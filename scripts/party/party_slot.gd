@@ -91,6 +91,7 @@ func set_ready(ready_value: bool) -> bool:
 	return true
 
 
+
 func to_dictionary() -> Dictionary:
 	return {
 		"slot_index": slot_index,
@@ -100,8 +101,15 @@ func to_dictionary() -> Dictionary:
 		"is_ready": is_ready,
 		"connected": connected,
 		"controlled_by_ai": controlled_by_ai,
-		"player_id": player_id
+		"player_id": player_id,
+		"player_data": (
+			player.to_dictionary()
+			if player != null
+			else {}
+		)
 	}
+
+
 
 
 func apply_dictionary(data: Dictionary) -> void:
@@ -114,8 +122,14 @@ func apply_dictionary(data: Dictionary) -> void:
 	controlled_by_ai = bool(data.get("controlled_by_ai", false))
 	player_id = str(data.get("player_id", ""))
 
-	# Il riferimento viene ricollegato da PartyState.
-	player = null
+	var player_data: Variant = data.get("player_data", {})
+
+	if occupied and player_data is Dictionary and not player_data.is_empty():
+		player = PlayerState.from_dictionary(player_data)
+		if player_id.is_empty():
+			player_id = player.id
+	else:
+		player = null
 
 
 func is_valid() -> bool:
@@ -129,13 +143,13 @@ func is_valid() -> bool:
 			and peer_id == 0
 		)
 
-	return (
-		not player_id.is_empty()
-		and (
-			controlled_by_ai
-			or peer_id > 0
-		)
-	)
+	if player_id.is_empty():
+		return false
+
+	if player != null and player.id != player_id:
+		return false
+
+	return controlled_by_ai or peer_id > 0
 
 
 static func from_dictionary(data: Dictionary) -> PartySlot:
