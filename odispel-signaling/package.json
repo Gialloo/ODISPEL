@@ -1,0 +1,17 @@
+﻿{
+  "name": "odispel-signaling",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ODISPEL WebRTC signaling server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "keywords": [],
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}
