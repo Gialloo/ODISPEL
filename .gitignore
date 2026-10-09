@@ -1,0 +1,26 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Godot: cache e file generati
+.godot/
+.import/
+
+# Esportazioni e build
+/export/
+/build/
+
+# Dipendenze Node.js
+node_modules/
+
+# Segreti e configurazioni locali
+.env
+.env.*
+!.env.example
+
+# Log
+*.log
+
+# File temporanei
+*.tmp
+*.bak
