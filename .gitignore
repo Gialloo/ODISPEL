@@ -24,3 +24,6 @@ node_modules/
 # File temporanei
 *.tmp
 *.bak
+
+# File temporaneo generato durante il caricamento WebRTC
+/addons/webrtc_native/lib/~libwebrtc_native.windows.template_debug.x86_64.dll
