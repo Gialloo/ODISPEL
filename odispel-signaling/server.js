@@ -1,10 +1,15 @@
-﻿"use strict";
+"use strict";
 
+const http = require("node:http");
 const WebSocket = require("ws");
 const crypto = require("node:crypto");
 
-const HOST = process.env.ODISPEL_SIGNALING_HOST || "127.0.0.1";
-const PORT = Number(process.env.ODISPEL_SIGNALING_PORT || 9080);
+// In locale: 127.0.0.1:9080. Sul cloud (Render ecc.) la piattaforma imposta PORT:
+// in quel caso ascoltiamo su 0.0.0.0 e usiamo quella porta.
+const CLOUD_PORT = process.env.PORT;
+const HOST =
+  process.env.ODISPEL_SIGNALING_HOST || (CLOUD_PORT ? "0.0.0.0" : "127.0.0.1");
+const PORT = Number(process.env.ODISPEL_SIGNALING_PORT || CLOUD_PORT || 9080);
 const MAX_CLIENTS_PER_ROOM = 6;
 const MAX_MESSAGE_BYTES = 64 * 1024;
 
@@ -13,9 +18,20 @@ const MAX_MESSAGE_BYTES = 64 * 1024;
 const rooms = new Map();
 const clients = new Map();
 
+// Piccolo server HTTP: risponde "ok" a /health (serve a svegliare il server
+// e ai controlli della piattaforma); le connessioni WebSocket passano da qui.
+const httpServer = http.createServer((req, res) => {
+  if (req.url === "/health" || req.url === "/") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("ok");
+    return;
+  }
+  res.writeHead(404);
+  res.end();
+});
+
 const server = new WebSocket.Server({
-  host: HOST,
-  port: PORT,
+  server: httpServer,
   maxPayload: MAX_MESSAGE_BYTES,
 });
 
@@ -197,11 +213,14 @@ server.on("connection", (socket) => {
   socket.on("error", () => leaveRoom(socket));
 });
 
-server.on("listening", () => {
+httpServer.on("listening", () => {
   console.log(`ODISPEL signaling in ascolto su ws://${HOST}:${PORT}`);
 });
 
-server.on("error", (error) => {
+httpServer.on("error", (error) => {
   console.error("Errore signaling:", error.message);
   process.exitCode = 1;
 });
+
+httpServer.listen(PORT, HOST);
+

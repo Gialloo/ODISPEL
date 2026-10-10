@@ -244,7 +244,7 @@ func _after_connect_started() -> void:
 
 	host_button.disabled = true
 	join_button.disabled = true
-	_set_status("Connessione al server...")
+	_set_status("Connessione al server... (se è inattivo può servire fino a 1 minuto)")
 
 
 func _on_room_joined() -> void:

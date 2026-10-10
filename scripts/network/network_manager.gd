@@ -14,7 +14,8 @@ signal signaling_lost
 # Il client riprova a entrare perché l'host non c'è ancora.
 signal waiting_for_host(attempt: int)
 
-const SIGNALING_CONNECT_TIMEOUT_MSEC: int = 10000
+# Il server gratuito nel cloud può impiegare circa 1 minuto a svegliarsi.
+const SIGNALING_CONNECT_TIMEOUT_MSEC: int = 90000
 const LINK_OPEN_TIMEOUT_MSEC: int = 20000
 
 var is_host: bool = false
