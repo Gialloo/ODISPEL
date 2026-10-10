@@ -46,10 +46,21 @@ static func can_resolve(game: GameState) -> bool:
 			return false
 
 	return true
-	
+
+
+# Risoluzione forzata (scadenza del timer): non aspetta chi non ha scelto.
+static func can_force_resolve(game: GameState) -> bool:
+	if not _is_in_phase(game, CombatState.Phase.PLANNING):
+		return false
+
+	return not game.party.get_living_players().is_empty()
+
+
+# force = true: chi non ha scelto (anche se connesso) attacca in automatico.
 static func resolve_round(
 	game: GameState,
-	player_level: int = 1
+	player_level: int = 1,
+	force: bool = false
 ) -> Dictionary:
 	var result: Dictionary = {
 		"ok": false,
@@ -58,7 +69,11 @@ static func resolve_round(
 		"events": []
 	}
 
-	if not can_resolve(game):
+	var resolvable: bool = (
+		can_force_resolve(game) if force else can_resolve(game)
+	)
+
+	if not resolvable:
 		return result
 
 	var combat: CombatState = game.combat
@@ -69,15 +84,24 @@ static func resolve_round(
 
 	result["ok"] = true
 
-	# Azione automatica per chi è disconnesso e non ha scelto.
+	# Azione automatica per chi non ha scelto: disconnesso, controllato
+	# dall'IA oppure (con force) scaduto il tempo.
 	for player: PlayerState in game.party.get_living_players():
 		if player.selected_action_id.is_empty():
 			player.selected_action_id = "attack"
 			player.action_was_automatic = true
 			player.is_locked = true
+
+			var reason: String = " non ha scelto in tempo: attacco automatico."
+
+			if not player.connected:
+				reason = " è disconnesso: attacco automatico."
+			elif player.controlled_by_ai:
+				reason = " è controllato dall'IA: attacco automatico."
+
 			events.append(_event(
 				"auto_action",
-				player.display_name + " è disconnesso: attacco automatico.",
+				player.display_name + reason,
 				player.id
 			))
 

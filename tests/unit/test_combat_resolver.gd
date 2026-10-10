@@ -12,6 +12,7 @@ func _initialize() -> void:
 	_test_guard_round()
 	_test_full_combat()
 	_test_disconnected_players()
+	_test_forced_resolution()
 
 	print("")
 	print("=== RISULTATI ===")
@@ -207,3 +208,34 @@ func _test_disconnected_players() -> void:
 	_check("Scelta conservata: round risolto", result2["ok"] == true)
 	_check("Scelta conservata: attacca solo il giocatore 1 (boss a 1900)", game2.combat.boss.hp == 1900)
 	_check("Scelta conservata: nessuna azione automatica", not _has_event(result2, "auto_action"))
+
+
+func _test_forced_resolution() -> void:
+	var game: GameState = _make_game(12345)
+	CombatResolver.submit_action(game, "player_1", "attack")
+
+	_check("Forzato: senza force il round non si risolve", not CombatResolver.can_resolve(game))
+	_check("Forzato: la risoluzione forzata è possibile", CombatResolver.can_force_resolve(game))
+
+	var normal: Dictionary = CombatResolver.resolve_round(game)
+	_check("Forzato: resolve_round normale rifiutato", normal["ok"] == false)
+
+	var result: Dictionary = CombatResolver.resolve_round(game, 1, true)
+
+	_check("Forzato: round risolto", result["ok"] == true)
+	_check("Forzato: attacco automatico di chi non ha scelto (boss a 1800)", game.combat.boss.hp == 1800)
+	_check("Forzato: evento auto_action", _has_event(result, "auto_action"))
+
+	var timeout_text: bool = false
+
+	for event: Dictionary in result["events"]:
+		if event["type"] == "auto_action" and "in tempo" in str(event["text"]):
+			timeout_text = true
+
+	_check("Forzato: il messaggio parla di tempo scaduto", timeout_text)
+	_check("Forzato: round successivo iniziato", game.combat.round_state.number == 2)
+
+	# Fuori dalla fase di pianificazione la forzatura non vale.
+	var ended: GameState = _make_game(12345)
+	ended.combat.end_combat()
+	_check("Forzato: nessuna forzatura a combattimento finito", not CombatResolver.can_force_resolve(ended))

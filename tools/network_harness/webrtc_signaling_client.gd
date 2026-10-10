@@ -1,4 +1,3 @@
-
 extends SceneTree
 
 const SERVER_URL := "ws://127.0.0.1:9080"
@@ -130,7 +129,8 @@ func handle_signaling(data: Dictionary) -> void:
 			peer_id = str(data.get("peer_id", ""))
 			socket.send_text(JSON.stringify({
 				"type": "join",
-				"room_id": ROOM_ID
+				"room_id": ROOM_ID,
+				"role": "host" if role == "A" else "client"
 			}))
 
 		"joined":

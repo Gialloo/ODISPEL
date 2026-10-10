@@ -74,7 +74,8 @@ func process_client(socket: WebSocketPeer, label: String) -> void:
 
 			socket.send_text(JSON.stringify({
 				"type": "join",
-				"room_id": ROOM_ID
+				"room_id": ROOM_ID,
+				"role": "host" if label == "A" else "client"
 			}))
 
 		elif data.get("type") == "joined" and data.get("room_id") == ROOM_ID:

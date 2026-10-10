@@ -55,7 +55,8 @@ func _handle_signaling(data: Dictionary) -> void:
 		"connected":
 			socket.send_text(JSON.stringify({
 				"type": "join",
-				"room_id": ROOM_ID
+				"room_id": ROOM_ID,
+				"role": "host" if role == "A" else "client"
 			}))
 
 		"joined":

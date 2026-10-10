@@ -124,6 +124,10 @@ func _check_state() -> void:
 
 
 func _on_error(reason: String) -> void:
+	# Dopo il PASS, la chiusura del collegamento è normale.
+	if quit_at > 0.0:
+		return
+
 	_fail(reason)
 
 

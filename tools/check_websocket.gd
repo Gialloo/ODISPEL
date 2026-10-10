@@ -44,7 +44,8 @@ func run_test() -> void:
 
 					var join_message := {
 						"type": "join",
-						"room_id": ROOM_ID
+						"room_id": ROOM_ID,
+						"role": "host"
 					}
 					socket.send_text(JSON.stringify(join_message))
 					join_sent = true

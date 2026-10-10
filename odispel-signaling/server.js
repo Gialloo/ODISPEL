@@ -8,6 +8,8 @@ const PORT = Number(process.env.ODISPEL_SIGNALING_PORT || 9080);
 const MAX_CLIENTS_PER_ROOM = 6;
 const MAX_MESSAGE_BYTES = 64 * 1024;
 
+// rooms:   roomId -> { host: socket, clients: Set<socket> }
+// clients: socket  -> { roomId, role }
 const rooms = new Map();
 const clients = new Map();
 
@@ -24,20 +26,97 @@ function send(socket, message) {
 }
 
 function leaveRoom(socket) {
-  const roomId = clients.get(socket);
-  if (!roomId) return;
+  const info = clients.get(socket);
+  if (!info) return;
 
   clients.delete(socket);
-  const room = rooms.get(roomId);
+  const room = rooms.get(info.roomId);
   if (!room) return;
 
-  room.delete(socket);
+  if (info.role === "host") {
+    // Senza host la stanza non ha senso: si chiude e i client sono liberi
+    // di entrare in un'altra stanza (o di riprovare più tardi).
+    rooms.delete(info.roomId);
 
-  for (const member of room) {
-    send(member, { type: "peer_left", peer_id: socket.peerId });
+    for (const member of room.clients) {
+      clients.delete(member);
+      send(member, { type: "room_closed", reason: "host_left" });
+    }
+
+    return;
   }
 
-  if (room.size === 0) rooms.delete(roomId);
+  room.clients.delete(socket);
+  send(room.host, { type: "peer_left", peer_id: socket.peerId });
+}
+
+function handleJoin(socket, message) {
+  if (clients.has(socket)) {
+    send(socket, { type: "error", code: "already_in_room" });
+    return;
+  }
+
+  if (
+    typeof message.room_id !== "string" ||
+    !/^[a-zA-Z0-9_-]{1,48}$/.test(message.room_id)
+  ) {
+    send(socket, { type: "error", code: "invalid_room_id" });
+    return;
+  }
+
+  if (message.role !== "host" && message.role !== "client") {
+    send(socket, { type: "error", code: "invalid_role" });
+    return;
+  }
+
+  const roomId = message.room_id;
+
+  if (message.role === "host") {
+    if (rooms.has(roomId)) {
+      send(socket, { type: "error", code: "room_taken" });
+      return;
+    }
+
+    rooms.set(roomId, { host: socket, clients: new Set() });
+    clients.set(socket, { roomId, role: "host" });
+
+    send(socket, {
+      type: "joined",
+      room_id: roomId,
+      role: "host",
+      peer_id: socket.peerId,
+      peers: [],
+    });
+
+    return;
+  }
+
+  const room = rooms.get(roomId);
+
+  if (!room) {
+    // Il client non entra nella stanza: può riprovare sullo stesso socket.
+    send(socket, { type: "error", code: "no_host" });
+    return;
+  }
+
+  if (1 + room.clients.size >= MAX_CLIENTS_PER_ROOM) {
+    send(socket, { type: "error", code: "room_full" });
+    return;
+  }
+
+  room.clients.add(socket);
+  clients.set(socket, { roomId, role: "client" });
+
+  send(socket, {
+    type: "joined",
+    room_id: roomId,
+    role: "client",
+    peer_id: socket.peerId,
+    host_peer_id: room.host.peerId,
+    peers: [room.host.peerId],
+  });
+
+  send(room.host, { type: "peer_joined", peer_id: socket.peerId });
 }
 
 server.on("connection", (socket) => {
@@ -61,53 +140,12 @@ server.on("connection", (socket) => {
     }
 
     if (message.type === "join") {
-      if (clients.has(socket)) {
-        send(socket, { type: "error", code: "already_in_room" });
-        return;
-      }
-
-      if (
-        typeof message.room_id !== "string" ||
-        !/^[a-zA-Z0-9_-]{1,48}$/.test(message.room_id)
-      ) {
-        send(socket, { type: "error", code: "invalid_room_id" });
-        return;
-      }
-
-      let room = rooms.get(message.room_id);
-
-      if (!room) {
-        room = new Set();
-        rooms.set(message.room_id, room);
-      }
-
-      if (room.size >= MAX_CLIENTS_PER_ROOM) {
-        send(socket, { type: "error", code: "room_full" });
-        return;
-      }
-
-      const existingPeers = [...room].map((peer) => peer.peerId);
-      room.add(socket);
-      clients.set(socket, message.room_id);
-
-      send(socket, {
-        type: "joined",
-        room_id: message.room_id,
-        peer_id: socket.peerId,
-        peers: existingPeers,
-      });
-
-      for (const peer of room) {
-        if (peer !== socket) {
-          send(peer, { type: "peer_joined", peer_id: socket.peerId });
-        }
-      }
-
+      handleJoin(socket, message);
       return;
     }
 
-    const roomId = clients.get(socket);
-    const room = roomId ? rooms.get(roomId) : null;
+    const info = clients.get(socket);
+    const room = info ? rooms.get(info.roomId) : null;
 
     if (!room) {
       send(socket, { type: "error", code: "not_in_room" });
@@ -127,9 +165,21 @@ server.on("connection", (socket) => {
       return;
     }
 
-    const target = [...room].find(
-      (peer) => peer.peerId === message.target_peer_id
-    );
+    let target = null;
+
+    if (info.role === "client") {
+      // I client parlano solo con l'host, mai tra loro.
+      if (message.target_peer_id !== room.host.peerId) {
+        send(socket, { type: "error", code: "invalid_target" });
+        return;
+      }
+
+      target = room.host;
+    } else {
+      target = [...room.clients].find(
+        (peer) => peer.peerId === message.target_peer_id
+      );
+    }
 
     if (!target) {
       send(socket, { type: "error", code: "target_not_found" });
@@ -155,4 +205,3 @@ server.on("error", (error) => {
   console.error("Errore signaling:", error.message);
   process.exitCode = 1;
 });
-
