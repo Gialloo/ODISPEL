@@ -217,7 +217,7 @@ func _process(delta: float) -> void:
 	_tick_join_retry(delta)
 
 	while _socket.get_available_packet_count() > 0:
-		var data: Variant = JSON.parse_string(
+		var data: Variant = WebRTCLink.parse_json(
 			_socket.get_packet().get_string_from_utf8()
 		)
 

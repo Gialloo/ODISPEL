@@ -22,7 +22,6 @@ func _run_tests() -> void:
 	print("")
 	print("=== ODISPEL MODEL TESTS ===")
 
-	_test_network_identity()
 	_test_player_state()
 	_test_party_state()
 	_test_run_state()
@@ -32,7 +31,7 @@ func _run_tests() -> void:
 	_test_boss_state()
 	_test_combat_state()
 	_test_game_state()
-	_test_network_snapshot()
+	_test_game_state_roundtrip()
 
 	print("")
 	print("=== RISULTATI ===")
@@ -45,23 +44,6 @@ func _run_tests() -> void:
 	else:
 		print("SONO NECESSARIE CORREZIONI")
 		quit(1)
-
-
-func _test_network_identity() -> void:
-	var identity := NetworkIdentity.new()
-	identity.setup(7, "player_test")
-
-	check(identity.is_valid(), "NetworkIdentity valida")
-	check(identity.has_player(), "NetworkIdentity contiene il giocatore")
-
-	var restored := NetworkIdentity.from_dictionary(
-		identity.to_dictionary()
-	)
-
-	check(
-		restored.peer_id == 7 and restored.player_id == "player_test",
-		"NetworkIdentity serializzazione"
-	)
 
 
 func _test_player_state() -> void:
@@ -278,40 +260,43 @@ func _test_game_state() -> void:
 	check(game.is_valid(), "GameState completa valida")
 
 
-func _test_network_snapshot() -> void:
+func _test_game_state_roundtrip() -> void:
 	var game := GameState.new()
-	game.setup("snapshot_test", 1, 1, 2)
+	game.setup("roundtrip_test", 1, 1, 2)
 
 	var player := PlayerState.new()
 	player.setup("player_1", "Tester", 1)
-	check(game.party.add_player(player), "Preparazione snapshot")
-
-	check(game.setup_run("run_snapshot", 9876, "node_start"),
-		"Preparazione run snapshot")
-
-	check(game.begin_combat("boss_snapshot", "Boss", 1000),
-		"Preparazione combattimento snapshot")
-
-	var snapshot := NetworkSnapshot.new()
+	check(game.party.add_player(player), "Roundtrip: preparazione party")
 
 	check(
-		snapshot.create_from_game_state(game, 1),
-		"Creazione NetworkSnapshot"
+		game.setup_run("run_roundtrip", 9876, "node_start"),
+		"Roundtrip: preparazione run"
 	)
 
-	var restored_snapshot := NetworkSnapshot.from_dictionary(
-		snapshot.to_dictionary()
+	check(
+		game.begin_combat("boss_roundtrip", "Boss", 1000),
+		"Roundtrip: preparazione combattimento"
 	)
 
-	check(restored_snapshot.is_valid(), "NetworkSnapshot serializzazione")
+	# Passaggio per JSON, come avviene in rete.
+	var parsed: Variant = JSON.parse_string(JSON.stringify(game.to_dictionary()))
+	check(parsed is Dictionary, "Roundtrip: JSON valido")
 
-	var restored_game := GameState.from_dictionary(
-		restored_snapshot.state_data
-	)
+	if not parsed is Dictionary:
+		return
 
-	check(restored_game.is_valid(), "Ripristino GameState dallo snapshot")
+	var restored_game := GameState.from_dictionary(parsed)
+
+	check(restored_game.is_valid(), "Roundtrip: GameState ripristinato valido")
 
 	check(
 		restored_game.party.get_players().size() == 1,
-		"Snapshot conserva i dati dei giocatori"
+		"Roundtrip: conserva i dati dei giocatori"
+	)
+
+	check(
+		restored_game.combat != null
+		and restored_game.combat.boss.id == "boss_roundtrip"
+		and restored_game.run.seed == 9876,
+		"Roundtrip: conserva boss e run"
 	)

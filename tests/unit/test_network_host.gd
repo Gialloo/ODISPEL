@@ -33,6 +33,7 @@ func _initialize() -> void:
 	_test_signaling_state()
 	_test_filtered_snapshot()
 	_test_host_start_combat()
+	_test_safe_json_parsing()
 
 	for manager in _managers:
 		manager.free()
@@ -728,4 +729,24 @@ func _test_host_start_combat() -> void:
 	_check(
 		"Lobby: un client non avvia il combattimento",
 		not client.host_start_combat("boss_test", "Boss", 2000, 5)
+	)
+
+
+func _test_safe_json_parsing() -> void:
+	_check("JSON: oggetto valido", WebRTCLink.parse_json('{"a": 1}') is Dictionary)
+	_check("JSON: testo non valido dà null", WebRTCLink.parse_json("non è json") == null)
+	_check("JSON: testo vuoto dà null", WebRTCLink.parse_json("") == null)
+	_check("JSON: un array non è un messaggio", not WebRTCLink.parse_json("[1, 2]") is Dictionary)
+
+	var link := WebRTCLink.new()
+	var messages: Array[Dictionary] = []
+	link.message_received.connect(func(message: Dictionary) -> void: messages.append(message))
+
+	for _i in range(10):
+		link._handle_raw("{{ rotto", 1000)
+
+	link._handle_raw('{"type":"action"}', 1000)
+	_check(
+		"JSON: i messaggi rotti non bloccano quelli validi",
+		messages.size() == 1 and link._invalid_count == 10
 	)

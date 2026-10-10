@@ -32,6 +32,11 @@ var _was_open: bool = false
 var _closed_emitted: bool = false
 var _last_received_msec: int = 0
 var _last_ping_msec: int = 0
+var _invalid_count: int = 0
+
+# Dopo questi avvisi i messaggi non validi si scartano in silenzio,
+# così un peer ostile non riempie il log.
+const MAX_INVALID_WARNINGS: int = 3
 
 
 # Costruisce la lista dei server ICE.
@@ -151,6 +156,17 @@ func poll() -> void:
 		channel_closed.emit()
 
 
+# Come JSON.parse_string, ma un testo non valido non scrive errori nel log:
+# restituisce semplicemente null.
+static func parse_json(raw: String) -> Variant:
+	var json := JSON.new()
+
+	if json.parse(raw) != OK:
+		return null
+
+	return json.data
+
+
 # True se il canale si è aperto almeno una volta.
 func has_been_open() -> bool:
 	return _was_open
@@ -161,10 +177,14 @@ func has_been_open() -> bool:
 func _handle_raw(raw: String, now_msec: int) -> void:
 	_last_received_msec = now_msec
 
-	var parsed: Variant = JSON.parse_string(raw)
+	var parsed: Variant = parse_json(raw)
 
 	if not parsed is Dictionary:
-		push_warning("WebRTCLink: messaggio non valido scartato.")
+		_invalid_count += 1
+
+		if _invalid_count <= MAX_INVALID_WARNINGS:
+			push_warning("WebRTCLink: messaggio non valido scartato.")
+
 		return
 
 	if str(parsed.get("type", "")) == "ping":
