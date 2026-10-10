@@ -203,17 +203,10 @@ func _on_action_selected(player_id: String, action: String) -> void:
 	if combat_over:
 		return
 
-	if game.combat.phase != CombatState.Phase.PLANNING:
-		return
-
-	if player_actions.has(player_id):
+	if not CombatResolver.submit_action(game, player_id, action):
 		return
 
 	var player: PlayerState = _get_player(player_id)
-
-	if player == null or not player.can_act():
-		return
-
 	player_actions[player_id] = action
 
 	var buttons: Dictionary = action_buttons[player_id]
@@ -228,7 +221,7 @@ func _on_action_selected(player_id: String, action: String) -> void:
 
 	_log(player.display_name + " sceglie: " + action + ".")
 
-	if _all_living_players_have_actions():
+	if CombatResolver.can_resolve(game):
 		status_label.text = "Le azioni sono pronte. Risolvi il round."
 	else:
 		status_label.text += " In attesa degli altri giocatori."
@@ -264,97 +257,29 @@ func _update_resolve_button() -> void:
 
 
 func _resolve_round() -> void:
-	if combat_over or not _all_living_players_have_actions():
-		return
-
-	if not game.combat.lock_round():
-		return
-
-	if not game.combat.begin_resolution():
+	if combat_over or not CombatResolver.can_resolve(game):
 		return
 
 	resolve_button.disabled = true
 
-	# Prima agiscono i giocatori ancora vivi.
-	for player_id in ["player_1", "player_2"]:
-		if not game.combat.is_boss_alive():
-			break
+	var result: Dictionary = CombatResolver.resolve_round(
+		game,
+		CampaignState.player_level
+	)
 
-		var player: PlayerState = _get_player(player_id)
-
-		if player == null or not player.can_act():
-			continue
-
-		if player_actions.get(player_id, "") == "attack":
-			var attack_level_steps: int = maxi(
-				0,
-				CampaignState.player_level - 1
-			)
-			var damage_multiplier: float = (
-				1.0 + (0.05 * attack_level_steps)
-			)
-			var attack_damage: int = int(
-				round(PLAYER_DAMAGE * damage_multiplier)
-			)
-			var actual_attack_damage: int = game.combat.boss.take_damage(
-				attack_damage
-			)
-
-			_log(
-				player.display_name + " infligge "
-				+ str(actual_attack_damage) + " danni."
-			)
-
-	# Il boss sconfitto non contrattacca.
-	if not game.combat.is_boss_alive():
-		_finish_combat(true)
+	if not result["ok"]:
+		_update_resolve_button()
 		return
 
-	# Il boss attacca un giocatore ancora vivo.
-	var target: PlayerState = _choose_boss_target()
+	for event: Dictionary in result["events"]:
+		_log(event["text"])
 
-	if target != null and game.combat.begin_boss_reaction(target.id):
-		var incoming_damage: int = BOSS_DAMAGE
-
-		if player_actions.get(target.id, "") == "guard":
-			incoming_damage = int(ceil(float(incoming_damage) / 2.0))
-			_log(target.display_name + " si difende: danni ridotti.")
-
-		var defense_level_steps: int = maxi(
-			0,
-			CampaignState.player_level - 1
-		)
-		var damage_reduction: float = minf(
-			0.05 * defense_level_steps,
-			MAX_DAMAGE_REDUCTION
-		)
-
-		incoming_damage = int(round(
-			incoming_damage * (1.0 - damage_reduction)
-		))
-
-		var actual_damage: int = target.take_damage(incoming_damage)
-
-		_log(
-			"Il boss colpisce " + target.display_name
-			+ " per " + str(actual_damage) + " danni."
-		)
-
-	game.combat.begin_status_update()
 	_refresh_interface()
 
-	# Controlla la sconfitta prima di iniziare un nuovo round.
-	if game.party.get_living_players().is_empty():
-		_finish_combat(false)
+	if result["finished"]:
+		_finish_combat(result["victory"])
 		return
 
-	if not game.combat.is_boss_alive():
-		_finish_combat(true)
-		return
-
-	# Prepara il round successivo.
-	game.combat.round_state.advance()
-	game.combat.begin_round()
 	player_actions.clear()
 
 	for player_id in ["player_1", "player_2"]:
@@ -365,13 +290,8 @@ func _resolve_round() -> void:
 		buttons["attack"].disabled = not can_act_now
 		buttons["guard"].disabled = not can_act_now
 
-		if not can_act_now and player != null:
-			_log(player.display_name + " è KO e non può agire.")
-
 	status_label.text = "Round pronto. Scegli le azioni."
-	_refresh_interface()
 	_update_resolve_button()
-
 
 func _choose_boss_target() -> PlayerState:
 	var living_players: Array = game.party.get_living_players()
