@@ -11,8 +11,14 @@ config_version=5
 [application]
 
 config/name="ODISPEL"
+run/main_scene="uid://c28067ejtxflr"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+CampaignState="*uid://c8lloqc2i0mu2"
+SaveManager="*uid://cuv5g44srpksk"
 
 [display]
 

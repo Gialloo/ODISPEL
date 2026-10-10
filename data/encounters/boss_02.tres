@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EncounterData" format=3 uid="uid://csmwhpsojd2ad"]
+
+[ext_resource type="Script" uid="uid://brgok0menokua" path="res://scripts/data/encounter_data.gd" id="1_lodmm"]
+
+[resource]
+script = ExtResource("1_lodmm")
+encounter_id = "boss_02"
+display_name = "Secondo incontro"
+boss_max_hp = 2000
+reward_exp = 150
+reward_currency = 75
+metadata/_custom_type_script = "uid://brgok0menokua"

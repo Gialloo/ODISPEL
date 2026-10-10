@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://c28067ejtxflr"]
+
+[ext_resource type="Script" uid="uid://bvxr8schbqqpn" path="res://scenes/combat/combat_demo.gd" id="1_obir6"]
+
+[node name="CombatDemo" type="Control" unique_id=725031651]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_obir6")

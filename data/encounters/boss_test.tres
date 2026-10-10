@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EncounterData" format=3 uid="uid://y0rmj8d0nyow"]
+
+[ext_resource type="Script" uid="uid://brgok0menokua" path="res://scripts/data/encounter_data.gd" id="1_vi25g"]
+
+[resource]
+script = ExtResource("1_vi25g")
+encounter_id = "boss_test"
+display_name = "Boss di prova"
+reward_exp = 100
+reward_currency = 50
+metadata/_custom_type_script = "uid://brgok0menokua"
