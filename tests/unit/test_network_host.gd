@@ -23,6 +23,8 @@ func _initialize() -> void:
 	_test_duplicate_token_replaces_old_link()
 	_test_no_new_players_after_round_one()
 	_test_invalid_token_rejected()
+	_test_version_mismatch()
+	_test_game_config()
 	_test_planning_timeout()
 	_test_timer_disabled_by_default()
 	_test_client_counts_down_locally()
@@ -93,7 +95,8 @@ func _hello(
 	manager._host_handle_message({
 		"type": "hello",
 		"name": display_name,
-		"token": token
+		"token": token,
+		"version": GameConfig.VERSION
 	}, peer_id)
 
 
@@ -231,6 +234,27 @@ func _test_no_new_players_after_round_one() -> void:
 	manager._drop_peer("peerA")
 	_hello(manager, "peerA2", "tok-a")
 	_check("Chi era già dentro può rientrare", manager._peer_players.get("peerA2") == "player_2")
+
+
+func _test_version_mismatch() -> void:
+	var manager := _make_manager(2)
+	manager._links["peerA"] = WebRTCLink.new()
+	manager._host_handle_message({"type": "hello", "name": "Old", "token": "tok-old", "version": "0.0.1"}, "peerA")
+	_check("Versione diversa rifiutata", not manager._peer_players.has("peerA"))
+
+	manager._host_handle_message({"type": "hello", "name": "Old", "token": "tok-old"}, "peerA")
+	_check("Versione mancante rifiutata", not manager._peer_players.has("peerA"))
+
+	_hello(manager, "peerB", "tok-b", "Bob")
+	_check("Versione uguale accettata", manager._peer_players.has("peerB"))
+
+
+func _test_game_config() -> void:
+	_check("Config: https diventa wss", GameConfig.normalize_server_url("https://a.onrender.com/") == "wss://a.onrender.com")
+	_check("Config: http diventa ws", GameConfig.normalize_server_url(" http://x:1 ") == "ws://x:1")
+	_check("Config: url valido", GameConfig.is_valid_server_url("wss://a.b"))
+	_check("Config: url non valido", not GameConfig.is_valid_server_url("a.b") and not GameConfig.is_valid_server_url("wss://"))
+	_check("Config: server predefinito valido", GameConfig.is_valid_server_url(GameConfig.DEFAULT_SERVER_URL))
 
 
 func _test_invalid_token_rejected() -> void:

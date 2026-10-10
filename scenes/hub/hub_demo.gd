@@ -39,6 +39,12 @@ func _build_interface() -> void:
 	subtitle.add_theme_font_size_override("font_size", 22)
 	layout.add_child(subtitle)
 
+	var version_label := Label.new()
+	version_label.text = "v" + GameConfig.VERSION
+	version_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	version_label.modulate = Color(1, 1, 1, 0.5)
+	layout.add_child(version_label)
+
 	var description := Label.new()
 	description.text = "Seleziona una missione da affrontare."
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

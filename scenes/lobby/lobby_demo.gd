@@ -2,7 +2,6 @@ extends Control
 
 const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
 const COMBAT_SCENE: String = "res://scenes/combat/combat_net.tscn"
-const DEFAULT_URL: String = "ws://127.0.0.1:9080"
 const DEFAULT_ROOM: String = "odispel"
 
 var form_box: VBoxContainer
@@ -66,7 +65,7 @@ func _build_interface() -> void:
 	form_box.add_theme_constant_override("separation", 8)
 	layout.add_child(form_box)
 
-	url_edit = _add_field(form_box, "Server di signaling", DEFAULT_URL)
+	url_edit = _add_field(form_box, "Server di signaling", GameConfig.get_server_url())
 	room_edit = _add_field(form_box, "Stanza", DEFAULT_ROOM)
 	name_edit = _add_field(form_box, "Il tuo nome", "Giocatore")
 
@@ -178,7 +177,7 @@ func _set_status(text: String) -> void:
 
 # Legge e controlla i campi del modulo. Restituisce {} se qualcosa non va.
 func _read_form() -> Dictionary:
-	var url: String = url_edit.text.strip_edges()
+	var url: String = GameConfig.normalize_server_url(url_edit.text)
 	var room: String = room_edit.text.strip_edges()
 	var display_name: String = name_edit.text.strip_edges()
 
@@ -195,6 +194,9 @@ func _read_form() -> Dictionary:
 
 	if display_name.is_empty():
 		display_name = "Giocatore"
+
+	url_edit.text = url
+	GameConfig.remember_server_url(url)
 
 	return {
 		"url": url,

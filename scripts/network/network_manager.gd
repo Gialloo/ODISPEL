@@ -425,7 +425,8 @@ func _on_link_opened(peer_id: String) -> void:
 			link.send_message({
 				"type": "hello",
 				"name": _display_name,
-				"token": session_token
+				"token": session_token,
+				"version": GameConfig.VERSION
 			})
 
 
@@ -524,6 +525,14 @@ func _host_handle_hello(peer_id: String, message: Dictionary) -> void:
 	var link: WebRTCLink = _links.get(peer_id)
 
 	if link == null:
+		return
+
+	if str(message.get("version", "")) != GameConfig.VERSION:
+		link.send_message({
+			"type": "error",
+			"code": "version_mismatch",
+			"host_version": GameConfig.VERSION
+		})
 		return
 
 	var token: String = str(message.get("token", "")).strip_edges()
@@ -754,4 +763,12 @@ func _client_handle_message(message: Dictionary) -> void:
 				round_result_received.emit(events)
 
 		"error":
-			network_error.emit("host: " + str(message.get("code", "?")))
+			var code: String = str(message.get("code", "?"))
+
+			if code == "version_mismatch":
+				network_error.emit(
+					"versione del gioco diversa: l'host usa la %s, tu la %s. Scarica l'ultima versione."
+					% [str(message.get("host_version", "?")), GameConfig.VERSION]
+				)
+			else:
+				network_error.emit("host: " + code)
