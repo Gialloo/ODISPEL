@@ -38,12 +38,15 @@ static func can_resolve(game: GameState) -> bool:
 		return false
 
 	for player: PlayerState in living:
+		# Chi è disconnesso o controllato dall'IA non blocca il round.
+		if player.controlled_by_ai or not player.connected:
+			continue
+
 		if not player.is_locked or player.selected_action_id.is_empty():
 			return false
 
 	return true
-
-
+	
 static func resolve_round(
 	game: GameState,
 	player_level: int = 1
@@ -65,6 +68,18 @@ static func resolve_round(
 		return result
 
 	result["ok"] = true
+
+	# Azione automatica per chi è disconnesso e non ha scelto.
+	for player: PlayerState in game.party.get_living_players():
+		if player.selected_action_id.is_empty():
+			player.selected_action_id = "attack"
+			player.action_was_automatic = true
+			player.is_locked = true
+			events.append(_event(
+				"auto_action",
+				player.display_name + " è disconnesso: attacco automatico.",
+				player.id
+			))
 
 	var level_steps: int = maxi(0, player_level - 1)
 

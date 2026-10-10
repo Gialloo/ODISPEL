@@ -11,6 +11,7 @@ func _initialize() -> void:
 	_test_attack_round()
 	_test_guard_round()
 	_test_full_combat()
+	_test_disconnected_players()
 
 	print("")
 	print("=== RISULTATI ===")
@@ -159,3 +160,50 @@ func _test_full_combat() -> void:
 		and first["p1_hp"] == second["p1_hp"]
 		and first["p2_hp"] == second["p2_hp"]
 	)
+
+
+func _has_event(result: Dictionary, event_type: String) -> bool:
+	for event: Dictionary in result["events"]:
+		if event["type"] == event_type:
+			return true
+
+	return false
+
+
+func _test_disconnected_players() -> void:
+	# Caso 1: il giocatore 2 cade prima di scegliere.
+	var game: GameState = _make_game(12345)
+	_player(game, "player_2").disconnect_player()
+
+	_check(
+		"Disconnesso: il giocatore connesso che non ha scelto blocca ancora",
+		not CombatResolver.can_resolve(game)
+	)
+
+	CombatResolver.submit_action(game, "player_1", "attack")
+
+	_check("Disconnesso: non blocca il round", CombatResolver.can_resolve(game))
+
+	var result: Dictionary = CombatResolver.resolve_round(game)
+
+	_check("Disconnesso: round risolto", result["ok"] == true)
+	_check("Disconnesso: attacco automatico (boss a 1800)", game.combat.boss.hp == 1800)
+	_check("Disconnesso: evento auto_action registrato", _has_event(result, "auto_action"))
+	_check("Disconnesso: round successivo iniziato", game.combat.round_state.number == 2)
+
+	# Caso 2: il giocatore 2 sceglie guard e poi cade.
+	var game2: GameState = _make_game(12345)
+	CombatResolver.submit_action(game2, "player_2", "guard")
+	_player(game2, "player_2").disconnect_player()
+
+	_check(
+		"Scelta fatta prima di cadere: manca ancora il giocatore 1",
+		not CombatResolver.can_resolve(game2)
+	)
+
+	CombatResolver.submit_action(game2, "player_1", "attack")
+	var result2: Dictionary = CombatResolver.resolve_round(game2)
+
+	_check("Scelta conservata: round risolto", result2["ok"] == true)
+	_check("Scelta conservata: attacca solo il giocatore 1 (boss a 1900)", game2.combat.boss.hp == 1900)
+	_check("Scelta conservata: nessuna azione automatica", not _has_event(result2, "auto_action"))
