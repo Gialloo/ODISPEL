@@ -8,6 +8,24 @@ extends Resource
 var generator: RandomNumberGenerator = null
 
 
+# Legge un intero a 64 bit da un dato serializzato.
+# I numeri passati per JSON diventano float (double) e perdono precisione
+# oltre 2^53, per questo i valori grandi si salvano come stringa.
+# Accetta anche int e float, per i dati scritti dalle versioni precedenti.
+static func read_int64(value: Variant, fallback: int = 0) -> int:
+	if value is String:
+		var text: String = value.strip_edges()
+		return text.to_int() if text.is_valid_int() else fallback
+
+	if value is int:
+		return value
+
+	if value is float:
+		return int(value)
+
+	return fallback
+
+
 func setup(new_seed: int) -> void:
 	seed_value = new_seed
 	generator = RandomNumberGenerator.new()
@@ -72,14 +90,14 @@ func to_dictionary() -> Dictionary:
 		sync_state()
 
 	return {
-		"seed_value": seed_value,
-		"state_value": state_value
+		"seed_value": str(seed_value),
+		"state_value": str(state_value)
 	}
 
 
 func apply_dictionary(data: Dictionary) -> void:
-	seed_value = int(data.get("seed_value", 1))
-	state_value = int(data.get("state_value", 0))
+	seed_value = read_int64(data.get("seed_value", 1), 1)
+	state_value = read_int64(data.get("state_value", 0), 0)
 
 	generator = RandomNumberGenerator.new()
 	generator.seed = seed_value

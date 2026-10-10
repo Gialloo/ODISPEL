@@ -31,6 +31,7 @@ func _initialize() -> void:
 	_test_link_heartbeat()
 	_test_link_open_timeout()
 	_test_signaling_state()
+	_test_filtered_snapshot()
 
 	for manager in _managers:
 		manager.free()
@@ -526,4 +527,103 @@ func _test_signaling_state() -> void:
 	fourth.shutdown()
 	fourth._process(0.1)
 	_check("Shutdown: nessun errore dopo la chiusura volontaria", errors4.is_empty())
+
+
+func _test_filtered_snapshot() -> void:
+	var manager := _make_manager(3)
+	_hello(manager, "peerA", "tok-a", "Alice")
+	_hello(manager, "peerB", "tok-b", "Bob")
+
+	# Alice sceglie guard; l'host e Bob non hanno ancora scelto.
+	manager._host_handle_message({"type": "action", "action_id": "guard"}, "peerA")
+
+	var game: GameState = manager.game
+	var alice: PlayerState = _player(manager, "player_2")
+	_check("Snapshot: Alice ha scelto guard", alice.selected_action_id == "guard" and alice.is_locked)
+
+	var for_bob: Dictionary = NetworkManager.build_snapshot_for(game, "player_3")
+	var for_alice: Dictionary = NetworkManager.build_snapshot_for(game, "player_2")
+
+	_check(
+		"Snapshot: Bob non vede la scelta di Alice",
+		_snapshot_action(for_bob, "player_2") == ""
+	)
+	_check(
+		"Snapshot: Bob vede però che Alice ha bloccato la scelta",
+		_snapshot_locked(for_bob, "player_2")
+	)
+	_check(
+		"Snapshot: Alice vede la propria scelta",
+		_snapshot_action(for_alice, "player_2") == "guard"
+	)
+	_check(
+		"Snapshot: chi non ha un giocatore non vede nessuna scelta",
+		_snapshot_action(NetworkManager.build_snapshot_for(game, ""), "player_2") == ""
+	)
+
+	_check(
+		"Snapshot: stato dell'RNG rimosso",
+		for_bob["combat"]["rng"].is_empty()
+	)
+	_check(
+		"Snapshot: seed della run nascosto",
+		str(for_bob["run"]["seed"]) == "0"
+	)
+
+	_check(
+		"Snapshot: lo stato dell'host non viene modificato",
+		alice.selected_action_id == "guard"
+		and game.combat.rng != null
+		and game.run.seed == 12345
+	)
+
+	# Dopo il passaggio per JSON il client ricostruisce uno stato valido.
+	var parsed: Variant = JSON.parse_string(JSON.stringify(for_bob))
+	var client_game := GameState.new()
+
+	if parsed is Dictionary:
+		client_game.apply_dictionary(parsed)
+
+	_check("Snapshot: il client lo accetta come stato valido", client_game.is_valid())
+	_check(
+		"Snapshot: il client non riceve l'RNG",
+		client_game.combat != null and client_game.combat.rng == null
+	)
+	_check(
+		"Snapshot: il client ha il boss e il round corretti",
+		client_game.combat.boss.hp == 2000 and client_game.combat.round_state.number == 1
+	)
+
+	# Fuori dalla pianificazione le scelte non vengono più nascoste dal filtro,
+	# ma l'RNG resta sempre rimosso.
+	game.combat.phase = CombatState.Phase.ENDED
+	var ended: Dictionary = NetworkManager.build_snapshot_for(game, "player_3")
+	_check(
+		"Snapshot: a combattimento chiuso l'RNG resta nascosto",
+		ended["combat"]["rng"].is_empty()
+	)
+
+	# Senza combattimento il filtro non si rompe.
+	var empty_game := GameState.new()
+	empty_game.setup("vuoto", 1, 1, 2)
+	var no_combat: Dictionary = NetworkManager.build_snapshot_for(empty_game, "x")
+	_check("Snapshot: funziona anche senza combattimento", no_combat.has("session"))
+
+
+func _snapshot_player(snapshot: Dictionary, player_id: String) -> Dictionary:
+	for slot_data in snapshot["party"]["slots"]:
+		var player_data: Dictionary = slot_data.get("player_data", {})
+
+		if str(player_data.get("id", "")) == player_id:
+			return player_data
+
+	return {}
+
+
+func _snapshot_action(snapshot: Dictionary, player_id: String) -> String:
+	return str(_snapshot_player(snapshot, player_id).get("selected_action_id", "?"))
+
+
+func _snapshot_locked(snapshot: Dictionary, player_id: String) -> bool:
+	return bool(_snapshot_player(snapshot, player_id).get("is_locked", false))
 

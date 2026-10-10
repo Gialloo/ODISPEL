@@ -602,8 +602,62 @@ func _broadcast(message: Dictionary) -> void:
 
 
 func _broadcast_snapshot() -> void:
-	_broadcast({"type": "snapshot", "state": game.to_dictionary()})
+	# Ogni client riceve la sua versione dello stato, senza i segreti.
+	for peer_id: String in _links.keys():
+		var link: WebRTCLink = _links[peer_id]
+		var viewer_id: String = str(_peer_players.get(peer_id, ""))
+
+		link.send_message({
+			"type": "snapshot",
+			"state": build_snapshot_for(game, viewer_id)
+		})
+
 	snapshot_received.emit()
+
+
+# Stato di gioco come lo può vedere un singolo giocatore.
+# Tolti (l'host ha lo stato completo):
+#   - seed dell'RNG e stato del generatore: con quelli un client modificato
+#     potrebbe prevedere i bersagli del boss;
+#   - le azioni scelte dagli altri giocatori durante la pianificazione
+#     (resta visibile solo che hanno "bloccato" la scelta).
+# L'identificativo vuoto vale per chi non ha ancora un giocatore assegnato.
+static func build_snapshot_for(
+	game_state: GameState,
+	viewer_player_id: String
+) -> Dictionary:
+	var data: Dictionary = game_state.to_dictionary()
+
+	var run_data: Variant = data.get("run", {})
+
+	if run_data is Dictionary and not run_data.is_empty():
+		run_data["seed"] = "0"
+
+	var combat_data: Variant = data.get("combat", {})
+
+	if not (combat_data is Dictionary) or combat_data.is_empty():
+		return data
+
+	combat_data["rng"] = {}
+
+	if int(combat_data.get("phase", -1)) != int(CombatState.Phase.PLANNING):
+		return data
+
+	var party_data: Variant = data.get("party", {})
+
+	if not (party_data is Dictionary):
+		return data
+
+	for slot_data in party_data.get("slots", []):
+		var player_data: Variant = slot_data.get("player_data", {})
+
+		if not (player_data is Dictionary) or player_data.is_empty():
+			continue
+
+		if str(player_data.get("id", "")) != viewer_player_id:
+			player_data["selected_action_id"] = ""
+
+	return data
 
 
 # ---------- CLIENT ----------

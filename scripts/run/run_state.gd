@@ -51,7 +51,7 @@ func is_valid() -> bool:
 func to_dictionary() -> Dictionary:
 	return {
 		"run_id": run_id,
-		"seed": seed,
+		"seed": str(seed),
 		"encounter_index": encounter_index,
 		"map_node_id": map_node_id,
 		"temporary_level": temporary_level
@@ -60,7 +60,7 @@ func to_dictionary() -> Dictionary:
 
 func apply_dictionary(data: Dictionary) -> void:
 	run_id = str(data.get("run_id", ""))
-	seed = int(data.get("seed", 0))
+	seed = RNGState.read_int64(data.get("seed", 0), 0)
 	encounter_index = max(0, int(data.get("encounter_index", 0)))
 	map_node_id = str(data.get("map_node_id", ""))
 	temporary_level = max(1, int(data.get("temporary_level", 1)))

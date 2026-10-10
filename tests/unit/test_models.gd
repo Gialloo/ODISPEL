@@ -27,6 +27,7 @@ func _run_tests() -> void:
 	_test_party_state()
 	_test_run_state()
 	_test_rng_state()
+	_test_rng_json_precision()
 	_test_round_state()
 	_test_boss_state()
 	_test_combat_state()
@@ -162,6 +163,47 @@ func _test_rng_state() -> void:
 	check(
 		restored.random_int(0, 100) == rng_a.random_int(0, 100),
 		"RNG continua la sequenza dopo ripristino"
+	)
+
+
+func _test_rng_json_precision() -> void:
+	var rng := RNGState.new()
+	rng.setup(987654321987654321)
+
+	# Valori oltre 2^53 devono sopravvivere al passaggio per JSON.
+	for _i in range(5):
+		rng.random_int(0, 1000)
+
+	var parsed: Variant = JSON.parse_string(JSON.stringify(rng.to_dictionary()))
+	check(parsed is Dictionary, "RNG: JSON valido")
+
+	if not parsed is Dictionary:
+		return
+
+	check(parsed["state_value"] is String, "RNG: stato serializzato come stringa")
+	check(parsed["seed_value"] is String, "RNG: seed serializzato come stringa")
+
+	var restored := RNGState.from_dictionary(parsed)
+	check(restored.seed_value == rng.seed_value, "RNG: seed identico dopo JSON")
+	check(restored.state_value == rng.state_value, "RNG: stato identico dopo JSON")
+	check(
+		restored.random_int(0, 1000000) == rng.random_int(0, 1000000),
+		"RNG: stessa sequenza dopo JSON"
+	)
+
+	var legacy := RNGState.from_dictionary({"seed_value": 12345, "state_value": 42})
+	check(
+		legacy.seed_value == 12345 and legacy.state_value == 42,
+		"RNG: i vecchi dati numerici si leggono ancora"
+	)
+
+	var run := RunState.new()
+	run.setup("big_run", 987654321987654321, "start")
+	var run_parsed: Variant = JSON.parse_string(JSON.stringify(run.to_dictionary()))
+	check(
+		run_parsed is Dictionary
+		and RunState.from_dictionary(run_parsed).seed == 987654321987654321,
+		"RunState: seed grande identico dopo JSON"
 	)
 
 
