@@ -4,6 +4,10 @@ extends Control
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	# Tornando all'hub si chiude sempre l'eventuale sessione di rete.
+	NetSession.close()
+
 	_build_interface()
 
 
@@ -149,6 +153,25 @@ func _build_interface() -> void:
 		)
 
 		layout.add_child(mission_button)
+
+	separator = HSeparator.new()
+	layout.add_child(separator)
+
+	var multiplayer_button := Button.new()
+	multiplayer_button.text = "MULTIPLAYER CO-OP"
+	multiplayer_button.custom_minimum_size = Vector2(0, 46)
+	multiplayer_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	multiplayer_button.pressed.connect(_on_multiplayer_pressed)
+	layout.add_child(multiplayer_button)
+
+
+func _on_multiplayer_pressed() -> void:
+	var error := get_tree().change_scene_to_file(
+		"res://scenes/lobby/lobby_demo.tscn"
+	)
+
+	if error != OK:
+		push_error("Impossibile aprire la lobby. Codice: " + str(error))
 
 
 func _on_mission_pressed(encounter_id: String) -> void:

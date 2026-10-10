@@ -406,6 +406,7 @@ func _finish_combat(victory: bool) -> void:
 
 	_refresh_interface()
 
+	get_tree().set_meta("combat_mode", "local")
 	get_tree().set_meta(
 		"combat_result",
 		"victory" if victory else "defeat"

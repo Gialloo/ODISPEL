@@ -32,6 +32,7 @@ func _initialize() -> void:
 	_test_link_open_timeout()
 	_test_signaling_state()
 	_test_filtered_snapshot()
+	_test_host_start_combat()
 
 	for manager in _managers:
 		manager.free()
@@ -627,3 +628,104 @@ func _snapshot_action(snapshot: Dictionary, player_id: String) -> String:
 func _snapshot_locked(snapshot: Dictionary, player_id: String) -> bool:
 	return bool(_snapshot_player(snapshot, player_id).get("is_locked", false))
 
+
+
+
+func _make_lobby_manager(player_count: int) -> NetworkManager:
+	var game := GameState.new()
+	game.setup("lobby_test", 1, 1, player_count)
+
+	for index in range(player_count):
+		var player := PlayerState.new()
+		player.setup("player_" + str(index + 1), "P" + str(index + 1), index + 1)
+		game.party.add_player(player)
+
+	var manager := NetworkManager.new()
+	manager.is_host = true
+	manager.game = game
+	manager.local_player_id = "player_1"
+	manager._prepare_host_party()
+	_managers.append(manager)
+	return manager
+
+
+func _test_host_start_combat() -> void:
+	var manager := _make_lobby_manager(4)
+
+	_check("Lobby: all'inizio c'è solo l'host", manager.get_connected_human_count() == 1)
+	_check(
+		"Lobby: non si avvia da soli",
+		not manager.host_start_combat("boss_test", "Boss", 2000, 777)
+		and manager.game.combat == null
+	)
+
+	_hello(manager, "peerA", "tok-a", "Alice")
+	_check("Lobby: host e Alice sono due umani", manager.get_connected_human_count() == 2)
+
+	_check(
+		"Lobby: dati del boss non validi rifiutati",
+		not manager.host_start_combat("", "Boss", 2000, 777)
+	)
+
+	_check(
+		"Lobby: avvio riuscito",
+		manager.host_start_combat("boss_test", "Boss", 2000, 777)
+	)
+
+	var game: GameState = manager.game
+	_check(
+		"Lobby: restano solo host e Alice",
+		game.party.get_players().size() == 2
+		and game.party.get_player_by_id("player_3") == null
+		and game.party.get_player_by_id("player_4") == null
+	)
+	_check("Lobby: party valido dopo la pulizia", game.party.is_valid())
+	_check(
+		"Lobby: combattimento in pianificazione al round 1",
+		game.combat != null
+		and game.combat.phase == CombatState.Phase.PLANNING
+		and game.combat.round_state.number == 1
+	)
+	_check("Lobby: seed della run", game.run.seed == 777)
+	_check("Lobby: timer dei round attivato", manager.planning_timer_enabled)
+	_check(
+		"Lobby: secondo avvio rifiutato mentre si combatte",
+		not manager.host_start_combat("boss_test", "Boss", 2000, 778)
+	)
+
+	_hello(manager, "peerB", "tok-b", "Bob")
+	_check(
+		"Lobby: dopo l'avvio non entrano nuovi giocatori",
+		not manager._peer_players.has("peerB")
+	)
+
+	manager.host_submit_action("attack")
+	manager._host_handle_message({"type": "action", "action_id": "attack"}, "peerA")
+	_check(
+		"Lobby: il round si risolve con i due giocatori (boss a 1800)",
+		game.combat.round_state.number == 2 and game.combat.boss.hp == 1800
+	)
+
+	# Chi è entrato e poi uscito non viene tolto dal party.
+	var second := _make_lobby_manager(3)
+	_hello(second, "peerA", "tok-a", "Alice")
+	_hello(second, "peerB", "tok-b", "Bob")
+	second._drop_peer("peerB")
+
+	_check(
+		"Lobby: chi è uscito resta riservato (rimossi 0 posti)",
+		second.host_remove_unfilled_players() == 0
+	)
+	_check(
+		"Lobby: con host e Alice connessi si può avviare",
+		second.host_start_combat("boss_test", "Boss", 2000, 5)
+		and second.game.party.get_players().size() == 3
+	)
+
+	# Un client non può avviare nulla.
+	var client := NetworkManager.new()
+	_managers.append(client)
+	_check(
+		"Lobby: un client non avvia il combattimento",
+		not client.host_start_combat("boss_test", "Boss", 2000, 5)
+	)

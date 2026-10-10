@@ -103,6 +103,74 @@ func submit_action(action_id: String) -> bool:
 	return link.send_message({"type": "action", "action_id": action_id})
 
 
+# Giocatori umani attualmente collegati (host compreso).
+func get_connected_human_count() -> int:
+	if game == null or game.party == null:
+		return 0
+
+	var count: int = 0
+
+	for player: PlayerState in game.party.get_players():
+		if player.connected and not player.controlled_by_ai:
+			count += 1
+
+	return count
+
+
+# Toglie dal party i posti che nessuno ha mai occupato.
+# Chi è entrato e poi è uscito resta (può rientrare, nel frattempo gioca l'IA).
+func host_remove_unfilled_players() -> int:
+	if not is_host or game == null:
+		return 0
+
+	var reserved: Array = _player_tokens.values()
+	var removed: int = 0
+
+	for player: PlayerState in game.party.get_players():
+		if player.id == local_player_id:
+			continue
+
+		if player.connected or reserved.has(player.id):
+			continue
+
+		if game.party.remove_player(player.id):
+			removed += 1
+
+	return removed
+
+
+# Avvia il combattimento per tutti. Servono l'host e almeno un client.
+func host_start_combat(
+	boss_id: String,
+	boss_name: String,
+	boss_hp: int,
+	run_seed: int
+) -> bool:
+	if not is_host or game == null:
+		return false
+
+	if boss_id.is_empty() or boss_hp <= 0 or run_seed == 0:
+		return false
+
+	if game.combat != null and not game.combat.is_finished():
+		return false
+
+	if get_connected_human_count() < 2:
+		return false
+
+	host_remove_unfilled_players()
+
+	if not game.setup_run("net_" + str(run_seed), run_seed, "start"):
+		return false
+
+	if not game.begin_combat(boss_id, boss_name, boss_hp):
+		return false
+
+	set_planning_timer_enabled(true)
+	_broadcast_snapshot()
+	return true
+
+
 # Attiva o disattiva il timer dei round. Attivandolo riparte da capo.
 func set_planning_timer_enabled(enabled: bool) -> void:
 	planning_timer_enabled = enabled

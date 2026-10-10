@@ -65,11 +65,35 @@ func _build_interface() -> void:
 
 	_show_result(str(get_tree().get_meta("combat_result", "victory")))
 
+	# In rete non si rigioca né si prosegue da soli: si torna all'hub.
+	if _is_net():
+		replay_button.visible = false
+		continue_button.visible = false
 
+
+
+
+# True se il risultato viene da un combattimento in rete.
+func _is_net() -> bool:
+	return str(get_tree().get_meta("combat_mode", "local")) == "net"
+
+
+# In rete l'incontro è quello dell'host, non quello selezionato qui.
+func _result_encounter() -> EncounterData:
+	if not _is_net():
+		return CampaignState.get_current_encounter()
+
+	var encounter_id: String = str(get_tree().get_meta("net_encounter_id", ""))
+
+	for encounter: EncounterData in CampaignState.ENCOUNTER_FILES:
+		if encounter.encounter_id == encounter_id:
+			return encounter
+
+	return null
 
 
 func _show_result(result: String) -> void:
-	var encounter: EncounterData = CampaignState.get_current_encounter()
+	var encounter: EncounterData = _result_encounter()
 
 	var level_before: int = int(
 		get_tree().get_meta(
@@ -130,7 +154,9 @@ func _show_result(result: String) -> void:
 				+ "Monete previste: " + str(encounter.reward_currency)
 			)
 
-	if CampaignState.has_next_encounter():
+	if _is_net():
+		continue_button.disabled = true
+	elif CampaignState.has_next_encounter():
 		continue_button.disabled = false
 	else:
 		details_label.text += "\nCampagna completata."
@@ -169,6 +195,9 @@ func _on_continue_pressed() -> void:
 		)
 
 func _on_hub_pressed() -> void:
+	if _is_net():
+		NetSession.close()
+
 	var error := get_tree().change_scene_to_file(
 		"res://scenes/hub/hub_demo.tscn"
 	)
