@@ -233,15 +233,20 @@ func _host_apply_action(player_id: String, action_id: String) -> bool:
 	if not CombatResolver.submit_action(game, player_id, action_id):
 		return false
 
-	if CombatResolver.can_resolve(game):
-		var result: Dictionary = CombatResolver.resolve_round(game, player_level)
-
-		if result["ok"]:
-			_broadcast({"type": "round_result", "events": result["events"]})
-			round_result_received.emit(result["events"])
-
+	_host_try_resolve()
 	_broadcast_snapshot()
 	return true
+
+
+func _host_try_resolve() -> void:
+	if not CombatResolver.can_resolve(game):
+		return
+
+	var result: Dictionary = CombatResolver.resolve_round(game, player_level)
+
+	if result["ok"]:
+		_broadcast({"type": "round_result", "events": result["events"]})
+		round_result_received.emit(result["events"])
 
 
 func _find_free_player() -> PlayerState:
@@ -271,8 +276,8 @@ func _drop_peer(peer_id: String) -> void:
 				player.disconnect_player()
 
 		player_left.emit(player_id)
+		_host_try_resolve()
 		_broadcast_snapshot()
-
 
 func _broadcast(message: Dictionary) -> void:
 	for link: WebRTCLink in _links.values():
