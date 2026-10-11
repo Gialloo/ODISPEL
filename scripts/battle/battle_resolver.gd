@@ -1,0 +1,415 @@
+class_name BattleResolver
+extends RefCounted
+
+# Risoluzione dei round. Funziona solo su Dictionary (vedi BattleState) e usa
+# RNGState per le scelte casuali, quindi e' deterministica a parita' di seed.
+#
+# Scelta di un giocatore: {"swap": unit_id | "", "move": move_id, "target": player_id | ""}
+
+
+# ---------- RNG ----------
+
+static func _load_rng(state: Dictionary) -> RNGState:
+	var rng: RNGState = RNGState.new()
+	rng.seed_value = RNGState.read_int64(state["rng_seed"], 1)
+	rng.state_value = RNGState.read_int64(state["rng_state"], 0)
+	rng.restore()
+	return rng
+
+
+static func _save_rng(state: Dictionary, rng: RNGState) -> void:
+	state["rng_state"] = str(rng.state_value)
+
+
+# ---------- Inizio round / annuncio mossa del boss ----------
+
+static func begin_round(state: Dictionary) -> void:
+	var boss: Dictionary = BattleState.boss(state)
+	var def: Dictionary = BattleContent.BOSSES[str(boss["char"])]
+	var cycle: Array = def["cycle"]
+	var move_id: String = str(cycle[int(state["cycle_index"]) % cycle.size()])
+	var alive: Array = BattleState.alive_players(state)
+	var target: String = ""
+	if not alive.is_empty():
+		var rng: RNGState = _load_rng(state)
+		target = str(alive[rng.random_index(alive.size())]["id"])
+		_save_rng(state, rng)
+	state["telegraph"] = {"move": move_id, "target": target}
+
+
+# ---------- Scelte ----------
+
+# Ritorna "" se la scelta e' valida, altrimenti il motivo.
+static func validate_choice(state: Dictionary, pid: String, choice: Dictionary) -> String:
+	var p: Dictionary = BattleState.player(state, pid)
+	if p.is_empty():
+		return "giocatore sconosciuto"
+	if not BattleState.player_alive(state, p):
+		return "giocatore sconfitto"
+	if str(state["winner"]) != "":
+		return "battaglia finita"
+
+	var uid: String = str(p["active"])
+	var swap: String = str(choice.get("swap", ""))
+	if swap != "":
+		if not p["team"].has(swap):
+			return "personaggio non in squadra"
+		if not BattleState.is_alive(BattleState.unit(state, swap)):
+			return "personaggio sconfitto"
+		uid = swap
+	var u: Dictionary = BattleState.unit(state, uid)
+	if not BattleState.is_alive(u):
+		return "personaggio attivo sconfitto"
+
+	var move_id: String = str(choice.get("move", ""))
+	if not BattleContent.MOVES.has(move_id):
+		return "mossa sconosciuta"
+	var move: Dictionary = BattleContent.MOVES[move_id]
+	match str(move["kind"]):
+		"basic":
+			pass
+		"skill":
+			if not u["skills"].has(move_id):
+				return "mossa non equipaggiata"
+			if int(u["energy"]) < int(move["cost"]):
+				return "energia insufficiente"
+		"ult":
+			if str(u["ult"]) != move_id:
+				return "ultimate non equipaggiata"
+			if int(u["gauge"]) < BattleTypes.GAUGE_MAX:
+				return "barra non piena"
+	return ""
+
+
+static func submit_choice(state: Dictionary, pid: String, choice: Dictionary) -> bool:
+	if validate_choice(state, pid, choice) != "":
+		return false
+	var p: Dictionary = BattleState.player(state, pid)
+	p["choice"] = {
+		"swap": str(choice.get("swap", "")),
+		"move": str(choice.get("move", "")),
+		"target": str(choice.get("target", "")),
+	}
+	return true
+
+
+# Tutti i giocatori umani vivi hanno scelto (l'IA sceglie da sola).
+static func can_resolve(state: Dictionary) -> bool:
+	if str(state["winner"]) != "":
+		return false
+	for p in state["players"]:
+		if bool(p["ai"]) or not BattleState.player_alive(state, p):
+			continue
+		if p["choice"] == null:
+			return false
+	return true
+
+
+# ---------- Risoluzione ----------
+
+static func resolve_round(state: Dictionary, force: bool = false) -> Array:
+	var events: Array = []
+	state["events"] = events
+	if str(state["winner"]) != "":
+		return events
+	if not force and not can_resolve(state):
+		return events
+
+	var rng: RNGState = _load_rng(state)
+
+	# 1. scelte mancanti: IA, oppure attacco standard se forzato
+	for p in state["players"]:
+		if not BattleState.player_alive(state, p):
+			continue
+		if p["choice"] == null:
+			if bool(p["ai"]):
+				p["choice"] = BattleAI.choose(state, str(p["id"]))
+			else:
+				p["choice"] = {"swap": "", "move": BattleTypes.ACTION_ATTACK, "target": ""}
+		elif validate_choice(state, str(p["id"]), p["choice"]) != "":
+			p["choice"] = {"swap": "", "move": BattleTypes.ACTION_ATTACK, "target": ""}
+
+	# 2. cambi (gratuiti, prima di tutto)
+	for p in state["players"]:
+		if p["choice"] == null:
+			continue
+		var swap: String = str(p["choice"]["swap"])
+		if swap != "" and swap != str(p["active"]):
+			_do_swap(state, p, swap, events)
+
+	# 3. azioni ordinate per priorita', velocita', id
+	var actions: Array = []
+	for p in state["players"]:
+		if p["choice"] == null:
+			continue
+		var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+		if not BattleState.is_alive(u):
+			continue
+		var move_id: String = str(p["choice"]["move"])
+		var move: Dictionary = BattleContent.MOVES[move_id]
+		actions.append({"actor": u["id"], "move": move_id, "target": str(p["choice"]["target"]), "prio": int(move["priority"]), "spd": int(u["spd"]), "boss": false})
+	var boss: Dictionary = BattleState.boss(state)
+	actions.append({"actor": boss["id"], "move": str(state["telegraph"]["move"]), "target": str(state["telegraph"]["target"]), "prio": 0, "spd": int(boss["spd"]), "boss": true})
+	actions.sort_custom(_action_before)
+
+	for a in actions:
+		if str(state["winner"]) != "":
+			break
+		var actor: Dictionary = BattleState.unit(state, str(a["actor"]))
+		if not BattleState.is_alive(actor):
+			continue
+		if bool(a["boss"]):
+			_boss_act(state, actor, str(a["move"]), str(a["target"]), rng, events)
+		else:
+			_player_act(state, actor, str(a["move"]), str(a["target"]), events)
+		_check_winner(state, events)
+
+	# 4. fine round
+	if str(state["winner"]) == "":
+		_end_of_round(state, events)
+	_check_winner(state, events)
+
+	for p in state["players"]:
+		p["choice"] = null
+	if str(state["winner"]) == "":
+		state["round"] = int(state["round"]) + 1
+		state["cycle_index"] = int(state["cycle_index"]) + 1
+		_save_rng(state, rng)
+		begin_round(state)
+	else:
+		_save_rng(state, rng)
+	return events
+
+
+static func _action_before(a: Dictionary, b: Dictionary) -> bool:
+	if a["prio"] != b["prio"]:
+		return a["prio"] > b["prio"]
+	if a["spd"] != b["spd"]:
+		return a["spd"] > b["spd"]
+	return str(a["actor"]) < str(b["actor"])
+
+
+static func _do_swap(state: Dictionary, p: Dictionary, new_id: String, events: Array) -> void:
+	var old_id: String = str(p["active"])
+	p["active"] = new_id
+	events.append({"t": "swap", "player": p["id"], "from": old_id, "to": new_id})
+	var u: Dictionary = BattleState.unit(state, new_id)
+	for pass_id in u["passives"]:
+		var pdef: Dictionary = BattleContent.PASSIVES.get(str(pass_id), {})
+		if pdef.has("on_enter_shield"):
+			var amount: int = int(round(float(u["atk"]) * float(pdef["on_enter_shield"])))
+			u["shield"] = int(u["shield"]) + amount
+			events.append({"t": "shield", "src": new_id, "dst": new_id, "amount": amount})
+
+
+# ---------- Danni ----------
+
+static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float) -> int:
+	var dmg: float = float(attacker["atk"]) * mult
+	dmg *= BattleTypes.color_multiplier(str(attacker["color"]), str(defender["color"]))
+	if defender["statuses"].has("mark"):
+		dmg *= BattleTypes.MARK_BONUS
+	if str(attacker["side"]) == "boss" and float(attacker["hp"]) < float(attacker["max_hp"]) * BattleTypes.ENRAGE_BELOW:
+		dmg *= BattleTypes.ENRAGE_BONUS
+	if float(defender["hp"]) < float(defender["max_hp"]) * BattleTypes.ENRAGE_BELOW:
+		for pass_id in attacker["passives"]:
+			if bool(BattleContent.PASSIVES.get(str(pass_id), {}).get("hunter", false)):
+				dmg *= BattleTypes.HUNTER_BONUS
+	dmg = dmg * 100.0 / (100.0 + float(defender["def"]))
+	if defender["statuses"].has("guard"):
+		dmg *= BattleTypes.GUARD_FACTOR
+	return maxi(1, int(round(dmg)))
+
+
+# Applica un colpo: prima lo scudo, poi i PV. Carica le barre ultimate.
+static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, mult: float, events: Array) -> void:
+	var dmg: int = calc_damage(attacker, defender, mult)
+	var absorbed: int = mini(int(defender["shield"]), dmg)
+	defender["shield"] = int(defender["shield"]) - absorbed
+	var lost: int = dmg - absorbed
+	defender["hp"] = maxi(0, int(defender["hp"]) - lost)
+	events.append({"t": "damage", "src": attacker["id"], "dst": defender["id"], "amount": lost, "absorbed": absorbed})
+	if str(attacker["side"]) == "player":
+		attacker["gauge"] = mini(BattleTypes.GAUGE_MAX, int(attacker["gauge"]) + BattleTypes.GAUGE_ON_HIT)
+	if str(defender["side"]) == "player":
+		defender["gauge"] = mini(BattleTypes.GAUGE_MAX, int(defender["gauge"]) + BattleTypes.GAUGE_ON_DAMAGED)
+	if int(defender["hp"]) <= 0:
+		_on_down(defender, events)
+
+
+static func _on_down(u: Dictionary, events: Array) -> void:
+	u["statuses"] = {}
+	u["shield"] = 0
+	events.append({"t": "down", "unit": u["id"]})
+
+
+static func _add_status(u: Dictionary, status: String, turns: int, events: Array) -> void:
+	var current: int = int(u["statuses"].get(status, 0))
+	u["statuses"][status] = maxi(current, turns)
+	events.append({"t": "status", "unit": u["id"], "status": status, "turns": turns})
+
+
+# ---------- Azioni ----------
+
+static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, target_pid: String, events: Array) -> void:
+	var move: Dictionary = BattleContent.MOVES[move_id]
+	var kind: String = str(move["kind"])
+	# controlli al momento dell'esecuzione
+	if kind == "ult" and int(actor["gauge"]) < BattleTypes.GAUGE_MAX:
+		move_id = BattleTypes.ACTION_ATTACK
+		move = BattleContent.MOVES[move_id]
+		kind = "basic"
+	elif kind == "skill" and int(actor["energy"]) < int(move["cost"]):
+		move_id = BattleTypes.ACTION_ATTACK
+		move = BattleContent.MOVES[move_id]
+		kind = "basic"
+
+	if kind == "ult":
+		actor["gauge"] = 0
+	elif kind == "skill":
+		actor["energy"] = int(actor["energy"]) - int(move["cost"])
+	events.append({"t": "act", "unit": actor["id"], "move": move_id})
+
+	if move.has("energy"):
+		actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + int(move["energy"]))
+	if move.has("self_status"):
+		for s in move["self_status"]:
+			_add_status(actor, str(s), int(move["self_status"][s]), events)
+
+	var targets: Array = []
+	match str(move["target"]):
+		"enemy":
+			targets = [BattleState.boss(state)]
+		"self":
+			targets = [actor]
+		"ally":
+			var t: Dictionary = BattleState.active_unit(state, target_pid)
+			if not BattleState.is_alive(t) or str(t["side"]) != "player":
+				t = actor
+			targets = [t]
+		"allies":
+			for p in state["players"]:
+				var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+				if BattleState.is_alive(u):
+					targets.append(u)
+
+	for t in targets:
+		if not BattleState.is_alive(t):
+			continue
+		if move.has("mult"):
+			_hit(state, actor, t, float(move["mult"]), events)
+		if move.has("heal"):
+			var amount: int = int(round(float(actor["atk"]) * float(move["heal"])))
+			var before: int = int(t["hp"])
+			t["hp"] = mini(int(t["max_hp"]), before + amount)
+			events.append({"t": "heal", "src": actor["id"], "dst": t["id"], "amount": int(t["hp"]) - before})
+		if move.has("shield") and str(move["target"]) != "enemy":
+			var sh: int = int(round(float(actor["atk"]) * float(move["shield"])))
+			t["shield"] = int(t["shield"]) + sh
+			events.append({"t": "shield", "src": actor["id"], "dst": t["id"], "amount": sh})
+		if bool(move.get("cleanse", false)):
+			t["statuses"].erase("bleed")
+			events.append({"t": "cleanse", "unit": t["id"]})
+		if move.has("status") and BattleState.is_alive(t):
+			for s in move["status"]:
+				_add_status(t, str(s), int(move["status"][s]), events)
+
+
+static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, target_pid: String, rng: RNGState, events: Array) -> void:
+	var move: Dictionary = BattleContent.BOSS_MOVES[move_id]
+	events.append({"t": "boss_move", "move": move_id})
+	var targets: Array = []
+	if str(move["target"]) == "all":
+		for p in BattleState.alive_players(state):
+			targets.append(BattleState.active_unit(state, str(p["id"])))
+	else:
+		var chosen: Dictionary = BattleState.player(state, target_pid)
+		# la provocazione devia il colpo
+		for p in BattleState.alive_players(state):
+			var au: Dictionary = BattleState.active_unit(state, str(p["id"]))
+			if BattleState.is_alive(au) and au["statuses"].has("taunt"):
+				chosen = p
+				break
+		if chosen.is_empty() or not BattleState.player_alive(state, chosen):
+			var alive: Array = BattleState.alive_players(state)
+			if not alive.is_empty():
+				chosen = alive[rng.random_index(alive.size())]
+		if not chosen.is_empty():
+			targets.append(BattleState.active_unit(state, str(chosen["id"])))
+
+	for t in targets:
+		if not BattleState.is_alive(t):
+			continue
+		_hit(state, boss, t, float(move["mult"]), events)
+		if move.has("status") and BattleState.is_alive(t):
+			for s in move["status"]:
+				_add_status(t, str(s), int(move["status"][s]), events)
+
+
+# ---------- Fine round ----------
+
+static func _end_of_round(state: Dictionary, events: Array) -> void:
+	var units: Dictionary = state["units"]
+
+	# sanguinamento (ignora gli scudi)
+	for uid in units:
+		var u: Dictionary = units[uid]
+		if BattleState.is_alive(u) and u["statuses"].has("bleed"):
+			var dmg: int = maxi(1, int(float(u["max_hp"]) * BattleTypes.BLEED_FRACTION))
+			u["hp"] = maxi(0, int(u["hp"]) - dmg)
+			events.append({"t": "bleed", "unit": uid, "amount": dmg})
+			if int(u["hp"]) <= 0:
+				_on_down(u, events)
+
+	# durata degli stati e fine degli scudi
+	for uid in units:
+		var u: Dictionary = units[uid]
+		var expired: Array = []
+		for s in u["statuses"]:
+			u["statuses"][s] = int(u["statuses"][s]) - 1
+			if int(u["statuses"][s]) <= 0:
+				expired.append(s)
+		for s in expired:
+			u["statuses"].erase(s)
+		u["shield"] = 0
+
+	# energia: chi sta in panchina recupera di piu'
+	for p in state["players"]:
+		for uid in p["team"]:
+			var u: Dictionary = BattleState.unit(state, uid)
+			if not BattleState.is_alive(u):
+				continue
+			var gain: int = BattleTypes.REGEN_ACTIVE if uid == p["active"] else BattleTypes.REGEN_BENCH
+			u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + gain)
+
+	# se l'attivo e' caduto entra il compagno con piu' vita
+	for p in state["players"]:
+		_auto_replace(state, p, events)
+
+
+static func _auto_replace(state: Dictionary, p: Dictionary, events: Array) -> void:
+	if BattleState.is_alive(BattleState.unit(state, str(p["active"]))):
+		return
+	var best: String = ""
+	var best_ratio: float = -1.0
+	for uid in p["team"]:
+		var u: Dictionary = BattleState.unit(state, uid)
+		if not BattleState.is_alive(u):
+			continue
+		var ratio: float = float(u["hp"]) / float(u["max_hp"])
+		if ratio > best_ratio:
+			best_ratio = ratio
+			best = uid
+	if best != "":
+		_do_swap(state, p, best, events)
+
+
+static func _check_winner(state: Dictionary, events: Array) -> void:
+	if str(state["winner"]) != "":
+		return
+	if not BattleState.is_alive(BattleState.boss(state)):
+		state["winner"] = "players"
+	elif BattleState.alive_players(state).is_empty():
+		state["winner"] = "boss"
+	if str(state["winner"]) != "":
+		events.append({"t": "end", "winner": state["winner"]})
