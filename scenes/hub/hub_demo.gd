@@ -18,14 +18,25 @@ func _build_interface() -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
+	# Tutto il menu scorre se non sta nella finestra.
+	var scroll := ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(scroll)
+
 	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.add_child(center)
 
 	var layout := VBoxContainer.new()
-	layout.custom_minimum_size = Vector2(460, 500)
+	layout.custom_minimum_size = Vector2(460, 0)
 	layout.add_theme_constant_override("separation", 12)
 	center.add_child(layout)
+
+	var top_space := Control.new()
+	top_space.custom_minimum_size = Vector2(0, 16)
+	layout.add_child(top_space)
 
 	var title := Label.new()
 	title.text = "ODISPEL"
@@ -121,6 +132,37 @@ func _build_interface() -> void:
 	separator = HSeparator.new()
 	layout.add_child(separator)
 
+	# MENU PRINCIPALE
+	var battle_button := Button.new()
+	battle_button.text = "NUOVO COMBATTIMENTO (SOLO)"
+	battle_button.custom_minimum_size = Vector2(0, 46)
+	battle_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	battle_button.pressed.connect(_on_new_battle_pressed)
+	layout.add_child(battle_button)
+
+	var roster_button := Button.new()
+	roster_button.text = "SQUADRA E RECLUTAMENTO"
+	roster_button.custom_minimum_size = Vector2(0, 46)
+	roster_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roster_button.pressed.connect(_on_roster_pressed)
+	layout.add_child(roster_button)
+
+	var multiplayer_button := Button.new()
+	multiplayer_button.text = "MULTIPLAYER CO-OP"
+	multiplayer_button.custom_minimum_size = Vector2(0, 46)
+	multiplayer_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	multiplayer_button.pressed.connect(_on_multiplayer_pressed)
+	layout.add_child(multiplayer_button)
+
+
+	separator = HSeparator.new()
+	layout.add_child(separator)
+
+	var missions_title := Label.new()
+	missions_title.text = "MISSIONI (CAMPAGNA)"
+	missions_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	layout.add_child(missions_title)
+
 	# ELENCO MISSIONI
 	for encounter in CampaignState.ENCOUNTER_FILES:
 		var mission_button := Button.new()
@@ -162,27 +204,6 @@ func _build_interface() -> void:
 
 	separator = HSeparator.new()
 	layout.add_child(separator)
-
-	var battle_button := Button.new()
-	battle_button.text = "NUOVO COMBATTIMENTO (SOLO)"
-	battle_button.custom_minimum_size = Vector2(0, 46)
-	battle_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	battle_button.pressed.connect(_on_new_battle_pressed)
-	layout.add_child(battle_button)
-
-	var roster_button := Button.new()
-	roster_button.text = "SQUADRA E RECLUTAMENTO"
-	roster_button.custom_minimum_size = Vector2(0, 46)
-	roster_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	roster_button.pressed.connect(_on_roster_pressed)
-	layout.add_child(roster_button)
-
-	var multiplayer_button := Button.new()
-	multiplayer_button.text = "MULTIPLAYER CO-OP"
-	multiplayer_button.custom_minimum_size = Vector2(0, 46)
-	multiplayer_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	multiplayer_button.pressed.connect(_on_multiplayer_pressed)
-	layout.add_child(multiplayer_button)
 
 
 func _on_new_battle_pressed() -> void:

@@ -1,7 +1,8 @@
 extends Control
 
 const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
-const COMBAT_SCENE: String = "res://scenes/combat/combat_net.tscn"
+const BATTLE_SCENE: String = "res://scenes/battle/battle_screen.tscn"
+const BOSS_ID: String = "distributore"
 const DEFAULT_ROOM: String = "odispel"
 
 var form_box: VBoxContainer
@@ -236,8 +237,13 @@ func _on_join_pressed() -> void:
 func _after_connect_started() -> void:
 	var manager: NetworkManager = NetSession.manager
 
+	# In battaglia si porta la squadra scelta nella schermata Squadra.
+	var roster: Dictionary = RosterStore.load_or_new()
+	manager.set_local_team(RosterState.team_entries(roster))
+
 	manager.room_joined.connect(_on_room_joined)
 	manager.snapshot_received.connect(_refresh)
+	manager.battle_updated.connect(_refresh)
 	manager.player_assigned.connect(_on_player_assigned)
 	manager.player_left.connect(_on_player_left)
 	manager.network_error.connect(_on_network_error)
@@ -295,6 +301,11 @@ func _refresh() -> void:
 	if manager == null or _leaving:
 		return
 
+	# Il client segue l'host: appena parte la battaglia, ci va anche lui.
+	if not manager.is_host and not manager.battle.is_empty() and str(manager.battle["winner"]) == "":
+		_go_to_battle()
+		return
+
 	var game: GameState = manager.game
 	var lines := PackedStringArray()
 
@@ -316,11 +327,6 @@ func _refresh() -> void:
 
 	if manager.is_host:
 		start_button.disabled = manager.get_connected_human_count() < 2
-		return
-
-	# Il client segue l'host: appena parte il combattimento, ci va anche lui.
-	if game != null and game.combat != null and not game.combat.is_finished():
-		_go_to_combat()
 
 
 func _on_start_pressed() -> void:
@@ -329,37 +335,36 @@ func _on_start_pressed() -> void:
 	if manager == null:
 		return
 
-	# Combattimento già avviato (per esempio il cambio scena era fallito):
-	# basta riprovare ad aprirlo.
-	if (
-		manager.game != null
-		and manager.game.combat != null
-		and not manager.game.combat.is_finished()
-	):
-		_go_to_combat()
+	# Battaglia gia' avviata (per esempio il cambio scena era fallito): riapri la schermata.
+	if not manager.battle.is_empty() and str(manager.battle["winner"]) == "":
+		_go_to_battle()
 		return
 
 	if manager.get_connected_human_count() < 2:
 		_set_status("Impossibile avviare: servono almeno 2 giocatori connessi.")
 		return
 
-	if not NetSession.host_start_combat():
-		_set_status("Impossibile avviare: incontro della campagna non valido.")
+	if not manager.host_start_battle(BOSS_ID, int(randi()) | 1):
+		_set_status("Impossibile avviare la battaglia.")
 		return
 
-	_go_to_combat()
+	_go_to_battle()
 
 
-func _go_to_combat() -> void:
+func _go_to_battle() -> void:
 	if _leaving:
 		return
 
 	_leaving = true
-	var error: int = get_tree().change_scene_to_file(COMBAT_SCENE)
+	var scene: Node = (load(BATTLE_SCENE) as PackedScene).instantiate()
+	scene.pending_source = NetSession.manager
+	var tree: SceneTree = get_tree()
+	var old: Node = tree.current_scene
+	tree.root.add_child(scene)
+	tree.current_scene = scene
 
-	if error != OK:
-		_leaving = false
-		push_error("Impossibile aprire il combattimento. Codice: " + str(error))
+	if old != null:
+		old.queue_free()
 
 
 func _on_leave_pressed() -> void:

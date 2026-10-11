@@ -39,6 +39,11 @@ var battle_planning_seconds: float = 30.0
 var battle_timer_enabled: bool = false
 var local_team: Array = []          # squadra di chi gioca (host o client)
 var _player_teams: Dictionary = {}  # player_id -> squadra validata (host)
+var battle_rewards: Dictionary = {}  # premi di chi gioca qui, a battaglia finita
+var reward_save_path: String = RosterStore.DEFAULT_PATH
+var _battle_boss_id: String = ""
+var _battle_seed: int = 0
+var _rewards_applied: bool = false
 
 # Token segreto del client: permette di riprendere lo stesso giocatore
 # dopo una disconnessione. Si può salvare e reimpostare prima di start_client().
@@ -228,6 +233,9 @@ func host_start_battle(boss_id: String, run_seed: int) -> bool:
 
 	host_remove_unfilled_players()
 
+	if not local_team.is_empty() and not local_player_id.is_empty():
+		_player_teams[local_player_id] = local_team
+
 	var specs: Array = []
 
 	for player: PlayerState in game.party.get_players():
@@ -244,6 +252,10 @@ func host_start_battle(boss_id: String, run_seed: int) -> bool:
 		})
 
 	battle = BattleState.create(specs, boss_id, run_seed)
+	_battle_boss_id = boss_id
+	_battle_seed = run_seed
+	battle_rewards = {}
+	_rewards_applied = false
 	battle_time_left = battle_planning_seconds
 	battle_timer_enabled = true
 	_broadcast_battle()
@@ -297,15 +309,40 @@ func _battle_resolve(force: bool) -> void:
 
 
 func _broadcast_battle() -> void:
+	# A battaglia finita ognuno riceve dall'host i propri premi (il client non
+	# conosce il seed, quindi non potrebbe calcolarli ne' falsificarli).
+	var all_rewards: Dictionary = {}
+
+	if str(battle.get("winner", "")) != "":
+		all_rewards = BattleRewards.for_battle(battle, _battle_boss_id, _battle_seed)
+		battle_rewards = all_rewards.get(local_player_id, {})
+
 	for peer_id: String in _links.keys():
 		var link: WebRTCLink = _links[peer_id]
 		var viewer_id: String = str(_peer_players.get(peer_id, ""))
 
-		link.send_message({
+		var message: Dictionary = {
 			"type": "battle_snapshot",
 			"state": BattleNet.snapshot_for(battle, viewer_id),
 			"time_left": battle_time_left
-		})
+		}
+
+		if not all_rewards.is_empty():
+			message["rewards"] = all_rewards.get(viewer_id, {})
+
+		link.send_message(message)
+
+
+# A battaglia finita: assegna i premi alla collezione locale e la salva. Una volta sola.
+func finish() -> Dictionary:
+	if _rewards_applied or battle.is_empty() or str(battle.get("winner", "")) == "":
+		return battle_rewards
+
+	_rewards_applied = true
+	var roster: Dictionary = RosterStore.load_or_new(reward_save_path)
+	RosterState.apply_rewards(roster, battle_rewards)
+	RosterStore.save(roster, reward_save_path)
+	return battle_rewards
 
 
 func _tick_battle_timer(delta: float) -> void:
@@ -924,6 +961,12 @@ func _client_handle_message(message: Dictionary) -> void:
 			if bstate is Dictionary and not bstate.is_empty():
 				battle = BattleState.normalize(bstate)
 				battle_time_left = float(message.get("time_left", 0.0))
+
+				var rewards: Variant = message.get("rewards", null)
+
+				if rewards is Dictionary:
+					battle_rewards = BattleState.normalize(rewards)
+
 				battle_updated.emit()
 
 		"battle_events":

@@ -9,7 +9,14 @@ const RARITY_COLORS: Array = [Color("#c9dde2"), Color("#7cf0ff"), Color("#b07bff
 
 var roster: Dictionary = {}
 var save_path: String = RosterStore.DEFAULT_PATH
-var tab: String = "squadra"          # "squadra" | "reclutamento"
+const EQUIP_SLOTS: Array = [
+	["skill0", "SKILL 1"], ["skill1", "SKILL 2"], ["ult", "ULTIMATE"],
+	["passive0", "PASSIVA 1"], ["passive1", "PASSIVA 2"],
+	["arma", "ARMA"], ["petto", "PETTO"], ["stivali", "STIVALI"],
+]
+
+var tab: String = "squadra"          # "squadra" | "equip" | "reclutamento"
+var equip_slot: String = "skill0"
 var selected: String = ""            # personaggio mostrato nella scheda
 var slot_target: int = 2             # posto della squadra sostituito quando e' piena
 var status_text: String = ""
@@ -22,6 +29,12 @@ var _status_label: Label
 var _tab_buttons: Dictionary = {}
 var _team_page: Control
 var _recruit_page: Control
+var _equip_page: Control
+var _equip_name: Label
+var _equip_slots_box: VBoxContainer
+var _equip_list: VBoxContainer
+var _equip_action: HBoxContainer
+var _equip_title: HudPanel
 var _list_box: VBoxContainer
 var _slots_box: HBoxContainer
 var _detail_label: Label
@@ -74,7 +87,7 @@ func _build() -> void:
 	add_child(_mats_label)
 
 	var x: float = 24.0
-	for entry in [["squadra", "SQUADRA"], ["reclutamento", "RECLUTAMENTO"]]:
+	for entry in [["squadra", "SQUADRA"], ["equip", "EQUIPAGGIO"], ["reclutamento", "RECLUTAMENTO"]]:
 		var b := Button.new()
 		b.text = str(entry[1])
 		b.position = Vector2(x, 90)
@@ -86,6 +99,7 @@ func _build() -> void:
 		x += 242.0
 
 	_build_team_page()
+	_build_equip_page()
 	_build_recruit_page()
 
 	var back := Button.new()
@@ -152,6 +166,61 @@ func _build_team_page() -> void:
 	_action_box = HBoxContainer.new()
 	_action_box.add_theme_constant_override("separation", 10)
 	col.add_child(_action_box)
+
+
+func _build_equip_page() -> void:
+	_equip_page = _page()
+
+	var who := HudPanel.new().setup("OPERATORE", BattleTheme.RD)
+	who.position = Vector2(20, 14)
+	who.size = Vector2(430, 72)
+	_equip_page.add_child(who)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	who.set_content(row)
+	var prev := Button.new()
+	prev.text = "<"
+	prev.custom_minimum_size = Vector2(50, 0)
+	BattleTheme.style_button(prev, "normal", 20)
+	prev.pressed.connect(cycle_char.bind(-1))
+	row.add_child(prev)
+	_equip_name = BattleTheme.make_label("", 22, BattleTheme.WH, true)
+	_equip_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_equip_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_equip_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(_equip_name)
+	var nxt := Button.new()
+	nxt.text = ">"
+	nxt.custom_minimum_size = Vector2(50, 0)
+	BattleTheme.style_button(nxt, "normal", 20)
+	nxt.pressed.connect(cycle_char.bind(1))
+	row.add_child(nxt)
+
+	var slots := HudPanel.new().setup("SLOT", BattleTheme.CY)
+	slots.position = Vector2(20, 102)
+	slots.size = Vector2(430, 406)
+	_equip_page.add_child(slots)
+	_equip_slots_box = VBoxContainer.new()
+	_equip_slots_box.add_theme_constant_override("separation", 3)
+	slots.set_content(_equip_slots_box)
+
+	_equip_title = HudPanel.new().setup("INVENTARIO", BattleTheme.CY)
+	_equip_title.position = Vector2(466, 14)
+	_equip_title.size = Vector2(794, 494)
+	_equip_page.add_child(_equip_title)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 6)
+	_equip_title.set_content(col)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	col.add_child(scroll)
+	_equip_list = VBoxContainer.new()
+	_equip_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_equip_list.add_theme_constant_override("separation", 3)
+	scroll.add_child(_equip_list)
+	_equip_action = HBoxContainer.new()
+	col.add_child(_equip_action)
 
 
 func _build_recruit_page() -> void:
@@ -256,6 +325,88 @@ func pull(count: int) -> bool:
 	return _say("Reclutamento completato (-%d monete)." % int(r["cost"]), true)
 
 
+# Passa all'operatore posseduto precedente/successivo.
+func cycle_char(direction: int) -> void:
+	var ids: Array = roster["characters"].keys()
+	ids.sort()
+	if ids.is_empty():
+		return
+	var i: int = ids.find(selected)
+	i = (maxi(i, 0) + direction + ids.size()) % ids.size()
+	selected = str(ids[i])
+	refresh()
+
+
+func select_equip_slot(key: String) -> void:
+	equip_slot = key
+	refresh()
+
+
+# Id del pezzo equipaggiato da un personaggio in uno slot ("" se vuoto).
+func gear_in_slot(char_id: String, slot: String) -> String:
+	for gid in roster["gear"]:
+		var g: Dictionary = roster["gear"][gid]
+		if str(g["equipped_by"]) == char_id and str(g["slot"]) == slot:
+			return str(gid)
+	return ""
+
+
+# Mette nello slot scelto l'oggetto indicato (id mossa/passiva/pezzo); "" svuota lo slot.
+func equip_item(item_id: String) -> bool:
+	if not RosterState.owns(roster, selected):
+		return _say("Nessun operatore.", false)
+	var ok: bool = false
+	var key: String = equip_slot
+	if key.begins_with("skill"):
+		var idx: int = int(key.substr(5))
+		ok = RosterState.equip_skill(roster, selected, idx, item_id)
+		if not ok:
+			return _say(_why_not(idx, roster["characters"][selected]["skills"].size(), item_id, "skills"), false)
+	elif key == "ult":
+		ok = RosterState.equip_ult(roster, selected, item_id)
+		if not ok:
+			return _say("Nessuna copia libera di questa ultimate.", false)
+	elif key.begins_with("passive"):
+		var pidx: int = int(key.substr(7))
+		ok = RosterState.equip_passive(roster, selected, pidx, item_id)
+		if not ok:
+			return _say(_why_not(pidx, roster["characters"][selected]["passives"].size(), item_id, "passives"), false)
+	else:
+		if item_id == "":
+			var cur: String = gear_in_slot(selected, key)
+			ok = cur == "" or RosterState.unequip_gear(roster, cur)
+		else:
+			if not roster["gear"].has(item_id) or str(roster["gear"][item_id]["slot"]) != key:
+				return _say("Pezzo non adatto a questo slot.", false)
+			ok = RosterState.equip_gear(roster, selected, item_id)
+		if not ok:
+			return _say("Non riuscito.", false)
+	_save()
+	return _say("Equipaggiamento aggiornato.", true)
+
+
+func _why_not(slot: int, size: int, item_id: String, field: String) -> String:
+	if item_id != "" and slot > size:
+		return "Riempi prima lo slot precedente."
+	if item_id != "":
+		var list: Array = roster["characters"][selected][field]
+		for i in list.size():
+			if i != slot and str(list[i]) == item_id:
+				return "Gia' equipaggiata su questo operatore."
+		return "Nessuna copia libera."
+	return "Non riuscito."
+
+
+func upgrade_gear(gear_id: String) -> bool:
+	var err: String = RosterState.level_up_gear(roster, gear_id)
+	if err != "":
+		var msgs: Dictionary = {"max": "Pezzo al livello massimo.", "monete": "Monete insufficienti.",
+			"lega": "Leghe insufficienti.", "sconosciuto": "Pezzo sconosciuto."}
+		return _say(str(msgs.get(err, "Non riuscito: " + err)), false)
+	_save()
+	return _say("Pezzo potenziato al livello %d." % int(roster["gear"][gear_id]["level"]), true)
+
+
 func _say(text: String, ok: bool) -> bool:
 	status_text = text
 	refresh()
@@ -284,6 +435,7 @@ func refresh() -> void:
 	_mats_label.text = "NUCLEI %d   LEGHE %d" % [int(mats.get("nucleo", 0)), int(mats.get("lega", 0))]
 	_status_label.text = status_text
 	_team_page.visible = tab == "squadra"
+	_equip_page.visible = tab == "equip"
 	_recruit_page.visible = tab == "reclutamento"
 	for k in _tab_buttons:
 		BattleTheme.style_button(_tab_buttons[k], "primary" if k == tab else "normal", 20)
@@ -291,6 +443,8 @@ func refresh() -> void:
 		_refresh_list()
 		_refresh_slots()
 		_refresh_detail()
+	elif tab == "equip":
+		_refresh_equip()
 	else:
 		_refresh_recruit()
 
@@ -408,6 +562,177 @@ func _refresh_detail() -> void:
 	BattleTheme.style_button(ub, "primary", 18)
 	ub.pressed.connect(upgrade.bind(selected))
 	_action_box.add_child(ub)
+
+	var eb := Button.new()
+	eb.text = "EQUIPAGGIO"
+	eb.custom_minimum_size = Vector2(0, 50)
+	eb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	BattleTheme.style_button(eb, "normal", 18)
+	eb.pressed.connect(show_tab.bind("equip"))
+	_action_box.add_child(eb)
+
+
+func _gear_stats_text(g: Dictionary) -> String:
+	var rarity: int = clampi(int(g["rarity"]), 0, BattleContent.GEAR_RARITY_MULT.size() - 1)
+	var mult: float = float(BattleContent.GEAR_RARITY_MULT[rarity]) * (1.0 + BattleContent.GEAR_LEVEL_BONUS * float(int(g["level"]) - 1))
+	var parts: Array = []
+	var base: Dictionary = BattleContent.GEAR_BASE[str(g["slot"])]
+	for k in base:
+		parts.append("%s +%d" % [str(k).to_upper(), int(round(float(base[k]) * mult))])
+	return " ".join(parts)
+
+
+func _gear_text(gid: String) -> String:
+	var g: Dictionary = roster["gear"][gid]
+	return "%s Lv%d/%d  %s" % [str(BattleTypes.RARITIES[int(g["rarity"])]).to_upper(), int(g["level"]),
+		int(BattleContent.GEAR_MAX_LEVEL[int(g["rarity"])]), _gear_stats_text(g)]
+
+
+func _slot_value_text(key: String) -> String:
+	var e: Dictionary = roster["characters"][selected]
+	if key.begins_with("skill"):
+		var i: int = int(key.substr(5))
+		return BattleText.move_name(str(e["skills"][i])) if i < e["skills"].size() else "(vuoto)"
+	if key == "ult":
+		return BattleText.move_name(str(e["ult"]))
+	if key.begins_with("passive"):
+		var j: int = int(key.substr(7))
+		return str(BattleContent.PASSIVES[str(e["passives"][j])]["name"]) if j < e["passives"].size() else "(vuoto)"
+	var gid: String = gear_in_slot(selected, key)
+	return _gear_text(gid) if gid != "" else "(vuoto)"
+
+
+func _item_button(text: String, kind: String, enabled: bool, id: String) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(0, 40)
+	b.clip_text = true
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	BattleTheme.style_button(b, kind, 16)
+	b.disabled = not enabled
+	b.pressed.connect(equip_item.bind(id))
+	return b
+
+
+func _refresh_equip() -> void:
+	_clear(_equip_slots_box)
+	_clear(_equip_list)
+	_clear(_equip_action)
+	if selected == "" or not RosterState.owns(roster, selected):
+		_equip_name.text = "NESSUN OPERATORE"
+		return
+	var def: Dictionary = BattleContent.CHARACTERS[selected]
+	var e: Dictionary = roster["characters"][selected]
+	_equip_name.text = "%s  Lv%d" % [str(def["name"]).to_upper(), int(e["level"])]
+	_equip_name.add_theme_color_override("font_color", BattleTheme.unit_color(str(def["color"])))
+
+	for entry in EQUIP_SLOTS:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(0, 40)
+		b.clip_text = true
+		b.text = "%-9s %s" % [str(entry[1]), _slot_value_text(str(entry[0]))]
+		BattleTheme.style_button(b, "primary" if str(entry[0]) == equip_slot else "normal", 15)
+		b.pressed.connect(select_equip_slot.bind(str(entry[0])))
+		_equip_slots_box.add_child(b)
+
+	var key: String = equip_slot
+	var title: String = key
+	for entry in EQUIP_SLOTS:
+		if str(entry[0]) == key:
+			title = str(entry[1])
+	_equip_title.title = "INVENTARIO: " + title
+	_equip_title.queue_redraw()
+
+	if key.begins_with("skill") or key == "ult" or key.begins_with("passive"):
+		_refresh_equip_moves(key)
+	else:
+		_refresh_equip_gear(key)
+
+
+func _refresh_equip_moves(key: String) -> void:
+	var is_passive: bool = key.begins_with("passive")
+	var field: String = "skills"
+	var slot: int = 0
+	var current: String = ""
+	var e: Dictionary = roster["characters"][selected]
+	if key.begins_with("skill"):
+		slot = int(key.substr(5))
+		current = str(e["skills"][slot]) if slot < e["skills"].size() else ""
+	elif key == "ult":
+		field = "ult"
+		current = str(e["ult"])
+	else:
+		field = "passives"
+		slot = int(key.substr(7))
+		current = str(e["passives"][slot]) if slot < e["passives"].size() else ""
+
+	if key != "ult":
+		_equip_list.add_child(_item_button("-- SVUOTA LO SLOT --", "normal", current != "", ""))
+
+	var table: Dictionary = roster["passives"] if is_passive else roster["moves"]
+	var ids: Array = table.keys()
+	ids.sort()
+	for id in ids:
+		var wanted: String = "skill" if key.begins_with("skill") else "ult"
+		if not is_passive and (not BattleContent.MOVES.has(id) or str(BattleContent.MOVES[id]["kind"]) != wanted):
+			continue
+		var owned: int = int(table[id])
+		var used: int = RosterState._used(roster, field, str(id))
+		var free: int = owned - used
+		var is_current: bool = str(id) == current
+		var name: String = str(BattleContent.PASSIVES[id]["name"]) if is_passive else BattleText.move_name(str(id))
+		var hint: String = _passive_hint(str(id)) if is_passive else BattleText.move_hint(str(id))
+		var text: String = "%s%s   [libere %d/%d]   %s" % ["> " if is_current else "", name, free, owned, hint]
+		_equip_list.add_child(_item_button(text, "primary" if is_current else "normal", is_current or free > 0, str(id)))
+
+
+func _passive_hint(pid: String) -> String:
+	var p: Dictionary = BattleContent.PASSIVES[pid]
+	if p.has("atk_mult"):
+		return "ATK +%d%%" % int(round((float(p["atk_mult"]) - 1.0) * 100.0))
+	if p.has("hp_mult"):
+		return "PV +%d%%" % int(round((float(p["hp_mult"]) - 1.0) * 100.0))
+	if p.has("on_enter_shield"):
+		return "scudo quando entra"
+	if p.has("hunter"):
+		return "piu' danni al boss ferito"
+	return ""
+
+
+func _refresh_equip_gear(key: String) -> void:
+	var cur: String = gear_in_slot(selected, key)
+	_equip_list.add_child(_item_button("-- TOGLI IL PEZZO --", "normal", cur != "", ""))
+	var ids: Array = []
+	for gid in roster["gear"]:
+		if str(roster["gear"][gid]["slot"]) == key:
+			ids.append(str(gid))
+	ids.sort()
+	if ids.is_empty():
+		_equip_list.add_child(BattleTheme.make_label("Nessun pezzo di questo tipo. Si trovano come premi.", 16, BattleTheme.CY_DIM))
+	for gid in ids:
+		var g: Dictionary = roster["gear"][gid]
+		var owner_id: String = str(g["equipped_by"])
+		var tag: String = ""
+		if owner_id == selected:
+			tag = "> "
+		var text: String = "%s%s" % [tag, _gear_text(gid)]
+		if owner_id != "" and owner_id != selected:
+			text += "   (su %s)" % str(BattleContent.CHARACTERS[owner_id]["name"]).to_upper()
+		_equip_list.add_child(_item_button(text, "primary" if owner_id == selected else "normal", true, gid))
+	if cur != "":
+		var g2: Dictionary = roster["gear"][cur]
+		var ub := Button.new()
+		ub.custom_minimum_size = Vector2(0, 46)
+		ub.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if int(g2["level"]) >= int(BattleContent.GEAR_MAX_LEVEL[int(g2["rarity"])]):
+			ub.text = "PEZZO AL LIVELLO MASSIMO"
+			ub.disabled = true
+		else:
+			var cost: Dictionary = BattleContent.gear_upgrade_cost(int(g2["rarity"]), int(g2["level"]))
+			ub.text = "POTENZIA PEZZO  %dM + %dL" % [int(cost["coins"]), int(cost["lega"])]
+		BattleTheme.style_button(ub, "primary", 18)
+		ub.pressed.connect(upgrade_gear.bind(cur))
+		_equip_action.add_child(ub)
 
 
 func _refresh_recruit() -> void:

@@ -638,12 +638,13 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(spacer)
-	var again := Button.new()
-	again.text = "RIGIOCA"
-	again.custom_minimum_size = Vector2(0, 50)
-	BattleTheme.style_button(again, "primary", 26)
-	again.pressed.connect(_on_again)
-	box.add_child(again)
+	if not (source is NetworkManager):
+		var again := Button.new()
+		again.text = "RIGIOCA"
+		again.custom_minimum_size = Vector2(0, 50)
+		BattleTheme.style_button(again, "primary", 26)
+		again.pressed.connect(_on_again)
+		box.add_child(again)
 	var hub := Button.new()
 	hub.text = "TORNA ALL'HUB"
 	hub.custom_minimum_size = Vector2(0, 44)
@@ -678,4 +679,11 @@ func _on_again() -> void:
 
 
 func _on_hub() -> void:
+	# In rete, uscire chiude anche la stanza.
+	if source is NetworkManager:
+		var session: Node = get_node_or_null("/root/NetSession")
+		if session != null:
+			session.close()
+		else:
+			(source as NetworkManager).shutdown()
 	get_tree().change_scene_to_file(HUB_SCENE)
