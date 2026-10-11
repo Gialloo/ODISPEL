@@ -163,12 +163,28 @@ func _build_interface() -> void:
 	separator = HSeparator.new()
 	layout.add_child(separator)
 
+	var battle_button := Button.new()
+	battle_button.text = "NUOVO COMBATTIMENTO (SOLO)"
+	battle_button.custom_minimum_size = Vector2(0, 46)
+	battle_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	battle_button.pressed.connect(_on_new_battle_pressed)
+	layout.add_child(battle_button)
+
 	var multiplayer_button := Button.new()
 	multiplayer_button.text = "MULTIPLAYER CO-OP"
 	multiplayer_button.custom_minimum_size = Vector2(0, 46)
 	multiplayer_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	multiplayer_button.pressed.connect(_on_multiplayer_pressed)
 	layout.add_child(multiplayer_button)
+
+
+func _on_new_battle_pressed() -> void:
+	var error := get_tree().change_scene_to_file(
+		"res://scenes/battle/battle_screen.tscn"
+	)
+
+	if error != OK:
+		push_error("Impossibile aprire la battaglia. Codice: " + str(error))
 
 
 func _on_multiplayer_pressed() -> void:

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="ODISPEL"
-run/main_scene="uid://c28067ejtxflr"
+run/main_scene="uid://io8v28y1efyh"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
 
