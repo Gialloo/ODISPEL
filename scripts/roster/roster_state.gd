@@ -13,13 +13,15 @@ extends RefCounted
 #   passives: {passive_id: copie},
 #   materials: {nucleo, lega: quantita'},
 #   gear: {gear_id: {id, slot, rarity, level, equipped_by}},  # pezzi unici
-#   next_gear: int                                            # prossimo id pezzo
+#   next_gear: int,                                           # prossimo id pezzo
+#   pulls: int, pity: int                                     # reclutamento
 # }
 
 const VERSION: int = 1
 const MAX_LEVEL: int = 50
 const MAX_RANK: int = 5
-const STARTER_CHARACTERS: Array = ["kira", "dax", "elle", "bruno", "nova", "mira"]
+# Si parte con 4 personaggi: 3 in squadra e 1 di riserva (compagno IA in solitaria).
+const STARTER_CHARACTERS: Array = ["kira", "dax", "elle", "bruno"]
 const STARTER_TEAM: Array = ["kira", "dax", "elle"]
 
 
@@ -34,6 +36,8 @@ static func new_roster() -> Dictionary:
 		"materials": {},
 		"gear": {},
 		"next_gear": 1,
+		"pulls": 0,
+		"pity": 0,
 	}
 	for id in STARTER_CHARACTERS:
 		add_character(roster, str(id))
@@ -291,6 +295,8 @@ static func validate(roster: Dictionary) -> String:
 static func _validate_gear(roster: Dictionary) -> String:
 	if int(roster.get("coins", 0)) < 0:
 		return "monete negative"
+	if int(roster.get("pulls", 0)) < 0 or int(roster.get("pity", 0)) < 0:
+		return "contatori di reclutamento negativi"
 	for mat in roster.get("materials", {}):
 		if not BattleContent.MATERIALS.has(mat) or int(roster["materials"][mat]) < 0:
 			return "materiale non valido"
@@ -480,6 +486,10 @@ static func from_json(text: String) -> Dictionary:
 		roster["gear"] = {}
 	if not roster.has("next_gear"):
 		roster["next_gear"] = 1
+	if not roster.has("pulls"):
+		roster["pulls"] = 0
+	if not roster.has("pity"):
+		roster["pity"] = 0
 	if int(roster.get("version", 0)) != VERSION or validate(roster) != "":
 		return {}
 	return roster

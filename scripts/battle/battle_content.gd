@@ -39,13 +39,18 @@ const CLASS_STATS: Dictionary = {
 const LEVEL_BONUS: float = 0.08
 const RANK_BONUS: float = 0.05
 
+# rarity: indice in BattleTypes.RARITIES (quanto e' raro da reclutare)
 const CHARACTERS: Dictionary = {
-	"kira": {"name": "Kira", "color": "viola", "cls": "striker", "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk"},
-	"dax": {"name": "Dax", "color": "rosso", "cls": "vanguard", "skill": "provoca", "ult": "bastione", "passive": "p_hp"},
-	"elle": {"name": "Elle", "color": "verde", "cls": "warden", "skill": "cura", "ult": "rinascita", "passive": "p_swap"},
-	"bruno": {"name": "Bruno", "color": "blu", "cls": "vanguard", "skill": "barriera", "ult": "bastione", "passive": "p_hp"},
-	"nova": {"name": "Nova", "color": "giallo", "cls": "striker", "skill": "marchio", "ult": "spezzatutto", "passive": "p_hunter"},
-	"mira": {"name": "Mira", "color": "blu", "cls": "warden", "skill": "purifica", "ult": "rinascita", "passive": "p_swap"},
+	"kira": {"name": "Kira", "color": "viola", "cls": "striker", "rarity": 1, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk"},
+	"dax": {"name": "Dax", "color": "rosso", "cls": "vanguard", "rarity": 0, "skill": "provoca", "ult": "bastione", "passive": "p_hp"},
+	"elle": {"name": "Elle", "color": "verde", "cls": "warden", "rarity": 0, "skill": "cura", "ult": "rinascita", "passive": "p_swap"},
+	"bruno": {"name": "Bruno", "color": "blu", "cls": "vanguard", "rarity": 0, "skill": "barriera", "ult": "bastione", "passive": "p_hp"},
+	"nova": {"name": "Nova", "color": "giallo", "cls": "striker", "rarity": 1, "skill": "marchio", "ult": "spezzatutto", "passive": "p_hunter"},
+	"mira": {"name": "Mira", "color": "blu", "cls": "warden", "rarity": 1, "skill": "purifica", "ult": "rinascita", "passive": "p_swap"},
+	"rex": {"name": "Rex", "color": "rosso", "cls": "striker", "rarity": 0, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk"},
+	"ivo": {"name": "Ivo", "color": "blu", "cls": "striker", "rarity": 1, "skill": "marchio", "ult": "spezzatutto", "passive": "p_swap"},
+	"sera": {"name": "Sera", "color": "verde", "cls": "warden", "rarity": 2, "skill": "barriera", "ult": "rinascita", "passive": "p_hunter"},
+	"tana": {"name": "Tana", "color": "giallo", "cls": "vanguard", "rarity": 3, "skill": "provoca", "ult": "bastione", "passive": "p_hunter"},
 }
 
 # Equipaggiamento: valore base per slot, moltiplicato da rarita' e livello.
@@ -144,7 +149,7 @@ static func default_entry(char_id: String, level: int = 1, rank: int = 0) -> Dic
 
 
 # Rarita' estratta con un tiro: 45% comune, 30% rara, 22% epica, 3% leggendaria.
-static func _roll_rarity(rng: RNGState) -> int:
+static func roll_rarity(rng: RNGState) -> int:
 	var roll: int = rng.random_int(1, 100)
 	if roll > 97:
 		return 3
@@ -160,7 +165,7 @@ static func roll_drops(boss_id: String, rng: RNGState) -> Array:
 	var boss: Dictionary = BOSSES.get(boss_id, {})
 	var drops: Array = []
 	for i in int(boss.get("drops", 1)):
-		var rarity: int = _roll_rarity(rng)
+		var rarity: int = roll_rarity(rng)
 		var pool: Array = []
 		for id in MOVES:
 			var m: Dictionary = MOVES[id]
@@ -177,7 +182,7 @@ static func roll_drops(boss_id: String, rng: RNGState) -> Array:
 
 # Estrae un pezzo di equipaggiamento: {kind: "gear", slot, rarity}.
 static func roll_gear(rng: RNGState) -> Dictionary:
-	var rarity: int = _roll_rarity(rng)
+	var rarity: int = roll_rarity(rng)
 	var slot: String = str(BattleTypes.GEAR_SLOTS[rng.random_index(BattleTypes.GEAR_SLOTS.size())])
 	return {"kind": "gear", "slot": slot, "rarity": rarity}
 
@@ -196,6 +201,8 @@ static func validate() -> Array:
 	var errors: Array = []
 	for id in CHARACTERS:
 		var c: Dictionary = CHARACTERS[id]
+		if int(c.get("rarity", -1)) < 0 or int(c.get("rarity", -1)) >= BattleTypes.RARITIES.size():
+			errors.append("%s: rarita' non valida" % id)
 		if not BattleTypes.COLORS.has(c["color"]):
 			errors.append("%s: colore sconosciuto" % id)
 		if not CLASS_STATS.has(c["cls"]):

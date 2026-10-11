@@ -29,15 +29,15 @@ func _init() -> void:
 func _test_new_roster() -> void:
 	var r: Dictionary = RosterState.new_roster()
 	_check("collezione iniziale valida", RosterState.validate(r) == "")
-	_check("6 personaggi di partenza", r["characters"].size() == 6)
+	_check("4 personaggi di partenza", r["characters"].size() == 4 and RosterState.spare_entries(r).size() == 1)
 	_check("squadra iniziale di 3", r["team"] == ["kira", "dax", "elle"])
-	_check("mosse innate in inventario", r["moves"].get("colpo_caricato", 0) == 1 and r["moves"].get("spezzatutto", 0) == 2)
+	_check("mosse innate in inventario", r["moves"].get("colpo_caricato", 0) == 1 and r["moves"].get("spezzatutto", 0) == 1)
 	_check("passive innate in inventario", r["passives"].get("p_hp", 0) == 2)
 	_check("personaggio sconosciuto non aggiungibile", RosterState.add_character(r, "drago") == "")
 
 
 func _test_team() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	_check("squadra valida", RosterState.set_team(r, ["nova", "bruno"]))
 	_check("squadra salvata in ordine", r["team"] == ["nova", "bruno"])
 	_check("squadra vuota rifiutata", not RosterState.set_team(r, []))
@@ -46,13 +46,13 @@ func _test_team() -> void:
 	_check("personaggio non posseduto rifiutato", not RosterState.set_team(r, ["kira", "drago"]))
 	_check("squadra invariata dopo un rifiuto", r["team"] == ["nova", "bruno"])
 	_check("compagni IA = posseduti fuori squadra", RosterState.spare_entries(r).size() == 4)
-	var small: Dictionary = RosterState.new_roster()
+	var small: Dictionary = _full()
 	small["characters"].erase("mira")
 	_check("spare non include chi non si possiede", RosterState.spare_entries(small).size() == 2)
 
 
 func _test_equip() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	_check("seconda skill non posseduta rifiutata", not RosterState.equip_skill(r, "kira", 1, "cura"))
 	RosterState.add_drop(r, {"kind": "move", "id": "marchio"})
 	# marchio e' gia' posseduto da Nova (1 copia, equipaggiata): il drop ne da' una seconda
@@ -67,7 +67,7 @@ func _test_equip() -> void:
 
 	# ultimate: Kira e Nova hanno spezzatutto (2 copie, entrambe in uso)
 	_check("ultimate senza copie libere rifiutata", not RosterState.equip_ult(r, "dax", "spezzatutto"))
-	var r2: Dictionary = RosterState.new_roster()
+	var r2: Dictionary = _full()
 	_check("ultimate senza copia libera rifiutata", not RosterState.equip_ult(r2, "kira", "bastione"))
 	RosterState.add_drop(r2, {"kind": "move", "id": "bastione"})
 	_check("ultimate libera equipaggiabile", RosterState.equip_ult(r2, "kira", "bastione"))
@@ -78,7 +78,7 @@ func _test_equip() -> void:
 	_check("collezione ancora valida (2)", RosterState.validate(r2) == "")
 
 	# passive
-	var r3: Dictionary = RosterState.new_roster()
+	var r3: Dictionary = _full()
 	_check("seconda passiva non posseduta rifiutata", not RosterState.equip_passive(r3, "kira", 1, "p_hunter"))
 	RosterState.add_drop(r3, {"kind": "passive", "id": "p_atk"})
 	_check("passiva posseduta equipaggiabile", RosterState.equip_passive(r3, "dax", 1, "p_atk"))
@@ -89,13 +89,13 @@ func _test_equip() -> void:
 
 
 func _test_drops_and_copies() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	_check("copia: sale di rank", RosterState.add_character(r, "kira") == "rank" and r["characters"]["kira"]["rank"] == 1)
 	for i in 4:
 		RosterState.add_character(r, "kira")
 	_check("rank massimo raggiunto", r["characters"]["kira"]["rank"] == RosterState.MAX_RANK)
 	_check("oltre il massimo: nessun effetto", RosterState.add_character(r, "kira") == "max" and r["characters"]["kira"]["rank"] == RosterState.MAX_RANK)
-	var empty: Dictionary = RosterState.new_roster()
+	var empty: Dictionary = _full()
 	empty["characters"].erase("bruno")
 	_check("nuovo personaggio aggiunto", RosterState.add_character(empty, "bruno") == "new" and RosterState.owns(empty, "bruno"))
 	_check("drop sconosciuto rifiutato", not RosterState.add_drop(r, {"kind": "move", "id": "fulmine"}))
@@ -146,7 +146,7 @@ func _test_validation() -> void:
 
 
 func _test_json_and_store() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	RosterState.add_character(r, "kira")
 	r["characters"]["dax"]["gear"] = [{"slot": "petto", "rarity": 2, "level": 3}]
 	r["coins"] = 250
@@ -161,7 +161,7 @@ func _test_json_and_store() -> void:
 	var path: String = "user://test_roster_tmp.json"
 	_check("salvataggio su disco", RosterStore.save(r, path))
 	_check("rilettura da disco", RosterStore.load_or_new(path) == r)
-	_check("secondo salvataggio sovrascrive", RosterStore.save(RosterState.new_roster(), path) and RosterStore.load_or_new(path)["coins"] == 0)
+	_check("secondo salvataggio sovrascrive", RosterStore.save(_full(), path) and RosterStore.load_or_new(path)["coins"] == 0)
 	var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	f.store_string("{ rovinato")
 	f.close()
@@ -172,7 +172,7 @@ func _test_json_and_store() -> void:
 
 
 func _test_solo_battle() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	var s: Dictionary = RosterState.create_solo_battle(r, "Io", "distributore", 21)
 	_check("solo: squadra e 2 compagni IA", s["players"].size() == 3 and s["players"][0]["team"].size() == 3)
 	_check("solo: i compagni sono i personaggi fuori squadra", BattleState.unit(s, "ai1:bruno").size() > 0 and BattleState.unit(s, "ai1:nova").size() > 0 and BattleState.unit(s, "ai2:mira").size() > 0)
@@ -184,11 +184,19 @@ func _test_solo_battle() -> void:
 	_check("la partita solo si conclude", s["winner"] != "")
 
 	# l'equipaggiamento influisce sulla battaglia
-	var r2: Dictionary = RosterState.new_roster()
+	var r2: Dictionary = _full()
 	r2["characters"]["kira"]["gear"] = [{"slot": "arma", "rarity": 3, "level": 5}]
 	var a: Dictionary = RosterState.create_solo_battle(r, "Io", "distributore", 1)
 	var b: Dictionary = RosterState.create_solo_battle(r2, "Io", "distributore", 1)
 	_check("l'arma aumenta l'ATK in battaglia", BattleState.unit(b, "p1:kira")["atk"] > BattleState.unit(a, "p1:kira")["atk"])
-	var low: Dictionary = RosterState.new_roster()
+	var low: Dictionary = _full()
 	low["team"] = ["kira"]
 	_check("squadra da 1: gli altri 5 sono compagni IA", RosterState.create_solo_battle(low, "Io", "distributore", 1)["players"].size() == 3)
+
+
+# Collezione con i 6 personaggi originali (i test non dipendono dal roster iniziale).
+func _full() -> Dictionary:
+	var r: Dictionary = RosterState.new_roster()
+	for id in ["kira", "dax", "elle", "bruno", "nova", "mira"]:
+		RosterState.add_character(r, id) if not RosterState.owns(r, id) else null
+	return r

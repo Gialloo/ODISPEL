@@ -26,7 +26,7 @@ func _init() -> void:
 
 
 func _test_gear() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	_check("nuova collezione senza pezzi", r["gear"].is_empty() and r["materials"].is_empty())
 	var a: String = RosterState.new_gear(r, "arma", 1)
 	var b: String = RosterState.new_gear(r, "arma", 2)
@@ -73,7 +73,7 @@ func _test_gear() -> void:
 
 
 func _test_level_up() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	_check("senza monete e materiali non si sale", RosterState.level_up_character(r, "kira") == "monete")
 	r["coins"] = 1000
 	_check("senza nucleo non si sale", RosterState.level_up_character(r, "kira") == "nucleo")
@@ -137,7 +137,7 @@ func _test_rewards() -> void:
 
 
 func _test_apply_rewards() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	var rw: Dictionary = {"coins": 300, "materials": {"nucleo": 3, "lega": 2}, "drops": [
 		{"kind": "move", "id": "cura", "rarity": 1},
 		{"kind": "passive", "id": "p_atk", "rarity": 0},
@@ -170,7 +170,7 @@ func _test_apply_rewards() -> void:
 
 
 func _test_persistence() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	var g: String = RosterState.new_gear(r, "petto", 3, 4)
 	RosterState.equip_gear(r, "elle", g)
 	r["coins"] = 42
@@ -183,7 +183,7 @@ func _test_persistence() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 	# salvataggio vecchio senza pezzi/materiali
-	var old: Dictionary = RosterState.new_roster()
+	var old: Dictionary = _full()
 	old.erase("materials")
 	old.erase("gear")
 	old.erase("next_gear")
@@ -192,7 +192,7 @@ func _test_persistence() -> void:
 
 
 func _test_in_battle() -> void:
-	var r: Dictionary = RosterState.new_roster()
+	var r: Dictionary = _full()
 	var a: Dictionary = RosterState.create_solo_battle(r, "Io", "distributore", 3)
 	var g: String = RosterState.new_gear(r, "arma", 3, 10)
 	RosterState.equip_gear(r, "kira", g)
@@ -203,3 +203,11 @@ func _test_in_battle() -> void:
 	var c: Dictionary = RosterState.create_solo_battle(r, "Io", "distributore", 3)
 	_check("gli stivali aumentano la velocita'", BattleState.unit(c, "p1:kira")["spd"] > BattleState.unit(b, "p1:kira")["spd"])
 	_check("la squadra con pezzi supera la validazione di rete", RosterState.validate_team(RosterState.team_entries(r)) == "")
+
+
+# Collezione con i 6 personaggi originali (i test non dipendono dal roster iniziale).
+func _full() -> Dictionary:
+	var r: Dictionary = RosterState.new_roster()
+	for id in ["kira", "dax", "elle", "bruno", "nova", "mira"]:
+		RosterState.add_character(r, id) if not RosterState.owns(r, id) else null
+	return r

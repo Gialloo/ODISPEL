@@ -48,11 +48,32 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	}
 
 
-static func make_boss(boss_id: String, player_count: int) -> Dictionary:
+# Il boss scala con i "giocatori effettivi": un giocatore vale 1, un compagno IA
+# ("ally": true, creato in solitaria) vale AI_WEIGHT. Un giocatore umano che esce
+# e viene sostituito dall'IA resta un giocatore intero.
+const AI_WEIGHT: float = 0.5
+
+
+static func effective_players(specs: Array) -> float:
+	var total: float = 0.0
+	for spec in specs:
+		total += AI_WEIGHT if bool(spec.get("ally", false)) else 1.0
+	return maxf(1.0, total)
+
+
+# Valore della lista a "posizione" frazionaria (1 = primo elemento), interpolato.
+static func _interpolate(values: Array, position: float) -> float:
+	var x: float = clampf(position, 1.0, float(values.size()))
+	var lower: int = int(floor(x))
+	var upper: int = mini(lower + 1, values.size())
+	var t: float = x - float(lower)
+	return float(values[lower - 1]) * (1.0 - t) + float(values[upper - 1]) * t
+
+
+static func make_boss(boss_id: String, effective: float) -> Dictionary:
 	var def: Dictionary = BattleContent.BOSSES[boss_id]
-	var hp: int = int(def["hp_per_player"]) * maxi(1, player_count)
-	var scale_list: Array = def.get("atk_scale", [1.0])
-	var atk_scale: float = float(scale_list[clampi(player_count, 1, scale_list.size()) - 1])
+	var hp: int = int(round(float(def["hp_per_player"]) * maxf(1.0, effective)))
+	var atk_scale: float = _interpolate(def.get("atk_scale", [1.0]), effective)
 	return {
 		"id": BOSS_ID,
 		"char": boss_id,
@@ -108,7 +129,7 @@ static func create(specs: Array, boss_id: String, seed_value: int) -> Dictionary
 			"active": team[0] if not team.is_empty() else "",
 			"choice": null,
 		})
-	units[BOSS_ID] = make_boss(boss_id, specs.size())
+	units[BOSS_ID] = make_boss(boss_id, effective_players(specs))
 	var rng: RNGState = RNGState.new()
 	rng.setup(seed_value)
 	state["rng_state"] = str(rng.state_value)
@@ -132,7 +153,7 @@ static func create_solo(player_name: String, team: Array, spare: Array, boss_id:
 		var b: Array = buckets[i]
 		if b.is_empty():
 			continue
-		specs.append({"id": "ai%d" % (i + 1), "name": "IA %d" % (i + 1), "ai": true, "team": b})
+		specs.append({"id": "ai%d" % (i + 1), "name": "IA %d" % (i + 1), "ai": true, "ally": true, "team": b})
 	return create(specs, boss_id, seed_value)
 
 

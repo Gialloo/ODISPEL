@@ -36,6 +36,7 @@ func _init() -> void:
 	_test_death_and_end()
 	_test_determinism_and_json()
 	_test_solo_and_ai()
+	_test_boss_scaling()
 	_test_drops()
 	print("---")
 	print("%d passati, %d falliti" % [passed, failed])
@@ -337,6 +338,18 @@ func _test_solo_and_ai() -> void:
 		guard += 1
 	_check("l'IA sceglie sempre mosse valide", ok)
 	_check("la battaglia si conclude", t["winner"] != "" and guard < 60)
+
+
+func _test_boss_scaling() -> void:
+	var hpp: int = int(BattleContent.BOSSES["distributore"]["hp_per_player"])
+	var humans: Dictionary = BattleState.create([_spec("a", ["kira"]), _spec("b", ["nova"], true)], "distributore", 1)
+	_check("un giocatore pilotato dall'IA vale come un umano", BattleState.boss(humans)["max_hp"] == 2 * hpp)
+	var team: Array = [BattleContent.default_entry("kira")]
+	var solo: Dictionary = BattleState.create_solo("Io", team, [BattleContent.default_entry("dax")], "distributore", 1, 1)
+	_check("un compagno IA vale mezzo giocatore", BattleState.boss(solo)["max_hp"] == int(round(1.5 * float(hpp))))
+	var alone: Dictionary = BattleState.create([_spec("a", ["kira"])], "distributore", 1)
+	_check("la forza del boss cresce con i giocatori effettivi", BattleState.boss(alone)["atk"] < BattleState.boss(solo)["atk"] and BattleState.boss(solo)["atk"] < BattleState.boss(humans)["atk"])
+	_check("effective_players non scende sotto 1", BattleState.effective_players([]) == 1.0)
 
 
 func _test_drops() -> void:
