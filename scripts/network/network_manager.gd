@@ -7,6 +7,9 @@ signal snapshot_received
 signal round_result_received(events: Array)
 signal player_left(player_id: String)
 signal network_error(reason: String)
+# Battaglia con il nuovo motore (vedi BattleState / BattleNet).
+signal battle_updated
+signal battle_events_received(events: Array)
 
 # Il signaling si è chiuso ma i collegamenti di gioco già aperti continuano.
 signal signaling_lost
@@ -27,6 +30,15 @@ var player_level: int = 1
 var planning_timer_enabled: bool = false
 var local_player_id: String = ""
 var my_peer_id: String = ""
+
+# Nuovo motore di battaglia: lo stato completo sta solo sull'host,
+# i client ricevono una copia filtrata.
+var battle: Dictionary = {}
+var battle_time_left: float = 0.0
+var battle_planning_seconds: float = 30.0
+var battle_timer_enabled: bool = false
+var local_team: Array = []          # squadra di chi gioca (host o client)
+var _player_teams: Dictionary = {}  # player_id -> squadra validata (host)
 
 # Token segreto del client: permette di riprendere lo stesso giocatore
 # dopo una disconnessione. Si può salvare e reimpostare prima di start_client().
@@ -185,6 +197,128 @@ func set_planning_timer_enabled(enabled: bool) -> void:
 		game.combat.round_state.begin()
 
 
+# ---------- Battaglia (nuovo motore) ----------
+
+# Imposta la squadra di chi gioca. Ritorna false se non e' valida.
+func set_local_team(entries: Array) -> bool:
+	if RosterState.validate_team(entries) != "":
+		return false
+
+	local_team = BattleState.normalize(entries)
+
+	if is_host and not local_player_id.is_empty():
+		_player_teams[local_player_id] = local_team
+
+	return true
+
+
+# Avvia la battaglia per tutti. Servono l'host e almeno un client.
+func host_start_battle(boss_id: String, run_seed: int) -> bool:
+	if not is_host or game == null or run_seed == 0:
+		return false
+
+	if not BattleContent.BOSSES.has(boss_id):
+		return false
+
+	if not battle.is_empty() and str(battle["winner"]) == "":
+		return false
+
+	if get_connected_human_count() < 2:
+		return false
+
+	host_remove_unfilled_players()
+
+	var specs: Array = []
+
+	for player: PlayerState in game.party.get_players():
+		var team: Array = _player_teams.get(player.id, [])
+
+		if team.is_empty():
+			team = RosterState.team_entries(RosterState.new_roster())
+
+		specs.append({
+			"id": player.id,
+			"name": player.display_name,
+			"ai": not player.connected or player.controlled_by_ai,
+			"team": team
+		})
+
+	battle = BattleState.create(specs, boss_id, run_seed)
+	battle_time_left = battle_planning_seconds
+	battle_timer_enabled = true
+	_broadcast_battle()
+	battle_updated.emit()
+	return true
+
+
+# Invia la scelta di chi gioca qui (host o client).
+func submit_choice(choice: Dictionary) -> bool:
+	if is_host:
+		return _host_apply_choice(local_player_id, BattleNet.clean_choice(choice))
+
+	var link: WebRTCLink = _links.get(_host_peer_id)
+
+	if link == null:
+		return false
+
+	var message: Dictionary = BattleNet.clean_choice(choice)
+	message["type"] = "choice"
+	return link.send_message(message)
+
+
+func _host_apply_choice(player_id: String, choice: Dictionary) -> bool:
+	if battle.is_empty():
+		return false
+
+	if not BattleResolver.submit_choice(battle, player_id, choice):
+		return false
+
+	if BattleResolver.can_resolve(battle):
+		_battle_resolve(false)
+	else:
+		_broadcast_battle()
+		battle_updated.emit()
+
+	return true
+
+
+func _battle_try_resolve() -> void:
+	if not battle.is_empty() and BattleResolver.can_resolve(battle):
+		_battle_resolve(false)
+
+
+func _battle_resolve(force: bool) -> void:
+	var events: Array = BattleResolver.resolve_round(battle, force)
+	battle_time_left = battle_planning_seconds
+	_broadcast({"type": "battle_events", "events": events})
+	battle_events_received.emit(events)
+	_broadcast_battle()
+	battle_updated.emit()
+
+
+func _broadcast_battle() -> void:
+	for peer_id: String in _links.keys():
+		var link: WebRTCLink = _links[peer_id]
+		var viewer_id: String = str(_peer_players.get(peer_id, ""))
+
+		link.send_message({
+			"type": "battle_snapshot",
+			"state": BattleNet.snapshot_for(battle, viewer_id),
+			"time_left": battle_time_left
+		})
+
+
+func _tick_battle_timer(delta: float) -> void:
+	if battle.is_empty() or str(battle["winner"]) != "":
+		return
+
+	battle_time_left = maxf(0.0, battle_time_left - delta)
+
+	# Solo l'host decide: scaduto il tempo, chi non ha scelto attacca.
+	if is_host and battle_timer_enabled and battle_time_left <= 0.0:
+		_battle_resolve(true)
+
+
 func shutdown() -> void:
 	# Prima il flag: la chiusura volontaria non è un errore.
 	_shutting_down = true
@@ -230,6 +364,7 @@ func _process(delta: float) -> void:
 
 	_check_link_timeouts(Time.get_ticks_msec())
 	_tick_planning_timer(delta)
+	_tick_battle_timer(delta)
 
 
 func _send_join() -> void:
@@ -426,7 +561,8 @@ func _on_link_opened(peer_id: String) -> void:
 				"type": "hello",
 				"name": _display_name,
 				"token": session_token,
-				"version": GameConfig.VERSION
+				"version": GameConfig.VERSION,
+				"team": local_team
 			})
 
 
@@ -453,6 +589,12 @@ func _host_handle_message(message: Dictionary, peer_id: String) -> void:
 	match str(message.get("type", "")):
 		"hello":
 			_host_handle_hello(peer_id, message)
+
+		"choice":
+			var chooser: String = str(_peer_players.get(peer_id, ""))
+
+			if not chooser.is_empty():
+				_host_apply_choice(chooser, BattleNet.clean_choice(message))
 
 		"action":
 			var player_id: String = str(_peer_players.get(peer_id, ""))
@@ -541,6 +683,12 @@ func _host_handle_hello(peer_id: String, message: Dictionary) -> void:
 		link.send_message({"type": "error", "code": "invalid_token"})
 		return
 
+	var team_result: Dictionary = BattleNet.read_team(message)
+
+	if not bool(team_result["ok"]):
+		link.send_message({"type": "error", "code": "invalid_team", "detail": str(team_result["error"])})
+		return
+
 	var player: PlayerState = null
 
 	if _player_tokens.has(token):
@@ -581,6 +729,10 @@ func _host_handle_hello(peer_id: String, message: Dictionary) -> void:
 	_peer_players[peer_id] = player.id
 	_peer_numbers[peer_id] = peer_number
 	_player_tokens[token] = player.id
+	_player_teams[player.id] = team_result["team"]
+
+	# Rientro a battaglia in corso: torna a comandare lui al posto dell'IA.
+	BattleNet.set_player_ai(battle, player.id, false)
 
 	link.send_message({"type": "welcome", "player_id": player.id})
 	player_assigned.emit(player.id)
@@ -600,6 +752,9 @@ func _prepare_host_party() -> void:
 # I nuovi giocatori possono entrare solo prima che il combattimento
 # superi il primo round. Chi ha già un token può sempre rientrare.
 func _is_joining_open() -> bool:
+	if not battle.is_empty():
+		return false
+
 	if game.combat == null:
 		return true
 
@@ -669,8 +824,12 @@ func _drop_peer(peer_id: String, notify: bool = true) -> void:
 	# Passa dal party, così anche lo slot resta coerente con il giocatore.
 	game.party.disconnect_player(player_id)
 
+	# In battaglia gioca l'IA al posto suo finche' non rientra.
+	BattleNet.set_player_ai(battle, player_id, true)
+
 	player_left.emit(player_id)
 	_host_try_resolve()
+	_battle_try_resolve()
 	_broadcast_snapshot()
 
 
@@ -689,6 +848,9 @@ func _broadcast_snapshot() -> void:
 			"type": "snapshot",
 			"state": build_snapshot_for(game, viewer_id)
 		})
+
+	if not battle.is_empty():
+		_broadcast_battle()
 
 	snapshot_received.emit()
 
@@ -756,6 +918,20 @@ func _client_handle_message(message: Dictionary) -> void:
 				game.apply_dictionary(state)
 				snapshot_received.emit()
 
+		"battle_snapshot":
+			var bstate: Variant = message.get("state", {})
+
+			if bstate is Dictionary and not bstate.is_empty():
+				battle = BattleState.normalize(bstate)
+				battle_time_left = float(message.get("time_left", 0.0))
+				battle_updated.emit()
+
+		"battle_events":
+			var bevents: Variant = message.get("events", [])
+
+			if bevents is Array:
+				battle_events_received.emit(BattleState.normalize(bevents))
+
 		"round_result":
 			var events: Variant = message.get("events", [])
 
@@ -765,7 +941,9 @@ func _client_handle_message(message: Dictionary) -> void:
 		"error":
 			var code: String = str(message.get("code", "?"))
 
-			if code == "version_mismatch":
+			if code == "invalid_team":
+				network_error.emit("squadra non valida: " + str(message.get("detail", "")))
+			elif code == "version_mismatch":
 				network_error.emit(
 					"versione del gioco diversa: l'host usa la %s, tu la %s. Scarica l'ultima versione."
 					% [str(message.get("host_version", "?")), GameConfig.VERSION]
