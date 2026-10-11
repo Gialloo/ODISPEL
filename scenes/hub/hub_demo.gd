@@ -170,6 +170,13 @@ func _build_interface() -> void:
 	battle_button.pressed.connect(_on_new_battle_pressed)
 	layout.add_child(battle_button)
 
+	var roster_button := Button.new()
+	roster_button.text = "SQUADRA E RECLUTAMENTO"
+	roster_button.custom_minimum_size = Vector2(0, 46)
+	roster_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	roster_button.pressed.connect(_on_roster_pressed)
+	layout.add_child(roster_button)
+
 	var multiplayer_button := Button.new()
 	multiplayer_button.text = "MULTIPLAYER CO-OP"
 	multiplayer_button.custom_minimum_size = Vector2(0, 46)
@@ -185,6 +192,15 @@ func _on_new_battle_pressed() -> void:
 
 	if error != OK:
 		push_error("Impossibile aprire la battaglia. Codice: " + str(error))
+
+
+func _on_roster_pressed() -> void:
+	var error := get_tree().change_scene_to_file(
+		"res://scenes/roster/roster_screen.tscn"
+	)
+
+	if error != OK:
+		push_error("Impossibile aprire la squadra. Codice: " + str(error))
 
 
 func _on_multiplayer_pressed() -> void:
