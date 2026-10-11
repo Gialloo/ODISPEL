@@ -10,7 +10,10 @@ extends RefCounted
 #   characters: {char_id: entry},   # entry come in BattleContent.default_entry
 #   team: [char_id],                # 1..3, il primo e' l'attivo iniziale
 #   moves: {move_id: copie},        # inventario mosse/ultimate
-#   passives: {passive_id: copie}
+#   passives: {passive_id: copie},
+#   materials: {nucleo, lega: quantita'},
+#   gear: {gear_id: {id, slot, rarity, level, equipped_by}},  # pezzi unici
+#   next_gear: int                                            # prossimo id pezzo
 # }
 
 const VERSION: int = 1
@@ -28,6 +31,9 @@ static func new_roster() -> Dictionary:
 		"team": [],
 		"moves": {},
 		"passives": {},
+		"materials": {},
+		"gear": {},
+		"next_gear": 1,
 	}
 	for id in STARTER_CHARACTERS:
 		add_character(roster, str(id))
@@ -264,6 +270,9 @@ static func validate(roster: Dictionary) -> String:
 		var err: String = validate_entry(roster["characters"][id])
 		if err != "":
 			return "%s: %s" % [id, err]
+	var gear_err: String = _validate_gear(roster)
+	if gear_err != "":
+		return gear_err
 	var team: Array = roster["team"]
 	if team.is_empty() or team.size() > BattleTypes.TEAM_SIZE:
 		return "squadra non valida"
@@ -277,6 +286,172 @@ static func validate(roster: Dictionary) -> String:
 		if _used(roster, "passives", str(id)) > int(roster["passives"][id]):
 			return "passiva equipaggiata piu' volte di quante possedute: %s" % id
 	return ""
+
+
+static func _validate_gear(roster: Dictionary) -> String:
+	if int(roster.get("coins", 0)) < 0:
+		return "monete negative"
+	for mat in roster.get("materials", {}):
+		if not BattleContent.MATERIALS.has(mat) or int(roster["materials"][mat]) < 0:
+			return "materiale non valido"
+	var used: Dictionary = {}
+	for gid in roster.get("gear", {}):
+		var g: Dictionary = roster["gear"][gid]
+		if str(g.get("id", "")) != str(gid):
+			return "pezzo con id incoerente"
+		if not BattleContent.GEAR_BASE.has(str(g.get("slot", ""))):
+			return "pezzo con slot non valido"
+		var r: int = int(g.get("rarity", -1))
+		if r < 0 or r >= BattleContent.GEAR_RARITY_MULT.size():
+			return "pezzo con rarita' non valida"
+		var lv: int = int(g.get("level", 0))
+		if lv < 1 or lv > int(BattleContent.GEAR_MAX_LEVEL[r]):
+			return "pezzo con livello non valido"
+		var owner_id: String = str(g.get("equipped_by", ""))
+		if owner_id != "":
+			if not roster["characters"].has(owner_id):
+				return "pezzo equipaggiato a chi non c'e'"
+			var key: String = "%s/%s" % [owner_id, g["slot"]]
+			if used.has(key):
+				return "due pezzi nello stesso slot"
+			used[key] = true
+	return ""
+
+
+# ---------- Equipaggiamento: pezzi unici ----------
+
+# Crea un pezzo nuovo e ritorna il suo id.
+static func new_gear(roster: Dictionary, slot: String, rarity: int, level: int = 1) -> String:
+	if not BattleContent.GEAR_BASE.has(slot):
+		return ""
+	if rarity < 0 or rarity >= BattleContent.GEAR_RARITY_MULT.size():
+		return ""
+	if level < 1 or level > int(BattleContent.GEAR_MAX_LEVEL[rarity]):
+		return ""
+	var gid: String = "g%d" % int(roster["next_gear"])
+	roster["next_gear"] = int(roster["next_gear"]) + 1
+	roster["gear"][gid] = {"id": gid, "slot": slot, "rarity": rarity, "level": level, "equipped_by": ""}
+	return gid
+
+
+# Rifa la lista "gear" di ogni personaggio dai pezzi equipaggiati:
+# il motore di battaglia legge solo quella.
+static func sync_gear(roster: Dictionary) -> void:
+	for cid in roster["characters"]:
+		roster["characters"][cid]["gear"] = []
+	var ids: Array = roster["gear"].keys()
+	ids.sort()
+	for gid in ids:
+		var g: Dictionary = roster["gear"][gid]
+		var owner_id: String = str(g["equipped_by"])
+		if owner_id != "" and roster["characters"].has(owner_id):
+			roster["characters"][owner_id]["gear"].append({"id": gid, "slot": g["slot"], "rarity": g["rarity"], "level": g["level"]})
+
+
+# Equipaggia un pezzo. Se era su un altro personaggio passa a questo;
+# se c'era gia' un pezzo dello stesso slot, quello torna in inventario.
+static func equip_gear(roster: Dictionary, char_id: String, gear_id: String) -> bool:
+	if not owns(roster, char_id) or not roster["gear"].has(gear_id):
+		return false
+	var item: Dictionary = roster["gear"][gear_id]
+	for other_id in roster["gear"]:
+		var other: Dictionary = roster["gear"][other_id]
+		if other_id != gear_id and str(other["equipped_by"]) == char_id and other["slot"] == item["slot"]:
+			other["equipped_by"] = ""
+	item["equipped_by"] = char_id
+	sync_gear(roster)
+	return true
+
+
+static func unequip_gear(roster: Dictionary, gear_id: String) -> bool:
+	if not roster["gear"].has(gear_id):
+		return false
+	roster["gear"][gear_id]["equipped_by"] = ""
+	sync_gear(roster)
+	return true
+
+
+# ---------- Potenziamento ----------
+
+static func _can_pay(roster: Dictionary, cost: Dictionary) -> String:
+	if int(roster["coins"]) < int(cost.get("coins", 0)):
+		return "monete"
+	for mat in BattleContent.MATERIALS:
+		if int(roster["materials"].get(mat, 0)) < int(cost.get(mat, 0)):
+			return mat
+	return ""
+
+
+static func _pay(roster: Dictionary, cost: Dictionary) -> void:
+	roster["coins"] = int(roster["coins"]) - int(cost.get("coins", 0))
+	for mat in BattleContent.MATERIALS:
+		var left: int = int(roster["materials"].get(mat, 0)) - int(cost.get(mat, 0))
+		if left > 0:
+			roster["materials"][mat] = left
+		else:
+			roster["materials"].erase(mat)
+
+
+# Ritorna "" se riuscito, altrimenti cosa manca: "sconosciuto", "max", "monete", "nucleo".
+static func level_up_character(roster: Dictionary, char_id: String) -> String:
+	if not owns(roster, char_id):
+		return "sconosciuto"
+	var entry: Dictionary = roster["characters"][char_id]
+	var level: int = int(entry["level"])
+	if level >= MAX_LEVEL:
+		return "max"
+	var cost: Dictionary = BattleContent.character_upgrade_cost(level)
+	var missing: String = _can_pay(roster, cost)
+	if missing != "":
+		return missing
+	_pay(roster, cost)
+	entry["level"] = level + 1
+	return ""
+
+
+# Ritorna "" se riuscito, altrimenti cosa manca: "sconosciuto", "max", "monete", "lega".
+static func level_up_gear(roster: Dictionary, gear_id: String) -> String:
+	if not roster["gear"].has(gear_id):
+		return "sconosciuto"
+	var item: Dictionary = roster["gear"][gear_id]
+	var level: int = int(item["level"])
+	var rarity: int = int(item["rarity"])
+	if level >= int(BattleContent.GEAR_MAX_LEVEL[rarity]):
+		return "max"
+	var cost: Dictionary = BattleContent.gear_upgrade_cost(rarity, level)
+	var missing: String = _can_pay(roster, cost)
+	if missing != "":
+		return missing
+	_pay(roster, cost)
+	item["level"] = level + 1
+	sync_gear(roster)
+	return ""
+
+
+# ---------- Premi ----------
+
+# Aggiunge alla collezione i premi di BattleRewards. Ritorna quanti premi
+# (monete, materiali, oggetti) sono stati applicati.
+static func apply_rewards(roster: Dictionary, rewards: Dictionary) -> int:
+	var applied: int = 0
+	var coins: int = int(rewards.get("coins", 0))
+	if coins > 0:
+		roster["coins"] = int(roster["coins"]) + coins
+		applied += 1
+	var materials: Dictionary = rewards.get("materials", {})
+	for mat in materials:
+		if BattleContent.MATERIALS.has(mat) and int(materials[mat]) > 0:
+			roster["materials"][mat] = int(roster["materials"].get(mat, 0)) + int(materials[mat])
+			applied += 1
+	for drop in rewards.get("drops", []):
+		if not (drop is Dictionary):
+			continue
+		if str(drop.get("kind", "")) == "gear":
+			if new_gear(roster, str(drop.get("slot", "")), int(drop.get("rarity", -1))) != "":
+				applied += 1
+		elif add_drop(roster, drop):
+			applied += 1
+	return applied
 
 
 # ---------- Battaglia ----------
@@ -298,6 +473,13 @@ static func from_json(text: String) -> Dictionary:
 		return {}
 	var parsed: Variant = json.data
 	var roster: Dictionary = BattleState.normalize(parsed)
+	# salvataggi scritti prima dei pezzi unici e dei materiali
+	if not roster.has("materials"):
+		roster["materials"] = {}
+	if not roster.has("gear"):
+		roster["gear"] = {}
+	if not roster.has("next_gear"):
+		roster["next_gear"] = 1
 	if int(roster.get("version", 0)) != VERSION or validate(roster) != "":
 		return {}
 	return roster

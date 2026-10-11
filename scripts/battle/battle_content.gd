@@ -56,6 +56,11 @@ const GEAR_BASE: Dictionary = {
 }
 const GEAR_RARITY_MULT: Array = [1.0, 1.3, 1.7, 2.2]
 const GEAR_LEVEL_BONUS: float = 0.10
+# Livello massimo di un pezzo, per rarita'.
+const GEAR_MAX_LEVEL: Array = [10, 15, 20, 30]
+
+# Materiali per potenziare: Nucleo (personaggi), Lega (pezzi).
+const MATERIALS: Dictionary = {"nucleo": "Nucleo", "lega": "Lega"}
 
 # Boss. Il ciclo di mosse e' annunciato un round prima.
 # target "one": un giocatore scelto e annunciato; "all": tutti i giocatori.
@@ -72,6 +77,7 @@ const BOSSES: Dictionary = {
 		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
 		"atk_scale": [0.62, 0.8, 1.0],
 		"drops": 2,
+		"reward": {"coins": 300, "nucleo": [2, 4], "lega": [1, 3], "gear_chance": 40},
 	},
 }
 
@@ -137,19 +143,24 @@ static func default_entry(char_id: String, level: int = 1, rank: int = 0) -> Dic
 	}
 
 
-# Estrae i premi dopo un boss. Ogni premio e' {kind, id, rarity}.
+# Rarita' estratta con un tiro: 45% comune, 30% rara, 22% epica, 3% leggendaria.
+static func _roll_rarity(rng: RNGState) -> int:
+	var roll: int = rng.random_int(1, 100)
+	if roll > 97:
+		return 3
+	if roll > 85:
+		return 2
+	if roll > 55:
+		return 1
+	return 0
+
+
+# Estrae le mosse e passive lasciate da un boss. Ogni premio e' {kind, id, rarity}.
 static func roll_drops(boss_id: String, rng: RNGState) -> Array:
 	var boss: Dictionary = BOSSES.get(boss_id, {})
 	var drops: Array = []
 	for i in int(boss.get("drops", 1)):
-		var roll: int = rng.random_int(1, 100)
-		var rarity: int = 0
-		if roll > 97:
-			rarity = 3
-		elif roll > 85:
-			rarity = 2
-		elif roll > 55:
-			rarity = 1
+		var rarity: int = _roll_rarity(rng)
 		var pool: Array = []
 		for id in MOVES:
 			var m: Dictionary = MOVES[id]
@@ -162,6 +173,22 @@ static func roll_drops(boss_id: String, rng: RNGState) -> Array:
 			continue
 		drops.append(pool[rng.random_index(pool.size())])
 	return drops
+
+
+# Estrae un pezzo di equipaggiamento: {kind: "gear", slot, rarity}.
+static func roll_gear(rng: RNGState) -> Dictionary:
+	var rarity: int = _roll_rarity(rng)
+	var slot: String = str(BattleTypes.GEAR_SLOTS[rng.random_index(BattleTypes.GEAR_SLOTS.size())])
+	return {"kind": "gear", "slot": slot, "rarity": rarity}
+
+
+# Costo per salire di livello: {coins, nucleo} per i personaggi, {coins, lega} per i pezzi.
+static func character_upgrade_cost(level: int) -> Dictionary:
+	return {"coins": 50 * level, "nucleo": 1 + level / 3}
+
+
+static func gear_upgrade_cost(rarity: int, level: int) -> Dictionary:
+	return {"coins": 40 * level * (rarity + 1), "lega": 1 + (level / 3) * (rarity + 1)}
 
 
 # Controllo di coerenza dei dati. Ritorna la lista degli errori trovati.
