@@ -36,7 +36,7 @@ func _shape(offset: Vector2 = Vector2.ZERO) -> PackedVector2Array:
 
 func _draw() -> void:
 	draw_colored_polygon(_shape(Vector2(5.0, 5.0)), Color(accent, 0.28))
-	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.93))
+	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.80))
 	var outline: PackedVector2Array = _shape()
 	outline.append(outline[0])
 	draw_polyline(outline, accent, 2.0)
