@@ -6,11 +6,11 @@ shader_type canvas_item;
 // velatura): stesso aspetto, un terzo del lavoro per la scheda video.
 
 uniform vec4 tint = vec4(0.1, 0.6, 0.7, 0.08);
-uniform float scan_strength : hint_range(0.0, 1.0) = 0.22;
-uniform float vignette_strength : hint_range(0.0, 1.0) = 0.62;
-uniform float noise_strength : hint_range(0.0, 0.5) = 0.07;
+uniform float scan_strength : hint_range(0.0, 1.0) = 0.10;
+uniform float vignette_strength : hint_range(0.0, 1.0) = 0.5;
+uniform float noise_strength : hint_range(0.0, 0.5) = 0.02;
 uniform float dot_size : hint_range(4.0, 20.0) = 9.0;
-uniform float halftone_strength : hint_range(0.0, 1.0) = 0.55;
+uniform float halftone_strength : hint_range(0.0, 1.0) = 0.32;
 uniform vec4 ink : source_color = vec4(0.0, 0.03, 0.05, 1.0);
 uniform bool dots_on_top = true;   // true: retino sopra la telecamera (battaglia); false: sotto (menu)
 

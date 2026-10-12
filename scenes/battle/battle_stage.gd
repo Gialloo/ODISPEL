@@ -820,7 +820,7 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 		for r in 10:
 			var ang: float = float(r) / 10.0 * TAU + _t * 0.8
 			var d0: Vector2 = Vector2(cos(ang), sin(ang) * 1.4)
-			draw_line(Vector2(cx, foot_y - 100.0) + d0 * 78.0, Vector2(cx, foot_y - 100.0) + d0 * (104.0 + 14.0 * beat), Color(BattleTheme.POP, 0.55 + 0.3 * beat), 4.0)
+			draw_line(Vector2(cx, foot_y - 100.0) + d0 * 78.0, Vector2(cx, foot_y - 100.0) + d0 * (104.0 + 14.0 * beat), Color(BattleTheme.POP, 0.3 + 0.25 * beat), 3.0)
 		_text(BattleTheme.display(), Vector2(cx - 34.0, foot_y - 232.0 - 6.0 * beat), "ULT PRONTA", 18, BattleTheme.POP)
 
 	if not alive:
@@ -867,6 +867,9 @@ func _draw_bench() -> void:
 	var dx: float = minf(88.0, step * 0.42)
 	for i in n:
 		var p: Dictionary = players[i]
+		# la panchina e' solo quella del TUO party: gli altri mostrano solo chi e' in campo
+		if not (str(p["id"]) == local_player_id or (local_player_id == "" and i == 0)):
+			continue
 		var gx: float = fighter_x(i, n)
 		var k: int = 0
 		for uid in p["team"]:
@@ -1024,7 +1027,8 @@ func _draw_fighter_body(cx: float, foot_y: float, top: float, body_col: Color, c
 func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index: int, is_lead: bool, _foot_y: float) -> void:
 	# riquadro e targhetta
 	var rect := Rect2(cx - 82.0, top - 12.0, 164.0, 236.0)
-	_brackets(rect, BattleTheme.RD if is_lead else col, 5.0 if is_lead else 3.0, 24.0)
+	if is_lead:
+		_brackets(rect, BattleTheme.RD, 5.0, 24.0)
 	var tag: String = "%s · %s" % [_who_label(index, str(u.get("owner", ""))), str(u["name"]).to_upper()]
 	var tw: float = _tag_width(tag)
 	var tab: PackedVector2Array = PackedVector2Array([
@@ -1132,7 +1136,6 @@ func _draw_ronda(cx: float, foot_y: float) -> void:
 			var tip := Vector2(cx + side * spread, y0 - 34.0 - 8.0 * flap)
 			draw_polyline(PackedVector2Array([Vector2(cx + side * 34.0, y0), Vector2(cx + side * (spread * 0.6), y0 - 22.0 - 5.0 * flap), tip]), Color(col, 0.75 - 0.18 * float(k)), 4.0 - float(k))
 	draw_polyline(_ellipse(Vector2(cx, foot_y + 8.0), 90.0, 21.0, 28) + PackedVector2Array([Vector2(cx + 90.0, foot_y + 8.0)]), Color(col, 0.55 + 0.3 * sin(_t * 6.0)), 3.0)
-	_text(BattleTheme.display(), Vector2(cx - 30.0, foot_y - 224.0), "RONDA", 16, col)
 
 
 func _brackets(r: Rect2, col: Color, width: float, l: float) -> void:

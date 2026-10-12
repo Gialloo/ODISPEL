@@ -80,7 +80,7 @@ func tutorial_steps() -> Array:
 		{"title": "I TUOI OPERATORI", "target": _panel_of(_ops_box),
 		"text": "La tua squadra: PV, energia e carica dell'ultimate di ciascuno. Uno solo e' in campo (il triangolo). Clicca un compagno in panchina per scambiarlo: il cambio e' gratis e avviene prima di tutto. Chi sta in panchina recupera piu' energia."},
 		{"title": "COME FUNZIONA UN TURNO", "target": _panel_of(_turn_box),
-		"text": "Ogni round TU scegli solo per il tuo operatore in campo. I compagni IA scelgono da soli (non copiano te) e la loro scelta e' gia' visibile nell'ORDINE DEL TURNO. Poi si risolve tutto in fila per priorita' e velocita': il segnalino rosso mostra chi agisce e chi subisce. Gli operatori in panchina sono i silhouette scure dietro la squadra."},
+		"text": "Ogni round TU scegli solo per il tuo operatore in campo. I compagni IA scelgono da soli (non copiano te) e la loro scelta e' gia' visibile nell'ORDINE DEL TURNO. Poi si risolve tutto in fila per priorita' e velocita': il segnalino rosso mostra chi agisce e chi subisce. Dietro di te vedi in silhouette il tuo party in panchina (solo i tuoi operatori)."},
 		{"title": "GLI ORDINI", "target": _panel_of(_orders_box),
 		"text": "Scegli cosa fare: ATTACCO, GUARDIA (dimezza i danni), le abilita' (costano energia) e l'ULTIMATE, che si carica combattendo. Scorciatoie: tasti 1-4. I colori contano: un colpo del colore giusto fa +50% di danni, quello sbagliato -33%."},
 		{"title": "CLASSI E FAZIONI", "target": null,
@@ -189,17 +189,19 @@ func _build_camera_info() -> void:
 	_rec_dot.position = Vector2(28, 28)
 	_rec_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_rec_dot)
-	var rec := BattleTheme.make_label("REC", 30, BattleTheme.WH, true)
-	rec.position = Vector2(56, 18)
+	var rec := BattleTheme.make_label("REC", 24, BattleTheme.WH, true)
+	rec.position = Vector2(56, 20)
 	add_child(rec)
 	var cam := BattleTheme.make_label("CAM-07 · VIA S. GIORGIO · PARK 3", 14, BattleTheme.CY)
 	cam.position = Vector2(28, 70)
+	cam.visible = false
 	add_child(cam)
 	_clock_label = BattleTheme.make_label("", 15, BattleTheme.CY)
 	_clock_label.position = Vector2(28, 92)
+	_clock_label.visible = false
 	add_child(_clock_label)
 	_round_label = BattleTheme.make_label("CICLO 01", 22, BattleTheme.WH, true)
-	_round_label.position = Vector2(28, 118)
+	_round_label.position = Vector2(28, 52)
 	add_child(_round_label)
 
 
@@ -221,6 +223,7 @@ func _build_boss_banner() -> void:
 	box.add_child(_boss_hp)
 
 	var timer_panel := HudPanel.new().setup("ORDINE ENTRO", BattleTheme.RD)
+	timer_panel.quiet = true
 	add_child(timer_panel)
 	_anchor(timer_panel, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-250, 34, -22, 102))
 	_timer_label = BattleTheme.make_label("LIBERO", 34, BattleTheme.CY, true)
@@ -243,9 +246,10 @@ func _build_telegraph() -> void:
 # Pannello "ORDINE DEL TURNO": chi agisce, in che ordine e cosa ha scelto (le IA decidono da sole).
 func _build_turn_panel() -> void:
 	var panel := HudPanel.new().setup("ORDINE DEL TURNO", BattleTheme.CY_DIM)
-	panel.margins = Vector4(12, 28, 12, 6)
+	panel.quiet = true
+	panel.margins = Vector4(12, 26, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(20, 150, 350, 288))
+	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(20, 92, 330, 218))
 	_turn_box = VBoxContainer.new()
 	_turn_box.add_theme_constant_override("separation", 1)
 	_turn_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -342,6 +346,7 @@ func _build_orders() -> void:
 
 func _build_log() -> void:
 	var panel := HudPanel.new().setup("REGISTRO", BattleTheme.CY_DIM)
+	panel.quiet = true
 	panel.margins = Vector4(12, 30, 12, 8)
 	add_child(panel)
 	_anchor(panel, Vector4(0.0, 1.0, 1.0, 1.0), Vector4(436, -224, -716 if TouchUi.active() else -556, -18))
@@ -1016,19 +1021,17 @@ func _fx_damage(e: Dictionary) -> float:
 	var target: Dictionary = BattleState.unit(shown, dst)
 	if bool(e.get("crit", false)) and amount > 0:
 		Snd.play("crit")
-		ComicFx.speed_lines(_fx, _stage.anchor_of(dst), Hints.faction_color("rondini"), 0.3)
-		_pop("CRITICO!", dst, BattleTheme.POP, BattleTheme.RD, 38, 70.0, Vector2(60.0, -70.0))
 		_stage.impact(10.0, 0.03)
+	var is_crit: bool = bool(e.get("crit", false))
 	var heavy: bool = float(amount) >= float(target.get("max_hp", 1)) * BIG_HIT_FRACTION
 	var fill: Color = BattleTheme.POP if to_boss else BattleTheme.RD
-	_pop("-%d" % amount, dst, fill, BattleTheme.BK, 48 if heavy else 36, 82.0 if heavy else 62.0)
-	if heavy:
+	# un solo fumetto per colpo: il critico e' semplicemente piu' grande, col punto esclamativo
+	_pop("-%d%s" % [amount, "!" if is_crit else ""], dst, fill, BattleTheme.BK, 52 if is_crit else (44 if heavy else 32), 84.0 if is_crit else (74.0 if heavy else 56.0))
+	if heavy or is_crit:
 		var at: Vector2 = _stage.anchor_of(dst)
-		ComicFx.speed_lines(_fx, at, Color(1, 1, 1, 0.9) if to_boss else BattleTheme.RD, 0.26)
+		ComicFx.speed_lines(_fx, at, Color(1, 1, 1, 0.9) if to_boss else BattleTheme.RD, 0.22)
 		_stage.impact(11.0 if to_boss else 8.0, 0.025)
-		ComicFx.flash(_fx, Color(1, 1, 1, 0.35), 0.1)
-		_pop(str(HIT_WORDS[randi() % HIT_WORDS.size()]), dst, BattleTheme.WH, BattleTheme.RD, 30, 54.0, Vector2(-70.0, -90.0))
-		return 0.08
+		return 0.06
 	_stage.impact(4.0, 0.0)
 	return 0.0
 
@@ -1042,7 +1045,10 @@ func _fx_act(e: Dictionary) -> float:
 	var unit: Dictionary = BattleState.unit(shown, str(e.get("unit", "")))
 	if unit.is_empty() or str(unit["id"]) == BattleState.BOSS_ID:
 		return 0.0
-	_announce(str(unit["name"]), BattleText.move_name(move_id), false)
+	if kind == "ult":
+		_announce(str(unit["name"]), BattleText.move_name(move_id), false)
+	else:
+		_float_text(BattleText.move_name(move_id), str(unit["id"]), BattleTheme.unit_color(str(unit["color"])), 18)
 	if int(move.get("ammo", 0)) > 0:
 		Snd.play("shot")
 	elif int(move.get("ammo_gain", 0)) > 0:
@@ -1050,7 +1056,6 @@ func _fx_act(e: Dictionary) -> float:
 	if kind == "skill" and str(move.get("target", "")) == "enemy" and move.has("mult"):
 		# abilita': scia nel colore dell'operatore verso il boss
 		var scol: Color = BattleTheme.unit_color(str(unit["color"]))
-		ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), scol, 0.22)
 		_zap(_stage.anchor_of(str(unit["id"])), _stage.anchor_of(BattleState.BOSS_ID), scol)
 	if kind == "ult":
 		var at: Vector2 = _stage.anchor_of(str(unit["id"]))

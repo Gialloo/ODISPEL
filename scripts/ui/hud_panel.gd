@@ -6,6 +6,7 @@ extends Control
 var title: String = ""
 var accent: Color = BattleTheme.CY
 var cut: float = 14.0
+var quiet: bool = false      # pannello secondario: solo velo e filo sottile, niente ombra ne' linguetta
 var margins: Vector4 = Vector4(18.0, 30.0, 18.0, 12.0)   # sinistra, alto, destra, basso
 
 
@@ -34,7 +35,19 @@ func _shape(offset: Vector2 = Vector2.ZERO) -> PackedVector2Array:
 	])
 
 
+func _draw_quiet() -> void:
+	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.5))
+	var outline: PackedVector2Array = _shape()
+	outline.append(outline[0])
+	draw_polyline(outline, Color(accent, 0.55), 1.5)
+	if title != "":
+		draw_string(BattleTheme.hud(), Vector2(cut + 2.0, 19.0), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(accent, 0.9))
+
+
 func _draw() -> void:
+	if quiet:
+		_draw_quiet()
+		return
 	draw_colored_polygon(_shape(Vector2(5.0, 5.0)), Color(accent, 0.28))
 	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.80))
 	var outline: PackedVector2Array = _shape()
