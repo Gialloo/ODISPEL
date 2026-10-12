@@ -42,7 +42,6 @@ const LINK_MAX: int = 4
 const LINK_GAUGE: int = 12         # ultimate caricata a entrambi quando si legano fazioni diverse (CROSS)
 
 const BLEED_FRACTION: float = 0.04
-const MARK_BONUS: float = 1.25
 const GUARD_FACTOR: float = 0.5
 const ENRAGE_BONUS: float = 1.25
 const ENRAGE_BELOW: float = 0.5

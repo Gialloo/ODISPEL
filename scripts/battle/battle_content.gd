@@ -129,6 +129,11 @@ const CHARACTERS: Dictionary = {
 	"sera": {"name": "Sera", "color": "verde", "cls": "warden", "rarity": 2, "skill": "barriera", "ult": "rinascita", "passive": "p_hunter", "faction": "rondini"},
 	"eco": {"name": "Eco", "color": "giallo", "cls": "striker", "rarity": 2, "skill": "marchio", "ult": "spezzatutto", "passive": "p_atk", "faction": "kairos"},
 	"tana": {"name": "Tana", "color": "giallo", "cls": "vanguard", "rarity": 3, "skill": "provoca", "ult": "bastione", "passive": "p_hunter", "faction": "libracorp"},
+	# Agent 02: tiratore scelto. Angela: mecamante, glass cannon con 12 munizioni.
+	"dafne": {"name": "Dafne", "color": "verde", "cls": "striker", "rarity": 3, "skill": "u_dafne_a", "ult": "coordinated_shot", "passive": "p_atk", "faction": "libracorp",
+		"role": "Tiratore scelto", "ammo_max": 6, "stat_mult": {"hp": 0.9, "atk": 1.1}},
+	"angela": {"name": "Angela", "color": "giallo", "cls": "striker", "rarity": 3, "skill": "u_angela_a", "ult": "orbital_strike", "passive": "p_atk", "faction": "libracorp",
+		"role": "Mecamante", "ammo_max": 12, "stat_mult": {"hp": 0.75, "atk": 1.2, "def": 0.8}},
 }
 
 # Fazione e stile di un operatore (campi opzionali "faction" e "style" in CHARACTERS; l'entry del roster puo' avere
@@ -296,10 +301,11 @@ static func compute_stats(entry: Dictionary) -> Dictionary:
 	var rank: int = int(entry.get("rank", 0))
 	var char_rarity: int = clampi(int(def.get("rarity", 0)), 0, RARITY_STAT_MULT.size() - 1)
 	var factor: float = (1.0 + LEVEL_BONUS * float(level - 1)) * (1.0 + RANK_BONUS * float(rank)) * float(RARITY_STAT_MULT[char_rarity])
-	var hp: float = float(base["hp"]) * factor
-	var atk: float = float(base["atk"]) * factor
-	var dfn: float = float(base["def"]) * factor
-	var spd: float = float(base["spd"]) * factor
+	var sm: Dictionary = def.get("stat_mult", {})
+	var hp: float = float(base["hp"]) * factor * float(sm.get("hp", 1.0))
+	var atk: float = float(base["atk"]) * factor * float(sm.get("atk", 1.0))
+	var dfn: float = float(base["def"]) * factor * float(sm.get("def", 1.0))
+	var spd: float = float(base["spd"]) * factor * float(sm.get("spd", 1.0))
 
 	var gear: Array = entry.get("gear", [])
 	for piece in gear:

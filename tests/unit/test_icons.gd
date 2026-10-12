@@ -68,7 +68,7 @@ func _run() -> void:
 	scene.save_path = TMP
 	root.add_child(scene)
 	await process_frame
-	_check("griglia: 11 mattonelle in 5 colonne", scene._list_box.get_child_count() == 11 and scene._list_box.columns == 5)
+	_check("griglia: 13 mattonelle in 5 colonne", scene._list_box.get_child_count() == 13 and scene._list_box.columns == 5)
 	_check("squadra: 3 carte", scene._slots_box.get_child_count() == 3)
 	var icons_in_card: int = 0
 	for c in scene._slots_box.get_child(0).get_children():

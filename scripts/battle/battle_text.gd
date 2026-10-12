@@ -9,6 +9,7 @@ const STATUS_NAMES: Dictionary = {
 	"taunt": "PROVOCA",
 	"bleed": "SANGUINA",
 	"mark": "MARCHIO",
+	"hidden": "NASCOSTO",
 }
 
 
@@ -89,6 +90,22 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 			return {"text": "%s: PROTOCOLLO" % unit_name(state, str(e["unit"])), "kind": "info"}
 		"counter":
 			return {"text": "%s CONTRATTACCA" % unit_name(state, str(e["unit"])), "kind": "info"}
+		"marks":
+			if int(e["added"]) > 0:
+				return {"text": "MARCHI SUL BERSAGLIO: %d  (+%d)" % [int(e["n"]), int(e["added"])], "kind": "info"}
+			return {"text": "MARCHI CONSUMATI: %d" % -int(e["added"]), "kind": "hit"}
+		"dodge":
+			return {"text": "%s SCHIVA IL COLPO" % unit_name(state, str(e["unit"])), "kind": "heal"}
+		"debuff":
+			return {"text": "BERSAGLIO: %s -%d GRADO" % [str(BattleContent.STAT_NAMES.get(str(e["stat"]), str(e["stat"]).to_upper())), int(e["grades"])], "kind": "info"}
+		"buff":
+			return {"text": "%s POTENZIA LA SQUADRA" % unit_name(state, str(e["unit"])), "kind": "heal"}
+		"summon":
+			return {"text": "%s EVOCA %s" % [unit_name(state, str(e["unit"])), "UNA TORRETTA" if str(e["kind"]) == "turret" else "UN DRONE"], "kind": "info"}
+		"summon_shot":
+			return {"text": "%s SPARA (-1 MUN)" % ("TORRETTA" if str(e["kind"]) == "turret" else "DRONE"), "kind": "info"}
+		"summon_end":
+			return {"text": "%s DI %s %s" % [("TORRETTA" if str(e["kind"]) == "turret" else "DRONE"), unit_name(state, str(e["unit"])), "ESAURITO" if str(e["reason"]) == "ammo" else "PERSO"], "kind": "info"}
 		"link":
 			return {"text": "LINK x%d · %s + %s%s" % [int(e["n"]), unit_name(state, str(e["with"])), unit_name(state, str(e["unit"])), "  (UNISONO)" if str(e["kind"]) == "unison" else "  (CROSS: ULT +%d)" % BattleTypes.LINK_GAUGE], "kind": "link"}
 		"link_break":
@@ -112,6 +129,25 @@ static func apply_to_display(state: Dictionary, e: Dictionary) -> void:
 			var p: Dictionary = BattleState.player(state, str(e["player"]))
 			if not p.is_empty():
 				p["active"] = str(e["to"])
+		"marks":
+			var mu: Dictionary = BattleState.unit(state, str(e["unit"]))
+			if not mu.is_empty():
+				mu["marks"] = int(e["n"])
+				if int(e["n"]) <= 0:
+					mu["statuses"].erase("mark")
+				else:
+					mu["statuses"]["mark"] = 99
+		"summon":
+			var sl: Array = state["summons"]
+			for i in range(sl.size() - 1, -1, -1):
+				if str(sl[i]["owner"]) == str(e["unit"]) and str(sl[i]["kind"]) == str(e["kind"]):
+					sl.remove_at(i)
+			sl.append({"id": "%s:%s" % [str(e["kind"]), str(e["unit"])], "owner": str(e["unit"]), "kind": str(e["kind"])})
+		"summon_end":
+			var sl2: Array = state["summons"]
+			for i in range(sl2.size() - 1, -1, -1):
+				if str(sl2[i]["owner"]) == str(e["unit"]) and str(sl2[i]["kind"]) == str(e["kind"]):
+					sl2.remove_at(i)
 		"damage":
 			var d: Dictionary = BattleState.unit(state, str(e["dst"]))
 			if not d.is_empty():

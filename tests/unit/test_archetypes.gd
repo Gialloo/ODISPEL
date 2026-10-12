@@ -44,8 +44,9 @@ func _init() -> void:
 	_check("STR: lo slancio fa piu' danno", d5 > d0)
 	var kira: Dictionary = _unit("kira")        # viola = INT
 	var plain: int = BattleResolver.calc_damage(kira, boss, 1.0)
-	boss["statuses"]["mark"] = 2
-	_check("INT: bonus sui marchiati (e Scintilla viola)", BattleResolver.calc_damage(kira, boss, 1.0) > int(round(float(plain) * BattleTypes.MARK_BONUS)))
+	boss["statuses"]["mark"] = 99
+	boss["marks"] = 1
+	_check("INT: bonus sui marchiati (e Scintilla viola)", BattleResolver.calc_damage(kira, boss, 1.0) > int(round(float(plain) * (1.0 + Marks.PCT))))
 	# abilita' uniche
 	var ok_skills := true
 	for id in BattleContent.CHARACTERS:

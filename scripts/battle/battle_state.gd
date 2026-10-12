@@ -45,6 +45,7 @@ static func _blank_unit(id: String, char_id: String, side: String, owner: String
 		"shield": 0,
 		"ammo": 0,
 		"ammo_max": 0,
+		"marks": 0,
 	}
 
 
@@ -69,8 +70,9 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	u["rarity"] = int(entry.get("rarity", def.get("rarity", 0)))
 	u["faction"] = BattleContent.faction_of(char_id, entry)
 	if str(u["faction"]) == "libracorp":
-		u["ammo"] = BattleTypes.AMMO_MAX
-		u["ammo_max"] = BattleTypes.AMMO_MAX
+		var cap: int = int(def.get("ammo_max", BattleTypes.AMMO_MAX))
+		u["ammo"] = cap
+		u["ammo_max"] = cap
 	u["style"] = BattleContent.style_of(char_id, entry)
 	u["crit"] = 0
 	u["crit_dmg"] = Factions.CRIT_DMG_PM
@@ -130,6 +132,8 @@ static func create(specs: Array, boss_id: String, seed_value: int, tier: int = 0
 		"units": {},
 		"telegraph": {},
 		"events": [],
+		"summons": [],
+		"marks_applied": 0,
 		"rng_seed": str(seed_value),
 		"rng_state": "0",
 	}

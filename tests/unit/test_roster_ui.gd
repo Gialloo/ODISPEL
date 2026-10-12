@@ -39,7 +39,7 @@ func _run() -> void:
 
 	_check("parte sulla scheda della squadra", s.tab == "squadra")
 	_check("e' scelto il primo della squadra", s.selected == "kira")
-	_check("11 righe nella collezione", s._list_box.get_child_count() == 11)
+	_check("13 righe nella collezione", s._list_box.get_child_count() == 13)
 	var enabled: int = 0
 	for b in s._list_box.get_children():
 		if not b.disabled:

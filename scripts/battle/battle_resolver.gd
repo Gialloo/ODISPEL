@@ -177,7 +177,7 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 		var move: Dictionary = BattleContent.MOVES[move_id]
 		actions.append({"actor": u["id"], "move": move_id, "target": str(p["choice"]["target"]), "prio": int(move["priority"]), "spd": int(u["spd"]), "boss": false})
 	var boss: Dictionary = BattleState.boss(state)
-	actions.append({"actor": boss["id"], "move": str(state["telegraph"]["move"]), "target": str(state["telegraph"]["target"]), "prio": 0, "spd": int(boss["spd"]), "boss": true})
+	actions.append({"actor": boss["id"], "move": str(state["telegraph"]["move"]), "target": str(state["telegraph"]["target"]), "prio": 0, "spd": int(round(float(boss["spd"]) * Marks.boss_mult(boss, "spd"))), "boss": true})
 	actions.sort_custom(_action_before)
 
 	for a in actions:
@@ -191,6 +191,7 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 			_boss_act(state, actor, str(a["move"]), str(a["target"]), rng, events)
 		else:
 			_player_act(state, actor, str(a["move"]), str(a["target"]), events)
+			_summon_upkeep(state, events, false)
 		_check_winner(state, events)
 
 	# 4. fine round
@@ -266,11 +267,10 @@ static func _do_swap(state: Dictionary, p: Dictionary, new_id: String, events: A
 # ---------- Danni ----------
 
 # pierce: percentuale di difesa ignorata (colpi mirati).
-static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float, pierce: int = 0, flat: float = 0.0) -> int:
-	var dmg: float = float(attacker["atk"]) * mult + flat
+static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float, pierce: int = 0, flat: float = 0.0, ammo_hit: bool = false) -> int:
+	var dmg: float = float(attacker["atk"]) * Marks.boss_mult(attacker, "atk") * mult + flat
 	dmg *= BattleTypes.color_multiplier(str(attacker["color"]), str(defender["color"]))
-	if defender["statuses"].has("mark"):
-		dmg *= BattleTypes.MARK_BONUS
+	dmg *= Marks.bonus_mult(defender, ammo_hit)
 	dmg *= Archetypes.damage_mult(attacker, defender)
 	dmg *= Signatures.damage_mult(attacker, defender)
 	if str(attacker["side"]) == "boss" and float(attacker["hp"]) < float(attacker["max_hp"]) * BattleTypes.ENRAGE_BELOW:
@@ -279,7 +279,7 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float,
 		for pass_id in attacker["passives"]:
 			if bool(BattleContent.PASSIVES.get(str(pass_id), {}).get("hunter", false)):
 				dmg *= BattleTypes.HUNTER_BONUS
-	dmg = dmg * 100.0 / (100.0 + float(defender["def"]) * float(100 - clampi(pierce, 0, 100)) / 100.0)
+	dmg = dmg * 100.0 / (100.0 + float(defender["def"]) * Marks.boss_mult(defender, "def") * float(100 - clampi(pierce, 0, 100)) / 100.0)
 	if defender["statuses"].has("guard"):
 		dmg *= BattleTypes.GUARD_FACTOR
 	return maxi(1, int(round(dmg)))
@@ -316,11 +316,15 @@ static func _break_link(state: Dictionary, events: Array) -> void:
 
 
 # Applica un colpo: prima lo scudo, poi i PV. Carica le barre ultimate.
-static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, mult: float, events: Array, pierce: int = 0, flat: float = 0.0) -> void:
-	var dmg: int = calc_damage(attacker, defender, mult, pierce, flat)
-	var crit: bool = Factions.rolls_crit(state, attacker, defender, events.size())
+static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, mult: float, events: Array, pierce: int = 0, flat: float = 0.0, ammo_hit: bool = false, crit_pm: int = 0, crit_dmg_boost: int = 0) -> void:
+	if Marks.dodges(state, defender, attacker, events.size()):
+		events.append({"t": "dodge", "unit": defender["id"]})
+		return
+	var dmg: int = calc_damage(attacker, defender, mult, pierce, flat, ammo_hit)
+	var crit: bool = Factions.rolls_crit(state, attacker, defender, events.size(), crit_pm)
 	if crit:
-		dmg = maxi(1, int(round(float(dmg) * float(attacker.get("crit_dmg", Factions.CRIT_DMG_PM)) / 1000.0)))
+		var cd: float = float(attacker.get("crit_dmg", Factions.CRIT_DMG_PM)) * (1.0 + float(crit_dmg_boost) / 1000.0)
+		dmg = maxi(1, int(round(float(dmg) * cd / 1000.0)))
 	var absorbed: int = mini(int(defender["shield"]), dmg)
 	defender["shield"] = int(defender["shield"]) - absorbed
 	var lost: int = dmg - absorbed
@@ -440,11 +444,26 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 					targets.append(u)
 
 	var bonus: float = BattleContent.move_bonus(actor, move)
+	var ammo_hit: bool = int(move.get("ammo", 0)) > 0
 	for t in targets:
 		if not BattleState.is_alive(t):
 			continue
+		# i marchi si applicano PRIMA del colpo (cosi' il colpo ne beneficia)
+		if move.has("status") and str(t["side"]) == "boss" and move["status"].has("mark"):
+			Marks.add(state, t, int(move["status"]["mark"]) + Archetypes.status_extra(actor, "mark"), events)
 		if move.has("mult"):
-			_hit(state, actor, t, float(move["mult"]) * (1.0 + link_gain * float(link_n)) * awake_mult, events, int(move.get("pierce", 0)), bonus)
+			var m_total: float = float(move["mult"]) * (1.0 + link_gain * float(link_n)) * awake_mult
+			if move.has("consume_marks"):
+				# Orbital Strike: ogni marchio sul bersaglio vale danno in piu', poi i marchi spariscono
+				m_total *= 1.0 + float(move["consume_marks"]) * float(Marks.count(t))
+			var boost: int = 0
+			if move.has("crit_dmg_per_mark"):
+				boost = mini(int(move.get("crit_dmg_cap", 650)), int(move["crit_dmg_per_mark"]) * Marks.count(t))
+			for _i in int(move.get("hits", 1)):
+				if BattleState.is_alive(t):
+					_hit(state, actor, t, m_total, events, int(move.get("pierce", 0)), bonus, ammo_hit, int(move.get("crit_pm", 0)), boost)
+			if move.has("consume_marks"):
+				Marks.consume(t, events)
 		if move.has("heal"):
 			var amount: int = int(round((float(actor["atk"]) * float(move["heal"]) + bonus) * Archetypes.support_mult(actor) * awake_mult))
 			var before: int = int(t["hp"])
@@ -464,7 +483,81 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 			events.append({"t": "cleanse", "unit": t["id"]})
 		if move.has("status") and BattleState.is_alive(t):
 			for s in move["status"]:
+				if str(s) == "mark" and str(t["side"]) == "boss":
+					continue       # gia' applicato sopra come pila di marchi
 				_add_status(t, str(s), int(move["status"][s]) + Archetypes.status_extra(actor, str(s)), events)
+		if move.has("debuff") and BattleState.is_alive(t) and str(t["side"]) == "boss":
+			for st in move["debuff"]:
+				Marks.debuff(t, str(st), int(move["debuff"][st]), events)
+
+	# effetti di squadra, evocazioni
+	if move.has("team_ammo"):
+		for uid in BattleState.player(state, str(actor["owner"]))["team"]:
+			var mate: Dictionary = BattleState.unit(state, uid)
+			if BattleState.is_alive(mate) and int(mate["ammo_max"]) > 0:
+				_change_ammo(mate, int(move["team_ammo"]), events)
+	if move.has("ally_buff"):
+		for p in state["players"]:
+			for uid in p["team"]:
+				var ally: Dictionary = BattleState.unit(state, uid)
+				if not BattleState.is_alive(ally):
+					continue
+				for st in move["ally_buff"]:
+					Factions.add_mod(ally, "buff_" + str(st), str(st), Marks.GRADE_PM * int(move["ally_buff"][st]), Marks.DEBUFF_TURNS)
+		Factions.refresh(state)
+		events.append({"t": "buff", "unit": actor["id"]})
+	if move.has("summon"):
+		_summon(state, actor, str(move["summon"]), events)
+
+
+# EVOCAZIONI: torretta e drone seguono chi li ha evocati, sparano da soli a fine round (1 munizione a colpo)
+# e finiscono a 0 munizioni: la torretta esplode sul boss, il drone dona scudi a tutta la squadra.
+const TURRET_MULT: float = 0.8
+const DRONE_MULT: float = 0.35
+const TURRET_BLAST_MULT: float = 2.5
+const DRONE_SHIELD_MULT: float = 1.0
+
+
+static func _summon(state: Dictionary, actor: Dictionary, kind: String, events: Array) -> void:
+	var list: Array = state["summons"]
+	for i in range(list.size() - 1, -1, -1):
+		if str(list[i]["owner"]) == str(actor["id"]) and str(list[i]["kind"]) == kind:
+			list.remove_at(i)
+	list.append({"id": "%s:%s" % [kind, actor["id"]], "owner": str(actor["id"]), "kind": kind})
+	events.append({"t": "summon", "unit": actor["id"], "kind": kind})
+
+
+static func _summon_upkeep(state: Dictionary, events: Array, shoot: bool) -> void:
+	var list: Array = state["summons"]
+	if list.is_empty():
+		return
+	var boss: Dictionary = BattleState.boss(state)
+	for i in range(list.size() - 1, -1, -1):
+		var s: Dictionary = list[i]
+		var owner: Dictionary = BattleState.unit(state, str(s["owner"]))
+		var kind: String = str(s["kind"])
+		if not BattleState.is_alive(owner):
+			list.remove_at(i)
+			events.append({"t": "summon_end", "unit": str(s["owner"]), "kind": kind, "reason": "down"})
+			continue
+		if shoot and BattleState.is_alive(boss) and int(owner["ammo"]) > 0:
+			events.append({"t": "summon_shot", "unit": owner["id"], "kind": kind})
+			_change_ammo(owner, -1, events)
+			_hit(state, owner, boss, TURRET_MULT if kind == "turret" else DRONE_MULT, events, 0, 0.0, true)
+		if int(owner["ammo"]) <= 0:
+			list.remove_at(i)
+			events.append({"t": "summon_end", "unit": owner["id"], "kind": kind, "reason": "ammo"})
+			if kind == "turret":
+				if BattleState.is_alive(boss):
+					_hit(state, owner, boss, TURRET_BLAST_MULT, events, 0, 0.0, true)
+			else:
+				var amount: int = int(round(float(owner["atk"]) * DRONE_SHIELD_MULT * Archetypes.support_mult(owner)))
+				for uid in BattleState.player(state, str(owner["owner"]))["team"]:
+					var mate: Dictionary = BattleState.unit(state, uid)
+					if BattleState.is_alive(mate):
+						mate["shield"] = int(mate["shield"]) + amount
+						events.append({"t": "shield", "src": owner["id"], "dst": mate["id"], "amount": amount})
+	_check_winner(state, events)
 
 
 static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, target_pid: String, rng: RNGState, events: Array) -> void:
@@ -515,6 +608,10 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 
 static func _end_of_round(state: Dictionary, events: Array) -> void:
 	var units: Dictionary = state["units"]
+	_summon_upkeep(state, events, true)
+	if str(state["winner"]) != "" or not BattleState.is_alive(BattleState.boss(state)):
+		_check_winner(state, events)
+		return
 
 	# sanguinamento (ignora gli scudi)
 	for uid in units:

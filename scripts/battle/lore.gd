@@ -26,6 +26,16 @@ const CHARACTERS: Dictionary = {
 		"lore": "Una voce nata nei display e nelle linee della citta', che ripete cio' che sente e sta imparando cosa significa. E' dalla parte della squadra, anche se nessuno sa ancora perche'.",
 		"tactic": "MARCHIO fa piu' danno a tutto il gruppo sul bersaglio segnato: marchia, poi lascia agire i compagni. SPEZZATUTTO quando il boss e' segnato. Non da' aure: fazione Kairos.",
 	},
+	"dafne": {
+		"tag": "Agent 02 · Tiratore scelto",
+		"lore": "La seconda agente LibraCorp a uscire dai registri. Non parla molto: marchia, aspetta, spara una volta sola. Ogni marchio che mette sul bersaglio le fa vedere meglio il punto debole.",
+		"tactic": "MARCHIO prima di tutto: i colpi con munizioni fanno +15% a marchio. COLPO MIRATO abbassa la difesa e punta al critico. COPERTURA ti nasconde (schivata) e ricarica 2 munizioni. COLPO COORDINATO mette 3 marchi e potenzia tutta la squadra.",
+	},
+	"angela": {
+		"tag": "Orbital Laser Goddess",
+		"lore": "Dice di parlare con un satellite. I droni le rispondono. Fragile come il vetro, ma quando il cielo si apre non resta nulla da raccogliere.",
+		"tactic": "12 munizioni: TORRETTA e DRONE sparano da soli ogni round (1 munizione a colpo) e a zero esplodono o danno scudi. MITRAGLIATRICE per i critici. RAGGIO ORBITALE consuma tutti i marchi: falli accumulare prima. I suoi marchi ricaricano le munizioni di tutti i LibraCorp.",
+	},
 	"bruno": {
 		"tag": "Scudi per tutti",
 		"lore": "Tranquillo, metodico, controlla due volte ogni serratura. La sua magia costruisce barriere dove servono.",
@@ -74,7 +84,7 @@ static func glossary() -> Array:
 		["GUARDIA", "Dimezza il danno subito in quel round (x%.1f) e ridona energia." % BattleTypes.GUARD_FACTOR],
 		["SCUDO", "Assorbe danno prima dei PV. Lo danno Barriera, Bastione, Provoca e l'entrata scudata."],
 		["PROVOCAZIONE", "Il boss, se puo', colpisce chi provoca. Utile per proteggere chi fa danno."],
-		["MARCHIO", "Il bersaglio marchiato subisce +%d%% di danno per qualche turno." % int(round((BattleTypes.MARK_BONUS - 1.0) * 100.0))],
+		["MARCHIO", "Pila di marchi sul nemico (max %d): ogni marchio da' +%d%% di danno, +%d%% ai colpi che usano munizioni. Restano finche' qualcuno non li consuma." % [Marks.MAX, int(round(Marks.PCT * 100.0)), int(round(Marks.AMMO_PCT * 100.0))]],
 		["SANGUINAMENTO", "Danno ogni round pari al %d%% dei PV massimi. Si toglie con Purifica o Rinascita." % int(round(BattleTypes.BLEED_FRACTION * 100.0))],
 		["FURIA DEL BOSS", "Sotto meta' PV il boss colpisce piu' forte (+%d%%)." % int(round((BattleTypes.ENRAGE_BONUS - 1.0) * 100.0))],
 		["CACCIATORE", "Passiva: +%d%% di danno contro chi e' sotto meta' PV." % int(round((BattleTypes.HUNTER_BONUS - 1.0) * 100.0))],

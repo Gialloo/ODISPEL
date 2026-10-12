@@ -91,7 +91,7 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 			return str(sid)
 		if m.has("ammo") and int(u["ammo"]) - int(m["ammo"]) >= 1:
 			return str(sid)
-		if m.has("status") and m["status"].has("mark") and not boss["statuses"].has("mark"):
+		if m.has("status") and m["status"].has("mark") and Marks.count(boss) < 3:
 			return str(sid)
 		if m.has("mult") and float(m["mult"]) >= 2.0 and energy >= int(m["cost"]) + 1:
 			return str(sid)

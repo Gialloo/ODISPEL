@@ -216,8 +216,8 @@ static func on_hit_taken(state: Dictionary, defender: Dictionary, events: Array 
 
 # Il colpo e' critico? Deterministico: dipende solo dal seme e da cio' che sta accadendo, cosi' host e client
 # vedono lo stesso risultato e non si consuma il generatore dei tiri (chi non ha critico non cambia nulla).
-static func rolls_crit(state: Dictionary, attacker: Dictionary, defender: Dictionary, salt: int) -> bool:
-	var chance: int = int(attacker.get("crit", 0)) + Signatures.crit_bonus(attacker, defender)
+static func rolls_crit(state: Dictionary, attacker: Dictionary, defender: Dictionary, salt: int, extra_pm: int = 0) -> bool:
+	var chance: int = int(attacker.get("crit", 0)) + Signatures.crit_bonus(state, attacker, defender) + extra_pm
 	if chance <= 0:
 		return false
 	if chance >= 1000:
