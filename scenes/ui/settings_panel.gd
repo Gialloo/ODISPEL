@@ -10,6 +10,8 @@ var music_slider: HSlider
 var sfx_slider: HSlider
 var mute_box: Button
 var full_box: Button
+var vsync_box: Button
+var fps_button: Button
 var tutorial_button: Button
 var art_folder_button: Button
 var art_reload_button: Button
@@ -54,6 +56,13 @@ func _ready() -> void:
 
 	mute_box = _toggle(box, Settings.muted, _on_mute, "AUDIO: MUTO  (tasto M)", "AUDIO: ATTIVO  (tasto M)")
 	full_box = _toggle(box, Settings.fullscreen, _on_fullscreen, "SCHERMO INTERO: SI", "SCHERMO INTERO: NO")
+	vsync_box = _toggle(box, Settings.vsync, _on_vsync, "V-SYNC: SI", "V-SYNC: NO")
+	fps_button = Button.new()
+	fps_button.text = Settings.fps_text()
+	fps_button.custom_minimum_size = Vector2(0, 46)
+	BattleTheme.style_button(fps_button, "normal", 20)
+	fps_button.pressed.connect(_on_fps)
+	box.add_child(fps_button)
 
 	box.add_child(HSeparator.new())
 
@@ -162,6 +171,17 @@ func _on_sfx(v: float) -> void:
 
 func _on_mute(on: bool) -> void:
 	Settings.muted = on
+	_apply()
+
+
+func _on_vsync(on: bool) -> void:
+	Settings.vsync = on
+	_apply()
+
+
+func _on_fps() -> void:
+	Settings.fps_limit = Settings.next_fps_limit()
+	fps_button.text = Settings.fps_text()
 	_apply()
 
 

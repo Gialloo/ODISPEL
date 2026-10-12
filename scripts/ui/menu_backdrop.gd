@@ -24,7 +24,7 @@ static func add_to(parent: Control, new_accent: Color = BattleTheme.RD, at_index
 
 
 # Le strisce scorrono pianissimo: 15 ridisegni al secondo bastano e costano meno.
-const REDRAW_EVERY: float = 1.0 / 15.0
+const REDRAW_EVERY: float = 0.0     # a ogni fotogramma: lo scorrimento resta fluido anche a 144 fps
 var _since_draw: float = 0.0
 
 

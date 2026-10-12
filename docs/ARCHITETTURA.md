@@ -114,3 +114,8 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
 
 - **LINK**: nello stesso round, se due compagni agiscono di fila senza che il boss si muova, nasce un anello (`BattleResolver._chain_link`): +15% di danno per anello (max 4, `BattleTypes.LINK_*`). Fazioni diverse = CROSS (ultimate +12 a entrambi); stessa fazione o colore = UNISONO (anello doppio). Il boss spezza la catena (`link_break`). Eventi `link` e `link_break`, mostrati da `battle_screen._fx_link`. Test: `tests/unit/test_link.gd`.
 - **Direzione artistica**: sfondo procedurale pop/neon in `battle_stage._paint_procedural_background` (cielo viola-magenta, sole a strisce, palazzi con insegne, griglia al neon); operatori con anello luminoso e raggio di luce.
+
+## Prestazioni (FPS)
+
+- Impostazioni video in `Settings`: `fps_limit` (60, 90, 120, 144, 240, senza limite; di base 144) e `vsync` (attivo). `Settings.apply_video()` imposta `Engine.max_fps` e il V-Sync, ed e' richiamata da `AudioManager.apply_settings`. Con il V-Sync il gioco segue il monitor.
+- Lo sfondo dei menu (`MenuBackdrop`) si ridisegna a ogni fotogramma; lo sfondo della battaglia e' un livello statico disegnato una volta sola.

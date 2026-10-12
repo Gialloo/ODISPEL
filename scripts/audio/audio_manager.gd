@@ -67,6 +67,7 @@ func apply_settings() -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), linear_to_db(maxf(Settings.music, 0.0001)))
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), linear_to_db(maxf(Settings.sfx, 0.0001)))
 	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), Settings.muted)
+	Settings.apply_video()
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if Settings.fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
 
