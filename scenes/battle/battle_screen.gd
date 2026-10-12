@@ -945,7 +945,16 @@ func _fx_act(e: Dictionary) -> float:
 	elif int(move.get("ammo_gain", 0)) > 0:
 		Snd.play("reload")
 	if kind == "ult":
-		return _play_cutin(str(unit.get("char", "")), BattleText.move_name(move_id), BattleTheme.unit_color(str(unit["color"])))
+		var at: Vector2 = _stage.anchor_of(str(unit["id"]))
+		var ucol: Color = BattleTheme.unit_color(str(unit["color"]))
+		var ust: String = UltFx.style_for(move)
+		var seconds: float = _play_cutin(str(unit.get("char", "")), BattleText.move_name(move_id), BattleTheme.unit_color(str(unit["color"])))
+		# le particelle partono quando il ritratto sparisce, sul personaggio
+		get_tree().create_timer(seconds * 0.9).timeout.connect(func() -> void:
+			if is_inside_tree():
+				UltFx.play(_fx, at, ucol, ust, _stage.anchor_of(BattleState.BOSS_ID) if ust == "strike" else Vector2.ZERO)
+				Snd.play("crit", 0.8))
+		return seconds
 	return 0.0
 
 
