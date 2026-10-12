@@ -59,6 +59,10 @@ static func make_label(text: String, size: int = 16, color: Color = CY, use_disp
 	l.add_theme_font_override("font", display() if use_display else mono())
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
+	if use_display:
+		# contorno nero spesso: il testo "da fumetto" si legge su qualsiasi sfondo
+		l.add_theme_color_override("font_outline_color", BK)
+		l.add_theme_constant_override("outline_size", maxi(4, size / 7))
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
 
@@ -77,28 +81,30 @@ static func _box(bg: Color, border: Color, width: int = 2) -> StyleBoxFlat:
 
 
 # kind: "primary" (rosso), "normal" (ciano), "ultimate" (bianco su rosso)
+# I pulsanti sono parallelogrammi con ombra netta (stile Persona); sotto il mouse
+# diventano pieni e si spostano un poco.
 static func style_button(b: Button, kind: String = "normal", size: int = 22) -> void:
-	var normal: StyleBoxFlat
-	var hover: StyleBoxFlat
+	var normal: SlantBox
+	var hover: SlantBox
 	var text_color: Color
 	var hover_text: Color
 	match kind:
 		"primary":
-			normal = _box(RD, WH, 2)
-			hover = _box(WH, RD, 2)
+			normal = SlantBox.make(RD, WH, 16.0, BK, 3.0)
+			hover = SlantBox.make(WH, RD, 16.0, RD, 3.0)
 			text_color = WH
 			hover_text = RD
 		"ultimate":
-			normal = _box(BK, WH, 3)
-			hover = _box(WH, RD, 3)
+			normal = SlantBox.make(BK, WH, 16.0, RD, 3.0)
+			hover = SlantBox.make(WH, RD, 16.0, BK, 3.0)
 			text_color = WH
 			hover_text = RD
 		_:
-			normal = _box(BK, CY, 2)
-			hover = _box(CY, CY, 2)
+			normal = SlantBox.make(BK, CY, 14.0, CY_DARK, 2.0)
+			hover = SlantBox.make(CY, BK, 14.0, CY_DIM, 2.0)
 			text_color = CY
 			hover_text = BK
-	var disabled: StyleBoxFlat = _box(Color(0.02, 0.06, 0.07), CY_DARK, 2)
+	var disabled: SlantBox = SlantBox.make(Color(0.02, 0.06, 0.07), CY_DARK, 14.0, Color(0, 0, 0, 0), 2.0)
 	b.add_theme_stylebox_override("normal", normal)
 	b.add_theme_stylebox_override("hover", hover)
 	b.add_theme_stylebox_override("pressed", hover)
@@ -108,6 +114,8 @@ static func style_button(b: Button, kind: String = "normal", size: int = 22) -> 
 	b.add_theme_color_override("font_hover_color", hover_text)
 	b.add_theme_color_override("font_pressed_color", hover_text)
 	b.add_theme_color_override("font_disabled_color", CY_DARK)
+	b.add_theme_color_override("font_outline_color", BK if kind != "normal" else Color(0, 0, 0, 0))
+	b.add_theme_constant_override("outline_size", 0 if kind == "normal" else 4)
 	b.add_theme_font_override("font", display())
 	b.add_theme_font_size_override("font_size", size)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT

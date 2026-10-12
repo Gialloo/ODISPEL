@@ -37,6 +37,7 @@ var _equip_title: HudPanel
 var _list_box: VBoxContainer
 var _slots_box: HBoxContainer
 var _detail_label: Label
+var _detail_portrait: PortraitView
 var _detail_title: Label
 var _action_box: HBoxContainer
 var _pity_label: Label
@@ -172,6 +173,12 @@ func _build_team_page() -> void:
 	_action_box = HBoxContainer.new()
 	_action_box.add_theme_constant_override("separation", 10)
 	col.add_child(_action_box)
+	# illustrazione dell'operatore (la tua grafica `splash.png`, o il segnaposto)
+	_detail_portrait = PortraitView.new().setup("", "splash")
+	_detail_portrait.show_expression_text = false
+	_detail_portrait.position = Vector2(500.0, 36.0)
+	_detail_portrait.size = Vector2(270.0, 250.0)
+	card.add_child(_detail_portrait)
 
 
 func _build_equip_page() -> void:
@@ -553,11 +560,15 @@ func _refresh_detail() -> void:
 	if selected == "" or not RosterState.owns(roster, selected):
 		_detail_title.text = "NESSUN OPERATORE"
 		_detail_label.text = ""
+		_detail_portrait.visible = false
 		return
 	var def: Dictionary = BattleContent.CHARACTERS[selected]
 	var e: Dictionary = roster["characters"][selected]
 	var st: Dictionary = BattleContent.compute_stats(e)
 	_detail_title.text = str(def["name"]).to_upper()
+	_detail_portrait.visible = true
+	if _detail_portrait.char_id != selected:
+		_detail_portrait.setup(selected, "splash")
 	_detail_title.add_theme_color_override("font_color", BattleTheme.unit_color(str(def["color"])))
 	var skills: Array = []
 	for s in e["skills"]:

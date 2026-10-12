@@ -7,7 +7,7 @@ var passed: int = 0
 var failed: int = 0
 const TMP: String = "user://test_settings_tmp.cfg"
 
-const SFX: Array = ["click", "hover", "back", "toast", "success", "ready", "error", "save", "hit", "player_hit", "guard", "heal", "down", "boss_charge", "boss_attack", "swap", "victory", "defeat"]
+const SFX: Array = ["click", "hover", "back", "toast", "success", "ready", "error", "save", "hit", "player_hit", "guard", "heal", "down", "boss_charge", "boss_attack", "swap", "victory", "defeat", "wipe", "cutin", "talk"]
 
 
 func _check(name: String, cond: bool) -> void:
@@ -65,7 +65,7 @@ func _run() -> void:
 		if not (st is AudioStreamWAV) or (st as AudioStreamWAV).data.size() < 100:
 			all_ok = false
 			print("manca/vuoto: ", s)
-	_check("tutti i 18 effetti esistono", all_ok)
+	_check("tutti i 21 effetti esistono", all_ok)
 	_check("musica del menu", load("res://assets/audio/music/menu.wav") is AudioStreamWAV)
 	_check("musica della battaglia", load("res://assets/audio/music/battle.wav") is AudioStreamWAV)
 	Snd.play("click")

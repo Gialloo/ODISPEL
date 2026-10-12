@@ -27,6 +27,16 @@ func _build() -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
+	var hub_art: Texture2D = ArtLibrary.background("hub")
+	if hub_art != null:
+		var pic := TextureRect.new()
+		pic.texture = hub_art
+		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		pic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(pic)
+
 	var cctv := ColorRect.new()
 	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
 	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -117,8 +127,7 @@ func _on_menu(key: String) -> void:
 	match key:
 		"continue":
 			var next: Dictionary = MissionConfig.suggest(roster)
-			MissionConfig.set_mission(str(next["boss"]), int(next["tier"]))
-			SceneRouter.go("battle", true)
+			Story.start_mission(self, str(next["boss"]), int(next["tier"]))
 		"settings":
 			SettingsPanel.open(self)
 		_:

@@ -21,7 +21,8 @@ const TIPS: Array = [
 
 const TOAST_COLORS: Array = [BattleTheme.CY, Color("#6bffb0"), Color("#ffd25f"), BattleTheme.RD]
 const MAX_TOASTS: int = 4
-const MIN_LOADING_SECONDS: float = 0.7
+const MIN_LOADING_SECONDS: float = 0.5
+const WIPE_SECONDS: float = 0.22
 
 # attivita' in corso: nome -> testo (l'ultima inserita e' quella mostrata)
 var _jobs: Dictionary = {}
@@ -38,6 +39,7 @@ var _loading_title: Label
 var _loading_tip: Label
 var _loading_bar: ColorRect
 var _loading_fill: ColorRect
+var _wipe: Wipe
 var _busy_transition: bool = false
 var _angle: float = 0.0
 
@@ -62,6 +64,37 @@ class Spinner extends Control:
 		draw_arc(c, r, angle, angle + TAU * 0.28, 12, BattleTheme.CY, 3.0)
 
 
+# Stacco diagonale a tre bande (rosso, bianco, nero) come nei menu di Persona.
+# cover: quanto lo schermo e' coperto, da sinistra (0..1); reveal: quanto e' stato riscoperto.
+class Wipe extends Control:
+	const SLANT: float = 240.0
+	const BANDS: Array = [Color("#ff2d55"), Color("#f2fdff"), Color("#04080a")]
+	var cover: float = 0.0:
+		set(v):
+			cover = v
+			queue_redraw()
+	var reveal: float = 0.0:
+		set(v):
+			reveal = v
+			queue_redraw()
+
+	func _edge(k: float) -> float:
+		return lerpf(-SLANT, size.x + SLANT, clampf(k, 0.0, 1.0))
+
+	func _draw() -> void:
+		if cover <= 0.0:
+			return
+		var h: float = size.y
+		for i in BANDS.size():
+			var end_x: float = _edge(cover * 1.5 - float(i) * 0.25)
+			var start_x: float = _edge(reveal * 1.5 - float(BANDS.size() - 1 - i) * 0.25)
+			if end_x <= start_x:
+				continue
+			draw_colored_polygon(PackedVector2Array([
+				Vector2(start_x + SLANT, 0.0), Vector2(end_x + SLANT, 0.0),
+				Vector2(end_x, h), Vector2(start_x, h)]), BANDS[i])
+
+
 func _init() -> void:
 	layer = 100
 	name = "Feedback"
@@ -76,6 +109,11 @@ func _ready() -> void:
 	_build_toasts()
 	_build_spinner()
 	_build_loading()
+	_wipe = Wipe.new()
+	_wipe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_wipe.mouse_filter = Control.MOUSE_FILTER_STOP
+	_wipe.visible = false
+	_root.add_child(_wipe)
 
 
 func _build_toasts() -> void:
@@ -280,8 +318,14 @@ func is_loading() -> bool:
 	return _busy_transition
 
 
-# Copre lo schermo, esegue l'azione (cambio scena), poi scopre. Dura almeno
-# MIN_LOADING_SECONDS per non lampeggiare.
+func _wipe_to(property: String, value: float) -> void:
+	var tw: Tween = create_tween()
+	tw.tween_property(_wipe, property, value, WIPE_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	await tw.finished
+
+
+# Stacco diagonale, esegue l'azione (cambio scena) a schermo coperto, mostra la
+# schermata di caricamento almeno MIN_LOADING_SECONDS, poi stacco di nuovo e scopre.
 func transition(action: Callable, title: String = "CARICAMENTO", tip: String = "") -> void:
 	if _busy_transition:
 		action.call()
@@ -291,14 +335,18 @@ func transition(action: Callable, title: String = "CARICAMENTO", tip: String = "
 	_loading_title.text = title
 	_loading_tip.text = tip if tip != "" else "CONSIGLIO: " + str(TIPS[randi() % TIPS.size()])
 	_loading_fill.size.x = 0.0
-	_loading.modulate.a = 0.0
-	_loading.visible = true
+	_wipe.cover = 0.0
+	_wipe.reveal = 0.0
+	_wipe.visible = true
+	Snd.play("wipe")
 
-	var fade_in: Tween = create_tween()
-	fade_in.tween_property(_loading, "modulate:a", 1.0, 0.15)
-	await fade_in.finished
+	await _wipe_to("cover", 1.0)
 
+	# a schermo coperto: cambio scena e schermata di caricamento sotto
 	action.call()
+	_loading.modulate.a = 1.0
+	_loading.visible = true
+	await _wipe_to("reveal", 1.0)
 
 	var started: int = Time.get_ticks_msec()
 	var fill: Tween = create_tween()
@@ -306,8 +354,11 @@ func transition(action: Callable, title: String = "CARICAMENTO", tip: String = "
 	while float(Time.get_ticks_msec() - started) / 1000.0 < MIN_LOADING_SECONDS:
 		await get_tree().process_frame
 
-	var fade_out: Tween = create_tween()
-	fade_out.tween_property(_loading, "modulate:a", 0.0, 0.2)
-	await fade_out.finished
+	_wipe.cover = 0.0
+	_wipe.reveal = 0.0
+	Snd.play("wipe")
+	await _wipe_to("cover", 1.0)
 	_loading.visible = false
+	await _wipe_to("reveal", 1.0)
+	_wipe.visible = false
 	_busy_transition = false

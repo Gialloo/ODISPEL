@@ -18,6 +18,11 @@ var boss_hit: float = 0.0           # 1 = appena colpito, scende a 0
 var hit_flash: Dictionary = {}      # unit_id -> intensita'
 var _t: float = 0.0
 var _positions: Dictionary = {}
+var _shake: float = 0.0              # ampiezza dello scuotimento, scende da sola
+var _punch: float = 0.0              # piccolo zoom d'impatto, scende da solo
+var _cam: Vector2 = Vector2.ZERO     # spostamento "della camera" per la parallasse, -1..1
+var _bg_boss: String = ""
+var _bg_layers: Array = []           # strati dello sfondo dalla tua grafica (vuoto = sfondo disegnato)
 
 
 func _process(delta: float) -> void:
@@ -25,11 +30,33 @@ func _process(delta: float) -> void:
 	boss_hit = maxf(0.0, boss_hit - delta * 3.0)
 	for uid in hit_flash.keys():
 		hit_flash[uid] = maxf(0.0, float(hit_flash[uid]) - delta * 3.0)
+	_shake = maxf(0.0, _shake - delta * 40.0)
+	_punch = maxf(0.0, _punch - delta * 0.5)
+	var want := Vector2.ZERO
+	if size.x > 0.0:
+		var m: Vector2 = get_local_mouse_position()
+		want = Vector2(clampf(m.x / size.x * 2.0 - 1.0, -1.0, 1.0), clampf(m.y / size.y * 2.0 - 1.0, -1.0, 1.0))
+	want.x += sin(_t * 0.4) * 0.35
+	_cam = _cam.lerp(want, minf(1.0, delta * 3.0))
+	position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake
+	pivot_offset = size * 0.5
+	scale = Vector2.ONE * (1.0 + _punch)
 	queue_redraw()
+
+
+# Scuote l'inquadratura e la ingrandisce un attimo (colpi forti).
+func impact(amount: float = 10.0, zoom: float = 0.03) -> void:
+	_shake = maxf(_shake, amount)
+	_punch = maxf(_punch, zoom)
 
 
 func set_state(new_state: Dictionary) -> void:
 	state = new_state
+	if not state.is_empty():
+		var boss_id: String = str(BattleState.boss(state)["char"])
+		if boss_id != _bg_boss:
+			_bg_boss = boss_id
+			_bg_layers = ArtLibrary.background_layers(boss_id)
 	_layout()
 
 
@@ -86,7 +113,21 @@ func _draw() -> void:
 
 # ---------- Sfondo ----------
 
+# Sfondo dalle tue immagini: piu' strati che scorrono di poco, i lontani meno dei vicini.
+func _draw_art_background() -> void:
+	const FACTORS: Array = [0.012, 0.03, 0.06, 0.10]
+	draw_rect(Rect2(0.0, 0.0, DW, DH), Color.BLACK)
+	for i in _bg_layers.size():
+		var tex: Texture2D = _bg_layers[i]
+		var shift: Vector2 = _cam * -60.0 * float(FACTORS[mini(i, FACTORS.size() - 1)]) * 10.0
+		var pad: float = 90.0
+		draw_texture_rect(tex, Rect2(Vector2(-pad, -pad) + shift, Vector2(DW + pad * 2.0, DH + pad * 2.0)), false)
+
+
 func _draw_background() -> void:
+	if not _bg_layers.is_empty():
+		_draw_art_background()
+		return
 	# cielo a strisce
 	var top: Color = Color("#041015")
 	var bottom: Color = Color("#0c3038")
@@ -164,15 +205,13 @@ func _draw_boss() -> void:
 	draw_colored_polygon(shadow, Color(0, 0, 0, 0.5))
 
 	var body: Rect2
-	match str(boss["char"]):
-		"semaforo":
-			body = _draw_semaforo(boss, alive, enraged, o)
-		"tombino":
-			body = _draw_tombino(boss, alive, enraged, o)
-		_:
-			body = _draw_distributore(alive, enraged, o)
+	var art: Texture2D = ArtLibrary.boss_image(str(boss["char"]), "battle")
+	if art != null:
+		body = _draw_boss_art(boss, art, alive, o)
+	else:
+		body = _draw_boss_body(boss, alive, enraged, o)
 
-	if boss_hit > 0.0:
+	if boss_hit > 0.0 and art == null:
 		draw_rect(body, Color(1, 1, 1, 0.55 * boss_hit))
 
 	# riquadro di tracciamento
@@ -180,6 +219,35 @@ func _draw_boss() -> void:
 	_brackets(br, BattleTheme.RD if alive else BattleTheme.CY_DARK, 5.0, 40.0)
 	if alive:
 		draw_line(Vector2(br.position.x + br.size.x * 0.5, br.position.y), Vector2(br.position.x + br.size.x * 0.5, br.position.y - 22.0), BattleTheme.RD, 3.0)
+
+
+# Il boss disegnato dall'artista: i piedi sul suolo, altezza massima 440. Se esiste
+# `hurt.png` la usa per un attimo quando viene colpito.
+func _draw_boss_art(boss: Dictionary, art: Texture2D, alive: bool, o: Vector2) -> Rect2:
+	var img: Texture2D = art
+	if boss_hit > 0.4:
+		var hurt: Texture2D = ArtLibrary.boss_image(str(boss["char"]), "hurt")
+		if hurt != null:
+			img = hurt
+	var ts: Vector2 = img.get_size()
+	var fit: float = minf(460.0 / ts.y, 520.0 / ts.x)
+	var sz: Vector2 = ts * fit
+	var rect := Rect2(Vector2(BOSS_X - sz.x * 0.5, GEO_FLOOR + 10.0 - sz.y) + o, sz)
+	var tint: Color = Color.WHITE.lerp(Color(1.6, 1.6, 1.6), boss_hit) if alive else Color(0.25, 0.25, 0.3)
+	draw_texture_rect(img, rect, false, tint)
+	return rect
+
+
+func _draw_boss_body(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
+	var body: Rect2
+	match str(boss["char"]):
+		"semaforo":
+			body = _draw_semaforo(boss, alive, enraged, o)
+		"tombino":
+			body = _draw_tombino(boss, alive, enraged, o)
+		_:
+			body = _draw_distributore(alive, enraged, o)
+	return body
 
 
 # Il distributore: ritorna il riquadro del corpo.
@@ -367,6 +435,23 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 		return
 
 	var top: float = foot_y - 210.0 + bob
+	var sprite: Texture2D = ArtLibrary.battle_sprite(str(u.get("char", "")))
+	if sprite != null:
+		_draw_fighter_sprite(sprite, cx, foot_y, bob, flash_v)
+	else:
+		_draw_fighter_body(cx, foot_y, top, body_col, col)
+	_draw_fighter_frame(u, cx, top, col, index, is_lead, foot_y)
+
+
+# Figura disegnata dall'utente: ancorata ai piedi, alta ~230 px.
+func _draw_fighter_sprite(tex: Texture2D, cx: float, foot_y: float, bob: float, flash_v: float) -> void:
+	var h: float = 230.0
+	var w: float = h * tex.get_width() / maxf(1.0, float(tex.get_height()))
+	var tint: Color = Color.WHITE.lerp(Color(2.0, 2.0, 2.0), flash_v)
+	draw_texture_rect(tex, Rect2(cx - w * 0.5, foot_y - h + bob, w, h), false, tint)
+
+
+func _draw_fighter_body(cx: float, foot_y: float, top: float, body_col: Color, col: Color) -> void:
 	# gambe
 	draw_rect(Rect2(cx - 24.0, foot_y - 90.0, 20.0, 90.0), body_col)
 	draw_rect(Rect2(cx + 4.0, foot_y - 90.0, 20.0, 90.0), body_col)
@@ -384,6 +469,8 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 	# visore
 	draw_rect(Rect2(cx - 14.0, top + 18.0, 28.0, 8.0), col)
 
+
+func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index: int, is_lead: bool, _foot_y: float) -> void:
 	# riquadro e targhetta
 	var rect := Rect2(cx - 82.0, top - 12.0, 164.0, 236.0)
 	_brackets(rect, BattleTheme.RD if is_lead else col, 5.0 if is_lead else 3.0, 24.0)

@@ -4,20 +4,6 @@ extends RefCounted
 # Pezzi grafici condivisi dalla lobby: carte dei giocatori e scelta missione.
 
 
-# Silhouette di un operatore, nel colore del personaggio.
-class Portrait extends Control:
-	var color: Color = BattleTheme.CY
-
-	func _draw() -> void:
-		var w: float = size.x
-		var h: float = size.y
-		var cx: float = w * 0.5
-		draw_circle(Vector2(cx, h * 0.24), h * 0.14, color)
-		draw_rect(Rect2(cx - w * 0.28, h * 0.42, w * 0.56, h * 0.30), color)
-		draw_rect(Rect2(cx - w * 0.22, h * 0.72, w * 0.18, h * 0.28), color)
-		draw_rect(Rect2(cx + w * 0.04, h * 0.72, w * 0.18, h * 0.28), color)
-
-
 static func _style(border: Color, filled: bool = false) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = border.darkened(0.7) if filled else BattleTheme.PANEL
@@ -76,9 +62,11 @@ static func fill_players(box: Container, lobby: Dictionary, local_id: String, bi
 		inner.add_theme_constant_override("separation", 6 if big else 10)
 		card.add_child(inner)
 
-		var portrait := Portrait.new()
-		portrait.color = color if status != "OFFLINE" else BattleTheme.RD_DARK
-		portrait.custom_minimum_size = Vector2(120, 130) if big else Vector2(26, 34)
+		# grafica vera se c'e' (icona o ritratto), altrimenti il segnaposto
+		var portrait := PortraitView.new().setup(str(lead.get("char", "")), "bust" if big else "icon")
+		portrait.show_expression_text = false
+		portrait.dimmed = status == "OFFLINE"
+		portrait.custom_minimum_size = Vector2(160, 150) if big else Vector2(36, 36)
 		portrait.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		inner.add_child(portrait)
 

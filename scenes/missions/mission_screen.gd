@@ -99,6 +99,12 @@ func _build() -> void:
 	var sp := Control.new()
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dbox.add_child(sp)
+	var story_button := Button.new()
+	story_button.text = "RIVEDI LA SCENA INIZIALE"
+	story_button.custom_minimum_size = Vector2(0, 40)
+	BattleTheme.style_button(story_button, "normal", 16)
+	story_button.pressed.connect(_on_replay_story)
+	dbox.add_child(story_button)
 	go_button = Button.new()
 	go_button.text = "AVVIA MISSIONE"
 	go_button.custom_minimum_size = Vector2(0, 60)
@@ -169,8 +175,13 @@ func _refresh() -> void:
 
 
 func _on_go() -> void:
-	MissionConfig.set_mission(selected_boss, selected_tier)
-	SceneRouter.go("battle", true)
+	Story.start_mission(self, selected_boss, selected_tier)
+
+
+func _on_replay_story() -> void:
+	var view: DialogueView = Story.play(self, Story.scene_id(selected_boss, "pre"), false)
+	if view == null:
+		Notify.warning("Nessuna scena per questo bersaglio.")
 
 
 func _on_back() -> void:

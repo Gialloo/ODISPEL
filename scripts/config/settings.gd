@@ -10,6 +10,7 @@ static var sfx: float = 0.8          # 0..1
 static var muted: bool = false
 static var fullscreen: bool = false
 static var tutorial_done: bool = false
+static var seen_scenes: Array = []      # scene di storia gia' viste
 static var _loaded: bool = false
 
 
@@ -23,6 +24,7 @@ static func load_settings() -> void:
 	muted = bool(cfg.get_value("audio", "muted", muted))
 	fullscreen = bool(cfg.get_value("video", "fullscreen", fullscreen))
 	tutorial_done = bool(cfg.get_value("game", "tutorial_done", tutorial_done))
+	seen_scenes = Array(cfg.get_value("game", "seen_scenes", []))
 
 
 static func ensure_loaded() -> void:
@@ -37,6 +39,7 @@ static func save() -> bool:
 	cfg.set_value("audio", "muted", muted)
 	cfg.set_value("video", "fullscreen", fullscreen)
 	cfg.set_value("game", "tutorial_done", tutorial_done)
+	cfg.set_value("game", "seen_scenes", seen_scenes)
 	return cfg.save(path) == OK
 
 
@@ -50,3 +53,10 @@ static func should_show_tutorial() -> bool:
 static func finish_tutorial() -> void:
 	tutorial_done = true
 	save()
+
+
+static func mark_scene_seen(id: String) -> void:
+	ensure_loaded()
+	if not seen_scenes.has(id):
+		seen_scenes.append(id)
+		save()

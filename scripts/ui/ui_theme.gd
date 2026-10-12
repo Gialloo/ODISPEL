@@ -32,10 +32,10 @@ static func build() -> Theme:
 
 	# Bottoni (ciano; "primary" e' un'eccezione dei singoli schermi)
 	for cls in ["Button", "OptionButton", "MenuButton"]:
-		t.set_stylebox("normal", cls, _box(BattleTheme.BK, BattleTheme.CY, 2, 14.0))
-		t.set_stylebox("hover", cls, _box(BattleTheme.CY, BattleTheme.CY, 2, 14.0))
-		t.set_stylebox("pressed", cls, _box(BattleTheme.CY, BattleTheme.WH, 2, 14.0))
-		t.set_stylebox("disabled", cls, _box(Color(0.02, 0.06, 0.07), BattleTheme.CY_DARK, 2, 14.0))
+		t.set_stylebox("normal", cls, SlantBox.make(BattleTheme.BK, BattleTheme.CY, 14.0, BattleTheme.CY_DARK, 2.0))
+		t.set_stylebox("hover", cls, SlantBox.make(BattleTheme.CY, BattleTheme.BK, 14.0, BattleTheme.CY_DIM, 2.0))
+		t.set_stylebox("pressed", cls, SlantBox.make(BattleTheme.CY, BattleTheme.WH, 14.0, BattleTheme.CY_DIM, 2.0))
+		t.set_stylebox("disabled", cls, SlantBox.make(Color(0.02, 0.06, 0.07), BattleTheme.CY_DARK, 14.0, Color(0, 0, 0, 0), 2.0))
 		t.set_stylebox("focus", cls, StyleBoxEmpty.new())
 		t.set_color("font_color", cls, BattleTheme.CY)
 		t.set_color("font_hover_color", cls, BattleTheme.BK)

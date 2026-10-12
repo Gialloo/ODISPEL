@@ -11,6 +11,9 @@ var sfx_slider: HSlider
 var mute_box: Button
 var full_box: Button
 var tutorial_button: Button
+var art_folder_button: Button
+var art_reload_button: Button
+var art_label: Label
 var _music_value: Label
 var _sfx_value: Label
 
@@ -38,8 +41,8 @@ func _ready() -> void:
 	panel.anchor_bottom = 0.5
 	panel.offset_left = -260.0
 	panel.offset_right = 260.0
-	panel.offset_top = -210.0
-	panel.offset_bottom = 210.0
+	panel.offset_top = -270.0
+	panel.offset_bottom = 270.0
 	add_child(panel)
 
 	var box := VBoxContainer.new()
@@ -55,11 +58,32 @@ func _ready() -> void:
 	box.add_child(HSeparator.new())
 
 	tutorial_button = Button.new()
-	tutorial_button.text = "RIVEDI IL TUTORIAL"
+	tutorial_button.text = "RIVEDI TUTORIAL E STORIA"
 	tutorial_button.custom_minimum_size = Vector2(0, 46)
 	BattleTheme.style_button(tutorial_button, "normal", 20)
 	tutorial_button.pressed.connect(_on_tutorial)
 	box.add_child(tutorial_button)
+
+	art_label = BattleTheme.make_label("", 15, BattleTheme.CY_DIM)
+	box.add_child(art_label)
+	var art_row := HBoxContainer.new()
+	art_row.add_theme_constant_override("separation", 10)
+	box.add_child(art_row)
+	art_folder_button = Button.new()
+	art_folder_button.text = "APRI CARTELLA GRAFICHE"
+	art_folder_button.custom_minimum_size = Vector2(0, 46)
+	art_folder_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	BattleTheme.style_button(art_folder_button, "normal", 16)
+	art_folder_button.pressed.connect(func() -> void: ArtLibrary.open_folder())
+	art_row.add_child(art_folder_button)
+	art_reload_button = Button.new()
+	art_reload_button.text = "RICARICA GRAFICHE"
+	art_reload_button.custom_minimum_size = Vector2(0, 46)
+	art_reload_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	BattleTheme.style_button(art_reload_button, "normal", 16)
+	art_reload_button.pressed.connect(_on_art_reload)
+	art_row.add_child(art_reload_button)
+	_update_art_label()
 
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -148,8 +172,20 @@ func _on_fullscreen(on: bool) -> void:
 
 func _on_tutorial() -> void:
 	Settings.tutorial_done = false
+	Settings.seen_scenes = []
 	Settings.save()
-	Notify.success("Il tutorial ripartira' al prossimo combattimento.")
+	Notify.success("Tutorial e scene di storia ripartiranno dal prossimo combattimento.")
+
+
+func _update_art_label() -> void:
+	var rep: Dictionary = ArtLibrary.report()
+	art_label.text = "GRAFICHE TROVATE: %d / %d  (le mancanti usano il segnaposto)" % [rep["found"].size(), int(rep["total"])]
+
+
+func _on_art_reload() -> void:
+	ArtLibrary.refresh()
+	_update_art_label()
+	Notify.success("Grafiche ricaricate.")
 
 
 func close_panel() -> void:

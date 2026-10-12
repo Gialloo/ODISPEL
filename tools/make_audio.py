@@ -153,6 +153,19 @@ def make_sfx():
     whoosh = lowpass(whoosh, 400) * 0 + whoosh
     sw = lowpass(whoosh, 3000) * np.sin(np.pi * np.arange(n) / n)
     save("sfx/swap.wav", sw, 0.5)
+    # stacco diagonale (cambio schermata): colpo di vento + tonfo
+    n = int(SR * 0.35)
+    wipe = lowpass(noise(0.35), 5000) * np.sin(np.pi * np.arange(n) / n) ** 2
+    thud = sine(sweep(160, 70, 0.35), 0.35) * env(n, 0.002, 0.08) * 0.6
+    save("sfx/wipe.wav", mix(wipe * 0.9, thud), 0.6)
+    # sequenza ultimate: risalita metallica e colpo
+    n = int(SR * 0.7)
+    riser = saw(sweep(180, 900, 0.5), 0.5) * np.linspace(0.1, 1, int(SR * 0.5)) ** 1.5
+    riser = lowpass(riser, 3000)
+    boom = sine(sweep(120, 40, 0.5), 0.5) * env(int(SR * 0.5), 0.002, 0.14)
+    save("sfx/cutin.wav", mix(riser * 0.8, at(boom, 0.38, 0.9) * 1.2, at(lowpass(noise(0.25), 4000) * env(int(SR * 0.25), 0.001, 0.07), 0.38, 0.9)), 0.8)
+    # "voce" dei dialoghi: tic breve e basso, uno per lettera
+    save("sfx/talk.wav", sine(300, 0.045) * env(int(SR * 0.045), 0.002, 0.02) + sine(600, 0.045) * env(int(SR * 0.045), 0.002, 0.015) * 0.3, 0.4)
     fan = [("C5", 0.0, 0.18), ("E5", 0.16, 0.18), ("G5", 0.32, 0.18), ("C6", 0.48, 0.9)]
     save("sfx/victory.wav", mix(*[at(mix(sine(note_freq(nm), d), sine(note_freq(nm) * 2, d) * 0.3) * env(int(SR * d), 0.01, d * 0.5), s, 1.6) for nm, s, d in fan]), 0.7)
     sad = [("A4", 0.0, 0.3), ("F4", 0.28, 0.3), ("D4", 0.56, 0.3), ("A3", 0.84, 1.0)]

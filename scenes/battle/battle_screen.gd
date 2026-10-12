@@ -164,6 +164,14 @@ func _build() -> void:
 	cctv.material = mat
 	add_child(cctv)
 
+	var halftone := ColorRect.new()
+	halftone.set_anchors_preset(Control.PRESET_FULL_RECT)
+	halftone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hmat := ShaderMaterial.new()
+	hmat.shader = load("res://shaders/halftone.gdshader")
+	halftone.material = hmat
+	add_child(halftone)
+
 	_fx = Control.new()
 	_fx.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -594,39 +602,103 @@ func _play_events(events: Array) -> void:
 			return
 		var line: Dictionary = BattleText.describe(shown, e)
 		_push_log(str(line["text"]), str(line["kind"]))
-		_event_fx(e)
+		var extra: float = _event_fx(e)
 		BattleText.apply_to_display(shown, e)
 		_stage.set_state(shown)
 		_refresh_boss()
 		_refresh_operators()
-		await get_tree().create_timer(event_delay).timeout
+		await get_tree().create_timer(event_delay + extra).timeout
 	animating = false
 	if not is_inside_tree():
 		return
 	_sync()
 
 
-func _event_fx(e: Dictionary) -> void:
+const HIT_WORDS: Array = ["BAM!", "POW!", "CRACK!", "WHAM!", "BOOM!"]
+const BIG_HIT_FRACTION: float = 0.12     # un colpo cosi' grande (rispetto ai PV massimi) e' "pesante"
+
+
+# Effetti grafici e sonori di un evento. Ritorna i secondi di pausa in piu' (hit-stop).
+func _event_fx(e: Dictionary) -> float:
 	match str(e.get("t", "")):
 		"damage":
-			var dst: String = str(e["dst"])
-			Snd.play("guard" if int(e["amount"]) <= 0 else ("hit" if dst == BattleState.BOSS_ID else "player_hit"), randf_range(0.94, 1.06))
-			_stage.flash(dst)
-			_float_text("-%d" % int(e["amount"]) if int(e["amount"]) > 0 else "SCUDO", dst, BattleTheme.WH, 46 if dst == BattleState.BOSS_ID else 38)
+			return _fx_damage(e)
 		"bleed":
 			_float_text("-%d" % int(e["amount"]), str(e["unit"]), BattleTheme.RD, 28)
 		"heal":
 			Snd.play("heal")
-			_float_text("+%d" % int(e["amount"]), str(e["dst"]), Color("#6bffb0"), 34)
-		"boss_move":
-			Snd.play("boss_charge")
-		"swap":
-			Snd.play("swap")
+			_pop("+%d" % int(e["amount"]), str(e["dst"]), Color("#6bffb0"), BattleTheme.BK, 32, 52.0)
 		"shield":
 			_float_text("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.CY, 26)
+		"boss_move":
+			Snd.play("boss_charge")
+			_announce(BattleContent.BOSSES.get(str(BattleState.boss(shown)["char"]), {}).get("name", "BOSS"), BattleText.move_name(str(e.get("move", ""))), true)
+		"act":
+			return _fx_act(e)
+		"swap":
+			Snd.play("swap")
 		"down":
 			Snd.play("down")
-			_float_text("K.O.", str(e["unit"]), BattleTheme.RD, 44)
+			_stage.impact(14.0, 0.04)
+			ComicFx.flash(_fx, Color(1, 1, 1, 0.5), 0.15)
+			_pop("K.O.!", str(e["unit"]), BattleTheme.RD, BattleTheme.WH, 56, 95.0)
+			return 0.12
+	return 0.0
+
+
+func _fx_damage(e: Dictionary) -> float:
+	var dst: String = str(e["dst"])
+	var amount: int = int(e["amount"])
+	var to_boss: bool = dst == BattleState.BOSS_ID
+	Snd.play("guard" if amount <= 0 else ("hit" if to_boss else "player_hit"), randf_range(0.94, 1.06))
+	_stage.flash(dst)
+	if amount <= 0:
+		_pop("GUARD!", dst, BattleTheme.CY, BattleTheme.BK, 34, 62.0)
+		return 0.0
+	var target: Dictionary = BattleState.unit(shown, dst)
+	var heavy: bool = float(amount) >= float(target.get("max_hp", 1)) * BIG_HIT_FRACTION
+	var fill: Color = Color("#fff36b") if to_boss else BattleTheme.RD
+	_pop("-%d" % amount, dst, fill, BattleTheme.BK, 48 if heavy else 36, 82.0 if heavy else 62.0)
+	if heavy:
+		var at: Vector2 = _stage.anchor_of(dst)
+		ComicFx.speed_lines(_fx, at, Color(1, 1, 1, 0.9) if to_boss else Color("#ff2d55"), 0.26)
+		_stage.impact(11.0 if to_boss else 8.0, 0.025)
+		ComicFx.flash(_fx, Color(1, 1, 1, 0.35), 0.1)
+		_pop(str(HIT_WORDS[randi() % HIT_WORDS.size()]), dst, BattleTheme.WH, BattleTheme.RD, 30, 54.0, Vector2(-70.0, -90.0))
+		return 0.08
+	_stage.impact(4.0, 0.0)
+	return 0.0
+
+
+func _fx_act(e: Dictionary) -> float:
+	var move_id: String = str(e.get("move", ""))
+	var move: Dictionary = BattleContent.MOVES.get(move_id, {})
+	var kind: String = str(move.get("kind", "basic"))
+	if kind == "basic":
+		return 0.0
+	var unit: Dictionary = BattleState.unit(shown, str(e.get("unit", "")))
+	if unit.is_empty() or str(unit["id"]) == BattleState.BOSS_ID:
+		return 0.0
+	_announce(str(unit["name"]), BattleText.move_name(move_id), false)
+	if kind == "ult":
+		return _play_cutin(str(unit.get("char", "")), BattleText.move_name(move_id), BattleTheme.unit_color(str(unit["color"])))
+	return 0.0
+
+
+# Didascalia inclinata col nome di chi agisce e dell'abilita'.
+func _announce(who: String, what: String, hostile: bool) -> void:
+	var text: String = "%s  //  %s" % [str(who).to_upper(), str(what).to_upper()]
+	ComicFx.caption(_fx, text, Vector2(380.0 if hostile else 24.0, 168.0), BattleTheme.RD if hostile else BattleTheme.CY, 0.55)
+
+
+func _pop(text: String, uid: String, fill: Color, ink: Color, size: int, radius: float, offset: Vector2 = Vector2.ZERO) -> void:
+	var pos: Vector2 = _stage.anchor_of(uid) + Vector2(randf_range(-18.0, 18.0), -50.0) + offset
+	ComicFx.pop(_fx, text, pos, fill, ink, size, radius)
+
+
+# Sequenza dell'ultimate: ritratto grande, banda inclinata e nome della mossa.
+func _play_cutin(char_id: String, move_name: String, color: Color) -> float:
+	return CutIn.play(_fx, char_id, move_name, color)
 
 
 func _float_text(text: String, uid: String, color: Color, size: int) -> void:
@@ -676,7 +748,15 @@ func _check_end() -> void:
 	var rewards: Dictionary = {}
 	if source.has_method("finish"):
 		rewards = source.finish()
-	_show_result(str(shown["winner"]) == "players", rewards)
+	var won: bool = str(shown["winner"]) == "players"
+	# prima vittoria su questo boss: scena finale della storia, poi il riquadro dell'esito
+	if won and source is SoloBattleSource and Story.enabled():
+		var post: String = Story.scene_id(str(BattleState.boss(shown)["char"]), "post")
+		if Story.is_new(post):
+			var view: DialogueView = Story.play(self, post)
+			if view != null:
+				await view.finished
+	_show_result(won, rewards)
 
 
 func _show_result(victory: bool, rewards: Dictionary) -> void:
@@ -692,6 +772,12 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	panel.cut = 24.0
 	_overlay.add_child(panel)
 	_anchor(panel, Vector4(0.5, 0.5, 0.5, 0.5), Vector4(-300, -230, 300, 230))
+	var accent: Color = BattleTheme.CY if victory else BattleTheme.RD
+	ComicFx.flash(_overlay, Color.WHITE if victory else BattleTheme.RD, 0.18)
+	ComicFx.speed_lines(_overlay, Vector2(640, 360), Color(1, 1, 1, 0.8), 0.5)
+	var _banner := ComicFx.caption(_overlay, "VITTORIA!" if victory else "SCONFITTA...", Vector2(380, 44), accent, 99.0)
+	_banner.name = "ResultBanner"
+	UiMotion.slide_in([panel], Vector2(0, 60), 0.0, 0.3)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	panel.set_content(box)
