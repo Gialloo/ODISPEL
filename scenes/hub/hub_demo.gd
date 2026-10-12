@@ -61,7 +61,7 @@ func _build() -> void:
 	var ready_feats: int = Feats.claimable_count(roster)
 	_menu_button(menu, "feats", "OBIETTIVI" + ("  ·  %d DA RISCUOTERE" % ready_feats if ready_feats > 0 else ""), "primary" if ready_feats > 0 else "normal", 56, 22)
 	_menu_button(menu, "settings", "IMPOSTAZIONI", "normal", 44, 18)
-	menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-6 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DARK))
+	menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-6 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DIM))
 
 	_build_status_panel()
 	UiMotion.slide_in(buttons.values(), Vector2(-180, 0), 0.07, 0.3)
@@ -119,18 +119,22 @@ func _build_status_panel() -> void:
 
 	box.add_child(HSeparator.new())
 	box.add_child(BattleTheme.make_label("PROGRESSI", 14, BattleTheme.CY_DIM))
+	var locked: int = 0
 	for boss_id in BattleContent.BOSS_ORDER:
-		var open: bool = RosterState.is_boss_unlocked(roster, str(boss_id))
+		if not RosterState.is_boss_unlocked(roster, str(boss_id)):
+			locked += 1
+			continue
 		var cleared: int = RosterState.cleared_tiers(roster, str(boss_id))
-		var line: String = "%-12s %s" % [MissionConfig.boss_title(str(boss_id)), _pips(cleared) if open else "BLOCCATO"]
-		box.add_child(BattleTheme.make_label(line, 17, BattleTheme.CY if open else BattleTheme.CY_DARK))
+		box.add_child(BattleTheme.make_label("%-12s %s" % [MissionConfig.boss_title(str(boss_id)), _pips(cleared)], 17, BattleTheme.CY))
+	if locked > 0:
+		box.add_child(BattleTheme.make_label("+ %d BERSAGLI DA SBLOCCARE" % locked, 15, BattleTheme.CY_DIM))
 
 	box.add_child(HSeparator.new())
 	box.add_child(BattleTheme.make_label("OBIETTIVI DI OGGI  %d/%d" % [Objectives.completed(roster), Objectives.COUNT], 14, BattleTheme.CY_DIM))
 	for o in roster["objectives"]["list"]:
 		var done: bool = bool(o["done"])
 		var txt: String = "%s %s  (%d/%d)" % ["[X]" if done else "[ ]", Objectives.describe(o), int(o["progress"]), int(o["goal"])]
-		box.add_child(BattleTheme.make_label(txt, 16, BattleTheme.CY_DARK if done else BattleTheme.WH))
+		box.add_child(BattleTheme.make_label(txt, 16, BattleTheme.OK if done else BattleTheme.WH))
 
 
 func _pips(cleared: int) -> String:
