@@ -19,7 +19,7 @@ const TIPS: Array = [
 	"In multiplayer puoi consultare squadra ed equipaggio mentre aspetti gli altri.",
 ]
 
-const TOAST_COLORS: Array = [BattleTheme.CY, Color("#6bffb0"), Color("#ffd25f"), BattleTheme.RD]
+const TOAST_COLORS: Array = [BattleTheme.CY, BattleTheme.OK, BattleTheme.GOLD, BattleTheme.RD]
 const MAX_TOASTS: int = 4
 const MIN_LOADING_SECONDS: float = 0.5
 const WIPE_SECONDS: float = 0.22
@@ -53,7 +53,7 @@ class Spinner extends Control:
 		var c: Vector2 = size * 0.5
 		var r: float = minf(size.x, size.y) * 0.4
 		if done:
-			var col: Color = BattleTheme.RD if failed else Color("#6bffb0")
+			var col: Color = BattleTheme.RD if failed else BattleTheme.OK
 			if failed:
 				draw_line(c + Vector2(-r * 0.6, -r * 0.6), c + Vector2(r * 0.6, r * 0.6), col, 3.0)
 				draw_line(c + Vector2(-r * 0.6, r * 0.6), c + Vector2(r * 0.6, -r * 0.6), col, 3.0)
@@ -68,7 +68,7 @@ class Spinner extends Control:
 # cover: quanto lo schermo e' coperto, da sinistra (0..1); reveal: quanto e' stato riscoperto.
 class Wipe extends Control:
 	const SLANT: float = 240.0
-	const BANDS: Array = [Color("#ff2d55"), Color("#f2fdff"), Color("#04080a")]
+	const BANDS: Array = [BattleTheme.RD, BattleTheme.WH, BattleTheme.BK]
 	var cover: float = 0.0:
 		set(v):
 			cover = v
@@ -166,13 +166,7 @@ func _build_loading() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_loading.add_child(bg)
 
-	var cctv := ColorRect.new()
-	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
-	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/cctv_overlay.gdshader")
-	cctv.material = mat
-	_loading.add_child(cctv)
+	ScreenFx.cctv(_loading)
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 16)
@@ -277,7 +271,7 @@ func _refresh_spinner() -> void:
 		sp.done = true
 		sp.failed = not _saved_ok
 		_spinner_label.text = "SALVATO" if _saved_ok else "SALVATAGGIO NON RIUSCITO"
-		_spinner_label.add_theme_color_override("font_color", Color("#6bffb0") if _saved_ok else BattleTheme.RD)
+		_spinner_label.add_theme_color_override("font_color", BattleTheme.OK if _saved_ok else BattleTheme.RD)
 		_spinner_box.visible = true
 	else:
 		_spinner_box.visible = false

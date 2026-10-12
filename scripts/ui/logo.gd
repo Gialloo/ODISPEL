@@ -7,6 +7,7 @@ extends Control
 const TEXT: String = "ODISPEL"
 var font_size: int = 78
 var _t: float = 0.0
+var _rec_on: bool = true
 
 
 func _ready() -> void:
@@ -17,7 +18,11 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	queue_redraw()
+	# si ridisegna solo quando il puntino REC cambia stato
+	var on: bool = int(_t * 1.6) % 2 == 0
+	if on != _rec_on:
+		_rec_on = on
+		queue_redraw()
 
 
 func _draw() -> void:
@@ -37,6 +42,6 @@ func _draw() -> void:
 	draw_string_outline(font, base, TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 14, BattleTheme.BK)
 	draw_string(font, base, TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, BattleTheme.WH)
 	# REC
-	if int(_t * 1.6) % 2 == 0:
+	if _rec_on:
 		draw_circle(Vector2(tw + 26, 10), 7.0, BattleTheme.RD)
 	draw_string(BattleTheme.mono(), Vector2(tw + 38, 16), "REC", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, BattleTheme.CY)

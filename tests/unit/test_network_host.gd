@@ -654,8 +654,6 @@ func _snapshot_locked(snapshot: Dictionary, player_id: String) -> bool:
 	return bool(_snapshot_player(snapshot, player_id).get("is_locked", false))
 
 
-
-
 func _make_lobby_manager(player_count: int) -> NetworkManager:
 	var game := GameState.new()
 	game.setup("lobby_test", 1, 1, player_count)

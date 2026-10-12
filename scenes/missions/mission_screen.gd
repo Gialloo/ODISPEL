@@ -31,18 +31,8 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	var bg := ColorRect.new()
-	bg.color = BattleTheme.BK
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-	MenuBackdrop.add_to(self, BattleTheme.RD)
-	var cctv := ColorRect.new()
-	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
-	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/cctv_overlay.gdshader")
-	cctv.material = mat
-	add_child(cctv)
+	ScreenFx.solid(self, BattleTheme.BK)
+	ScreenFx.menu_overlays(self, BattleTheme.RD)
 
 	var title := BattleTheme.make_label("SELEZIONE MISSIONE", 34, BattleTheme.CY, true)
 	title.position = Vector2(40, 24)

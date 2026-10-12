@@ -90,7 +90,6 @@ func mark_encounter_completed(encounter_id: String) -> void:
 		save_campaign()
 
 
-
 func claim_encounter_rewards(encounter_id: String) -> bool:
 	var encounter: EncounterData = _get_encounter_by_id(encounter_id)
 
@@ -130,7 +129,6 @@ func has_claimed_rewards(encounter_id: String) -> bool:
 	return claimed_reward_ids.has(encounter_id)
 
 
-
 func get_player_profile() -> Dictionary:
 	return {
 		"player_level": player_level,
@@ -144,7 +142,6 @@ func get_exp_for_next_level() -> int:
 	return player_level * 100
 
 
-
 func get_exp_progress_in_level() -> int:
 	var exp_at_level_start: int = 0
 
@@ -154,7 +151,6 @@ func get_exp_progress_in_level() -> int:
 	return player_exp - exp_at_level_start
 
 
-
 func _update_player_level() -> void:
 	player_level = 1
 	var remaining_exp: int = player_exp
@@ -162,7 +158,6 @@ func _update_player_level() -> void:
 	while remaining_exp >= player_level * 100:
 		remaining_exp -= player_level * 100
 		player_level += 1
-
 
 
 func save_campaign() -> void:
@@ -213,7 +208,7 @@ func load_campaign() -> void:
 		player_currency = maxi(0, int(saved_currency))
 	else:
 		player_currency = 0
-		
+
 	_update_player_level()
 
 	claimed_reward_ids.clear()

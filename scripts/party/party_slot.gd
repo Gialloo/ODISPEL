@@ -91,7 +91,6 @@ func set_ready(ready_value: bool) -> bool:
 	return true
 
 
-
 func to_dictionary() -> Dictionary:
 	return {
 		"slot_index": slot_index,
@@ -108,8 +107,6 @@ func to_dictionary() -> Dictionary:
 			else {}
 		)
 	}
-
-
 
 
 func apply_dictionary(data: Dictionary) -> void:

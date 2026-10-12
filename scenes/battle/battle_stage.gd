@@ -13,16 +13,67 @@ const FLOOR_Y: float = 470.0        # dove i piedi toccano il suolo sullo scherm
 const GEO_FLOOR: float = 600.0      # il suolo nelle coordinate con cui sono disegnate le figure
 const ENTITY_SCALE: float = 0.76    # le figure sono disegnate in grande e ridotte qui
 
+# Colori usati ogni frame: creati una volta sola
+const K_0F3640: Color = Color("#0f3640")
+const K_103C46: Color = Color("#103c46")
+const K_7CF0FF: Color = Color("#7cf0ff")
+const K_9CEAF5: Color = Color("#9ceaf5")
+const K_041015: Color = Color("#041015")
+const K_0C3038: Color = Color("#0c3038")
+const K_08242C: Color = Color("#08242c")
+const K_12505E: Color = Color("#12505e")
+const K_071A20: Color = Color("#071a20")
+const K_1A5A68: Color = Color("#1a5a68")
+const K_D6FFFF: Color = Color("#d6ffff")
+const K_0C222A: Color = Color("#0c222a")
+const K_071218: Color = Color("#071218")
+const K_050D10: Color = Color("#050d10")
+const K_2A1018: Color = Color("#2a1018")
+const K_0F3844: Color = Color("#0f3844")
+const K_27808F: Color = Color("#27808f")
+const K_06141A: Color = Color("#06141a")
+const K_03090C: Color = Color("#03090c")
+const K_0A1C22: Color = Color("#0a1c22")
+const K_02060A: Color = Color("#02060a")
+const K_12202A: Color = Color("#12202a")
+const K_08181E: Color = Color("#08181e")
+const K_050F13: Color = Color("#050f13")
+const K_02080B: Color = Color("#02080b")
+const K_0C1A1F: Color = Color("#0c1a1f")
+
 var state: Dictionary = {}
 var boss_hit: float = 0.0           # 1 = appena colpito, scende a 0
 var hit_flash: Dictionary = {}      # unit_id -> intensita'
 var _t: float = 0.0
 var _positions: Dictionary = {}
+var _moved: bool = false
+var _zoomed: bool = false
 var _shake: float = 0.0              # ampiezza dello scuotimento, scende da sola
 var _punch: float = 0.0              # piccolo zoom d'impatto, scende da solo
 var _cam: Vector2 = Vector2.ZERO     # spostamento "della camera" per la parallasse, -1..1
+var _bg_static: StaticLayer = null    # sfondo disegnato: si disegna una volta sola
 var _bg_boss: String = ""
 var _bg_layers: Array = []           # strati dello sfondo dalla tua grafica (vuoto = sfondo disegnato)
+
+
+# Livello che si disegna UNA volta (e di nuovo solo se cambia la dimensione): Godot tiene
+# i comandi di disegno in memoria, cosi' lo sfondo non costa nulla a ogni frame.
+class StaticLayer extends Control:
+	var painter: Callable
+
+	func _draw() -> void:
+		if painter.is_valid():
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2(size.x / BattleStage.DW, size.y / BattleStage.DH))
+			painter.call(self)
+
+
+func _ready() -> void:
+	_bg_static = StaticLayer.new()
+	_bg_static.painter = _paint_procedural_background
+	_bg_static.show_behind_parent = true
+	_bg_static.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bg_static.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_bg_static)
 
 
 func _process(delta: float) -> void:
@@ -38,9 +89,19 @@ func _process(delta: float) -> void:
 		want = Vector2(clampf(m.x / size.x * 2.0 - 1.0, -1.0, 1.0), clampf(m.y / size.y * 2.0 - 1.0, -1.0, 1.0))
 	want.x += sin(_t * 0.4) * 0.35
 	_cam = _cam.lerp(want, minf(1.0, delta * 3.0))
-	position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake
-	pivot_offset = size * 0.5
-	scale = Vector2.ONE * (1.0 + _punch)
+	if _shake > 0.0:
+		position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake
+		_moved = true
+	elif _moved:
+		position = Vector2.ZERO
+		_moved = false
+	if _punch > 0.0:
+		pivot_offset = size * 0.5
+		scale = Vector2.ONE * (1.0 + _punch)
+		_zoomed = true
+	elif _zoomed:
+		scale = Vector2.ONE
+		_zoomed = false
 	queue_redraw()
 
 
@@ -57,6 +118,8 @@ func set_state(new_state: Dictionary) -> void:
 		if boss_id != _bg_boss:
 			_bg_boss = boss_id
 			_bg_layers = ArtLibrary.background_layers(boss_id)
+			if _bg_static != null:
+				_bg_static.visible = _bg_layers.is_empty() and static_background
 	_layout()
 
 
@@ -95,6 +158,46 @@ func _layout() -> void:
 		_positions[str(players[i]["active"])] = _map(Vector2(gx, GEO_FLOOR - 120.0), gx)
 
 
+const SHADOW_COLOR: Color = Color(0, 0, 0, 0.5)
+static var _unit_circles: Dictionary = {}      # n punti -> coseni e seni gia' calcolati
+var _text_lines: Dictionary = {}               # testo disegnato -> TextLine pronto
+var _tag_widths: Dictionary = {}               # testo -> larghezza (non si ricalcola ogni frame)
+
+
+# Punti di un'ellisse. Coseni e seni di ogni n si calcolano una volta sola.
+func _ellipse(center: Vector2, rx: float, ry: float, n: int) -> PackedVector2Array:
+	if not _unit_circles.has(n):
+		var table := PackedVector2Array()
+		for i in n:
+			var a: float = TAU * float(i) / float(n)
+			table.append(Vector2(cos(a), sin(a)))
+		_unit_circles[n] = table
+	var unit: PackedVector2Array = _unit_circles[n]
+	var out := PackedVector2Array()
+	out.resize(n)
+	for i in n:
+		out[i] = Vector2(center.x + unit[i].x * rx, center.y + unit[i].y * ry)
+	return out
+
+
+func _tag_width(tag: String) -> float:
+	if not _tag_widths.has(tag):
+		_tag_widths[tag] = BattleTheme.display().get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+	return float(_tag_widths[tag])
+
+
+# Testo con la forma gia' calcolata: disegnare una stringa ogni frame costa molto di piu'
+# che disegnare un TextLine gia' pronto. `pos` e' la linea di base, come in draw_string.
+func _text(font: Font, pos: Vector2, text: String, font_size: int, color: Color) -> void:
+	var key: String = "%d|%d|%s" % [font.get_instance_id(), font_size, text]
+	var line: TextLine = _text_lines.get(key)
+	if line == null:
+		line = TextLine.new()
+		line.add_string(text, font, font_size)
+		_text_lines[key] = line
+	line.draw(get_canvas_item(), pos - Vector2(0.0, line.get_line_ascent()), color)
+
+
 # Imposta la trasformazione per disegnare una figura ancorata in gx.
 func _entity_transform(gx: float) -> void:
 	var base := Vector2(size.x / DW, size.y / DH)
@@ -102,13 +205,26 @@ func _entity_transform(gx: float) -> void:
 	draw_set_transform(Vector2(t.x * base.x, t.y * base.y), 0.0, base * ENTITY_SCALE)
 
 
+# Strumenti di misura (usati da tools/bench.gd): tempo speso a disegnare l'inquadratura.
+static var static_background: bool = true      # false = sfondo ridisegnato a ogni frame (confronto)
+static var profile: bool = false
+static var profile_usec: int = 0
+static var profile_frames: int = 0
+
+
 func _draw() -> void:
+	var t0: int = Time.get_ticks_usec() if profile else 0
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(size.x / DW, size.y / DH))
+	if not static_background and _bg_layers.is_empty():
+		_paint_procedural_background(self)
 	_draw_background()
 	_entity_transform(BOSS_X)
 	_draw_boss()
 	_draw_fighters()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if profile:
+		profile_usec += Time.get_ticks_usec() - t0
+		profile_frames += 1
 
 
 # ---------- Sfondo ----------
@@ -127,14 +243,18 @@ func _draw_art_background() -> void:
 func _draw_background() -> void:
 	if not _bg_layers.is_empty():
 		_draw_art_background()
-		return
+
+
+# Lo sfondo disegnato dal codice (quando non ci sono le tue immagini). Si esegue una volta
+# sola, sul livello statico: `c` e' il nodo su cui disegnare.
+func _paint_procedural_background(c: CanvasItem) -> void:
 	# cielo a strisce
-	var top: Color = Color("#041015")
-	var bottom: Color = Color("#0c3038")
+	var top: Color = K_041015
+	var bottom: Color = K_0C3038
 	var strips: int = 22
 	for i in strips:
 		var f: float = float(i) / float(strips - 1)
-		draw_rect(Rect2(0.0, HORIZON * float(i) / float(strips), DW, HORIZON / float(strips) + 1.0), top.lerp(bottom, f))
+		c.draw_rect(Rect2(0.0, HORIZON * float(i) / float(strips), DW, HORIZON / float(strips) + 1.0), top.lerp(bottom, f))
 
 	# palazzi lontani
 	var rng := RandomNumberGenerator.new()
@@ -143,43 +263,43 @@ func _draw_background() -> void:
 	while x < DW:
 		var w: float = rng.randf_range(60.0, 150.0)
 		var h: float = rng.randf_range(70.0, 190.0)
-		draw_rect(Rect2(x, HORIZON - h, w, h), Color("#08242c"))
-		draw_rect(Rect2(x, HORIZON - h, w, 3.0), Color("#12505e"))
+		c.draw_rect(Rect2(x, HORIZON - h, w, h), K_08242C)
+		c.draw_rect(Rect2(x, HORIZON - h, w, 3.0), K_12505E)
 		var wy: float = HORIZON - h + 14.0
 		while wy < HORIZON - 12.0:
 			var wx: float = x + 8.0
 			while wx < x + w - 12.0:
 				if rng.randf() < 0.28:
-					draw_rect(Rect2(wx, wy, 7.0, 9.0), Color(CY_WINDOW, rng.randf_range(0.25, 0.8)))
+					c.draw_rect(Rect2(wx, wy, 7.0, 9.0), Color(CY_WINDOW, rng.randf_range(0.25, 0.8)))
 				wx += 16.0
 			wy += 20.0
 		x += w + rng.randf_range(2.0, 14.0)
 
 	# asfalto
-	draw_rect(Rect2(0.0, HORIZON, DW, DH - HORIZON), Color("#071a20"))
+	c.draw_rect(Rect2(0.0, HORIZON, DW, DH - HORIZON), K_071A20)
 	var vp := Vector2(DW * 0.5, HORIZON)
 	var lx: float = -900.0
 	while lx < DW + 900.0:
-		draw_line(vp, Vector2(lx, DH), Color("#103c46", 0.75), 1.5)
+		c.draw_line(vp, Vector2(lx, DH), Color(K_103C46, 0.75), 1.5)
 		lx += 150.0
 	for row in 9:
 		var y: float = HORIZON + pow(float(row + 1), 2.0) * 4.6
-		draw_line(Vector2(0.0, y), Vector2(DW, y), Color("#0f3640", 0.6), 1.0)
+		c.draw_line(Vector2(0.0, y), Vector2(DW, y), Color(K_0F3640, 0.6), 1.0)
 
 	# strisce dei parcheggi
 	for side in [-1.0, 1.0]:
 		for j in 4:
 			var base_x: float = DW * 0.5 + side * (190.0 + float(j) * 210.0)
-			draw_line(vp + Vector2(side * 18.0 * float(j + 1), 0.0), Vector2(base_x + side * 120.0, DH), Color("#9ceaf5", 0.28), 3.0)
+			c.draw_line(vp + Vector2(side * 18.0 * float(j + 1), 0.0), Vector2(base_x + side * 120.0, DH), Color(K_9CEAF5, 0.28), 3.0)
 
 	# lampioni
 	for lamp_x in [70.0, 1210.0]:
-		draw_line(Vector2(lamp_x, FLOOR_Y + 30.0), Vector2(lamp_x, 110.0), Color("#1a5a68"), 6.0)
-		draw_line(Vector2(lamp_x, 110.0), Vector2(lamp_x + (46.0 if lamp_x < 640.0 else -46.0), 98.0), Color("#1a5a68"), 5.0)
+		c.draw_line(Vector2(lamp_x, FLOOR_Y + 30.0), Vector2(lamp_x, 110.0), K_1A5A68, 6.0)
+		c.draw_line(Vector2(lamp_x, 110.0), Vector2(lamp_x + (46.0 if lamp_x < 640.0 else -46.0), 98.0), K_1A5A68, 5.0)
 		var lh: float = lamp_x + (46.0 if lamp_x < 640.0 else -46.0)
-		draw_circle(Vector2(lh, 100.0), 9.0, Color("#d6ffff"))
+		c.draw_circle(Vector2(lh, 100.0), 9.0, K_D6FFFF)
 		var cone: PackedVector2Array = PackedVector2Array([Vector2(lh, 104.0), Vector2(lh - 120.0, FLOOR_Y + 30.0), Vector2(lh + 120.0, FLOOR_Y + 30.0)])
-		draw_colored_polygon(cone, Color("#7cf0ff", 0.06))
+		c.draw_colored_polygon(cone, Color(K_7CF0FF, 0.06))
 
 
 const CY_WINDOW: Color = Color("#8ff6ff")
@@ -198,11 +318,7 @@ func _draw_boss() -> void:
 	var o: Vector2 = shake + Vector2(0.0, sin(_t * 1.3) * 1.5)
 
 	# ombra
-	var shadow: PackedVector2Array = PackedVector2Array()
-	for i in 24:
-		var a: float = TAU * float(i) / 24.0
-		shadow.append(Vector2(BOSS_X + cos(a) * 210.0, GEO_FLOOR + 18.0 + sin(a) * 26.0))
-	draw_colored_polygon(shadow, Color(0, 0, 0, 0.5))
+	draw_colored_polygon(_ellipse(Vector2(BOSS_X, GEO_FLOOR + 18.0), 210.0, 26.0, 24), SHADOW_COLOR)
 
 	var body: Rect2
 	var art: Texture2D = ArtLibrary.boss_image(str(boss["char"]), "battle")
@@ -255,26 +371,26 @@ func _draw_boss_body(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -
 # Il distributore: ritorna il riquadro del corpo.
 func _draw_distributore(alive: bool, enraged: bool, o: Vector2) -> Rect2:
 	var body := Rect2(BOSS_X - 170.0 + o.x, 170.0 + o.y, 340.0, 430.0)
-	var base_col: Color = Color("#0c222a") if alive else Color("#071218")
+	var base_col: Color = K_0C222A if alive else K_071218
 	draw_rect(body, base_col)
 	draw_rect(body, BattleTheme.CY if alive else BattleTheme.CY_DARK, false, 3.0)
 
 	# insegna in alto
 	var sign_rect := Rect2(body.position.x + 12.0, body.position.y + 12.0, body.size.x - 24.0, 54.0)
-	draw_rect(sign_rect, Color("#050d10"))
+	draw_rect(sign_rect, K_050D10)
 	draw_rect(sign_rect, BattleTheme.RD if enraged else BattleTheme.CY_DIM, false, 2.0)
 	var blink: float = 1.0 if (int(_t * 2.0) % 2 == 0 or not enraged) else 0.35
-	var eye_col: Color = Color(BattleTheme.RD, blink) if alive else Color("#2a1018")
+	var eye_col: Color = Color(BattleTheme.RD, blink) if alive else K_2A1018
 	draw_rect(Rect2(sign_rect.position.x + 24.0, sign_rect.position.y + 16.0, 56.0, 22.0), eye_col)
 	draw_rect(Rect2(sign_rect.end.x - 80.0, sign_rect.position.y + 16.0, 56.0, 22.0), eye_col)
-	draw_string(BattleTheme.display(), Vector2(sign_rect.position.x + 96.0, sign_rect.position.y + 36.0), "ESAURITO", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, BattleTheme.WH if alive else BattleTheme.CY_DARK)
+	_text(BattleTheme.display(), Vector2(sign_rect.position.x + 96.0, sign_rect.position.y + 36.0), "ESAURITO", 22, BattleTheme.WH if alive else BattleTheme.CY_DARK)
 
 	# vetrina con i prodotti
 	var glass := Rect2(body.position.x + 16.0, body.position.y + 82.0, 210.0, 250.0)
-	draw_rect(glass, Color("#0f3844"))
+	draw_rect(glass, K_0F3844)
 	for shelf in 4:
 		var sy: float = glass.position.y + 12.0 + float(shelf) * 60.0
-		draw_line(Vector2(glass.position.x, sy + 52.0), Vector2(glass.end.x, sy + 52.0), Color("#27808f"), 2.0)
+		draw_line(Vector2(glass.position.x, sy + 52.0), Vector2(glass.end.x, sy + 52.0), K_27808F, 2.0)
 		for col in 4:
 			var px: float = glass.position.x + 14.0 + float(col) * 49.0
 			var hot: bool = (shelf * 4 + col) % 5 == 0
@@ -283,12 +399,12 @@ func _draw_distributore(alive: bool, enraged: bool, o: Vector2) -> Rect2:
 
 	# tastierino e fessura
 	var pad := Rect2(body.position.x + 244.0, body.position.y + 90.0, 80.0, 150.0)
-	draw_rect(pad, Color("#06141a"))
+	draw_rect(pad, K_06141A)
 	for r in 4:
 		for c in 3:
 			draw_rect(Rect2(pad.position.x + 8.0 + float(c) * 24.0, pad.position.y + 10.0 + float(r) * 34.0, 18.0, 24.0), Color(BattleTheme.CY, 0.55))
 	draw_rect(Rect2(body.position.x + 250.0, body.position.y + 262.0, 68.0, 10.0), BattleTheme.CY_DARK)
-	draw_rect(Rect2(body.position.x + 60.0, body.position.y + 350.0, 220.0, 56.0), Color("#03090c"))
+	draw_rect(Rect2(body.position.x + 60.0, body.position.y + 350.0, 220.0, 56.0), K_03090C)
 	draw_rect(Rect2(body.position.x + 60.0, body.position.y + 350.0, 220.0, 56.0), BattleTheme.CY_DIM, false, 2.0)
 	return body
 
@@ -313,20 +429,20 @@ func _draw_semaforo(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) ->
 		lit = [false, false, false]
 
 	# palo e base
-	draw_rect(Rect2(cx - 16.0, 440.0 + o.y, 32.0, 160.0), Color("#0a1c22"))
+	draw_rect(Rect2(cx - 16.0, 440.0 + o.y, 32.0, 160.0), K_0A1C22)
 	draw_rect(Rect2(cx - 16.0, 440.0 + o.y, 32.0, 160.0), BattleTheme.CY_DIM, false, 2.0)
-	draw_rect(Rect2(cx - 70.0, 586.0, 140.0, 16.0), Color("#0a1c22"))
+	draw_rect(Rect2(cx - 70.0, 586.0, 140.0, 16.0), K_0A1C22)
 	draw_rect(Rect2(cx - 70.0, 586.0, 140.0, 16.0), BattleTheme.CY_DIM, false, 2.0)
 
 	# cassa
 	var body := Rect2(cx - 100.0, 140.0 + o.y, 200.0, 320.0)
-	draw_rect(body, Color("#0c222a") if alive else Color("#071218"))
+	draw_rect(body, K_0C222A if alive else K_071218)
 	draw_rect(body, BattleTheme.CY if alive else BattleTheme.CY_DARK, false, 3.0)
-	draw_rect(Rect2(body.position.x + 8.0, body.position.y + 8.0, body.size.x - 16.0, 14.0), Color("#050d10"))
+	draw_rect(Rect2(body.position.x + 8.0, body.position.y + 8.0, body.size.x - 16.0, 14.0), K_050D10)
 
 	for i in 3:
 		var c := Vector2(cx, body.position.y + 78.0 + float(i) * 96.0)
-		draw_circle(c, 40.0, Color("#03090c"))
+		draw_circle(c, 40.0, K_03090C)
 		var col: Color = lamp_cols[i]
 		if bool(lit[i]):
 			var flicker: float = 1.0 if not enraged else (0.7 + 0.3 * sin(_t * 40.0))
@@ -336,7 +452,7 @@ func _draw_semaforo(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) ->
 			draw_circle(c, 36.0, Color(col, 0.12 if alive else 0.04))
 		draw_arc(c, 40.0, 0.0, TAU, 32, BattleTheme.CY_DIM if alive else BattleTheme.CY_DARK, 2.0)
 		# visiera
-		draw_rect(Rect2(c.x - 46.0, c.y - 52.0, 92.0, 14.0), Color("#071218"))
+		draw_rect(Rect2(c.x - 46.0, c.y - 52.0, 92.0, 14.0), K_071218)
 		draw_rect(Rect2(c.x - 46.0, c.y - 52.0, 92.0, 14.0), BattleTheme.CY_DARK, false, 2.0)
 	return Rect2(cx - 100.0, 140.0 + o.y, 200.0, 462.0)
 
@@ -353,7 +469,7 @@ func _draw_tombino(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> 
 
 	# fessura: l'interno scuro con gli occhi
 	var gap := Rect2(cx - 190.0, base_y - open_amount, 380.0, open_amount + 24.0)
-	draw_rect(gap, Color("#02060a"))
+	draw_rect(gap, K_02060A)
 	if alive:
 		var eye_col: Color = Color(col, 0.95)
 		draw_rect(Rect2(cx - 100.0, base_y - open_amount * 0.7, 54.0, 9.0), eye_col)
@@ -368,21 +484,16 @@ func _draw_tombino(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> 
 			for j in 11:
 				var f: float = float(j) / 10.0
 				pts.append(Vector2(x0 + sin(_t * 2.0 + float(k) + f * 4.0) * 16.0 * f, base_y - open_amount - h * f))
-			draw_polyline(pts, Color("#12202a"), 18.0 - 8.0 * 0.5)
+			draw_polyline(pts, K_12202A, 18.0 - 8.0 * 0.5)
 			draw_polyline(pts, Color(col, 0.55), 3.0)
 
 	# coperchio: ellisse con anelli
 	var lid_y: float = base_y - open_amount - 18.0
-	var lid: PackedVector2Array = PackedVector2Array()
-	for i in 32:
-		var a: float = TAU * float(i) / 32.0
-		lid.append(Vector2(cx + cos(a) * 205.0, lid_y + sin(a) * 38.0))
-	draw_colored_polygon(lid, Color("#0c222a") if alive else Color("#071218"))
+	var lid: PackedVector2Array = _ellipse(Vector2(cx, lid_y), 205.0, 38.0, 32)
+	draw_colored_polygon(lid, K_0C222A if alive else K_071218)
 	for r in [0.78, 0.55, 0.32]:
-		var ring: PackedVector2Array = PackedVector2Array()
-		for i in 33:
-			var a2: float = TAU * float(i) / 32.0
-			ring.append(Vector2(cx + cos(a2) * 205.0 * r, lid_y + sin(a2) * 38.0 * r))
+		var ring: PackedVector2Array = _ellipse(Vector2(cx, lid_y), 205.0 * r, 38.0 * r, 32)
+		ring.append(ring[0])
 		draw_polyline(ring, BattleTheme.CY_DIM if alive else BattleTheme.CY_DARK, 2.0)
 	var outline: PackedVector2Array = lid.duplicate()
 	outline.append(lid[0])
@@ -405,13 +516,13 @@ func _draw_cabina(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> R
 	# tetto
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(body.position.x - 18.0, body.position.y + 30.0), Vector2(body.end.x + 18.0, body.position.y + 30.0),
-		Vector2(body.end.x - 8.0, body.position.y), Vector2(body.position.x + 8.0, body.position.y)]), Color("#0c222a") if alive else Color("#071218"))
-	draw_rect(Rect2(body.position.x + 40.0, body.position.y + 6.0, 160.0, 20.0), Color("#050d10"))
-	draw_string(BattleTheme.display(), Vector2(body.position.x + 74.0, body.position.y + 22.0), "TELEFONO", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, BattleTheme.WH if alive else BattleTheme.CY_DARK)
+		Vector2(body.end.x - 8.0, body.position.y), Vector2(body.position.x + 8.0, body.position.y)]), K_0C222A if alive else K_071218)
+	draw_rect(Rect2(body.position.x + 40.0, body.position.y + 6.0, 160.0, 20.0), K_050D10)
+	_text(BattleTheme.display(), Vector2(body.position.x + 74.0, body.position.y + 22.0), "TELEFONO", 16, BattleTheme.WH if alive else BattleTheme.CY_DARK)
 	# telaio e vetri a riquadri
 	var shift: float = sin(_t * 40.0) * 3.0 if ringing else 0.0
 	var frame := Rect2(body.position.x + shift, body.position.y + 34.0, body.size.x, body.size.y - 34.0)
-	draw_rect(frame, Color("#08181e") if alive else Color("#050f13"))
+	draw_rect(frame, K_08181E if alive else K_050F13)
 	for r in 4:
 		for c in 3:
 			var pane := Rect2(frame.position.x + 14.0 + float(c) * 70.0, frame.position.y + 14.0 + float(r) * 62.0, 62.0, 54.0)
@@ -421,7 +532,7 @@ func _draw_cabina(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> R
 	draw_rect(frame, frame_col, false, 4.0)
 	# display con gli occhi
 	var disp := Rect2(frame.position.x + 60.0, frame.position.y + 270.0, 120.0, 60.0)
-	draw_rect(disp, Color("#02080b"))
+	draw_rect(disp, K_02080B)
 	draw_rect(disp, BattleTheme.RD if enraged else BattleTheme.CY_DIM, false, 2.0)
 	if alive:
 		var blink: float = 1.0 if (int(_t * 2.0) % 2 == 0 or not enraged) else 0.3
@@ -435,12 +546,12 @@ func _draw_cabina(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> R
 	for j in 9:
 		var f: float = float(j) / 8.0
 		cord.append(hook.lerp(tip, f) + Vector2(sin(f * 9.0 + _t * 3.0) * 6.0, 0.0))
-	draw_polyline(cord, Color("#12202a"), 6.0)
+	draw_polyline(cord, K_12202A, 6.0)
 	draw_polyline(cord, Color(col, 0.6), 2.0)
-	draw_rect(Rect2(tip.x - 14.0, tip.y, 28.0, 56.0), Color("#0c222a"))
+	draw_rect(Rect2(tip.x - 14.0, tip.y, 28.0, 56.0), K_0C222A)
 	draw_rect(Rect2(tip.x - 14.0, tip.y, 28.0, 56.0), frame_col, false, 3.0)
 	# basamento
-	draw_rect(Rect2(body.position.x - 14.0, body.end.y - 6.0, body.size.x + 28.0, 16.0), Color("#03090c"))
+	draw_rect(Rect2(body.position.x - 14.0, body.end.y - 6.0, body.size.x + 28.0, 16.0), K_03090C)
 	return Rect2(body.position.x - 20.0, body.position.y, body.size.x + 80.0, body.size.y + 10.0)
 
 
@@ -467,16 +578,12 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 	var flash_v: float = float(hit_flash.get(u["id"], 0.0))
 	var foot_y: float = GEO_FLOOR + 8.0
 	var cx: float = chest.x
-	var body_col: Color = col.darkened(0.55) if alive else Color("#0c1a1f")
+	var body_col: Color = col.darkened(0.55) if alive else K_0C1A1F
 	if alive and flash_v > 0.0:
 		body_col = body_col.lerp(BattleTheme.WH, flash_v)
 
 	# ombra
-	var sh: PackedVector2Array = PackedVector2Array()
-	for k in 16:
-		var a: float = TAU * float(k) / 16.0
-		sh.append(Vector2(cx + cos(a) * 54.0, foot_y + 8.0 + sin(a) * 11.0))
-	draw_colored_polygon(sh, Color(0, 0, 0, 0.5))
+	draw_colored_polygon(_ellipse(Vector2(cx, foot_y + 8.0), 54.0, 11.0, 16), SHADOW_COLOR)
 
 	if not alive:
 		# a terra
@@ -527,18 +634,18 @@ func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index
 	var rect := Rect2(cx - 82.0, top - 12.0, 164.0, 236.0)
 	_brackets(rect, BattleTheme.RD if is_lead else col, 5.0 if is_lead else 3.0, 24.0)
 	var tag: String = "ID-%02d %s" % [index + 1, str(u["name"]).to_upper()]
-	var tw: float = BattleTheme.display().get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+	var tw: float = _tag_width(tag)
 	var tab: PackedVector2Array = PackedVector2Array([
 		Vector2(rect.position.x, rect.position.y - 28.0), Vector2(rect.position.x + tw + 26.0, rect.position.y - 28.0),
 		Vector2(rect.position.x + tw + 14.0, rect.position.y - 2.0), Vector2(rect.position.x - 8.0, rect.position.y - 2.0)])
 	draw_colored_polygon(tab, BattleTheme.RD if is_lead else col)
-	draw_string(BattleTheme.display(), Vector2(rect.position.x + 6.0, rect.position.y - 10.0), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, BattleTheme.BK)
+	_text(BattleTheme.display(), Vector2(rect.position.x + 6.0, rect.position.y - 10.0), tag, 16, BattleTheme.BK)
 
 	# stati
 	var sx: float = rect.position.x
 	var statuses: Dictionary = u["statuses"]
 	for s in statuses:
-		draw_string(BattleTheme.mono(), Vector2(sx, rect.end.y + 22.0), "[%s]" % BattleText.status_name(str(s)), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, BattleTheme.CY)
+		_text(BattleTheme.mono(), Vector2(sx, rect.end.y + 22.0), "[%s]" % BattleText.status_name(str(s)), 14, BattleTheme.CY)
 		sx += 92.0
 	if int(u["shield"]) > 0:
 		draw_arc(Vector2(cx, top + 100.0), 100.0, PI * 1.15, PI * 1.85, 24, Color(BattleTheme.WH, 0.65), 4.0)

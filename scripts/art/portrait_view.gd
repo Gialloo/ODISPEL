@@ -50,13 +50,13 @@ func _refresh_texture() -> void:
 				_texture = ArtLibrary.cutin(char_id)
 			_:
 				_texture = ArtLibrary.portrait(char_id, expression)
+	set_process(_texture == null)    # con la grafica vera non c'e' niente che si muova
 	queue_redraw()
 
 
 func _process(delta: float) -> void:
 	_t += delta
-	if _texture == null:
-		queue_redraw()
+	queue_redraw()
 
 
 func _color() -> Color:

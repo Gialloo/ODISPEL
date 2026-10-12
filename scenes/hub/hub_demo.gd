@@ -26,11 +26,7 @@ func _ready() -> void:
 # ---------- Costruzione ----------
 
 func _build() -> void:
-	var background := ColorRect.new()
-	background.color = BattleTheme.BK
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(background)
+	ScreenFx.solid(self, BattleTheme.BK)
 
 	var hub_art: Texture2D = ArtLibrary.background("hub")
 	if hub_art != null:
@@ -42,14 +38,7 @@ func _build() -> void:
 		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(pic)
 
-	MenuBackdrop.add_to(self, BattleTheme.RD)
-	var cctv := ColorRect.new()
-	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
-	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/cctv_overlay.gdshader")
-	cctv.material = mat
-	add_child(cctv)
+	ScreenFx.menu_overlays(self, BattleTheme.RD)
 
 	var title := OdispelLogo.new()
 	title.position = Vector2(60, 24)

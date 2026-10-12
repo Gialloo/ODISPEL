@@ -4,10 +4,16 @@ extends RefCounted
 # Porta d'ingresso per i suoni. Senza il gestore audio (test) non fa nulla.
 
 
+static var _cached: Node = null
+
+
 static func _mgr() -> Node:
+	if is_instance_valid(_cached):
+		return _cached
 	var loop: MainLoop = Engine.get_main_loop()
 	if loop is SceneTree:
-		return (loop as SceneTree).root.get_node_or_null("Sfx")
+		_cached = (loop as SceneTree).root.get_node_or_null("Sfx")
+		return _cached
 	return null
 
 

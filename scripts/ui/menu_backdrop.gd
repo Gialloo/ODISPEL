@@ -10,7 +10,7 @@ var secondary: Color = BattleTheme.CY
 var _t: float = 0.0
 
 
-static func add_to(parent: Control, new_accent: Color = BattleTheme.RD, at_index: int = -1) -> MenuBackdrop:
+static func add_to(parent: Control, new_accent: Color = BattleTheme.RD, at_index: int = -1, with_halftone: bool = true) -> MenuBackdrop:
 	var b := MenuBackdrop.new()
 	b.accent = new_accent
 	b.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -18,19 +18,22 @@ static func add_to(parent: Control, new_accent: Color = BattleTheme.RD, at_index
 	parent.add_child(b)
 	if at_index >= 0:
 		parent.move_child(b, mini(at_index, parent.get_child_count() - 1))
-	var half := ColorRect.new()
-	half.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	half.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/halftone.gdshader")
-	half.material = mat
-	b.add_child(half)
+	if with_halftone:
+		ScreenFx.halftone(b)
 	return b
+
+
+# Le strisce scorrono pianissimo: 15 ridisegni al secondo bastano e costano meno.
+const REDRAW_EVERY: float = 1.0 / 15.0
+var _since_draw: float = 0.0
 
 
 func _process(delta: float) -> void:
 	_t += delta
-	queue_redraw()
+	_since_draw += delta
+	if _since_draw >= REDRAW_EVERY:
+		_since_draw = 0.0
+		queue_redraw()
 
 
 func _draw() -> void:

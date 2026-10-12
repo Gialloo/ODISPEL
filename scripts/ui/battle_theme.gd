@@ -12,6 +12,9 @@ const RD_DARK: Color = Color("#5a1022")
 const WH: Color = Color("#f2fdff")
 const BK: Color = Color("#04080a")
 const PANEL: Color = Color("#061418")
+const OK: Color = Color("#6bffb0")        # esito positivo (verde)
+const GOLD: Color = Color("#ffd25f")      # evidenza / rarita' alta
+const POP: Color = Color("#fff36b")       # giallo dei fumetti
 
 # Colori di gioco dei personaggi (vantaggi di colore).
 const UNIT_COLORS: Dictionary = {
@@ -80,39 +83,54 @@ static func _box(bg: Color, border: Color, width: int = 2) -> StyleBoxFlat:
 	return s
 
 
-# kind: "primary" (rosso), "normal" (ciano), "ultimate" (bianco su rosso)
-# I pulsanti sono parallelogrammi con ombra netta (stile Persona); sotto il mouse
-# diventano pieni e si spostano un poco.
-static func style_button(b: Button, kind: String = "normal", size: int = 22) -> void:
+# Gli stili dei pulsanti sono uguali per tutti: si creano una volta per tipo e si condividono.
+static var _button_styles: Dictionary = {}
+
+
+static func _styles_for(kind: String) -> Dictionary:
+	if _button_styles.has(kind):
+		return _button_styles[kind]
 	var normal: SlantBox
 	var hover: SlantBox
-	var text_color: Color
-	var hover_text: Color
+	var colors: Dictionary
 	match kind:
 		"primary":
 			normal = SlantBox.make(RD, WH, 16.0, BK, 3.0)
 			hover = SlantBox.make(WH, RD, 16.0, RD, 3.0)
-			text_color = WH
-			hover_text = RD
+			colors = {"text": WH, "hover": RD}
 		"ultimate":
 			normal = SlantBox.make(BK, WH, 16.0, RD, 3.0)
 			hover = SlantBox.make(WH, RD, 16.0, BK, 3.0)
-			text_color = WH
-			hover_text = RD
+			colors = {"text": WH, "hover": RD}
 		_:
 			normal = SlantBox.make(BK, CY, 14.0, CY_DARK, 2.0)
 			hover = SlantBox.make(CY, BK, 14.0, CY_DIM, 2.0)
-			text_color = CY
-			hover_text = BK
-	var disabled: SlantBox = SlantBox.make(Color(0.02, 0.06, 0.07), CY_DARK, 14.0, Color(0, 0, 0, 0), 2.0)
-	b.add_theme_stylebox_override("normal", normal)
-	b.add_theme_stylebox_override("hover", hover)
-	b.add_theme_stylebox_override("pressed", hover)
-	b.add_theme_stylebox_override("disabled", disabled)
-	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	b.add_theme_color_override("font_color", text_color)
-	b.add_theme_color_override("font_hover_color", hover_text)
-	b.add_theme_color_override("font_pressed_color", hover_text)
+			colors = {"text": CY, "hover": BK}
+	var styles: Dictionary = {
+		"normal": normal,
+		"hover": hover,
+		"disabled": SlantBox.make(Color(0.02, 0.06, 0.07), CY_DARK, 14.0, Color(0, 0, 0, 0), 2.0),
+		"focus": StyleBoxEmpty.new(),
+		"text": colors["text"],
+		"hover_text": colors["hover"],
+	}
+	_button_styles[kind] = styles
+	return styles
+
+
+# kind: "primary" (rosso), "normal" (ciano), "ultimate" (bianco su rosso)
+# I pulsanti sono parallelogrammi con ombra netta (stile Persona); sotto il mouse
+# diventano pieni e si spostano un poco.
+static func style_button(b: Button, kind: String = "normal", size: int = 22) -> void:
+	var st: Dictionary = _styles_for(kind)
+	b.add_theme_stylebox_override("normal", st["normal"])
+	b.add_theme_stylebox_override("hover", st["hover"])
+	b.add_theme_stylebox_override("pressed", st["hover"])
+	b.add_theme_stylebox_override("disabled", st["disabled"])
+	b.add_theme_stylebox_override("focus", st["focus"])
+	b.add_theme_color_override("font_color", st["text"])
+	b.add_theme_color_override("font_hover_color", st["hover_text"])
+	b.add_theme_color_override("font_pressed_color", st["hover_text"])
 	b.add_theme_color_override("font_disabled_color", CY_DARK)
 	b.add_theme_color_override("font_outline_color", BK if kind != "normal" else Color(0, 0, 0, 0))
 	b.add_theme_constant_override("outline_size", 0 if kind == "normal" else 4)

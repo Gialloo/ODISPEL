@@ -59,7 +59,6 @@ func run_test() -> void:
 		peer_b.poll()
 
 
-
 		if (
 			channel_a.get_ready_state() == WebRTCDataChannel.STATE_OPEN
 			and channel_b.get_ready_state() == WebRTCDataChannel.STATE_OPEN

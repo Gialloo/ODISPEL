@@ -4,7 +4,7 @@ extends Control
 # potenziamento dei personaggi e reclutamento (singolo / x10).
 # Ogni modifica viene salvata subito su save_path.
 
-const RARITY_COLORS: Array = [Color("#c9dde2"), Color("#7cf0ff"), Color("#b07bff"), Color("#ffd25f")]
+const RARITY_COLORS: Array = [Color("#c9dde2"), BattleTheme.CY, BattleTheme.UNIT_COLORS["viola"], BattleTheme.GOLD]
 
 var roster: Dictionary = {}
 var save_path: String = RosterStore.DEFAULT_PATH
@@ -62,11 +62,7 @@ func _ready() -> void:
 # ---------- Costruzione ----------
 
 func _build() -> void:
-	var bg := ColorRect.new()
-	bg.color = BattleTheme.BK
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
+	ScreenFx.solid(self, BattleTheme.BK)
 
 	var title := BattleTheme.make_label("ARCHIVIO OPERATORI", 40, BattleTheme.WH, true)
 	title.position = Vector2(24, 10)
@@ -115,14 +111,7 @@ func _build() -> void:
 	_status_label.size = Vector2(960, 28)
 	add_child(_status_label)
 
-	MenuBackdrop.add_to(self, BattleTheme.RD)
-	var cctv := ColorRect.new()
-	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
-	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/cctv_overlay.gdshader")
-	cctv.material = mat
-	add_child(cctv)
+	ScreenFx.menu_overlays(self, BattleTheme.RD)
 
 
 func _page() -> Control:

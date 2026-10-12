@@ -8,10 +8,16 @@ extends RefCounted
 enum Kind { INFO, SUCCESS, WARNING, ERROR }
 
 
+static var _cached: Node = null
+
+
 static func _hub() -> Node:
+	if is_instance_valid(_cached):
+		return _cached
 	var loop: MainLoop = Engine.get_main_loop()
 	if loop is SceneTree:
-		return (loop as SceneTree).root.get_node_or_null("Feedback")
+		_cached = (loop as SceneTree).root.get_node_or_null("Feedback")
+		return _cached
 	return null
 
 

@@ -8,13 +8,16 @@ uniform float scan_strength : hint_range(0.0, 1.0) = 0.22;
 uniform float vignette_strength : hint_range(0.0, 1.0) = 0.62;
 uniform float noise_strength : hint_range(0.0, 0.5) = 0.07;
 
+// Hash senza sin(): molto piu' economico sulle schede video deboli.
 float hash(vec2 p) {
-	return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
 }
 
 void fragment() {
 	vec2 uv = UV;
-	float scan = 0.5 + 0.5 * sin(uv.y * 720.0 * 3.14159);
+	float scan = 0.5 + 0.5 * sin(uv.y * 2261.95);   // 720 * PI
 	float a = scan * scan_strength;
 
 	vec2 c = uv - vec2(0.5);

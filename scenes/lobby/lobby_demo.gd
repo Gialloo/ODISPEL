@@ -38,20 +38,9 @@ func _ready() -> void:
 
 
 func _build_interface() -> void:
-	var background := ColorRect.new()
-	background.color = BattleTheme.BK
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(background)
+	ScreenFx.solid(self, BattleTheme.BK)
 
-	MenuBackdrop.add_to(self, BattleTheme.CY)
-	var cctv := ColorRect.new()
-	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
-	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/cctv_overlay.gdshader")
-	cctv.material = mat
-	add_child(cctv)
+	ScreenFx.menu_overlays(self, BattleTheme.CY)
 
 	var title := BattleTheme.make_label("LOBBY CO-OP", 34, BattleTheme.CY, true)
 	title.position = Vector2(40, 22)

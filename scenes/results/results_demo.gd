@@ -71,8 +71,6 @@ func _build_interface() -> void:
 		continue_button.visible = false
 
 
-
-
 # True se il risultato viene da un combattimento in rete.
 func _is_net() -> bool:
 	return str(get_tree().get_meta("combat_mode", "local")) == "net"

@@ -61,7 +61,7 @@ class Pop extends Control:
 		draw_string(f, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, ink)
 
 
-static func pop(parent: Node, text: String, pos: Vector2, fill: Color = Color("#fff36b"), ink: Color = Color.BLACK, size: int = 40, radius: float = 70.0) -> Pop:
+static func pop(parent: Node, text: String, pos: Vector2, fill: Color = BattleTheme.POP, ink: Color = Color.BLACK, size: int = 40, radius: float = 70.0) -> Pop:
 	var p := Pop.new()
 	p.text = text
 	p.fill = fill

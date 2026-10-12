@@ -69,8 +69,7 @@ func _test_player_state() -> void:
 func _test_party_state() -> void:
 	var party := PartyState.new()
 	party.setup("party_test", 2)
-	
-	
+
 
 	var player_1 := PlayerState.new()
 	player_1.setup("player_1", "Tester 1", 1)

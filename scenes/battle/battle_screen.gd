@@ -34,6 +34,10 @@ var _log_label: RichTextLabel
 var _overlay: Control
 var _rec_dot: ColorRect
 var _t: float = 0.0
+var _clock_sec: int = -1
+var _ops_sig: String = ""
+var _orders_sig: String = ""
+var _timer_secs: int = -2
 var _order_buttons: Array = []
 
 
@@ -150,27 +154,8 @@ func _build() -> void:
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_stage)
 
-	# velatura ciano e rumore di telecamera
-	var tint := ColorRect.new()
-	tint.color = Color(0.1, 0.6, 0.7, 0.08)
-	tint.set_anchors_preset(Control.PRESET_FULL_RECT)
-	tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(tint)
-	var cctv := ColorRect.new()
-	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
-	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/cctv_overlay.gdshader")
-	cctv.material = mat
-	add_child(cctv)
-
-	var halftone := ColorRect.new()
-	halftone.set_anchors_preset(Control.PRESET_FULL_RECT)
-	halftone.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var hmat := ShaderMaterial.new()
-	hmat.shader = load("res://shaders/halftone.gdshader")
-	halftone.material = hmat
-	add_child(halftone)
+	# velatura ciano, telecamera e retino da fumetto: un solo passaggio a tutto schermo
+	ScreenFx.battle(self)
 
 	_fx = Control.new()
 	_fx.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -286,19 +271,26 @@ func _build_log() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	if _rec_dot != null:
-		_rec_dot.visible = int(_t * 1.6) % 2 == 0
-	if _clock_label != null:
+		var on: bool = int(_t * 1.6) % 2 == 0
+		if _rec_dot.visible != on:
+			_rec_dot.visible = on
+	# l'orologio e il timer cambiano una volta al secondo: niente testo nuovo a ogni frame
+	var now_sec: int = int(Time.get_unix_time_from_system())
+	if _clock_label != null and now_sec != _clock_sec:
+		_clock_sec = now_sec
 		var d: Dictionary = Time.get_datetime_dict_from_system()
 		_clock_label.text = "%02d.%02d.%04d  %02d:%02d:%02d" % [d["day"], d["month"], d["year"], d["hour"], d["minute"], d["second"]]
 	if source != null and _timer_label != null:
 		var left: float = float(source.battle_time_left)
-		if left < 0.0:
-			_timer_label.text = "LIBERO"
-			_timer_label.add_theme_color_override("font_color", BattleTheme.CY)
-		else:
-			var secs: int = int(ceil(left))
-			_timer_label.text = "%02d:%02d" % [secs / 60, secs % 60]
-			_timer_label.add_theme_color_override("font_color", BattleTheme.RD if secs <= 10 else BattleTheme.WH)
+		var secs: int = -1 if left < 0.0 else int(ceil(left))
+		if secs != _timer_secs:
+			_timer_secs = secs
+			if secs < 0:
+				_timer_label.text = "LIBERO"
+				_timer_label.add_theme_color_override("font_color", BattleTheme.CY)
+			else:
+				_timer_label.text = "%02d:%02d" % [secs / 60, secs % 60]
+				_timer_label.add_theme_color_override("font_color", BattleTheme.RD if secs <= 10 else BattleTheme.WH)
 
 
 func _refresh_all() -> void:
@@ -365,13 +357,28 @@ func _bar_row(label: String, ratio: float, color: Color, segs: int, width: float
 
 
 func _refresh_operators() -> void:
+	var me: Dictionary = _local_player()
+	# firma di cio' che si vede: se non e' cambiata nulla, i nodi restano dove sono
+	var sig: String = ""
+	var active_id: String = ""
+	if not me.is_empty():
+		active_id = pending_swap if pending_swap != "" else str(me["active"])
+		sig = "%s|%s|" % [active_id, str(me["active"])]
+		for uid in me["team"]:
+			var tu: Dictionary = BattleState.unit(shown, uid)
+			sig += "%s,%d,%d,%d,%d,%d;" % [uid, int(tu["hp"]), int(tu["max_hp"]), int(tu["energy"]), int(tu["gauge"]), int(tu["level"])]
+		for p in shown["players"]:
+			if p["id"] != me["id"]:
+				var ta: Dictionary = BattleState.unit(shown, str(p["active"]))
+				sig += "%s,%d,%d;" % [str(ta.get("name", "?")), int(ta.get("hp", 0)), int(ta.get("max_hp", 1))]
+	if sig == _ops_sig and _ops_box.get_child_count() > 0:
+		return
+	_ops_sig = sig
 	for c in _ops_box.get_children():
 		_ops_box.remove_child(c)
 		c.queue_free()
-	var me: Dictionary = _local_player()
 	if me.is_empty():
 		return
-	var active_id: String = pending_swap if pending_swap != "" else str(me["active"])
 	for uid in me["team"]:
 		var u: Dictionary = BattleState.unit(shown, uid)
 		_ops_box.add_child(_unit_row(u, uid == active_id, uid == str(me["active"])))
@@ -472,15 +479,31 @@ func _on_unit_pressed(uid: String) -> void:
 
 # Ordini: attacco, guardia, skill e ultimate dell'unita' che agira'.
 func _refresh_orders() -> void:
+	var me: Dictionary = _local_player()
+	if me.is_empty() or str(shown["winner"]) != "":
+		_orders_sig = ""
+		for c in _orders_box.get_children():
+			_orders_box.remove_child(c)
+			c.queue_free()
+		_order_buttons.clear()
+		return
+	var uid: String = pending_swap if pending_swap != "" else str(me["active"])
+	var u: Dictionary = BattleState.unit(shown, uid)
+	# firma di cio' che si vede (testi e pulsanti spenti): se e' uguale non si ricostruisce
+	var sig: String = "%s|%s|%s|%s|%d" % [uid, pending_swap, locked, animating, int(u["gauge"])]
+	var sig_ids: Array = ["attack", "guard"]
+	sig_ids.append_array(u["skills"])
+	if str(u["ult"]) != "":
+		sig_ids.append(str(u["ult"]))
+	for mid in sig_ids:
+		sig += "|" + str(BattleResolver.validate_choice(shown, str(source.local_player_id), _make_choice(str(mid))) == "")
+	if sig == _orders_sig and _orders_box.get_child_count() > 0:
+		return
+	_orders_sig = sig
 	for c in _orders_box.get_children():
 		_orders_box.remove_child(c)
 		c.queue_free()
 	_order_buttons.clear()
-	var me: Dictionary = _local_player()
-	if me.is_empty() or str(shown["winner"]) != "":
-		return
-	var uid: String = pending_swap if pending_swap != "" else str(me["active"])
-	var u: Dictionary = BattleState.unit(shown, uid)
 	if pending_swap != "":
 		var info := BattleTheme.make_label("CAMBIO » %s (GRATIS)" % str(u["name"]).to_upper(), 13, BattleTheme.WH)
 		_orders_box.add_child(info)
@@ -513,12 +536,6 @@ func _refresh_orders() -> void:
 		b.clip_text = true
 		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		BattleTheme.style_button(b, str(e["kind"]), 26 if primary else 13)
-		if not primary:
-			for st in ["normal", "hover", "pressed", "disabled"]:
-				var sb: StyleBoxFlat = b.get_theme_stylebox(st) as StyleBoxFlat
-				if sb != null:
-					sb.content_margin_left = 8.0
-					sb.content_margin_right = 6.0
 		b.disabled = err != "" or locked or animating
 		b.pressed.connect(_on_order_pressed.bind(move_id))
 		b.focus_mode = Control.FOCUS_NONE
@@ -627,7 +644,7 @@ func _event_fx(e: Dictionary) -> float:
 			_float_text("-%d" % int(e["amount"]), str(e["unit"]), BattleTheme.RD, 28)
 		"heal":
 			Snd.play("heal")
-			_pop("+%d" % int(e["amount"]), str(e["dst"]), Color("#6bffb0"), BattleTheme.BK, 32, 52.0)
+			_pop("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
 		"shield":
 			_float_text("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.CY, 26)
 		"boss_move":
@@ -657,11 +674,11 @@ func _fx_damage(e: Dictionary) -> float:
 		return 0.0
 	var target: Dictionary = BattleState.unit(shown, dst)
 	var heavy: bool = float(amount) >= float(target.get("max_hp", 1)) * BIG_HIT_FRACTION
-	var fill: Color = Color("#fff36b") if to_boss else BattleTheme.RD
+	var fill: Color = BattleTheme.POP if to_boss else BattleTheme.RD
 	_pop("-%d" % amount, dst, fill, BattleTheme.BK, 48 if heavy else 36, 82.0 if heavy else 62.0)
 	if heavy:
 		var at: Vector2 = _stage.anchor_of(dst)
-		ComicFx.speed_lines(_fx, at, Color(1, 1, 1, 0.9) if to_boss else Color("#ff2d55"), 0.26)
+		ComicFx.speed_lines(_fx, at, Color(1, 1, 1, 0.9) if to_boss else BattleTheme.RD, 0.26)
 		_stage.impact(11.0 if to_boss else 8.0, 0.025)
 		ComicFx.flash(_fx, Color(1, 1, 1, 0.35), 0.1)
 		_pop(str(HIT_WORDS[randi() % HIT_WORDS.size()]), dst, BattleTheme.WH, BattleTheme.RD, 30, 54.0, Vector2(-70.0, -90.0))
