@@ -10,13 +10,16 @@ extends RefCounted
 # rarity: indice in BattleTypes.RARITIES
 const MOVES: Dictionary = {
 	"attack": {"name": "Attacco", "kind": "basic", "cost": 0, "priority": 0, "rarity": 0, "target": "enemy", "mult": 1.0},
-	"guard": {"name": "Guardia", "kind": "basic", "cost": 0, "priority": 1, "rarity": 0, "target": "self", "self_status": {"guard": 1}, "energy": 1},
+	"guard": {"name": "Guardia", "kind": "basic", "cost": 0, "priority": 1, "rarity": 0, "target": "self", "self_status": {"guard": 1}, "energy": 1, "ammo_gain": 1},
 	"colpo_caricato": {"name": "Colpo caricato", "kind": "skill", "cost": 2, "priority": 0, "rarity": 0, "target": "enemy", "mult": 2.0},
 	"marchio": {"name": "Marchio", "kind": "skill", "cost": 1, "priority": 0, "rarity": 0, "target": "enemy", "mult": 0.5, "status": {"mark": 2}},
 	"provoca": {"name": "Provoca", "kind": "skill", "cost": 1, "priority": 1, "rarity": 0, "target": "self", "self_status": {"taunt": 1}, "shield": 0.6},
 	"barriera": {"name": "Barriera", "kind": "skill", "cost": 2, "priority": 1, "rarity": 1, "target": "allies", "shield": 1.0},
 	"cura": {"name": "Cura", "kind": "skill", "cost": 2, "priority": 0, "rarity": 1, "target": "ally", "heal": 1.4},
 	"purifica": {"name": "Purifica", "kind": "skill", "cost": 1, "priority": 0, "rarity": 1, "target": "ally", "heal": 0.4, "cleanse": true},
+	"ricarica": {"name": "Ricarica", "kind": "skill", "cost": 0, "priority": 1, "rarity": 0, "target": "self", "ammo_gain": 3, "energy": 1},
+	"colpo_mirato": {"name": "Colpo mirato", "kind": "skill", "cost": 1, "priority": 0, "rarity": 1, "target": "enemy", "mult": 1.7, "ammo": 1, "pierce": 50},
+	"colpo_alla_testa": {"name": "Colpo alla testa", "kind": "skill", "cost": 2, "priority": 0, "rarity": 2, "target": "enemy", "mult": 2.4, "ammo": 2, "pierce": 50},
 	"spezzatutto": {"name": "Spezzatutto", "kind": "ult", "cost": 0, "priority": 0, "rarity": 2, "target": "enemy", "mult": 4.5},
 	"bastione": {"name": "Bastione", "kind": "ult", "cost": 0, "priority": 1, "rarity": 2, "target": "allies", "shield": 2.0},
 	"rinascita": {"name": "Rinascita", "kind": "ult", "cost": 0, "priority": 0, "rarity": 3, "target": "allies", "heal": 1.5, "cleanse": true},
@@ -209,13 +212,21 @@ static func compute_stats(entry: Dictionary) -> Dictionary:
 
 
 # Equipaggiamento di base di un personaggio (innata + ultimate + passiva innata).
+# Le skill di partenza: quella innata e, per la LibraCorp, Ricarica (senza munizioni il loro stile non funziona).
+static func _default_skills(char_id: String) -> Array:
+	var skills: Array = [str(CHARACTERS[char_id]["skill"])]
+	if faction_of(char_id) == "libracorp":
+		skills.append("ricarica")
+	return skills
+
+
 static func default_entry(char_id: String, level: int = 1, rank: int = 0) -> Dictionary:
 	var def: Dictionary = CHARACTERS[char_id]
 	return {
 		"char": char_id,
 		"level": level,
 		"rank": rank,
-		"skills": [str(def["skill"])],
+		"skills": _default_skills(char_id),
 		"ult": str(def["ult"]),
 		"passives": [str(def["passive"])],
 		"gear": [],

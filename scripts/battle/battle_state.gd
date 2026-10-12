@@ -43,6 +43,8 @@ static func _blank_unit(id: String, char_id: String, side: String, owner: String
 		"passives": [],
 		"statuses": {},
 		"shield": 0,
+		"ammo": 0,
+		"ammo_max": 0,
 	}
 
 
@@ -58,6 +60,9 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	u["passives"] = entry.get("passives", []).duplicate()
 	u["rarity"] = int(entry.get("rarity", def.get("rarity", 0)))
 	u["faction"] = BattleContent.faction_of(char_id, entry)
+	if str(u["faction"]) == "libracorp":
+		u["ammo"] = BattleTypes.AMMO_MAX
+		u["ammo_max"] = BattleTypes.AMMO_MAX
 	u["style"] = BattleContent.style_of(char_id, entry)
 	u["crit"] = 0
 	u["crit_dmg"] = Factions.CRIT_DMG_PM

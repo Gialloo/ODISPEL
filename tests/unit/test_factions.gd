@@ -210,5 +210,64 @@ func _init() -> void:
 	var rf: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("kira"), BattleContent.default_entry("elle")]}], "distributore", 7)
 	_check("Magabondi in squadra con Rondini: aura dimezzata", int(BattleState.unit(rf, "a:elle")["aura"].get("crit", 0)) == 10 and int(BattleState.unit(rf, "a:kira")["aura"].get("crit", 0)) == 20)
 
+	# LibraCorp: munizioni, contrattacco, colpi mirati
+	var lb: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("dax"), BattleContent.default_entry("tana")]}], "distributore", 11)
+	var lbd: Dictionary = BattleState.unit(lb, "a:dax")
+	_check("LibraCorp: munizioni piene", lbd["ammo"] == BattleTypes.AMMO_MAX and lbd["ammo_max"] == BattleTypes.AMMO_MAX)
+	_check("LibraCorp: parte con Ricarica", BattleContent.default_entry("dax")["skills"].has("ricarica"))
+	var nolib: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("kira")]}], "distributore", 11)
+	_check("Altre fazioni: niente munizioni", BattleState.unit(nolib, "a:kira")["ammo_max"] == 0)
+	var ev: Array = []
+	var bossu: Dictionary = BattleState.boss(lb)
+	var bhp: int = bossu["hp"]
+	BattleResolver._boss_act(lb, bossu, "scarica", "a", RNGState.new(), ev)
+	var kinds: Array = []
+	for x in ev:
+		kinds.append(str(x["t"]))
+	_check("Contrattacco: spende una munizione e colpisce il boss", kinds.has("counter") and lbd["ammo"] == BattleTypes.AMMO_MAX - 1 and bossu["hp"] < bhp)
+	lbd["ammo"] = 0
+	var before_hp: int = bossu["hp"]
+	BattleResolver._boss_act(lb, bossu, "scarica", "a", RNGState.new(), [])
+	_check("Senza munizioni non contrattacca", bossu["hp"] == before_hp)
+	# ricarica e guardia
+	lbd["ammo"] = 0
+	lbd["energy"] = 2
+	var ev2: Array = []
+	BattleResolver._player_act(lb, lbd, "ricarica", "", ev2)
+	_check("Ricarica: +3 munizioni e +1 energia", lbd["ammo"] == 3 and lbd["energy"] == 3)
+	lbd["ammo"] = 0
+	BattleResolver._player_act(lb, lbd, "guard", "", [])
+	_check("Guardia: +1 munizione", lbd["ammo"] == 1)
+	# colpi mirati
+	lbd["skills"] = ["colpo_mirato", "colpo_alla_testa"]
+	lbd["energy"] = 6
+	lbd["ammo"] = 1
+	_check("Colpo alla testa: serve 2 munizioni", BattleResolver.validate_choice(lb, "a", {"swap": "", "move": "colpo_alla_testa", "target": ""}) == "munizioni insufficienti")
+	_check("Colpo mirato valido con 1 munizione", BattleResolver.validate_choice(lb, "a", {"swap": "", "move": "colpo_mirato", "target": ""}) == "")
+	var plain_dmg: int = BattleResolver.calc_damage(lbd, bossu, 1.7)
+	var pierce_dmg: int = BattleResolver.calc_damage(lbd, bossu, 1.7, 50)
+	_check("Perforazione: piu' danno a parita' di moltiplicatore", pierce_dmg > plain_dmg)
+	BattleResolver._player_act(lb, lbd, "colpo_mirato", "", [])
+	_check("Colpo mirato spende la munizione", lbd["ammo"] == 0)
+	var kd: Dictionary = BattleState.unit(nolib, "a:kira")
+	kd["skills"] = ["ricarica"]
+	_check("Ricarica senza armi rifiutata", BattleResolver.validate_choice(nolib, "a", {"swap": "", "move": "ricarica", "target": ""}) == "niente da ricaricare")
+	# IA: ricarica a secco
+	lbd["ammo"] = 0
+	lbd["skills"] = ["ricarica"]
+	lbd["energy"] = 3
+	var ai_choice: Dictionary = BattleAI.choose(lb, "a")
+	_check("IA: ricarica quando e' a secco", ai_choice["move"] == "ricarica" or ai_choice["swap"] != "")
+	# salvataggio vecchio: la LibraCorp riceve Ricarica una volta sola
+	var old: Dictionary = RosterState.new_roster()
+	old["characters"]["dax"]["skills"] = ["provoca"]
+	old["moves"]["ricarica"] = int(old["moves"]["ricarica"]) - 1
+	old.erase("faction_sync")
+	var migrated: Dictionary = RosterState.from_json(RosterState.to_json(old))
+	_check("Migrazione: Dax riceve Ricarica", not migrated.is_empty() and migrated["characters"]["dax"]["skills"].has("ricarica") and RosterState.validate(migrated) == "")
+	migrated["characters"]["dax"]["skills"] = ["provoca"]
+	var again: Dictionary = RosterState.from_json(RosterState.to_json(migrated))
+	_check("Migrazione: una volta sola", not again.is_empty() and not again["characters"]["dax"]["skills"].has("ricarica"))
+
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)

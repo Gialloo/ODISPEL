@@ -411,7 +411,10 @@ func _faction_tag(u: Dictionary) -> String:
 	if f == "":
 		return ""
 	var aura: String = Factions.aura_text(u)
-	return Factions.name_of(f).to_upper() + ("  " + aura if aura != "" else "")
+	var tag: String = Factions.name_of(f).to_upper() + ("  " + aura if aura != "" else "")
+	if int(u.get("ammo_max", 0)) > 0:
+		tag += "  MUN %d/%d" % [int(u["ammo"]), int(u["ammo_max"])]
+	return tag
 
 
 func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:

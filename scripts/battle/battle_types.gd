@@ -28,6 +28,10 @@ const START_ENERGY: int = 2
 const REGEN_ACTIVE: int = 1
 const REGEN_BENCH: int = 2
 
+# Munizioni (LibraCorp): si spendono per colpi speciali e per il contrattacco, si recuperano con Ricarica e Guardia.
+const AMMO_MAX: int = 3
+const COUNTER_MULT: float = 0.5
+
 const GAUGE_MAX: int = 100
 const GAUGE_ON_HIT: int = 15
 const GAUGE_ON_DAMAGED: int = 10

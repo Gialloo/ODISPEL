@@ -92,6 +92,10 @@ static func validate_choice(state: Dictionary, pid: String, choice: Dictionary) 
 				return "mossa non equipaggiata"
 			if int(u["energy"]) < int(move["cost"]):
 				return "energia insufficiente"
+			if int(u["ammo"]) < int(move.get("ammo", 0)):
+				return "munizioni insufficienti"
+			if move.has("ammo_gain") and int(u["ammo_max"]) <= 0:
+				return "niente da ricaricare"
 		"ult":
 			if str(u["ult"]) != move_id:
 				return "ultimate non equipaggiata"
@@ -223,7 +227,8 @@ static func _do_swap(state: Dictionary, p: Dictionary, new_id: String, events: A
 
 # ---------- Danni ----------
 
-static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float) -> int:
+# pierce: percentuale di difesa ignorata (colpi mirati).
+static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float, pierce: int = 0) -> int:
 	var dmg: float = float(attacker["atk"]) * mult
 	dmg *= BattleTypes.color_multiplier(str(attacker["color"]), str(defender["color"]))
 	if defender["statuses"].has("mark"):
@@ -234,15 +239,15 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float)
 		for pass_id in attacker["passives"]:
 			if bool(BattleContent.PASSIVES.get(str(pass_id), {}).get("hunter", false)):
 				dmg *= BattleTypes.HUNTER_BONUS
-	dmg = dmg * 100.0 / (100.0 + float(defender["def"]))
+	dmg = dmg * 100.0 / (100.0 + float(defender["def"]) * float(100 - clampi(pierce, 0, 100)) / 100.0)
 	if defender["statuses"].has("guard"):
 		dmg *= BattleTypes.GUARD_FACTOR
 	return maxi(1, int(round(dmg)))
 
 
 # Applica un colpo: prima lo scudo, poi i PV. Carica le barre ultimate.
-static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, mult: float, events: Array) -> void:
-	var dmg: int = calc_damage(attacker, defender, mult)
+static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, mult: float, events: Array, pierce: int = 0) -> void:
+	var dmg: int = calc_damage(attacker, defender, mult, pierce)
 	var crit: bool = Factions.rolls_crit(state, attacker, defender, events.size())
 	if crit:
 		dmg = maxi(1, int(round(float(dmg) * float(attacker.get("crit_dmg", Factions.CRIT_DMG_PM)) / 1000.0)))
@@ -262,6 +267,29 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		_on_down(defender, events)
 	else:
 		Factions.on_hit_taken(state, defender)
+
+
+# Munizioni: positivo = ricarica, negativo = si spendono. Resta tra 0 e il massimo dell'unita'.
+static func _change_ammo(u: Dictionary, delta: int, events: Array) -> void:
+	if delta == 0 or int(u["ammo_max"]) <= 0:
+		return
+	var now: int = clampi(int(u["ammo"]) + delta, 0, int(u["ammo_max"]))
+	if now != int(u["ammo"]):
+		u["ammo"] = now
+		events.append({"t": "ammo", "unit": u["id"], "value": now})
+
+
+# Protocollo (LibraCorp): chi viene colpito dal boss e resta in piedi, con una munizione, risponde al fuoco.
+static func _counter(state: Dictionary, boss: Dictionary, target: Dictionary, events: Array) -> void:
+	if str(state["winner"]) != "" or not BattleState.is_alive(target) or not BattleState.is_alive(boss):
+		return
+	if str(target.get("faction", "")) != "libracorp" or str(target.get("style", "ortodosso")) != "ortodosso":
+		return
+	if int(target["ammo"]) < 1 or Factions.is_suppressed(state, "libracorp"):
+		return
+	_change_ammo(target, -1, events)
+	events.append({"t": "counter", "unit": target["id"]})
+	_hit(state, target, boss, BattleTypes.COUNTER_MULT, events)
 
 
 static func _on_down(u: Dictionary, events: Array) -> void:
@@ -286,7 +314,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		move_id = BattleTypes.ACTION_ATTACK
 		move = BattleContent.MOVES[move_id]
 		kind = "basic"
-	elif kind == "skill" and int(actor["energy"]) < int(move["cost"]):
+	elif kind == "skill" and (int(actor["energy"]) < int(move["cost"]) or int(actor["ammo"]) < int(move.get("ammo", 0))):
 		move_id = BattleTypes.ACTION_ATTACK
 		move = BattleContent.MOVES[move_id]
 		kind = "basic"
@@ -296,6 +324,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	elif kind == "skill":
 		actor["energy"] = int(actor["energy"]) - int(move["cost"])
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
+	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
 
 	if move.has("energy"):
 		actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + int(move["energy"]))
@@ -324,7 +353,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		if not BattleState.is_alive(t):
 			continue
 		if move.has("mult"):
-			_hit(state, actor, t, float(move["mult"]), events)
+			_hit(state, actor, t, float(move["mult"]), events, int(move.get("pierce", 0)))
 		if move.has("heal"):
 			var amount: int = int(round(float(actor["atk"]) * float(move["heal"])))
 			var before: int = int(t["hp"])
@@ -374,6 +403,7 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 			continue
 		var hp_before: int = int(t["hp"])
 		_hit(state, boss, t, float(move["mult"]), events)
+		_counter(state, boss, t, events)
 		if move.has("drain"):
 			var dealt: int = hp_before - int(t["hp"])
 			var before: int = int(boss["hp"])

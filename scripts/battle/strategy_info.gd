@@ -33,9 +33,9 @@ const FACTIONS: Dictionary = {
 	"libracorp": {
 		"idea": "Resiste, risponde ai colpi e spara con munizioni contate. I poteri vengono dall'equipaggiamento.",
 		"win": "Vinci a lungo termine: il boss si spreca sui tuoi bersagli resistenti e tu rispondi a ogni suo colpo.",
-		"needs": ["Schiera piu' operatori LibraCorp: ogni aura si somma (tetto +25% difesa).", "Metti in squadra un leggendario o epico: da' l'aura piu' grande.", "Anche i comuni contano: ognuno aggiunge la sua parte.", "Resisti e rispondi: guardia e provocazione, poi contrattacca."],
-		"now": "Aura DIFESA (cresce con la rarita', tetto +25%). PROTOCOLLO: chi viene colpito e resta in piedi prende +5% DIF e VEL per il round dopo (una volta per turno, solo gli ortodossi).",
-		"soon": "Munizioni, mira e colpo alla testa, contrattacchi, reazioni, azioni extra.",
+		"needs": ["Schiera piu' operatori LibraCorp: ogni aura si somma (tetto +25% difesa).", "Metti in squadra un leggendario o epico: da' l'aura piu' grande.", "Anche i comuni contano: ognuno aggiunge la sua parte.", "Gestisci le MUNIZIONI: ogni contrattacco ne costa una. Ricarica (o Guardia) prima di restare a secco.", "Colpo mirato e Colpo alla testa fanno molto danno e perforano la difesa, ma consumano munizioni."],
+		"now": "Aura DIFESA (cresce con la rarita', tetto +25%). PROTOCOLLO (solo ortodossi): chi viene colpito e resta in piedi prende +5% DIF e VEL per il round dopo e CONTRATTACCA il boss (x0,5) spendendo una munizione. Munizioni (max 3), Ricarica, Colpo mirato, Colpo alla testa.",
+		"soon": "Azioni extra, reazioni su mosse specifiche dei boss, moduli di equipaggiamento.",
 	},
 	"rondini": {
 		"idea": "Pattuglie di notte, colpi rapidi e precisi. Cannoni di vetro: fanno tanto danno ma reggono poco.",

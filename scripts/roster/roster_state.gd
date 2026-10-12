@@ -39,6 +39,7 @@ static func new_roster() -> Dictionary:
 		"pulls": 0,
 		"pity": 0,
 		"cleared": {},
+		"faction_sync": 1,
 	}
 	for id in STARTER_CHARACTERS:
 		add_character(roster, str(id))
@@ -66,7 +67,8 @@ static func add_character(roster: Dictionary, char_id: String) -> String:
 	var fresh: Dictionary = BattleContent.default_entry(char_id)
 	roster["characters"][char_id] = fresh
 	# la mossa, l'ultimate e la passiva innate sono sempre possedute
-	_inventory_add(roster["moves"], str(fresh["skills"][0]))
+	for sk in fresh["skills"]:
+		_inventory_add(roster["moves"], str(sk))
 	_inventory_add(roster["moves"], str(fresh["ult"]))
 	_inventory_add(roster["passives"], str(fresh["passives"][0]))
 	return "new"
@@ -567,6 +569,21 @@ static func is_tier_unlocked(roster: Dictionary, boss_id: String, tier: int) -> 
 
 # ---------- JSON ----------
 
+# Salvataggi scritti prima delle munizioni: gli operatori LibraCorp ricevono Ricarica se hanno uno slot libero.
+static func sync_faction_moves(roster: Dictionary) -> void:
+	var chars: Variant = roster.get("characters", {})
+	if not (chars is Dictionary) or not (roster.get("moves", null) is Dictionary) or int(roster.get("faction_sync", 0)) >= 1:
+		return
+	roster["faction_sync"] = 1     # una volta sola: se poi il giocatore la toglie, non torna
+	for id in chars:
+		if not BattleContent.CHARACTERS.has(str(id)) or BattleContent.faction_of(str(id)) != "libracorp":
+			continue
+		var skills: Variant = chars[id].get("skills", null)
+		if skills is Array and skills.size() < BattleTypes.SKILL_SLOTS and not skills.has("ricarica"):
+			skills.append("ricarica")
+			_inventory_add(roster["moves"], "ricarica")
+
+
 static func to_json(roster: Dictionary) -> String:
 	return JSON.stringify(roster, "\t")
 
@@ -590,6 +607,7 @@ static func from_json(text: String) -> Dictionary:
 		roster["pity"] = 0
 	if not roster.has("cleared"):
 		roster["cleared"] = {}
+	sync_faction_moves(roster)
 	if int(roster.get("version", 0)) != VERSION or validate(roster) != "":
 		return {}
 	return roster

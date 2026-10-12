@@ -86,6 +86,11 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 			var victim: Dictionary = BattleState.active_unit(state, tele_target)
 			if BattleState.is_alive(victim) and _ratio(victim) < _ratio(u):
 				return str(sid)
+		# LibraCorp: ricarica a secco; i colpi con munizioni lasciano sempre una carica per il contrattacco
+		if m.has("ammo_gain") and int(u["ammo_max"]) > 0 and int(u["ammo"]) == 0:
+			return str(sid)
+		if m.has("ammo") and int(u["ammo"]) - int(m["ammo"]) >= 1:
+			return str(sid)
 		if m.has("status") and m["status"].has("mark") and not boss["statuses"].has("mark"):
 			return str(sid)
 		if m.has("mult") and float(m["mult"]) >= 2.0 and energy >= int(m["cost"]) + 1:

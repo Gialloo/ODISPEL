@@ -47,6 +47,12 @@ static func move_hint(move_id: String) -> String:
 			parts.append(status_name(str(s)))
 	if bool(m.get("cleanse", false)):
 		parts.append("PURIFICA")
+	if int(m.get("ammo", 0)) > 0:
+		parts.append("MUN -%d" % int(m["ammo"]))
+	if int(m.get("ammo_gain", 0)) > 0:
+		parts.append("MUN +%d" % int(m["ammo_gain"]))
+	if int(m.get("pierce", 0)) > 0:
+		parts.append("PERFORA")
 	if int(m.get("priority", 0)) > 0:
 		parts.append("PRIORITA'")
 	return " · ".join(parts)
@@ -73,6 +79,8 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 			return {"text": "%s SCUDO +%d" % [unit_name(state, str(e["dst"])), int(e["amount"])], "kind": "heal"}
 		"status":
 			return {"text": "%s: %s" % [unit_name(state, str(e["unit"])), status_name(str(e["status"]))], "kind": "info"}
+		"counter":
+			return {"text": "%s CONTRATTACCA" % unit_name(state, str(e["unit"])), "kind": "info"}
 		"cleanse":
 			return {"text": "%s PURIFICATO" % unit_name(state, str(e["unit"])), "kind": "heal"}
 		"bleed":
@@ -113,6 +121,10 @@ static func apply_to_display(state: Dictionary, e: Dictionary) -> void:
 			var t: Dictionary = BattleState.unit(state, str(e["unit"]))
 			if not t.is_empty():
 				t["statuses"][str(e["status"])] = int(e.get("turns", 1))
+		"ammo":
+			var am: Dictionary = BattleState.unit(state, str(e["unit"]))
+			if not am.is_empty():
+				am["ammo"] = int(e["value"])
 		"cleanse":
 			var c: Dictionary = BattleState.unit(state, str(e["unit"]))
 			if not c.is_empty():
