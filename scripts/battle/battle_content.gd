@@ -68,23 +68,68 @@ const GEAR_MAX_LEVEL: Array = [10, 15, 20, 30]
 const MATERIALS: Dictionary = {"nucleo": "Nucleo", "lega": "Lega"}
 
 # Boss. Il ciclo di mosse e' annunciato un round prima.
-# target "one": un giocatore scelto e annunciato; "all": tutti i giocatori.
+# target "one": un giocatore scelto a caso e annunciato; "weakest": il piu' ferito
+# (annunciato); "all": tutti i giocatori.
+# Opzioni: "status" (sui bersagli), "self_shield" (scudo al boss, frazione dei PV
+# massimi), "drain" (il boss recupera questa frazione del danno inflitto).
 const BOSS_MOVES: Dictionary = {
 	"scarica": {"name": "Scarica", "target": "one", "mult": 1.6},
 	"raffica": {"name": "Raffica", "target": "all", "mult": 0.7},
 	"scossa": {"name": "Scossa", "target": "one", "mult": 0.9, "status": {"bleed": 3}},
 	"sovraccarico": {"name": "Sovraccarico", "target": "all", "mult": 1.2},
+	"lampeggio": {"name": "Lampeggio", "target": "all", "mult": 0.55, "status": {"mark": 2}},
+	"rosso": {"name": "Rosso", "target": "one", "mult": 1.9},
+	"giallo": {"name": "Giallo", "target": "weakest", "mult": 0.7, "self_shield": 0.06},
+	"verde": {"name": "Verde", "target": "all", "mult": 0.95},
+	"gorgo": {"name": "Gorgo", "target": "one", "mult": 1.7},
+	"risucchio": {"name": "Risucchio", "target": "weakest", "mult": 0.9, "drain": 0.6},
+	"alluvione": {"name": "Alluvione", "target": "all", "mult": 0.6, "status": {"bleed": 3}},
+	"chiusura": {"name": "Chiusura", "target": "all", "mult": 0.45, "self_shield": 0.05},
 }
+
+# Livelli di difficolta': moltiplicano PV e ATK del boss, aggiungono difesa e premi.
+const TIERS: Array = [
+	{"id": "normale", "name": "NORMALE", "hp": 1.0, "atk": 1.0, "def": 0, "reward": 1.0},
+	{"id": "difficile", "name": "DIFFICILE", "hp": 1.5, "atk": 1.25, "def": 8, "reward": 1.7},
+	{"id": "incubo", "name": "INCUBO", "hp": 2.1, "atk": 1.55, "def": 15, "reward": 2.6},
+]
+
+# Ordine di sblocco: si apre il boss successivo battendo il precedente (almeno a NORMALE).
+const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino"]
+
 const BOSSES: Dictionary = {
 	"distributore": {
-		"name": "Distributore", "color": "giallo", "hp_per_player": 900,
+		"name": "Distributore", "title": "CLASSE ANOMALIA · MINACCIA BASSA", "color": "giallo", "hp_per_player": 900,
 		"atk": 390, "def": 25, "spd": 105,
+		"desc": "Un distributore automatico impazzito. Colpi pesanti a un solo bersaglio e scosse che fanno sanguinare.",
 		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
 		"atk_scale": [0.62, 0.8, 1.0],
 		"drops": 2,
 		"reward": {"coins": 300, "nucleo": [2, 4], "lega": [1, 3], "gear_chance": 40},
 	},
+	"semaforo": {
+		"name": "Semaforo", "title": "CLASSE ANOMALIA · MINACCIA MEDIA", "color": "rosso", "hp_per_player": 850,
+		"atk": 380, "def": 20, "spd": 118,
+		"desc": "Un semaforo che non cambia piu' colore. Veloce: agisce prima di quasi tutti. Marchia la squadra e punta chi e' piu' ferito.",
+		"cycle": ["lampeggio", "rosso", "giallo", "verde"],
+		"atk_scale": [0.62, 0.8, 1.0],
+		"drops": 2,
+		"reward": {"coins": 450, "nucleo": [3, 5], "lega": [2, 4], "gear_chance": 50},
+	},
+	"tombino": {
+		"name": "Tombino", "title": "CLASSE ANOMALIA · MINACCIA ALTA", "color": "viola", "hp_per_player": 1000,
+		"atk": 340, "def": 35, "spd": 82,
+		"desc": "Qualcosa vive sotto il tombino. Lento ma resistente: si cura risucchiando i feriti e si chiude sotto uno scudo.",
+		"cycle": ["gorgo", "risucchio", "alluvione", "chiusura"],
+		"atk_scale": [0.62, 0.8, 1.0],
+		"drops": 3,
+		"reward": {"coins": 650, "nucleo": [4, 7], "lega": [3, 6], "gear_chance": 60},
+	},
 }
+
+
+static func tier_of(tier: int) -> Dictionary:
+	return TIERS[clampi(tier, 0, TIERS.size() - 1)]
 
 
 static func has_move(id: String) -> bool:
@@ -149,8 +194,9 @@ static func default_entry(char_id: String, level: int = 1, rank: int = 0) -> Dic
 
 
 # Rarita' estratta con un tiro: 45% comune, 30% rara, 22% epica, 3% leggendaria.
-static func roll_rarity(rng: RNGState) -> int:
-	var roll: int = rng.random_int(1, 100)
+# bonus: sposta il tiro verso le rarita' alte (i livelli di difficolta' lo usano).
+static func roll_rarity(rng: RNGState, bonus: int = 0) -> int:
+	var roll: int = mini(100, rng.random_int(1, 100) + bonus)
 	if roll > 97:
 		return 3
 	if roll > 85:
@@ -161,11 +207,12 @@ static func roll_rarity(rng: RNGState) -> int:
 
 
 # Estrae le mosse e passive lasciate da un boss. Ogni premio e' {kind, id, rarity}.
-static func roll_drops(boss_id: String, rng: RNGState) -> Array:
+static func roll_drops(boss_id: String, rng: RNGState, tier: int = 0) -> Array:
 	var boss: Dictionary = BOSSES.get(boss_id, {})
 	var drops: Array = []
-	for i in int(boss.get("drops", 1)):
-		var rarity: int = roll_rarity(rng)
+	var t: int = clampi(tier, 0, TIERS.size() - 1)
+	for i in int(boss.get("drops", 1)) + t:
+		var rarity: int = roll_rarity(rng, t * 6)
 		var pool: Array = []
 		for id in MOVES:
 			var m: Dictionary = MOVES[id]
@@ -181,8 +228,8 @@ static func roll_drops(boss_id: String, rng: RNGState) -> Array:
 
 
 # Estrae un pezzo di equipaggiamento: {kind: "gear", slot, rarity}.
-static func roll_gear(rng: RNGState) -> Dictionary:
-	var rarity: int = roll_rarity(rng)
+static func roll_gear(rng: RNGState, tier: int = 0) -> Dictionary:
+	var rarity: int = roll_rarity(rng, clampi(tier, 0, TIERS.size() - 1) * 6)
 	var slot: String = str(BattleTypes.GEAR_SLOTS[rng.random_index(BattleTypes.GEAR_SLOTS.size())])
 	return {"kind": "gear", "slot": slot, "rarity": rarity}
 
@@ -221,4 +268,17 @@ static func validate() -> Array:
 		for m in BOSSES[id]["cycle"]:
 			if not BOSS_MOVES.has(m):
 				errors.append("%s: mossa boss sconosciuta %s" % [id, m])
+		var b: Dictionary = BOSSES[id]
+		if not BattleTypes.COLORS.has(b.get("color", "")):
+			errors.append("%s: colore del boss sconosciuto" % id)
+		if not b.has("reward") or not b.has("name") or not b.has("desc") or not b.has("title"):
+			errors.append("%s: boss incompleto (nome, titolo, descrizione, premi)" % id)
+		if not BOSS_ORDER.has(id):
+			errors.append("%s: boss fuori da BOSS_ORDER" % id)
+	for id in BOSS_ORDER:
+		if not BOSSES.has(id):
+			errors.append("BOSS_ORDER: boss sconosciuto %s" % id)
+	for id in BOSS_MOVES:
+		if not ["one", "all", "weakest"].has(str(BOSS_MOVES[id]["target"])):
+			errors.append("%s: bersaglio del boss sconosciuto" % id)
 	return errors

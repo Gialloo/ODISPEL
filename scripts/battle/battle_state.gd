@@ -70,9 +70,10 @@ static func _interpolate(values: Array, position: float) -> float:
 	return float(values[lower - 1]) * (1.0 - t) + float(values[upper - 1]) * t
 
 
-static func make_boss(boss_id: String, effective: float) -> Dictionary:
+static func make_boss(boss_id: String, effective: float, tier: int = 0) -> Dictionary:
 	var def: Dictionary = BattleContent.BOSSES[boss_id]
-	var hp: int = int(round(float(def["hp_per_player"]) * maxf(1.0, effective)))
+	var t: Dictionary = BattleContent.tier_of(tier)
+	var hp: int = int(round(float(def["hp_per_player"]) * maxf(1.0, effective) * float(t["hp"])))
 	var atk_scale: float = _interpolate(def.get("atk_scale", [1.0]), effective)
 	return {
 		"id": BOSS_ID,
@@ -85,8 +86,8 @@ static func make_boss(boss_id: String, effective: float) -> Dictionary:
 		"level": 1,
 		"max_hp": hp,
 		"hp": hp,
-		"atk": int(round(float(def["atk"]) * atk_scale)),
-		"def": int(def["def"]),
+		"atk": int(round(float(def["atk"]) * atk_scale * float(t["atk"]))),
+		"def": int(def["def"]) + int(t["def"]),
 		"spd": int(def["spd"]),
 		"energy": 0,
 		"gauge": 0,
@@ -99,8 +100,9 @@ static func make_boss(boss_id: String, effective: float) -> Dictionary:
 
 
 # specs: [{id, name, ai, team:[entry]}]
-static func create(specs: Array, boss_id: String, seed_value: int) -> Dictionary:
+static func create(specs: Array, boss_id: String, seed_value: int, tier: int = 0) -> Dictionary:
 	var state: Dictionary = {
+		"tier": clampi(tier, 0, BattleContent.TIERS.size() - 1),
 		"round": 1,
 		"winner": "",
 		"cycle_index": 0,
@@ -129,7 +131,7 @@ static func create(specs: Array, boss_id: String, seed_value: int) -> Dictionary
 			"active": team[0] if not team.is_empty() else "",
 			"choice": null,
 		})
-	units[BOSS_ID] = make_boss(boss_id, effective_players(specs))
+	units[BOSS_ID] = make_boss(boss_id, effective_players(specs), int(state["tier"]))
 	var rng: RNGState = RNGState.new()
 	rng.setup(seed_value)
 	state["rng_state"] = str(rng.state_value)
@@ -140,7 +142,7 @@ static func create(specs: Array, boss_id: String, seed_value: int) -> Dictionary
 # Partita in solitaria: i compagni sono personaggi del roster non in squadra,
 # controllati dall'IA. Ogni compagno IA e' un giocatore a se' con 1 personaggio
 # attivo + i suoi eventuali sostituti.
-static func create_solo(player_name: String, team: Array, spare: Array, boss_id: String, seed_value: int, ai_count: int = 2) -> Dictionary:
+static func create_solo(player_name: String, team: Array, spare: Array, boss_id: String, seed_value: int, ai_count: int = 2, tier: int = 0) -> Dictionary:
 	var specs: Array = [{"id": "p1", "name": player_name, "ai": false, "team": team}]
 	var buckets: Array = []
 	for i in ai_count:
@@ -154,7 +156,7 @@ static func create_solo(player_name: String, team: Array, spare: Array, boss_id:
 		if b.is_empty():
 			continue
 		specs.append({"id": "ai%d" % (i + 1), "name": "IA %d" % (i + 1), "ai": true, "ally": true, "team": b})
-	return create(specs, boss_id, seed_value)
+	return create(specs, boss_id, seed_value, tier)
 
 
 static func unit(state: Dictionary, uid: String) -> Dictionary:

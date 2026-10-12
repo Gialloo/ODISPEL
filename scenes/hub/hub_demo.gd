@@ -9,11 +9,12 @@ func _ready() -> void:
 	NetSession.close()
 
 	_build_interface()
+	_apply_theme(self)
 
 
 func _build_interface() -> void:
 	var background := ColorRect.new()
-	background.color = Color("#11121a")
+	background.color = BattleTheme.BK
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
@@ -71,8 +72,8 @@ func _build_interface() -> void:
 	profile_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color("#1b1c29")
-	panel_style.border_color = Color("#7439a6")
+	panel_style.bg_color = BattleTheme.PANEL
+	panel_style.border_color = BattleTheme.CY_DIM
 	panel_style.set_border_width_all(1)
 	panel_style.set_corner_radius_all(8)
 	panel_style.content_margin_left = 16.0
@@ -208,7 +209,7 @@ func _build_interface() -> void:
 
 func _on_new_battle_pressed() -> void:
 	var error := get_tree().change_scene_to_file(
-		"res://scenes/battle/battle_screen.tscn"
+		"res://scenes/missions/mission_screen.tscn"
 	)
 
 	if error != OK:
@@ -246,3 +247,16 @@ func _on_mission_pressed(encounter_id: String) -> void:
 		push_error(
 			"Impossibile avviare la missione. Codice: " + str(error)
 		)
+
+
+# Colora tutto l'hub nello stile telecamera di sorveglianza.
+func _apply_theme(node: Node) -> void:
+	for c in node.get_children():
+		if c is Button:
+			var b: Button = c
+			BattleTheme.style_button(b, "primary" if b.text.begins_with("NUOVO") else "normal", 20)
+		elif c is Label:
+			var l: Label = c
+			l.add_theme_color_override("font_color", BattleTheme.CY if l.text != "ODISPEL" else BattleTheme.WH)
+			l.add_theme_font_override("font", BattleTheme.mono() if l.text != "ODISPEL" else BattleTheme.display())
+		_apply_theme(c)

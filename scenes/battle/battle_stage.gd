@@ -144,7 +144,7 @@ func _draw_background() -> void:
 const CY_WINDOW: Color = Color("#8ff6ff")
 
 
-# ---------- Boss: il distributore ----------
+# ---------- Boss ----------
 
 func _draw_boss() -> void:
 	if state.is_empty():
@@ -163,6 +163,27 @@ func _draw_boss() -> void:
 		shadow.append(Vector2(BOSS_X + cos(a) * 210.0, GEO_FLOOR + 18.0 + sin(a) * 26.0))
 	draw_colored_polygon(shadow, Color(0, 0, 0, 0.5))
 
+	var body: Rect2
+	match str(boss["char"]):
+		"semaforo":
+			body = _draw_semaforo(boss, alive, enraged, o)
+		"tombino":
+			body = _draw_tombino(boss, alive, enraged, o)
+		_:
+			body = _draw_distributore(alive, enraged, o)
+
+	if boss_hit > 0.0:
+		draw_rect(body, Color(1, 1, 1, 0.55 * boss_hit))
+
+	# riquadro di tracciamento
+	var br := Rect2(body.position - Vector2(26.0, 26.0), body.size + Vector2(52.0, 52.0))
+	_brackets(br, BattleTheme.RD if alive else BattleTheme.CY_DARK, 5.0, 40.0)
+	if alive:
+		draw_line(Vector2(br.position.x + br.size.x * 0.5, br.position.y), Vector2(br.position.x + br.size.x * 0.5, br.position.y - 22.0), BattleTheme.RD, 3.0)
+
+
+# Il distributore: ritorna il riquadro del corpo.
+func _draw_distributore(alive: bool, enraged: bool, o: Vector2) -> Rect2:
 	var body := Rect2(BOSS_X - 170.0 + o.x, 170.0 + o.y, 340.0, 430.0)
 	var base_col: Color = Color("#0c222a") if alive else Color("#071218")
 	draw_rect(body, base_col)
@@ -199,15 +220,108 @@ func _draw_boss() -> void:
 	draw_rect(Rect2(body.position.x + 250.0, body.position.y + 262.0, 68.0, 10.0), BattleTheme.CY_DARK)
 	draw_rect(Rect2(body.position.x + 60.0, body.position.y + 350.0, 220.0, 56.0), Color("#03090c"))
 	draw_rect(Rect2(body.position.x + 60.0, body.position.y + 350.0, 220.0, 56.0), BattleTheme.CY_DIM, false, 2.0)
+	return body
 
-	if boss_hit > 0.0:
-		draw_rect(body, Color(1, 1, 1, 0.55 * boss_hit))
 
-	# riquadro di tracciamento
-	var br := Rect2(body.position - Vector2(26.0, 26.0), body.size + Vector2(52.0, 52.0))
-	_brackets(br, BattleTheme.RD if alive else BattleTheme.CY_DARK, 5.0, 40.0)
+# Il semaforo: le tre luci mostrano la mossa annunciata. Ritorna il riquadro del corpo.
+func _draw_semaforo(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
+	var cx: float = BOSS_X + o.x
+	var move: String = str(state.get("telegraph", {}).get("move", ""))
+	var lamp_cols: Array = [BattleTheme.unit_color("rosso"), BattleTheme.unit_color("giallo"), BattleTheme.unit_color("verde")]
+	var lit: Array = [false, false, false]
+	match move:
+		"rosso":
+			lit[0] = true
+		"giallo":
+			lit[1] = true
+		"verde":
+			lit[2] = true
+		"lampeggio":
+			var on: bool = int(_t * 4.0) % 2 == 0
+			lit = [on, on, on]
+	if not alive:
+		lit = [false, false, false]
+
+	# palo e base
+	draw_rect(Rect2(cx - 16.0, 440.0 + o.y, 32.0, 160.0), Color("#0a1c22"))
+	draw_rect(Rect2(cx - 16.0, 440.0 + o.y, 32.0, 160.0), BattleTheme.CY_DIM, false, 2.0)
+	draw_rect(Rect2(cx - 70.0, 586.0, 140.0, 16.0), Color("#0a1c22"))
+	draw_rect(Rect2(cx - 70.0, 586.0, 140.0, 16.0), BattleTheme.CY_DIM, false, 2.0)
+
+	# cassa
+	var body := Rect2(cx - 100.0, 140.0 + o.y, 200.0, 320.0)
+	draw_rect(body, Color("#0c222a") if alive else Color("#071218"))
+	draw_rect(body, BattleTheme.CY if alive else BattleTheme.CY_DARK, false, 3.0)
+	draw_rect(Rect2(body.position.x + 8.0, body.position.y + 8.0, body.size.x - 16.0, 14.0), Color("#050d10"))
+
+	for i in 3:
+		var c := Vector2(cx, body.position.y + 78.0 + float(i) * 96.0)
+		draw_circle(c, 40.0, Color("#03090c"))
+		var col: Color = lamp_cols[i]
+		if bool(lit[i]):
+			var flicker: float = 1.0 if not enraged else (0.7 + 0.3 * sin(_t * 40.0))
+			draw_circle(c, 52.0, Color(col, 0.18 * flicker))
+			draw_circle(c, 36.0, Color(col, flicker))
+		else:
+			draw_circle(c, 36.0, Color(col, 0.12 if alive else 0.04))
+		draw_arc(c, 40.0, 0.0, TAU, 32, BattleTheme.CY_DIM if alive else BattleTheme.CY_DARK, 2.0)
+		# visiera
+		draw_rect(Rect2(c.x - 46.0, c.y - 52.0, 92.0, 14.0), Color("#071218"))
+		draw_rect(Rect2(c.x - 46.0, c.y - 52.0, 92.0, 14.0), BattleTheme.CY_DARK, false, 2.0)
+	return Rect2(cx - 100.0, 140.0 + o.y, 200.0, 462.0)
+
+
+# Il tombino: il coperchio si solleva quando colpisce. Ritorna il riquadro del corpo.
+func _draw_tombino(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
+	var cx: float = BOSS_X + o.x
+	var col: Color = BattleTheme.unit_color(str(boss["color"]))
+	var move: String = str(state.get("telegraph", {}).get("move", ""))
+	var open_amount: float = 26.0 if alive and (move == "gorgo" or move == "risucchio") else 8.0
+	if enraged:
+		open_amount += 8.0 + sin(_t * 6.0) * 5.0
+	var base_y: float = 560.0 + o.y
+
+	# fessura: l'interno scuro con gli occhi
+	var gap := Rect2(cx - 190.0, base_y - open_amount, 380.0, open_amount + 24.0)
+	draw_rect(gap, Color("#02060a"))
 	if alive:
-		draw_line(Vector2(br.position.x + br.size.x * 0.5, br.position.y), Vector2(br.position.x + br.size.x * 0.5, br.position.y - 22.0), BattleTheme.RD, 3.0)
+		var eye_col: Color = Color(col, 0.95)
+		draw_rect(Rect2(cx - 100.0, base_y - open_amount * 0.7, 54.0, 9.0), eye_col)
+		draw_rect(Rect2(cx + 46.0, base_y - open_amount * 0.7, 54.0, 9.0), eye_col)
+
+	# tentacoli
+	if alive:
+		for k in 6:
+			var x0: float = cx - 150.0 + float(k) * 60.0
+			var h: float = 150.0 + float((k * 37) % 70) + sin(_t * 1.5 + float(k)) * 12.0
+			var pts: PackedVector2Array = PackedVector2Array()
+			for j in 11:
+				var f: float = float(j) / 10.0
+				pts.append(Vector2(x0 + sin(_t * 2.0 + float(k) + f * 4.0) * 16.0 * f, base_y - open_amount - h * f))
+			draw_polyline(pts, Color("#12202a"), 18.0 - 8.0 * 0.5)
+			draw_polyline(pts, Color(col, 0.55), 3.0)
+
+	# coperchio: ellisse con anelli
+	var lid_y: float = base_y - open_amount - 18.0
+	var lid: PackedVector2Array = PackedVector2Array()
+	for i in 32:
+		var a: float = TAU * float(i) / 32.0
+		lid.append(Vector2(cx + cos(a) * 205.0, lid_y + sin(a) * 38.0))
+	draw_colored_polygon(lid, Color("#0c222a") if alive else Color("#071218"))
+	for r in [0.78, 0.55, 0.32]:
+		var ring: PackedVector2Array = PackedVector2Array()
+		for i in 33:
+			var a2: float = TAU * float(i) / 32.0
+			ring.append(Vector2(cx + cos(a2) * 205.0 * r, lid_y + sin(a2) * 38.0 * r))
+		draw_polyline(ring, BattleTheme.CY_DIM if alive else BattleTheme.CY_DARK, 2.0)
+	var outline: PackedVector2Array = lid.duplicate()
+	outline.append(lid[0])
+	draw_polyline(outline, BattleTheme.CY if alive else BattleTheme.CY_DARK, 3.0)
+	# crepa luminosa
+	if alive:
+		draw_polyline(PackedVector2Array([Vector2(cx - 60.0, lid_y - 10.0), Vector2(cx - 20.0, lid_y + 8.0), Vector2(cx + 14.0, lid_y - 6.0), Vector2(cx + 70.0, lid_y + 12.0)]), col, 3.0)
+
+	return Rect2(cx - 210.0, 300.0 + o.y, 420.0, 300.0)
 
 
 # ---------- Combattenti ----------

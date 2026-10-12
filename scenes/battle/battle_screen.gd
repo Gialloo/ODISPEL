@@ -5,6 +5,7 @@ extends Control
 # battle_events_received e submit_choice() - SoloBattleSource o NetworkManager.
 
 const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
+const MISSION_SCENE: String = "res://scenes/missions/mission_screen.tscn"
 
 var source: Variant = null
 var pending_source: Variant = null    # sorgente da collegare appena la scena e' pronta
@@ -54,7 +55,7 @@ func _ready() -> void:
 func _start_solo() -> void:
 	var s := SoloBattleSource.new()
 	bind_source(s)
-	s.start(RosterStore.load_or_new(), "distributore", int(randi()) | 1)
+	s.start(RosterStore.load_or_new(), MissionConfig.boss_id, int(randi()) | 1, MissionConfig.tier)
 
 
 func bind_source(src: Variant) -> void:
@@ -167,7 +168,7 @@ func _build_boss_banner() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	panel.set_content(box)
-	_boss_name = BattleTheme.make_label("DISTRIBUTORE · CLASSE ANOMALIA · MINACCIA ALTA", 13, BattleTheme.RD)
+	_boss_name = BattleTheme.make_label("SOGGETTO", 13, BattleTheme.RD)
 	box.add_child(_boss_name)
 	_boss_bar = SegBar.new().setup(30, BattleTheme.RD, Vector2(0, 18))
 	_boss_bar.color_off = BattleTheme.RD_DARK
@@ -263,6 +264,9 @@ func _refresh_all() -> void:
 
 func _refresh_boss() -> void:
 	var boss: Dictionary = BattleState.boss(shown)
+	var info: Dictionary = BattleContent.BOSSES.get(str(boss["char"]), {})
+	var tier_name: String = str(BattleContent.tier_of(int(shown.get("tier", 0)))["name"])
+	_boss_name.text = "%s · %s · %s" % [str(info.get("name", "SOGGETTO")).to_upper(), str(info.get("title", "")).to_upper(), tier_name]
 	_boss_bar.set_ratio(float(boss["hp"]) / float(boss["max_hp"]))
 	var tags: String = ""
 	for s in boss["statuses"]:
@@ -632,6 +636,9 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	var title := BattleTheme.make_label("OPERAZIONE RIUSCITA" if victory else "OPERAZIONE FALLITA", 40, BattleTheme.CY if victory else BattleTheme.RD, true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
+	var mission := BattleTheme.make_label("%s · %s" % [MissionConfig.boss_title(str(BattleState.boss(shown)["char"])), str(BattleContent.tier_of(int(shown.get("tier", 0)))["name"])], 16, BattleTheme.WH)
+	mission.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(mission)
 	box.add_child(BattleTheme.make_label("PREMI", 16, BattleTheme.WH))
 	for line in _reward_lines(rewards):
 		box.add_child(BattleTheme.make_label(line, 17, BattleTheme.CY))
@@ -645,6 +652,12 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 		BattleTheme.style_button(again, "primary", 26)
 		again.pressed.connect(_on_again)
 		box.add_child(again)
+		var pick := Button.new()
+		pick.text = "SCEGLI MISSIONE"
+		pick.custom_minimum_size = Vector2(0, 44)
+		BattleTheme.style_button(pick, "normal", 20)
+		pick.pressed.connect(_on_pick_mission)
+		box.add_child(pick)
 	var hub := Button.new()
 	hub.text = "TORNA ALL'HUB"
 	hub.custom_minimum_size = Vector2(0, 44)
@@ -676,6 +689,10 @@ func _reward_lines(rewards: Dictionary) -> Array:
 
 func _on_again() -> void:
 	get_tree().reload_current_scene()
+
+
+func _on_pick_mission() -> void:
+	get_tree().change_scene_to_file(MISSION_SCENE)
 
 
 func _on_hub() -> void:

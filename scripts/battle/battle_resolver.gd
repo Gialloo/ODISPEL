@@ -31,10 +31,29 @@ static func begin_round(state: Dictionary) -> void:
 	var alive: Array = BattleState.alive_players(state)
 	var target: String = ""
 	if not alive.is_empty():
-		var rng: RNGState = _load_rng(state)
-		target = str(alive[rng.random_index(alive.size())]["id"])
-		_save_rng(state, rng)
+		if str(BattleContent.BOSS_MOVES[move_id]["target"]) == "weakest":
+			target = _weakest_player(state, alive)
+		else:
+			var rng: RNGState = _load_rng(state)
+			target = str(alive[rng.random_index(alive.size())]["id"])
+			_save_rng(state, rng)
 	state["telegraph"] = {"move": move_id, "target": target}
+
+
+# Il giocatore il cui personaggio attivo ha la frazione di PV piu' bassa
+# (a parita', il primo nell'ordine dei giocatori).
+static func _weakest_player(state: Dictionary, alive: Array) -> String:
+	var best: String = ""
+	var best_ratio: float = 2.0
+	for p in alive:
+		var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+		if u.is_empty():
+			continue
+		var ratio: float = float(u["hp"]) / float(u["max_hp"])
+		if ratio < best_ratio:
+			best_ratio = ratio
+			best = str(p["id"])
+	return best
 
 
 # ---------- Scelte ----------
@@ -337,10 +356,22 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		if not chosen.is_empty():
 			targets.append(BattleState.active_unit(state, str(chosen["id"])))
 
+	if move.has("self_shield"):
+		var shield: int = int(round(float(boss["max_hp"]) * float(move["self_shield"])))
+		boss["shield"] = int(boss["shield"]) + shield
+		events.append({"t": "shield", "src": boss["id"], "dst": boss["id"], "amount": shield})
+
 	for t in targets:
 		if not BattleState.is_alive(t):
 			continue
+		var hp_before: int = int(t["hp"])
 		_hit(state, boss, t, float(move["mult"]), events)
+		if move.has("drain"):
+			var dealt: int = hp_before - int(t["hp"])
+			var before: int = int(boss["hp"])
+			boss["hp"] = mini(int(boss["max_hp"]), before + int(round(float(dealt) * float(move["drain"]))))
+			if int(boss["hp"]) > before:
+				events.append({"t": "heal", "src": boss["id"], "dst": boss["id"], "amount": int(boss["hp"]) - before})
 		if move.has("status") and BattleState.is_alive(t):
 			for s in move["status"]:
 				_add_status(t, str(s), int(move["status"][s]), events)

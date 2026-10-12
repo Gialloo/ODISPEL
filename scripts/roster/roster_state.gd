@@ -38,6 +38,7 @@ static func new_roster() -> Dictionary:
 		"next_gear": 1,
 		"pulls": 0,
 		"pity": 0,
+		"cleared": {},
 	}
 	for id in STARTER_CHARACTERS:
 		add_character(roster, str(id))
@@ -277,6 +278,9 @@ static func validate(roster: Dictionary) -> String:
 	var gear_err: String = _validate_gear(roster)
 	if gear_err != "":
 		return gear_err
+	var cleared_err: String = _validate_cleared(roster.get("cleared", {}))
+	if cleared_err != "":
+		return cleared_err
 	var team: Array = roster["team"]
 	if team.is_empty() or team.size() > BattleTypes.TEAM_SIZE:
 		return "squadra non valida"
@@ -289,6 +293,18 @@ static func validate(roster: Dictionary) -> String:
 	for id in roster["passives"]:
 		if _used(roster, "passives", str(id)) > int(roster["passives"][id]):
 			return "passiva equipaggiata piu' volte di quante possedute: %s" % id
+	return ""
+
+
+static func _validate_cleared(cleared: Variant) -> String:
+	if not (cleared is Dictionary):
+		return "progressi non validi"
+	for id in cleared:
+		if not BattleContent.BOSSES.has(str(id)):
+			return "progressi: boss sconosciuto %s" % id
+		var n: Variant = cleared[id]
+		if not (n is int) or int(n) < 0 or int(n) > BattleContent.TIERS.size():
+			return "progressi: valore non valido per %s" % id
 	return ""
 
 
@@ -463,8 +479,44 @@ static func apply_rewards(roster: Dictionary, rewards: Dictionary) -> int:
 # ---------- Battaglia ----------
 
 # Partita in solitaria: la tua squadra + compagni IA con i personaggi fuori squadra.
-static func create_solo_battle(roster: Dictionary, player_name: String, boss_id: String, seed_value: int, ai_count: int = 2) -> Dictionary:
-	return BattleState.create_solo(player_name, team_entries(roster), spare_entries(roster), boss_id, seed_value, ai_count)
+static func create_solo_battle(roster: Dictionary, player_name: String, boss_id: String, seed_value: int, ai_count: int = 2, tier: int = 0) -> Dictionary:
+	return BattleState.create_solo(player_name, team_entries(roster), spare_entries(roster), boss_id, seed_value, ai_count, tier)
+
+
+# ---------- Progressi e sblocchi ----------
+
+# Quanti livelli di difficolta' di un boss sono stati battuti (0..3).
+static func cleared_tiers(roster: Dictionary, boss_id: String) -> int:
+	return int(roster.get("cleared", {}).get(boss_id, 0))
+
+
+# Registra una vittoria: sblocca il livello di difficolta' successivo. Ritorna true se e' un progresso nuovo.
+static func mark_cleared(roster: Dictionary, boss_id: String, tier: int) -> bool:
+	if not BattleContent.BOSSES.has(boss_id) or tier < 0 or tier >= BattleContent.TIERS.size():
+		return false
+	if not roster.has("cleared"):
+		roster["cleared"] = {}
+	if cleared_tiers(roster, boss_id) >= tier + 1:
+		return false
+	roster["cleared"][boss_id] = tier + 1
+	return true
+
+
+# Il primo boss e' sempre aperto; gli altri si aprono battendo il precedente (almeno a NORMALE).
+static func is_boss_unlocked(roster: Dictionary, boss_id: String) -> bool:
+	var i: int = BattleContent.BOSS_ORDER.find(boss_id)
+	if i < 0:
+		return false
+	if i == 0:
+		return true
+	return cleared_tiers(roster, str(BattleContent.BOSS_ORDER[i - 1])) >= 1
+
+
+# NORMALE e' aperto con il boss; ogni livello successivo si apre battendo quello prima.
+static func is_tier_unlocked(roster: Dictionary, boss_id: String, tier: int) -> bool:
+	if tier < 0 or tier >= BattleContent.TIERS.size() or not is_boss_unlocked(roster, boss_id):
+		return false
+	return tier <= cleared_tiers(roster, boss_id)
 
 
 # ---------- JSON ----------
@@ -490,6 +542,8 @@ static func from_json(text: String) -> Dictionary:
 		roster["pulls"] = 0
 	if not roster.has("pity"):
 		roster["pity"] = 0
+	if not roster.has("cleared"):
+		roster["cleared"] = {}
 	if int(roster.get("version", 0)) != VERSION or validate(roster) != "":
 		return {}
 	return roster

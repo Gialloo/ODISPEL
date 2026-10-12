@@ -1,0 +1,174 @@
+extends Control
+
+# Scelta della missione: boss e livello di difficolta'. I blocchi seguono i
+# progressi salvati nella collezione (RosterState.cleared).
+
+const BATTLE_SCENE: String = "res://scenes/battle/battle_screen.tscn"
+const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
+
+var roster: Dictionary = {}
+var selected_boss: String = "distributore"
+var selected_tier: int = 0
+var boss_buttons: Dictionary = {}
+var tier_buttons: Array = []
+var go_button: Button
+var info_label: Label
+var _desc_label: Label
+var _boss_title: Label
+var _boss_sub: Label
+
+
+func _ready() -> void:
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var window: Window = get_window()
+	if window != null:
+		window.content_scale_size = Vector2i(1280, 720)
+	if roster.is_empty():
+		roster = RosterStore.load_or_new()
+	selected_boss = MissionConfig.boss_id
+	if not RosterState.is_boss_unlocked(roster, selected_boss):
+		selected_boss = BattleContent.BOSS_ORDER[0]
+	selected_tier = MissionConfig.tier
+	_build()
+	select_boss(selected_boss)
+
+
+func _build() -> void:
+	var bg := ColorRect.new()
+	bg.color = BattleTheme.BK
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(bg)
+	var cctv := ColorRect.new()
+	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://shaders/cctv_overlay.gdshader")
+	cctv.material = mat
+	add_child(cctv)
+
+	var title := BattleTheme.make_label("SELEZIONE MISSIONE", 34, BattleTheme.CY, true)
+	title.position = Vector2(40, 24)
+	add_child(title)
+
+	# Elenco dei boss
+	var list_panel := HudPanel.new().setup("BERSAGLI", BattleTheme.CY)
+	list_panel.position = Vector2(40, 90)
+	list_panel.size = Vector2(380, 520)
+	add_child(list_panel)
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 10)
+	list_panel.set_content(list)
+	for id in BattleContent.BOSS_ORDER:
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(0, 64)
+		b.pressed.connect(select_boss.bind(id))
+		list.add_child(b)
+		boss_buttons[id] = b
+
+	# Dettagli
+	var det := HudPanel.new().setup("DOSSIER", BattleTheme.RD)
+	det.position = Vector2(440, 90)
+	det.size = Vector2(800, 520)
+	add_child(det)
+	var dbox := VBoxContainer.new()
+	dbox.add_theme_constant_override("separation", 10)
+	det.set_content(dbox)
+	_boss_title = BattleTheme.make_label("", 30, BattleTheme.RD, true)
+	dbox.add_child(_boss_title)
+	_boss_sub = BattleTheme.make_label("", 14, BattleTheme.CY)
+	_boss_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_boss_sub.custom_minimum_size = Vector2(740, 0)
+	dbox.add_child(_boss_sub)
+	_desc_label = BattleTheme.make_label("", 17, BattleTheme.WH)
+	_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_desc_label.custom_minimum_size = Vector2(740, 90)
+	dbox.add_child(_desc_label)
+	dbox.add_child(BattleTheme.make_label("LIVELLO DI MINACCIA", 15, BattleTheme.CY))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	dbox.add_child(row)
+	for i in BattleContent.TIERS.size():
+		var tb := Button.new()
+		tb.custom_minimum_size = Vector2(0, 54)
+		tb.clip_text = true
+		tb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tb.pressed.connect(select_tier.bind(i))
+		row.add_child(tb)
+		tier_buttons.append(tb)
+	info_label = BattleTheme.make_label("", 16, BattleTheme.CY)
+	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info_label.custom_minimum_size = Vector2(740, 80)
+	dbox.add_child(info_label)
+	var sp := Control.new()
+	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	dbox.add_child(sp)
+	go_button = Button.new()
+	go_button.text = "AVVIA MISSIONE"
+	go_button.custom_minimum_size = Vector2(0, 60)
+	BattleTheme.style_button(go_button, "primary", 28)
+	go_button.pressed.connect(_on_go)
+	dbox.add_child(go_button)
+
+	var back := Button.new()
+	back.text = "TORNA ALL'HUB"
+	back.position = Vector2(40, 630)
+	back.size = Vector2(380, 54)
+	BattleTheme.style_button(back, "normal", 20)
+	back.pressed.connect(_on_back)
+	add_child(back)
+
+
+func select_boss(id: String) -> bool:
+	if not BattleContent.BOSSES.has(id) or not RosterState.is_boss_unlocked(roster, id):
+		return false
+	selected_boss = id
+	if not RosterState.is_tier_unlocked(roster, id, selected_tier):
+		selected_tier = 0
+	_refresh()
+	return true
+
+
+func select_tier(t: int) -> bool:
+	if t < 0 or t >= BattleContent.TIERS.size() or not RosterState.is_tier_unlocked(roster, selected_boss, t):
+		return false
+	selected_tier = t
+	_refresh()
+	return true
+
+
+func _refresh() -> void:
+	for id in boss_buttons:
+		var b: Button = boss_buttons[id]
+		var boss: Dictionary = BattleContent.BOSSES[id]
+		var open: bool = RosterState.is_boss_unlocked(roster, id)
+		var cleared: int = RosterState.cleared_tiers(roster, id)
+		if open:
+			b.text = "%s   [%d/%d]" % [str(boss["name"]).to_upper(), cleared, BattleContent.TIERS.size()]
+		else:
+			b.text = "??? BLOCCATO"
+		b.disabled = not open
+		BattleTheme.style_button(b, "primary" if id == selected_boss else "normal", 20)
+	var boss: Dictionary = BattleContent.BOSSES[selected_boss]
+	_boss_title.text = str(boss["name"]).to_upper()
+	_boss_sub.text = str(boss["title"]).to_upper()
+	_desc_label.text = str(boss["desc"])
+	for i in tier_buttons.size():
+		var tb: Button = tier_buttons[i]
+		var t: Dictionary = BattleContent.TIERS[i]
+		var open: bool = RosterState.is_tier_unlocked(roster, selected_boss, i)
+		tb.text = str(t["name"]) if open else "%s [X]" % str(t["name"])
+		tb.disabled = not open
+		BattleTheme.style_button(tb, "primary" if i == selected_tier else "normal", 18)
+	var tier: Dictionary = BattleContent.TIERS[selected_tier]
+	info_label.text = "PV x%.1f   ATTACCO x%.2f   DIFESA +%d   PREMI x%.1f" % [float(tier["hp"]), float(tier["atk"]), int(tier["def"]), float(tier["reward"])]
+	if selected_tier + 1 < BattleContent.TIERS.size() and not RosterState.is_tier_unlocked(roster, selected_boss, selected_tier + 1):
+		info_label.text += "\nBatti questo livello per sbloccare il successivo."
+
+
+func _on_go() -> void:
+	MissionConfig.set_mission(selected_boss, selected_tier)
+	get_tree().change_scene_to_file(BATTLE_SCENE)
+
+
+func _on_back() -> void:
+	get_tree().change_scene_to_file(HUB_SCENE)

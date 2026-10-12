@@ -2,7 +2,6 @@ extends Control
 
 const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
 const BATTLE_SCENE: String = "res://scenes/battle/battle_screen.tscn"
-const BOSS_ID: String = "distributore"
 const DEFAULT_ROOM: String = "odispel"
 
 var form_box: VBoxContainer
@@ -17,6 +16,8 @@ var status_label: Label
 var room_info_label: Label
 var players_label: Label
 var start_button: Button
+var mission_pick: OptionButton
+var tier_pick: OptionButton
 
 var _leaving: bool = false
 
@@ -116,6 +117,29 @@ func _build_interface() -> void:
 	players_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	room_box.add_child(players_label)
 
+	mission_pick = OptionButton.new()
+	mission_pick.custom_minimum_size.y = 40
+	for id in BattleContent.BOSS_ORDER:
+		mission_pick.add_item(MissionConfig.boss_title(id))
+	room_box.add_child(mission_pick)
+
+	tier_pick = OptionButton.new()
+	tier_pick.custom_minimum_size.y = 40
+	for t in BattleContent.TIERS:
+		tier_pick.add_item(str(t["name"]))
+	room_box.add_child(tier_pick)
+	# L'host sceglie solo tra le missioni che ha sbloccato.
+	var host_roster: Dictionary = RosterStore.load_or_new()
+	for i in BattleContent.BOSS_ORDER.size():
+		mission_pick.set_item_disabled(i, not RosterState.is_boss_unlocked(host_roster, str(BattleContent.BOSS_ORDER[i])))
+	for i in BattleContent.TIERS.size():
+		tier_pick.set_item_disabled(i, not RosterState.is_tier_unlocked(host_roster, "distributore", i))
+	mission_pick.item_selected.connect(func(_i: int) -> void:
+		for t in BattleContent.TIERS.size():
+			tier_pick.set_item_disabled(t, not RosterState.is_tier_unlocked(host_roster, str(BattleContent.BOSS_ORDER[mission_pick.selected]), t))
+		if tier_pick.is_item_disabled(tier_pick.selected):
+			tier_pick.select(0))
+
 	start_button = Button.new()
 	start_button.text = "AVVIA PARTITA"
 	start_button.custom_minimum_size.y = 46
@@ -169,6 +193,8 @@ func _show_room() -> void:
 		+ ("  —  sei l'HOST" if manager.is_host else "  —  sei un CLIENT")
 	)
 	start_button.visible = manager.is_host
+	mission_pick.visible = manager.is_host
+	tier_pick.visible = manager.is_host
 	_refresh()
 
 
@@ -344,7 +370,7 @@ func _on_start_pressed() -> void:
 		_set_status("Impossibile avviare: servono almeno 2 giocatori connessi.")
 		return
 
-	if not manager.host_start_battle(BOSS_ID, int(randi()) | 1):
+	if not manager.host_start_battle(str(BattleContent.BOSS_ORDER[mission_pick.selected]), int(randi()) | 1, tier_pick.selected):
 		_set_status("Impossibile avviare la battaglia.")
 		return
 

@@ -218,7 +218,7 @@ func set_local_team(entries: Array) -> bool:
 
 
 # Avvia la battaglia per tutti. Servono l'host e almeno un client.
-func host_start_battle(boss_id: String, run_seed: int) -> bool:
+func host_start_battle(boss_id: String, run_seed: int, tier: int = 0) -> bool:
 	if not is_host or game == null or run_seed == 0:
 		return false
 
@@ -251,7 +251,7 @@ func host_start_battle(boss_id: String, run_seed: int) -> bool:
 			"team": team
 		})
 
-	battle = BattleState.create(specs, boss_id, run_seed)
+	battle = BattleState.create(specs, boss_id, run_seed, tier)
 	_battle_boss_id = boss_id
 	_battle_seed = run_seed
 	battle_rewards = {}
@@ -341,6 +341,10 @@ func finish() -> Dictionary:
 	_rewards_applied = true
 	var roster: Dictionary = RosterStore.load_or_new(reward_save_path)
 	RosterState.apply_rewards(roster, battle_rewards)
+
+	if str(battle["winner"]) == "players":
+		RosterState.mark_cleared(roster, str(BattleState.boss(battle)["char"]), int(battle.get("tier", 0)))
+
 	RosterStore.save(roster, reward_save_path)
 	return battle_rewards
 

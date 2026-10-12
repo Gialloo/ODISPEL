@@ -11,6 +11,7 @@ var battle: Dictionary = {}
 var local_player_id: String = "p1"
 var battle_time_left: float = -1.0     # negativo = nessun timer
 var boss_id: String = "distributore"
+var tier: int = 0
 var seed_value: int = 1
 var roster: Dictionary = {}
 var rewards: Dictionary = {}
@@ -18,13 +19,14 @@ var save_path: String = RosterStore.DEFAULT_PATH
 var _finished: bool = false
 
 
-func start(new_roster: Dictionary, new_boss_id: String, new_seed: int) -> void:
+func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier: int = 0) -> void:
 	roster = new_roster
 	boss_id = new_boss_id
 	seed_value = new_seed
+	tier = clampi(new_tier, 0, BattleContent.TIERS.size() - 1)
 	rewards = {}
 	_finished = false
-	battle = RosterState.create_solo_battle(roster, "IO", boss_id, seed_value)
+	battle = RosterState.create_solo_battle(roster, "IO", boss_id, seed_value, 2, tier)
 	battle_updated.emit()
 
 
@@ -45,5 +47,7 @@ func finish() -> Dictionary:
 	var all: Dictionary = BattleRewards.for_battle(battle, boss_id, seed_value)
 	rewards = all.get(local_player_id, {})
 	RosterState.apply_rewards(roster, rewards)
+	if str(battle["winner"]) == "players":
+		RosterState.mark_cleared(roster, boss_id, tier)
 	RosterStore.save(roster, save_path)
 	return rewards
