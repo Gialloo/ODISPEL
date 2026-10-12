@@ -216,7 +216,8 @@ func _build_boss_banner() -> void:
 	_boss_bar = SegBar.new().setup(30, BattleTheme.RD, Vector2(0, 18))
 	_boss_bar.color_off = BattleTheme.RD_DARK
 	box.add_child(_boss_bar)
-	_boss_hp = BattleTheme.make_label("INTEGRITA'", 15, BattleTheme.WH)
+	_boss_hp = BattleTheme.make_label("INTEGRITA'", 17, BattleTheme.WH)
+	_boss_hp.add_theme_font_override("font", BattleTheme.hud())
 	box.add_child(_boss_hp)
 
 	var timer_panel := HudPanel.new().setup("ORDINE ENTRO", BattleTheme.RD)

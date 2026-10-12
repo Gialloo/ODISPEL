@@ -913,18 +913,7 @@ func _draw_markers() -> void:
 	var pulse: float = 0.5 + 0.5 * sin(_t * 8.0)
 	if link_n > 0 and _positions.has(link_from) and _positions.has(link_to):
 		# fulmine neon tra i due compagni legati
-		var a: Vector2 = _positions[link_from] + Vector2(0.0, -90.0)
-		var b: Vector2 = _positions[link_to] + Vector2(0.0, -90.0)
-		var pts := PackedVector2Array([a])
-		for i in range(1, 6):
-			var f: float = float(i) / 6.0
-			pts.append(a.lerp(b, f) + Vector2(0.0, (-1.0 if i % 2 == 0 else 1.0) * (16.0 + 5.0 * float(link_n)) * (0.6 + 0.4 * pulse)))
-		pts.append(b)
-		draw_polyline(pts, Color(link_col, 0.35), 14.0 + 3.0 * float(link_n))
-		draw_polyline(pts, link_col, 5.0)
-		draw_polyline(pts, Color.WHITE, 2.0)
-		draw_circle(a, 9.0, link_col)
-		draw_circle(b, 9.0, link_col)
+		_draw_bolt(_positions[link_from] + Vector2(0.0, -90.0), _positions[link_to] + Vector2(0.0, -90.0))
 	if acting != "" and _positions.has(acting):
 		var p: Vector2 = _positions[acting]
 		var y: float = p.y - (190.0 if acting != BattleState.BOSS_ID else 230.0) - pulse * 6.0
@@ -936,6 +925,60 @@ func _draw_markers() -> void:
 		draw_arc(q, 104.0 + pulse * 6.0, 0.0, TAU, 40, Color(BattleTheme.RD, 0.85), 4.0)
 		draw_arc(q, 120.0 + pulse * 6.0, 0.4, 1.4, 12, Color(BattleTheme.WH, 0.9), 3.0)
 		draw_arc(q, 120.0 + pulse * 6.0, 3.5, 4.5, 12, Color(BattleTheme.WH, 0.9), 3.0)
+
+
+# Fulmine del LINK: percorso spezzato che cambia ~14 volte al secondo (sfarfalla), con rami, bagliore a tre strati,
+# anelli elettrici alle estremita' e una scintilla a croce a meta'.
+func _bolt_points(a: Vector2, b: Vector2, seed_value: int, amp: float, segs: int) -> PackedVector2Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var dir: Vector2 = (b - a)
+	var normal: Vector2 = dir.orthogonal().normalized()
+	var pts := PackedVector2Array([a])
+	for i in range(1, segs):
+		var f: float = float(i) / float(segs)
+		var taper: float = sin(f * PI)            # le estremita' restano ferme
+		pts.append(a + dir * f + normal * rng.randf_range(-amp, amp) * taper)
+	pts.append(b)
+	return pts
+
+
+func _draw_bolt(a: Vector2, b: Vector2) -> void:
+	var n: float = float(link_n)
+	var tick: int = int(_t * 14.0)
+	var amp: float = 22.0 + 7.0 * n
+	var main: PackedVector2Array = _bolt_points(a, b, tick * 7919 + 11, amp, 9)
+	# rami che si staccano dal percorso principale
+	var branches: Array = []
+	var brng := RandomNumberGenerator.new()
+	brng.seed = tick * 104729 + 3
+	for k in 2 + link_n:
+		var idx: int = brng.randi_range(2, main.size() - 3)
+		var start: Vector2 = main[idx]
+		var ang: float = (b - a).angle() + brng.randf_range(-1.1, 1.1)
+		var length: float = brng.randf_range(40.0, 90.0)
+		branches.append(_bolt_points(start, start + Vector2(cos(ang), sin(ang)) * length, tick * 31 + k, 10.0, 4))
+	var wide: float = 22.0 + 4.0 * n
+	draw_polyline(main, Color(link_col, 0.14), wide * 1.7, true)
+	draw_polyline(main, Color(link_col, 0.28), wide, true)
+	draw_polyline(main, Color(link_col, 0.9), 7.0, true)
+	for br in branches:
+		draw_polyline(br, Color(link_col, 0.25), 9.0, true)
+		draw_polyline(br, Color(link_col, 0.95), 3.0, true)
+		draw_polyline(br, Color(1, 1, 1, 0.9), 1.2, true)
+	draw_polyline(main, Color(1, 1, 1, 0.97), 2.6, true)
+	# estremita': anelli elettrici
+	for p in [a, b]:
+		draw_circle(p, 16.0 + 3.0 * n, Color(link_col, 0.25))
+		draw_arc(p, 20.0 + 4.0 * sin(_t * 18.0), 0.0, TAU, 20, Color(link_col, 0.95), 3.0)
+		draw_circle(p, 7.0, Color.WHITE)
+	# scintilla a croce nel punto di mezzo
+	var mid: Vector2 = main[main.size() / 2]
+	var sp: float = 16.0 + 6.0 * n + 5.0 * sin(_t * 22.0)
+	draw_line(mid + Vector2(-sp, 0), mid + Vector2(sp, 0), Color.WHITE, 3.0)
+	draw_line(mid + Vector2(0, -sp), mid + Vector2(0, sp), Color.WHITE, 3.0)
+	draw_line(mid + Vector2(-sp, 0) * 0.6 + Vector2(0, -sp) * 0.6, mid + Vector2(sp, 0) * 0.6 + Vector2(0, sp) * 0.6, Color(link_col, 0.9), 2.0)
+	draw_line(mid + Vector2(sp, 0) * 0.6 + Vector2(0, -sp) * 0.6, mid + Vector2(-sp, 0) * 0.6 + Vector2(0, sp) * 0.6, Color(link_col, 0.9), 2.0)
 
 
 func clear_markers() -> void:

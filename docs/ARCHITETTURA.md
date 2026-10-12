@@ -119,3 +119,10 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
 
 - Impostazioni video in `Settings`: `fps_limit` (60, 90, 120, 144, 240, senza limite; di base 144) e `vsync` (attivo). `Settings.apply_video()` imposta `Engine.max_fps` e il V-Sync, ed e' richiamata da `AudioManager.apply_settings`. Con il V-Sync il gioco segue il monitor.
 - Lo sfondo dei menu (`MenuBackdrop`) si ridisegna a ogni fotogramma; lo sfondo della battaglia e' un livello statico disegnato una volta sola.
+
+## Colori OPTC, passive uniche, rank
+
+- **Colori = archetipi** (`scripts/battle/archetypes.gd`): rosso STR (slancio), giallo PSY (cure/scudi +20%, +1 energia a round), viola INT (marchi/sanguinamento +1 giro, +12% sui marchiati), verde DEX (critici potenti che caricano l'ultimate), blu QCK (VEL, ultimate di partenza e carica +40%). I bonus alle statistiche entrano in `Factions.refresh`; la ruota dei vantaggi di colore e' separata.
+- **Passive e abilita' uniche** (`scripts/battle/signatures.gd`): una passiva unica per personaggio (effetti `uniq` in per mille, perche' lo stato e' JSON senza decimali) e 1 abilita' (comuni/rari) o 2 (epici/leggendari, la seconda a rank 3). Le mosse uniche (`u_<char>_a/_b`) si aggiungono a `skills` alla creazione dell'unita' e non cadono come premio.
+- **Rank**: +8% statistiche per copia, passiva +15% per rank, rank 3 seconda abilita', rank 5 RISVEGLIO (ultimate +25%, +25 di carica iniziale). Test: `tests/unit/test_archetypes.gd`.
+- **UI**: terminale ordini largo 520 px con attacco e guardia in riga e font adattivo; fulmine del LINK procedurale (`BattleStage._draw_bolt`); font HUD `BattleTheme.hud()`.

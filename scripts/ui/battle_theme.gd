@@ -27,6 +27,7 @@ const UNIT_COLORS: Dictionary = {
 
 static var _mono: Font = null
 static var _display: Font = null
+static var _hud: Font = null
 
 
 static func unit_color(color_name: String) -> Color:
@@ -54,6 +55,20 @@ static func display() -> Font:
 		fv.variation_transform = Transform2D(Vector2(1.0, 0.0), Vector2(-0.22, 1.0), Vector2.ZERO)
 		_display = fv
 	return _display
+
+
+# Font dell'HUD (titoli dei pannelli, numeri): sans pesante e netto, leggermente inclinato, alla Overwatch.
+# Usa Bahnschrift (Windows) se c'e', altrimenti un grassetto di sistema.
+static func hud() -> Font:
+	if _hud == null:
+		var base := SystemFont.new()
+		base.font_names = PackedStringArray(["Bahnschrift", "Segoe UI Black", "Arial Black", "Roboto Black", "DejaVu Sans Bold", "sans-serif"])
+		base.font_weight = 800
+		var fv := FontVariation.new()
+		fv.base_font = base
+		fv.variation_transform = Transform2D(Vector2(1.0, 0.0), Vector2(-0.14, 1.0), Vector2.ZERO)
+		_hud = fv
+	return _hud
 
 
 static func make_label(text: String, size: int = 16, color: Color = CY, use_display: bool = false) -> Label:

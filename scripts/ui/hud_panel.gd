@@ -41,9 +41,14 @@ func _draw() -> void:
 	outline.append(outline[0])
 	draw_polyline(outline, accent, 2.0)
 	if title != "":
-		var font: Font = BattleTheme.display()
+		var font: Font = BattleTheme.hud()
 		var tw: float = font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
 		var tab: PackedVector2Array = PackedVector2Array([
 			Vector2(12.0, -12.0), Vector2(12.0 + tw + 34.0, -12.0), Vector2(12.0 + tw + 20.0, 12.0), Vector2(12.0, 12.0)])
 		draw_colored_polygon(tab, accent)
 		draw_string(font, Vector2(24.0, 6.0), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, BattleTheme.BK)
+		# tre chevron dopo la linguetta e un filo luminoso lungo il bordo alto
+		for i in 3:
+			var cx: float = 12.0 + tw + 44.0 + float(i) * 11.0
+			draw_polyline(PackedVector2Array([Vector2(cx, -8.0), Vector2(cx + 7.0, 0.0), Vector2(cx, 8.0)]), Color(accent, 0.75 - 0.2 * float(i)), 3.0)
+		draw_line(Vector2(cut + 4.0, 3.0), Vector2(size.x - 6.0, 3.0), Color(1, 1, 1, 0.10), 1.0)
