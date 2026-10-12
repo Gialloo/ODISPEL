@@ -8,6 +8,15 @@ const DEFAULT_PATH: String = "user://odispel_roster.json"
 
 
 static func save(roster: Dictionary, path: String = DEFAULT_PATH) -> bool:
+	var ok: bool = _write(roster, path)
+	if ok:
+		Notify.saved()
+	else:
+		Notify.save_failed()
+	return ok
+
+
+static func _write(roster: Dictionary, path: String) -> bool:
 	if RosterState.validate(roster) != "":
 		return false
 	# scrive su un file temporaneo e poi lo rinomina: niente file a meta' se si chiude

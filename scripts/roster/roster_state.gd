@@ -110,6 +110,23 @@ static func set_team(roster: Dictionary, ids: Array) -> bool:
 	return true
 
 
+# Gli operatori posseduti piu' forti (rarita', poi livello, poi rank), al massimo TEAM_SIZE.
+static func best_team(roster: Dictionary) -> Array:
+	var ids: Array = roster["characters"].keys()
+	ids.sort()
+	ids.sort_custom(func(a: String, b: String) -> bool:
+		var ca: Dictionary = roster["characters"][a]
+		var cb: Dictionary = roster["characters"][b]
+		var ra: int = int(BattleContent.CHARACTERS[a]["rarity"])
+		var rb: int = int(BattleContent.CHARACTERS[b]["rarity"])
+		if ra != rb:
+			return ra > rb
+		if int(ca["level"]) != int(cb["level"]):
+			return int(ca["level"]) > int(cb["level"])
+		return int(ca.get("rank", 0)) > int(cb.get("rank", 0)))
+	return ids.slice(0, BattleTypes.TEAM_SIZE)
+
+
 static func team_entries(roster: Dictionary) -> Array:
 	var out: Array = []
 	for id in roster["team"]:
@@ -500,6 +517,17 @@ static func mark_cleared(roster: Dictionary, boss_id: String, tier: int) -> bool
 		return false
 	roster["cleared"][boss_id] = tier + 1
 	return true
+
+
+# Cosa si e' sbloccato battendo `boss_id` al livello `tier` per la prima volta.
+static func unlock_news(boss_id: String, tier: int) -> Array:
+	var news: Array = []
+	if tier + 1 < BattleContent.TIERS.size():
+		news.append("LIVELLO %s SBLOCCATO: %s" % [str(BattleContent.TIERS[tier + 1]["name"]), MissionConfig.boss_title(boss_id)])
+	var index: int = BattleContent.BOSS_ORDER.find(boss_id)
+	if tier == 0 and index >= 0 and index + 1 < BattleContent.BOSS_ORDER.size():
+		news.append("NUOVO BERSAGLIO: %s" % MissionConfig.boss_title(str(BattleContent.BOSS_ORDER[index + 1])))
+	return news
 
 
 # Il primo boss e' sempre aperto; gli altri si aprono battendo il precedente (almeno a NORMALE).

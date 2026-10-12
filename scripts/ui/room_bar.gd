@@ -18,8 +18,6 @@ var _drop: PanelContainer
 var _cards: VBoxContainer
 var _picker: LobbyView.MissionPicker
 var _start_button: Button
-var _toast: Label
-var _toast_left: float = 0.0
 var _last_sig: String = ""
 
 
@@ -118,24 +116,8 @@ func _build() -> void:
 	leave.pressed.connect(_on_leave)
 	col.add_child(leave)
 
-	_toast = BattleTheme.make_label("", 16, BattleTheme.WH)
-	_toast.anchor_left = 0.5
-	_toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast.anchor_right = 0.5
-	_toast.offset_left = -300.0
-	_toast.offset_right = 300.0
-	_toast.offset_top = 14.0
-	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast.visible = false
-	_root.add_child(_toast)
 
 	_drop.visible = false
-
-
-func show_toast(text: String, seconds: float = 4.0) -> void:
-	_toast.text = text
-	_toast.visible = true
-	_toast_left = seconds
 
 
 func _manager() -> NetworkManager:
@@ -178,13 +160,6 @@ func refresh() -> void:
 		_drop.offset_top = _drop.offset_bottom - _drop.get_combined_minimum_size().y
 
 
-func _process(delta: float) -> void:
-	if _toast_left > 0.0:
-		_toast_left -= delta
-		if _toast_left <= 0.0:
-			_toast.visible = false
-
-
 func _on_ready() -> void:
 	var m: NetworkManager = _manager()
 	if m != null:
@@ -199,11 +174,11 @@ func _on_toggle() -> void:
 func _on_start() -> void:
 	var m: NetworkManager = _manager()
 	if m != null and not m.host_launch():
-		show_toast("Servono almeno 2 giocatori e tutti PRONTI.")
+		Notify.warning("Servono almeno 2 giocatori e tutti PRONTI.")
 
 
 func _on_open_lobby() -> void:
-	get_tree().change_scene_to_file("res://scenes/lobby/lobby_demo.tscn")
+	SceneRouter.go("lobby")
 
 
 func _on_leave() -> void:

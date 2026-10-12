@@ -3,9 +3,6 @@ extends Control
 # Scelta della missione: boss e livello di difficolta'. I blocchi seguono i
 # progressi salvati nella collezione (RosterState.cleared).
 
-const BATTLE_SCENE: String = "res://scenes/battle/battle_screen.tscn"
-const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
-
 var roster: Dictionary = {}
 var selected_boss: String = "distributore"
 var selected_tier: int = 0
@@ -25,10 +22,10 @@ func _ready() -> void:
 		window.content_scale_size = Vector2i(1280, 720)
 	if roster.is_empty():
 		roster = RosterStore.load_or_new()
-	selected_boss = MissionConfig.boss_id
-	if not RosterState.is_boss_unlocked(roster, selected_boss):
-		selected_boss = BattleContent.BOSS_ORDER[0]
-	selected_tier = MissionConfig.tier
+	# Si apre sulla missione consigliata: il primo boss non ancora finito.
+	var next: Dictionary = MissionConfig.suggest(roster)
+	selected_boss = str(next["boss"])
+	selected_tier = int(next["tier"])
 	_build()
 	select_boss(selected_boss)
 
@@ -109,6 +106,8 @@ func _build() -> void:
 	go_button.pressed.connect(_on_go)
 	dbox.add_child(go_button)
 
+	add_child(_hint("INVIO avvia  ·  1-3 bersaglio  ·  SU/GIU difficolta'  ·  ESC indietro", Vector2(440, 640)))
+
 	var back := Button.new()
 	back.text = "TORNA ALL'HUB"
 	back.position = Vector2(40, 630)
@@ -171,8 +170,31 @@ func _refresh() -> void:
 
 func _on_go() -> void:
 	MissionConfig.set_mission(selected_boss, selected_tier)
-	get_tree().change_scene_to_file(BATTLE_SCENE)
+	SceneRouter.go("battle", true)
 
 
 func _on_back() -> void:
-	get_tree().change_scene_to_file(HUB_SCENE)
+	SceneRouter.go("hub")
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	match event.keycode:
+		KEY_ESCAPE:
+			_on_back()
+		KEY_ENTER, KEY_KP_ENTER:
+			if not go_button.disabled:
+				_on_go()
+		KEY_1, KEY_2, KEY_3:
+			select_boss(str(BattleContent.BOSS_ORDER[int(event.keycode) - int(KEY_1)]))
+		KEY_UP:
+			select_tier(selected_tier - 1)
+		KEY_DOWN:
+			select_tier(selected_tier + 1)
+
+
+func _hint(text: String, pos: Vector2) -> Label:
+	var l := BattleTheme.make_label(text, 13, BattleTheme.CY_DARK)
+	l.position = pos
+	return l

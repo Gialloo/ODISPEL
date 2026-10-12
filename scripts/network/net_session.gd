@@ -15,13 +15,11 @@ var manager: NetworkManager = null
 # e rientra con lo stesso token riprende lo stesso giocatore.
 var client_token: String = ""
 
-const BATTLE_PATH: String = "res://scenes/battle/battle_screen.tscn"
-const HUB_PATH: String = "res://scenes/hub/hub_demo.tscn"
-
 var bar: RoomBar = null
 var last_error: String = ""
 var _last_scene: Node = null
 var _entering_battle: bool = false
+var _known_lobby: Dictionary = {}
 
 
 func _ready() -> void:
@@ -80,6 +78,7 @@ func start_host(
 		return false
 
 	_attach()
+	Notify.busy("rete", "CONNESSIONE AL SERVER...")
 	return true
 
 
@@ -97,6 +96,7 @@ func start_client(url: String, room_id: String, display_name: String) -> bool:
 
 	client_token = manager.session_token
 	_attach()
+	Notify.busy("rete", "CONNESSIONE AL SERVER...")
 	return true
 
 
@@ -128,6 +128,8 @@ func close() -> void:
 	manager.queue_free()
 	manager = null
 	_entering_battle = false
+	_known_lobby = {}
+	Notify.idle("rete")
 
 	if bar != null:
 		bar.expanded = false
@@ -138,13 +140,10 @@ func close() -> void:
 func leave_room() -> void:
 	close()
 
-	var scene: Node = get_tree().current_scene
+	if SceneRouter.is_current("battle"):
+		SceneRouter.go("hub")
 
-	if scene != null and str(scene.scene_file_path).contains("battle_screen"):
-		get_tree().change_scene_to_file(HUB_PATH)
-
-	if bar != null:
-		bar.show_toast("Sei uscito dalla stanza.")
+	Notify.toast("Sei uscito dalla stanza.")
 
 
 func _attach() -> void:
@@ -154,8 +153,12 @@ func _attach() -> void:
 	manager.battle_updated.connect(_on_battle_updated)
 	manager.network_error.connect(_on_network_error)
 	manager.player_left.connect(_on_player_left)
-	manager.player_assigned.connect(func(_id: String) -> void: _on_lobby_updated())
-	manager.room_joined.connect(_on_lobby_updated)
+	manager.player_assigned.connect(_on_player_assigned)
+	manager.room_joined.connect(_on_room_joined)
+	manager.waiting_for_host.connect(func(attempt: int) -> void:
+		Notify.busy("rete", "RICERCA DELL'HOST... (%d)" % attempt))
+	manager.signaling_lost.connect(func() -> void:
+		Notify.warning("Il server non risponde: nessun altro potra' entrare."))
 
 	if manager.is_host:
 		manager.refresh_lobby()
@@ -169,28 +172,79 @@ func refresh_team() -> void:
 	manager.set_local_team(RosterState.team_entries(RosterStore.load_or_new()))
 
 
+func _on_room_joined() -> void:
+	if manager != null and manager.is_host:
+		Notify.idle("rete")
+		Notify.success("Stanza creata. Aspetta gli altri operatori.")
+
+	_on_lobby_updated()
+
+
+func _on_player_assigned(_id: String) -> void:
+	if manager != null and not manager.is_host:
+		Notify.idle("rete")
+		Notify.success("Sei nella stanza.")
+
+	_on_lobby_updated()
+
+
 func _on_lobby_updated() -> void:
+	if manager != null:
+		_announce_changes(_known_lobby, manager.lobby)
+		_known_lobby = manager.lobby.duplicate(true)
+
 	if bar != null:
 		bar.refresh()
 
 
-func _on_player_left(player_id: String) -> void:
-	if bar != null:
-		var name: String = player_id
+# Dice al giocatore cosa e' cambiato nella lobby: chi entra, chi e' pronto, la missione.
+func _announce_changes(old: Dictionary, new: Dictionary) -> void:
+	if old.is_empty():
+		return
 
-		for p in manager.lobby.get("players", []) if manager != null else []:
+	var before: Dictionary = {}
+
+	for p in old.get("players", []):
+		before[str(p["id"])] = p
+
+	var me: String = manager.local_player_id
+
+	for p in new.get("players", []):
+		var id: String = str(p["id"])
+		var name: String = str(p["name"]).to_upper()
+
+		if id == me:
+			continue
+
+		if not before.has(id):
+			Notify.toast("%s E' ENTRATO NELLA STANZA" % name)
+		elif bool(p["ready"]) and not bool(before[id]["ready"]):
+			Notify.success("%s E' PRONTO" % name)
+
+	if str(old.get("boss", "")) != str(new.get("boss", "")) or int(old.get("tier", 0)) != int(new.get("tier", 0)):
+		if not manager.is_host:
+			Notify.toast("MISSIONE: %s · %s" % [
+				MissionConfig.boss_title(str(new["boss"])),
+				str(BattleContent.tier_of(int(new["tier"]))["name"])
+			])
+
+
+func _on_player_left(player_id: String) -> void:
+	var name: String = player_id
+
+	if manager != null:
+		for p in _known_lobby.get("players", []):
 			if str(p["id"]) == player_id:
 				name = str(p["name"])
 
-		bar.show_toast("%s ha lasciato la stanza." % name)
+	Notify.warning("%s ha lasciato la stanza." % name.to_upper())
 
 
 func _on_network_error(reason: String) -> void:
 	last_error = reason
 	close()
 
-	if bar != null:
-		bar.show_toast("Errore di rete: " + reason, 8.0)
+	Notify.error("Errore di rete: " + reason)
 
 
 # La battaglia parte: tutti i giocatori della stanza ci vengono portati,
@@ -204,7 +258,7 @@ func _on_battle_updated() -> void:
 
 	var scene: Node = get_tree().current_scene
 
-	if scene != null and str(scene.scene_file_path).contains("battle_screen") and scene.get("source") == manager:
+	if SceneRouter.is_current("battle") and scene.get("source") == manager:
 		return
 
 	enter_battle()
@@ -215,7 +269,18 @@ func enter_battle() -> void:
 		return
 
 	_entering_battle = true
-	var packed: PackedScene = load(BATTLE_PATH) as PackedScene
+	Notify.transition(_swap_to_battle, "PREPARAZIONE OPERAZIONE")
+
+	# Pronto per la battaglia successiva.
+	await get_tree().process_frame
+	_entering_battle = false
+
+
+func _swap_to_battle() -> void:
+	if manager == null:
+		return
+
+	var packed: PackedScene = load(SceneRouter.path_of("battle")) as PackedScene
 	var battle_scene: Node = packed.instantiate()
 	battle_scene.set("pending_source", manager)
 	var tree: SceneTree = get_tree()
@@ -228,10 +293,6 @@ func enter_battle() -> void:
 
 	if bar != null:
 		bar.refresh()
-
-	# Pronto per la battaglia successiva.
-	await tree.process_frame
-	_entering_battle = false
 
 
 func _new_manager() -> NetworkManager:

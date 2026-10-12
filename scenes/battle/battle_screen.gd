@@ -4,9 +4,6 @@ extends Control
 # offra: battle, local_player_id, battle_time_left, battle_updated,
 # battle_events_received e submit_choice() - SoloBattleSource o NetworkManager.
 
-const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
-const LOBBY_SCENE: String = "res://scenes/lobby/lobby_demo.tscn"
-const MISSION_SCENE: String = "res://scenes/missions/mission_screen.tscn"
 
 var source: Variant = null
 var pending_source: Variant = null    # sorgente da collegare appena la scena e' pronta
@@ -521,6 +518,16 @@ func _on_order_pressed(move_id: String) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
+	# A battaglia finita: INVIO = rigioca / torna alla lobby, ESC = esci.
+	if _ended_shown:
+		if event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
+			if source is NetworkManager:
+				_on_hub()
+			else:
+				_on_again()
+		elif event.keycode == KEY_ESCAPE:
+			SceneRouter.go("hub" if not (source is NetworkManager) else "lobby")
+		return
 	var idx: int = int(event.keycode) - int(KEY_1)
 	if idx >= 0 and idx < _order_buttons.size():
 		var b: Button = _order_buttons[idx]
@@ -697,16 +704,16 @@ func _reward_lines(rewards: Dictionary) -> Array:
 
 
 func _on_again() -> void:
-	get_tree().reload_current_scene()
+	SceneRouter.go("battle", true)
 
 
 func _on_pick_mission() -> void:
-	get_tree().change_scene_to_file(MISSION_SCENE)
+	SceneRouter.go("missions")
 
 
 func _on_hub() -> void:
 	# In rete la stanza resta aperta: si torna alla lobby con tutti gli altri.
-	get_tree().change_scene_to_file(LOBBY_SCENE if source is NetworkManager else HUB_SCENE)
+	SceneRouter.go("lobby" if source is NetworkManager else "hub")
 
 
 func _on_leave_room() -> void:
@@ -715,4 +722,4 @@ func _on_leave_room() -> void:
 		session.leave_room()
 	else:
 		(source as NetworkManager).shutdown()
-		get_tree().change_scene_to_file(HUB_SCENE)
+		SceneRouter.go("hub")

@@ -107,16 +107,15 @@ func _run() -> void:
 	_check("tutti pronti: si puo' avviare", m.all_ready())
 	_check("AVVIA si sblocca nella barra", not bar._start_button.disabled)
 	_check("l'host avvia", m.host_launch())
-	await process_frame
-	await process_frame
+	await create_timer(0.6).timeout
 	_check("si entra in battaglia dall'hub", str(current_scene.scene_file_path).contains("battle_screen"))
 	_check("la battaglia e' quella di rete", current_scene.source == m)
 	_check("in battaglia la barra e' nascosta", not bar.visible)
 
 	# uscita dalla stanza
+	await create_timer(1.2).timeout
 	ns.leave_room()
-	await process_frame
-	await process_frame
+	await create_timer(0.5).timeout
 	_check("uscendo la stanza si chiude", ns.manager == null)
 	_check("si torna all'hub", str(current_scene.scene_file_path).contains("hub_demo"))
 	_check("senza stanza la barra sparisce", not bar.visible)

@@ -5,8 +5,6 @@ extends Control
 # La stanza vive in NetSession, quindi si puo' uscire da questa schermata
 # (hub, squadra, missioni) senza perderla: la barra in alto la tiene a portata.
 
-const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
-const ROSTER_SCENE: String = "res://scenes/roster/roster_screen.tscn"
 const DEFAULT_ROOM: String = "odispel"
 
 var form_panel: HudPanel
@@ -162,14 +160,14 @@ func _build_room() -> void:
 	squad.text = "SQUADRA"
 	squad.custom_minimum_size = Vector2(160, 54)
 	BattleTheme.style_button(squad, "normal", 20)
-	squad.pressed.connect(func() -> void: get_tree().change_scene_to_file(ROSTER_SCENE))
+	squad.pressed.connect(func() -> void: SceneRouter.go("roster"))
 	row.add_child(squad)
 
 	var hub := Button.new()
 	hub.text = "HUB"
 	hub.custom_minimum_size = Vector2(110, 54)
 	BattleTheme.style_button(hub, "normal", 20)
-	hub.pressed.connect(func() -> void: get_tree().change_scene_to_file(HUB_SCENE))
+	hub.pressed.connect(func() -> void: SceneRouter.go("hub"))
 	row.add_child(hub)
 
 	var leave := Button.new()
@@ -324,6 +322,20 @@ func _refresh() -> void:
 	start_button.disabled = not manager.all_ready()
 
 
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed or event.echo or not _in_room:
+		return
+	# SPAZIO = pronto / annulla, INVIO = avvia (host), ESC = hub (la stanza resta aperta)
+	match event.keycode:
+		KEY_SPACE:
+			_on_ready_pressed()
+		KEY_ENTER, KEY_KP_ENTER:
+			if not start_button.disabled and start_button.visible:
+				_on_start_pressed()
+		KEY_ESCAPE:
+			SceneRouter.go("hub")
+
+
 func _on_ready_pressed() -> void:
 	var manager: NetworkManager = NetSession.manager
 	if manager != null:
@@ -345,4 +357,4 @@ func _on_leave_pressed() -> void:
 
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file(HUB_SCENE)
+	SceneRouter.go("hub")

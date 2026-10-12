@@ -4,7 +4,6 @@ extends Control
 # potenziamento dei personaggi e reclutamento (singolo / x10).
 # Ogni modifica viene salvata subito su save_path.
 
-const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
 const RARITY_COLORS: Array = [Color("#c9dde2"), Color("#7cf0ff"), Color("#b07bff"), Color("#ffd25f")]
 
 var roster: Dictionary = {}
@@ -150,6 +149,13 @@ func _build_team_page() -> void:
 	_slots_box = HBoxContainer.new()
 	_slots_box.add_theme_constant_override("separation", 10)
 	squad.set_content(_slots_box)
+	var auto := Button.new()
+	auto.text = "SQUADRA MIGLIORE"
+	auto.position = Vector2(1010, 2)
+	auto.size = Vector2(236, 28)
+	BattleTheme.style_button(auto, "normal", 14)
+	auto.pressed.connect(auto_team)
+	squad.add_child(auto)
 
 	var card := HudPanel.new().setup("SCHEDA", BattleTheme.CY)
 	card.position = Vector2(466, 150)
@@ -322,7 +328,44 @@ func pull(count: int) -> bool:
 		return _say("Reclutamento non riuscito.", false)
 	last_results = r["results"]
 	_save()
+	_announce_pulls(last_results)
 	return _say("Reclutamento completato (-%d monete)." % int(r["cost"]), true)
+
+
+# Avvisa dei nuovi operatori ottenuti (max 3, i migliori per primi).
+func _announce_pulls(results: Array) -> void:
+	var fresh: Array = []
+	for r in results:
+		if str(r["outcome"]) == "new":
+			fresh.append(r)
+	fresh.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["rarity"]) > int(b["rarity"]))
+	for r in fresh.slice(0, 3):
+		Notify.toast("NUOVO OPERATORE: %s (%s)" % [str(BattleContent.CHARACTERS[str(r["char"])]["name"]).to_upper(), str(BattleTypes.RARITIES[int(r["rarity"])]).to_upper()], Notify.Kind.WARNING)
+
+
+# Mette in squadra i migliori operatori posseduti, senza cercarli uno a uno.
+func auto_team() -> bool:
+	var best: Array = RosterState.best_team(roster)
+	if best == roster["team"]:
+		return _say("La squadra e' gia' la migliore possibile.", true)
+	if not RosterState.set_team(roster, best):
+		return _say("Squadra non valida.", false)
+	slot_target = 0
+	selected = str(best[0])
+	_save()
+	return _say("Squadra migliore schierata.", true)
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	match event.keycode:
+		KEY_ESCAPE:
+			_on_back()
+		KEY_LEFT:
+			cycle_char(-1)
+		KEY_RIGHT:
+			cycle_char(1)
 
 
 # Passa all'operatore posseduto precedente/successivo.
@@ -409,6 +452,7 @@ func upgrade_gear(gear_id: String) -> bool:
 
 func _say(text: String, ok: bool) -> bool:
 	status_text = text
+	Notify.toast(text, Notify.Kind.SUCCESS if ok else Notify.Kind.ERROR)
 	refresh()
 	if _status_label != null:
 		_status_label.add_theme_color_override("font_color", BattleTheme.WH if ok else BattleTheme.RD)
@@ -420,9 +464,7 @@ func _save() -> void:
 
 
 func _on_back() -> void:
-	var error := get_tree().change_scene_to_file(HUB_SCENE)
-	if error != OK:
-		push_error("Impossibile tornare all'hub. Codice: " + str(error))
+	SceneRouter.go("hub")
 
 
 # ---------- Aggiornamento grafico ----------

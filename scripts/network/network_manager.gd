@@ -495,7 +495,12 @@ func finish() -> Dictionary:
 	RosterState.apply_rewards(roster, battle_rewards)
 
 	if str(battle["winner"]) == "players":
-		RosterState.mark_cleared(roster, str(BattleState.boss(battle)["char"]), int(battle.get("tier", 0)))
+		var boss_id: String = str(BattleState.boss(battle)["char"])
+		var tier: int = int(battle.get("tier", 0))
+
+		if RosterState.mark_cleared(roster, boss_id, tier):
+			for line in RosterState.unlock_news(boss_id, tier):
+				Notify.success(line)
 
 	RosterStore.save(roster, reward_save_path)
 	return battle_rewards
