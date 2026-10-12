@@ -591,7 +591,7 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	gauge.position = Vector2(104, 34)
 	inner.add_child(gauge)
 	var where_l := BattleTheme.make_label(where, 11, fg if is_active or not alive else (BattleTheme.BK if selected else BattleTheme.WH), is_active)
-	where_l.position = Vector2(304, 2)
+	where_l.position = Vector2(332 if TouchUi.active() else 304, 2)
 	inner.add_child(where_l)
 	if int(u["gauge"]) >= BattleTypes.GAUGE_MAX and alive:
 		var ult_l := BattleTheme.make_label("ULT", 12, BattleTheme.BK if selected else BattleTheme.RD, true)
@@ -675,6 +675,8 @@ func _refresh_orders() -> void:
 		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		BattleTheme.style_button(b, str(e["kind"]), 26 if primary else 13)
 		b.disabled = err != "" or locked or animating
+		var oic: GameIcon = GameIcon.attach(b, GameIcon.move_key(move_id), BattleTheme.WH if primary else GameIcon.move_color(move_id), 30.0 if primary else 18.0)
+		oic.modulate.a = 0.35 if b.disabled else 1.0
 		b.pressed.connect(_on_order_pressed.bind(move_id))
 		b.focus_mode = Control.FOCUS_NONE
 		if primary:

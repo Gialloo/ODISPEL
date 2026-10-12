@@ -79,3 +79,16 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
   in `Lore.CHARACTERS` (lo controlla `test_factions.gd`).
 - Le tre guide usano la finestra `GachaGuide` (`open_pages`) e si aprono dall'archivio operatori (bottoni STRATEGIE, ARCHIVIO, LEGENDA).
 - Il tutorial del primo combattimento ha un passo su classi e fazioni.
+
+## Leggibilita' di battaglia e menu
+
+- Battaglia: `BattleResolver.begin_round` calcola subito le scelte dei compagni IA (visibili anche ai client: `BattleNet.snapshot_for`);
+  `BattleResolver.action_order(state)` da' l'ordine in cui agiranno (priorita', velocita'). Il pannello ORDINE DEL TURNO
+  (`BattleScreen.turn_rows`) lo mostra. Ogni compagno IA sceglie da solo: non copia il giocatore.
+- `BattleStage`: la panchina e' disegnata scura/trasparente dietro i combattenti; etichette TU / IA<n> / nome; segnalino rosso
+  su chi agisce e cerchio su chi subisce (`acting`, `acting_target`).
+- Archivio operatori: in alto la squadra (3 carte, `OperatorCards.slot_card`), sotto la griglia della collezione
+  (`OperatorCards.tile`) e la scheda. Nell'equipaggiamento il ritratto e le icone dell'operatore che si sta modificando.
+- `scripts/ui/game_icon.gd` (`GameIcon`): icone vettoriali segnaposto per classi, fazioni, tipi di mossa, equipaggiamento e valute.
+  `GameIcon.move_key(id)` ricava l'icona dalla mossa; `GameIcon.attach(button, chiave, colore)` la mette in un pulsante.
+  Per grafica vera basta sostituire il disegno in `_draw`.

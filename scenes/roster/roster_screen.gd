@@ -24,6 +24,7 @@ var next_seed: int = 0               # 0 = casuale; i test lo fissano
 
 var _coins_label: Label
 var _mats_label: Label
+var _lega_label: Label
 var _status_label: Label
 var _tab_buttons: Dictionary = {}
 var guide_button: Button
@@ -34,16 +35,20 @@ var _team_page: Control
 var _recruit_page: Control
 var _equip_page: Control
 var _equip_name: Label
+var _equip_info: Label
+var _equip_icons: HBoxContainer
+var _detail_icons: HBoxContainer
+var _equip_portrait: PortraitView
 var _equip_slots_box: VBoxContainer
 var _equip_list: VBoxContainer
 var _equip_action: HBoxContainer
 var _equip_title: HudPanel
-var _list_box: VBoxContainer
+var _list_box: GridContainer
 var _slots_box: HBoxContainer
 var _detail_label: Label
 var _detail_portrait: PortraitView
 var _detail_title: Label
-var _action_box: HBoxContainer
+var _action_box: GridContainer
 var _pity_label: Label
 var _results_box: VBoxContainer
 var _pull_buttons: Array = []
@@ -76,15 +81,20 @@ func _build() -> void:
 	add_child(sub)
 
 	_coins_label = BattleTheme.make_label("", 22, BattleTheme.CY, true)
-	_coins_label.position = Vector2(820, 14)
-	_coins_label.size = Vector2(440, 30)
-	_coins_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_coins_label.position = Vector2(1044, 12)
+	_coins_label.size = Vector2(216, 30)
 	add_child(_coins_label)
+	_header_icon("coin", Vector2(1012, 14), 26.0)
 	_mats_label = BattleTheme.make_label("", 16, BattleTheme.CY_DIM)
-	_mats_label.position = Vector2(700, 48)
-	_mats_label.size = Vector2(560, 24)
-	_mats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_mats_label.position = Vector2(1040, 52)
+	_mats_label.size = Vector2(84, 24)
 	add_child(_mats_label)
+	_header_icon("nucleo", Vector2(1014, 52), 22.0)
+	_lega_label = BattleTheme.make_label("", 16, BattleTheme.CY_DIM)
+	_lega_label.position = Vector2(1156, 52)
+	_lega_label.size = Vector2(104, 24)
+	add_child(_lega_label)
+	_header_icon("lega", Vector2(1130, 52), 22.0)
 
 	var x: float = 24.0
 	for entry in [["squadra", "SQUADRA"], ["equip", "EQUIPAGGIO"], ["reclutamento", "RECLUTAMENTO"]]:
@@ -136,8 +146,14 @@ func _build() -> void:
 	ScreenFx.menu_overlays(self, BattleTheme.RD)
 
 
+func _header_icon(key: String, pos: Vector2, px: float) -> void:
+	var ic := GameIcon.new().setup(key, GameIcon.currency_color(key), px)
+	ic.position = pos
+	add_child(ic)
+
+
 # Sul telefono le liste lunghe si scorrono con il dito; sul PC restano com'erano.
-func _set_scrolled(panel: HudPanel, box: VBoxContainer) -> void:
+func _set_scrolled(panel: HudPanel, box: Container) -> void:
 	if not TouchUi.active():
 		panel.set_content(box)
 		return
@@ -159,36 +175,43 @@ func _page() -> Control:
 func _build_team_page() -> void:
 	_team_page = _page()
 
-	var coll := HudPanel.new().setup("COLLEZIONE", BattleTheme.CY)
-	coll.position = Vector2(20, 14)
-	coll.size = Vector2(430, 494)
-	_team_page.add_child(coll)
-	_list_box = VBoxContainer.new()
-	_list_box.add_theme_constant_override("separation", 3)
-	_set_scrolled(coll, _list_box)
-
-	var squad := HudPanel.new().setup("SQUADRA ATTIVA", BattleTheme.RD)
-	squad.position = Vector2(466, 14)
-	squad.size = Vector2(794, 120)
+	# in alto la squadra (anteprima dei 3 posti), sotto a sinistra la griglia, a destra la scheda
+	var squad := HudPanel.new().setup("LA TUA SQUADRA  -  3 POSTI", BattleTheme.RD)
+	squad.position = Vector2(20, 8)
+	squad.size = Vector2(1240, 158)
 	_team_page.add_child(squad)
 	_slots_box = HBoxContainer.new()
-	_slots_box.add_theme_constant_override("separation", 10)
+	_slots_box.add_theme_constant_override("separation", 12)
 	squad.set_content(_slots_box)
+	var squad_hint := BattleTheme.make_label("IL POSTO ROSSO E' QUELLO CHE CAMBI", 13, BattleTheme.CY_DIM)
+	squad_hint.position = Vector2(420, 4)
+	squad.add_child(squad_hint)
 	var auto := Button.new()
-	auto.text = "SQUADRA MIGLIORE"
-	auto.position = Vector2(1010, 2)
-	auto.size = Vector2(236, 28)
+	auto.text = "MIGLIORE" if TouchUi.active() else "SQUADRA MIGLIORE"
+	auto.position = Vector2(1080 if TouchUi.active() else 990, 2)
+	auto.size = Vector2(160 if TouchUi.active() else 236, 28)
 	BattleTheme.style_button(auto, "normal", 14)
 	auto.pressed.connect(auto_team)
 	squad.add_child(auto)
 
-	var card := HudPanel.new().setup("SCHEDA", BattleTheme.CY)
-	card.position = Vector2(466, 150)
-	card.size = Vector2(794, 358)
+	var coll := HudPanel.new().setup("COLLEZIONE  -  TOCCA PER SCEGLIERE", BattleTheme.CY)
+	coll.position = Vector2(20, 176)
+	coll.size = Vector2(572, 332)
+	_team_page.add_child(coll)
+	_list_box = GridContainer.new()
+	_list_box.columns = 5
+	_list_box.add_theme_constant_override("h_separation", 6)
+	_list_box.add_theme_constant_override("v_separation", 6)
+	_set_scrolled(coll, _list_box)
+
+	var card := HudPanel.new().setup("SCHEDA OPERATORE", BattleTheme.CY)
+	card.margins = Vector4(14.0, 30.0, 186.0, 12.0)
+	card.position = Vector2(606, 176)
+	card.size = Vector2(654, 332)
 	_team_page.add_child(card)
 	var leg := Button.new()
-	leg.text = "LEGENDA  ?"
-	leg.position = Vector2(600, 2)
+	leg.text = "?" if TouchUi.active() else "LEGENDA  ?"
+	leg.position = Vector2(500 if TouchUi.active() else 466, 2)
 	leg.size = Vector2(180, 28)
 	BattleTheme.style_button(leg, "normal", 14)
 	leg.pressed.connect(open_legend)
@@ -198,75 +221,108 @@ func _build_team_page() -> void:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 6)
 	card.set_content(col)
-	_detail_title = BattleTheme.make_label("", 30, BattleTheme.WH, true)
-	col.add_child(_detail_title)
-	_detail_label = BattleTheme.make_label("", 16, BattleTheme.CY)
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 10)
+	col.add_child(title_row)
+	_detail_title = BattleTheme.make_label("", 28, BattleTheme.WH, true)
+	title_row.add_child(_detail_title)
+	_detail_icons = HBoxContainer.new()
+	_detail_icons.add_theme_constant_override("separation", 4)
+	_detail_icons.alignment = BoxContainer.ALIGNMENT_CENTER
+	title_row.add_child(_detail_icons)
+	_detail_label = BattleTheme.make_label("", 14, BattleTheme.CY)
 	_detail_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(_detail_label)
-	_action_box = HBoxContainer.new()
-	_action_box.add_theme_constant_override("separation", 10)
+	_action_box = GridContainer.new()
+	_action_box.columns = 2
+	_action_box.add_theme_constant_override("h_separation", 8)
+	_action_box.add_theme_constant_override("v_separation", 6)
 	col.add_child(_action_box)
 	# illustrazione dell'operatore (la tua grafica `splash.png`, o il segnaposto)
 	_detail_portrait = PortraitView.new().setup("", "splash")
 	_detail_portrait.show_expression_text = false
-	_detail_portrait.position = Vector2(500.0, 36.0)
-	_detail_portrait.size = Vector2(270.0, 250.0)
+	_detail_portrait.position = Vector2(480.0, 40.0)
+	_detail_portrait.size = Vector2(164.0, 280.0)
 	card.add_child(_detail_portrait)
 
 
 func _build_equip_page() -> void:
 	_equip_page = _page()
 
-	var who := HudPanel.new().setup("OPERATORE", BattleTheme.RD)
-	who.position = Vector2(20, 14)
-	who.size = Vector2(430, 88 if TouchUi.active() else 72)
+	# chi stai equipaggiando: ritratto grande, nome, classe e frecce per cambiare operatore
+	var who_h: float = 150.0
+	var who := HudPanel.new().setup("STAI MODIFICANDO", BattleTheme.RD)
+	who.position = Vector2(20, 8)
+	who.size = Vector2(430, who_h)
 	_equip_page.add_child(who)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 10)
 	who.set_content(row)
-	var prev := Button.new()
-	prev.text = "<"
-	prev.custom_minimum_size = Vector2(50, 0)
-	BattleTheme.style_button(prev, "normal", 20)
-	prev.pressed.connect(cycle_char.bind(-1))
-	row.add_child(prev)
-	_equip_name = BattleTheme.make_label("", 22, BattleTheme.WH, true)
+	_equip_portrait = PortraitView.new().setup("", "splash")
+	_equip_portrait.show_expression_text = false
+	_equip_portrait.custom_minimum_size = Vector2(120, 0)
+	row.add_child(_equip_portrait)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 4)
+	row.add_child(col)
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 6)
+	col.add_child(name_row)
+	_equip_name = BattleTheme.make_label("", 24, BattleTheme.WH, true)
+	_equip_name.clip_text = true
 	_equip_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_equip_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_equip_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(_equip_name)
+	name_row.add_child(_equip_name)
+	_equip_icons = HBoxContainer.new()
+	_equip_icons.add_theme_constant_override("separation", 4)
+	name_row.add_child(_equip_icons)
+	_equip_info = BattleTheme.make_label("", 13, BattleTheme.CY)
+	_equip_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_equip_info.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(_equip_info)
+	var arrows := HBoxContainer.new()
+	arrows.add_theme_constant_override("separation", 8)
+	col.add_child(arrows)
+	var prev := Button.new()
+	prev.text = "<  PREC."
+	prev.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	prev.custom_minimum_size = Vector2(0, 50 if TouchUi.active() else 34)
+	BattleTheme.style_button(prev, "normal", 14)
+	prev.pressed.connect(cycle_char.bind(-1))
+	arrows.add_child(prev)
 	var nxt := Button.new()
-	nxt.text = ">"
-	nxt.custom_minimum_size = Vector2(50, 0)
-	BattleTheme.style_button(nxt, "normal", 20)
+	nxt.text = "SUCC.  >"
+	nxt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nxt.custom_minimum_size = Vector2(0, 50 if TouchUi.active() else 34)
+	BattleTheme.style_button(nxt, "normal", 14)
 	nxt.pressed.connect(cycle_char.bind(1))
-	row.add_child(nxt)
+	arrows.add_child(nxt)
 
 	var slots := HudPanel.new().setup("SLOT", BattleTheme.CY)
-	slots.position = Vector2(20, 114 if TouchUi.active() else 102)
-	slots.size = Vector2(430, 394 if TouchUi.active() else 406)
+	slots.position = Vector2(20, 8.0 + who_h + 8.0)
+	slots.size = Vector2(430, 508.0 - (8.0 + who_h + 8.0))
 	_equip_page.add_child(slots)
 	_equip_slots_box = VBoxContainer.new()
 	_equip_slots_box.add_theme_constant_override("separation", 3)
 	_set_scrolled(slots, _equip_slots_box)
 
 	_equip_title = HudPanel.new().setup("INVENTARIO", BattleTheme.CY)
-	_equip_title.position = Vector2(466, 14)
-	_equip_title.size = Vector2(794, 494)
+	_equip_title.position = Vector2(466, 8)
+	_equip_title.size = Vector2(794, 500)
 	_equip_page.add_child(_equip_title)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 6)
-	_equip_title.set_content(col)
+	var icol := VBoxContainer.new()
+	icol.add_theme_constant_override("separation", 6)
+	_equip_title.set_content(icol)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	col.add_child(scroll)
+	icol.add_child(scroll)
 	_equip_list = VBoxContainer.new()
 	_equip_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_equip_list.add_theme_constant_override("separation", 3)
 	scroll.add_child(_equip_list)
 	_equip_action = HBoxContainer.new()
-	col.add_child(_equip_action)
+	icol.add_child(_equip_action)
 
 
 func _build_recruit_page() -> void:
@@ -575,7 +631,8 @@ func refresh() -> void:
 		return
 	_coins_label.text = "MONETE %d" % int(roster["coins"])
 	var mats: Dictionary = roster["materials"]
-	_mats_label.text = "NUCLEI %d   LEGHE %d" % [int(mats.get("nucleo", 0)), int(mats.get("lega", 0))]
+	_mats_label.text = "NUCLEI %d" % int(mats.get("nucleo", 0))
+	_lega_label.text = "LEGHE %d" % int(mats.get("lega", 0))
 	_status_label.text = status_text
 	_team_page.visible = tab == "squadra"
 	_equip_page.visible = tab == "equip"
@@ -611,22 +668,12 @@ func _refresh_list() -> void:
 		if ra != rb:
 			return ra > rb
 		return str(a) < str(b))
+	var team: Array = roster["team"]
 	for id in ids:
-		var def: Dictionary = BattleContent.CHARACTERS[id]
-		var b := Button.new()
-		b.custom_minimum_size = Vector2(0, 40)
-		b.clip_text = true
-		if RosterState.owns(roster, id):
-			var e: Dictionary = roster["characters"][id]
-			var mark: String = "[SQ] " if (roster["team"] as Array).has(id) else "     "
-			b.text = "%s%-6s Lv%-2d %s" % [mark, str(def["name"]).to_upper(), int(e["level"]), _stars(int(e["rank"]))]
-			BattleTheme.style_button(b, "primary" if id == selected else "normal", 17)
+		var owned: bool = RosterState.owns(roster, id)
+		var b: Button = OperatorCards.tile(str(id), owned, roster["characters"][id] if owned else {}, team.find(id) + 1, id == selected)
+		if owned:
 			b.pressed.connect(select.bind(id))
-		else:
-			b.text = "      ???    non reclutato"
-			BattleTheme.style_button(b, "normal", 17)
-			b.disabled = true
-		b.set_meta("char_id", id)
 		_list_box.add_child(b)
 
 
@@ -634,17 +681,8 @@ func _refresh_slots() -> void:
 	_clear(_slots_box)
 	var team: Array = roster["team"]
 	for i in BattleTypes.TEAM_SIZE:
-		var b := Button.new()
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		if i < team.size():
-			var id: String = str(team[i])
-			var e: Dictionary = roster["characters"][id]
-			var def: Dictionary = BattleContent.CHARACTERS[id]
-			b.text = "%d. %s\nLv%d  %s" % [i + 1, str(def["name"]).to_upper(), int(e["level"]), str(def["color"]).to_upper()]
-		else:
-			b.text = "%d. (vuoto)" % (i + 1)
-		BattleTheme.style_button(b, "primary" if i == slot_target else "normal", 17)
+		var id: String = str(team[i]) if i < team.size() else ""
+		var b: Button = OperatorCards.slot_card(i, id, roster["characters"][id] if id != "" else {}, i == slot_target)
 		b.pressed.connect(select_slot.bind(i))
 		_slots_box.add_child(b)
 
@@ -660,6 +698,7 @@ func _refresh_detail() -> void:
 	var e: Dictionary = roster["characters"][selected]
 	var st: Dictionary = BattleContent.compute_stats(e)
 	_detail_title.text = str(def["name"]).to_upper()
+	_fill_identity_icons(_detail_icons, selected, 28.0)
 	_detail_portrait.visible = true
 	if _detail_portrait.char_id != selected:
 		_detail_portrait.setup(selected, "splash")
@@ -679,7 +718,6 @@ func _refresh_detail() -> void:
 		lines.append("%s  |  %s  |  %s" % [Factions.name_of(faction).to_upper(), str(Factions.FACTIONS[faction]["doctrine"]).to_upper(), BattleContent.style_of(selected, e).to_upper()])
 	lines.append("PV  %-6d ATK %-5d" % [int(st["hp"]), int(st["atk"])])
 	lines.append("DEF %-6d VEL %-5d" % [int(st["def"]), int(st["spd"])])
-	lines.append("")
 	lines.append("SKILL     %s" % (", ".join(skills) if not skills.is_empty() else "-"))
 	lines.append("ULTIMATE  %s" % BattleText.move_name(str(e["ult"])))
 	lines.append("PASSIVA   %s" % (", ".join(passives) if not passives.is_empty() else "-"))
@@ -687,7 +725,7 @@ func _refresh_detail() -> void:
 
 	var in_team: bool = (roster["team"] as Array).has(selected)
 	var tb := Button.new()
-	tb.custom_minimum_size = Vector2(0, 50)
+	tb.custom_minimum_size = Vector2(0, 54 if TouchUi.active() else 40)
 	tb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tb.clip_text = true
 	tb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -698,12 +736,12 @@ func _refresh_detail() -> void:
 	else:
 		var tgt: String = str(roster["team"][clampi(slot_target, 0, (roster["team"] as Array).size() - 1)])
 		tb.text = "AL POSTO DI %s" % str(BattleContent.CHARACTERS[tgt]["name"]).to_upper()
-	BattleTheme.style_button(tb, "normal", 18)
+	BattleTheme.style_button(tb, "normal", 15)
 	tb.pressed.connect(toggle_team.bind(selected))
 	_action_box.add_child(tb)
 
 	var ub := Button.new()
-	ub.custom_minimum_size = Vector2(0, 50)
+	ub.custom_minimum_size = Vector2(0, 54 if TouchUi.active() else 40)
 	ub.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ub.clip_text = true
 	ub.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -712,32 +750,57 @@ func _refresh_detail() -> void:
 		ub.disabled = true
 	else:
 		var cost: Dictionary = BattleContent.character_upgrade_cost(int(e["level"]))
-		ub.text = ("POTENZIA %dM+%dN" if TouchUi.active() else "POTENZIA  %dM + %dN") % [int(cost["coins"]), int(cost["nucleo"])]
+		ub.text = ("POT. %dM+%dN" if TouchUi.active() else "POTENZIA  %dM + %dN") % [int(cost["coins"]), int(cost["nucleo"])]
 		ub.size_flags_stretch_ratio = 1.6
-	BattleTheme.style_button(ub, "primary", 18)
+	BattleTheme.style_button(ub, "primary", 15)
 	ub.pressed.connect(upgrade.bind(selected))
 	_action_box.add_child(ub)
 
 	if faction != "":
 		var sb := Button.new()
-		sb.custom_minimum_size = Vector2(0, 50)
+		sb.custom_minimum_size = Vector2(0, 54 if TouchUi.active() else 40)
 		sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		sb.clip_text = true
 		sb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		sb.text = "STILE: %s" % BattleContent.style_of(selected, e).to_upper()
-		BattleTheme.style_button(sb, "normal", 18)
+		sb.text = ("%s" if TouchUi.active() else "STILE: %s") % BattleContent.style_of(selected, e).to_upper()
+		BattleTheme.style_button(sb, "normal", 15)
 		sb.pressed.connect(toggle_style.bind(selected))
 		_action_box.add_child(sb)
 
 	var eb := Button.new()
 	eb.text = "EQUIPAGGIO"
-	eb.custom_minimum_size = Vector2(0, 50)
+	eb.custom_minimum_size = Vector2(0, 54 if TouchUi.active() else 40)
 	eb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	eb.clip_text = true
 	eb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	BattleTheme.style_button(eb, "normal", 18)
+	BattleTheme.style_button(eb, "normal", 15)
 	eb.pressed.connect(show_tab.bind("equip"))
 	_action_box.add_child(eb)
+
+
+# Icone di classe e fazione di un operatore (una riga accanto al nome).
+func _fill_identity_icons(box: Container, char_id: String, px: float) -> void:
+	_clear(box)
+	var def: Dictionary = BattleContent.CHARACTERS[char_id]
+	box.add_child(GameIcon.new().setup(str(def["cls"]), BattleTheme.unit_color(str(def["color"])), px))
+	var faction: String = BattleContent.faction_of(char_id)
+	if faction != "":
+		box.add_child(GameIcon.new().setup(faction, Hints.faction_color(faction), px))
+
+
+# Icona e colore di uno slot dell'equipaggiamento (per le skill, quella della mossa montata).
+func _slot_icon(key: String) -> Array:
+	var e: Dictionary = roster["characters"][selected]
+	if key.begins_with("skill"):
+		var i: int = int(key.substr(5))
+		if i < e["skills"].size():
+			return [GameIcon.move_key(str(e["skills"][i])), GameIcon.move_color(str(e["skills"][i]))]
+		return ["bolt", BattleTheme.CY_DIM]
+	if key == "ult":
+		return ["burst", BattleTheme.GOLD]
+	if key.begins_with("passive"):
+		return ["passive", BattleTheme.CY]
+	return [GameIcon.gear_key(key), BattleTheme.CY]
 
 
 func _gear_stats_text(g: Dictionary) -> String:
@@ -770,7 +833,7 @@ func _slot_value_text(key: String) -> String:
 	return _gear_text(gid) if gid != "" else "(vuoto)"
 
 
-func _item_button(text: String, kind: String, enabled: bool, id: String) -> Button:
+func _item_button(text: String, kind: String, enabled: bool, id: String, icon_key: String = "", icon_color: Color = BattleTheme.CY) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.custom_minimum_size = Vector2(0, 40)
@@ -778,6 +841,9 @@ func _item_button(text: String, kind: String, enabled: bool, id: String) -> Butt
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	BattleTheme.style_button(b, kind, 16)
 	b.disabled = not enabled
+	if icon_key != "":
+		var ic: GameIcon = GameIcon.attach(b, icon_key, BattleTheme.WH if kind == "primary" else icon_color, 22.0)
+		ic.modulate.a = 1.0 if enabled else 0.35
 	b.pressed.connect(equip_item.bind(id))
 	return b
 
@@ -793,13 +859,19 @@ func _refresh_equip() -> void:
 	var e: Dictionary = roster["characters"][selected]
 	_equip_name.text = "%s  Lv%d" % [str(def["name"]).to_upper(), int(e["level"])]
 	_equip_name.add_theme_color_override("font_color", BattleTheme.unit_color(str(def["color"])))
+	_equip_info.text = "%s · %s\n%s" % [str(def["cls"]).to_upper(), str(def["color"]).to_upper(), Lore.character_text(selected).get("tag", "")]
+	if _equip_portrait.char_id != selected:
+		_equip_portrait.setup(selected, "splash")
+	_fill_identity_icons(_equip_icons, selected, 26.0)
 
 	for entry in EQUIP_SLOTS:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(0, 40)
+		b.custom_minimum_size = Vector2(0, 46 if TouchUi.active() else 34)
 		b.clip_text = true
 		b.text = "%-9s %s" % [str(entry[1]), _slot_value_text(str(entry[0]))]
 		BattleTheme.style_button(b, "primary" if str(entry[0]) == equip_slot else "normal", 15)
+		var sk: Array = _slot_icon(str(entry[0]))
+		GameIcon.attach(b, str(sk[0]), BattleTheme.WH if str(entry[0]) == equip_slot else (sk[1] as Color), 20.0)
 		b.pressed.connect(select_equip_slot.bind(str(entry[0])))
 		_equip_slots_box.add_child(b)
 
@@ -851,7 +923,9 @@ func _refresh_equip_moves(key: String) -> void:
 		var name: String = str(BattleContent.PASSIVES[id]["name"]) if is_passive else BattleText.move_name(str(id))
 		var hint: String = _passive_hint(str(id)) if is_passive else BattleText.move_hint(str(id))
 		var text: String = "%s%s   [libere %d/%d]   %s" % ["> " if is_current else "", name, free, owned, hint]
-		_equip_list.add_child(_item_button(text, "primary" if is_current else "normal", is_current or free > 0, str(id)))
+		var ik: String = "passive" if is_passive else GameIcon.move_key(str(id))
+		var icol: Color = BattleTheme.CY if is_passive else GameIcon.move_color(str(id))
+		_equip_list.add_child(_item_button(text, "primary" if is_current else "normal", is_current or free > 0, str(id), ik, icol))
 
 
 func _passive_hint(pid: String) -> String:
@@ -886,7 +960,7 @@ func _refresh_equip_gear(key: String) -> void:
 		var text: String = "%s%s" % [tag, _gear_text(gid)]
 		if owner_id != "" and owner_id != selected:
 			text += "   (su %s)" % str(BattleContent.CHARACTERS[owner_id]["name"]).to_upper()
-		_equip_list.add_child(_item_button(text, "primary" if owner_id == selected else "normal", true, gid))
+		_equip_list.add_child(_item_button(text, "primary" if owner_id == selected else "normal", true, gid, GameIcon.gear_key(key), BattleTheme.rarity_color(int(g["rarity"]))))
 	if cur != "":
 		var g2: Dictionary = roster["gear"][cur]
 		var ub := Button.new()
@@ -898,7 +972,7 @@ func _refresh_equip_gear(key: String) -> void:
 		else:
 			var cost: Dictionary = BattleContent.gear_upgrade_cost(int(g2["rarity"]), int(g2["level"]))
 			ub.text = "POTENZIA PEZZO  %dM + %dL" % [int(cost["coins"]), int(cost["lega"])]
-		BattleTheme.style_button(ub, "primary", 18)
+		BattleTheme.style_button(ub, "primary", 15)
 		ub.pressed.connect(upgrade_gear.bind(cur))
 		_equip_action.add_child(ub)
 
