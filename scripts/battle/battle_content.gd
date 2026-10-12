@@ -196,6 +196,10 @@ const BOSS_MOVES: Dictionary = {
 	"lancette": {"name": "Lancette", "target": "all", "mult": 0.9, "status": {"bleed": 3}},
 	"ora_zero": {"name": "Ora zero", "target": "all", "mult": 0.65, "status": {"mark": 2}, "self_shield": 0.06},
 	"tempo_perso": {"name": "Tempo perso", "target": "weakest", "mult": 1.0, "drain": 0.7},
+	"riflesso": {"name": "Riflesso", "target": "one", "mult": 2.1},
+	"frantumi": {"name": "Frantumi", "target": "all", "mult": 0.95, "status": {"bleed": 3}},
+	"doppio": {"name": "Doppio", "target": "weakest", "mult": 0.85, "drain": 0.5, "self_shield": 0.05},
+	"simmetria": {"name": "Simmetria", "target": "all", "mult": 0.7, "status": {"mark": 3}, "self_shield": 0.06},
 }
 
 # Livelli di difficolta': moltiplicano PV e ATK del boss, aggiungono difesa e premi.
@@ -206,7 +210,7 @@ const TIERS: Array = [
 ]
 
 # Ordine di sblocco: si apre il boss successivo battendo il precedente (almeno a NORMALE).
-const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino", "cabina", "ascensore", "manichino", "orologio"]
+const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino", "cabina", "ascensore", "manichino", "orologio", "specchio"]
 
 const BOSSES: Dictionary = {
 	"distributore": {
@@ -272,6 +276,15 @@ const BOSSES: Dictionary = {
 		"atk_scale": [0.62, 0.8, 1.0],
 		"drops": 5,
 		"reward": {"coins": 3500, "nucleo": [18, 26], "lega": [14, 22], "gear_chance": 100},
+	},
+	"specchio": {
+		"name": "Specchio", "title": "CLASSE ANOMALIA · OLTRE LA SCALA", "color": "rosso", "hp_per_player": 1700,
+		"atk": 440, "def": 50, "spd": 108,
+		"desc": "Lo specchio che c'era dietro l'orologio: mostra la squadra come sarebbe stata se il tempo non si fosse fermato. Un riflesso colpisce un solo bersaglio, i frantumi feriscono tutti e il doppio si nutre dei piu' deboli.",
+		"cycle": ["riflesso", "frantumi", "doppio", "simmetria"],
+		"atk_scale": [0.62, 0.8, 1.0],
+		"drops": 5,
+		"reward": {"coins": 4600, "nucleo": [22, 30], "lega": [18, 26], "gear_chance": 100},
 	},
 }
 

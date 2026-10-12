@@ -240,6 +240,27 @@ eco [happy] R: Voi quattro. Tutti e quattro. Per sempre.
 *: Sulla mappa, il cerchio si chiude. E fuori dal cerchio, lontano, una nuova luce si accende. Ma questa e' un'altra storia.
 *: FINE DELLA PRIMA STAGIONE.
 """,
+	"specchio_pre": """
+@bg torre_orologio
+*: Dietro il quadrante rotto dell'orologio, c'e' una stanza che nessuna mappa segnava. Al centro, uno specchio alto fino al soffitto.
+eco [surprised] R: Questo non c'era. Non l'ho mai sentito.
+kira [neutral] L: Ci siamo tutti. Ma... guardate. Sul vetro la sciarpa di Nico e' ancora al suo posto.
+dax [neutral] R: Un riflesso che non sa che il tempo si e' fermato. O che ha ricominciato.
+elle [sad] L: Siamo noi, se non ci fossimo mai incontrati. Ognuno nel suo pezzo di citta'.
+specchio [angry] R: PERCHE' VOI E NON NOI? NOI ERAVAMO PRIMA.
+bruno [neutral] R: Squadra, e' un'anomalia fuori dalla classificazione. Il registro non ha una riga per questo.
+kira [angry] L: Allora gliela scriviamo noi.
+""",
+	"specchio_post": """
+@bg torre_orologio
+*: Lo specchio si incrina da un angolo all'altro. Ogni scheggia mostra la squadra da un'altra parte, a fare altre cose, in una citta' diversa.
+elle [happy] L: Guardate. In alcune siamo comunque insieme.
+dax [happy] R: Statisticamente trascurabile. Ma lo ammetto: mi piace.
+eco [happy] R: Ogni scheggia e' un'ora in piu'. Non una in meno.
+kira [happy] L: Allora teniamone una. Per ricordarci che questa e' quella vera.
+*: Una scheggia piu' piccola delle altre cade nella mano di Kira. Dentro, per un istante, una luce che non e' il suo riflesso.
+*: Fine dell'extra della prima stagione.
+""",
 }
 
 

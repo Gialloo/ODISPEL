@@ -494,6 +494,8 @@ func _draw_boss_body(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -
 			body = _draw_manichino(boss, alive, enraged, o)
 		"orologio":
 			body = _draw_orologio(boss, alive, enraged, o)
+		"specchio":
+			body = _draw_specchio(boss, alive, enraged, o)
 		_:
 			body = _draw_distributore(alive, enraged, o)
 	return body
@@ -737,6 +739,42 @@ func _draw_orologio(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) ->
 	draw_line(face, face + Vector2(cos(ma), sin(ma)) * (r * 0.78), BattleTheme.RD if alive else BattleTheme.CY_DARK, 6.0)
 	draw_circle(face, 10.0, line)
 	return Rect2(face.x - r, face.y - r, r * 2.0, 450.0)
+
+
+# Lo specchio: cornice ovale, riflesso che brilla a bande e crepe che crescono con le ferite.
+func _draw_specchio(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
+	var cx: float = BOSS_X + o.x
+	var col: Color = BattleTheme.unit_color(str(boss["color"]))
+	var line: Color = col if alive else BattleTheme.CY_DARK
+	var move: String = str(state.get("telegraph", {}).get("move", ""))
+	var c := Vector2(cx, 360.0 + o.y)
+	var rx: float = 150.0
+	var ry: float = 225.0
+	draw_colored_polygon(_ellipse(c, rx + 16.0, ry + 16.0, 36), K_0C222A if alive else K_071218)
+	draw_colored_polygon(_ellipse(c, rx, ry, 36), K_08181E if alive else K_050F13)
+	# riflesso: una sagoma scura che imita la squadra
+	if alive:
+		var sway: float = sin(_t * 1.4) * 6.0
+		draw_colored_polygon(_ellipse(c + Vector2(sway, -70.0), 38.0, 44.0, 20), Color(col, 0.22))
+		draw_colored_polygon(PackedVector2Array([c + Vector2(-70.0 + sway, 20.0), c + Vector2(-44.0 + sway, -28.0), c + Vector2(44.0 + sway, -28.0), c + Vector2(70.0 + sway, 20.0), c + Vector2(60.0, 150.0), c + Vector2(-60.0, 150.0)]), Color(col, 0.16))
+		# banda di luce che scorre in diagonale
+		var band: float = fposmod(_t * 0.5, 1.6) - 0.3
+		var bx: float = c.x - rx + band * rx * 2.0
+		draw_colored_polygon(PackedVector2Array([Vector2(bx - 26.0, c.y - ry * 0.8), Vector2(bx + 6.0, c.y - ry * 0.8), Vector2(bx - 54.0, c.y + ry * 0.8), Vector2(bx - 86.0, c.y + ry * 0.8)]), Color(1, 1, 1, 0.07))
+	draw_polyline(_ellipse(c, rx + 16.0, ry + 16.0, 36) + PackedVector2Array([Vector2(c.x + rx + 16.0, c.y)]), line, 5.0)
+	# crepe: sempre un po', di piu' da furioso o quando annuncia i frantumi
+	var cracks: int = 2 + (3 if enraged else 0) + (3 if (alive and move == "frantumi") else 0)
+	for i in cracks:
+		var a: float = TAU * float(i) / float(cracks) + 0.4
+		var p0: Vector2 = c + Vector2(cos(a) * 12.0, sin(a) * 12.0)
+		var p1: Vector2 = c + Vector2(cos(a + 0.12) * rx * 0.55, sin(a + 0.12) * ry * 0.55)
+		var p2: Vector2 = c + Vector2(cos(a - 0.05) * rx * 0.92, sin(a - 0.05) * ry * 0.92)
+		draw_polyline(PackedVector2Array([p0, p1, p2]), Color(1, 1, 1, 0.55 if alive else 0.15), 2.0)
+	if alive:
+		var blink: float = 1.0 if (int(_t * 2.0) % 2 == 0 or not enraged) else 0.3
+		for sx in [-1.0, 1.0]:
+			draw_rect(Rect2(c.x + sx * 52.0 - 16.0, c.y - 150.0, 32.0, 10.0), Color(BattleTheme.RD, blink))
+	return Rect2(c.x - rx, c.y - ry, rx * 2.0, ry * 2.0)
 
 
 func _draw_cabina(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:

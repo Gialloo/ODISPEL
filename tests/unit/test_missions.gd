@@ -29,7 +29,7 @@ func _run() -> void:
 
 	_check("parte dal primo boss", s.selected_boss == "distributore")
 	_check("livello normale", s.selected_tier == 0)
-	_check("7 pulsanti boss", s.boss_buttons.size() == 7)
+	_check("8 pulsanti boss", s.boss_buttons.size() == 8)
 	_check("3 pulsanti livello", s.tier_buttons.size() == 3)
 	_check("semaforo bloccato", s.boss_buttons["semaforo"].disabled)
 	_check("il bloccato non si sceglie", not s.select_boss("semaforo"))
