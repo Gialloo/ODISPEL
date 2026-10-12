@@ -18,3 +18,11 @@
 | "nessun host nella stanza" | l'host deve creare la stanza PRIMA; controlla il codice (maiuscole comprese) |
 | "connessione con l'host non riuscita" | la rete di uno di voi blocca i collegamenti diretti (succede su alcune reti di casa, scuola, ufficio e con i dati del telefono). Provate: un'altra rete, l'hotspot del telefono, o cambiate chi fa l'host |
 | versioni diverse | tutti devono avere lo stesso zip |
+
+## Novita' della versione 0.7.0 (da provare!)
+- **Fazioni:** LibraCorp, Rondini, Magabondi. Sotto ogni operatore in battaglia vedi un badge (LC, RN, MB), le aure attive e, per LibraCorp, le munizioni (icone di proiettile).
+- **Per capire tutto:** passa il mouse su badge, aure, munizioni, classe e pulsanti d'azione. Sul telefono: tocca (sui pulsanti d'azione tieni premuto).
+- **Archivio operatori:** bottoni STRATEGIE (classi e fazioni), ARCHIVIO (glossario) e LEGENDA (sulla scheda di ogni operatore).
+- **LibraCorp:** contrattacca quando viene colpito (costa una munizione). Ricarica e Guardia ridanno munizioni.
+- **Rondini:** colpi critici. **Magabondi:** prendono meta' dell'aura piu' forte della squadra.
+- Dicci cosa non si capisce o non e' bilanciato: e' una prova!
