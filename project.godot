@@ -25,6 +25,8 @@ Sfx="*res://scripts/audio/audio_manager.gd"
 
 [display]
 
+window/handheld/orientation=0
+
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
@@ -35,5 +37,6 @@ window/stretch/aspect="expand"
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+textures/vram_compression/import_etc2_astc=true
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
