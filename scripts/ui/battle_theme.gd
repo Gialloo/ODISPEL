@@ -135,6 +135,12 @@ static func style_button(b: Button, kind: String = "normal", size: int = 22) -> 
 	b.add_theme_color_override("font_outline_color", BK if kind != "normal" else Color(0, 0, 0, 0))
 	b.add_theme_constant_override("outline_size", 0 if kind == "normal" else 4)
 	b.add_theme_font_override("font", display())
-	b.add_theme_font_size_override("font_size", size)
+	b.add_theme_font_size_override("font_size", TouchUi.fit(b, size))
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+
+# Colore di una rarita' (comune, rara, epica, leggendaria).
+static func rarity_color(rarity: int) -> Color:
+	var colors: Array = [Color("#c9dde2"), CY, UNIT_COLORS["viola"], GOLD]
+	return colors[clampi(rarity, 0, colors.size() - 1)]

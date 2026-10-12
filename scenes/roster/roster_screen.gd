@@ -4,7 +4,7 @@ extends Control
 # potenziamento dei personaggi e reclutamento (singolo / x10).
 # Ogni modifica viene salvata subito su save_path.
 
-const RARITY_COLORS: Array = [Color("#c9dde2"), BattleTheme.CY, BattleTheme.UNIT_COLORS["viola"], BattleTheme.GOLD]
+const RARITY_COLORS: Array = [Color("#c9dde2"), BattleTheme.CY, BattleTheme.UNIT_COLORS["viola"], BattleTheme.GOLD]  # = BattleTheme.rarity_color
 
 var roster: Dictionary = {}
 var save_path: String = RosterStore.DEFAULT_PATH
@@ -26,6 +26,7 @@ var _coins_label: Label
 var _mats_label: Label
 var _status_label: Label
 var _tab_buttons: Dictionary = {}
+var guide_button: Button
 var _team_page: Control
 var _recruit_page: Control
 var _equip_page: Control
@@ -100,8 +101,8 @@ func _build() -> void:
 
 	var back := Button.new()
 	back.text = "TORNA ALL'HUB"
-	back.position = Vector2(24, 664)
-	back.size = Vector2(250, 44)
+	back.position = Vector2(24, 654 if TouchUi.active() else 664)
+	back.size = Vector2(250, 64 if TouchUi.active() else 44)
 	BattleTheme.style_button(back, "normal", 20)
 	back.pressed.connect(_on_back)
 	add_child(back)
@@ -112,6 +113,18 @@ func _build() -> void:
 	add_child(_status_label)
 
 	ScreenFx.menu_overlays(self, BattleTheme.RD)
+
+
+# Sul telefono le liste lunghe si scorrono con il dito; sul PC restano com'erano.
+func _set_scrolled(panel: HudPanel, box: VBoxContainer) -> void:
+	if not TouchUi.active():
+		panel.set_content(box)
+		return
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(box)
+	panel.set_content(scroll)
 
 
 func _page() -> Control:
@@ -131,7 +144,7 @@ func _build_team_page() -> void:
 	_team_page.add_child(coll)
 	_list_box = VBoxContainer.new()
 	_list_box.add_theme_constant_override("separation", 3)
-	coll.set_content(_list_box)
+	_set_scrolled(coll, _list_box)
 
 	var squad := HudPanel.new().setup("SQUADRA ATTIVA", BattleTheme.RD)
 	squad.position = Vector2(466, 14)
@@ -176,7 +189,7 @@ func _build_equip_page() -> void:
 
 	var who := HudPanel.new().setup("OPERATORE", BattleTheme.RD)
 	who.position = Vector2(20, 14)
-	who.size = Vector2(430, 72)
+	who.size = Vector2(430, 88 if TouchUi.active() else 72)
 	_equip_page.add_child(who)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
@@ -200,12 +213,12 @@ func _build_equip_page() -> void:
 	row.add_child(nxt)
 
 	var slots := HudPanel.new().setup("SLOT", BattleTheme.CY)
-	slots.position = Vector2(20, 102)
-	slots.size = Vector2(430, 406)
+	slots.position = Vector2(20, 114 if TouchUi.active() else 102)
+	slots.size = Vector2(430, 394 if TouchUi.active() else 406)
 	_equip_page.add_child(slots)
 	_equip_slots_box = VBoxContainer.new()
 	_equip_slots_box.add_theme_constant_override("separation", 3)
-	slots.set_content(_equip_slots_box)
+	_set_scrolled(slots, _equip_slots_box)
 
 	_equip_title = HudPanel.new().setup("INVENTARIO", BattleTheme.CY)
 	_equip_title.position = Vector2(466, 14)
@@ -246,7 +259,16 @@ func _build_recruit_page() -> void:
 		b.pressed.connect(pull.bind(int(entry[0])))
 		col.add_child(b)
 		_pull_buttons.append([b, int(entry[0]), str(entry[1])])
-	var note := BattleTheme.make_label("Le copie aumentano il rank (max 5).\nA rank massimo si ottengono monete.\nIl x10 garantisce almeno un raro.", 14, BattleTheme.CY_DIM)
+	var guide := Button.new()
+	guide.text = "COME FUNZIONA  ?"
+	guide.custom_minimum_size = Vector2(0, 46)
+	BattleTheme.style_button(guide, "normal", 20)
+	guide.pressed.connect(open_gacha_guide)
+	col.add_child(guide)
+	guide_button = guide
+	var odds: Array = BattleContent.rarity_odds()
+	var note := BattleTheme.make_label("Quote: comune %d%% · rara %d%% · epica %d%% · leggendaria %d%%.\nLe copie aumentano il rank (max 5).\nIl x10 garantisce almeno un raro." % [odds[0], odds[1], odds[2], odds[3]], 14, BattleTheme.CY_DIM)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(note)
 
 	var res := HudPanel.new().setup("ESITO", BattleTheme.CY)
@@ -267,6 +289,16 @@ func _process(delta: float) -> void:
 func show_tab(name: String) -> void:
 	tab = name
 	refresh()
+	if name == "reclutamento" and Settings.should_show_gacha_guide():
+		open_gacha_guide()
+
+
+# Apre la guida al reclutamento (da sola la prima volta, poi dal bottone).
+func open_gacha_guide() -> GachaGuide:
+	for c in get_children():
+		if c is GachaGuide:
+			return c
+	return GachaGuide.open(self)
 
 
 func select(char_id: String) -> void:
@@ -584,10 +616,12 @@ func _refresh_detail() -> void:
 	var tb := Button.new()
 	tb.custom_minimum_size = Vector2(0, 50)
 	tb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tb.clip_text = true
+	tb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if in_team:
-		tb.text = "TOGLI DALLA SQUADRA"
+		tb.text = "TOGLI" if TouchUi.active() else "TOGLI DALLA SQUADRA"
 	elif (roster["team"] as Array).size() < BattleTypes.TEAM_SIZE:
-		tb.text = "METTI IN SQUADRA"
+		tb.text = "METTI" if TouchUi.active() else "METTI IN SQUADRA"
 	else:
 		var tgt: String = str(roster["team"][clampi(slot_target, 0, (roster["team"] as Array).size() - 1)])
 		tb.text = "AL POSTO DI %s" % str(BattleContent.CHARACTERS[tgt]["name"]).to_upper()
@@ -598,12 +632,15 @@ func _refresh_detail() -> void:
 	var ub := Button.new()
 	ub.custom_minimum_size = Vector2(0, 50)
 	ub.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ub.clip_text = true
+	ub.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if int(e["level"]) >= RosterState.MAX_LEVEL:
 		ub.text = "LIVELLO MASSIMO"
 		ub.disabled = true
 	else:
 		var cost: Dictionary = BattleContent.character_upgrade_cost(int(e["level"]))
-		ub.text = "POTENZIA  %dM + %dN" % [int(cost["coins"]), int(cost["nucleo"])]
+		ub.text = ("POTENZIA %dM+%dN" if TouchUi.active() else "POTENZIA  %dM + %dN") % [int(cost["coins"]), int(cost["nucleo"])]
+		ub.size_flags_stretch_ratio = 1.6
 	BattleTheme.style_button(ub, "primary", 18)
 	ub.pressed.connect(upgrade.bind(selected))
 	_action_box.add_child(ub)
@@ -612,6 +649,8 @@ func _refresh_detail() -> void:
 	eb.text = "EQUIPAGGIO"
 	eb.custom_minimum_size = Vector2(0, 50)
 	eb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	eb.clip_text = true
+	eb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	BattleTheme.style_button(eb, "normal", 18)
 	eb.pressed.connect(show_tab.bind("equip"))
 	_action_box.add_child(eb)

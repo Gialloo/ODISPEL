@@ -32,3 +32,9 @@
 - `godot --headless --path . -s res://tools/battle_sim.gd -- 40` - bilanciamento (percentuali di vittoria per boss, difficolta' e livello).
 
 Nota: `ArtLibrary.refresh()` si chiama cosi' perche' `reload()` e' una funzione interna di Godot sulle classi: usarla azzera le variabili statiche.
+
+## Telefono, guida al reclutamento, forza per rarità
+
+- `TouchUi` (scripts/ui/touch_ui.gd): attiva su Android/iOS (o con `TouchUi.force` per provare su PC). `BattleTheme.style_button` porta ogni bottone ad altezza minima 64 e testo minimo 20; la battaglia usa 88/80 per gli ordini, la schermata squadra scorre con il dito. Sul PC non cambia nulla. Controllo visivo: `xvfb-run -a godot --path . --resolution 1280x720 -s res://tools/touch_shots.gd -- cartella 1`.
+- `GachaGuide` (scenes/roster/gacha_guide.gd): quattro pagine (valute, rarità, copie e garanzie, operatori). Le cifre vengono da `BattleContent` e `Recruiting`; si apre da sola la prima volta (`Settings.gacha_guide_seen`) e dal bottone COME FUNZIONA.
+- Rarità: `BattleContent.RARITY_STAT_MULT` (1.00 / 1.08 / 1.18 / 1.32) moltiplica le statistiche degli operatori; l'equipaggiamento usa `GEAR_RARITY_MULT`. Le quote di estrazione si leggono con `BattleContent.rarity_odds()` (55/30/12/3).

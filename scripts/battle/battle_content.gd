@@ -38,6 +38,9 @@ const CLASS_STATS: Dictionary = {
 }
 const LEVEL_BONUS: float = 0.08
 const RANK_BONUS: float = 0.05
+# Un operatore piu' raro e' piu' forte di base: moltiplicatore delle statistiche
+# per rarita' (comune, rara, epica, leggendaria). Sale come l'equipaggiamento.
+const RARITY_STAT_MULT: Array = [1.0, 1.08, 1.18, 1.32]
 
 # rarity: indice in BattleTypes.RARITIES (quanto e' raro da reclutare)
 const CHARACTERS: Dictionary = {
@@ -164,7 +167,8 @@ static func compute_stats(entry: Dictionary) -> Dictionary:
 	var base: Dictionary = CLASS_STATS[str(def["cls"])]
 	var level: int = int(entry.get("level", 1))
 	var rank: int = int(entry.get("rank", 0))
-	var factor: float = (1.0 + LEVEL_BONUS * float(level - 1)) * (1.0 + RANK_BONUS * float(rank))
+	var char_rarity: int = clampi(int(def.get("rarity", 0)), 0, RARITY_STAT_MULT.size() - 1)
+	var factor: float = (1.0 + LEVEL_BONUS * float(level - 1)) * (1.0 + RANK_BONUS * float(rank)) * float(RARITY_STAT_MULT[char_rarity])
 	var hp: float = float(base["hp"]) * factor
 	var atk: float = float(base["atk"]) * factor
 	var dfn: float = float(base["def"]) * factor
@@ -206,10 +210,8 @@ static func default_entry(char_id: String, level: int = 1, rank: int = 0) -> Dic
 	}
 
 
-# Rarita' estratta con un tiro: 45% comune, 30% rara, 22% epica, 3% leggendaria.
-# bonus: sposta il tiro verso le rarita' alte (i livelli di difficolta' lo usano).
-static func roll_rarity(rng: RNGState, bonus: int = 0) -> int:
-	var roll: int = mini(100, rng.random_int(1, 100) + bonus)
+# Rarita' di un tiro da 1 a 100: 1-55 comune, 56-85 rara, 86-97 epica, 98-100 leggendaria.
+static func rarity_for_roll(roll: int) -> int:
 	if roll > 97:
 		return 3
 	if roll > 85:
@@ -217,6 +219,20 @@ static func roll_rarity(rng: RNGState, bonus: int = 0) -> int:
 	if roll > 55:
 		return 1
 	return 0
+
+
+# Quote di estrazione in percentuale (comune, rara, epica, leggendaria), calcolate dai tiri.
+static func rarity_odds() -> Array:
+	var odds: Array = [0, 0, 0, 0]
+	for roll in range(1, 101):
+		odds[rarity_for_roll(roll)] += 1
+	return odds
+
+
+# Rarita' estratta con un tiro (quote: rarity_odds).
+# bonus: sposta il tiro verso le rarita' alte (i livelli di difficolta' lo usano).
+static func roll_rarity(rng: RNGState, bonus: int = 0) -> int:
+	return rarity_for_roll(mini(100, rng.random_int(1, 100) + bonus))
 
 
 # Estrae le mosse e passive lasciate da un boss. Ogni premio e' {kind, id, rarity}.

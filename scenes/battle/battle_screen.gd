@@ -235,7 +235,7 @@ func _build_telegraph() -> void:
 func _build_operators() -> void:
 	var panel := HudPanel.new().setup("OPERATORI", BattleTheme.CY)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -224, 420, -18))
+	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 420, -18))
 	_ops_box = VBoxContainer.new()
 	_ops_box.add_theme_constant_override("separation", 3)
 	panel.set_content(_ops_box)
@@ -245,7 +245,7 @@ func _build_orders() -> void:
 	var panel := HudPanel.new().setup("TERMINALE ORDINI", BattleTheme.RD)
 	panel.cut = 20.0
 	add_child(panel)
-	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-420, -224, -20, -18))
+	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-620, -348, -20, -18) if TouchUi.active() else Vector4(-420, -224, -20, -18))
 	_orders_box = VBoxContainer.new()
 	_orders_box.add_theme_constant_override("separation", 5)
 	panel.set_content(_orders_box)
@@ -255,7 +255,7 @@ func _build_log() -> void:
 	var panel := HudPanel.new().setup("REGISTRO", BattleTheme.CY_DIM)
 	panel.margins = Vector4(12, 30, 12, 8)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 1.0, 1.0, 1.0), Vector4(436, -224, -436, -18))
+	_anchor(panel, Vector4(0.0, 1.0, 1.0, 1.0), Vector4(436, -224, -636 if TouchUi.active() else -436, -18))
 	_log_label = RichTextLabel.new()
 	_log_label.bbcode_enabled = true
 	_log_label.scroll_active = false
@@ -402,10 +402,16 @@ func _refresh_operators() -> void:
 		_ops_box.add_child(allies)
 
 
+# Altezza della riga di un operatore: sul telefono e' piu' alta, per il dito.
+func _unit_row_height() -> float:
+	return 60.0 if TouchUi.active() else 44.0
+
+
 func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	var alive: bool = BattleState.is_alive(u)
+	var row_h: float = _unit_row_height()
 	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(0, 44)
+	btn.custom_minimum_size = Vector2(0, row_h)
 	btn.flat = true
 	btn.disabled = not alive
 	btn.focus_mode = Control.FOCUS_NONE
@@ -423,9 +429,14 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	btn.add_child(bgc)
 	var key := ColorRect.new()
 	key.color = BattleTheme.unit_color(str(u["color"]))
-	key.size = Vector2(6, 44)
+	key.size = Vector2(6, row_h)
 	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(key)
+	# il contenuto resta disegnato come per i 44 punti originali, centrato nella riga
+	var inner := Control.new()
+	inner.position = Vector2(0, (row_h - 44.0) * 0.5)
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(inner)
 
 	var fg: Color = BattleTheme.BK if selected else (BattleTheme.CY if alive else BattleTheme.CY_DARK)
 	var title: String = str(u["name"]).to_upper()
@@ -433,35 +444,35 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 		title += "  ▶"
 	var name_l := BattleTheme.make_label(title, 17, fg, true)
 	name_l.position = Vector2(16, -2)
-	btn.add_child(name_l)
+	inner.add_child(name_l)
 	var cls_l := BattleTheme.make_label("%s · LV%d" % [str(u["cls"]).to_upper(), int(u["level"])], 11, fg)
 	cls_l.position = Vector2(180, 3)
-	btn.add_child(cls_l)
+	inner.add_child(cls_l)
 
 	var hp_ratio: float = float(u["hp"]) / float(u["max_hp"])
 	var hp := SegBar.new().setup(16, BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.CY), Vector2(250, 8))
 	hp.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
 	hp.set_ratio(hp_ratio)
 	hp.position = Vector2(16, 22)
-	btn.add_child(hp)
+	inner.add_child(hp)
 	var hp_t := BattleTheme.make_label("%d" % int(u["hp"]), 13, fg)
 	hp_t.position = Vector2(274, 15)
-	btn.add_child(hp_t)
+	inner.add_child(hp_t)
 
 	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(78, 6))
 	en.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
 	en.set_ratio(float(u["energy"]) / float(BattleTypes.MAX_ENERGY))
 	en.position = Vector2(16, 34)
-	btn.add_child(en)
+	inner.add_child(en)
 	var gauge := SegBar.new().setup(10, BattleTheme.BK if selected else BattleTheme.RD, Vector2(96, 6))
 	gauge.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.RD_DARK
 	gauge.set_ratio(float(u["gauge"]) / float(BattleTypes.GAUGE_MAX))
 	gauge.position = Vector2(104, 34)
-	btn.add_child(gauge)
+	inner.add_child(gauge)
 	if int(u["gauge"]) >= BattleTypes.GAUGE_MAX and alive:
 		var ult_l := BattleTheme.make_label("ULT", 12, BattleTheme.BK if selected else BattleTheme.RD, true)
 		ult_l.position = Vector2(210, 28)
-		btn.add_child(ult_l)
+		inner.add_child(ult_l)
 	return btn
 
 
@@ -531,7 +542,7 @@ func _refresh_orders() -> void:
 		b.text = "%d %s%s" % [n, BattleText.move_name(move_id), suffix]
 		b.tooltip_text = BattleText.move_hint(move_id)
 		var primary: bool = str(e["kind"]) == "primary"
-		b.custom_minimum_size = Vector2(0, 46 if primary else 38)
+		b.custom_minimum_size = Vector2(0, (TouchUi.COMFY_HEIGHT if primary else 80.0) if TouchUi.active() else (46.0 if primary else 38.0))
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.clip_text = true
 		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -546,8 +557,8 @@ func _refresh_orders() -> void:
 		_order_buttons.append(b)
 		n += 1
 	_orders_box.add_child(grid)
-	var hint := BattleTheme.make_label("TASTI 1-%d · CLICCA UN OPERATORE PER IL CAMBIO" % (n - 1), 11, BattleTheme.CY_DIM)
-	_orders_box.add_child(hint)
+	var hint_text: String = "TOCCA UN OPERATORE PER IL CAMBIO" if TouchUi.active() else "TASTI 1-%d · CLICCA UN OPERATORE PER IL CAMBIO" % (n - 1)
+	_orders_box.add_child(BattleTheme.make_label(hint_text, 11, BattleTheme.CY_DIM))
 
 
 func _make_choice(move_id: String) -> Dictionary:
