@@ -114,12 +114,19 @@ func _start_solo() -> void:
 	var s := SoloBattleSource.new()
 	bind_source(s)
 	s.endless_floor = MissionConfig.endless_floor
+	s.daily_mod = MissionConfig.daily_mod
 	s.start(RosterStore.load_or_new(), MissionConfig.boss_id, int(randi()) | 1, MissionConfig.tier)
 	if DisplayServer.get_name() != "headless":
 		get_tree().create_timer(1.4).timeout.connect(func() -> void:
 			if is_inside_tree() and str(shown.get("winner", "")) == "":
 				banter(_local_active_id(), "start", true))
-	if MissionConfig.endless_floor > 0 and DisplayServer.get_name() != "headless":
+	if MissionConfig.daily_mod != "" and DisplayServer.get_name() != "headless":
+		var dm: Dictionary = {}
+		for m in Endless.MODS:
+			if str(m["id"]) == MissionConfig.daily_mod:
+				dm = m
+		ComicFx.caption(_fx, "SFIDA DEL GIORNO  //  %s: %s" % [str(dm.get("name", "")), str(dm.get("desc", ""))], Vector2(240.0, 300.0), BattleTheme.POP, 1.8)
+	elif MissionConfig.endless_floor > 0 and DisplayServer.get_name() != "headless":
 		var emod: Dictionary = Endless.mod_for(MissionConfig.endless_floor)
 		var cap: String = "PIANO %d" % MissionConfig.endless_floor
 		if not emod.is_empty():
@@ -888,7 +895,7 @@ func _event_fx(e: Dictionary) -> float:
 		"marks":
 			return _fx_marks(e)
 		"dodge":
-			Snd.play("swap")
+			Snd.play("dodge")
 			_pop("SCHIVA!", str(e["unit"]), BattleTheme.OK, BattleTheme.BK, 32, 54.0, Vector2(0.0, -30.0))
 		"debuff":
 			Snd.play("down", 1.4)
@@ -903,7 +910,7 @@ func _event_fx(e: Dictionary) -> float:
 					_float_text("▲ ATK  ▲ VEL", str(au["id"]), BattleTheme.OK, 20)
 			ComicFx.flash(_fx, Color(BattleTheme.OK, 0.25), 0.18)
 		"summon":
-			Snd.play("reload")
+			Snd.play("deploy")
 			_stage.summon_pulse = 1.0
 			_pop("TORRETTA!" if str(e["kind"]) == "turret" else "DRONE!", str(e["unit"]), BattleTheme.POP, BattleTheme.BK, 30, 56.0, Vector2(90.0, -30.0))
 		"summon_shot":
@@ -925,6 +932,7 @@ func _event_fx(e: Dictionary) -> float:
 				_pop("SCUDI!", str(e["unit"]), BattleTheme.CY, BattleTheme.BK, 40, 70.0, Vector2(60.0, -20.0))
 		"ronda":
 			if int(e["on"]) == 1:
+				Snd.play("ronda")
 				_float_text("RONDA ▲", str(e["unit"]), Color("#f2fdff"), 22)
 			else:
 				Snd.play("crit", 1.2)
@@ -965,10 +973,10 @@ func _fx_marks(e: Dictionary) -> float:
 	var uid: String = str(e["unit"])
 	_stage.mark_pulse = 1.0
 	if int(e["added"]) > 0:
-		Snd.play("trait", 1.5)
+		Snd.play("mark", 1.0 + 0.04 * float(int(e["n"])))
 		_pop("MARCHIO x%d" % int(e["n"]), uid, BattleTheme.POP, BattleTheme.BK, 34, 60.0, Vector2(0.0, -60.0))
 		return 0.0
-	Snd.play("crit", 0.9)
+	Snd.play("mark_burst")
 	_stage.impact(12.0, 0.04)
 	ComicFx.flash(_fx, Color(BattleTheme.POP, 0.4), 0.15)
 	_pop("MARCHI SPESI!", uid, BattleTheme.RD, BattleTheme.WH, 40, 76.0, Vector2(0.0, -60.0))
@@ -1306,7 +1314,13 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 	var mission_text: String = "%s · %s" % [MissionConfig.boss_title(str(BattleState.boss(shown)["char"])), str(BattleContent.tier_of(int(shown.get("tier", 0)))["name"])]
-	if MissionConfig.endless_floor > 0:
+	if MissionConfig.daily_mod != "":
+		mission_text = "SFIDA DEL GIORNO · %s" % MissionConfig.boss_title(MissionConfig.boss_id)
+		if victory and source is SoloBattleSource and bool(source.daily_first):
+			mission_text += " · SERIE %d (PREMI x%.1f)" % [Daily.streak(RosterStore.load_or_new()), Daily.reward_mult(RosterStore.load_or_new())]
+		elif victory:
+			mission_text += " · BONUS GIA' RISCOSSO"
+	elif MissionConfig.endless_floor > 0:
 		var best_floor: int = Endless.best(RosterStore.load_or_new()) if source is SoloBattleSource else 0
 		mission_text = "CICLO INFINITO · PIANO %d · RECORD %d" % [MissionConfig.endless_floor, best_floor]
 	var mission := BattleTheme.make_label(mission_text, 16, BattleTheme.WH)

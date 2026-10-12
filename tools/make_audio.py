@@ -190,6 +190,26 @@ def make_faction_sfx():
     save("sfx/trait.wav", mix(at(blip(note_freq("E5"), 0.1, 0.05), 0, 0.3), at(blip(note_freq("A5"), 0.14, 0.07), 0.07, 0.3)) * 0.8, 0.5)
 
 
+def make_combat_sfx():
+    """Marchi, schivata, Ronda, schieramento di torretta/drone."""
+    # marchio: aggancio del mirino (due scatti che salgono)
+    save("sfx/mark.wav", mix(at(blip(1500, 0.05, 0.02), 0, 0.22), at(blip(2250, 0.07, 0.035), 0.06, 0.22), at(lowpass(noise(0.03), 7000) * env(int(SR * 0.03), 0.001, 0.01), 0, 0.22) * 0.5), 0.6)
+    # marchi spesi: schianto con coda discendente
+    n = int(SR * 0.45)
+    fall = sine(sweep(1400, 180, 0.45), 0.45) * env(n, 0.001, 0.14)
+    crack = lowpass(noise(0.12), 5000) * env(int(SR * 0.12), 0.001, 0.03)
+    save("sfx/mark_burst.wav", mix(fall, crack * 0.9, at(blip(2600, 0.08, 0.04), 0, 0.45) * 0.5), 0.85)
+    # schivata: spostamento d'aria
+    n = int(SR * 0.28)
+    air = lowpass(noise(0.28), 3500) * np.sin(np.linspace(0, np.pi, n)) ** 2
+    save("sfx/dodge.wav", mix(air * 0.8, sine(sweep(500, 1300, 0.28), 0.28) * np.sin(np.linspace(0, np.pi, n)) * 0.25), 0.55)
+    # Ronda: carillon luminoso che sale
+    save("sfx/ronda.wav", mix(*[at(mix(sine(note_freq(nm), 0.28), sine(note_freq(nm) * 2, 0.28) * 0.3) * env(int(SR * 0.28), 0.002, 0.12), 0.06 * i, 0.55) for i, nm in enumerate(["E5", "G5", "B5", "E6"])]), 0.65)
+    # schieramento: ingranaggio, scatto, bip di conferma
+    clack = lambda f: lowpass(noise(0.05), 7000) * env(int(SR * 0.05), 0.001, 0.012) + sine(f, 0.05) * env(int(SR * 0.05), 0.001, 0.015) * 0.5
+    save("sfx/deploy.wav", mix(at(clack(500), 0, 0.5), at(clack(800), 0.1, 0.5), at(sine(sweep(300, 900, 0.18), 0.18) * env(int(SR * 0.18), 0.01, 0.1) * 0.5, 0.18, 0.5), at(blip(1800, 0.08, 0.04) * 0.6, 0.36, 0.5)), 0.7)
+
+
 # ---------- Musica (cicli perfetti: i code delle note si riavvolgono) ----------
 
 def put(track, sound, start_sample):
@@ -277,9 +297,12 @@ def make_music():
 
 if __name__ == "__main__":
     import sys
-    if "--faction" in sys.argv:       # solo i suoni nuovi delle fazioni (non riscrive gli altri)
+    if "--combat" in sys.argv:        # solo i suoni di marchi/Ronda/schivata
+        make_combat_sfx()
+    elif "--faction" in sys.argv:       # solo i suoni nuovi delle fazioni (non riscrive gli altri)
         make_faction_sfx()
     else:
         make_sfx()
         make_faction_sfx()
+        make_combat_sfx()
         make_music()

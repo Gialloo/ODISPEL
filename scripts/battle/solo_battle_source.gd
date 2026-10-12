@@ -13,6 +13,8 @@ var battle_time_left: float = -1.0     # negativo = nessun timer
 var boss_id: String = "distributore"
 var tier: int = 0
 var endless_floor: int = 0       # > 0: CICLO INFINITO a questo piano
+var daily_mod: String = ""       # non vuoto: SFIDA DEL GIORNO con questo modificatore
+var daily_first: bool = false    # vera se questa vittoria ha pagato il bonus del giorno
 var seed_value: int = 1
 var roster: Dictionary = {}
 var rewards: Dictionary = {}
@@ -28,7 +30,9 @@ func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier:
 	rewards = {}
 	_finished = false
 	battle = RosterState.create_solo_battle(roster, "IO", boss_id, seed_value, 2, tier)
-	if endless_floor > 0:
+	if daily_mod != "":
+		Endless.apply(battle, Daily.FLOOR, daily_mod)
+	elif endless_floor > 0:
 		Endless.apply(battle, endless_floor)
 		if endless_floor > 1:
 			Endless.apply_carry(battle, MissionConfig.endless_carry)
@@ -58,7 +62,11 @@ func finish() -> Dictionary:
 		if Endless.record(roster, endless_floor, won):
 			Notify.success("NUOVO RECORD: PIANO %d" % endless_floor)
 	RosterState.apply_rewards(roster, rewards)
-	if won and endless_floor == 0:
+	if daily_mod != "" and won and Daily.record_win(roster):
+		daily_first = true
+		rewards = Daily.scale_rewards(rewards, Daily.reward_mult(roster))
+		Notify.success("SFIDA DEL GIORNO SUPERATA · SERIE %d" % Daily.streak(roster))
+	if won and endless_floor == 0 and daily_mod == "":
 		if RosterState.mark_cleared(roster, boss_id, tier):
 			for line in RosterState.unlock_news(boss_id, tier):
 				Notify.success(line)

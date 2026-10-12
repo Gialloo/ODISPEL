@@ -72,13 +72,14 @@ static func reward_mult(floor_n: int) -> float:
 
 
 # Scala il bersaglio dello stato di battaglia (dopo BattleState.create). Idempotente solo se chiamata una volta.
-static func apply(state: Dictionary, floor_n: int) -> void:
+static func apply(state: Dictionary, floor_n: int, mod_override: String = "") -> void:
 	var boss: Dictionary = BattleState.boss(state)
 	var hp: float = float(boss["max_hp"]) * hp_mult(floor_n)
 	var atk: float = float(boss["atk"]) * atk_mult(floor_n)
 	var def: float = float(boss["def"])
 	var spd: float = float(boss["spd"])
-	match str(mod_for(floor_n).get("id", "")):
+	var mod_id: String = mod_override if mod_override != "" else str(mod_for(floor_n).get("id", ""))
+	match mod_id:
 		"corazzato":
 			def *= 1.3
 		"furioso":

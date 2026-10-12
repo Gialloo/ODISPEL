@@ -9,6 +9,7 @@ var selected_tier: int = 0
 var boss_buttons: Dictionary = {}
 var tier_buttons: Array = []
 var go_button: Button
+var daily_button: Button
 var info_label: Label
 var _desc_label: Label
 var _boss_title: Label
@@ -69,7 +70,7 @@ func _build() -> void:
 	dbox.add_child(_boss_sub)
 	_desc_label = BattleTheme.make_label("", 17, BattleTheme.WH)
 	_desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_desc_label.custom_minimum_size = Vector2(740, 90)
+	_desc_label.custom_minimum_size = Vector2(740, 56)
 	dbox.add_child(_desc_label)
 	dbox.add_child(BattleTheme.make_label("LIVELLO DI MINACCIA", 15, BattleTheme.CY))
 	var row := HBoxContainer.new()
@@ -85,20 +86,29 @@ func _build() -> void:
 		tier_buttons.append(tb)
 	info_label = BattleTheme.make_label("", 16, BattleTheme.CY)
 	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info_label.custom_minimum_size = Vector2(740, 80)
+	info_label.custom_minimum_size = Vector2(740, 52)
 	dbox.add_child(info_label)
 	var sp := Control.new()
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dbox.add_child(sp)
 	var story_button := Button.new()
 	story_button.text = "RIVEDI LA SCENA INIZIALE"
-	story_button.custom_minimum_size = Vector2(0, 40)
+	story_button.custom_minimum_size = Vector2(0, 36)
 	BattleTheme.style_button(story_button, "normal", 16)
 	story_button.pressed.connect(_on_replay_story)
 	dbox.add_child(story_button)
+	var dboss: String = Daily.boss_for(roster)
+	var dmod: Dictionary = Daily.mod_for()
+	daily_button = Button.new()
+	daily_button.text = "SFIDA DEL GIORNO  ·  %s  ·  %s  ·  %s" % [MissionConfig.boss_title(dboss), str(dmod["name"]), ("BONUS RISCOSSO" if Daily.done_today(roster) else "PREMI x%.1f  ·  SERIE %d" % [Daily.reward_mult(roster), Daily.streak(roster)])]
+	daily_button.custom_minimum_size = Vector2(0, 44)
+	daily_button.clip_text = true
+	BattleTheme.style_button(daily_button, "normal", 16)
+	daily_button.pressed.connect(_on_daily)
+	dbox.add_child(daily_button)
 	go_button = Button.new()
 	go_button.text = "AVVIA MISSIONE"
-	go_button.custom_minimum_size = Vector2(0, 60)
+	go_button.custom_minimum_size = Vector2(0, 56)
 	BattleTheme.style_button(go_button, "primary", 28)
 	go_button.pressed.connect(_on_go)
 	dbox.add_child(go_button)
@@ -169,6 +179,10 @@ func _refresh() -> void:
 
 func _on_go() -> void:
 	Story.start_mission(self, selected_boss, selected_tier)
+
+
+func _on_daily() -> void:
+	Daily.start(roster)
 
 
 func _on_replay_story() -> void:
