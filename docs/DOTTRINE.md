@@ -10,7 +10,7 @@ fissa per fazione, bonus che cresce con la rarità di chi la dà, con un tetto.
 | LibraCorp | **Protocollo** | Difesa | nome confermato |
 | Rondini | Ronda (tempismo e discrezione) | Velocità | bozza |
 | Magabondi | Improvvisazione (rischio e adattamento; nessuna aura, prendono metà del bonus più forte in squadra) | nessuna | bozza |
-| Anomalie / Kairos (nemici) | Dissonanza (spengono per un po' le aure di una fazione) | — | bozza |
+| Anomalie / Kairos (nemici) | Dissonanza (legano, indeboliscono, avvelenano; spengono per un po' le aure di una fazione) | — | parole chiave dell'autore, nome da confermare |
 
 ## LibraCorp: Protocollo
 Parole chiave dell'autore: risposte, counter, riposte, ricarica, munizioni, colpi con munizioni, headshot,
@@ -28,3 +28,17 @@ Esempio di aura e tratti (valori da provare):
 
 Regole da fissare: tetto agli effetti sommati (proposta: +25% di aure della stessa fazione), contatore "una volta
 per turno", aure valide solo nella squadra del giocatore (per partire).
+
+## Anomalie / Kairos: Dissonanza
+Parole chiave dell'autore: binding, debuff, spell binding, veleno, controllo (CC), danni nel tempo (DoT).
+
+Lettura proposta (bozza):
+- **Binding (legatura):** un bersaglio non può cambiare operatore o agire con una certa mossa finche' dura.
+- **Spell binding (sigillo):** una skill o l'ultimate di un bersaglio e' bloccata per qualche turno.
+- **Debuff (maledizione):** riduce attacco, difesa o velocita'; puo' anche spegnere un'aura di fazione.
+- **Veleno e DoT:** danno a ogni turno, a pile; il veleno riduce le cure. Il sanguinamento che c'e' gia' resta.
+- **CC:** stordimento (perde il turno), provocazione forzata. Con limiti: un bersaglio appena liberato e' immune un turno.
+- Sempre annunciati un round prima (come ora) e con una risposta possibile: purificare, intercettare (LibraCorp), agire per primi (Rondini).
+
+Assegnazione ai boss attuali (bozza): Semaforo = CC (stop e via), Tombino = veleno e DoT, Cabina = binding e sigilli
+(linea occupata), Distributore = debuff. I Kairos di fine gioco li combinano.
