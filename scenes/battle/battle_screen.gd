@@ -679,7 +679,7 @@ func _refresh_orders() -> void:
 		HintCard.bind(b, func() -> Dictionary: return Hints.move_card(BattleState.unit(shown, order_unit_id), move_id, order_err), self, true)
 		var primary: bool = str(e["id"]) == "attack"
 		var is_guard: bool = str(e["id"]) == "guard"
-		b.custom_minimum_size = Vector2(0, (TouchUi.COMFY_HEIGHT if (primary or is_guard) else 62.0) if TouchUi.active() else (48.0 if (primary or is_guard) else 40.0))
+		b.custom_minimum_size = Vector2(0, (TouchUi.COMFY_HEIGHT if (primary or is_guard) else TouchUi.MIN_HEIGHT) if TouchUi.active() else (48.0 if (primary or is_guard) else 40.0))
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if primary:
 			b.size_flags_stretch_ratio = 1.7

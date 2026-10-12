@@ -142,7 +142,7 @@ func _run() -> void:
 	await process_frame
 	var all_big: bool = scr._order_buttons.size() >= 3
 	for ob in scr._order_buttons:
-		all_big = all_big and (ob as Button).custom_minimum_size.y >= 80.0
+		all_big = all_big and (ob as Button).custom_minimum_size.y >= TouchUi.MIN_HEIGHT
 	_check("touch: ordini di battaglia grandi", all_big)
 	scr.queue_free()
 	TouchUi.force = false
