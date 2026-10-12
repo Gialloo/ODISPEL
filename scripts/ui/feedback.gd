@@ -11,7 +11,7 @@ const TIPS: Array = [
 	"Il telegrafo in alto a destra mostra la mossa del boss: guardalo prima di scegliere.",
 	"PROVOCA obbliga gli attacchi a bersaglio singolo a colpire chi la usa.",
 	"I colori contano: un colpo del colore giusto fa molti piu' danni.",
-	"Ogni cambio di operatore costa un turno: usalo per salvare chi sta per cadere.",
+	"Cambiare operatore e' gratis e avviene prima di tutto: usalo per salvare chi sta per cadere.",
 	"Il Tombino cura se stesso: concentra i danni e non lasciargli tempo.",
 	"Il Semaforo cambia colore: ROSSO colpisce forte uno solo, VERDE tutti insieme.",
 	"Potenzia l'operatore guida: e' quello che tutti vedono nella lobby.",
@@ -179,6 +179,7 @@ func show_toast(text: String, kind: int = 0) -> void:
 		_toasts.remove_child(oldest)
 		oldest.queue_free()
 
+	Snd.play(["toast", "success", "toast", "error"][clampi(kind, 0, 3)])
 	var color: Color = TOAST_COLORS[clampi(kind, 0, TOAST_COLORS.size() - 1)]
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -221,6 +222,7 @@ func has_job(job: String) -> bool:
 func show_saved(ok: bool) -> void:
 	_saved_ok = ok
 	_saved_left = 1.4
+	Snd.play("save" if ok else "error")
 	_refresh_spinner()
 
 

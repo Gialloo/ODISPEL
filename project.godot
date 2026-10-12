@@ -21,6 +21,7 @@ CampaignState="*uid://c8lloqc2i0mu2"
 SaveManager="*uid://cuv5g44srpksk"
 NetSession="*uid://pygfm6l0g37o"
 Feedback="*res://scripts/ui/feedback.gd"
+Sfx="*res://scripts/audio/audio_manager.gd"
 
 [display]
 

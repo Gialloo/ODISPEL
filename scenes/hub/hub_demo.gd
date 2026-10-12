@@ -51,7 +51,8 @@ func _build() -> void:
 	_menu_button(menu, "missions", "SCEGLI MISSIONE", "normal", 56, 22)
 	_menu_button(menu, "roster", "SQUADRA E RECLUTAMENTO", "normal", 56, 22)
 	_menu_button(menu, "lobby", "MULTIPLAYER CO-OP", "normal", 56, 22)
-	menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-4 = SCORCIATOIE", 13, BattleTheme.CY_DARK))
+	_menu_button(menu, "settings", "IMPOSTAZIONI", "normal", 44, 18)
+	menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-5 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DARK))
 
 	_build_status_panel()
 
@@ -118,6 +119,8 @@ func _on_menu(key: String) -> void:
 			var next: Dictionary = MissionConfig.suggest(roster)
 			MissionConfig.set_mission(str(next["boss"]), int(next["tier"]))
 			SceneRouter.go("battle", true)
+		"settings":
+			SettingsPanel.open(self)
 		_:
 			SceneRouter.go(key)
 
@@ -125,6 +128,9 @@ func _on_menu(key: String) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
+	for c in get_children():
+		if c is SettingsPanel:      # con la finestra aperta le scorciatoie dell'hub tacciono
+			return
 	match event.keycode:
 		KEY_ENTER, KEY_KP_ENTER, KEY_1:
 			_on_menu("continue")
@@ -134,3 +140,5 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_on_menu("roster")
 		KEY_4:
 			_on_menu("lobby")
+		KEY_5:
+			_on_menu("settings")

@@ -24,6 +24,8 @@ var _round_label: Label
 var _timer_label: Label
 var _clock_label: Label
 var _tele_panel: HudPanel
+var _boss_panel: HudPanel
+var _tutorial: TutorialOverlay = null
 var _tele_label: Label
 var _tele_target: Label
 var _ops_box: VBoxContainer
@@ -46,6 +48,48 @@ func _ready() -> void:
 		bind_source(pending_source)
 	elif source == null:
 		_start_solo()
+	if source is SoloBattleSource and Settings.should_show_tutorial():
+		_start_tutorial.call_deferred()
+
+
+# ---------- Tutorial ----------
+
+func _panel_of(c: Control) -> Control:
+	var node: Node = c
+	while node != null and not (node is HudPanel):
+		node = node.get_parent()
+	return node as Control
+
+
+func tutorial_steps() -> Array:
+	return [
+		{"title": "BENVENUTO, OPERATORE", "target": null,
+		"text": "Una anomalia ti sta davanti. Il tuo compito: metterla a terra prima che metta K.O. tutta la tua squadra. Si combatte a round: ogni round scegli un ordine, poi si risolve tutto insieme."},
+		{"title": "IL BERSAGLIO", "target": _boss_panel,
+		"text": "Qui vedi il nome del boss e la sua integrita'. Quando la barra arriva a zero, hai vinto. Sotto meta' integrita' il boss va in furia e colpisce piu' forte."},
+		{"title": "ALLARME", "target": _tele_panel,
+		"text": "Il boss ti avvisa: questa e' la mossa che usera' in QUESTO round e chi colpira'. Cambia ogni round, quindi leggila sempre prima di scegliere."},
+		{"title": "I TUOI OPERATORI", "target": _panel_of(_ops_box),
+		"text": "La tua squadra: PV, energia e carica dell'ultimate di ciascuno. Uno solo e' in campo (il triangolo). Clicca un compagno in panchina per scambiarlo: il cambio e' gratis e avviene prima di tutto. Chi sta in panchina recupera piu' energia."},
+		{"title": "GLI ORDINI", "target": _panel_of(_orders_box),
+		"text": "Scegli cosa fare: ATTACCO, GUARDIA (dimezza i danni), le abilita' (costano energia) e l'ULTIMATE, che si carica combattendo. Scorciatoie: tasti 1-4. I colori contano: un colpo del colore giusto fa +50% di danni, quello sbagliato -33%."},
+		{"title": "PRONTO?", "target": null,
+		"text": "Il registro in basso racconta cosa succede ogni round. Se finisce male, non c'e' problema: si ritenta e si guadagnano comunque monete per potenziare la squadra. Buona fortuna!"},
+	]
+
+
+func _start_tutorial() -> void:
+	if _tutorial != null or not is_inside_tree():
+		return
+	await get_tree().process_frame     # aspetta che i pannelli abbiano la loro posizione
+	_tutorial = TutorialOverlay.new().setup(tutorial_steps())
+	add_child(_tutorial)
+	_tutorial.finished.connect(_on_tutorial_finished)
+
+
+func _on_tutorial_finished(_skipped: bool) -> void:
+	_tutorial = null
+	Settings.finish_tutorial()
 
 
 # ---------- Avvio ----------
@@ -161,6 +205,7 @@ func _build_camera_info() -> void:
 
 func _build_boss_banner() -> void:
 	var panel := HudPanel.new().setup("SOGGETTO N.07", BattleTheme.RD)
+	_boss_panel = panel
 	add_child(panel)
 	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-268, 34, 252, 124))
 	var box := VBoxContainer.new()
@@ -565,15 +610,22 @@ func _event_fx(e: Dictionary) -> void:
 	match str(e.get("t", "")):
 		"damage":
 			var dst: String = str(e["dst"])
+			Snd.play("guard" if int(e["amount"]) <= 0 else ("hit" if dst == BattleState.BOSS_ID else "player_hit"), randf_range(0.94, 1.06))
 			_stage.flash(dst)
 			_float_text("-%d" % int(e["amount"]) if int(e["amount"]) > 0 else "SCUDO", dst, BattleTheme.WH, 46 if dst == BattleState.BOSS_ID else 38)
 		"bleed":
 			_float_text("-%d" % int(e["amount"]), str(e["unit"]), BattleTheme.RD, 28)
 		"heal":
+			Snd.play("heal")
 			_float_text("+%d" % int(e["amount"]), str(e["dst"]), Color("#6bffb0"), 34)
+		"boss_move":
+			Snd.play("boss_charge")
+		"swap":
+			Snd.play("swap")
 		"shield":
 			_float_text("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.CY, 26)
 		"down":
+			Snd.play("down")
 			_float_text("K.O.", str(e["unit"]), BattleTheme.RD, 44)
 
 
@@ -628,6 +680,8 @@ func _check_end() -> void:
 
 
 func _show_result(victory: bool, rewards: Dictionary) -> void:
+	Snd.duck(-14.0)
+	Snd.play("victory" if victory else "defeat")
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.72)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
