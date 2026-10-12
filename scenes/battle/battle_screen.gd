@@ -847,6 +847,13 @@ func _event_fx(e: Dictionary) -> float:
 			_link_clear()
 		"down":
 			Snd.play("down")
+			if str(e["unit"]) == BattleState.BOSS_ID:
+				# colpo di grazia: lampo, linee e scritta gigante
+				_stage.impact(26.0, 0.08)
+				ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color.WHITE, 0.5)
+				ComicFx.flash(_fx, Color(1, 1, 1, 0.85), 0.35)
+				_pop("FINISH!", BattleState.BOSS_ID, BattleTheme.POP, BattleTheme.RD, 84, 120.0, Vector2(0.0, -20.0))
+				return 0.35
 			_stage.impact(14.0, 0.04)
 			ComicFx.flash(_fx, Color(1, 1, 1, 0.5), 0.15)
 			_pop("K.O.!", str(e["unit"]), BattleTheme.RD, BattleTheme.WH, 56, 95.0)
@@ -863,6 +870,10 @@ func _fx_link(e: Dictionary) -> float:
 	var col: Color = BattleTheme.POP if unison else BattleTheme.CY
 	Snd.play("crit", 1.0 + 0.12 * float(n))
 	_link_clear()
+	_stage.link_from = str(e["with"])
+	_stage.link_to = str(e["unit"])
+	_stage.link_n = n
+	_stage.link_col = col
 	var l := BattleTheme.make_label("LINK x%d" % n, 54 + n * 6, col, true)
 	l.add_theme_color_override("font_outline_color", BattleTheme.BK)
 	l.add_theme_constant_override("outline_size", 14)
@@ -881,6 +892,7 @@ func _fx_link(e: Dictionary) -> float:
 
 
 func _link_clear() -> void:
+	_stage.link_n = 0
 	if _link_node != null and is_instance_valid(_link_node):
 		var l: Label = _link_node
 		var tw := create_tween()

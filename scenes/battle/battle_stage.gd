@@ -893,9 +893,29 @@ func _draw_bench_unit(u: Dictionary, gx: float, slot: int) -> void:
 
 
 # Segnalini di chi agisce (triangolo rosso) e di chi subisce (cerchio rosso), durante la riproduzione del round.
+var link_from: String = ""
+var link_to: String = ""
+var link_n: int = 0
+var link_col: Color = Color("#7cf0ff")
+
+
 func _draw_markers() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2(size.x / DW, size.y / DH))
 	var pulse: float = 0.5 + 0.5 * sin(_t * 8.0)
+	if link_n > 0 and _positions.has(link_from) and _positions.has(link_to):
+		# fulmine neon tra i due compagni legati
+		var a: Vector2 = _positions[link_from] + Vector2(0.0, -90.0)
+		var b: Vector2 = _positions[link_to] + Vector2(0.0, -90.0)
+		var pts := PackedVector2Array([a])
+		for i in range(1, 6):
+			var f: float = float(i) / 6.0
+			pts.append(a.lerp(b, f) + Vector2(0.0, (-1.0 if i % 2 == 0 else 1.0) * (16.0 + 5.0 * float(link_n)) * (0.6 + 0.4 * pulse)))
+		pts.append(b)
+		draw_polyline(pts, Color(link_col, 0.35), 14.0 + 3.0 * float(link_n))
+		draw_polyline(pts, link_col, 5.0)
+		draw_polyline(pts, Color.WHITE, 2.0)
+		draw_circle(a, 9.0, link_col)
+		draw_circle(b, 9.0, link_col)
 	if acting != "" and _positions.has(acting):
 		var p: Vector2 = _positions[acting]
 		var y: float = p.y - (190.0 if acting != BattleState.BOSS_ID else 230.0) - pulse * 6.0
@@ -910,6 +930,7 @@ func _draw_markers() -> void:
 
 
 func clear_markers() -> void:
+	link_n = 0
 	acting = ""
 	acting_target = ""
 
