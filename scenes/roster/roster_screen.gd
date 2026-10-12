@@ -231,7 +231,8 @@ func _build_team_page() -> void:
 	_detail_icons.add_theme_constant_override("separation", 4)
 	_detail_icons.alignment = BoxContainer.ALIGNMENT_CENTER
 	title_row.add_child(_detail_icons)
-	_detail_label = BattleTheme.make_label("", 14, BattleTheme.WH)
+	_detail_label = BattleTheme.make_label("", 13, BattleTheme.WH)
+	_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(_detail_label)
 	_action_box = GridContainer.new()
@@ -718,21 +719,32 @@ func _refresh_detail() -> void:
 	var skills: Array = []
 	for s in e["skills"]:
 		skills.append(BattleText.move_name(str(s)))
+	for s in Signatures.skills_for(selected, int(e["rank"])):
+		skills.append("★" + BattleText.move_name(str(s)))
 	var passives: Array = []
 	for p in e["passives"]:
 		passives.append(str(BattleContent.PASSIVES[str(p)]["name"]))
 	var lines: Array = []
-	lines.append("%s  |  %s  |  %s" % [str(def["color"]).to_upper(), str(def["cls"]).to_upper(), str(BattleTypes.RARITIES[int(def["rarity"])]).to_upper()])
-	lines.append(str(Lore.character_text(selected).get("tag", "")))
-	lines.append("LIVELLO %d/%d    RANK %s" % [int(e["level"]), RosterState.MAX_LEVEL, _stars(int(e["rank"]))])
+	var arch: Dictionary = Archetypes.DEFS.get(Archetypes.of_color(str(def["color"])), {})
+	lines.append("%s = %s  |  %s  |  %s" % [str(def["color"]).to_upper(), str(arch.get("tag", "")), str(def["cls"]).to_upper(), str(BattleTypes.RARITIES[int(def["rarity"])]).to_upper()])
+	lines.append("%s: %s" % [str(arch.get("name", "")), str(arch.get("line", ""))])
 	var faction: String = BattleContent.faction_of(selected)
 	if faction != "":
 		lines.append("%s  |  %s  |  %s" % [Factions.name_of(faction).to_upper(), str(Factions.FACTIONS[faction]["doctrine"]).to_upper(), BattleContent.style_of(selected, e).to_upper()])
-	lines.append("PV  %-6d ATK %-5d" % [int(st["hp"]), int(st["atk"])])
-	lines.append("DEF %-6d VEL %-5d" % [int(st["def"]), int(st["spd"])])
-	lines.append("SKILL     %s" % (", ".join(skills) if not skills.is_empty() else "-"))
-	lines.append("ULTIMATE  %s" % BattleText.move_name(str(e["ult"])))
-	lines.append("PASSIVA   %s" % (", ".join(passives) if not passives.is_empty() else "-"))
+	lines.append("LIV %d/%d   RANK %s" % [int(e["level"]), RosterState.MAX_LEVEL, _stars(int(e["rank"]))])
+	lines.append("PV %d  ATK %d  DEF %d  VEL %d" % [int(st["hp"]), int(st["atk"]), int(st["def"]), int(st["spd"])])
+	lines.append("SKILL  %s" % (", ".join(skills) if not skills.is_empty() else "-"))
+	lines.append("ULT  %s" % BattleText.move_name(str(e["ult"])))
+	var pass_names: Array = passives.duplicate()
+	if Signatures.has_passive(selected):
+		pass_names.append("★" + Signatures.passive_name(selected))
+	lines.append("PASSIVE  %s" % (", ".join(pass_names) if not pass_names.is_empty() else "-"))
+	if Signatures.has_passive(selected):
+		lines.append("★ %s" % Signatures.passive_text(selected, int(e["rank"])))
+	lines.append("RANK %d: %s" % [int(e["rank"]), Signatures.rank_perk_text(selected, int(e["rank"]))])
+	var nm: String = Signatures.next_milestone(selected, int(e["rank"]))
+	if nm != "":
+		lines.append("PROSSIMO  %s" % nm)
 	_detail_label.text = "\n".join(lines)
 
 	var in_team: bool = (roster["team"] as Array).has(selected)
@@ -1011,7 +1023,8 @@ func _refresh_recruit() -> void:
 			"new":
 				outcome = "NUOVO!"
 			"rank":
-				outcome = "RANK +1"
+				var unl: String = Signatures.rank_unlock_text(str(r["char"]), int(r.get("rank", 0)))
+				outcome = "RANK %d  %s" % [int(r.get("rank", 0)), unl if unl != "" else "+%d%% STAT" % int(round(BattleContent.RANK_BONUS * 100.0))]
 			_:
 				outcome = "RANK MAX  +%d monete" % int(r["refund"])
 		var line := "%-6s %-11s %s" % [str(def["name"]).to_upper(), str(BattleTypes.RARITIES[int(r["rarity"])]).to_upper(), outcome]

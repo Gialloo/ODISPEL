@@ -158,3 +158,33 @@ static func crit_bonus(attacker: Dictionary, defender: Dictionary) -> int:
 	if v > 0.0 and defender.get("statuses", {}).has("mark"):
 		return int(round(v * 1000.0))
 	return 0
+
+
+# Cosa da' un rank (per la scheda e per i messaggi di rank up).
+static func rank_perk_text(char_id: String, rank: int) -> String:
+	var parts: Array = ["+%d%% STAT" % int(round(BattleContent.RANK_BONUS * 100.0 * float(rank)))]
+	if has_passive(char_id):
+		parts.append("PASSIVA +%d%%" % int(round(PASSIVE_RANK_SCALE * 100.0 * float(rank))))
+	if rank >= AWAKEN_RANK:
+		parts.append("RISVEGLIO")
+	return " · ".join(parts)
+
+
+# Il prossimo traguardo: sblocco della seconda abilita' o risveglio. "" se non c'e' altro.
+static func next_milestone(char_id: String, rank: int) -> String:
+	var all: Array = all_skills(char_id)
+	if all.size() > 1 and rank < SECOND_SKILL_RANK:
+		return "RANK %d: sblocca %s" % [SECOND_SKILL_RANK, BattleText.move_name(str(all[1]["id"]))]
+	if rank < AWAKEN_RANK:
+		return "RANK %d: RISVEGLIO (ultimate +%d%%, parte con +%d di carica)" % [AWAKEN_RANK, int(round((AWAKEN_ULT - 1.0) * 100.0)), AWAKEN_GAUGE]
+	return ""
+
+
+# Cosa si e' appena ottenuto salendo a questo rank ("" se solo statistiche).
+static func rank_unlock_text(char_id: String, rank: int) -> String:
+	var all: Array = all_skills(char_id)
+	if all.size() > 1 and rank == SECOND_SKILL_RANK:
+		return "NUOVA ABILITA': %s" % BattleText.move_name(str(all[1]["id"])).to_upper()
+	if rank == AWAKEN_RANK:
+		return "RISVEGLIO!"
+	return ""

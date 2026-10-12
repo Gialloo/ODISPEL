@@ -61,7 +61,7 @@ static func pull(roster: Dictionary, count: int, seed_value: int) -> Dictionary:
 		if outcome == "max":
 			refund = (actual + 1) * REFUND_PER_RARITY
 			roster["coins"] = int(roster["coins"]) + refund
-		results.append({"char": char_id, "rarity": actual, "outcome": outcome, "refund": refund})
+		results.append({"char": char_id, "rarity": actual, "outcome": outcome, "refund": refund, "rank": int(roster["characters"][char_id]["rank"])})
 
 	roster["pulls"] = int(roster["pulls"]) + count
 	return {"ok": true, "error": "", "cost": cost, "results": results}
