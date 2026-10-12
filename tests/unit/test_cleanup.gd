@@ -88,7 +88,8 @@ func _run() -> void:
 	await process_frame
 	_check("operatori: il cambio ricostruisce la lista", scene._ops_box.get_child(0) != first_op)
 	_check("ordini: il cambio ricostruisce i pulsanti", scene._orders_box.get_child(0) != first_order)
-	_check("ordini: restano quattro pulsanti", scene._order_buttons.size() == 4)
+	var shown_unit: Dictionary = BattleState.unit(scene.shown, bench)
+	_check("ordini: un pulsante per azione base, skill e ultimate", scene._order_buttons.size() == 2 + (shown_unit["skills"] as Array).size() + 1)
 	scene._on_unit_pressed(bench)
 	await process_frame
 	_check("ordini: annullare il cambio rimette i pulsanti", scene._order_buttons.size() == 4 and scene._orders_box.get_child_count() > 0)

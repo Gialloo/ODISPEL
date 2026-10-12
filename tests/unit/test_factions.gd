@@ -269,5 +269,39 @@ func _init() -> void:
 	var again: Dictionary = RosterState.from_json(RosterState.to_json(migrated))
 	_check("Migrazione: una volta sola", not again.is_empty() and not again["characters"]["dax"]["skills"].has("ricarica"))
 
+	# schede informative
+	var hu: Dictionary = BattleState.unit(lb, "a:dax")
+	hu["ammo"] = 0
+	var cards: Array = [Hints.faction_card(hu), Hints.aura_card(lb, hu), Hints.ammo_card(hu), Hints.mods_card(hu), Hints.class_card(hu)]
+	for mid in BattleContent.MOVES:
+		cards.append(Hints.move_card(hu, str(mid), "energia insufficiente"))
+	var cards_ok: bool = true
+	for cd in cards:
+		cards_ok = cards_ok and str(cd["title"]) != "" and str(cd["body"]) != ""
+	_check("schede: tutte con titolo e testo", cards_ok)
+	_check("scheda munizioni: avvisa quando e' a secco", str(Hints.ammo_card(hu)["body"]).contains("A SECCO"))
+	_check("scheda mossa: dice perche' non si puo' usare", str(Hints.move_card(hu, "colpo_mirato", "munizioni insufficienti")["body"]).contains("munizioni insufficienti"))
+	_check("scheda aura: elenca chi la da'", str(Hints.aura_card(lb, hu)["body"]).contains("Tana"))
+	_check("fonti aura: Tana (leggendaria) pesa piu' di Dax", Factions.aura_sources(lb, hu).size() == 2)
+	var chip_host: Control = Control.new()
+	root.add_child(chip_host)
+	var chip: InfoChip = InfoChip.ammo(2, 3, Color.WHITE)
+	chip_host.add_child(chip)
+	await process_frame
+	_check("chip munizioni: ha una dimensione", chip.size.x > 20.0 and chip.size.y > 10.0)
+	var hc: HintCard = HintCard.show_for(chip_host, chip, Hints.ammo_card(hu))
+	await process_frame
+	_check("scheda: compare e poi sparisce", HintCard.current() == hc and hc.is_inside_tree())
+	HintCard.hide_current()
+	await process_frame
+	_check("scheda: chiusa", HintCard.current() == null)
+	var seen_trait: bool = false
+	var pt: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("dax")]}], "distributore", 3)
+	var evs: Array = []
+	BattleResolver._hit(pt, BattleState.boss(pt), BattleState.unit(pt, "a:dax"), 0.5, evs)
+	for x in evs:
+		seen_trait = seen_trait or str(x["t"]) == "trait"
+	_check("Protocollo: emette l'evento 'trait'", seen_trait)
+
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)

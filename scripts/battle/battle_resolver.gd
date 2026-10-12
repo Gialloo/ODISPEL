@@ -266,7 +266,7 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 	if int(defender["hp"]) <= 0:
 		_on_down(defender, events)
 	else:
-		Factions.on_hit_taken(state, defender)
+		Factions.on_hit_taken(state, defender, events)
 
 
 # Munizioni: positivo = ricarica, negativo = si spendono. Resta tra 0 e il massimo dell'unita'.

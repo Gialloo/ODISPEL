@@ -168,6 +168,24 @@ static func refresh(state: Dictionary) -> void:
 			u["crit"] = clampi(int(u["base"]["crit"]) + int(total.get("crit", 0)), 0, 1000)
 
 
+# Chi contribuisce all'aura di un'unita': [{name, pm}], solo operatori vivi della stessa fazione nella stessa squadra.
+static func aura_sources(state: Dictionary, u: Dictionary) -> Array:
+	var out: Array = []
+	var f: String = str(u.get("faction", ""))
+	if f == "" or aura_stat(f) == "" or is_suppressed(state, f):
+		return out
+	var p: Dictionary = BattleState.player(state, str(u.get("owner", "")))
+	for uid in p.get("team", []):
+		var v: Dictionary = BattleState.unit(state, uid)
+		if str(v.get("faction", "")) != f or not BattleState.is_alive(v):
+			continue
+		var pm: int = aura_value(int(v.get("rarity", 0)))
+		if is_atypical(v):
+			pm = pm * ATYPICAL_AURA_PCT / 100
+		out.append({"name": str(v["name"]), "pm": pm})
+	return out
+
+
 # Riepilogo leggibile delle aure di un'unita': "DIF +7%".
 static func aura_text(u: Dictionary) -> String:
 	var parts: Array = []
@@ -183,13 +201,14 @@ static func aura_text(u: Dictionary) -> String:
 const PROTOCOL_HIT_PM: int = 50
 
 
-static func on_hit_taken(state: Dictionary, defender: Dictionary) -> void:
+static func on_hit_taken(state: Dictionary, defender: Dictionary, events: Array = []) -> void:
 	if str(defender.get("faction", "")) != "libracorp" or str(defender.get("side", "")) != "player":
 		return
 	if is_suppressed(state, "libracorp") or str(defender.get("style", "ortodosso")) != "ortodosso":
 		return
 	add_mod(defender, "protocollo_def", "def", PROTOCOL_HIT_PM, 2)
 	add_mod(defender, "protocollo_spd", "spd", PROTOCOL_HIT_PM, 2)
+	events.append({"t": "trait", "unit": defender["id"], "trait": "protocollo"})
 	refresh(state)
 
 

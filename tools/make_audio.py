@@ -172,6 +172,24 @@ def make_sfx():
     save("sfx/defeat.wav", mix(*[at(lowpass(saw(note_freq(nm), d), 1400) * env(int(SR * d), 0.01, d * 0.45), s, 2.0) for nm, s, d in sad]), 0.7)
 
 
+def make_faction_sfx():
+    """Suoni propri delle meccaniche di fazione: sparo, ricarica, contrattacco, critico, tratto."""
+    n = int(SR * 0.2)
+    bang = lowpass(noise(0.2), 6000) * env(n, 0.001, 0.035)
+    kick = sine(sweep(260, 70, 0.2), 0.2) * env(n, 0.001, 0.05)
+    save("sfx/shot.wav", mix(bang * 0.9, kick), 0.8)
+    clack = lambda f: lowpass(noise(0.05), 7000) * env(int(SR * 0.05), 0.001, 0.012) + sine(f, 0.05) * env(int(SR * 0.05), 0.001, 0.015) * 0.5
+    save("sfx/reload.wav", mix(at(clack(900), 0, 0.4), at(clack(1500), 0.14, 0.4), at(blip(2200, 0.08, 0.04) * 0.6, 0.22, 0.4)), 0.7)
+    n = int(SR * 0.35)
+    ring = mix(sine(1100, 0.35), sine(1650, 0.35) * 0.5) * env(n, 0.001, 0.1)
+    save("sfx/counter.wav", mix(at(bang * 0.8, 0, 0.45), at(ring, 0.05, 0.45)), 0.8)
+    n = int(SR * 0.3)
+    ping = mix(sine(sweep(900, 2400, 0.3), 0.3), sine(sweep(1350, 3600, 0.3), 0.3) * 0.4) * env(n, 0.001, 0.12)
+    crack = lowpass(noise(0.08), 6000) * env(int(SR * 0.08), 0.001, 0.02)
+    save("sfx/crit.wav", mix(ping, crack * 0.8), 0.8)
+    save("sfx/trait.wav", mix(at(blip(note_freq("E5"), 0.1, 0.05), 0, 0.3), at(blip(note_freq("A5"), 0.14, 0.07), 0.07, 0.3)) * 0.8, 0.5)
+
+
 # ---------- Musica (cicli perfetti: i code delle note si riavvolgono) ----------
 
 def put(track, sound, start_sample):
@@ -258,5 +276,10 @@ def make_music():
 
 
 if __name__ == "__main__":
-    make_sfx()
-    make_music()
+    import sys
+    if "--faction" in sys.argv:       # solo i suoni nuovi delle fazioni (non riscrive gli altri)
+        make_faction_sfx()
+    else:
+        make_sfx()
+        make_faction_sfx()
+        make_music()

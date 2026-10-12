@@ -364,7 +364,7 @@ func _refresh_operators() -> void:
 		sig = "%s|%s|" % [active_id, str(me["active"])]
 		for uid in me["team"]:
 			var tu: Dictionary = BattleState.unit(shown, uid)
-			sig += "%s,%d,%d,%d,%d,%d,%s;" % [uid, int(tu["hp"]), int(tu["max_hp"]), int(tu["energy"]), int(tu["gauge"]), int(tu["level"]), Factions.aura_text(tu)]
+			sig += "%s,%d,%d,%d,%d,%d,%s,%d,%d;" % [uid, int(tu["hp"]), int(tu["max_hp"]), int(tu["energy"]), int(tu["gauge"]), int(tu["level"]), Factions.aura_text(tu), int(tu["ammo"]), (tu["mods"] as Array).size()]
 		for p in shown["players"]:
 			if p["id"] != me["id"]:
 				var ta: Dictionary = BattleState.unit(shown, str(p["active"]))
@@ -405,16 +405,34 @@ func _unit_row_height() -> float:
 	return 60.0 if TouchUi.active() else 44.0
 
 
-# "LIBRACORP DIF +7%" sotto il nome: fazione e aure attive (vuoto per chi non ha fazione).
-func _faction_tag(u: Dictionary) -> String:
+# Sotto il nome: fazione, aure, munizioni, effetti. Ognuno si puo' puntare o toccare per leggere cosa significa.
+func _add_chips(inner: Control, u: Dictionary, selected: bool) -> void:
 	var f: String = str(u.get("faction", ""))
 	if f == "":
-		return ""
+		return
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	row.position = Vector2(206.0, 28.0 if not TouchUi.active() else 24.0)
+	inner.add_child(row)
+	var tint: Color = Hints.faction_color(f)
+	if selected:
+		tint = BattleTheme.BK
+	var fac: InfoChip = InfoChip.badge(Hints.faction_code(f), tint)
+	HintCard.bind(fac, func() -> Dictionary: return Hints.faction_card(BattleState.unit(shown, str(u["id"]))), self)
+	row.add_child(fac)
 	var aura: String = Factions.aura_text(u)
-	var tag: String = Factions.name_of(f).to_upper() + ("  " + aura if aura != "" else "")
+	if aura != "":
+		var ac: InfoChip = InfoChip.badge(aura, tint, false)
+		HintCard.bind(ac, func() -> Dictionary: return Hints.aura_card(shown, BattleState.unit(shown, str(u["id"]))), self)
+		row.add_child(ac)
 	if int(u.get("ammo_max", 0)) > 0:
-		tag += "  MUN %d/%d" % [int(u["ammo"]), int(u["ammo_max"])]
-	return tag
+		var am: InfoChip = InfoChip.ammo(int(u["ammo"]), int(u["ammo_max"]), tint if selected else Hints.faction_color("libracorp"))
+		HintCard.bind(am, func() -> Dictionary: return Hints.ammo_card(BattleState.unit(shown, str(u["id"]))), self)
+		row.add_child(am)
+	if not (u.get("mods", []) as Array).is_empty():
+		var mc: InfoChip = InfoChip.badge("▲", BattleTheme.BK if selected else BattleTheme.GOLD)
+		HintCard.bind(mc, func() -> Dictionary: return Hints.mods_card(BattleState.unit(shown, str(u["id"]))), self)
+		row.add_child(mc)
 
 
 func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
@@ -455,15 +473,12 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	var name_l := BattleTheme.make_label(title, 17, fg, true)
 	name_l.position = Vector2(16, -2)
 	inner.add_child(name_l)
-	var cls_l := BattleTheme.make_label("%s · LV%d" % [str(u["cls"]).to_upper(), int(u["level"])], 11, fg)
-	cls_l.position = Vector2(180, 3)
+	var cls_l: InfoChip = InfoChip.badge("%s · LV%d" % [str(u["cls"]).to_upper(), int(u["level"])], fg, false)
+	cls_l.position = Vector2(176, 1)
+	HintCard.bind(cls_l, func() -> Dictionary: return Hints.class_card(BattleState.unit(shown, str(u["id"]))), self)
 	inner.add_child(cls_l)
 
-	var tag: String = _faction_tag(u)
-	if tag != "":
-		var tag_l := BattleTheme.make_label(tag, 11, BattleTheme.RD if not selected else BattleTheme.BK)
-		tag_l.position = Vector2(210, 31)
-		inner.add_child(tag_l)
+	_add_chips(inner, u, selected)
 
 	var hp_ratio: float = float(u["hp"]) / float(u["max_hp"])
 	var hp := SegBar.new().setup(16, BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.CY), Vector2(250, 8))
@@ -556,7 +571,9 @@ func _refresh_orders() -> void:
 		elif str(move["kind"]) == "ult":
 			suffix = " ·%d%%" % int(u["gauge"])
 		b.text = "%d %s%s" % [n, BattleText.move_name(move_id), suffix]
-		b.tooltip_text = BattleText.move_hint(move_id)
+		var order_unit_id: String = uid
+		var order_err: String = err
+		HintCard.bind(b, func() -> Dictionary: return Hints.move_card(BattleState.unit(shown, order_unit_id), move_id, order_err), self, true)
 		var primary: bool = str(e["kind"]) == "primary"
 		b.custom_minimum_size = Vector2(0, (TouchUi.COMFY_HEIGHT if primary else 80.0) if TouchUi.active() else (46.0 if primary else 38.0))
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -575,6 +592,14 @@ func _refresh_orders() -> void:
 	_orders_box.add_child(grid)
 	var hint_text: String = "TOCCA UN OPERATORE PER IL CAMBIO" if TouchUi.active() else "TASTI 1-%d · CLICCA UN OPERATORE PER IL CAMBIO" % (n - 1)
 	_orders_box.add_child(BattleTheme.make_label(hint_text, 11, BattleTheme.CY_DIM))
+
+
+# Un pulsante tenuto premuto ha aperto la sua scheda: quel rilascio non e' un comando.
+func _held_hint_order() -> bool:
+	for b in _order_buttons:
+		if is_instance_valid(b) and HintCard.consume_hold(b):
+			return true
+	return false
 
 
 func _make_choice(move_id: String) -> Dictionary:
@@ -601,6 +626,8 @@ func _most_hurt_ally() -> String:
 
 func _on_order_pressed(move_id: String) -> void:
 	if animating or locked or source == null:
+		return
+	if not _order_buttons.is_empty() and _held_hint_order():
 		return
 	var choice: Dictionary = _make_choice(move_id)
 	if BattleResolver.validate_choice(shown, str(source.local_player_id), choice) != "":
@@ -645,7 +672,8 @@ func _play_events(events: Array) -> void:
 		if not is_inside_tree():
 			return
 		var line: Dictionary = BattleText.describe(shown, e)
-		_push_log(str(line["text"]), str(line["kind"]))
+		if str(line["text"]) != "":
+			_push_log(str(line["text"]), str(line["kind"]))
 		var extra: float = _event_fx(e)
 		BattleText.apply_to_display(shown, e)
 		_stage.set_state(shown)
@@ -669,6 +697,17 @@ func _event_fx(e: Dictionary) -> float:
 			return _fx_damage(e)
 		"bleed":
 			_float_text("-%d" % int(e["amount"]), str(e["unit"]), BattleTheme.RD, 28)
+		"counter":
+			Snd.play("counter")
+			_stage.impact(6.0, 0.02)
+			_pop("RISPOSTA!", str(e["unit"]), Hints.faction_color("libracorp"), BattleTheme.BK, 34, 60.0, Vector2(0.0, -30.0))
+		"ammo":
+			return _fx_ammo(e)
+		"trait":
+			Snd.play("trait")
+			_float_text("▲ DIF  ▲ VEL", str(e["unit"]), Hints.faction_color("libracorp"), 20)
+		"status":
+			_fx_status(e)
 		"heal":
 			Snd.play("heal")
 			_pop("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
@@ -700,6 +739,11 @@ func _fx_damage(e: Dictionary) -> float:
 		_pop("GUARD!", dst, BattleTheme.CY, BattleTheme.BK, 34, 62.0)
 		return 0.0
 	var target: Dictionary = BattleState.unit(shown, dst)
+	if bool(e.get("crit", false)) and amount > 0:
+		Snd.play("crit")
+		ComicFx.speed_lines(_fx, _stage.anchor_of(dst), Hints.faction_color("rondini"), 0.3)
+		_pop("CRITICO!", dst, BattleTheme.POP, BattleTheme.RD, 38, 70.0, Vector2(60.0, -70.0))
+		_stage.impact(10.0, 0.03)
 	var heavy: bool = float(amount) >= float(target.get("max_hp", 1)) * BIG_HIT_FRACTION
 	var fill: Color = BattleTheme.POP if to_boss else BattleTheme.RD
 	_pop("-%d" % amount, dst, fill, BattleTheme.BK, 48 if heavy else 36, 82.0 if heavy else 62.0)
@@ -724,9 +768,41 @@ func _fx_act(e: Dictionary) -> float:
 	if unit.is_empty() or str(unit["id"]) == BattleState.BOSS_ID:
 		return 0.0
 	_announce(str(unit["name"]), BattleText.move_name(move_id), false)
+	if int(move.get("ammo", 0)) > 0:
+		Snd.play("shot")
+	elif int(move.get("ammo_gain", 0)) > 0:
+		Snd.play("reload")
 	if kind == "ult":
 		return _play_cutin(str(unit.get("char", "")), BattleText.move_name(move_id), BattleTheme.unit_color(str(unit["color"])))
 	return 0.0
+
+
+# Munizioni che salgono o scendono: numero fluttuante con il proiettile.
+func _fx_ammo(e: Dictionary) -> float:
+	var uid: String = str(e["unit"])
+	var before: int = int(BattleState.unit(shown, uid).get("ammo", 0))
+	var delta: int = int(e["value"]) - before
+	if delta > 0:
+		_float_text("+%d ●" % delta, uid, Hints.faction_color("libracorp"), 24)
+	elif delta < 0:
+		_float_text("%d ●" % delta, uid, BattleTheme.CY_DIM, 22)
+	if int(e["value"]) == 0:
+		_float_text("A SECCO!", uid, BattleTheme.RD, 22)
+	return 0.0
+
+
+# Parola a fumetto per gli stati: ogni abilita' di classe si riconosce al volo.
+func _fx_status(e: Dictionary) -> void:
+	var uid: String = str(e["unit"])
+	match str(e["status"]):
+		"taunt":
+			_pop("PROVOCA!", uid, BattleTheme.RD, BattleTheme.WH, 30, 54.0, Vector2(0.0, -40.0))
+		"mark":
+			_pop("MARCHIATO!", uid, BattleTheme.POP, BattleTheme.BK, 28, 54.0, Vector2(0.0, -40.0))
+		"guard":
+			_pop("GUARDIA", uid, BattleTheme.CY, BattleTheme.BK, 26, 50.0, Vector2(0.0, -40.0))
+		"bleed":
+			_pop("SANGUINA!", uid, BattleTheme.RD, BattleTheme.WH, 26, 50.0, Vector2(0.0, -40.0))
 
 
 # Didascalia inclinata col nome di chi agisce e dell'abilita'.

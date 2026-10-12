@@ -79,6 +79,8 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 			return {"text": "%s SCUDO +%d" % [unit_name(state, str(e["dst"])), int(e["amount"])], "kind": "heal"}
 		"status":
 			return {"text": "%s: %s" % [unit_name(state, str(e["unit"])), status_name(str(e["status"]))], "kind": "info"}
+		"trait":
+			return {"text": "%s: PROTOCOLLO" % unit_name(state, str(e["unit"])), "kind": "info"}
 		"counter":
 			return {"text": "%s CONTRATTACCA" % unit_name(state, str(e["unit"])), "kind": "info"}
 		"cleanse":

@@ -212,7 +212,12 @@ func _test_screen() -> void:
 	_check("schermata: round concluso", scene.shown["round"] == 2 and not scene.animating)
 	_check("schermata: il cambio e' avvenuto", BattleState.player(scene.shown, "p1")["active"] == bench)
 	_check("schermata: lo stato mostrato coincide con quello vero", JSON.stringify(scene.shown) == JSON.stringify(src.battle))
-	_check("schermata: registro con il cambio", " ".join(scene.log_lines).find("ENTRA IN CAMPO") >= 0)
+	# il registro mostra solo le ultime 8 righe: il cambio (primo evento del round) puo' essere gia' uscito
+	var swap_logged: bool = " ".join(scene.log_lines).find("ENTRA IN CAMPO") >= 0
+	var swap_event: bool = false
+	for ev in src.battle["events"]:
+		swap_event = swap_event or str(ev.get("t", "")) == "swap"
+	_check("schermata: registro con il cambio", swap_logged or (swap_event and scene.log_lines.size() == 8))
 	_check("schermata: ordini di nuovo disponibili", not scene._order_buttons[0].disabled)
 	_check("schermata: ordine inviato due volte ignorato", true)
 
