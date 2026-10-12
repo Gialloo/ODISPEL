@@ -114,6 +114,10 @@ func _start_solo() -> void:
 	bind_source(s)
 	s.endless_floor = MissionConfig.endless_floor
 	s.start(RosterStore.load_or_new(), MissionConfig.boss_id, int(randi()) | 1, MissionConfig.tier)
+	if DisplayServer.get_name() != "headless":
+		get_tree().create_timer(1.4).timeout.connect(func() -> void:
+			if is_inside_tree() and str(shown.get("winner", "")) == "":
+				banter(_local_active_id(), "start", true))
 	if MissionConfig.endless_floor > 0 and DisplayServer.get_name() != "headless":
 		var emod: Dictionary = Endless.mod_for(MissionConfig.endless_floor)
 		var cap: String = "PIANO %d" % MissionConfig.endless_floor
@@ -217,9 +221,10 @@ func _build_boss_banner() -> void:
 	var panel := HudPanel.new().setup("SOGGETTO N.07", BattleTheme.RD)
 	_boss_panel = panel
 	add_child(panel)
-	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-268, 34, 252, 124))
+	panel.margins = Vector4(18.0, 26.0, 18.0, 8.0)
+	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-300, 24, 140, 120))
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
+	box.add_theme_constant_override("separation", 3)
 	panel.set_content(box)
 	_boss_name = BattleTheme.make_label("SOGGETTO", 13, BattleTheme.RD)
 	box.add_child(_boss_name)
@@ -234,7 +239,8 @@ func _build_boss_banner() -> void:
 	var timer_panel := HudPanel.new().setup("ORDINE ENTRO", BattleTheme.RD)
 	timer_panel.quiet = true
 	add_child(timer_panel)
-	_anchor(timer_panel, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-250, 34, -22, 102))
+	timer_panel.margins = Vector4(14.0, 22.0, 14.0, 2.0)
+	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(170, 20, 330, 80))
 	_timer_label = BattleTheme.make_label("LIBERO", 34, BattleTheme.CY, true)
 	timer_panel.set_content(_timer_label)
 
@@ -242,7 +248,8 @@ func _build_boss_banner() -> void:
 func _build_telegraph() -> void:
 	_tele_panel = HudPanel.new().setup("ALLARME", BattleTheme.RD)
 	add_child(_tele_panel)
-	_anchor(_tele_panel, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-380, 124, -22, 206))
+	_tele_panel.margins = Vector4(18.0, 26.0, 18.0, 6.0)
+	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-300, 128, 140, 204))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	_tele_panel.set_content(box)
@@ -334,17 +341,20 @@ func _refresh_turn_panel() -> void:
 
 
 func _build_operators() -> void:
-	var panel := HudPanel.new().setup("OPERATORI", BattleTheme.CY)
-	panel.margins = Vector4(14.0, 30.0, 14.0, 12.0)
+	var panel := HudPanel.new().setup("", BattleTheme.CY)
+	panel.bare = true
+	panel.margins = Vector4(10.0, 10.0, 10.0, 8.0)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 416, -18))
+	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 372, -18))
 	_ops_box = VBoxContainer.new()
 	_ops_box.add_theme_constant_override("separation", 3)
 	panel.set_content(_ops_box)
 
 
 func _build_orders() -> void:
-	var panel := HudPanel.new().setup("TERMINALE ORDINI", BattleTheme.RD)
+	var panel := HudPanel.new().setup("", BattleTheme.RD)
+	panel.bare = true
+	panel.margins = Vector4(14.0, 12.0, 14.0, 8.0)
 	panel.cut = 20.0
 	add_child(panel)
 	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-700, -392, -20, -18) if TouchUi.active() else Vector4(-540, -246, -20, -18))
@@ -354,11 +364,11 @@ func _build_orders() -> void:
 
 
 func _build_log() -> void:
-	var panel := HudPanel.new().setup("REGISTRO", BattleTheme.CY_DIM)
-	panel.quiet = true
-	panel.margins = Vector4(12, 30, 12, 8)
+	var panel := HudPanel.new().setup("", BattleTheme.CY_DIM)
+	panel.bare = true
+	panel.margins = Vector4(12, 8, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 1.0, 1.0, 1.0), Vector4(436, -224, -716 if TouchUi.active() else -556, -18))
+	_anchor(panel, Vector4(0.0, 1.0, 1.0, 1.0), Vector4(392, -86, -716 if TouchUi.active() else -556, -18))
 	_log_label = RichTextLabel.new()
 	_log_label.bbcode_enabled = true
 	_log_label.scroll_active = false
@@ -428,7 +438,7 @@ func _refresh_boss() -> void:
 	for m in boss.get("mods", []):
 		if int(m["pm"]) < 0:
 			tags += " ▼%s" % str(BattleContent.STAT_NAMES.get(str(m["stat"]), str(m["stat"]).to_upper()))
-	_boss_hp.text = "INTEGRITA'  %d/%d%s" % [int(boss["hp"]), int(boss["max_hp"]), tags]
+	_boss_hp.text = "PV  %d/%d%s" % [int(boss["hp"]), int(boss["max_hp"]), tags]
 
 
 func _local_player() -> Dictionary:
@@ -531,7 +541,7 @@ func _add_chips(inner: Control, u: Dictionary, selected: bool) -> void:
 		return
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
-	row.position = Vector2(206.0, 28.0 if not TouchUi.active() else 24.0)
+	row.position = Vector2(206.0, 26.0 if not TouchUi.active() else 22.0)
 	inner.add_child(row)
 	var tint: Color = Hints.faction_color(f)
 	if selected:
@@ -539,19 +549,10 @@ func _add_chips(inner: Control, u: Dictionary, selected: bool) -> void:
 	var fac: InfoChip = InfoChip.badge(Hints.faction_code(f), tint)
 	HintCard.bind(fac, func() -> Dictionary: return Hints.faction_card(BattleState.unit(shown, str(u["id"]))), self)
 	row.add_child(fac)
-	var aura: String = Factions.aura_text(u)
-	if aura != "":
-		var ac: InfoChip = InfoChip.badge(aura, tint, false)
-		HintCard.bind(ac, func() -> Dictionary: return Hints.aura_card(shown, BattleState.unit(shown, str(u["id"]))), self)
-		row.add_child(ac)
 	if int(u.get("ammo_max", 0)) > 0:
 		var am: InfoChip = InfoChip.ammo(int(u["ammo"]), int(u["ammo_max"]), tint if selected else Hints.faction_color("libracorp"))
 		HintCard.bind(am, func() -> Dictionary: return Hints.ammo_card(BattleState.unit(shown, str(u["id"]))), self)
 		row.add_child(am)
-	if not (u.get("mods", []) as Array).is_empty():
-		var mc: InfoChip = InfoChip.badge("▲", BattleTheme.BK if selected else BattleTheme.GOLD)
-		HintCard.bind(mc, func() -> Dictionary: return Hints.mods_card(BattleState.unit(shown, str(u["id"]))), self)
-		row.add_child(mc)
 
 
 func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
@@ -593,21 +594,20 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	var name_l := BattleTheme.make_label(title, 17, fg, true)
 	name_l.position = Vector2(16, -2)
 	inner.add_child(name_l)
-	var cls_l: InfoChip = InfoChip.badge("%s · LV%d" % [str(u["cls"]).to_upper(), int(u["level"])], fg, false)
-	cls_l.position = Vector2(176, 1)
-	HintCard.bind(cls_l, func() -> Dictionary: return Hints.class_card(BattleState.unit(shown, str(u["id"]))), self)
-	inner.add_child(cls_l)
+	var lv_l := BattleTheme.make_label("LV%d" % int(u["level"]), 12, fg)
+	lv_l.position = Vector2(176, 3)
+	inner.add_child(lv_l)
 
 	_add_chips(inner, u, selected)
 
 	var hp_ratio: float = float(u["hp"]) / float(u["max_hp"])
-	var hp := SegBar.new().setup(16, BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.CY), Vector2(250, 8))
+	var hp := SegBar.new().setup(14, BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.CY), Vector2(196, 8))
 	hp.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
 	hp.set_ratio(hp_ratio)
 	hp.position = Vector2(16, 22)
 	inner.add_child(hp)
-	var hp_t := BattleTheme.make_label("%d" % int(u["hp"]), 13, fg)
-	hp_t.position = Vector2(274, 15)
+	var hp_t := BattleTheme.make_label("%d" % int(u["hp"]), 18, fg, true)
+	hp_t.position = Vector2(222, 1)
 	inner.add_child(hp_t)
 
 	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(78, 6))
@@ -620,9 +620,10 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	gauge.set_ratio(float(u["gauge"]) / float(BattleTypes.GAUGE_MAX))
 	gauge.position = Vector2(104, 34)
 	inner.add_child(gauge)
-	var where_l := BattleTheme.make_label(where, 11, fg if is_active or not alive else (BattleTheme.BK if selected else BattleTheme.WH), is_active)
-	where_l.position = Vector2(332 if TouchUi.active() else 304, 2)
-	inner.add_child(where_l)
+	if not alive:
+		var where_l := BattleTheme.make_label(where, 11, fg, true)
+		where_l.position = Vector2(274, 3)
+		inner.add_child(where_l)
 	if int(u["gauge"]) >= BattleTypes.GAUGE_MAX and alive:
 		var ult_l := BattleTheme.make_label("ULT", 12, BattleTheme.BK if selected else BattleTheme.RD, true)
 		ult_l.position = Vector2(210, 28)
@@ -943,6 +944,7 @@ func _event_fx(e: Dictionary) -> float:
 			_stage.impact(14.0, 0.04)
 			ComicFx.flash(_fx, Color(1, 1, 1, 0.5), 0.15)
 			_pop("K.O.!", str(e["unit"]), BattleTheme.RD, BattleTheme.WH, 56, 95.0)
+			banter(_local_active_id(), "ko")
 			return 0.12
 	return 0.0
 
@@ -1035,6 +1037,15 @@ func _fx_damage(e: Dictionary) -> float:
 		Snd.play("crit")
 		_stage.impact(10.0, 0.03)
 	var is_crit: bool = bool(e.get("crit", false))
+	if to_boss:
+		if is_crit:
+			banter(str(e["src"]), "crit")
+		if not _banter_enraged and float(int(target["hp"]) - amount) / float(maxi(1, int(target["max_hp"]))) < BattleTypes.ENRAGE_BELOW:
+			_banter_enraged = true
+			banter(_local_active_id(), "enrage", true)
+	elif int(target.get("hp", 0)) - amount > 0 and float(int(target["hp"]) - amount) / float(maxi(1, int(target["max_hp"]))) < 0.3 and not _banter_low.has(dst):
+		_banter_low[dst] = true
+		banter(dst, "low_hp")
 	var heavy: bool = float(amount) >= float(target.get("max_hp", 1)) * BIG_HIT_FRACTION
 	var fill: Color = BattleTheme.POP if to_boss else BattleTheme.RD
 	# un solo fumetto per colpo: il critico e' semplicemente piu' grande, col punto esclamativo
@@ -1048,6 +1059,73 @@ func _fx_damage(e: Dictionary) -> float:
 	return 0.0
 
 
+# ---------- Battute ----------
+
+var _banter_node: Control = null
+var _banter_until_ms: int = 0
+var _banter_low: Dictionary = {}
+var _banter_enraged: bool = false
+
+
+# Fumetto in alto a destra: volto di chi parla e una riga. Non piu' di uno ogni ~6 secondi.
+func banter(uid: String, kind: String, force: bool = false) -> void:
+	var now: int = Time.get_ticks_msec()
+	if not force and now < _banter_until_ms:
+		return
+	var u: Dictionary = BattleState.unit(shown, uid)
+	if u.is_empty() or str(u["side"]) != "player" or not Settings.banter:
+		return
+	var text: String = Banter.line(kind, str(u["color"]), int(shown.get("round", 0)) + uid.length())
+	if text == "":
+		return
+	_banter_until_ms = now + 6000
+	if _banter_node != null and is_instance_valid(_banter_node):
+		_banter_node.queue_free()
+	var plate := Control.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	plate.anchor_left = 1.0
+	plate.anchor_right = 1.0
+	plate.offset_left = -400.0
+	plate.offset_right = -22.0
+	plate.offset_top = 22.0
+	plate.offset_bottom = 112.0
+	var bg := PanelContainer.new()
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.offset_right = -70.0
+	bg.add_theme_stylebox_override("panel", SlantBox.make(BattleTheme.BK, BattleTheme.WH, 12.0, BattleTheme.unit_color(str(u["color"])), 3.0))
+	var lab := BattleTheme.make_label(text, 20, BattleTheme.WH, true)
+	lab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lab.add_theme_color_override("font_outline_color", BattleTheme.BK)
+	bg.add_child(lab)
+	plate.add_child(bg)
+	var face := PortraitView.new().setup(str(u["char"]), "bust")
+	face.show_expression_text = false
+	face.set_expression(Banter.expression_for(kind))
+	face.size = Vector2(120.0, 120.0)
+	face.position = Vector2(plate.offset_right - plate.offset_left - 128.0, -22.0)
+	plate.add_child(face)
+	_overlay_banter_host().add_child(plate)
+	_banter_node = plate
+	plate.modulate.a = 0.0
+	var tw := create_tween()
+	tw.tween_property(plate, "modulate:a", 1.0, 0.15)
+	tw.tween_interval(3.4)
+	tw.tween_property(plate, "modulate:a", 0.0, 0.4)
+	tw.tween_callback(plate.queue_free)
+
+
+func _local_active_id() -> String:
+	var me: Dictionary = _local_player()
+	return str(me.get("active", "")) if not me.is_empty() else ""
+
+
+func _overlay_banter_host() -> Control:
+	return _fx
+
+
 func _fx_act(e: Dictionary) -> float:
 	var move_id: String = str(e.get("move", ""))
 	var move: Dictionary = BattleContent.MOVES.get(move_id, {})
@@ -1058,6 +1136,7 @@ func _fx_act(e: Dictionary) -> float:
 	if unit.is_empty() or str(unit["id"]) == BattleState.BOSS_ID:
 		return 0.0
 	if kind == "ult":
+		banter(str(unit["id"]), "ult", true)
 		_announce(str(unit["name"]), BattleText.move_name(move_id), false)
 	else:
 		_float_text(BattleText.move_name(move_id), str(unit["id"]), BattleTheme.unit_color(str(unit["color"])), 18)
@@ -1166,7 +1245,7 @@ func _push_log(text: String, kind: String) -> void:
 
 func _refresh_log() -> void:
 	if _log_label != null:
-		_log_label.text = "\n".join(log_lines)
+		_log_label.text = "\n".join(log_lines.slice(maxi(0, log_lines.size() - 4)))
 
 
 # ---------- Fine battaglia ----------

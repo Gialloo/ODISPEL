@@ -13,6 +13,7 @@ static var fps_limit: int = 144        # 0 = senza limite
 static var vsync: bool = true
 static var light_fx: bool = OS.has_feature("mobile")   # effetti ridotti: niente velo telecamera ne' pulviscolo (telefoni e PC lenti)
 const FPS_CHOICES: Array = [60, 90, 120, 144, 240, 0]
+static var banter: bool = true          # battute dei personaggi in battaglia
 static var tutorial_done: bool = false
 static var gacha_guide_seen: bool = false
 static var seen_scenes: Array = []      # scene di storia gia' viste
@@ -33,6 +34,7 @@ static func load_settings() -> void:
 		fps_limit = 144
 	vsync = bool(cfg.get_value("video", "vsync", vsync))
 	light_fx = bool(cfg.get_value("video", "light_fx", light_fx))
+	banter = bool(cfg.get_value("game", "banter", banter))
 	tutorial_done = bool(cfg.get_value("game", "tutorial_done", tutorial_done))
 	gacha_guide_seen = bool(cfg.get_value("game", "gacha_guide_seen", gacha_guide_seen))
 	seen_scenes = Array(cfg.get_value("game", "seen_scenes", []))
@@ -68,6 +70,7 @@ static func save() -> bool:
 	cfg.set_value("video", "fps_limit", fps_limit)
 	cfg.set_value("video", "vsync", vsync)
 	cfg.set_value("video", "light_fx", light_fx)
+	cfg.set_value("game", "banter", banter)
 	cfg.set_value("game", "tutorial_done", tutorial_done)
 	cfg.set_value("game", "gacha_guide_seen", gacha_guide_seen)
 	cfg.set_value("game", "seen_scenes", seen_scenes)

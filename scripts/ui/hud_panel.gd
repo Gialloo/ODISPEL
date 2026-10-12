@@ -6,6 +6,7 @@ extends Control
 var title: String = ""
 var accent: Color = BattleTheme.CY
 var cut: float = 14.0
+var bare: bool = false       # senza cornice: solo una velatura scura, il contenuto sta sulla scena
 var quiet: bool = false      # pannello secondario: solo velo e filo sottile, niente ombra ne' linguetta
 var margins: Vector4 = Vector4(18.0, 30.0, 18.0, 12.0)   # sinistra, alto, destra, basso
 
@@ -45,6 +46,9 @@ func _draw_quiet() -> void:
 
 
 func _draw() -> void:
+	if bare:
+		draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.38))
+		return
 	if quiet:
 		_draw_quiet()
 		return

@@ -13,6 +13,7 @@ var full_box: Button
 var vsync_box: Button
 var fps_button: Button
 var light_box: Button
+var banter_box: Button
 var tutorial_button: Button
 var art_folder_button: Button
 var art_reload_button: Button
@@ -44,8 +45,8 @@ func _ready() -> void:
 	panel.anchor_bottom = 0.5
 	panel.offset_left = -300.0
 	panel.offset_right = 300.0
-	panel.offset_top = -280.0
-	panel.offset_bottom = 280.0
+	panel.offset_top = -300.0
+	panel.offset_bottom = 300.0
 	add_child(panel)
 
 	var box := VBoxContainer.new()
@@ -59,6 +60,7 @@ func _ready() -> void:
 	full_box = _toggle(box, Settings.fullscreen, _on_fullscreen, "SCHERMO INTERO: SI", "SCHERMO INTERO: NO")
 	vsync_box = _toggle(box, Settings.vsync, _on_vsync, "V-SYNC: SI", "V-SYNC: NO")
 	light_box = _toggle(box, Settings.light_fx, _on_light_fx, "EFFETTI RIDOTTI: SI (piu' fluido)", "EFFETTI RIDOTTI: NO")
+	banter_box = _toggle(box, Settings.banter, _on_banter, "BATTUTE IN BATTAGLIA: SI", "BATTUTE IN BATTAGLIA: NO")
 	fps_button = Button.new()
 	fps_button.text = Settings.fps_text()
 	fps_button.custom_minimum_size = Vector2(0, 40)
@@ -178,6 +180,11 @@ func _on_mute(on: bool) -> void:
 
 func _on_vsync(on: bool) -> void:
 	Settings.vsync = on
+	_apply()
+
+
+func _on_banter(on: bool) -> void:
+	Settings.banter = on
 	_apply()
 
 

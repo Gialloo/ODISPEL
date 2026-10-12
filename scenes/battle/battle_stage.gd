@@ -8,7 +8,7 @@ extends Control
 const DW: float = 1280.0
 const DH: float = 720.0
 const HORIZON: float = 250.0
-const BOSS_X: float = 780.0
+const BOSS_X: float = 930.0
 const FLOOR_Y: float = 470.0        # dove i piedi toccano il suolo sullo schermo
 const GEO_FLOOR: float = 600.0      # il suolo nelle coordinate con cui sono disegnate le figure
 const ENTITY_SCALE: float = 0.76    # le figure sono disegnate in grande e ridotte qui
@@ -211,8 +211,8 @@ func _map(p: Vector2, gx: float) -> Vector2:
 
 
 func fighter_x(index: int, count: int) -> float:
-	var step: float = 200.0 if count <= 1 else minf(200.0, 430.0 / float(count - 1))
-	return 150.0 + float(index) * step
+	var step: float = 170.0 if count <= 1 else minf(170.0, 360.0 / float(count - 1))
+	return 130.0 + float(index) * step
 
 
 func _layout() -> void:
