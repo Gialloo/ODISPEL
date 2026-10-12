@@ -9,7 +9,7 @@ fissa per fazione, bonus che cresce con la rarità di chi la dà, con un tetto.
 |---|---|---|---|
 | LibraCorp | **Protocollo** | Difesa | nome confermato |
 | Rondini | Ronda (colpi critici, danno alto, area; cannoni di vetro) | da decidere (critico, velocità o attacco) | parole chiave dell'autore, nome da confermare |
-| Magabondi | Improvvisazione (rischio e adattamento; nessuna aura, prendono metà del bonus più forte in squadra) | nessuna | bozza |
+| Magabondi | Improvvisazione (economia delle azioni, trovate non convenzionali; nessuna aura, prendono metà del bonus più forte in squadra) | nessuna | parole chiave dell'autore, nome da confermare |
 | Anomalie / Kairos (nemici) | Dissonanza (legano, indeboliscono, avvelenano; spengono per un po' le aure di una fazione) | — | parole chiave dell'autore, nome da confermare |
 
 ## LibraCorp: Protocollo
@@ -53,3 +53,16 @@ Lettura proposta (bozza):
   scudi da sfondare).
 - Resta il tema di lore: piccoli gruppi che agiscono di notte senza dare nell'occhio, quindi agire per primi e non farsi
   notare (velocita', mosse che attirano meno il boss).
+
+## Magabondi: Improvvisazione
+Parole chiave dell'autore: economia delle azioni (action economy), trovate (gimmick), tutto cio' che non e' convenzionale.
+Sono i piu' atipici: niente stile fisso, ognuno ha la sua regola speciale.
+
+Idee (bozza):
+- **Economia delle azioni:** spostare, rimandare o ottenere azioni (ordine ritardato al round dopo con bonus; prendere energia
+  in prestito dal round successivo; cambio operatore che non costa; azione dimezzata aggiuntiva).
+- **Trovate:** copiare l'ultima mossa di un alleato, rubare un bonus del boss, invertire l'ordine di azione del round,
+  trasformare una skill, effetti con esito casuale (sempre deterministici, dal seme dello scontro, per il multiplayer).
+- **Rischio:** magia illegale con contraccolpo; nessuna aura da dare, ma prendono meta' del bonus piu' forte presente in squadra.
+- Distinzione dai LibraCorp: le azioni extra dei Magabondi sono pianificate (le costruisci tu), quelle di LibraCorp sono
+  reazioni (arrivano quando succede qualcosa).
