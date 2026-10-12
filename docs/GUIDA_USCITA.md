@@ -7,7 +7,7 @@
 3. Trovi `build\ODISPEL-<versione>.zip`: dentro ci sono `ODISPEL.exe` (con tutto il gioco), la cartella `art\` (per le tue grafiche), `dialogues\` e `LEGGIMI.md`.
 4. Prova lo zip su un altro PC (o su un altro utente Windows): decomprimi, apri l'exe, gioca una missione da solo e apri Impostazioni > APRI CARTELLA GRAFICHE.
 
-Note: l'icona e' quella predefinita di Godot finche' non crei un `icon.ico` e lo indichi in Progetto > Esporta > Windows > Icona. Windows SmartScreen mostrera' l'avviso "editore sconosciuto" finche' l'exe non e' firmato: e' normale.
+
 
 ## 2. Test multiplayer tra reti diverse (la prova che manca)
 Serve un amico (o il tuo telefono come seconda rete: hotspot).
