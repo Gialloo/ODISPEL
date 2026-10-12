@@ -25,6 +25,8 @@ func _run() -> void:
 	var scene: Control = load("res://scenes/battle/battle_screen.tscn").instantiate()
 	root.add_child(scene)
 	await create_timer(0.3).timeout
+	if scene._tutorial != null:
+		scene._tutorial.queue_free()
 	await _shot("1_inizio")
 
 	# qualche round giocato con l'IA, poi lo stato a meta' battaglia

@@ -43,6 +43,9 @@ const K_0C1A1F: Color = Color("#0c1a1f")
 
 var state: Dictionary = {}
 var boss_hit: float = 0.0           # 1 = appena colpito, scende a 0
+var local_player_id: String = ""    # il giocatore di questo schermo: la sua etichetta e' "TU"
+var acting: String = ""             # unita' che sta agendo (segnalino rosso sopra di lei)
+var acting_target: String = ""      # e chi sta subendo l'azione (cerchio rosso)
 var hit_flash: Dictionary = {}      # unit_id -> intensita'
 var _t: float = 0.0
 var _positions: Dictionary = {}
@@ -277,7 +280,9 @@ func _draw() -> void:
 	_draw_background()
 	_entity_transform(BOSS_X)
 	_draw_boss()
+	_draw_bench()
 	_draw_fighters()
+	_draw_markers()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if profile:
 		profile_usec += Time.get_ticks_usec() - t0
@@ -625,7 +630,7 @@ func _draw_fighters() -> void:
 			continue
 		var gx: float = fighter_x(i, players.size())
 		_entity_transform(gx)
-		_draw_fighter(u, Vector2(gx, GEO_FLOOR - 120.0), i, i == 0)
+		_draw_fighter(u, Vector2(gx, GEO_FLOOR - 120.0), i, str(p["id"]) == local_player_id or (local_player_id == "" and i == 0))
 
 
 func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> void:
@@ -660,6 +665,94 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 
 
 # Figura disegnata dall'utente: ancorata ai piedi, alta ~230 px.
+# Chi comanda quell'operatore: TU, un compagno IA o un altro giocatore.
+func _who_label(index: int, owner_id: String) -> String:
+	if owner_id == local_player_id or (local_player_id == "" and index == 0):
+		return "TU"
+	var p: Dictionary = BattleState.player(state, owner_id)
+	if bool(p.get("ai", false)):
+		return "IA" + str(index)
+	return str(p.get("name", "P%d" % (index + 1))).to_upper().left(6)
+
+
+# Panchina: i compagni non in campo di ogni giocatore, dietro all'operatore attivo, piu' piccoli, scuri e trasparenti.
+const BENCH_SCALE: float = 0.62
+const BENCH_ALPHA: float = 0.42
+
+
+func _draw_bench() -> void:
+	if state.is_empty():
+		return
+	var players: Array = state["players"]
+	var n: int = players.size()
+	var step: float = 200.0 if n <= 1 else minf(200.0, 430.0 / float(n - 1))
+	var dx: float = minf(88.0, step * 0.42)
+	for i in n:
+		var p: Dictionary = players[i]
+		var gx: float = fighter_x(i, n)
+		var k: int = 0
+		for uid in p["team"]:
+			if str(uid) == str(p["active"]):
+				continue
+			var u: Dictionary = BattleState.unit(state, str(uid))
+			if u.is_empty():
+				continue
+			var side: float = -1.0 if k % 2 == 0 else 1.0
+			_draw_bench_unit(u, gx + side * dx, k)
+			k += 1
+
+
+func _draw_bench_unit(u: Dictionary, gx: float, slot: int) -> void:
+	var base := Vector2(size.x / DW, size.y / DH)
+	var s: float = ENTITY_SCALE * BENCH_SCALE
+	var lift: float = 30.0 + float(slot) * 6.0
+	var origin := Vector2(gx * (1.0 - s), FLOOR_Y - lift - GEO_FLOOR * s)
+	draw_set_transform(Vector2(origin.x * base.x, origin.y * base.y), 0.0, base * s)
+	var alive: bool = BattleState.is_alive(u)
+	var col: Color = BattleTheme.unit_color(str(u["color"]))
+	var foot_y: float = GEO_FLOOR + 8.0
+	var a: float = BENCH_ALPHA if alive else 0.3
+	draw_colored_polygon(_ellipse(Vector2(gx, foot_y + 8.0), 54.0, 11.0, 16), Color(0, 0, 0, 0.3))
+	if not alive:
+		draw_line(Vector2(gx - 30.0, foot_y - 90.0), Vector2(gx + 30.0, foot_y - 30.0), Color(BattleTheme.RD, 0.7), 8.0)
+		draw_line(Vector2(gx + 30.0, foot_y - 90.0), Vector2(gx - 30.0, foot_y - 30.0), Color(BattleTheme.RD, 0.7), 8.0)
+	var sprite: Texture2D = ArtLibrary.battle_sprite(str(u.get("char", "")))
+	if sprite != null:
+		var h: float = 230.0
+		var w: float = h * sprite.get_width() / maxf(1.0, float(sprite.get_height()))
+		draw_texture_rect(sprite, Rect2(gx - w * 0.5, foot_y - h, w, h), false, Color(0.45, 0.5, 0.55, a))
+	else:
+		_draw_fighter_body(gx, foot_y, foot_y - 210.0, Color(col.darkened(0.6), a), Color(col, a))
+	# nome e vita sotto i piedi (leggibili anche se la figura e' piccola)
+	var ratio: float = float(u["hp"]) / maxf(1.0, float(u["max_hp"]))
+	_text(BattleTheme.display(), Vector2(gx - 60.0, foot_y + 52.0), str(u["name"]).to_upper(), 30, Color(BattleTheme.WH, 0.75 if alive else 0.35))
+	draw_rect(Rect2(gx - 60.0, foot_y + 62.0, 120.0, 10.0), Color(0, 0, 0, 0.5))
+	draw_rect(Rect2(gx - 60.0, foot_y + 62.0, 120.0 * ratio, 10.0), Color(BattleTheme.RD if ratio < 0.3 else BattleTheme.CY, 0.75))
+	_entity_transform(BOSS_X)
+
+
+# Segnalini di chi agisce (triangolo rosso) e di chi subisce (cerchio rosso), durante la riproduzione del round.
+func _draw_markers() -> void:
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2(size.x / DW, size.y / DH))
+	var pulse: float = 0.5 + 0.5 * sin(_t * 8.0)
+	if acting != "" and _positions.has(acting):
+		var p: Vector2 = _positions[acting]
+		var y: float = p.y - (190.0 if acting != BattleState.BOSS_ID else 230.0) - pulse * 6.0
+		draw_colored_polygon(PackedVector2Array([Vector2(p.x - 20.0, y - 22.0), Vector2(p.x + 20.0, y - 22.0), Vector2(p.x, y + 6.0)]), BattleTheme.RD)
+		draw_polyline(PackedVector2Array([Vector2(p.x - 20.0, y - 22.0), Vector2(p.x + 20.0, y - 22.0), Vector2(p.x, y + 6.0), Vector2(p.x - 20.0, y - 22.0)]), BattleTheme.WH, 2.0)
+		_text(BattleTheme.display(), Vector2(p.x - 36.0, y - 30.0), "AGISCE", 18, BattleTheme.WH)
+	if acting_target != "" and acting_target != acting and _positions.has(acting_target):
+		var q: Vector2 = _positions[acting_target]
+		draw_arc(q, 104.0 + pulse * 6.0, 0.0, TAU, 40, Color(BattleTheme.RD, 0.85), 4.0)
+		draw_arc(q, 120.0 + pulse * 6.0, 0.4, 1.4, 12, Color(BattleTheme.WH, 0.9), 3.0)
+		draw_arc(q, 120.0 + pulse * 6.0, 3.5, 4.5, 12, Color(BattleTheme.WH, 0.9), 3.0)
+
+
+func clear_markers() -> void:
+	acting = ""
+	acting_target = ""
+
+
 func _draw_fighter_sprite(tex: Texture2D, cx: float, foot_y: float, bob: float, flash_v: float) -> void:
 	var h: float = 230.0
 	var w: float = h * tex.get_width() / maxf(1.0, float(tex.get_height()))
@@ -690,7 +783,7 @@ func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index
 	# riquadro e targhetta
 	var rect := Rect2(cx - 82.0, top - 12.0, 164.0, 236.0)
 	_brackets(rect, BattleTheme.RD if is_lead else col, 5.0 if is_lead else 3.0, 24.0)
-	var tag: String = "ID-%02d %s" % [index + 1, str(u["name"]).to_upper()]
+	var tag: String = "%s · %s" % [_who_label(index, str(u.get("owner", ""))), str(u["name"]).to_upper()]
 	var tw: float = _tag_width(tag)
 	var tab: PackedVector2Array = PackedVector2Array([
 		Vector2(rect.position.x, rect.position.y - 28.0), Vector2(rect.position.x + tw + 26.0, rect.position.y - 28.0),

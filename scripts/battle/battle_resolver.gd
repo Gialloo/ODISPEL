@@ -38,6 +38,10 @@ static func begin_round(state: Dictionary) -> void:
 			target = str(alive[rng.random_index(alive.size())]["id"])
 			_save_rng(state, rng)
 	state["telegraph"] = {"move": move_id, "target": target}
+	# L'IA decide subito, cosi' le sue intenzioni si vedono durante la pianificazione (non dipendono dalla scelta degli umani).
+	for p in state["players"]:
+		if bool(p["ai"]) and p["choice"] == null and BattleState.player_alive(state, p):
+			p["choice"] = BattleAI.choose(state, str(p["id"]))
 
 
 # Il giocatore il cui personaggio attivo ha la frazione di PV piu' bassa
@@ -202,6 +206,38 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 	else:
 		_save_rng(state, rng)
 	return events
+
+
+# Ordine in cui agiranno le unita' in questo round, anche prima che tutti abbiano scelto (per mostrarlo al giocatore).
+# Voce: {unit, player, move, swap, prio, spd, boss, chosen}. Chi non ha ancora scelto conta con priorita' 0.
+static func action_order(state: Dictionary) -> Array:
+	var list: Array = []
+	for p in state["players"]:
+		if not BattleState.player_alive(state, p):
+			continue
+		var choice: Variant = p["choice"]
+		var uid: String = str(p["active"])
+		var move_id: String = ""
+		var swap: String = ""
+		var prio: int = 0
+		if choice is Dictionary and choice.has("move"):
+			swap = str(choice.get("swap", ""))
+			if swap != "" and BattleState.is_alive(BattleState.unit(state, swap)):
+				uid = swap
+			move_id = str(choice["move"])
+			if BattleContent.MOVES.has(move_id):
+				prio = int(BattleContent.MOVES[move_id]["priority"])
+		var u: Dictionary = BattleState.unit(state, uid)
+		list.append({"unit": uid, "player": str(p["id"]), "move": move_id, "swap": swap, "prio": prio, "spd": int(u.get("spd", 0)), "boss": false, "chosen": move_id != ""})
+	var boss: Dictionary = BattleState.boss(state)
+	list.append({"unit": str(boss["id"]), "player": "", "move": str(state["telegraph"].get("move", "")), "swap": "", "prio": 0, "spd": int(boss["spd"]), "boss": true, "chosen": true})
+	list.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if int(a["prio"]) != int(b["prio"]):
+			return int(a["prio"]) > int(b["prio"])
+		if int(a["spd"]) != int(b["spd"]):
+			return int(a["spd"]) > int(b["spd"])
+		return str(a["unit"]) < str(b["unit"]))
+	return list
 
 
 static func _action_before(a: Dictionary, b: Dictionary) -> bool:

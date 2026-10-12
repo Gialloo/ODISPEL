@@ -17,7 +17,8 @@ static func snapshot_for(state: Dictionary, viewer_id: String) -> Dictionary:
 	for p in data.get("players", []):
 		if str(p["id"]) == viewer_id:
 			continue
-		if p.get("choice") != null:
+		# le intenzioni dell'IA non sono un segreto: si vedono (servono a capire il turno)
+		if p.get("choice") != null and not bool(p.get("ai", false)):
 			p["choice"] = {"locked": true}
 	return data
 
@@ -28,7 +29,12 @@ static func set_player_ai(state: Dictionary, player_id: String, ai: bool) -> boo
 	var p: Dictionary = BattleState.player(state, player_id)
 	if p.is_empty():
 		return false
+	var was_ai: bool = bool(p["ai"])
 	p["ai"] = ai
+	if was_ai and not ai:
+		p["choice"] = null      # chi rientra sceglie lui: la scelta dell'IA non vale
+	elif ai and p["choice"] == null and BattleState.player_alive(state, p):
+		p["choice"] = BattleAI.choose(state, player_id)
 	return true
 
 

@@ -16,6 +16,9 @@ var log_lines: Array = []
 var _ended_shown: bool = false
 
 var _stage: BattleStage
+var _turn_box: VBoxContainer
+var _turn_sig: String = ""
+var _turn_acting: String = ""
 var _fx: Control
 var _boss_name: Label
 var _boss_bar: SegBar
@@ -75,6 +78,8 @@ func tutorial_steps() -> Array:
 		"text": "Il boss ti avvisa: questa e' la mossa che usera' in QUESTO round e chi colpira'. Cambia ogni round, quindi leggila sempre prima di scegliere."},
 		{"title": "I TUOI OPERATORI", "target": _panel_of(_ops_box),
 		"text": "La tua squadra: PV, energia e carica dell'ultimate di ciascuno. Uno solo e' in campo (il triangolo). Clicca un compagno in panchina per scambiarlo: il cambio e' gratis e avviene prima di tutto. Chi sta in panchina recupera piu' energia."},
+		{"title": "COME FUNZIONA UN TURNO", "target": _panel_of(_turn_box),
+		"text": "Ogni round TU scegli solo per il tuo operatore in campo. I compagni IA scelgono da soli (non copiano te) e la loro scelta e' gia' visibile nell'ORDINE DEL TURNO. Poi si risolve tutto in fila per priorita' e velocita': il segnalino rosso mostra chi agisce e chi subisce. Gli operatori in panchina sono i silhouette scure dietro la squadra."},
 		{"title": "GLI ORDINI", "target": _panel_of(_orders_box),
 		"text": "Scegli cosa fare: ATTACCO, GUARDIA (dimezza i danni), le abilita' (costano energia) e l'ULTIMATE, che si carica combattendo. Scorciatoie: tasti 1-4. I colori contano: un colpo del colore giusto fa +50% di danni, quello sbagliato -33%."},
 		{"title": "CLASSI E FAZIONI", "target": null,
@@ -161,6 +166,7 @@ func _build() -> void:
 	_build_camera_info()
 	_build_boss_banner()
 	_build_telegraph()
+	_build_turn_panel()
 	_build_operators()
 	_build_orders()
 	_build_log()
@@ -230,6 +236,86 @@ func _build_telegraph() -> void:
 	box.add_child(_tele_target)
 
 
+# Pannello "ORDINE DEL TURNO": chi agisce, in che ordine e cosa ha scelto (le IA decidono da sole).
+func _build_turn_panel() -> void:
+	var panel := HudPanel.new().setup("ORDINE DEL TURNO", BattleTheme.CY_DIM)
+	panel.margins = Vector4(12, 28, 12, 6)
+	add_child(panel)
+	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(20, 150, 350, 288))
+	_turn_box = VBoxContainer.new()
+	_turn_box.add_theme_constant_override("separation", 1)
+	_turn_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.set_content(_turn_box)
+
+
+# Una riga per unita', nell'ordine in cui agiranno: "1 TU KIRA » COLPO CARICATO".
+func turn_rows() -> Array:
+	var rows: Array = []
+	if shown.is_empty() or str(shown["winner"]) != "":
+		return rows
+	var me: Dictionary = _local_player()
+	var n: int = 0
+	for entry in BattleResolver.action_order(shown):
+		n += 1
+		var action: String = ""
+		var row: Dictionary = {"n": n, "unit": str(entry["unit"]), "boss": bool(entry["boss"]), "mine": false, "color": BattleTheme.CY}
+		if bool(entry["boss"]):
+			row["who"] = "BOSS"
+			row["name"] = str(BattleState.boss(shown)["name"]).to_upper()
+			row["action"] = BattleText.move_name(str(entry["move"]))
+			row["color"] = BattleTheme.RD
+		else:
+			var p: Dictionary = BattleState.player(shown, str(entry["player"]))
+			var u: Dictionary = BattleState.unit(shown, str(entry["unit"]))
+			var mine: bool = not me.is_empty() and str(p["id"]) == str(me["id"])
+			row["mine"] = mine
+			row["name"] = str(u.get("name", "?")).to_upper()
+			row["who"] = "TU" if mine else ("IA" if bool(p["ai"]) else str(p["name"]).to_upper().left(4))
+			var choice: Variant = p["choice"]
+			if mine:
+				var pend: String = pending_swap
+				if locked or (choice is Dictionary and choice.has("move")):
+					action = BattleText.move_name(str(entry["move"])) if str(entry["move"]) != "" else "BLOCCATO"
+				else:
+					action = "SCEGLI TU" + ("  (CAMBIO)" if pend != "" else "")
+				row["color"] = BattleTheme.WH
+			elif choice is Dictionary and choice.has("move"):
+				action = BattleText.move_name(str(entry["move"]))
+				if str(entry["swap"]) != "" and str(entry["swap"]) != str(p["active"]):
+					action = "CAMBIO + " + action
+			else:
+				action = "HA SCELTO" if choice is Dictionary and bool(choice.get("locked", false)) else "SCEGLIE..."
+		row["action"] = action if not bool(entry["boss"]) else str(row["action"])
+		rows.append(row)
+	return rows
+
+
+func _refresh_turn_panel() -> void:
+	if _turn_box == null:
+		return
+	var rows: Array = turn_rows()
+	var sig: String = "%s|%d|%s|%s" % [_turn_acting, int(shown.get("round", 0)) if not shown.is_empty() else 0, str(locked), pending_swap]
+	for r in rows:
+		sig += "|%s,%s,%s" % [str(r["unit"]), str(r["action"]), str(r["who"])]
+	if sig == _turn_sig:
+		return
+	_turn_sig = sig
+	for c in _turn_box.get_children():
+		_turn_box.remove_child(c)
+		c.queue_free()
+	if rows.is_empty():
+		return
+	var fs: int = 13 if not TouchUi.active() else 14
+	for r in rows:
+		var acting_now: bool = str(r["unit"]) == _turn_acting
+		var text: String = "%s%d  %-4s %-7s » %s" % ["▶" if acting_now else " ", int(r["n"]), str(r["who"]), str(r["name"]).left(7), str(r["action"])]
+		var col: Color = BattleTheme.GOLD if acting_now else (r["color"] as Color)
+		var l := BattleTheme.make_label(text, fs, col, bool(r["mine"]))
+		l.clip_text = true
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_turn_box.add_child(l)
+
+
 func _build_operators() -> void:
 	var panel := HudPanel.new().setup("OPERATORI", BattleTheme.CY)
 	add_child(panel)
@@ -294,11 +380,13 @@ func _process(delta: float) -> void:
 func _refresh_all() -> void:
 	if shown.is_empty():
 		return
+	_stage.local_player_id = str(source.local_player_id)
 	_stage.set_state(shown)
 	_refresh_boss()
 	_refresh_telegraph()
 	_refresh_operators()
 	_refresh_orders()
+	_refresh_turn_panel()
 	_refresh_log()
 	_round_label.text = "CICLO %02d" % int(shown["round"])
 
@@ -369,6 +457,7 @@ func _refresh_operators() -> void:
 			if p["id"] != me["id"]:
 				var ta: Dictionary = BattleState.unit(shown, str(p["active"]))
 				sig += "%s,%d,%d;" % [str(ta.get("name", "?")), int(ta.get("hp", 0)), int(ta.get("max_hp", 1))]
+	_refresh_turn_panel()
 	if sig == _ops_sig and _ops_box.get_child_count() > 0:
 		return
 	_ops_sig = sig
@@ -470,6 +559,7 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	var title: String = str(u["name"]).to_upper()
 	if is_active:
 		title += "  ▶"
+	var where: String = "K.O." if not alive else ("IN CAMPO" if is_active else "PANCHINA")
 	var name_l := BattleTheme.make_label(title, 17, fg, true)
 	name_l.position = Vector2(16, -2)
 	inner.add_child(name_l)
@@ -500,6 +590,9 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	gauge.set_ratio(float(u["gauge"]) / float(BattleTypes.GAUGE_MAX))
 	gauge.position = Vector2(104, 34)
 	inner.add_child(gauge)
+	var where_l := BattleTheme.make_label(where, 11, fg if is_active or not alive else (BattleTheme.BK if selected else BattleTheme.WH), is_active)
+	where_l.position = Vector2(304, 2)
+	inner.add_child(where_l)
 	if int(u["gauge"]) >= BattleTypes.GAUGE_MAX and alive:
 		var ult_l := BattleTheme.make_label("ULT", 12, BattleTheme.BK if selected else BattleTheme.RD, true)
 		ult_l.position = Vector2(210, 28)
@@ -546,6 +639,7 @@ func _refresh_orders() -> void:
 		_orders_box.remove_child(c)
 		c.queue_free()
 	_order_buttons.clear()
+	_orders_box.add_child(BattleTheme.make_label("ORDINE PER %s" % str(u["name"]).to_upper(), 14, BattleTheme.WH, true))
 	if pending_swap != "":
 		var info := BattleTheme.make_label("CAMBIO » %s (GRATIS)" % str(u["name"]).to_upper(), 13, BattleTheme.WH)
 		_orders_box.add_child(info)
@@ -674,6 +768,7 @@ func _play_events(events: Array) -> void:
 		var line: Dictionary = BattleText.describe(shown, e)
 		if str(line["text"]) != "":
 			_push_log(str(line["text"]), str(line["kind"]))
+		_mark_event(e)
 		var extra: float = _event_fx(e)
 		BattleText.apply_to_display(shown, e)
 		_stage.set_state(shown)
@@ -681,9 +776,27 @@ func _play_events(events: Array) -> void:
 		_refresh_operators()
 		await get_tree().create_timer(event_delay + extra).timeout
 	animating = false
+	_stage.clear_markers()
+	_turn_acting = ""
 	if not is_inside_tree():
 		return
 	_sync()
+
+
+# Segnalino su chi agisce e su chi subisce, e riga evidenziata nel pannello dell'ordine.
+func _mark_event(e: Dictionary) -> void:
+	var t: String = str(e.get("t", ""))
+	if t == "act":
+		_stage.acting = str(e["unit"])
+		_stage.acting_target = ""
+	elif t == "boss_move":
+		_stage.acting = BattleState.BOSS_ID
+		_stage.acting_target = ""
+	elif e.has("src") and e.has("dst"):
+		_stage.acting = str(e["src"])
+		_stage.acting_target = str(e["dst"])
+	_turn_acting = _stage.acting
+	_refresh_turn_panel()
 
 
 const HIT_WORDS: Array = ["BAM!", "POW!", "CRACK!", "WHAM!", "BOOM!"]

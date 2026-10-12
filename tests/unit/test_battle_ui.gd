@@ -186,6 +186,25 @@ func _test_screen() -> void:
 	_check("schermata: bersaglio annunciato", "SCARICA" in scene._tele_label.text)
 	_check("schermata: nome del boss e vita", "1350" in scene._boss_hp.text or "INTEGRITA" in scene._boss_hp.text)
 	_check("schermata: righe iniziali nel registro", scene.log_lines.size() >= 2)
+	var rows: Array = scene.turn_rows()
+	_check("turno: una riga per ogni unita' che agisce (boss compreso)", rows.size() >= 2)
+	var has_boss: bool = false
+	var mine_rows: int = 0
+	var all_text: bool = true
+	for r in rows:
+		has_boss = has_boss or bool(r["boss"])
+		mine_rows += 1 if bool(r["mine"]) else 0
+		all_text = all_text and str(r["action"]) != ""
+	_check("turno: il boss e' nell'ordine", has_boss)
+	_check("turno: una sola riga e' tua", mine_rows == 1)
+	_check("turno: ogni riga dice cosa fa", all_text)
+	_check("turno: pannello con le righe", scene._turn_box.get_child_count() == rows.size())
+	var ai_known: bool = false
+	for p in scene.shown["players"]:
+		if bool(p["ai"]) and p["choice"] is Dictionary and p["choice"].has("move"):
+			ai_known = true
+	_check("turno: le scelte dell'IA sono visibili", ai_known or BattleState.player(scene.shown, "p1")["team"].size() == 1)
+	_check("palco: etichetta TU per il giocatore locale", scene._stage.local_player_id == "p1")
 
 	# cambio di personaggio
 	var me: Dictionary = BattleState.player(scene.shown, "p1")
