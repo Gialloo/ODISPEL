@@ -155,5 +155,26 @@ func _init() -> void:
 	gd._close()
 	_check("guida strategie non tocca la guida reclutamento", not Settings.gacha_guide_seen)
 
+	# legenda e archivio
+	var lore_ok: bool = true
+	for cid in BattleContent.CHARACTERS:
+		var lt: Dictionary = Lore.character_text(str(cid))
+		lore_ok = lore_ok and lt.has("tag") and lt.has("lore") and lt.has("tactic")
+		lore_ok = lore_ok and (Lore.legend_page(str(cid))["lines"] as Array).size() >= 5
+	_check("legenda: ogni operatore ha tag, lore e tattica", lore_ok)
+	_check("legenda: nome nel titolo", Lore.legend_page("kira")["title"] == "KIRA")
+	var fl: Dictionary = Lore.legend_page("kira")
+	var fcount: int = (fl["lines"] as Array).size()
+	var with_f: Dictionary = Lore.legend_page("kira", "atipico", "libracorp")
+	var txt_f: String = ""
+	for l in with_f["lines"]:
+		txt_f += str(l["text"])
+	_check("legenda: con fazione spiega fazione e stile", txt_f.contains("LIBRACORP") and txt_f.contains("ATIPICO") and fcount == (with_f["lines"] as Array).size())
+	_check("glossario: pagine + un'ultima pagina per operatore", Lore.archive_pages().size() >= BattleContent.CHARACTERS.size() + 3)
+	var gl_ok: bool = true
+	for term in Lore.glossary():
+		gl_ok = gl_ok and str(term[1]).length() > 10
+	_check("glossario: tutte le voci spiegate", gl_ok)
+
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)

@@ -123,7 +123,7 @@ func _run() -> void:
 	await process_frame
 	var t: TutorialOverlay = scene._tutorial
 	_check("il tutorial parte", t != null and t.is_inside_tree())
-	_check("sei passi", t.steps.size() == 6)
+	_check("sette passi", t.steps.size() == 7)
 	var targets_ok: bool = true
 	for i in range(1, 5):
 		t.index = i
@@ -151,7 +151,7 @@ func _run() -> void:
 	_check("il testo cambia", t.title_label.text == "IL BERSAGLIO")
 	var done: Array = []
 	t.finished.connect(func(skipped: bool) -> void: done.append(skipped))
-	for i in 5:
+	for i in 6:
 		t.next()
 	await process_frame
 	_check("l'ultimo passo finisce", done.size() == 1 and done[0] == false)

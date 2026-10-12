@@ -77,6 +77,8 @@ func tutorial_steps() -> Array:
 		"text": "La tua squadra: PV, energia e carica dell'ultimate di ciascuno. Uno solo e' in campo (il triangolo). Clicca un compagno in panchina per scambiarlo: il cambio e' gratis e avviene prima di tutto. Chi sta in panchina recupera piu' energia."},
 		{"title": "GLI ORDINI", "target": _panel_of(_orders_box),
 		"text": "Scegli cosa fare: ATTACCO, GUARDIA (dimezza i danni), le abilita' (costano energia) e l'ULTIMATE, che si carica combattendo. Scorciatoie: tasti 1-4. I colori contano: un colpo del colore giusto fa +50% di danni, quello sbagliato -33%."},
+		{"title": "CLASSI E FAZIONI", "target": null,
+		"text": "STRIKER fa danno, VANGUARD regge i colpi, WARDEN cura e protegge. Le FAZIONI (LibraCorp, Rondini, Magabondi, Kairos) danno bonus ai compagni dello stesso gruppo: piu' sono rari, piu' il bonus e' grande. Nell'archivio operatori trovi STRATEGIE, ARCHIVIO e la LEGENDA di ogni personaggio."},
 		{"title": "PRONTO?", "target": null,
 		"text": "Il registro in basso racconta cosa succede ogni round. Se finisce male, non c'e' problema: si ritenta e si guadagnano comunque monete per potenziare la squadra. Buona fortuna!"},
 	]

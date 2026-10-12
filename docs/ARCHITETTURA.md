@@ -70,3 +70,12 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
 - atipico: da' e riceve meta' aura, ma ha +8% ATK e +5% VEL personali (i Magabondi, atipici per natura, non dimezzano due volte).
 `RosterState.validate_entry` rifiuta fazione/rarita'/stile truccati nelle squadre ricevute dalla rete.
 `BattleState._blank_unit` e' la base comune di giocatori e boss. `tools/bench_sim.gd` misura la logica di battaglia (~0,2 ms a round).
+
+## Guide di gioco: STRATEGIE, ARCHIVIO, LEGENDA
+
+- `scripts/battle/strategy_info.gd`: cosa fa ogni classe e fazione, come si vince, cosa serve, cosa c'e' gia' e cosa arriva.
+- `scripts/battle/lore.gd`: legenda di ogni operatore (chi e', come si usa, classe, fazione), glossario dei termini (cifre lette dal codice)
+  e archivio. La lore dei personaggi e' una BOZZA da riscrivere. Un nuovo operatore in `BattleContent.CHARACTERS` deve avere la sua voce
+  in `Lore.CHARACTERS` (lo controlla `test_factions.gd`).
+- Le tre guide usano la finestra `GachaGuide` (`open_pages`) e si aprono dall'archivio operatori (bottoni STRATEGIE, ARCHIVIO, LEGENDA).
+- Il tutorial del primo combattimento ha un passo su classi e fazioni.

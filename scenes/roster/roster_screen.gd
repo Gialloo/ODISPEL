@@ -28,6 +28,8 @@ var _status_label: Label
 var _tab_buttons: Dictionary = {}
 var guide_button: Button
 var strategy_button: Button
+var archive_button: Button
+var legend_button: Button
 var _team_page: Control
 var _recruit_page: Control
 var _equip_page: Control
@@ -105,6 +107,15 @@ func _build() -> void:
 	add_child(strat)
 	strategy_button = strat
 
+	var arch := Button.new()
+	arch.text = "ARCHIVIO"
+	arch.position = Vector2(x + 242.0, 90)
+	arch.size = Vector2(230, 40)
+	BattleTheme.style_button(arch, "normal", 20)
+	arch.pressed.connect(open_archive)
+	add_child(arch)
+	archive_button = arch
+
 	_build_team_page()
 	_build_equip_page()
 	_build_recruit_page()
@@ -175,6 +186,15 @@ func _build_team_page() -> void:
 	card.position = Vector2(466, 150)
 	card.size = Vector2(794, 358)
 	_team_page.add_child(card)
+	var leg := Button.new()
+	leg.text = "LEGENDA  ?"
+	leg.position = Vector2(600, 2)
+	leg.size = Vector2(180, 28)
+	BattleTheme.style_button(leg, "normal", 14)
+	leg.pressed.connect(open_legend)
+	card.add_child(leg)
+	legend_button = leg
+
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 6)
 	card.set_content(col)
@@ -317,6 +337,25 @@ func open_strategy_guide() -> GachaGuide:
 		if c is GachaGuide:
 			return c
 	return GachaGuide.open_pages(self, "STRATEGIE: CLASSI E FAZIONI", StrategyInfo.pages())
+
+
+# Archivio consultabile: glossario dei termini e scheda di ogni operatore.
+func open_archive() -> GachaGuide:
+	for c in get_children():
+		if c is GachaGuide:
+			return c
+	return GachaGuide.open_pages(self, "ARCHIVIO: GLOSSARIO E OPERATORI", Lore.archive_pages())
+
+
+# Legenda dell'operatore selezionato: chi e', come si usa, la sua classe e la sua fazione.
+func open_legend() -> GachaGuide:
+	for c in get_children():
+		if c is GachaGuide:
+			return c
+	if selected == "" or not RosterState.owns(roster, selected):
+		return null
+	var e: Dictionary = roster["characters"][selected]
+	return GachaGuide.open_pages(self, "LEGENDA", [Lore.legend_page(selected, BattleContent.style_of(selected, e))])
 
 
 func select(char_id: String) -> void:
@@ -633,11 +672,11 @@ func _refresh_detail() -> void:
 		passives.append(str(BattleContent.PASSIVES[str(p)]["name"]))
 	var lines: Array = []
 	lines.append("%s  |  %s  |  %s" % [str(def["color"]).to_upper(), str(def["cls"]).to_upper(), str(BattleTypes.RARITIES[int(def["rarity"])]).to_upper()])
+	lines.append(str(Lore.character_text(selected).get("tag", "")))
 	lines.append("LIVELLO %d/%d    RANK %s" % [int(e["level"]), RosterState.MAX_LEVEL, _stars(int(e["rank"]))])
 	var faction: String = BattleContent.faction_of(selected)
 	if faction != "":
 		lines.append("%s  |  %s  |  %s" % [Factions.name_of(faction).to_upper(), str(Factions.FACTIONS[faction]["doctrine"]).to_upper(), BattleContent.style_of(selected, e).to_upper()])
-	lines.append("")
 	lines.append("PV  %-6d ATK %-5d" % [int(st["hp"]), int(st["atk"])])
 	lines.append("DEF %-6d VEL %-5d" % [int(st["def"]), int(st["spd"])])
 	lines.append("")
