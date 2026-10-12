@@ -163,15 +163,15 @@ func _run() -> void:
 	var r1: Dictionary = BattleRewards.for_player("semaforo", 11, 0, true, 1)
 	var r2: Dictionary = BattleRewards.for_player("semaforo", 11, 0, true, 2)
 	_check("monete crescono con la difficolta'", int(r0["coins"]) < int(r1["coins"]) and int(r1["coins"]) < int(r2["coins"]))
-	_check("monete normale = base", int(r0["coins"]) == 450)
+	_check("monete normale = base", int(r0["coins"]) == int(BattleContent.BOSSES["semaforo"]["reward"]["coins"]))
 	_check("piu' drop ai livelli alti (almeno 4 a incubo)", r2["drops"].size() >= 4)
 	_check("premi deterministici per tier", BattleRewards.for_player("tombino", 5, 1, true, 2) == BattleRewards.for_player("tombino", 5, 1, true, 2))
-	_check("sconfitta: solo un quarto delle monete (con moltiplicatore)", int(BattleRewards.for_player("tombino", 5, 0, false, 2)["coins"]) == int(round(650.0 * 2.6)) / 4)
+	_check("sconfitta: solo un terzo delle monete (con moltiplicatore)", int(BattleRewards.for_player("tombino", 5, 0, false, 2)["coins"]) == int(round(float(BattleContent.BOSSES["tombino"]["reward"]["coins"]) * float(BattleContent.tier_of(2)["reward"]))) / 3)
 	_check("senza tier i premi restano quelli di prima", BattleRewards.for_player("distributore", 3, 0, true) == BattleRewards.for_player("distributore", 3, 0, true, 0))
 	var fin: Dictionary = _state("tombino", 2, 2)
 	fin["winner"] = "players"
 	var all: Dictionary = BattleRewards.for_battle(fin, "tombino", 77)
-	_check("for_battle usa il tier dello stato", int(all["p1"]["coins"]) == int(round(650.0 * 2.6)))
+	_check("for_battle usa il tier dello stato", int(all["p1"]["coins"]) == int(round(float(BattleContent.BOSSES["tombino"]["reward"]["coins"]) * float(BattleContent.tier_of(2)["reward"]))))
 	_check("tutti i drop sono validi", _drops_valid(r2["drops"]) and _drops_valid(all["p1"]["drops"]))
 
 	print("---")

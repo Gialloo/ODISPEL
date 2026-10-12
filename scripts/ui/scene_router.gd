@@ -9,6 +9,7 @@ const SCENES: Dictionary = {
 	"roster": "res://scenes/roster/roster_screen.tscn",
 	"lobby": "res://scenes/lobby/lobby_demo.tscn",
 	"missions": "res://scenes/missions/mission_screen.tscn",
+	"feats": "res://scenes/feats/feats_screen.tscn",
 	"battle": "res://scenes/battle/battle_screen.tscn",
 }
 

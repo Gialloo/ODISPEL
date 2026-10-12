@@ -264,8 +264,8 @@ static func _do_swap(state: Dictionary, p: Dictionary, new_id: String, events: A
 # ---------- Danni ----------
 
 # pierce: percentuale di difesa ignorata (colpi mirati).
-static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float, pierce: int = 0) -> int:
-	var dmg: float = float(attacker["atk"]) * mult
+static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float, pierce: int = 0, flat: float = 0.0) -> int:
+	var dmg: float = float(attacker["atk"]) * mult + flat
 	dmg *= BattleTypes.color_multiplier(str(attacker["color"]), str(defender["color"]))
 	if defender["statuses"].has("mark"):
 		dmg *= BattleTypes.MARK_BONUS
@@ -282,8 +282,8 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float,
 
 
 # Applica un colpo: prima lo scudo, poi i PV. Carica le barre ultimate.
-static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, mult: float, events: Array, pierce: int = 0) -> void:
-	var dmg: int = calc_damage(attacker, defender, mult, pierce)
+static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, mult: float, events: Array, pierce: int = 0, flat: float = 0.0) -> void:
+	var dmg: int = calc_damage(attacker, defender, mult, pierce, flat)
 	var crit: bool = Factions.rolls_crit(state, attacker, defender, events.size())
 	if crit:
 		dmg = maxi(1, int(round(float(dmg) * float(attacker.get("crit_dmg", Factions.CRIT_DMG_PM)) / 1000.0)))
@@ -385,18 +385,19 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 				if BattleState.is_alive(u):
 					targets.append(u)
 
+	var bonus: float = BattleContent.move_bonus(actor, move)
 	for t in targets:
 		if not BattleState.is_alive(t):
 			continue
 		if move.has("mult"):
-			_hit(state, actor, t, float(move["mult"]), events, int(move.get("pierce", 0)))
+			_hit(state, actor, t, float(move["mult"]), events, int(move.get("pierce", 0)), bonus)
 		if move.has("heal"):
-			var amount: int = int(round(float(actor["atk"]) * float(move["heal"])))
+			var amount: int = int(round(float(actor["atk"]) * float(move["heal"]) + bonus))
 			var before: int = int(t["hp"])
 			t["hp"] = mini(int(t["max_hp"]), before + amount)
 			events.append({"t": "heal", "src": actor["id"], "dst": t["id"], "amount": int(t["hp"]) - before})
 		if move.has("shield") and str(move["target"]) != "enemy":
-			var sh: int = int(round(float(actor["atk"]) * float(move["shield"])))
+			var sh: int = int(round(float(actor["atk"]) * float(move["shield"]) + bonus))
 			t["shield"] = int(t["shield"]) + sh
 			events.append({"t": "shield", "src": actor["id"], "dst": t["id"], "amount": sh})
 		if bool(move.get("cleanse", false)):

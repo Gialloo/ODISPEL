@@ -141,6 +141,10 @@ static func effect_lines(m: Dictionary, u: Dictionary = {}) -> Array:
 		out.append("Cura x%.1f del tuo attacco." % float(m["heal"]))
 	if m.has("shield"):
 		out.append("Scudo x%.1f del tuo attacco." % float(m["shield"]))
+	if m.has("bonus"):
+		var bn: Dictionary = m["bonus"]
+		var amount: String = "%d" % int(round(BattleContent.move_bonus(u, m))) if not u.is_empty() else ""
+		out.append("+%s%% di %s%s." % [BattleText._pct_text(float(bn["pct"])), str(BattleContent.STAT_NAMES.get(bn["stat"], "")), (" (= +%s adesso)" % amount) if amount != "" else ""])
 	for s in m.get("status", {}):
 		out.append("Applica %s per %d turni." % [BattleText.status_name(str(s)), int(m["status"][s])])
 	for s in m.get("self_status", {}):

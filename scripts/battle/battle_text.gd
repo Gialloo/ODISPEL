@@ -30,6 +30,10 @@ static func unit_name(state: Dictionary, uid: String) -> String:
 
 
 # Descrizione breve di una mossa del giocatore (per i suggerimenti dei pulsanti).
+static func _pct_text(v: float) -> String:
+	return "%d" % int(v) if is_equal_approx(v, round(v)) else "%.1f" % v
+
+
 static func move_hint(move_id: String) -> String:
 	var m: Dictionary = BattleContent.MOVES.get(move_id, {})
 	var parts: Array = []
@@ -39,6 +43,8 @@ static func move_hint(move_id: String) -> String:
 		parts.append("CURA x%.1f" % float(m["heal"]))
 	if m.has("shield"):
 		parts.append("SCUDO x%.1f" % float(m["shield"]))
+	if m.has("bonus"):
+		parts.append("+%s%% %s" % [_pct_text(float(m["bonus"]["pct"])), str(BattleContent.STAT_NAMES.get(m["bonus"]["stat"], ""))])
 	if m.has("status"):
 		for s in m["status"]:
 			parts.append(status_name(str(s)))

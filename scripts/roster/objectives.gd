@@ -60,15 +60,15 @@ static func _make(kind: String, open_bosses: Array, rng: RandomNumberGenerator) 
 	match kind:
 		"play":
 			o["goal"] = 3
-			o["reward"] = {"coins": 150}
+			o["reward"] = {"coins": 300, "nucleo": 1}
 		"win":
 			o["goal"] = 2
-			o["reward"] = {"coins": 250, "nucleo": 1}
+			o["reward"] = {"coins": 500, "nucleo": 2}
 		"win_boss":
 			o["boss"] = str(open_bosses[rng.randi_range(0, open_bosses.size() - 1)])
-			o["reward"] = {"coins": 300, "lega": 1}
+			o["reward"] = {"coins": 600, "lega": 2}
 		"win_hard":
-			o["reward"] = {"coins": 450, "nucleo": 2}
+			o["reward"] = {"coins": 900, "nucleo": 3}
 	return o
 
 

@@ -8,22 +8,88 @@ extends RefCounted
 # target: enemy | self | ally | allies
 # cost: energia (skill). Le ultimate costano la barra piena.
 # rarity: indice in BattleTypes.RARITIES
-const MOVES: Dictionary = {
+const BASE_MOVES: Dictionary = {
 	"attack": {"name": "Attacco", "kind": "basic", "cost": 0, "priority": 0, "rarity": 0, "target": "enemy", "mult": 1.0},
 	"guard": {"name": "Guardia", "kind": "basic", "cost": 0, "priority": 1, "rarity": 0, "target": "self", "self_status": {"guard": 1}, "energy": 1, "ammo_gain": 1},
-	"colpo_caricato": {"name": "Colpo caricato", "kind": "skill", "cost": 2, "priority": 0, "rarity": 0, "target": "enemy", "mult": 2.0},
-	"marchio": {"name": "Marchio", "kind": "skill", "cost": 1, "priority": 0, "rarity": 0, "target": "enemy", "mult": 0.5, "status": {"mark": 2}},
-	"provoca": {"name": "Provoca", "kind": "skill", "cost": 1, "priority": 1, "rarity": 0, "target": "self", "self_status": {"taunt": 1}, "shield": 0.6},
-	"barriera": {"name": "Barriera", "kind": "skill", "cost": 2, "priority": 1, "rarity": 1, "target": "allies", "shield": 1.0},
-	"cura": {"name": "Cura", "kind": "skill", "cost": 2, "priority": 0, "rarity": 1, "target": "ally", "heal": 1.4},
-	"purifica": {"name": "Purifica", "kind": "skill", "cost": 1, "priority": 0, "rarity": 1, "target": "ally", "heal": 0.4, "cleanse": true},
 	"ricarica": {"name": "Ricarica", "kind": "skill", "cost": 0, "priority": 1, "rarity": 0, "target": "self", "ammo_gain": 3, "energy": 1},
-	"colpo_mirato": {"name": "Colpo mirato", "kind": "skill", "cost": 1, "priority": 0, "rarity": 1, "target": "enemy", "mult": 1.7, "ammo": 1, "pierce": 50},
-	"colpo_alla_testa": {"name": "Colpo alla testa", "kind": "skill", "cost": 2, "priority": 0, "rarity": 2, "target": "enemy", "mult": 2.4, "ammo": 2, "pierce": 50},
-	"spezzatutto": {"name": "Spezzatutto", "kind": "ult", "cost": 0, "priority": 0, "rarity": 2, "target": "enemy", "mult": 4.5},
-	"bastione": {"name": "Bastione", "kind": "ult", "cost": 0, "priority": 1, "rarity": 2, "target": "allies", "shield": 2.0},
-	"rinascita": {"name": "Rinascita", "kind": "ult", "cost": 0, "priority": 0, "rarity": 3, "target": "allies", "heal": 1.5, "cleanse": true},
 }
+
+# Mosse a livelli (una per rarita'). Ogni livello ha un valore base (mult / heal / shield, per il tuo ATK)
+# PIU' una parte di una statistica di chi la usa: "bonus": {"stat": ..., "pct": ...}.
+# Stat: atk, def, spd, max_hp, crit (il critico conta x10: 10% di crit = 100 punti).
+# L'id del primo livello e' quello base ("cura"); gli altri: _r (rara), _e (epica), _l (leggendaria).
+# "from": rarita' del primo livello. "values": un valore per livello; "pct": la percentuale della statistica per livello.
+const FAMILIES: Dictionary = {
+	"colpo_caricato": {"name": "Colpo caricato", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy",
+		"key": "mult", "values": [2.0, 2.3, 2.7, 3.2], "stat": "atk", "pct": [8, 14, 22, 32]},
+	"marchio": {"name": "Marchio", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "status": {"mark": 2},
+		"key": "mult", "values": [0.5, 0.6, 0.75, 0.9], "stat": "crit", "pct": [10, 18, 28, 40]},
+	"provoca": {"name": "Provoca", "kind": "skill", "cost": 1, "priority": 1, "target": "self", "self_status": {"taunt": 1},
+		"key": "shield", "values": [0.6, 0.8, 1.05, 1.4], "stat": "def", "pct": [10, 16, 24, 34]},
+	"barriera": {"name": "Barriera", "kind": "skill", "cost": 2, "priority": 1, "target": "allies",
+		"key": "shield", "values": [1.0, 1.3, 1.7, 2.2], "stat": "def", "pct": [10, 16, 24, 34]},
+	"cura": {"name": "Cura", "kind": "skill", "cost": 2, "priority": 0, "target": "ally",
+		"key": "heal", "values": [1.4, 1.8, 2.3, 2.8], "stat": "max_hp", "pct": [5, 6.5, 8, 10]},
+	"purifica": {"name": "Purifica", "kind": "skill", "cost": 1, "priority": 0, "target": "ally", "cleanse": true,
+		"key": "heal", "values": [0.4, 0.55, 0.7, 0.9], "stat": "max_hp", "pct": [2, 3, 4, 6]},
+	"colpo_mirato": {"name": "Colpo mirato", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "ammo": 1, "pierce": 50,
+		"from": 1, "key": "mult", "values": [1.7, 2.0, 2.4], "stat": "crit", "pct": [12, 20, 30]},
+	"colpo_alla_testa": {"name": "Colpo alla testa", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "ammo": 2, "pierce": 50,
+		"from": 2, "key": "mult", "values": [2.4, 2.9], "stat": "crit", "pct": [20, 34]},
+	"spezzatutto": {"name": "Spezzatutto", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy",
+		"from": 2, "key": "mult", "values": [4.5, 5.6], "stat": "atk", "pct": [20, 36]},
+	"bastione": {"name": "Bastione", "kind": "ult", "cost": 0, "priority": 1, "target": "allies",
+		"from": 2, "key": "shield", "values": [2.0, 2.7], "stat": "def", "pct": [30, 48]},
+	"rinascita": {"name": "Rinascita", "kind": "ult", "cost": 0, "priority": 0, "target": "allies", "cleanse": true,
+		"from": 2, "key": "heal", "values": [1.1, 1.5], "stat": "max_hp", "pct": [8, 15]},
+}
+const TIER_SUFFIX: Array = ["", "_r", "_e", "_l"]
+const TIER_NAMES: Array = ["", " II", " III", " IV"]
+
+# Tutte le mosse: quelle di base e i livelli delle famiglie.
+static var MOVES: Dictionary = _build_moves()
+
+
+static func _build_moves() -> Dictionary:
+	var out: Dictionary = BASE_MOVES.duplicate(true)
+	for fid in FAMILIES:
+		var f: Dictionary = FAMILIES[fid]
+		var first: int = int(f.get("from", 0))
+		var values: Array = f["values"]
+		for i in values.size():
+			var rarity: int = first + i
+			var id: String = str(fid) + (str(TIER_SUFFIX[rarity]) if i > 0 else "")
+			var m: Dictionary = {"name": str(f["name"]) + str(TIER_NAMES[i]), "kind": f["kind"], "cost": f["cost"], "priority": f["priority"],
+				"rarity": rarity, "target": f["target"], "family": fid, "tier": i}
+			for k in ["status", "self_status", "cleanse", "ammo", "pierce"]:
+				if f.has(k):
+					m[k] = f[k].duplicate(true) if f[k] is Dictionary else f[k]
+			m[str(f["key"])] = values[i]
+			m["bonus"] = {"stat": f["stat"], "pct": f["pct"][i]}
+			out[id] = m
+	return out
+
+
+# Valore di una statistica per i bonus delle mosse.
+static func stat_value(u: Dictionary, stat: String) -> float:
+	match stat:
+		"crit":
+			return float(u.get("crit", 0)) * 10.0
+		"max_hp":
+			return float(u.get("max_hp", 0))
+	return float(u.get(stat, 0))
+
+
+# Punti in piu' che una mossa prende da una statistica di chi la usa (0 se la mossa non ha bonus).
+static func move_bonus(u: Dictionary, move: Dictionary) -> float:
+	if not move.has("bonus"):
+		return 0.0
+	var b: Dictionary = move["bonus"]
+	return stat_value(u, str(b["stat"])) * float(b["pct"]) / 100.0
+
+
+const STAT_NAMES: Dictionary = {"atk": "ATK", "def": "DIF", "spd": "VEL", "max_hp": "PV MAX", "crit": "CRITICO"}
+
 
 # Passive: bonus statistici (moltiplicatori) o effetti a evento.
 const PASSIVES: Dictionary = {
@@ -112,8 +178,8 @@ const BOSS_MOVES: Dictionary = {
 # Livelli di difficolta': moltiplicano PV e ATK del boss, aggiungono difesa e premi.
 const TIERS: Array = [
 	{"id": "normale", "name": "NORMALE", "hp": 1.0, "atk": 1.0, "def": 0, "reward": 1.0},
-	{"id": "difficile", "name": "DIFFICILE", "hp": 1.5, "atk": 1.25, "def": 8, "reward": 1.7},
-	{"id": "incubo", "name": "INCUBO", "hp": 2.1, "atk": 1.55, "def": 15, "reward": 2.6},
+	{"id": "difficile", "name": "DIFFICILE", "hp": 1.5, "atk": 1.25, "def": 8, "reward": 2.0},
+	{"id": "incubo", "name": "INCUBO", "hp": 2.1, "atk": 1.55, "def": 15, "reward": 3.2},
 ]
 
 # Ordine di sblocco: si apre il boss successivo battendo il precedente (almeno a NORMALE).
@@ -126,8 +192,8 @@ const BOSSES: Dictionary = {
 		"desc": "Un distributore automatico impazzito. Colpi pesanti a un solo bersaglio e scosse che fanno sanguinare.",
 		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
 		"atk_scale": [0.62, 0.8, 1.0],
-		"drops": 2,
-		"reward": {"coins": 300, "nucleo": [2, 4], "lega": [1, 3], "gear_chance": 40},
+		"drops": 3,
+		"reward": {"coins": 600, "nucleo": [4, 8], "lega": [2, 6], "gear_chance": 65},
 	},
 	"semaforo": {
 		"name": "Semaforo", "title": "CLASSE ANOMALIA · MINACCIA MEDIA", "color": "rosso", "hp_per_player": 850,
@@ -135,8 +201,8 @@ const BOSSES: Dictionary = {
 		"desc": "Un semaforo che non cambia piu' colore. Veloce: agisce prima di quasi tutti. Marchia la squadra e punta chi e' piu' ferito.",
 		"cycle": ["lampeggio", "rosso", "giallo", "verde"],
 		"atk_scale": [0.62, 0.8, 1.0],
-		"drops": 2,
-		"reward": {"coins": 450, "nucleo": [3, 5], "lega": [2, 4], "gear_chance": 50},
+		"drops": 3,
+		"reward": {"coins": 900, "nucleo": [6, 10], "lega": [4, 8], "gear_chance": 75},
 	},
 	"tombino": {
 		"name": "Tombino", "title": "CLASSE ANOMALIA · MINACCIA ALTA", "color": "viola", "hp_per_player": 1000,
@@ -144,8 +210,8 @@ const BOSSES: Dictionary = {
 		"desc": "Qualcosa vive sotto il tombino. Lento ma resistente: si cura risucchiando i feriti e si chiude sotto uno scudo.",
 		"cycle": ["gorgo", "risucchio", "alluvione", "chiusura"],
 		"atk_scale": [0.62, 0.8, 1.0],
-		"drops": 3,
-		"reward": {"coins": 650, "nucleo": [4, 7], "lega": [3, 6], "gear_chance": 60},
+		"drops": 4,
+		"reward": {"coins": 1300, "nucleo": [8, 14], "lega": [6, 12], "gear_chance": 85},
 	},
 	"cabina": {
 		"name": "Cabina", "title": "CLASSE ANOMALIA · MINACCIA CRITICA", "color": "blu", "hp_per_player": 1100,
@@ -153,8 +219,8 @@ const BOSSES: Dictionary = {
 		"desc": "Una cabina telefonica che squilla da sola. Marchia la squadra, chiama un bersaglio con un colpo pesante e si nutre di chi e' gia' ferito.",
 		"cycle": ["squillo", "chiamata", "interferenza", "linea_occupata"],
 		"atk_scale": [0.62, 0.8, 1.0],
-		"drops": 3,
-		"reward": {"coins": 850, "nucleo": [5, 8], "lega": [4, 7], "gear_chance": 70},
+		"drops": 4,
+		"reward": {"coins": 1700, "nucleo": [10, 16], "lega": [8, 14], "gear_chance": 95},
 	},
 }
 

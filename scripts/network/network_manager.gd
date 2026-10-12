@@ -502,6 +502,7 @@ func finish() -> Dictionary:
 			for line in RosterState.unlock_news(boss_id, tier):
 				Notify.success(line)
 
+	Feats.record_battle(roster, str(battle["winner"]) == "players")
 	for line in Objectives.record_battle(roster, str(BattleState.boss(battle)["char"]), int(battle.get("tier", 0)), str(battle["winner"]) == "players"):
 		Notify.success(line)
 

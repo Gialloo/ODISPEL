@@ -20,7 +20,7 @@ static func for_player(boss_id: String, seed_value: int, player_index: int, vict
 
 	# Sconfitta: solo un piccolo premio di consolazione in monete.
 	if not victory:
-		return {"coins": int(round(float(cfg.get("coins", 0)) * mult)) / 4, "materials": {}, "drops": []}
+		return {"coins": int(round(float(cfg.get("coins", 0)) * mult)) / 3, "materials": {}, "drops": []}
 
 	var rng: RNGState = RNGState.new()
 	rng.setup(seed_value * 31 + player_index + 7)

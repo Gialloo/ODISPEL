@@ -58,8 +58,10 @@ func _build() -> void:
 	_menu_button(menu, "missions", "SCEGLI MISSIONE", "normal", 56, 22)
 	_menu_button(menu, "roster", "SQUADRA E RECLUTAMENTO", "normal", 56, 22)
 	_menu_button(menu, "lobby", "MULTIPLAYER CO-OP", "normal", 56, 22)
+	var ready_feats: int = Feats.claimable_count(roster)
+	_menu_button(menu, "feats", "OBIETTIVI" + ("  ·  %d DA RISCUOTERE" % ready_feats if ready_feats > 0 else ""), "primary" if ready_feats > 0 else "normal", 56, 22)
 	_menu_button(menu, "settings", "IMPOSTAZIONI", "normal", 44, 18)
-	menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-5 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DARK))
+	menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-6 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DARK))
 
 	_build_status_panel()
 	UiMotion.slide_in(buttons.values(), Vector2(-180, 0), 0.07, 0.3)
@@ -168,3 +170,5 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_on_menu("lobby")
 		KEY_5:
 			_on_menu("settings")
+		KEY_6:
+			_on_menu("feats")
