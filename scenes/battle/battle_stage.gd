@@ -8,7 +8,9 @@ extends Control
 const DW: float = 1280.0
 const DH: float = 720.0
 const HORIZON: float = 250.0
-const BOSS_X: float = 930.0
+const BOSS_X: float = 950.0
+const BOSS_FLOOR: float = 378.0     # il boss sta piu' lontano: piedi piu' in alto sullo schermo...
+const BOSS_SCALE: float = 0.66      # ...e figura piu' piccola (prospettiva)
 const FLOOR_Y: float = 470.0        # dove i piedi toccano il suolo sullo schermo
 const GEO_FLOOR: float = 600.0      # il suolo nelle coordinate con cui sono disegnate le figure
 const ENTITY_SCALE: float = 0.76    # le figure sono disegnate in grande e ridotte qui
@@ -206,25 +208,31 @@ func anchor_of(uid: String) -> Vector2:
 
 
 # Da coordinate "figura" a coordinate dell'inquadratura, per un'entita' ancorata in gx.
-func _map(p: Vector2, gx: float) -> Vector2:
-	return Vector2(gx + (p.x - gx) * ENTITY_SCALE, FLOOR_Y + (p.y - GEO_FLOOR) * ENTITY_SCALE)
+func _map(p: Vector2, gx: float, s: float = ENTITY_SCALE, floor_y: float = FLOOR_Y) -> Vector2:
+	return Vector2(gx + (p.x - gx) * s, floor_y + (p.y - GEO_FLOOR) * s)
+
+
+# La squadra e' vista in diagonale: il primo e' in basso a sinistra, vicino alla camera (grande);
+# gli altri salgono verso il centro e rimpiccioliscono. x = posizione, y = piedi sullo schermo, z = scala.
+func party_pose(index: int, _count: int) -> Vector3:
+	var t: float = float(index)
+	return Vector3(190.0 + t * 170.0, 474.0 - t * 38.0, 0.88 - t * 0.07)
 
 
 func fighter_x(index: int, count: int) -> float:
-	var step: float = 170.0 if count <= 1 else minf(170.0, 360.0 / float(count - 1))
-	return 130.0 + float(index) * step
+	return party_pose(index, count).x
 
 
 func _layout() -> void:
 	_positions.clear()
-	_positions[BattleState.BOSS_ID] = _map(Vector2(BOSS_X, 360.0), BOSS_X)
+	_positions[BattleState.BOSS_ID] = _map(Vector2(BOSS_X, 360.0), BOSS_X, BOSS_SCALE, BOSS_FLOOR)
 	if state.is_empty():
 		return
 	var players: Array = state["players"]
 	var n: int = players.size()
 	for i in n:
-		var gx: float = fighter_x(i, n)
-		_positions[str(players[i]["active"])] = _map(Vector2(gx, GEO_FLOOR - 120.0), gx)
+		var pose: Vector3 = party_pose(i, n)
+		_positions[str(players[i]["active"])] = _map(Vector2(pose.x, GEO_FLOOR - 120.0), pose.x, pose.z, pose.y)
 
 
 const SHADOW_COLOR: Color = Color(0, 0, 0, 0.5)
@@ -268,10 +276,10 @@ func _text(font: Font, pos: Vector2, text: String, font_size: int, color: Color)
 
 
 # Imposta la trasformazione per disegnare una figura ancorata in gx.
-func _entity_transform(gx: float) -> void:
+func _entity_transform(gx: float, s: float = ENTITY_SCALE, floor_y: float = FLOOR_Y) -> void:
 	var base := Vector2(size.x / DW, size.y / DH)
-	var t := Vector2(gx * (1.0 - ENTITY_SCALE), FLOOR_Y - GEO_FLOOR * ENTITY_SCALE)
-	draw_set_transform(Vector2(t.x * base.x, t.y * base.y), 0.0, base * ENTITY_SCALE)
+	var t := Vector2(gx * (1.0 - s), floor_y - GEO_FLOOR * s)
+	draw_set_transform(Vector2(t.x * base.x, t.y * base.y), 0.0, base * s)
 
 
 # Strumenti di misura (usati da tools/bench.gd): tempo speso a disegnare l'inquadratura.
@@ -289,10 +297,9 @@ func _draw() -> void:
 		_paint_procedural_background(self)
 	_draw_background()
 	_draw_motes()
-	_entity_transform(BOSS_X)
+	_entity_transform(BOSS_X, BOSS_SCALE, BOSS_FLOOR)
 	_draw_boss()
-	_draw_bench()
-	_draw_fighters()
+	_draw_party()
 	_draw_markers()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if profile:
@@ -783,19 +790,24 @@ func _draw_cabina(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> R
 
 # ---------- Combattenti ----------
 
-func _draw_fighters() -> void:
+# Dal fondo verso la camera: chi e' piu' lontano si disegna prima, cosi' il primo della squadra copre gli altri.
+func _draw_party() -> void:
 	if state.is_empty():
 		return
 	var players: Array = state["players"]
-	for i in players.size():
+	var n: int = players.size()
+	for k in n:
+		var i: int = n - 1 - k
 		var p: Dictionary = players[i]
+		var pose: Vector3 = party_pose(i, n)
+		_draw_bench_for(p, i, pose)
 		var u: Dictionary = BattleState.unit(state, str(p["active"]))
 		if u.is_empty():
 			continue
-		var gx: float = fighter_x(i, players.size())
+		var gx: float = pose.x
 		if _lunge_who == str(p["active"]):
-			gx += _lunge_offset(70.0)       # chi agisce scatta verso il boss e torna
-		_entity_transform(gx)
+			gx += _lunge_offset(70.0 * pose.z)       # chi agisce scatta verso il boss e torna
+		_entity_transform(gx, pose.z, pose.y)
 		_draw_fighter(u, Vector2(gx, GEO_FLOOR - 120.0), i, str(p["id"]) == local_player_id or (local_player_id == "" and i == 0))
 		_draw_summons(p, gx)
 
@@ -869,36 +881,28 @@ const BENCH_SCALE: float = 0.62
 const BENCH_ALPHA: float = 0.42
 
 
-func _draw_bench() -> void:
-	if state.is_empty():
+# La panchina e' solo quella del TUO party: gli altri mostrano solo chi e' in campo.
+func _draw_bench_for(p: Dictionary, i: int, pose: Vector3) -> void:
+	if not (str(p["id"]) == local_player_id or (local_player_id == "" and i == 0)):
 		return
-	var players: Array = state["players"]
-	var n: int = players.size()
-	var step: float = 200.0 if n <= 1 else minf(200.0, 430.0 / float(n - 1))
-	var dx: float = minf(88.0, step * 0.42)
-	for i in n:
-		var p: Dictionary = players[i]
-		# la panchina e' solo quella del TUO party: gli altri mostrano solo chi e' in campo
-		if not (str(p["id"]) == local_player_id or (local_player_id == "" and i == 0)):
+	var dx: float = 96.0 * pose.z
+	var k: int = 0
+	for uid in p["team"]:
+		if str(uid) == str(p["active"]):
 			continue
-		var gx: float = fighter_x(i, n)
-		var k: int = 0
-		for uid in p["team"]:
-			if str(uid) == str(p["active"]):
-				continue
-			var u: Dictionary = BattleState.unit(state, str(uid))
-			if u.is_empty():
-				continue
-			var side: float = -1.0 if k % 2 == 0 else 1.0
-			_draw_bench_unit(u, gx + side * dx, k)
-			k += 1
+		var u: Dictionary = BattleState.unit(state, str(uid))
+		if u.is_empty():
+			continue
+		var side: float = -1.0 if k % 2 == 0 else 1.0
+		_draw_bench_unit(u, pose.x + side * dx, k, pose.z, pose.y)
+		k += 1
 
 
-func _draw_bench_unit(u: Dictionary, gx: float, slot: int) -> void:
+func _draw_bench_unit(u: Dictionary, gx: float, slot: int, depth_scale: float = ENTITY_SCALE, floor_y: float = FLOOR_Y) -> void:
 	var base := Vector2(size.x / DW, size.y / DH)
-	var s: float = ENTITY_SCALE * BENCH_SCALE
+	var s: float = depth_scale * BENCH_SCALE
 	var lift: float = 30.0 + float(slot) * 6.0
-	var origin := Vector2(gx * (1.0 - s), FLOOR_Y - lift - GEO_FLOOR * s)
+	var origin := Vector2(gx * (1.0 - s), floor_y - lift - GEO_FLOOR * s)
 	draw_set_transform(Vector2(origin.x * base.x, origin.y * base.y), 0.0, base * s)
 	var alive: bool = BattleState.is_alive(u)
 	var col: Color = BattleTheme.unit_color(str(u["color"]))
@@ -920,7 +924,7 @@ func _draw_bench_unit(u: Dictionary, gx: float, slot: int) -> void:
 	_text(BattleTheme.display(), Vector2(gx - 60.0, foot_y + 52.0), str(u["name"]).to_upper(), 30, Color(BattleTheme.WH, 0.75 if alive else 0.35))
 	draw_rect(Rect2(gx - 60.0, foot_y + 62.0, 120.0, 10.0), Color(0, 0, 0, 0.5))
 	draw_rect(Rect2(gx - 60.0, foot_y + 62.0, 120.0 * ratio, 10.0), Color(BattleTheme.RD if ratio < 0.3 else BattleTheme.CY, 0.75))
-	_entity_transform(BOSS_X)
+	_entity_transform(BOSS_X, BOSS_SCALE, BOSS_FLOOR)
 
 
 # Segnalini di chi agisce (triangolo rosso) e di chi subisce (cerchio rosso), durante la riproduzione del round.
