@@ -30,7 +30,11 @@ func _u(s: Dictionary, c: String) -> Dictionary:
 
 func _init() -> void:
 	# nessuna fazione: statistiche invariate
-	var plain: Dictionary = _state([BattleContent.default_entry("kira"), BattleContent.default_entry("dax")])
+	var e1: Dictionary = BattleContent.default_entry("kira")
+	e1["faction"] = ""
+	var e2: Dictionary = BattleContent.default_entry("dax")
+	e2["faction"] = ""
+	var plain: Dictionary = _state([e1, e2])
 	var k: Dictionary = _u(plain, "kira")
 	_check("senza fazione: nessuna aura", k["aura"].is_empty() and k["def"] == k["base"]["def"] and k["crit"] == 0)
 
@@ -120,7 +124,8 @@ func _init() -> void:
 
 	# roster: set_style e validazione anti-truffa
 	var roster: Dictionary = RosterState.new_roster()
-	_check("set_style senza fazione rifiutato", not RosterState.set_style(roster, "kira", "atipico"))
+	_check("set_style con fazione accettato", RosterState.set_style(roster, "kira", "atipico") and BattleContent.style_of("kira", roster["characters"]["kira"]) == "atipico")
+	_check("set_style su operatore non posseduto rifiutato", not RosterState.set_style(roster, "tana", "atipico"))
 	_check("set_style stile sconosciuto rifiutato", not RosterState.set_style(roster, "kira", "boh"))
 	var good: Dictionary = BattleContent.default_entry("kira")
 	_check("entry normale valida", RosterState.validate_entry(good) == "")
@@ -175,6 +180,35 @@ func _init() -> void:
 	for term in Lore.glossary():
 		gl_ok = gl_ok and str(term[1]).length() > 10
 	_check("glossario: tutte le voci spiegate", gl_ok)
+
+	# fazioni assegnate e Protocollo
+	var all_ok: bool = true
+	for cid in BattleContent.CHARACTERS:
+		var fac: String = BattleContent.faction_of(str(cid))
+		all_ok = all_ok and Factions.FACTIONS.has(fac)
+	_check("ogni operatore ha una fazione valida", all_ok)
+	var pr: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("dax"), BattleContent.default_entry("tana")]}], "distributore", 7)
+	var dx: Dictionary = BattleState.unit(pr, "a:dax")
+	var def0: int = dx["def"]
+	var spd0: int = dx["spd"]
+	BattleResolver._hit(pr, BattleState.boss(pr), dx, 0.5, [])
+	_check("Protocollo: colpito, +5% DIF e VEL", dx["def"] > def0 and dx["spd"] > spd0 and dx["mods"].size() == 2)
+	var def1: int = dx["def"]
+	BattleResolver._hit(pr, BattleState.boss(pr), dx, 0.5, [])
+	_check("Protocollo: non si somma nello stesso turno", dx["def"] == def1 and dx["mods"].size() == 2)
+	Factions.tick(pr)
+	Factions.refresh(pr)
+	_check("Protocollo: dura il round dopo", dx["def"] == def1)
+	Factions.tick(pr)
+	Factions.refresh(pr)
+	_check("Protocollo: poi scade", dx["mods"].is_empty() and dx["def"] == def0)
+	var at2: Dictionary = BattleContent.default_entry("dax")
+	at2["style"] = "atipico"
+	var pa: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [at2]}], "distributore", 7)
+	BattleResolver._hit(pa, BattleState.boss(pa), BattleState.unit(pa, "a:dax"), 0.5, [])
+	_check("Protocollo: gli atipici non lo hanno", BattleState.unit(pa, "a:dax")["mods"].is_empty())
+	var rf: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("kira"), BattleContent.default_entry("elle")]}], "distributore", 7)
+	_check("Magabondi in squadra con Rondini: aura dimezzata", int(BattleState.unit(rf, "a:elle")["aura"].get("crit", 0)) == 10 and int(BattleState.unit(rf, "a:kira")["aura"].get("crit", 0)) == 20)
 
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)

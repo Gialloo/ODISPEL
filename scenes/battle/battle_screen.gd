@@ -364,7 +364,7 @@ func _refresh_operators() -> void:
 		sig = "%s|%s|" % [active_id, str(me["active"])]
 		for uid in me["team"]:
 			var tu: Dictionary = BattleState.unit(shown, uid)
-			sig += "%s,%d,%d,%d,%d,%d;" % [uid, int(tu["hp"]), int(tu["max_hp"]), int(tu["energy"]), int(tu["gauge"]), int(tu["level"])]
+			sig += "%s,%d,%d,%d,%d,%d,%s;" % [uid, int(tu["hp"]), int(tu["max_hp"]), int(tu["energy"]), int(tu["gauge"]), int(tu["level"]), Factions.aura_text(tu)]
 		for p in shown["players"]:
 			if p["id"] != me["id"]:
 				var ta: Dictionary = BattleState.unit(shown, str(p["active"]))
@@ -403,6 +403,15 @@ func _refresh_operators() -> void:
 # Altezza della riga di un operatore: sul telefono e' piu' alta, per il dito.
 func _unit_row_height() -> float:
 	return 60.0 if TouchUi.active() else 44.0
+
+
+# "LIBRACORP DIF +7%" sotto il nome: fazione e aure attive (vuoto per chi non ha fazione).
+func _faction_tag(u: Dictionary) -> String:
+	var f: String = str(u.get("faction", ""))
+	if f == "":
+		return ""
+	var aura: String = Factions.aura_text(u)
+	return Factions.name_of(f).to_upper() + ("  " + aura if aura != "" else "")
 
 
 func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
@@ -446,6 +455,12 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	var cls_l := BattleTheme.make_label("%s · LV%d" % [str(u["cls"]).to_upper(), int(u["level"])], 11, fg)
 	cls_l.position = Vector2(180, 3)
 	inner.add_child(cls_l)
+
+	var tag: String = _faction_tag(u)
+	if tag != "":
+		var tag_l := BattleTheme.make_label(tag, 11, BattleTheme.RD if not selected else BattleTheme.BK)
+		tag_l.position = Vector2(210, 31)
+		inner.add_child(tag_l)
 
 	var hp_ratio: float = float(u["hp"]) / float(u["max_hp"])
 	var hp := SegBar.new().setup(16, BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.CY), Vector2(250, 8))

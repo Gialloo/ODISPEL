@@ -44,16 +44,16 @@ const RARITY_STAT_MULT: Array = [1.0, 1.08, 1.18, 1.32]
 
 # rarity: indice in BattleTypes.RARITIES (quanto e' raro da reclutare)
 const CHARACTERS: Dictionary = {
-	"kira": {"name": "Kira", "color": "viola", "cls": "striker", "rarity": 1, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk"},
-	"dax": {"name": "Dax", "color": "rosso", "cls": "vanguard", "rarity": 0, "skill": "provoca", "ult": "bastione", "passive": "p_hp"},
-	"elle": {"name": "Elle", "color": "verde", "cls": "warden", "rarity": 0, "skill": "cura", "ult": "rinascita", "passive": "p_swap"},
-	"bruno": {"name": "Bruno", "color": "blu", "cls": "vanguard", "rarity": 0, "skill": "barriera", "ult": "bastione", "passive": "p_hp"},
-	"nova": {"name": "Nova", "color": "giallo", "cls": "striker", "rarity": 1, "skill": "marchio", "ult": "spezzatutto", "passive": "p_hunter"},
-	"mira": {"name": "Mira", "color": "blu", "cls": "warden", "rarity": 1, "skill": "purifica", "ult": "rinascita", "passive": "p_swap"},
-	"rex": {"name": "Rex", "color": "rosso", "cls": "striker", "rarity": 0, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk"},
-	"ivo": {"name": "Ivo", "color": "blu", "cls": "striker", "rarity": 1, "skill": "marchio", "ult": "spezzatutto", "passive": "p_swap"},
-	"sera": {"name": "Sera", "color": "verde", "cls": "warden", "rarity": 2, "skill": "barriera", "ult": "rinascita", "passive": "p_hunter"},
-	"tana": {"name": "Tana", "color": "giallo", "cls": "vanguard", "rarity": 3, "skill": "provoca", "ult": "bastione", "passive": "p_hunter"},
+	"kira": {"name": "Kira", "color": "viola", "cls": "striker", "rarity": 1, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk", "faction": "rondini"},
+	"dax": {"name": "Dax", "color": "rosso", "cls": "vanguard", "rarity": 0, "skill": "provoca", "ult": "bastione", "passive": "p_hp", "faction": "libracorp"},
+	"elle": {"name": "Elle", "color": "verde", "cls": "warden", "rarity": 0, "skill": "cura", "ult": "rinascita", "passive": "p_swap", "faction": "magabondi"},
+	"bruno": {"name": "Bruno", "color": "blu", "cls": "vanguard", "rarity": 0, "skill": "barriera", "ult": "bastione", "passive": "p_hp", "faction": "libracorp"},
+	"nova": {"name": "Nova", "color": "giallo", "cls": "striker", "rarity": 1, "skill": "marchio", "ult": "spezzatutto", "passive": "p_hunter", "faction": "rondini"},
+	"mira": {"name": "Mira", "color": "blu", "cls": "warden", "rarity": 1, "skill": "purifica", "ult": "rinascita", "passive": "p_swap", "faction": "libracorp"},
+	"rex": {"name": "Rex", "color": "rosso", "cls": "striker", "rarity": 0, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk", "faction": "rondini"},
+	"ivo": {"name": "Ivo", "color": "blu", "cls": "striker", "rarity": 1, "skill": "marchio", "ult": "spezzatutto", "passive": "p_swap", "faction": "magabondi", "style": "atipico"},
+	"sera": {"name": "Sera", "color": "verde", "cls": "warden", "rarity": 2, "skill": "barriera", "ult": "rinascita", "passive": "p_hunter", "faction": "rondini"},
+	"tana": {"name": "Tana", "color": "giallo", "cls": "vanguard", "rarity": 3, "skill": "provoca", "ult": "bastione", "passive": "p_hunter", "faction": "libracorp"},
 }
 
 # Fazione e stile di un operatore (campi opzionali "faction" e "style" in CHARACTERS; l'entry del roster puo' avere

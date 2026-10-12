@@ -260,6 +260,8 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		defender["gauge"] = mini(BattleTypes.GAUGE_MAX, int(defender["gauge"]) + BattleTypes.GAUGE_ON_DAMAGED)
 	if int(defender["hp"]) <= 0:
 		_on_down(defender, events)
+	else:
+		Factions.on_hit_taken(state, defender)
 
 
 static func _on_down(u: Dictionary, events: Array) -> void:

@@ -34,7 +34,7 @@ const FACTIONS: Dictionary = {
 		"idea": "Resiste, risponde ai colpi e spara con munizioni contate. I poteri vengono dall'equipaggiamento.",
 		"win": "Vinci a lungo termine: il boss si spreca sui tuoi bersagli resistenti e tu rispondi a ogni suo colpo.",
 		"needs": ["Schiera piu' operatori LibraCorp: ogni aura si somma (tetto +25% difesa).", "Metti in squadra un leggendario o epico: da' l'aura piu' grande.", "Anche i comuni contano: ognuno aggiunge la sua parte.", "Resisti e rispondi: guardia e provocazione, poi contrattacca."],
-		"now": "Aura DIFESA (cresce con la rarita', tetto +25%). Classi Vanguard e Warden gia' pronti.",
+		"now": "Aura DIFESA (cresce con la rarita', tetto +25%). PROTOCOLLO: chi viene colpito e resta in piedi prende +5% DIF e VEL per il round dopo (una volta per turno, solo gli ortodossi).",
 		"soon": "Munizioni, mira e colpo alla testa, contrattacchi, reazioni, azioni extra.",
 	},
 	"rondini": {

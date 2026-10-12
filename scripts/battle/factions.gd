@@ -178,6 +178,21 @@ static func aura_text(u: Dictionary) -> String:
 	return ", ".join(parts)
 
 
+# Tratti a evento. Protocollo (LibraCorp): chi viene colpito e resta in piedi prende +5% DIF e +5% VEL per il round dopo.
+# add_mod rinnova invece di sommare, quindi vale al massimo una volta per turno.
+const PROTOCOL_HIT_PM: int = 50
+
+
+static func on_hit_taken(state: Dictionary, defender: Dictionary) -> void:
+	if str(defender.get("faction", "")) != "libracorp" or str(defender.get("side", "")) != "player":
+		return
+	if is_suppressed(state, "libracorp") or str(defender.get("style", "ortodosso")) != "ortodosso":
+		return
+	add_mod(defender, "protocollo_def", "def", PROTOCOL_HIT_PM, 2)
+	add_mod(defender, "protocollo_spd", "spd", PROTOCOL_HIT_PM, 2)
+	refresh(state)
+
+
 # Il colpo e' critico? Deterministico: dipende solo dal seme e da cio' che sta accadendo, cosi' host e client
 # vedono lo stesso risultato e non si consuma il generatore dei tiri (chi non ha critico non cambia nulla).
 static func rolls_crit(state: Dictionary, attacker: Dictionary, defender: Dictionary, salt: int) -> bool:

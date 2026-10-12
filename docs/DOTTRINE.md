@@ -75,3 +75,16 @@ Idee (bozza):
 I testi che il giocatore legge (bottone STRATEGIE nell'archivio operatori) stanno in `scripts/battle/strategy_info.gd`:
 per ogni classe cosa fa e cosa serve perche' funzioni; per ogni fazione l'idea, la condizione di vittoria, cosa deve fare
 il giocatore, cosa c'e' gia' nel gioco e cosa arriva. Quando una meccanica viene implementata, spostarla da "in arrivo" a "gia' nel gioco".
+
+## Assegnazione provvisoria agli operatori attuali (da confermare)
+
+| Fazione | Operatori |
+|---|---|
+| LibraCorp | Dax, Bruno, Mira, Tana (leggendaria) |
+| Rondini | Kira, Nova, Rex, Sera |
+| Magabondi | Elle, Ivo (atipico per scelta) |
+| Kairos | nessuno: sono i nemici |
+
+Primo tratto in gioco, **Protocollo** (LibraCorp ortodossi): chi viene colpito e resta in piedi prende +5% difesa e velocita'
+per il round dopo, una volta per turno. Gli atipici non lo hanno. In battaglia, sotto ogni operatore si vedono fazione e aure attive.
+Decisioni prese in autonomia (da rivedere): riposte come contrattacco (da fare), munizioni rimandate, aura delle Rondini sul critico.
