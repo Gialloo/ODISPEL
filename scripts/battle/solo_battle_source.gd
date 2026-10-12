@@ -61,11 +61,11 @@ func finish() -> Dictionary:
 		MissionConfig.endless_carry = Endless.carry_from(battle) if won else {}
 		if Endless.record(roster, endless_floor, won):
 			Notify.success("NUOVO RECORD: PIANO %d" % endless_floor)
-	RosterState.apply_rewards(roster, rewards)
 	if daily_mod != "" and won and Daily.record_win(roster):
 		daily_first = true
 		rewards = Daily.scale_rewards(rewards, Daily.reward_mult(roster))
 		Notify.success("SFIDA DEL GIORNO SUPERATA · SERIE %d" % Daily.streak(roster))
+	RosterState.apply_rewards(roster, rewards)
 	if won and endless_floor == 0 and daily_mod == "":
 		if RosterState.mark_cleared(roster, boss_id, tier):
 			for line in RosterState.unlock_news(boss_id, tier):

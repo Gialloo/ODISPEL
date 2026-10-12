@@ -133,3 +133,16 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
 - **Evocazioni** (`state["summons"]`): torretta e drone di Angela. Sparano a fine round per -1 munizione; a secco la torretta esplode sul boss e il drone dà scudi alla squadra.
 - **Ronda** (Rondini, `Factions.ronda_*`): con aura attiva la Rondine ha lo stato `ronda` (+8% ATK/VEL). Il suo prossimo attacco con danno esce potenziato (x1,3, x1,15 in piu' per abilita' uniche e ultimate, +25% critico), poi si ricarica in 2 round.
 - **Grafica**: `battle_screen._event_fx` (popup e scariche per marks, debuff, buff, dodge, summon*, ronda); `battle_stage` disegna mirini sul boss, frecce dei malus, torretta/drone, ali della Ronda e contorno tratteggiato del nascosto. Prova visiva: `tools/marks_shot.gd`.
+
+## Ciclo Infinito, Sfida del giorno, ventaglio
+
+- **Ciclo Infinito** (`scripts/roster/endless.gd`): piani a scalare; `Endless.apply` scala il boss. Dal piano 2 i PV della squadra
+  si portano dietro (`carry_from` / `apply_carry`, in `MissionConfig.endless_carry`): +25% dei PV massimi di recupero,
+  chi era caduto torna al 30%. `tools/endless_sim.gd` simula quanti piani regge una squadra IA per livello.
+- **Sfida del giorno** (`scripts/roster/daily.gd`): boss e modificatore dalla data (`hash(data)`), scala dei nemici = piano 5.
+  La prima vittoria del giorno paga premi x3 (+10% per giorno di fila, fino a +50%); `roster["daily"] = {day, streak, best}`.
+  Si avvia dalla schermata missioni; `MissionConfig.daily_mod != ""` la distingue dal Ciclo Infinito.
+- **Ventaglio dei comandi** (`scripts/ui/fan_menu.gd`): i comandi dell'operatore attivo si dispongono su un arco che parte
+  dal suo torace sul palco (`BattleStage.party_pose`). `_refresh_orders` ricostruisce i pulsanti solo se cambia la firma.
+- **MVP** a fine battaglia: `battle_screen._dmg_by` somma i danni al boss per operatore.
+- Suoni nuovi (`tools/make_audio.py --combat`): mark, mark_burst, dodge, ronda, deploy.

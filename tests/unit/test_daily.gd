@@ -42,5 +42,28 @@ func _init() -> void:
 	_check("MissionConfig riconosce la sfida", MissionConfig.daily_mod != "" and MissionConfig.endless_floor == 0)
 	MissionConfig.set_mission("distributore", 0)
 	_check("missione normale la spegne", MissionConfig.daily_mod == "")
+	# battaglia vera: la sfida paga una volta sola, con serie e premi maggiorati
+	Objectives.enabled = false
+	var rr: Dictionary = RosterState.new_roster()
+	var src: SoloBattleSource = SoloBattleSource.new()
+	src.save_path = "user://test_daily_tmp.json"
+	src.daily_mod = "resistente"
+	src.start(rr, "distributore", 11, 0)
+	var boss: Dictionary = BattleState.boss(src.battle)
+	boss["hp"] = 0
+	src.battle["winner"] = "players"
+	var coins0: int = int(rr["coins"])
+	var prize: Dictionary = src.finish()
+	_check("la prima vittoria del giorno e' segnata", src.daily_first and Daily.done_today(rr))
+	_check("premi maggiorati", int(rr["coins"]) - coins0 == int(prize["coins"]) and int(prize["coins"]) > 0)
+	_check("il Ciclo Infinito non e' toccato", not rr.has("endless") or int(rr["endless"].get("best", 0)) == 0)
+	var src2: SoloBattleSource = SoloBattleSource.new()
+	src2.save_path = "user://test_daily_tmp.json"
+	src2.daily_mod = "resistente"
+	src2.start(rr, "distributore", 12, 0)
+	src2.battle["winner"] = "players"
+	src2.finish()
+	_check("la seconda vittoria non paga il bonus", not src2.daily_first)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_daily_tmp.json"))
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)
