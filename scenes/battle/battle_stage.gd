@@ -808,6 +808,15 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 			var dy: float = foot_y - 262.0 + sin(_t * 4.0) * 4.0
 			draw_colored_polygon(PackedVector2Array([Vector2(cx, dy + 14.0), Vector2(cx - 11.0, dy), Vector2(cx, dy - 14.0), Vector2(cx + 11.0, dy)]), BattleTheme.POP)
 
+	if alive and int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
+		# ultimate pronta: aura a raggi e scritta che pulsa
+		var beat: float = 0.5 + 0.5 * sin(_t * 7.0)
+		for r in 10:
+			var ang: float = float(r) / 10.0 * TAU + _t * 0.8
+			var d0: Vector2 = Vector2(cos(ang), sin(ang) * 1.4)
+			draw_line(Vector2(cx, foot_y - 100.0) + d0 * 78.0, Vector2(cx, foot_y - 100.0) + d0 * (104.0 + 14.0 * beat), Color(BattleTheme.POP, 0.55 + 0.3 * beat), 4.0)
+		_text(BattleTheme.display(), Vector2(cx - 34.0, foot_y - 232.0 - 6.0 * beat), "ULT PRONTA", 18, BattleTheme.POP)
+
 	if not alive:
 		# a terra
 		draw_rect(Rect2(cx - 62.0, foot_y - 26.0, 124.0, 24.0), body_col)
