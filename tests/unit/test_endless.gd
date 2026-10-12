@@ -51,5 +51,21 @@ func _init() -> void:
 	MissionConfig.set_mission("distributore", 0)
 	_check("missione normale azzera il piano", MissionConfig.endless_floor == 0)
 	_check("salvataggio valido col record", RosterState.validate(roster) == "")
+	var s2: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("kira", 1, 0), BattleContent.default_entry("dax", 1, 0)]}], "distributore", 5, 0)
+	var ka: Dictionary = BattleState.unit(s2, "a:kira")
+	var da: Dictionary = BattleState.unit(s2, "a:dax")
+	ka["hp"] = 10
+	da["hp"] = 0
+	var carry: Dictionary = Endless.carry_from(s2)
+	_check("carry registra i PV", int(carry["a:kira"]) == 10 and int(carry["a:dax"]) == 0)
+	var s3: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("kira", 1, 0), BattleContent.default_entry("dax", 1, 0)]}], "distributore", 6, 0)
+	Endless.apply_carry(s3, carry)
+	var k3: Dictionary = BattleState.unit(s3, "a:kira")
+	var d3: Dictionary = BattleState.unit(s3, "a:dax")
+	_check("PV riportati con un po' di recupero", int(k3["hp"]) > 10 and int(k3["hp"]) < int(k3["max_hp"]))
+	_check("il caduto torna a ~30%", int(d3["hp"]) >= 1 and int(d3["hp"]) < int(d3["max_hp"]) / 2)
+	MissionConfig.endless_carry = carry
+	MissionConfig.set_endless(1)
+	_check("al piano 1 il riporto si azzera", MissionConfig.endless_carry.is_empty())
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)

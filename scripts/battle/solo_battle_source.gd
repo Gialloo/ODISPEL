@@ -30,6 +30,8 @@ func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier:
 	battle = RosterState.create_solo_battle(roster, "IO", boss_id, seed_value, 2, tier)
 	if endless_floor > 0:
 		Endless.apply(battle, endless_floor)
+		if endless_floor > 1:
+			Endless.apply_carry(battle, MissionConfig.endless_carry)
 	battle_updated.emit()
 
 
@@ -52,6 +54,7 @@ func finish() -> Dictionary:
 	var won: bool = str(battle["winner"]) == "players"
 	if endless_floor > 0:
 		rewards = Endless.scale_rewards(rewards, endless_floor) if won else rewards
+		MissionConfig.endless_carry = Endless.carry_from(battle) if won else {}
 		if Endless.record(roster, endless_floor, won):
 			Notify.success("NUOVO RECORD: PIANO %d" % endless_floor)
 	RosterState.apply_rewards(roster, rewards)

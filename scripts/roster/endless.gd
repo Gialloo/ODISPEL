@@ -14,6 +14,8 @@ const ATK_STEP: float = 0.04            # +4% attacco per piano
 const REWARD_STEP: float = 0.12         # +12% premi per piano
 const BONUS_EVERY: int = 5              # ogni 5 piani, materiali extra
 const MOD_FROM: int = 3                 # primo piano con modificatore
+const CARRY_HEAL: float = 0.25          # tra un piano e l'altro la squadra recupera il 25% dei PV massimi
+const CARRY_REVIVE: float = 0.30        # chi e' caduto torna con il 30%
 
 const MODS: Array = [
 	{"id": "corazzato", "name": "CORAZZATO", "desc": "DIFESA +30%"},
@@ -125,3 +127,28 @@ static func record(roster: Dictionary, floor_n: int, won: bool) -> bool:
 static func start(floor_n: int = 1) -> void:
 	MissionConfig.set_endless(floor_n)
 	SceneRouter.go("battle", true)
+
+
+# PV a fine piano: {unit_id: hp} di tutta la squadra (anche IA e riserve).
+static func carry_from(state: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for uid in state["units"]:
+		var u: Dictionary = state["units"][uid]
+		if str(u["side"]) == "player":
+			out[str(uid)] = int(u["hp"])
+	return out
+
+
+# Al piano successivo: i PV si portano dietro, con un po' di recupero; i caduti tornano a meta' strada.
+static func apply_carry(state: Dictionary, carry: Dictionary) -> void:
+	for uid in carry:
+		var u: Dictionary = BattleState.unit(state, str(uid))
+		if u.is_empty():
+			continue
+		var mx: int = int(u["max_hp"])
+		var hp: int = int(carry[uid])
+		if hp <= 0:
+			hp = int(ceil(float(mx) * CARRY_REVIVE))
+		else:
+			hp = hp + int(ceil(float(mx) * CARRY_HEAL))
+		u["hp"] = clampi(hp, 1, mx)

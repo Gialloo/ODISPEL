@@ -34,7 +34,8 @@ var _tutorial: TutorialOverlay = null
 var _tele_label: Label
 var _tele_target: Label
 var _ops_box: VBoxContainer
-var _orders_box: VBoxContainer
+var _orders_box: FanMenu
+var _fan_key: String = ""
 var _log_label: RichTextLabel
 var _overlay: Control
 var _rec_dot: ColorRect
@@ -82,7 +83,7 @@ func tutorial_steps() -> Array:
 		"text": "La tua squadra: PV, energia e carica dell'ultimate di ciascuno. Uno solo e' in campo (il triangolo). Clicca un compagno in panchina per scambiarlo: il cambio e' gratis e avviene prima di tutto. Chi sta in panchina recupera piu' energia."},
 		{"title": "COME FUNZIONA UN TURNO", "target": _panel_of(_turn_box),
 		"text": "Ogni round TU scegli solo per il tuo operatore in campo. I compagni IA scelgono da soli (non copiano te) e la loro scelta e' gia' visibile nell'ORDINE DEL TURNO. Poi si risolve tutto in fila per priorita' e velocita': il segnalino rosso mostra chi agisce e chi subisce. Dietro di te vedi in silhouette il tuo party in panchina (solo i tuoi operatori)."},
-		{"title": "GLI ORDINI", "target": _panel_of(_orders_box),
+		{"title": "GLI ORDINI", "target": _orders_box,
 		"text": "Scegli cosa fare: ATTACCO, GUARDIA (dimezza i danni), le abilita' (costano energia) e l'ULTIMATE, che si carica combattendo. Scorciatoie: tasti 1-4. I colori contano: un colpo del colore giusto fa +50% di danni, quello sbagliato -33%."},
 		{"title": "CLASSI E FAZIONI", "target": null,
 		"text": "STRIKER fa danno, VANGUARD regge i colpi, WARDEN cura e protegge. Le FAZIONI (LibraCorp, Rondini, Magabondi, Kairos) danno bonus ai compagni dello stesso gruppo: piu' sono rari, piu' il bonus e' grande. Nell'archivio operatori trovi STRATEGIE, ARCHIVIO e la LEGENDA di ogni personaggio."},
@@ -352,15 +353,20 @@ func _build_operators() -> void:
 
 
 func _build_orders() -> void:
-	var panel := HudPanel.new().setup("", BattleTheme.RD)
-	panel.bare = true
-	panel.margins = Vector4(14.0, 12.0, 14.0, 8.0)
-	panel.cut = 20.0
-	add_child(panel)
-	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-700, -392, -20, -18) if TouchUi.active() else Vector4(-540, -246, -20, -18))
-	_orders_box = VBoxContainer.new()
-	_orders_box.add_theme_constant_override("separation", 7)
-	panel.set_content(_orders_box)
+	_orders_box = FanMenu.new()
+	_orders_box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_orders_box)
+
+
+# Il ventaglio nasce dal torace dell'operatore del giocatore, dove lo disegna il palco.
+func _fan_origin() -> Vector2:
+	var idx: int = 0
+	var players: Array = shown.get("players", [])
+	for i in players.size():
+		if str(players[i]["id"]) == str(source.local_player_id):
+			idx = i
+	var pose: Vector3 = _stage.party_pose(idx, players.size())
+	return Vector2(pose.x + 36.0, pose.y - 95.0 * pose.z)
 
 
 func _build_log() -> void:
@@ -657,6 +663,7 @@ func _refresh_orders() -> void:
 			_orders_box.remove_child(c)
 			c.queue_free()
 		_order_buttons.clear()
+		_orders_box.clear_arc()
 		return
 	var uid: String = pending_swap if pending_swap != "" else str(me["active"])
 	var u: Dictionary = BattleState.unit(shown, uid)
@@ -675,21 +682,22 @@ func _refresh_orders() -> void:
 		_orders_box.remove_child(c)
 		c.queue_free()
 	_order_buttons.clear()
-	_orders_box.add_child(BattleTheme.make_label("ORDINE PER %s" % str(u["name"]).to_upper(), 14, BattleTheme.WH, true))
-	if pending_swap != "":
-		var info := BattleTheme.make_label("CAMBIO » %s (GRATIS)" % str(u["name"]).to_upper(), 13, BattleTheme.WH)
-		_orders_box.add_child(info)
+	var touch: bool = TouchUi.active()
+	_orders_box.origin = _fan_origin()
+	_orders_box.tint = BattleTheme.unit_color(str(u["color"]))
+	var title := BattleTheme.make_label(("CAMBIO » %s (GRATIS)" if pending_swap != "" else "ORDINE PER %s") % str(u["name"]).to_upper(), 14, BattleTheme.WH, true)
+	_orders_box.add_child(title)
 	var entries: Array = [{"id": "attack", "kind": "primary"}, {"id": "guard", "kind": "normal"}]
 	for s in u["skills"]:
 		entries.append({"id": str(s), "kind": "normal"})
 	if str(u["ult"]) != "":
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
-	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", 8)
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 6)
+	var bh: float = 56.0 if touch else 42.0
+	var bw: float = 232.0 if touch else 196.0
+	var pts: Array = _orders_box.layout(entries.size(), bh, 6.0, 340.0 if touch else 290.0)
+	title.position = Vector2(float(pts[0].x) + 6.0, float(pts[0].y) - bh * 0.5 - 24.0)
+	var animate: bool = _fan_key != "%s|%d" % [uid, int(shown["round"])]
+	_fan_key = "%s|%d" % [uid, int(shown["round"])]
 	var n: int = 1
 	for e in entries:
 		var move_id: String = str(e["id"])
@@ -708,36 +716,34 @@ func _refresh_orders() -> void:
 		HintCard.bind(b, func() -> Dictionary: return Hints.move_card(BattleState.unit(shown, order_unit_id), move_id, order_err), self, true)
 		var primary: bool = str(e["id"]) == "attack"
 		var is_guard: bool = str(e["id"]) == "guard"
-		b.custom_minimum_size = Vector2(0, (TouchUi.COMFY_HEIGHT if (primary or is_guard) else TouchUi.MIN_HEIGHT) if TouchUi.active() else (48.0 if (primary or is_guard) else 40.0))
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		if primary:
-			b.size_flags_stretch_ratio = 1.7
+		var w: float = bw + (28.0 if primary else 0.0)
+		b.custom_minimum_size = Vector2(w, bh)
+		b.size = Vector2(w, bh)
 		# il testo non si taglia mai: si sceglie il carattere piu' grande che ci sta nel pulsante
-		var size_base: int = 26 if primary else (20 if is_guard else 17)
-		var panel_w: float = (680.0 if TouchUi.active() else 520.0) - 36.0
-		var cell_w: float = (panel_w - 8.0) / 2.0
-		var avail: float = (panel_w - 8.0) * (1.7 / 2.7) if primary else ((panel_w - 8.0) / 2.7 if is_guard else cell_w)
-		avail -= 74.0        # margini del pulsante e icona
+		var size_base: int = 22 if primary else 17
+		var avail: float = w - 74.0        # margini del pulsante e icona
 		var fsize: int = size_base
-		while fsize > (14 if TouchUi.active() else 10) and BattleTheme.display().get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize).x > avail:
+		while fsize > (14 if touch else 10) and BattleTheme.display().get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize).x > avail:
 			fsize -= 1
 		BattleTheme.style_button(b, str(e["kind"]) if not is_guard else "normal", fsize)
-		b.add_theme_font_size_override("font_size", fsize)      # il minimo touch non deve far uscire il testo dal pulsante
+		b.add_theme_font_size_override("font_size", fsize)
 		b.disabled = err != "" or locked or animating
-		var oic: GameIcon = GameIcon.attach(b, GameIcon.move_key(move_id), BattleTheme.WH if primary else GameIcon.move_color(move_id), 30.0 if primary else 20.0)
+		var oic: GameIcon = GameIcon.attach(b, GameIcon.move_key(move_id), BattleTheme.WH if primary else GameIcon.move_color(move_id), 26.0 if primary else 20.0)
 		oic.modulate.a = 0.35 if b.disabled else 1.0
 		b.pressed.connect(_on_order_pressed.bind(move_id))
 		b.focus_mode = Control.FOCUS_NONE
-		if primary or is_guard:
-			top.add_child(b)
+		var target: Vector2 = Vector2(float(pts[n - 1].x) - 8.0, float(pts[n - 1].y) - bh * 0.5)
+		_orders_box.add_child(b)
+		if animate and DisplayServer.get_name() != "headless":
+			b.position = _orders_box.origin - Vector2(0.0, bh * 0.5)
+			b.modulate.a = 0.0
+			var tw: Tween = b.create_tween().set_parallel(true).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+			tw.tween_property(b, "position", target, 0.22).set_delay(0.025 * float(n - 1))
+			tw.tween_property(b, "modulate:a", 1.0, 0.14).set_delay(0.025 * float(n - 1))
 		else:
-			grid.add_child(b)
+			b.position = target
 		_order_buttons.append(b)
 		n += 1
-	_orders_box.add_child(top)
-	_orders_box.add_child(grid)
-	var hint_text: String = "TOCCA UN OPERATORE PER IL CAMBIO" if TouchUi.active() else "TASTI 1-%d · CLICCA UN OPERATORE PER IL CAMBIO" % (n - 1)
-	_orders_box.add_child(BattleTheme.make_label(hint_text, 11, BattleTheme.CY_DIM))
 
 
 # Un pulsante tenuto premuto ha aperto la sua scheda: quel rilascio non e' un comando.
