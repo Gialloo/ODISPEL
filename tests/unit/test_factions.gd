@@ -36,7 +36,7 @@ func _init() -> void:
 	e2["faction"] = ""
 	var plain: Dictionary = _state([e1, e2])
 	var k: Dictionary = _u(plain, "kira")
-	_check("senza fazione: nessuna aura", k["aura"].is_empty() and k["def"] == k["base"]["def"] and k["crit"] == 0)
+	_check("senza fazione: nessuna aura", k["aura"].is_empty() and k["def"] == k["base"]["def"] and k["crit"] == 60)   # solo il bonus del colore viola (INT)
 
 	# LibraCorp: leggendaria (50) + 2 comuni (10+10) = +7% DIF per tutti
 	var s: Dictionary = _state([_entry("kira", "libracorp", 3), _entry("dax", "libracorp", 0), _entry("elle", "libracorp", 0)])
@@ -119,7 +119,7 @@ func _init() -> void:
 	var st: Dictionary = _state([_entry("kira", "libracorp", 3), at])
 	var du: Dictionary = _u(st, "dax")
 	_check("atipico riceve meta' aura", int(du["aura"]["def"]) == 27)
-	_check("atipico: bonus personali", du["atk"] == int(round(float(du["base"]["atk"]) * 1.08)) and du["spd"] == int(round(float(du["base"]["spd"]) * 1.05)))
+	_check("atipico: bonus personali", du["atk"] == int(round(float(du["base"]["atk"]) * 1.18)) and du["spd"] == int(round(float(du["base"]["spd"]) * 1.05)))   # atipico +8% e rosso (STR) +10% di ATK
 	_check("atipico da' meta' aura", int(_u(st, "kira")["aura"]["def"]) == 55)
 
 	# roster: set_style e validazione anti-truffa
@@ -226,6 +226,7 @@ func _init() -> void:
 		kinds.append(str(x["t"]))
 	_check("Contrattacco: spende una munizione e colpisce il boss", kinds.has("counter") and lbd["ammo"] == BattleTypes.AMMO_MAX - 1 and bossu["hp"] < bhp)
 	lbd["ammo"] = 0
+	lbd["uniq"] = {}     # senza la passiva unica (le spine di Dax colpirebbero comunque il boss)
 	var before_hp: int = bossu["hp"]
 	BattleResolver._boss_act(lb, bossu, "scarica", "a", RNGState.new(), [])
 	_check("Senza munizioni non contrattacca", bossu["hp"] == before_hp)

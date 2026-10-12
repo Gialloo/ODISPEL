@@ -271,6 +271,8 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float,
 	dmg *= BattleTypes.color_multiplier(str(attacker["color"]), str(defender["color"]))
 	if defender["statuses"].has("mark"):
 		dmg *= BattleTypes.MARK_BONUS
+	dmg *= Archetypes.damage_mult(attacker, defender)
+	dmg *= Signatures.damage_mult(attacker, defender)
 	if str(attacker["side"]) == "boss" and float(attacker["hp"]) < float(attacker["max_hp"]) * BattleTypes.ENRAGE_BELOW:
 		dmg *= BattleTypes.ENRAGE_BONUS
 	if float(defender["hp"]) < float(defender["max_hp"]) * BattleTypes.ENRAGE_BELOW:
@@ -328,13 +330,25 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		hit_event["crit"] = true
 	events.append(hit_event)
 	if str(attacker["side"]) == "player":
-		attacker["gauge"] = mini(BattleTypes.GAUGE_MAX, int(attacker["gauge"]) + BattleTypes.GAUGE_ON_HIT)
+		attacker["gauge"] = mini(BattleTypes.GAUGE_MAX, int(attacker["gauge"]) + Archetypes.gauge_on_hit(attacker))
+		Archetypes.after_hit(attacker, crit)
 	if str(defender["side"]) == "player":
 		defender["gauge"] = mini(BattleTypes.GAUGE_MAX, int(defender["gauge"]) + BattleTypes.GAUGE_ON_DAMAGED)
+	var steal: float = Signatures.value(attacker, "lifesteal")
+	if steal > 0.0 and lost > 0 and BattleState.is_alive(attacker):
+		var got: int = mini(int(attacker["max_hp"]) - int(attacker["hp"]), int(round(float(lost) * steal)))
+		if got > 0:
+			attacker["hp"] = int(attacker["hp"]) + got
+			events.append({"t": "heal", "src": attacker["id"], "dst": attacker["id"], "amount": got})
 	if int(defender["hp"]) <= 0:
 		_on_down(defender, events)
 	else:
 		Factions.on_hit_taken(state, defender, events)
+		var thorn: float = Signatures.value(defender, "thorns")
+		if thorn > 0.0 and str(attacker["side"]) == "boss" and str(defender["side"]) == "player":
+			var back: int = maxi(1, int(round(float(defender["atk"]) * thorn)))
+			attacker["hp"] = maxi(0, int(attacker["hp"]) - back)
+			events.append({"t": "damage", "src": defender["id"], "dst": attacker["id"], "amount": back, "absorbed": 0, "thorns": true})
 
 
 # Munizioni: positivo = ricarica, negativo = si spendono. Resta tra 0 e il massimo dell'unita'.
@@ -393,8 +407,15 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		actor["energy"] = int(actor["energy"]) - int(move["cost"])
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
 	var link_n: int = _chain_link(state, actor, events)
+	var link_gain: float = BattleTypes.LINK_BONUS + Signatures.value(actor, "link_boost")
+	var awake_mult: float = Signatures.AWAKEN_ULT if (kind == "ult" and bool(actor.get("awake", false))) else 1.0
 	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
 
+	var gsh: float = Signatures.value(actor, "guard_shield")
+	if gsh > 0.0 and move_id == BattleTypes.ACTION_GUARD:
+		var gs_amount: int = int(round(float(actor["max_hp"]) * gsh))
+		actor["shield"] = int(actor["shield"]) + gs_amount
+		events.append({"t": "shield", "src": actor["id"], "dst": actor["id"], "amount": gs_amount})
 	if move.has("energy"):
 		actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + int(move["energy"]))
 	if move.has("self_status"):
@@ -423,14 +444,19 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		if not BattleState.is_alive(t):
 			continue
 		if move.has("mult"):
-			_hit(state, actor, t, float(move["mult"]) * (1.0 + BattleTypes.LINK_BONUS * float(link_n)), events, int(move.get("pierce", 0)), bonus)
+			_hit(state, actor, t, float(move["mult"]) * (1.0 + link_gain * float(link_n)) * awake_mult, events, int(move.get("pierce", 0)), bonus)
 		if move.has("heal"):
-			var amount: int = int(round(float(actor["atk"]) * float(move["heal"]) + bonus))
+			var amount: int = int(round((float(actor["atk"]) * float(move["heal"]) + bonus) * Archetypes.support_mult(actor) * awake_mult))
 			var before: int = int(t["hp"])
 			t["hp"] = mini(int(t["max_hp"]), before + amount)
 			events.append({"t": "heal", "src": actor["id"], "dst": t["id"], "amount": int(t["hp"]) - before})
+			var hs: float = Signatures.value(actor, "heal_shield")
+			if hs > 0.0:
+				var extra: int = int(round(float(amount) * hs))
+				t["shield"] = int(t["shield"]) + extra
+				events.append({"t": "shield", "src": actor["id"], "dst": t["id"], "amount": extra})
 		if move.has("shield") and str(move["target"]) != "enemy":
-			var sh: int = int(round(float(actor["atk"]) * float(move["shield"]) + bonus))
+			var sh: int = int(round((float(actor["atk"]) * float(move["shield"]) + bonus) * Archetypes.support_mult(actor) * awake_mult))
 			t["shield"] = int(t["shield"]) + sh
 			events.append({"t": "shield", "src": actor["id"], "dst": t["id"], "amount": sh})
 		if bool(move.get("cleanse", false)):
@@ -438,7 +464,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 			events.append({"t": "cleanse", "unit": t["id"]})
 		if move.has("status") and BattleState.is_alive(t):
 			for s in move["status"]:
-				_add_status(t, str(s), int(move["status"][s]), events)
+				_add_status(t, str(s), int(move["status"][s]) + Archetypes.status_extra(actor, str(s)), events)
 
 
 static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, target_pid: String, rng: RNGState, events: Array) -> void:
@@ -512,13 +538,31 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 			u["statuses"].erase(s)
 		u["shield"] = 0
 
+	# passive uniche di fine round: rigenerazione, scudo che riparte, carica dell'ultimate
+	for uid in units:
+		var pu: Dictionary = units[uid]
+		if not BattleState.is_alive(pu) or str(pu["side"]) != "player":
+			continue
+		var rg: float = Signatures.value(pu, "regen")
+		if rg > 0.0:
+			var before_hp: int = int(pu["hp"])
+			pu["hp"] = mini(int(pu["max_hp"]), before_hp + int(round(float(pu["max_hp"]) * rg)))
+			if int(pu["hp"]) > before_hp:
+				events.append({"t": "heal", "src": uid, "dst": uid, "amount": int(pu["hp"]) - before_hp})
+		var rs: float = Signatures.value(pu, "round_shield")
+		if rs > 0.0:
+			pu["shield"] = int(round(float(pu["max_hp"]) * rs))
+		var gr: float = Signatures.value(pu, "gauge_regen")
+		if gr > 0.0:
+			pu["gauge"] = mini(BattleTypes.GAUGE_MAX, int(pu["gauge"]) + int(round(gr)))
+
 	# energia: chi sta in panchina recupera di piu'
 	for p in state["players"]:
 		for uid in p["team"]:
 			var u: Dictionary = BattleState.unit(state, uid)
 			if not BattleState.is_alive(u):
 				continue
-			var gain: int = BattleTypes.REGEN_ACTIVE if uid == p["active"] else BattleTypes.REGEN_BENCH
+			var gain: int = (BattleTypes.REGEN_ACTIVE if uid == p["active"] else BattleTypes.REGEN_BENCH) + Archetypes.round_energy(u)
 			u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + gain)
 
 	# se l'attivo e' caduto entra il compagno con piu' vita

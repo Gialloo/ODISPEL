@@ -180,9 +180,9 @@ func _test_screen() -> void:
 	await process_frame
 
 	_check("schermata: stato mostrato", not scene.shown.is_empty() and scene.shown["round"] == 1)
-	_check("schermata: tasti degli ordini (attacco, guardia, skill, ultimate)", scene._order_buttons.size() == 4)
+	_check("schermata: tasti degli ordini (attacco, guardia, 2 skill, ultimate)", scene._order_buttons.size() == 5)
 	_check("schermata: attacco e guardia abilitati", not scene._order_buttons[0].disabled and not scene._order_buttons[1].disabled)
-	_check("schermata: l'ultimate e' bloccata a barra vuota", scene._order_buttons[3].disabled)
+	_check("schermata: l'ultimate e' bloccata a barra vuota", scene._order_buttons[4].disabled)
 	_check("schermata: bersaglio annunciato", "SCARICA" in scene._tele_label.text)
 	_check("schermata: nome del boss e vita", "1350" in scene._boss_hp.text or "INTEGRITA" in scene._boss_hp.text)
 	_check("schermata: righe iniziali nel registro", scene.log_lines.size() >= 2)

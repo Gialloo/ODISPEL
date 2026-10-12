@@ -58,6 +58,14 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	u["skills"] = entry.get("skills", []).duplicate()
 	u["ult"] = str(entry.get("ult", ""))
 	u["passives"] = entry.get("passives", []).duplicate()
+	# abilita' e passiva uniche del personaggio; il rank le potenzia
+	var rank: int = int(entry.get("rank", 0))
+	u["rank"] = rank
+	for sid in Signatures.skills_for(char_id, rank):
+		if not u["skills"].has(sid):
+			u["skills"].append(sid)
+	u["uniq"] = Signatures.effects_for(char_id, rank)
+	u["awake"] = rank >= Signatures.AWAKEN_RANK
 	u["rarity"] = int(entry.get("rarity", def.get("rarity", 0)))
 	u["faction"] = BattleContent.faction_of(char_id, entry)
 	if str(u["faction"]) == "libracorp":
@@ -69,6 +77,9 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	u["base"] = {"atk": int(stats["atk"]), "def": int(stats["def"]), "spd": int(stats["spd"]), "crit": 0}
 	u["aura"] = {}
 	u["mods"] = []
+	Archetypes.setup(u)
+	if bool(u.get("awake", false)):
+		u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + Signatures.AWAKEN_GAUGE)
 	return u
 
 

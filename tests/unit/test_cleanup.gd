@@ -92,7 +92,7 @@ func _run() -> void:
 	_check("ordini: un pulsante per azione base, skill e ultimate", scene._order_buttons.size() == 2 + (shown_unit["skills"] as Array).size() + 1)
 	scene._on_unit_pressed(bench)
 	await process_frame
-	_check("ordini: annullare il cambio rimette i pulsanti", scene._order_buttons.size() == 4 and scene._orders_box.get_child_count() > 0)
+	_check("ordini: annullare il cambio rimette i pulsanti", scene._order_buttons.size() == 2 + (BattleState.unit(scene.shown, scene.shown["players"][0]["active"])["skills"] as Array).size() + 1 and scene._orders_box.get_child_count() > 0)
 	scene.locked = true
 	scene._refresh_orders()
 	_check("ordini: bloccando la schermata i pulsanti si spengono", scene._order_buttons[0].disabled)

@@ -160,6 +160,8 @@ static func refresh(state: Dictionary) -> void:
 			if is_atypical(u):
 				for st in ATYPICAL_SELF_PM:
 					total[st] = int(total.get(st, 0)) + int(ATYPICAL_SELF_PM[st])
+			for m in Archetypes.mods_for(u):
+				total[str(m["stat"])] = int(total.get(str(m["stat"]), 0)) + int(m["pm"])
 			for m in u["mods"]:
 				total[str(m["stat"])] = int(total.get(str(m["stat"]), 0)) + int(m["pm"])
 			for s in MULT_STATS:
@@ -215,7 +217,7 @@ static func on_hit_taken(state: Dictionary, defender: Dictionary, events: Array 
 # Il colpo e' critico? Deterministico: dipende solo dal seme e da cio' che sta accadendo, cosi' host e client
 # vedono lo stesso risultato e non si consuma il generatore dei tiri (chi non ha critico non cambia nulla).
 static func rolls_crit(state: Dictionary, attacker: Dictionary, defender: Dictionary, salt: int) -> bool:
-	var chance: int = int(attacker.get("crit", 0))
+	var chance: int = int(attacker.get("crit", 0)) + Signatures.crit_bonus(attacker, defender)
 	if chance <= 0:
 		return false
 	if chance >= 1000:

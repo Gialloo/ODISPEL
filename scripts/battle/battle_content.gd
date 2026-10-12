@@ -67,6 +67,11 @@ static func _build_moves() -> Dictionary:
 			m[str(f["key"])] = values[i]
 			m["bonus"] = {"stat": f["stat"], "pct": f["pct"][i]}
 			out[id] = m
+	# abilita' uniche dei personaggi: prendono la rarita' del proprietario e non cadono come premio
+	for mid in Signatures.MOVES:
+		var um: Dictionary = Signatures.MOVES[mid].duplicate(true)
+		um["rarity"] = int(CHARACTERS.get(str(um["unique"]), {}).get("rarity", 0))
+		out[mid] = um
 	return out
 
 
@@ -106,7 +111,7 @@ const CLASS_STATS: Dictionary = {
 	"warden": {"hp": 1000, "atk": 80, "def": 30, "spd": 100},
 }
 const LEVEL_BONUS: float = 0.08
-const RANK_BONUS: float = 0.05
+const RANK_BONUS: float = 0.08
 # Un operatore piu' raro e' piu' forte di base: moltiplicatore delle statistiche
 # per rarita' (comune, rara, epica, leggendaria). Sale come l'equipaggiamento.
 const RARITY_STAT_MULT: Array = [1.0, 1.08, 1.18, 1.32]
@@ -375,7 +380,7 @@ static func roll_drops(boss_id: String, rng: RNGState, tier: int = 0) -> Array:
 		var pool: Array = []
 		for id in MOVES:
 			var m: Dictionary = MOVES[id]
-			if str(m["kind"]) != "basic" and int(m["rarity"]) == rarity:
+			if str(m["kind"]) != "basic" and int(m["rarity"]) == rarity and not m.has("unique"):
 				pool.append({"kind": "move", "id": id, "rarity": rarity})
 		for id in PASSIVES:
 			if int(PASSIVES[id]["rarity"]) == rarity:
