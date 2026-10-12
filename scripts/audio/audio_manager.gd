@@ -96,11 +96,26 @@ func _on_node_added(node: Node) -> void:
 		var b: BaseButton = node
 		b.pressed.connect(_on_button_pressed.bind(b))
 		b.mouse_entered.connect(_on_button_hover.bind(b))
+		ButtonFx.hook(b)
+		b.gui_input.connect(_on_button_input.bind(b))
 
 
 func _on_button_pressed(b: BaseButton) -> void:
 	if not b.disabled:
-		play("click", randf_range(0.97, 1.04))
+		var snd: String = ButtonFx.sound_for(b)
+		play(snd, randf_range(0.97, 1.04) if snd == "click" else 1.0)
+
+
+# Premere un pulsante spento: suono d'errore e una piccola scossa, cosi' si capisce che non si puo'.
+func _on_button_input(event: InputEvent, b: BaseButton) -> void:
+	if not b.disabled or not (event is InputEventMouseButton or event is InputEventScreenTouch):
+		return
+	if event is InputEventMouseButton and not (event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if event is InputEventScreenTouch and not event.pressed:
+		return
+	play("error", 1.0, -8.0)
+	ButtonFx.shake(b)
 
 
 func _on_button_hover(b: BaseButton) -> void:

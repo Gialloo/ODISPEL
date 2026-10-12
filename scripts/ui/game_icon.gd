@@ -85,6 +85,38 @@ static func currency_color(k: String) -> Color:
 			return Color("#c9dde2")
 
 
+# Riga "icona + testo" (risorse, premi, elenchi).
+static func line(icon_key: String, col: Color, text: String, font_size: int = 18, text_color: Color = BattleTheme.WH, px: float = 0.0) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var size_px: float = px if px > 0.0 else float(font_size) + 4.0
+	row.add_child(GameIcon.new().setup(icon_key, col, size_px))
+	var l := BattleTheme.make_label(text, font_size, text_color)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(l)
+	return row
+
+
+# Icona e colore di una riga di premio ("+300 MONETE", "PEZZO: ARMA RARA", ...).
+static func reward_key(text: String) -> Array:
+	var t: String = text.to_upper()
+	if "MONETE" in t:
+		return ["coin", currency_color("coin")]
+	if "NUCLE" in t:
+		return ["nucleo", currency_color("nucleo")]
+	if "LEGH" in t or "LEGA" in t:
+		return ["lega", currency_color("lega")]
+	if t.begins_with("MOSSA"):
+		return ["bolt", BattleTheme.RD]
+	if t.begins_with("PASSIVA"):
+		return ["passive", BattleTheme.CY]
+	for g in ["ARMA", "PETTO", "STIVALI"]:
+		if t.begins_with("PEZZO: " + g):
+			return [g.to_lower(), BattleTheme.CY]
+	return ["", BattleTheme.CY]
+
+
 # Mette l'icona a sinistra di un pulsante e lascia lo spazio al testo.
 static func attach(b: Button, icon_key: String, col: Color, px: float = 22.0) -> GameIcon:
 	var ic := GameIcon.new().setup(icon_key, col, px)

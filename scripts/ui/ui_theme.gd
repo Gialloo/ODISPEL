@@ -37,10 +37,10 @@ static func build() -> Theme:
 		t.set_stylebox("pressed", cls, SlantBox.make(BattleTheme.CY, BattleTheme.WH, 14.0, BattleTheme.CY_DIM, 2.0))
 		t.set_stylebox("disabled", cls, SlantBox.make(Color(0.02, 0.06, 0.07), BattleTheme.CY_DARK, 14.0, Color(0, 0, 0, 0), 2.0))
 		t.set_stylebox("focus", cls, StyleBoxEmpty.new())
-		t.set_color("font_color", cls, BattleTheme.CY)
+		t.set_color("font_color", cls, BattleTheme.WH)
 		t.set_color("font_hover_color", cls, BattleTheme.BK)
 		t.set_color("font_pressed_color", cls, BattleTheme.BK)
-		t.set_color("font_disabled_color", cls, BattleTheme.CY_DARK)
+		t.set_color("font_disabled_color", cls, Color("#6aa3af"))
 		t.set_font("font", cls, display)
 		t.set_font_size("font_size", cls, 20)
 

@@ -5,7 +5,7 @@ extends RefCounted
 # Dominante celeste/ciano, accenti rossi aggressivi, bianco e nero.
 
 const CY: Color = Color("#7cf0ff")        # ciano principale
-const CY_DIM: Color = Color("#2a8a9a")
+const CY_DIM: Color = Color("#8fd6e4")      # testi secondari: chiari, si leggono bene
 const CY_DARK: Color = Color("#0f3a44")
 const RD: Color = Color("#ff2d55")        # rosso aggressivo
 const RD_DARK: Color = Color("#5a1022")
@@ -62,6 +62,11 @@ static func make_label(text: String, size: int = 16, color: Color = CY, use_disp
 	l.add_theme_font_override("font", display() if use_display else mono())
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
+	if not use_display:
+		# ombra netta: il testo piccolo resta leggibile su qualsiasi sfondo
+		l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.9))
+		l.add_theme_constant_override("shadow_offset_x", 1)
+		l.add_theme_constant_override("shadow_offset_y", 1)
 	if use_display:
 		# contorno nero spesso: il testo "da fumetto" si legge su qualsiasi sfondo
 		l.add_theme_color_override("font_outline_color", BK)
@@ -105,7 +110,7 @@ static func _styles_for(kind: String) -> Dictionary:
 		_:
 			normal = SlantBox.make(BK, CY, 14.0, CY_DARK, 2.0)
 			hover = SlantBox.make(CY, BK, 14.0, CY_DIM, 2.0)
-			colors = {"text": CY, "hover": BK}
+			colors = {"text": WH, "hover": BK}
 	var styles: Dictionary = {
 		"normal": normal,
 		"hover": hover,
@@ -131,9 +136,9 @@ static func style_button(b: Button, kind: String = "normal", size: int = 22) -> 
 	b.add_theme_color_override("font_color", st["text"])
 	b.add_theme_color_override("font_hover_color", st["hover_text"])
 	b.add_theme_color_override("font_pressed_color", st["hover_text"])
-	b.add_theme_color_override("font_disabled_color", CY_DARK)
-	b.add_theme_color_override("font_outline_color", BK if kind != "normal" else Color(0, 0, 0, 0))
-	b.add_theme_constant_override("outline_size", 0 if kind == "normal" else 4)
+	b.add_theme_color_override("font_disabled_color", Color("#6aa3af"))
+	b.add_theme_color_override("font_outline_color", BK if kind != "normal" else Color(0, 0, 0, 0.9))
+	b.add_theme_constant_override("outline_size", 4 if kind != "normal" else 3)
 	b.add_theme_font_override("font", display())
 	b.add_theme_font_size_override("font_size", TouchUi.fit(b, size))
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT

@@ -57,6 +57,11 @@ static func menu_overlays(parent: Control, accent: Color = BattleTheme.RD) -> vo
 		_menu_material.shader = load("res://shaders/battle_overlay.gdshader")
 		_menu_material.set_shader_parameter("tint", Color(0, 0, 0, 0))
 		_menu_material.set_shader_parameter("dots_on_top", false)
+		# nei menu il velo e' solo una leggera vignettatura: niente retino, righe o rumore sopra le scritte
+		_menu_material.set_shader_parameter("halftone_strength", 0.0)
+		_menu_material.set_shader_parameter("scan_strength", 0.0)
+		_menu_material.set_shader_parameter("noise_strength", 0.0)
+		_menu_material.set_shader_parameter("vignette_strength", 0.35)
 	_full_rect(parent, _menu_material)
 
 

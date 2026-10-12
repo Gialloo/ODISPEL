@@ -109,7 +109,6 @@ func _show_card(r: Dictionary) -> void:
 	var rarity: int = int(r["rarity"])
 	var col: Color = color_of(rarity)
 	var def: Dictionary = BattleContent.CHARACTERS.get(str(r["char"]), {})
-	Snd.play("cutin" if rarity >= 2 else "swap")
 	_stage_t = 0.0
 	_portrait.char_id = str(r["char"])
 	_portrait._refresh_texture()
@@ -129,8 +128,10 @@ func _show_card(r: Dictionary) -> void:
 	tw.tween_property(_name, "position:x", 640.0, 0.2).set_delay(0.06).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_sub, "position:x", 646.0, 0.2).set_delay(0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_badge, "position:x", 646.0, 0.2).set_delay(0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	ComicFx.speed_lines(self, Vector2(640, 360), Color(col, 0.9), 0.35)
-	ComicFx.flash(self, col if rarity >= 2 else Color.WHITE, 0.12)
+	# l'effetto cambia con la rarita': comune niente, rara anello, epica raggi e lampo, leggendaria tutto insieme
+	if rarity == 0:
+		ComicFx.flash(self, Color(1, 1, 1, 0.5), 0.1)
+	RarityFx.play(self, Vector2(350, 340), rarity)
 
 
 func _show_summary() -> void:

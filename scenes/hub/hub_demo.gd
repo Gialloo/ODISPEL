@@ -96,14 +96,24 @@ func _build_status_panel() -> void:
 
 	box.add_child(BattleTheme.make_label("RISORSE", 14, BattleTheme.CY_DIM))
 	var mats: Dictionary = roster["materials"]
-	box.add_child(BattleTheme.make_label("MONETE %d     NUCLEI %d     LEGHE %d" % [int(roster["coins"]), int(mats.get("nucleo", 0)), int(mats.get("lega", 0))], 20, BattleTheme.WH))
+	var res_row := HBoxContainer.new()
+	res_row.add_theme_constant_override("separation", 26)
+	for entry in [["coin", "MONETE %d" % int(roster["coins"])], ["nucleo", "NUCLEI %d" % int(mats.get("nucleo", 0))], ["lega", "LEGHE %d" % int(mats.get("lega", 0))]]:
+		res_row.add_child(GameIcon.line(str(entry[0]), GameIcon.currency_color(str(entry[0])), str(entry[1]), 20))
+	box.add_child(res_row)
 
 	box.add_child(HSeparator.new())
 	box.add_child(BattleTheme.make_label("SQUADRA ATTIVA", 14, BattleTheme.CY_DIM))
 	for id in roster["team"]:
 		var c: Dictionary = roster["characters"][id]
 		var def: Dictionary = BattleContent.CHARACTERS[str(id)]
-		box.add_child(BattleTheme.make_label("%s   LV%d   %s" % [str(def["name"]).to_upper(), int(c["level"]), str(def["cls"]).to_upper()], 18, BattleTheme.unit_color(str(def["color"]))))
+		var ucol: Color = BattleTheme.unit_color(str(def["color"]))
+		var unit_row: HBoxContainer = GameIcon.line(str(def["cls"]), ucol, "%s   LV%d   %s" % [str(def["name"]).to_upper(), int(c["level"]), str(def["cls"]).to_upper()], 18, ucol)
+		var fac: String = BattleContent.faction_of(str(id))
+		if fac != "":
+			unit_row.add_child(GameIcon.new().setup(fac, Hints.faction_color(fac), 22.0))
+			unit_row.add_child(BattleTheme.make_label(Factions.name_of(fac).to_upper(), 14, Hints.faction_color(fac)))
+		box.add_child(unit_row)
 
 	box.add_child(HSeparator.new())
 	box.add_child(BattleTheme.make_label("PROGRESSI", 14, BattleTheme.CY_DIM))

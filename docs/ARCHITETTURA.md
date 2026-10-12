@@ -92,3 +92,14 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
 - `scripts/ui/game_icon.gd` (`GameIcon`): icone vettoriali segnaposto per classi, fazioni, tipi di mossa, equipaggiamento e valute.
   `GameIcon.move_key(id)` ricava l'icona dalla mossa; `GameIcon.attach(button, chiave, colore)` la mette in un pulsante.
   Per grafica vera basta sostituire il disegno in `_draw`.
+
+## Reattivita' e animazioni
+
+- `scripts/ui/button_fx.gd` (`ButtonFx`): ogni pulsante si ingrandisce al passaggio del mouse, si schiaccia quando lo premi, lampeggia alla conferma
+  (vibrazione leggera su telefono). Un pulsante spento scuote e fa il suono d'errore. L'aggancio e' automatico, in `AudioManager._on_node_added`.
+  Suoni: "back" (TORNA/ESCI/SALTA...), "ready" (AVVIA/RECLUTA/CONTINUA...), "click" per gli altri.
+- `scripts/ui/rarity_fx.gd` (`RarityFx`): animazione di ottenimento diversa per rarita' (comune: nessun effetto; rara: anello e scintille;
+  epica: doppio anello, raggi e lampo; leggendaria: raggi dorati, lampo bianco, didascalia e vibrazione). Usata in `PullReveal`,
+  nell'esito del reclutamento e nei premi di fine battaglia. Le rarita' del gioco sono 4 (BattleTypes.RARITIES): una quinta ("non comune")
+  richiederebbe di ribilanciare quote e statistiche.
+- I menu hanno un velo leggero (solo vignettatura, senza retino ne' righe sopra le scritte); i testi secondari sono piu' chiari.

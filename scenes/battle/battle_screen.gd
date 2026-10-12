@@ -16,6 +16,7 @@ var log_lines: Array = []
 var _ended_shown: bool = false
 
 var _stage: BattleStage
+var _reward_rows: Array = []
 var _turn_box: VBoxContainer
 var _turn_sig: String = ""
 var _turn_acting: String = ""
@@ -1023,8 +1024,16 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	mission.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(mission)
 	box.add_child(BattleTheme.make_label("PREMI", 16, BattleTheme.WH))
+	_reward_rows.clear()
 	for line in _reward_lines(rewards):
-		box.add_child(BattleTheme.make_label(line, 17, BattleTheme.CY))
+		var rk: Array = GameIcon.reward_key(str(line))
+		var row: Control
+		if str(rk[0]) != "":
+			row = GameIcon.line(str(rk[0]), rk[1], str(line), 17, BattleTheme.CY)
+		else:
+			row = BattleTheme.make_label(line, 17, BattleTheme.CY)
+		box.add_child(row)
+		_reward_rows.append([row, _line_rarity(str(line))])
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(spacer)
@@ -1055,6 +1064,27 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 		BattleTheme.style_button(leave, "normal", 20)
 		leave.pressed.connect(_on_leave_room)
 		box.add_child(leave)
+	if DisplayServer.get_name() != "headless":
+		await get_tree().process_frame      # le righe devono avere la loro posizione prima di animarle
+		_animate_rewards(_overlay)
+
+
+# Rarita' scritta in una riga di premio ("MOSSA: CURA (RARA)"); -1 = nessuna (monete, materiali).
+func _line_rarity(line: String) -> int:
+	var up: String = line.to_upper()
+	for i in range(BattleTypes.RARITIES.size() - 1, -1, -1):
+		if str(BattleTypes.RARITIES[i]).to_upper() in up and (up.begins_with("MOSSA") or up.begins_with("PEZZO") or up.begins_with("PASSIVA")):
+			return i
+	return -1
+
+
+# Le righe dei premi entrano una dopo l'altra; gli oggetti rari fanno piu' scena.
+func _animate_rewards(host: Control) -> void:
+	var delay: float = 0.25
+	for entry in _reward_rows:
+		var r: int = int(entry[1])
+		RarityFx.reveal_row(host, entry[0], r, delay)
+		delay += float(RarityFx.STAGGER[clampi(r, 0, 3)]) + 0.04
 
 
 func _reward_lines(rewards: Dictionary) -> Array:

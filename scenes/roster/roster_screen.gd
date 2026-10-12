@@ -52,6 +52,7 @@ var _action_box: GridContainer
 var _pity_label: Label
 var _results_box: VBoxContainer
 var _pull_buttons: Array = []
+var _reveal_rows: bool = false      # le righe dell'esito entrano animate solo subito dopo un reclutamento
 var _t: float = 0.0
 
 
@@ -91,10 +92,10 @@ func _build() -> void:
 	add_child(_mats_label)
 	_header_icon("nucleo", Vector2(1014, 52), 22.0)
 	_lega_label = BattleTheme.make_label("", 16, BattleTheme.CY_DIM)
-	_lega_label.position = Vector2(1156, 52)
-	_lega_label.size = Vector2(104, 24)
+	_lega_label.position = Vector2(1170, 52)
+	_lega_label.size = Vector2(90, 24)
 	add_child(_lega_label)
-	_header_icon("lega", Vector2(1130, 52), 22.0)
+	_header_icon("lega", Vector2(1142, 52), 22.0)
 
 	var x: float = 24.0
 	for entry in [["squadra", "SQUADRA"], ["equip", "EQUIPAGGIO"], ["reclutamento", "RECLUTAMENTO"]]:
@@ -230,7 +231,7 @@ func _build_team_page() -> void:
 	_detail_icons.add_theme_constant_override("separation", 4)
 	_detail_icons.alignment = BoxContainer.ALIGNMENT_CENTER
 	title_row.add_child(_detail_icons)
-	_detail_label = BattleTheme.make_label("", 14, BattleTheme.CY)
+	_detail_label = BattleTheme.make_label("", 14, BattleTheme.WH)
 	_detail_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(_detail_label)
 	_action_box = GridContainer.new()
@@ -353,7 +354,11 @@ func _build_recruit_page() -> void:
 	col.add_child(guide)
 	guide_button = guide
 	var odds: Array = BattleContent.rarity_odds()
-	var note := BattleTheme.make_label("Quote: comune %d%% · rara %d%% · epica %d%% · leggendaria %d%%.\nLe copie aumentano il rank (max 5).\nIl x10 garantisce almeno un raro." % [odds[0], odds[1], odds[2], odds[3]], 14, BattleTheme.CY_DIM)
+	col.add_child(BattleTheme.make_label("QUOTE DI RECLUTAMENTO", 13, BattleTheme.CY_DIM))
+	for r in 4:
+		var rc: Color = BattleTheme.rarity_color(r)
+		col.add_child(GameIcon.line("nucleo", rc, "%s  %d%%" % [str(BattleTypes.RARITIES[r]).to_upper(), int(odds[r])], 15, rc))
+	var note := BattleTheme.make_label("Le copie aumentano il rank (max 5).\nIl x10 garantisce almeno un raro.", 14, BattleTheme.CY_DIM)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(note)
 
@@ -373,8 +378,14 @@ func _process(delta: float) -> void:
 # ---------- Azioni (usate anche dai test) ----------
 
 func show_tab(name: String) -> void:
+	var changed: bool = tab != name
 	tab = name
 	refresh()
+	if changed and is_inside_tree():
+		var page: Control = {"squadra": _team_page, "equip": _equip_page, "reclutamento": _recruit_page}.get(name)
+		if page != null:
+			page.modulate.a = 0.0
+			page.create_tween().tween_property(page, "modulate:a", 1.0, 0.18)
 	if name == "reclutamento" and Settings.should_show_gacha_guide():
 		open_gacha_guide()
 
@@ -482,6 +493,7 @@ func pull(count: int) -> bool:
 			return _say("Servono %d monete." % int(r["cost"]), false)
 		return _say("Reclutamento non riuscito.", false)
 	last_results = r["results"]
+	_reveal_rows = DisplayServer.get_name() != "headless"
 	_save()
 	if DisplayServer.get_name() != "headless":
 		PullReveal.play(self, last_results)
@@ -730,9 +742,9 @@ func _refresh_detail() -> void:
 	tb.clip_text = true
 	tb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if in_team:
-		tb.text = "TOGLI" if TouchUi.active() else "TOGLI DALLA SQUADRA"
+		tb.text = "TOGLI"
 	elif (roster["team"] as Array).size() < BattleTypes.TEAM_SIZE:
-		tb.text = "METTI" if TouchUi.active() else "METTI IN SQUADRA"
+		tb.text = "METTI IN SQUADRA"
 	else:
 		var tgt: String = str(roster["team"][clampi(slot_target, 0, (roster["team"] as Array).size() - 1)])
 		tb.text = "AL POSTO DI %s" % str(BattleContent.CHARACTERS[tgt]["name"]).to_upper()
@@ -750,7 +762,7 @@ func _refresh_detail() -> void:
 		ub.disabled = true
 	else:
 		var cost: Dictionary = BattleContent.character_upgrade_cost(int(e["level"]))
-		ub.text = ("POT. %dM+%dN" if TouchUi.active() else "POTENZIA  %dM + %dN") % [int(cost["coins"]), int(cost["nucleo"])]
+		ub.text = "POTENZIA %dM+%dN" % [int(cost["coins"]), int(cost["nucleo"])]
 		ub.size_flags_stretch_ratio = 1.6
 	BattleTheme.style_button(ub, "primary", 15)
 	ub.pressed.connect(upgrade.bind(selected))
@@ -991,6 +1003,7 @@ func _refresh_recruit() -> void:
 	if last_results.is_empty():
 		_results_box.add_child(BattleTheme.make_label("Nessun reclutamento ancora.", 18, BattleTheme.CY_DIM))
 		return
+	var delay: float = 0.0
 	for r in last_results:
 		var def: Dictionary = BattleContent.CHARACTERS[str(r["char"])]
 		var outcome: String = ""
@@ -1004,3 +1017,8 @@ func _refresh_recruit() -> void:
 		var line := "%-6s %-11s %s" % [str(def["name"]).to_upper(), str(BattleTypes.RARITIES[int(r["rarity"])]).to_upper(), outcome]
 		var l := BattleTheme.make_label(line, 22, RARITY_COLORS[clampi(int(r["rarity"]), 0, 3)])
 		_results_box.add_child(l)
+		if _reveal_rows:
+			l.custom_minimum_size = Vector2(0, 30)
+			RarityFx.reveal_row(self, l, int(r["rarity"]), delay)
+			delay += float(RarityFx.STAGGER[clampi(int(r["rarity"]), 0, 3)])
+	_reveal_rows = false
