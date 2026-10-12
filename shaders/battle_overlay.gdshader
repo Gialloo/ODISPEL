@@ -20,11 +20,9 @@ float hash(vec2 p) {
 	return fract((p3.x + p3.y) * p3.z);
 }
 
-// Sovrappone "top" a "bottom" (colore non premoltiplicato).
-vec4 over(vec4 top, vec4 bottom) {
-	float a = top.a + bottom.a * (1.0 - top.a);
-	vec3 c = a > 0.0001 ? (top.rgb * top.a + bottom.rgb * bottom.a * (1.0 - top.a)) / a : vec3(0.0);
-	return vec4(c, a);
+// Sovrapposizione di colori PREMOLTIPLICATI (top sopra bottom): niente divisioni, niente rami.
+vec4 over_pm(vec4 top, vec4 bottom) {
+	return top + bottom * (1.0 - top.a);
 }
 
 void fragment() {
@@ -33,20 +31,26 @@ void fragment() {
 	// telecamera (come cctv_overlay)
 	float a = (0.5 + 0.5 * sin(uv.y * 2261.95)) * scan_strength;
 	vec2 c0 = uv - vec2(0.5);
+	float cc = dot(c0, c0);
 	a += smoothstep(0.35, 0.95, length(c0 * vec2(1.0, 1.15))) * vignette_strength;
 	a += hash(floor(uv * vec2(640.0, 360.0)) + floor(TIME * 24.0)) * noise_strength;
 	float band = fract(TIME * 0.07);
 	float bright = smoothstep(0.05, 0.0, abs(uv.y - band)) * 0.07;
-	vec4 cam = vec4(vec3(bright * 6.0), clamp(a, 0.0, 0.92) * (1.0 - bright * 4.0));
+	float cam_a = clamp(a, 0.0, 0.92) * (1.0 - bright * 4.0);
+	vec4 cam = vec4(vec3(bright * 6.0) * cam_a, cam_a);
 
-	// retino (come halftone)
+	// retino (come halftone): il punto c'e' dove la distanza dal centro della cella e' minore del raggio;
+	// si confrontano i quadrati, cosi' non serve la radice
 	vec2 res = 1.0 / SCREEN_PIXEL_SIZE;
 	vec2 p = uv * res;
 	vec2 r = vec2(p.x + p.y, p.x - p.y) * 0.7071;
 	vec2 cell = fract(r / dot_size) - 0.5;
-	float edge = clamp(dot(c0, c0) * 2.2 + max(uv.y - 0.55, 0.0) * 0.9, 0.0, 1.0);
-	float ht_a = step(length(cell), edge * 0.62) * halftone_strength * edge;
-	vec4 dots = vec4(ink.rgb, ht_a);
+	float edge = clamp(cc * 2.2 + max(uv.y - 0.55, 0.0) * 0.9, 0.0, 1.0);
+	float rad = edge * 0.62;
+	float ht_a = step(dot(cell, cell), rad * rad) * halftone_strength * edge;
+	vec4 dots = vec4(ink.rgb * ht_a, ht_a);
 
-	COLOR = dots_on_top ? over(dots, over(cam, tint)) : over(cam, over(dots, tint));
+	vec4 base = vec4(tint.rgb * tint.a, tint.a);
+	vec4 res_pm = dots_on_top ? over_pm(dots, over_pm(cam, base)) : over_pm(cam, over_pm(dots, base));
+	COLOR = res_pm.a > 0.0001 ? vec4(res_pm.rgb / res_pm.a, res_pm.a) : vec4(0.0);
 }

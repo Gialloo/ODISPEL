@@ -36,10 +36,13 @@ static func halftone(parent: Control) -> ColorRect:
 	return _full_rect(parent, _halftone_material)
 
 
-# Fondo pieno a tutto schermo (non cattura il mouse).
+# Fondo pieno a tutto schermo (non cattura il mouse). Il nero del gioco e' gia' il colore con cui
+# lo schermo viene pulito a ogni frame (project.godot): disegnarlo ancora sarebbe un passaggio a
+# tutto schermo sprecato, quindi quel rettangolo resta nell'albero ma non viene disegnato.
 static func solid(parent: Control, color: Color) -> ColorRect:
 	var r := ColorRect.new()
 	r.color = color
+	r.visible = not color.is_equal_approx(BattleTheme.BK)
 	r.set_anchors_preset(Control.PRESET_FULL_RECT)
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(r)

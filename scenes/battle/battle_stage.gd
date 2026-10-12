@@ -56,15 +56,69 @@ var _bg_boss: String = ""
 var _bg_layers: Array = []           # strati dello sfondo dalla tua grafica (vuoto = sfondo disegnato)
 
 
-# Livello che si disegna UNA volta (e di nuovo solo se cambia la dimensione): Godot tiene
-# i comandi di disegno in memoria, cosi' lo sfondo non costa nulla a ogni frame.
+# Livello che si disegna UNA volta (e di nuovo solo se cambia la dimensione). Con `cached`
+# lo sfondo viene "fotografato" in una texture e a ogni frame costa un solo rettangolo
+# invece delle decine di forme sovrapposte; senza (test, schermo assente) resta il disegno.
 class StaticLayer extends Control:
 	var painter: Callable
+	var cached: bool = false
+	var _sub: SubViewport = null
+	var _inner: Control = null
+	var _view: TextureRect = null
 
 	func _draw() -> void:
+		if cached:
+			return
 		if painter.is_valid():
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2(size.x / BattleStage.DW, size.y / BattleStage.DH))
 			painter.call(self)
+
+	# Passa al disegno in texture. Da chiamare una volta, quando il livello e' nell'albero.
+	func enable_cache() -> void:
+		if cached:
+			return
+		cached = true
+		_sub = SubViewport.new()
+		_sub.disable_3d = true
+		_sub.transparent_bg = false
+		_sub.gui_disable_input = true
+		_sub.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		add_child(_sub)
+		_inner = Control.new()
+		_inner.draw.connect(_paint_inner)
+		_sub.add_child(_inner)
+		_view = TextureRect.new()
+		_view.texture = _sub.get_texture()
+		_view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_view.stretch_mode = TextureRect.STRETCH_SCALE
+		_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		add_child(_view)
+		resized.connect(refresh)
+		refresh()
+
+	func _paint_inner() -> void:
+		if painter.is_valid():
+			_inner.draw_set_transform(Vector2.ZERO, 0.0, Vector2(_inner.size.x / BattleStage.DW, _inner.size.y / BattleStage.DH))
+			painter.call(_inner)
+
+	# Ridisegna la texture (nuova dimensione, ripresa dell'app, nuovo sfondo).
+	func refresh() -> void:
+		if not cached or size.x < 1.0 or size.y < 1.0:
+			return
+		var pixels: float = 1.0
+		if is_inside_tree():
+			pixels = clampf(get_viewport().get_final_transform().get_scale().x, 1.0, 1.25)
+		var want := Vector2i((size * pixels).ceil())
+		if _sub.size != want:
+			_sub.size = want
+		_inner.size = Vector2(want)
+		_inner.queue_redraw()
+		_sub.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+	func _notification(what: int) -> void:
+		if cached and (what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_WM_WINDOW_FOCUS_IN):
+			refresh()
 
 
 func _ready() -> void:
@@ -74,6 +128,8 @@ func _ready() -> void:
 	_bg_static.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bg_static.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_bg_static)
+	if cache_background and DisplayServer.get_name() != "headless":
+		_bg_static.enable_cache()
 
 
 func _process(delta: float) -> void:
@@ -207,6 +263,7 @@ func _entity_transform(gx: float) -> void:
 
 # Strumenti di misura (usati da tools/bench.gd): tempo speso a disegnare l'inquadratura.
 static var static_background: bool = true      # false = sfondo ridisegnato a ogni frame (confronto)
+static var cache_background: bool = true       # sfondo "fotografato" in una texture (false = comandi di disegno)
 static var profile: bool = false
 static var profile_usec: int = 0
 static var profile_frames: int = 0

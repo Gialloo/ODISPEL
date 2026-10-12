@@ -14,6 +14,7 @@ const MUSIC_FADE: float = 0.8
 var current_music: String = ""
 
 var _streams: Dictionary = {}
+var _loops: Dictionary = {}
 var _pool: Array = []
 var _next: int = 0
 var _music_players: Array = []
@@ -40,6 +41,16 @@ func _ready() -> void:
 		_music_players.append(m)
 	apply_settings()
 	get_tree().node_added.connect(_on_node_added)
+	_preload_in_background()
+
+
+# Musica ed effetti si leggono su un altro thread: al primo suono non c'e' nessuna attesa.
+func _preload_in_background() -> void:
+	var paths: Array = [MUSIC_DIR + "menu.wav", MUSIC_DIR + "battle.wav"]
+	for file in ResourceLoader.list_directory(SFX_DIR):
+		if str(file).ends_with(".wav"):
+			paths.append(SFX_DIR + str(file))
+	Warmup.audio(paths)
 
 
 func _make_bus(bus_name: String) -> void:
@@ -119,16 +130,24 @@ func play_music(track: String) -> void:
 		tw.chain().tween_callback(old.stop)
 	if stream == null:
 		return
+	fresh.stream = _looped(track, stream)
+	fresh.volume_db = -60.0
+	fresh.play()
+	tw.tween_property(fresh, "volume_db", _duck_db, MUSIC_FADE)
+
+
+# Versione "a ciclo" di un brano: si crea una volta e si riusa a ogni cambio di schermata.
+func _looped(track: String, stream: AudioStream) -> AudioStream:
+	if _loops.has(track):
+		return _loops[track]
 	var looped: AudioStream = stream.duplicate()
 	if looped is AudioStreamWAV:
 		var wav: AudioStreamWAV = looped
 		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		wav.loop_begin = 0
 		wav.loop_end = wav.data.size() / 2        # 16 bit mono
-	fresh.stream = looped
-	fresh.volume_db = -60.0
-	fresh.play()
-	tw.tween_property(fresh, "volume_db", _duck_db, MUSIC_FADE)
+	_loops[track] = looped
+	return looped
 
 
 func duck(db: float) -> void:

@@ -16,6 +16,10 @@ extends RefCounted
 const EXPRESSIONS: Array = ["neutral", "happy", "angry", "sad", "surprised", "hurt"]
 const BG_LAYERS: int = 4
 
+# Lato massimo di una grafica in memoria. Il gioco e' 1280x720: oltre i 2048 punti non si vede
+# nulla di piu', ma una PNG molto grande occuperebbe decine di MB di memoria video su un telefono.
+const MAX_SIZE: int = 2048
+
 static var extra_roots: Array = []       # cartelle in piu' (usate dai test), cercate per prime
 static var _cache: Dictionary = {}       # percorso relativo -> Texture2D oppure null
 
@@ -46,12 +50,31 @@ static func texture(rel: String) -> Texture2D:
 		if FileAccess.file_exists(path):
 			var img := Image.load_from_file(path)
 			if img != null and not img.is_empty():
-				found = ImageTexture.create_from_image(img)
+				found = ImageTexture.create_from_image(_fit(img))
 				break
 	if found == null and ResourceLoader.exists("res://art/" + rel):
 		found = load("res://art/" + rel) as Texture2D
 	_cache[rel] = found
 	return found
+
+
+# Riduce (mantenendo le proporzioni) un'immagine piu' grande di MAX_SIZE.
+static func _fit(img: Image) -> Image:
+	var longest: int = maxi(img.get_width(), img.get_height())
+	if longest > MAX_SIZE:
+		var k: float = float(MAX_SIZE) / float(longest)
+		img.resize(maxi(1, int(round(img.get_width() * k))), maxi(1, int(round(img.get_height() * k))), Image.INTERPOLATE_LANCZOS)
+	return img
+
+
+# Il file c'e'? (senza caricarlo in memoria: serve al rapporto delle grafiche mancanti)
+static func has(rel: String) -> bool:
+	if _cache.has(rel):
+		return _cache[rel] != null
+	for root in roots():
+		if FileAccess.file_exists(str(root).path_join(rel)):
+			return true
+	return ResourceLoader.exists("res://art/" + rel)
 
 
 # La prima che esiste tra piu' percorsi.
@@ -147,7 +170,7 @@ static func report() -> Dictionary:
 	var found: Array = []
 	var missing: Array = []
 	for s in slots():
-		if texture(str(s["path"])) != null:
+		if has(str(s["path"])):
 			found.append(str(s["path"]))
 		else:
 			missing.append(str(s["path"]))

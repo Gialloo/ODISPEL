@@ -143,11 +143,7 @@ func _anchor(c: Control, a: Vector4, o: Vector4) -> void:
 
 
 func _build() -> void:
-	var bg := ColorRect.new()
-	bg.color = BattleTheme.BK
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
+	ScreenFx.solid(self, BattleTheme.BK)      # (non disegnato: lo schermo e' gia' pulito di questo colore)
 
 	_stage = BattleStage.new()
 	_stage.set_anchors_preset(Control.PRESET_FULL_RECT)

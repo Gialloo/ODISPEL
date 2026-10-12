@@ -21,6 +21,8 @@ func _ready() -> void:
 	else:
 		Objectives.ensure_today(roster)
 	_build()
+	Warmup.scenes(scene_file_path)
+	Warmup.shaders(self)
 
 
 # ---------- Costruzione ----------
