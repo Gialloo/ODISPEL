@@ -25,6 +25,8 @@ static func hair_style(char_id: String) -> int:
 
 # Capelli dietro la testa (da disegnare prima di spalle e volto).
 static func hair_back(ci: CanvasItem, head: Vector2, r: float, char_id: String, col: Color, tint: Color) -> void:
+	if r < 2.0:
+		return
 	var hair_col: Color = col.darkened(0.15) * tint
 	var style: int = hair_style(char_id)
 	# capelli dietro: massa + ciocche lunghe nello stile 2
@@ -32,7 +34,7 @@ static func hair_back(ci: CanvasItem, head: Vector2, r: float, char_id: String, 
 	var mass: PackedVector2Array = oval(head + Vector2(0, -r * 0.1), r * 1.22, r * 1.3)
 	ci.draw_colored_polygon(mass, hair_col)
 	# ombra a colore piatto in basso a destra (luce da sinistra)
-	ci.draw_colored_polygon(PackedVector2Array([head + Vector2(r * 0.5, r * 1.12), head + Vector2(r * 1.1, r * 0.55), head + Vector2(r * 1.2, -r * 0.1), head + Vector2(r * 0.9, r * 0.9)]), col.darkened(0.4) * tint)
+	ci.draw_colored_polygon(PackedVector2Array([head + Vector2(r * 0.5, r * 1.12), head + Vector2(r * 0.9, r * 0.9), head + Vector2(r * 1.1, r * 0.55), head + Vector2(r * 1.2, -r * 0.1), head + Vector2(r * 0.7, r * 0.2)]), col.darkened(0.4) * tint)
 	outline(ci, mass, ink_hair, maxf(2.0, r * 0.06))
 	if style == 0:
 		# ciuffo ribelle in cima
@@ -45,6 +47,8 @@ static func hair_back(ci: CanvasItem, head: Vector2, r: float, char_id: String, 
 
 # Volto, frangia, occhi e bocca.
 static func face(ci: CanvasItem, head: Vector2, r: float, char_id: String, col: Color, tint: Color, expression: String) -> void:
+	if r < 2.0:
+		return
 	var hair_col: Color = col.darkened(0.15) * tint
 	var hair_hi: Color = col.lightened(0.35) * tint
 	var skin: Color = Color("#f7dfcf") * tint

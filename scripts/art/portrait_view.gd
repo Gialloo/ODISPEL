@@ -50,11 +50,14 @@ func _refresh_texture() -> void:
 				_texture = ArtLibrary.cutin(char_id)
 			_:
 				_texture = ArtLibrary.portrait(char_id, expression)
-	set_process(_texture == null)    # con la grafica vera non c'e' niente che si muova
+	# solo il busto segnaposto respira; icone, sagome e grafica vera sono ferme (niente ridisegno a ogni frame)
+	set_process(_texture == null and kind == "bust" and not is_boss)
 	queue_redraw()
 
 
 func _process(delta: float) -> void:
+	if not is_visible_in_tree():
+		return
 	_t += delta
 	queue_redraw()
 
