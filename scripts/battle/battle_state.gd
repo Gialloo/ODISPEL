@@ -45,6 +45,14 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 		"passives": entry.get("passives", []).duplicate(),
 		"statuses": {},
 		"shield": 0,
+		"rarity": int(entry.get("rarity", def.get("rarity", 0))),
+		"faction": BattleContent.faction_of(char_id, entry),
+		"style": BattleContent.style_of(char_id, entry),
+		"crit": 0,
+		"crit_dmg": Factions.CRIT_DMG_PM,
+		"base": {"atk": int(stats["atk"]), "def": int(stats["def"]), "spd": int(stats["spd"]), "crit": 0},
+		"aura": {},
+		"mods": [],
 	}
 
 
@@ -132,6 +140,7 @@ static func create(specs: Array, boss_id: String, seed_value: int, tier: int = 0
 			"choice": null,
 		})
 	units[BOSS_ID] = make_boss(boss_id, effective_players(specs), int(state["tier"]))
+	Factions.refresh(state)
 	var rng: RNGState = RNGState.new()
 	rng.setup(seed_value)
 	state["rng_state"] = str(rng.state_value)

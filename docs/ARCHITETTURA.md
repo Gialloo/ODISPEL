@@ -48,3 +48,17 @@ Nota: `ArtLibrary.refresh()` si chiama cosi' perche' `reload()` e' una funzione 
 - `ArtLibrary`: grafiche oltre 2048 punti ridotte in memoria; il rapporto delle grafiche mancanti non le carica piu' (`has`).
 - Splash di Godot disattivato (boot_splash/show_image=false).
 - Strumenti: `tools/bench.gd` (ms per schermata), `bench_ab.gd` (sfondo a comandi o a texture), `bench_parts.gd` (dove va il tempo), `bench_load.gd` (caricamenti), `shader_diff.gd`.
+
+## Fazioni: fondamenta (scripts/battle/factions.gd)
+
+- Ogni unita' ha `faction`, `style` (ortodosso/atipico), `rarity`, `crit`, `crit_dmg`, `base` (statistiche pulite), `aura`, `mods`.
+- `Factions.refresh(state)` ricalcola atk/def/spd/crit = base + aure + mods. Chiamarlo dopo ogni cambiamento
+  (e' gia' chiamato in `BattleState.create` e a fine round).
+- Aura: ogni operatore vivo da' ai compagni vivi della stessa fazione un bonus (comune 1%, rara 2%, epica 3.5%,
+  leggendaria 5%), sommato e limitato a +25% (`AURA_CAP_PM`). Valori in per mille, tutto intero.
+- Magabondi: niente aura, ricevono meta' della piu' forte in squadra. Statistica delle Rondini (crit) provvisoria.
+- `Factions.add_mod(u, id, stat, pm, turns)`: bonus/malus temporanei (stessa id = si rinnova). `Factions.suppress(state, fazione, turni)`:
+  spegne le aure (per la Dissonanza dei Kairos). `Factions.tick` li fa scadere a fine round.
+- Critico: `Factions.rolls_crit` e' deterministico (seme + round + attaccante + bersaglio + indice evento), non consuma l'RNG;
+  chi ha crit 0 non cambia nulla. Danno critico x1.5; il colpo emette l'evento `crit`.
+- Le aure agiscono solo nella squadra del giocatore (in multigiocatore non attraversano i giocatori).

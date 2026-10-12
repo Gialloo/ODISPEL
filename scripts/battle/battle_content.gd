@@ -56,6 +56,18 @@ const CHARACTERS: Dictionary = {
 	"tana": {"name": "Tana", "color": "giallo", "cls": "vanguard", "rarity": 3, "skill": "provoca", "ult": "bastione", "passive": "p_hunter"},
 }
 
+# Fazione e stile di un operatore (campi opzionali "faction" e "style" in CHARACTERS; l'entry del roster puo' avere
+# gli stessi campi e ha la precedenza). Senza fazione: "" e niente aure.
+static func faction_of(char_id: String, entry: Dictionary = {}) -> String:
+	var def: Dictionary = CHARACTERS.get(char_id, {})
+	return str(entry.get("faction", def.get("faction", "")))
+
+
+static func style_of(char_id: String, entry: Dictionary = {}) -> String:
+	var def: Dictionary = CHARACTERS.get(char_id, {})
+	return str(entry.get("style", def.get("style", "ortodosso")))
+
+
 # Equipaggiamento: valore base per slot, moltiplicato da rarita' e livello.
 const GEAR_BASE: Dictionary = {
 	"arma": {"atk": 12},

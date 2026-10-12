@@ -243,11 +243,17 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float)
 # Applica un colpo: prima lo scudo, poi i PV. Carica le barre ultimate.
 static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, mult: float, events: Array) -> void:
 	var dmg: int = calc_damage(attacker, defender, mult)
+	var crit: bool = Factions.rolls_crit(state, attacker, defender, events.size())
+	if crit:
+		dmg = maxi(1, int(round(float(dmg) * float(attacker.get("crit_dmg", Factions.CRIT_DMG_PM)) / 1000.0)))
 	var absorbed: int = mini(int(defender["shield"]), dmg)
 	defender["shield"] = int(defender["shield"]) - absorbed
 	var lost: int = dmg - absorbed
 	defender["hp"] = maxi(0, int(defender["hp"]) - lost)
-	events.append({"t": "damage", "src": attacker["id"], "dst": defender["id"], "amount": lost, "absorbed": absorbed})
+	var hit_event: Dictionary = {"t": "damage", "src": attacker["id"], "dst": defender["id"], "amount": lost, "absorbed": absorbed}
+	if crit:
+		hit_event["crit"] = true
+	events.append(hit_event)
 	if str(attacker["side"]) == "player":
 		attacker["gauge"] = mini(BattleTypes.GAUGE_MAX, int(attacker["gauge"]) + BattleTypes.GAUGE_ON_HIT)
 	if str(defender["side"]) == "player":
@@ -416,6 +422,10 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 	# se l'attivo e' caduto entra il compagno con piu' vita
 	for p in state["players"]:
 		_auto_replace(state, p, events)
+
+	# modifiche temporanee e aure di fazione (chi e' caduto non da' piu' aure)
+	Factions.tick(state)
+	Factions.refresh(state)
 
 
 static func _auto_replace(state: Dictionary, p: Dictionary, events: Array) -> void:
