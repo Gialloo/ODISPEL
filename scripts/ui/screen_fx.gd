@@ -67,6 +67,14 @@ static func menu_overlays(parent: Control, accent: Color = BattleTheme.RD) -> vo
 
 # Velo della battaglia: velatura + telecamera + retino in un solo passaggio.
 static func battle(parent: Control) -> ColorRect:
+	if Settings.light_fx:
+		# effetti ridotti: niente passaggio a tutto schermo (un rettangolo trasparente, per non cambiare la struttura)
+		var empty := ColorRect.new()
+		empty.color = Color(0, 0, 0, 0)
+		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		empty.set_anchors_preset(Control.PRESET_FULL_RECT)
+		parent.add_child(empty)
+		return empty
 	if _battle_material == null:
 		_battle_material = ShaderMaterial.new()
 		_battle_material.shader = load("res://shaders/battle_overlay.gdshader")

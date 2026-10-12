@@ -1072,17 +1072,24 @@ func _lunge_offset(amount: float) -> float:
 
 
 # Pulviscolo neon che sale lentamente: da' profondita' alla scena senza testo ne' riquadri.
+const MOTE_COUNT: int = 26
+const MOTE_COLORS: Array = [Color("#7cf0ff"), Color("#fff36b"), Color("#ff5fd2")]
+static var _mote_seed: PackedFloat32Array = PackedFloat32Array()
+
+
 func _draw_motes() -> void:
-	for i in 26:
-		var seedv: float = float(i) * 37.1
+	if Settings.light_fx:
+		return
+	if _mote_seed.is_empty():
+		for i in MOTE_COUNT:
+			_mote_seed.append(float(i) * 37.1)
+	for i in MOTE_COUNT:
+		var seedv: float = _mote_seed[i]
 		var x: float = fmod(seedv * 13.7 + _t * (6.0 + float(i % 5) * 3.0), DW + 40.0) - 20.0
-		var y: float = fmod(seedv * 29.3 - _t * (10.0 + float(i % 4) * 5.0), 430.0)
-		if y < 0.0:
-			y += 430.0
-		y += 140.0
-		var tw: float = 0.5 + 0.5 * sin(_t * 1.7 + seedv)
-		var c: Color = [BattleTheme.CY, BattleTheme.POP, Color("#ff5fd2")][i % 3]
-		draw_circle(Vector2(x, y), 1.6 + float(i % 3), Color(c, 0.08 + 0.18 * tw))
+		var y: float = fposmod(seedv * 29.3 - _t * (10.0 + float(i % 4) * 5.0), 430.0) + 140.0
+		var c: Color = MOTE_COLORS[i % 3]
+		c.a = 0.08 + 0.18 * (0.5 + 0.5 * sin(_t * 1.7 + seedv))
+		draw_circle(Vector2(x, y), 1.6 + float(i % 3), c)
 
 
 func _draw_boss_marks(boss: Dictionary, br: Rect2) -> void:

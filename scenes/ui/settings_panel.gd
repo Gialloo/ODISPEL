@@ -12,6 +12,7 @@ var mute_box: Button
 var full_box: Button
 var vsync_box: Button
 var fps_button: Button
+var light_box: Button
 var tutorial_button: Button
 var art_folder_button: Button
 var art_reload_button: Button
@@ -41,14 +42,14 @@ func _ready() -> void:
 	panel.anchor_right = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_bottom = 0.5
-	panel.offset_left = -260.0
-	panel.offset_right = 260.0
-	panel.offset_top = -270.0
-	panel.offset_bottom = 270.0
+	panel.offset_left = -300.0
+	panel.offset_right = 300.0
+	panel.offset_top = -280.0
+	panel.offset_bottom = 280.0
 	add_child(panel)
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 12)
+	box.add_theme_constant_override("separation", 7)
 	panel.set_content(box)
 
 	music_slider = _slider_row(box, "MUSICA", Settings.music, true)
@@ -57,9 +58,10 @@ func _ready() -> void:
 	mute_box = _toggle(box, Settings.muted, _on_mute, "AUDIO: MUTO  (tasto M)", "AUDIO: ATTIVO  (tasto M)")
 	full_box = _toggle(box, Settings.fullscreen, _on_fullscreen, "SCHERMO INTERO: SI", "SCHERMO INTERO: NO")
 	vsync_box = _toggle(box, Settings.vsync, _on_vsync, "V-SYNC: SI", "V-SYNC: NO")
+	light_box = _toggle(box, Settings.light_fx, _on_light_fx, "EFFETTI RIDOTTI: SI (piu' fluido)", "EFFETTI RIDOTTI: NO")
 	fps_button = Button.new()
 	fps_button.text = Settings.fps_text()
-	fps_button.custom_minimum_size = Vector2(0, 46)
+	fps_button.custom_minimum_size = Vector2(0, 40)
 	BattleTheme.style_button(fps_button, "normal", 20)
 	fps_button.pressed.connect(_on_fps)
 	box.add_child(fps_button)
@@ -68,7 +70,7 @@ func _ready() -> void:
 
 	tutorial_button = Button.new()
 	tutorial_button.text = "RIVEDI TUTORIAL E STORIA"
-	tutorial_button.custom_minimum_size = Vector2(0, 46)
+	tutorial_button.custom_minimum_size = Vector2(0, 40)
 	BattleTheme.style_button(tutorial_button, "normal", 20)
 	tutorial_button.pressed.connect(_on_tutorial)
 	box.add_child(tutorial_button)
@@ -80,14 +82,14 @@ func _ready() -> void:
 	box.add_child(art_row)
 	art_folder_button = Button.new()
 	art_folder_button.text = "APRI CARTELLA GRAFICHE"
-	art_folder_button.custom_minimum_size = Vector2(0, 46)
+	art_folder_button.custom_minimum_size = Vector2(0, 40)
 	art_folder_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	BattleTheme.style_button(art_folder_button, "normal", 16)
 	art_folder_button.pressed.connect(func() -> void: ArtLibrary.open_folder())
 	art_row.add_child(art_folder_button)
 	art_reload_button = Button.new()
 	art_reload_button.text = "RICARICA GRAFICHE"
-	art_reload_button.custom_minimum_size = Vector2(0, 46)
+	art_reload_button.custom_minimum_size = Vector2(0, 40)
 	art_reload_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	BattleTheme.style_button(art_reload_button, "normal", 16)
 	art_reload_button.pressed.connect(_on_art_reload)
@@ -100,7 +102,7 @@ func _ready() -> void:
 
 	var close := Button.new()
 	close.text = "CHIUDI"
-	close.custom_minimum_size = Vector2(0, 52)
+	close.custom_minimum_size = Vector2(0, 46)
 	BattleTheme.style_button(close, "primary", 22)
 	close.pressed.connect(close_panel)
 	box.add_child(close)
@@ -110,7 +112,7 @@ func _ready() -> void:
 func _toggle(parent: Control, value: bool, handler: Callable, on_text: String, off_text: String) -> Button:
 	var b := Button.new()
 	b.toggle_mode = true
-	b.custom_minimum_size = Vector2(0, 42)
+	b.custom_minimum_size = Vector2(0, 36)
 	b.set_pressed_no_signal(value)
 	var refresh := func(on: bool) -> void:
 		b.text = on_text if on else off_text
@@ -176,6 +178,11 @@ func _on_mute(on: bool) -> void:
 
 func _on_vsync(on: bool) -> void:
 	Settings.vsync = on
+	_apply()
+
+
+func _on_light_fx(on: bool) -> void:
+	Settings.light_fx = on
 	_apply()
 
 
