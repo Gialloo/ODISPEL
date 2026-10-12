@@ -115,6 +115,10 @@ func _build_status_panel() -> void:
 		var def: Dictionary = BattleContent.CHARACTERS[str(id)]
 		var ucol: Color = BattleTheme.unit_color(str(def["color"]))
 		var unit_row: HBoxContainer = GameIcon.line(str(def["cls"]), ucol, "%s   LV%d   %s" % [str(def["name"]).to_upper(), int(c["level"]), str(def["cls"]).to_upper()], 18, ucol)
+		var face := PortraitView.new().setup(str(id), "icon")
+		face.custom_minimum_size = Vector2(36, 36)
+		unit_row.add_child(face)
+		unit_row.move_child(face, 0)
 		var fac: String = BattleContent.faction_of(str(id))
 		if fac != "":
 			unit_row.add_child(GameIcon.new().setup(fac, Hints.faction_color(fac), 22.0))

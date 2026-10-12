@@ -541,7 +541,7 @@ func _add_chips(inner: Control, u: Dictionary, selected: bool) -> void:
 		return
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
-	row.position = Vector2(206.0, 26.0 if not TouchUi.active() else 22.0)
+	row.position = Vector2(244.0, 26.0 if not TouchUi.active() else 22.0)
 	inner.add_child(row)
 	var tint: Color = Hints.faction_color(f)
 	if selected:
@@ -592,10 +592,16 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 		title += "  ▶"
 	var where: String = "K.O." if not alive else ("IN CAMPO" if is_active else "PANCHINA")
 	var name_l := BattleTheme.make_label(title, 17, fg, true)
-	name_l.position = Vector2(16, -2)
+	name_l.position = Vector2(54, -2)
 	inner.add_child(name_l)
+	# volto dell'operatore (la grafica vera se c'e', altrimenti il segnaposto anime)
+	var face := PortraitView.new().setup(str(u["char"]), "icon")
+	face.position = Vector2(10, 2)
+	face.size = Vector2(38, 38)
+	face.modulate = Color(1, 1, 1, 1.0 if alive else 0.4)
+	inner.add_child(face)
 	var lv_l := BattleTheme.make_label("LV%d" % int(u["level"]), 12, fg)
-	lv_l.position = Vector2(176, 3)
+	lv_l.position = Vector2(196, 3)
 	inner.add_child(lv_l)
 
 	_add_chips(inner, u, selected)
@@ -604,30 +610,29 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	var hp := SegBar.new().setup(14, BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.CY), Vector2(196, 8))
 	hp.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
 	hp.set_ratio(hp_ratio)
-	hp.position = Vector2(16, 22)
+	hp.position = Vector2(54, 22)
 	inner.add_child(hp)
 	var hp_t := BattleTheme.make_label("%d" % int(u["hp"]), 18, fg, true)
-	hp_t.position = Vector2(222, 1)
+	hp_t.position = Vector2(262, 1)
 	inner.add_child(hp_t)
 
 	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(78, 6))
 	en.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
 	en.set_ratio(float(u["energy"]) / float(BattleTypes.MAX_ENERGY))
-	en.position = Vector2(16, 34)
+	en.position = Vector2(54, 34)
 	inner.add_child(en)
 	var gauge := SegBar.new().setup(10, BattleTheme.BK if selected else BattleTheme.RD, Vector2(96, 6))
 	gauge.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.RD_DARK
 	gauge.set_ratio(float(u["gauge"]) / float(BattleTypes.GAUGE_MAX))
-	gauge.position = Vector2(104, 34)
+	gauge.position = Vector2(142, 34)
 	inner.add_child(gauge)
 	if not alive:
 		var where_l := BattleTheme.make_label(where, 11, fg, true)
 		where_l.position = Vector2(274, 3)
 		inner.add_child(where_l)
 	if int(u["gauge"]) >= BattleTypes.GAUGE_MAX and alive:
-		var ult_l := BattleTheme.make_label("ULT", 12, BattleTheme.BK if selected else BattleTheme.RD, true)
-		ult_l.position = Vector2(210, 28)
-		inner.add_child(ult_l)
+		lv_l.text = "ULT!"
+		lv_l.add_theme_color_override("font_color", BattleTheme.BK if selected else BattleTheme.RD)
 	return btn
 
 

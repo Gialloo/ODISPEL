@@ -861,7 +861,14 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 	if sprite != null:
 		_draw_fighter_sprite(sprite, cx, foot_y, bob, flash_v)
 	else:
-		_draw_fighter_body(cx, foot_y, top, body_col, col)
+		var expr: String = "neutral"
+		if flash_v > 0.3:
+			expr = "hurt"
+		elif float(u["hp"]) / maxf(1.0, float(u["max_hp"])) < 0.3:
+			expr = "sad"
+		elif int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
+			expr = "angry"
+		_draw_fighter_body(cx, foot_y, top, body_col, col, str(u.get("char", "")), expr, Color.WHITE)
 	_draw_fighter_frame(u, cx, top, col, index, is_lead, foot_y)
 
 
@@ -918,7 +925,7 @@ func _draw_bench_unit(u: Dictionary, gx: float, slot: int, depth_scale: float = 
 		var w: float = h * sprite.get_width() / maxf(1.0, float(sprite.get_height()))
 		draw_texture_rect(sprite, Rect2(gx - w * 0.5, foot_y - h, w, h), false, Color(0.45, 0.5, 0.55, a))
 	else:
-		_draw_fighter_body(gx, foot_y, foot_y - 210.0, Color(col.darkened(0.6), a), Color(col, a))
+		_draw_fighter_body(gx, foot_y, foot_y - 210.0, Color(col.darkened(0.6), a), Color(col, a), str(u.get("char", "")), "neutral", Color(1, 1, 1, a))
 	# nome e vita sotto i piedi (leggibili anche se la figura e' piccola)
 	var ratio: float = float(u["hp"]) / maxf(1.0, float(u["max_hp"]))
 	_text(BattleTheme.display(), Vector2(gx - 60.0, foot_y + 52.0), str(u["name"]).to_upper(), 30, Color(BattleTheme.WH, 0.75 if alive else 0.35))
@@ -1020,7 +1027,7 @@ func _draw_fighter_sprite(tex: Texture2D, cx: float, foot_y: float, bob: float, 
 	draw_texture_rect(tex, Rect2(cx - w * 0.5, foot_y - h + bob, w, h), false, tint)
 
 
-func _draw_fighter_body(cx: float, foot_y: float, top: float, body_col: Color, col: Color) -> void:
+func _draw_fighter_body(cx: float, foot_y: float, top: float, body_col: Color, col: Color, char_id: String = "", expression: String = "neutral", tint: Color = Color.WHITE) -> void:
 	# gambe
 	draw_rect(Rect2(cx - 24.0, foot_y - 90.0, 20.0, 90.0), body_col)
 	draw_rect(Rect2(cx + 4.0, foot_y - 90.0, 20.0, 90.0), body_col)
@@ -1032,11 +1039,10 @@ func _draw_fighter_body(cx: float, foot_y: float, top: float, body_col: Color, c
 	# braccia
 	draw_line(Vector2(cx - 40.0, top + 52.0), Vector2(cx - 58.0, top + 118.0), body_col, 14.0)
 	draw_line(Vector2(cx + 40.0, top + 52.0), Vector2(cx + 62.0, top + 112.0), body_col, 14.0)
-	# testa
-	draw_circle(Vector2(cx, top + 24.0), 24.0, body_col)
-	draw_arc(Vector2(cx, top + 24.0), 24.0, 0.0, TAU, 28, col, 2.0)
-	# visore
-	draw_rect(Rect2(cx - 14.0, top + 18.0, 28.0, 8.0), col)
+	# testa: volto anime con gli occhi che seguono lo stato (colpito, ferito, ultimate pronta)
+	var head := Vector2(cx, top + 26.0)
+	AnimeFace.hair_back(self, head, 27.0, char_id, col, tint)
+	AnimeFace.face(self, head, 27.0, char_id, col, tint, expression)
 
 
 func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index: int, is_lead: bool, _foot_y: float) -> void:
