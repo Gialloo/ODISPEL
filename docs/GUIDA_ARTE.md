@@ -44,6 +44,44 @@ Sfondi:
 ## Personaggi nuovi
 Il nome della cartella e' l'id del personaggio (lo stesso usato nel gioco).
 
+## Stile e scheda dei personaggi (per chi disegna)
+**Stile voluto**: anime / visual novel giapponese a colori. Tratto pulito con contorni a inchiostro, ombre a colore piatto
+(cel shading), pochi dettagli ma significativi, luce da sinistra. **L'attenzione e' sugli occhi**: grandi, lucidi, con riflessi,
+molto espressivi. Riferimenti: Persona, Kingdom Hearts, i personaggi di Final Fantasy disegnati da Amano. Personaggio in grande,
+**senza sfondo** (PNG trasparente).
+
+Il colore del personaggio (la sua "strategia") guida la tavolozza: capelli, accessori e iride nella tinta del colore.
+
+| Colore | Tinta guida | Strategia (carattere da trasmettere) |
+|---|---|---|
+| rosso | caldo, vivo | STR: diretto, energico, sguardo deciso |
+| giallo | oro, luminoso | PSY: premuroso, sostegno, sguardo gentile |
+| viola | viola/lilla | INT: analitico, sguardo acuto e calmo |
+| verde | verde menta | DEX: preciso, vigile, sguardo concentrato |
+| blu | azzurro | QCK: rapido, brillante, sguardo vivace |
+
+Espressioni da disegnare per ogni personaggio: `neutral`, `happy`, `angry`, `sad`, `surprised`, `hurt` (lo stesso volto, cambiano occhi,
+sopracciglia e bocca; il resto dell'immagine resta uguale cosi' si sovrappongono perfettamente).
+
+| id | Nome | Colore | Classe | Fazione | Note per il disegno |
+|---|---|---|---|---|---|
+| kira | Kira | viola | striker | Rondini | giovane scattante, divisa Rondini bianca, capelli viola |
+| dax | Dax | rosso | vanguard | LibraCorp | robusto, divisa LibraCorp, sguardo fermo |
+| elle | Elle | verde | warden | Magabondi | abiti sciolti e colorati, aria libera |
+| bruno | Bruno | blu | vanguard | LibraCorp | solido e affidabile, divisa LibraCorp |
+| nova | Nova | giallo | striker | Rondini | vivace, accessori dorati |
+| mira | Mira | blu | warden | LibraCorp | calma e attenta, divisa LibraCorp |
+| rex | Rex | rosso | striker | Rondini | grintoso, giacca Rondini |
+| ivo | Ivo | blu | striker | Magabondi | agile, look da strada |
+| sera | Sera | verde | warden | Rondini | elegante e serena, tratti delicati |
+| eco | Eco | giallo | striker | Kairos | enigmatico, dettagli dissonanti (Kairos) |
+| tana | Tana | giallo | vanguard | LibraCorp | leggendaria: presenza imponente, protettiva |
+| dafne | Dafne | verde | striker | LibraCorp | leggendaria, tiratrice scelta: sguardo da cecchina, divisa operativa |
+| angela | Angela | giallo | striker | LibraCorp | leggendaria, "Dea del laser orbitale": mecamante, elementi tecnologici luminosi |
+
+Per la **rarita'** si puo' curare di piu' il dettaglio: comuni semplici, leggendari con accessori e illustrazione piu' ricca.
+Mentre le grafiche vere non ci sono, il gioco disegna da solo un volto anime segnaposto con questi stessi colori (`scripts/art/anime_face.gd`).
+
 ## Dialoghi
 Le scene incluse sono in `scripts/story/story_data.gd`. Per riscriverne una senza toccare il
 codice crea un file `dialogues/<id>.txt` accanto all'eseguibile (o nella cartella dati) con

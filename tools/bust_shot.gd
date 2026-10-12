@@ -10,11 +10,11 @@ func _run() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	host.add_child(bg)
 	var i: int = 0
-	for e in [["kira", "neutral"], ["dafne", "angry"], ["angela", "happy"], ["elle", "sad"], ["nova", "surprised"]]:
+	for e in [["kira", "neutral"], ["dafne", "angry"], ["angela", "happy"], ["elle", "sad"]]:
 		var pv := PortraitView.new().setup(e[0], "bust")
 		pv.show_expression_text = false
-		pv.size = Vector2(250, 420)
-		pv.position = Vector2(10 + i * 252, 160)
+		pv.size = Vector2(310, 560)
+		pv.position = Vector2(10 + i * 318, 150)
 		host.add_child(pv)
 		pv.set_expression(e[1])
 		i += 1
