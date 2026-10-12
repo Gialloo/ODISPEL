@@ -70,7 +70,7 @@ func _stream(path: String) -> AudioStream:
 
 func play(sound: String, pitch: float = 1.0, volume_db: float = 0.0) -> void:
 	var stream: AudioStream = _stream(SFX_DIR + sound + ".wav")
-	if stream == null:
+	if stream == null or _pool.is_empty():
 		return
 	var p: AudioStreamPlayer = _pool[_next]
 	_next = (_next + 1) % _pool.size()

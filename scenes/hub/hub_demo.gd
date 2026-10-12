@@ -5,7 +5,8 @@ extends Control
 
 var roster: Dictionary = {}
 var continue_button: Button
-var buttons: Dictionary = {}     # chiave -> Button (usati dai test)
+var buttons: Dictionary = {}
+var _status_panel: Control     # chiave -> Button (usati dai test)
 
 
 func _ready() -> void:
@@ -15,6 +16,10 @@ func _ready() -> void:
 		window.content_scale_size = Vector2i(1280, 720)
 	if roster.is_empty():
 		roster = RosterStore.load_or_new()
+		if Objectives.ensure_today(roster):
+			RosterStore.save(roster)
+	else:
+		Objectives.ensure_today(roster)
 	_build()
 
 
@@ -37,6 +42,7 @@ func _build() -> void:
 		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(pic)
 
+	MenuBackdrop.add_to(self, BattleTheme.RD)
 	var cctv := ColorRect.new()
 	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
 	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -45,10 +51,10 @@ func _build() -> void:
 	cctv.material = mat
 	add_child(cctv)
 
-	var title := BattleTheme.make_label("ODISPEL", 64, BattleTheme.WH, true)
-	title.position = Vector2(60, 40)
+	var title := OdispelLogo.new()
+	title.position = Vector2(60, 24)
 	add_child(title)
-	add_child(_at(BattleTheme.make_label("MISSION CONTROL  ·  v" + GameConfig.VERSION, 16, BattleTheme.CY_DIM), Vector2(64, 124)))
+	add_child(_at(BattleTheme.make_label("MISSION CONTROL  ·  v" + GameConfig.VERSION, 16, BattleTheme.CY_DIM), Vector2(64, 136)))
 
 	var menu := VBoxContainer.new()
 	menu.add_theme_constant_override("separation", 14)
@@ -65,6 +71,8 @@ func _build() -> void:
 	menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-5 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DARK))
 
 	_build_status_panel()
+	UiMotion.slide_in(buttons.values(), Vector2(-180, 0), 0.07, 0.3)
+	UiMotion.slide_in([_status_panel], Vector2(120, 0), 0.0, 0.34)
 
 
 func _at(c: Control, pos: Vector2) -> Control:
@@ -89,6 +97,7 @@ func _build_status_panel() -> void:
 	panel.position = Vector2(680, 60)
 	panel.size = Vector2(560, 560)
 	add_child(panel)
+	_status_panel = panel
 
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
@@ -112,6 +121,13 @@ func _build_status_panel() -> void:
 		var cleared: int = RosterState.cleared_tiers(roster, str(boss_id))
 		var line: String = "%-12s %s" % [MissionConfig.boss_title(str(boss_id)), _pips(cleared) if open else "BLOCCATO"]
 		box.add_child(BattleTheme.make_label(line, 17, BattleTheme.CY if open else BattleTheme.CY_DARK))
+
+	box.add_child(HSeparator.new())
+	box.add_child(BattleTheme.make_label("OBIETTIVI DI OGGI  %d/%d" % [Objectives.completed(roster), Objectives.COUNT], 14, BattleTheme.CY_DIM))
+	for o in roster["objectives"]["list"]:
+		var done: bool = bool(o["done"])
+		var txt: String = "%s %s  (%d/%d)" % ["[X]" if done else "[ ]", Objectives.describe(o), int(o["progress"]), int(o["goal"])]
+		box.add_child(BattleTheme.make_label(txt, 16, BattleTheme.CY_DARK if done else BattleTheme.WH))
 
 
 func _pips(cleared: int) -> String:

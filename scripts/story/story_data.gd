@@ -72,10 +72,39 @@ tombino [angry] R: ...AVVICINATI.
 @bg tombino
 *: L'acqua si ritira. Il coperchio si richiude piano, senza rumore.
 elle [happy] L: Se ne e' andato. Credo che ora dorma.
-kira [happy] R: Rapporto finale: tre anomalie neutralizzate, nessuna perdita.
+kira [happy] R: Rapporto: tre anomalie neutralizzate, nessuna perdita.
 dax [neutral] L: Per stavolta.
 bruno [surprised] R: Per stavolta? Dax, hai visto le altre telecamere?
 *: Sul monitor, un'altra luce si accende. CAM-08.
+""",
+	"cabina_pre": """
+@bg cabina
+*: CAM-08. Un angolo dimenticato, dietro la stazione. Una cabina telefonica, senza apparecchio. Eppure squilla.
+bruno [surprised] L: Non c'e' nessun filo. Non puo' squillare.
+kira [neutral] R: Le altre erano mostri. Questa ci sta chiamando.
+elle [sad] L: Dax... la cornetta e' sollevata. Qualcuno e' in linea.
+cabina [neutral] R: PRONTO? PRONTO? CHI PARLA?
+> Rispondiamo -> risposta
+> Riagganciamo -> aggancia
+:risposta
+kira [neutral] L: Siamo la squadra di sorveglianza. Chi sei?
+cabina [sad] R: LA VOCE DI CHI NON HA PIU' RISPOSTO.
+@goto fine
+:aggancia
+dax [angry] L: Non si risponde a un mostro. Si spegne.
+cabina [angry] R: NON RIAGGANCIARE. NON RIAGGANCIARE.
+:fine
+kira [angry] L: Formazione. Questa linea la chiudiamo noi.
+""",
+	"cabina_post": """
+@bg cabina
+*: La cornetta ricade. Il telefono tace. Nella cabina resta solo un gettone, ancora caldo.
+elle [happy] L: Ha smesso di squillare.
+bruno [neutral] R: Quattro anomalie, quattro luoghi della citta'. Non sono casuali.
+kira [surprised] L: Guardate il monitor. Le quattro telecamere formano un disegno sulla mappa.
+dax [angry] R: Un cerchio. E al centro...
+*: Sulla mappa, al centro del cerchio, si accende una quinta luce. Nessun nome. Solo un numero: CAM-00.
+kira [neutral] L: La stagione finisce qui. Ma qualcuno ci sta guardando da quella telecamera.
 """,
 }
 

@@ -94,7 +94,7 @@ func _run() -> void:
 	# --- sblocchi
 	_check("novita' dopo il primo normale", RosterState.unlock_news("distributore", 0).size() == 2)
 	_check("novita' dopo il difficile: solo incubo", RosterState.unlock_news("distributore", 1).size() == 1)
-	_check("niente dopo l'incubo", RosterState.unlock_news("tombino", 2).is_empty())
+	_check("niente dopo l'incubo", RosterState.unlock_news("cabina", 2).is_empty())
 
 	# --- squadra migliore
 	var team_r: Dictionary = RosterState.new_roster()

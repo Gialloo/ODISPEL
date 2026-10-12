@@ -115,6 +115,7 @@ func _build() -> void:
 	_status_label.size = Vector2(960, 28)
 	add_child(_status_label)
 
+	MenuBackdrop.add_to(self, BattleTheme.RD)
 	var cctv := ColorRect.new()
 	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
 	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -335,6 +336,8 @@ func pull(count: int) -> bool:
 		return _say("Reclutamento non riuscito.", false)
 	last_results = r["results"]
 	_save()
+	if DisplayServer.get_name() != "headless":
+		PullReveal.play(self, last_results)
 	_announce_pulls(last_results)
 	return _say("Reclutamento completato (-%d monete)." % int(r["cost"]), true)
 

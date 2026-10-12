@@ -5,7 +5,7 @@ import os
 from PIL import Image, ImageDraw
 
 CHARS = ["kira", "dax", "elle", "bruno"]
-BOSSES = ["distributore", "semaforo", "tombino"]
+BOSSES = ["distributore", "semaforo", "tombino", "cabina"]
 EXPR = ["neutral", "happy", "angry", "sad", "surprised", "hurt"]
 OUT = os.path.join(os.path.dirname(__file__), "..", "art_templates")
 
@@ -35,6 +35,7 @@ for b in BOSSES:
     make("bosses/%s/portrait.png" % b, (1000, 1400), (255, 45, 85))
 for i in range(1, 5):
     make("backgrounds/battle/layer_%d.png" % i, (1400, 800), (42, 138, 154))
+make("logo.png", (1000, 280), (255, 45, 85))
 make("backgrounds/hub.png", (1920, 1080), (42, 138, 154))
 make("backgrounds/dialogue/strada_notte.png", (1920, 1080), (42, 138, 154))
 print("creati i modelli in", os.path.abspath(OUT))

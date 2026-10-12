@@ -44,6 +44,7 @@ func _build_interface() -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
+	MenuBackdrop.add_to(self, BattleTheme.CY)
 	var cctv := ColorRect.new()
 	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
 	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE

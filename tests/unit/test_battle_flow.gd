@@ -20,6 +20,7 @@ func _check(name: String, cond: bool) -> void:
 
 
 func _init() -> void:
+	Objectives.enabled = false
 	_run()
 
 

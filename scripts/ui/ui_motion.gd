@@ -8,7 +8,7 @@ extends RefCounted
 # Fa entrare i controlli (in ordine) dalla direzione indicata. Va chiamata dopo che
 # la schermata e' stata costruita; aspetta un frame per conoscere le posizioni finali.
 static func slide_in(controls: Array, from: Vector2 = Vector2(-120, 0), step: float = 0.06, seconds: float = 0.28) -> void:
-	if controls.is_empty():
+	if controls.is_empty() or DisplayServer.get_name() == "headless":
 		return
 	var tree: SceneTree = (controls[0] as Node).get_tree()
 	if tree == null:

@@ -35,6 +35,7 @@ func _build() -> void:
 	bg.color = BattleTheme.BK
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	MenuBackdrop.add_to(self, BattleTheme.RD)
 	var cctv := ColorRect.new()
 	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
 	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -112,7 +113,9 @@ func _build() -> void:
 	go_button.pressed.connect(_on_go)
 	dbox.add_child(go_button)
 
-	add_child(_hint("INVIO avvia  ·  1-3 bersaglio  ·  SU/GIU difficolta'  ·  ESC indietro", Vector2(440, 640)))
+	UiMotion.slide_in([list_panel], Vector2(-140, 0), 0.0, 0.3)
+	UiMotion.slide_in([det], Vector2(140, 0), 0.0, 0.34)
+	add_child(_hint("INVIO avvia  ·  1-4 bersaglio  ·  SU/GIU difficolta'  ·  ESC indietro", Vector2(440, 640)))
 
 	var back := Button.new()
 	back.text = "TORNA ALL'HUB"
@@ -197,7 +200,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_ENTER, KEY_KP_ENTER:
 			if not go_button.disabled:
 				_on_go()
-		KEY_1, KEY_2, KEY_3:
+		KEY_1, KEY_2, KEY_3, KEY_4:
 			select_boss(str(BattleContent.BOSS_ORDER[int(event.keycode) - int(KEY_1)]))
 		KEY_UP:
 			select_tier(selected_tier - 1)

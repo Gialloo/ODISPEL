@@ -21,7 +21,8 @@ func _shot(name: String) -> void:
 
 func _run() -> void:
 	var r: Dictionary = RosterState.new_roster()
-	RosterState.mark_cleared(r, "distributore", 0)
+	for id in ["distributore", "semaforo", "tombino"]:
+		RosterState.mark_cleared(r, id, 0)
 	var m: Control = load("res://scenes/missions/mission_screen.tscn").instantiate()
 	m.roster = r
 	root.add_child(m)

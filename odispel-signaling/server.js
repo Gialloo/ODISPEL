@@ -13,6 +13,19 @@ const PORT = Number(process.env.ODISPEL_SIGNALING_PORT || CLOUD_PORT || 9080);
 const MAX_CLIENTS_PER_ROOM = 6;
 const MAX_MESSAGE_BYTES = 64 * 1024;
 
+// Limiti di sicurezza (tutti regolabili con variabili d'ambiente, utili nei test).
+// MAX_ROOMS / MAX_CONNECTIONS: oltre, le nuove richieste ricevono un errore.
+// RATE_LIMIT: massimo di messaggi per socket ogni RATE_WINDOW_MS; chi esagera
+// viene scollegato. JOIN_TIMEOUT: chi non entra in una stanza viene chiuso.
+// HEARTBEAT: ping periodico (tiene aperte le connessioni dietro ai proxy del
+// cloud, che chiudono quelle inattive) e chiusura dei socket che non rispondono.
+const MAX_ROOMS = Number(process.env.ODISPEL_MAX_ROOMS || 500);
+const MAX_CONNECTIONS = Number(process.env.ODISPEL_MAX_CONNECTIONS || 2000);
+const RATE_LIMIT = Number(process.env.ODISPEL_RATE_LIMIT || 120);
+const RATE_WINDOW_MS = Number(process.env.ODISPEL_RATE_WINDOW_MS || 10000);
+const JOIN_TIMEOUT_MS = Number(process.env.ODISPEL_JOIN_TIMEOUT_MS || 60000);
+const HEARTBEAT_MS = Number(process.env.ODISPEL_HEARTBEAT_MS || 25000);
+
 // rooms:   roomId -> { host: socket, clients: Set<socket> }
 // clients: socket  -> { roomId, role }
 const rooms = new Map();
@@ -24,6 +37,20 @@ const httpServer = http.createServer((req, res) => {
   if (req.url === "/health" || req.url === "/") {
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end("ok");
+    return;
+  }
+
+  if (req.url === "/stats") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+        rooms: rooms.size,
+        connections: server.clients.size,
+        max_rooms: MAX_ROOMS,
+        max_connections: MAX_CONNECTIONS,
+        uptime_s: Math.round(process.uptime()),
+      })
+    );
     return;
   }
   res.writeHead(404);
@@ -93,6 +120,11 @@ function handleJoin(socket, message) {
       return;
     }
 
+    if (rooms.size >= MAX_ROOMS) {
+      send(socket, { type: "error", code: "server_full" });
+      return;
+    }
+
     rooms.set(roomId, { host: socket, clients: new Set() });
     clients.set(socket, { roomId, role: "host" });
 
@@ -135,12 +167,67 @@ function handleJoin(socket, message) {
   send(room.host, { type: "peer_joined", peer_id: socket.peerId });
 }
 
+function startHeartbeat() {
+  const timer = setInterval(() => {
+    for (const socket of server.clients) {
+      if (socket.isAlive === false) {
+        socket.terminate();
+        continue;
+      }
+
+      socket.isAlive = false;
+      socket.ping();
+    }
+  }, HEARTBEAT_MS);
+
+  timer.unref();
+  return timer;
+}
+
 server.on("connection", (socket) => {
+  if (server.clients.size > MAX_CONNECTIONS) {
+    send(socket, { type: "error", code: "server_full" });
+    socket.close(1013, "server_full");
+    return;
+  }
+
   socket.peerId = crypto.randomUUID();
+  socket.isAlive = true;
+  socket.on("pong", () => {
+    socket.isAlive = true;
+  });
+
+  // Chi si collega e non entra mai in una stanza non deve occupare un posto.
+  const joinTimer = setTimeout(() => {
+    if (!clients.has(socket)) {
+      send(socket, { type: "error", code: "join_timeout" });
+      socket.close(1000, "join_timeout");
+    }
+  }, JOIN_TIMEOUT_MS);
+  joinTimer.unref();
+  socket.on("close", () => clearTimeout(joinTimer));
+
+  let windowStart = Date.now();
+  let windowCount = 0;
 
   send(socket, { type: "connected", peer_id: socket.peerId });
 
   socket.on("message", (raw) => {
+    const now = Date.now();
+
+    if (now - windowStart > RATE_WINDOW_MS) {
+      windowStart = now;
+      windowCount = 0;
+    }
+
+    windowCount += 1;
+
+    if (windowCount > RATE_LIMIT) {
+      send(socket, { type: "error", code: "rate_limited" });
+      socket.close(1008, "rate_limited");
+      return;
+    }
+
     let message;
 
     try {
@@ -222,5 +309,13 @@ httpServer.on("error", (error) => {
   process.exitCode = 1;
 });
 
+startHeartbeat();
 httpServer.listen(PORT, HOST);
+
+// Chiusura ordinata quando la piattaforma riavvia il servizio.
+process.on("SIGTERM", () => {
+  for (const socket of server.clients) socket.close(1001, "server_restart");
+  httpServer.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 3000).unref();
+});
 

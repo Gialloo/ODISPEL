@@ -502,6 +502,9 @@ func finish() -> Dictionary:
 			for line in RosterState.unlock_news(boss_id, tier):
 				Notify.success(line)
 
+	for line in Objectives.record_battle(roster, str(BattleState.boss(battle)["char"]), int(battle.get("tier", 0)), str(battle["winner"]) == "players"):
+		Notify.success(line)
+
 	RosterStore.save(roster, reward_save_path)
 	return battle_rewards
 
@@ -654,7 +657,7 @@ func _check_link_timeouts(now_msec: int) -> void:
 		if is_host:
 			_drop_peer(peer_id)
 		else:
-			network_error.emit("connessione con l'host non riuscita")
+			network_error.emit("connessione con l'host non riuscita (rete troppo restrittiva? vedi docs/PROVA_ONLINE.md)")
 
 
 func _handle_signaling(data: Dictionary) -> void:
@@ -709,6 +712,12 @@ func _handle_signaling(data: Dictionary) -> void:
 					_on_no_host()
 				"room_taken":
 					network_error.emit("stanza già occupata: l'host deve crearla")
+				"server_full":
+					network_error.emit("il server e' pieno: riprova tra qualche minuto")
+				"rate_limited":
+					network_error.emit("troppi messaggi al server: riprova")
+				"join_timeout":
+					network_error.emit("sei rimasto troppo tempo senza entrare in una stanza")
 				var code:
 					network_error.emit("signaling: " + code)
 

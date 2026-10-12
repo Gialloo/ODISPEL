@@ -245,6 +245,8 @@ func _draw_boss_body(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -
 			body = _draw_semaforo(boss, alive, enraged, o)
 		"tombino":
 			body = _draw_tombino(boss, alive, enraged, o)
+		"cabina":
+			body = _draw_cabina(boss, alive, enraged, o)
 		_:
 			body = _draw_distributore(alive, enraged, o)
 	return body
@@ -390,6 +392,56 @@ func _draw_tombino(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> 
 		draw_polyline(PackedVector2Array([Vector2(cx - 60.0, lid_y - 10.0), Vector2(cx - 20.0, lid_y + 8.0), Vector2(cx + 14.0, lid_y - 6.0), Vector2(cx + 70.0, lid_y + 12.0)]), col, 3.0)
 
 	return Rect2(cx - 210.0, 300.0 + o.y, 420.0, 300.0)
+
+
+# La cabina telefonica: la cornetta penzola e il display mostra la mossa annunciata.
+func _draw_cabina(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
+	var cx: float = BOSS_X + o.x
+	var col: Color = BattleTheme.unit_color(str(boss["color"]))
+	var move: String = str(state.get("telegraph", {}).get("move", ""))
+	var ringing: bool = alive and move == "squillo"
+	var body := Rect2(cx - 120.0, 150.0 + o.y, 240.0, 450.0)
+	var frame_col: Color = col if alive else BattleTheme.CY_DARK
+	# tetto
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(body.position.x - 18.0, body.position.y + 30.0), Vector2(body.end.x + 18.0, body.position.y + 30.0),
+		Vector2(body.end.x - 8.0, body.position.y), Vector2(body.position.x + 8.0, body.position.y)]), Color("#0c222a") if alive else Color("#071218"))
+	draw_rect(Rect2(body.position.x + 40.0, body.position.y + 6.0, 160.0, 20.0), Color("#050d10"))
+	draw_string(BattleTheme.display(), Vector2(body.position.x + 74.0, body.position.y + 22.0), "TELEFONO", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, BattleTheme.WH if alive else BattleTheme.CY_DARK)
+	# telaio e vetri a riquadri
+	var shift: float = sin(_t * 40.0) * 3.0 if ringing else 0.0
+	var frame := Rect2(body.position.x + shift, body.position.y + 34.0, body.size.x, body.size.y - 34.0)
+	draw_rect(frame, Color("#08181e") if alive else Color("#050f13"))
+	for r in 4:
+		for c in 3:
+			var pane := Rect2(frame.position.x + 14.0 + float(c) * 70.0, frame.position.y + 14.0 + float(r) * 62.0, 62.0, 54.0)
+			var lit: bool = alive and ((r * 3 + c + int(_t * 1.5)) % 7 == 0)
+			draw_rect(pane, Color(col, 0.30) if lit else Color(BattleTheme.CY, 0.10))
+			draw_rect(pane, Color(frame_col, 0.7), false, 2.0)
+	draw_rect(frame, frame_col, false, 4.0)
+	# display con gli occhi
+	var disp := Rect2(frame.position.x + 60.0, frame.position.y + 270.0, 120.0, 60.0)
+	draw_rect(disp, Color("#02080b"))
+	draw_rect(disp, BattleTheme.RD if enraged else BattleTheme.CY_DIM, false, 2.0)
+	if alive:
+		var blink: float = 1.0 if (int(_t * 2.0) % 2 == 0 or not enraged) else 0.3
+		draw_rect(Rect2(disp.position.x + 20.0, disp.position.y + 20.0, 28.0, 14.0), Color(BattleTheme.RD, blink))
+		draw_rect(Rect2(disp.end.x - 48.0, disp.position.y + 20.0, 28.0, 14.0), Color(BattleTheme.RD, blink))
+	# cornetta penzolante
+	var sway: float = sin(_t * 2.2) * 10.0 + (sin(_t * 30.0) * 6.0 if ringing else 0.0)
+	var hook := Vector2(frame.end.x - 6.0, frame.position.y + 150.0)
+	var tip := Vector2(hook.x + 40.0 + sway, hook.y + 130.0)
+	var cord: PackedVector2Array = PackedVector2Array()
+	for j in 9:
+		var f: float = float(j) / 8.0
+		cord.append(hook.lerp(tip, f) + Vector2(sin(f * 9.0 + _t * 3.0) * 6.0, 0.0))
+	draw_polyline(cord, Color("#12202a"), 6.0)
+	draw_polyline(cord, Color(col, 0.6), 2.0)
+	draw_rect(Rect2(tip.x - 14.0, tip.y, 28.0, 56.0), Color("#0c222a"))
+	draw_rect(Rect2(tip.x - 14.0, tip.y, 28.0, 56.0), frame_col, false, 3.0)
+	# basamento
+	draw_rect(Rect2(body.position.x - 14.0, body.end.y - 6.0, body.size.x + 28.0, 16.0), Color("#03090c"))
+	return Rect2(body.position.x - 20.0, body.position.y, body.size.x + 80.0, body.size.y + 10.0)
 
 
 # ---------- Combattenti ----------

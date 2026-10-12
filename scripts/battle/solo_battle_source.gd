@@ -51,5 +51,7 @@ func finish() -> Dictionary:
 		if RosterState.mark_cleared(roster, boss_id, tier):
 			for line in RosterState.unlock_news(boss_id, tier):
 				Notify.success(line)
+	for line in Objectives.record_battle(roster, boss_id, tier, str(battle["winner"]) == "players"):
+		Notify.success(line)
 	RosterStore.save(roster, save_path)
 	return rewards

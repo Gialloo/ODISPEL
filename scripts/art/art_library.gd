@@ -138,6 +138,7 @@ static func slots() -> Array:
 	for i in range(1, BG_LAYERS + 1):
 		out.append({"path": "backgrounds/battle/layer_%d.png" % i, "group": "Sfondo battaglia", "note": "strato %d (1 = piu' lontano)" % i})
 	out.append({"path": "backgrounds/hub.png", "group": "Sfondi", "note": "sfondo dell'hub"})
+	out.append({"path": "logo.png", "group": "Sfondi", "note": "logo del gioco (hub)"})
 	return out
 
 

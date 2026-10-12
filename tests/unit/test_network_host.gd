@@ -486,7 +486,7 @@ func _test_link_open_timeout() -> void:
 	client._check_link_timeouts(NetworkManager.LINK_OPEN_TIMEOUT_MSEC)
 	_check(
 		"Timeout link: il client riceve un errore",
-		errors.size() == 1 and errors[0] == "connessione con l'host non riuscita"
+		errors.size() == 1 and errors[0].begins_with("connessione con l'host non riuscita")
 	)
 
 	client._check_link_timeouts(NetworkManager.LINK_OPEN_TIMEOUT_MSEC + 1000)

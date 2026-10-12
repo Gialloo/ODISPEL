@@ -85,6 +85,10 @@ const BOSS_MOVES: Dictionary = {
 	"risucchio": {"name": "Risucchio", "target": "weakest", "mult": 0.9, "drain": 0.6},
 	"alluvione": {"name": "Alluvione", "target": "all", "mult": 0.6, "status": {"bleed": 3}},
 	"chiusura": {"name": "Chiusura", "target": "all", "mult": 0.45, "self_shield": 0.05},
+	"squillo": {"name": "Squillo", "target": "all", "mult": 0.5, "status": {"mark": 2}},
+	"chiamata": {"name": "Chiamata", "target": "one", "mult": 1.8},
+	"interferenza": {"name": "Interferenza", "target": "all", "mult": 0.85, "status": {"bleed": 3}, "self_shield": 0.04},
+	"linea_occupata": {"name": "Linea occupata", "target": "weakest", "mult": 0.8, "drain": 0.5},
 }
 
 # Livelli di difficolta': moltiplicano PV e ATK del boss, aggiungono difesa e premi.
@@ -95,7 +99,7 @@ const TIERS: Array = [
 ]
 
 # Ordine di sblocco: si apre il boss successivo battendo il precedente (almeno a NORMALE).
-const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino"]
+const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino", "cabina"]
 
 const BOSSES: Dictionary = {
 	"distributore": {
@@ -124,6 +128,15 @@ const BOSSES: Dictionary = {
 		"atk_scale": [0.62, 0.8, 1.0],
 		"drops": 3,
 		"reward": {"coins": 650, "nucleo": [4, 7], "lega": [3, 6], "gear_chance": 60},
+	},
+	"cabina": {
+		"name": "Cabina", "title": "CLASSE ANOMALIA · MINACCIA CRITICA", "color": "blu", "hp_per_player": 1100,
+		"atk": 360, "def": 30, "spd": 96,
+		"desc": "Una cabina telefonica che squilla da sola. Marchia la squadra, chiama un bersaglio con un colpo pesante e si nutre di chi e' gia' ferito.",
+		"cycle": ["squillo", "chiamata", "interferenza", "linea_occupata"],
+		"atk_scale": [0.62, 0.8, 1.0],
+		"drops": 3,
+		"reward": {"coins": 850, "nucleo": [5, 8], "lega": [4, 7], "gear_chance": 70},
 	},
 }
 

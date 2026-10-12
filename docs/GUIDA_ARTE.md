@@ -26,7 +26,7 @@ Personaggi (`<id>` = kira, dax, elle, bruno, ...):
 | `characters/<id>/icon.png` | liste e lobby | 256x256 |
 | `characters/<id>/battle.png` | figura in battaglia (alta ~230 px nel gioco) | 480x640, piedi sul bordo basso |
 
-Boss (`<boss>` = distributore, semaforo, tombino):
+Boss (`<boss>` = distributore, semaforo, tombino, cabina):
 
 | File | Uso | Misura |
 |---|---|---|
@@ -38,6 +38,7 @@ Sfondi:
 - `backgrounds/battle/layer_1.png` ... `layer_4.png`: strati dal piu' lontano (1) al piu' vicino (4), 1400x800. Si muovono con la parallasse. Usane da 1 a 4.
 - `backgrounds/<boss>/layer_N.png`: come sopra ma solo per quel boss (ha la precedenza).
 - `backgrounds/hub.png`: sfondo dell'hub, 1920x1080.
+- `logo.png`: logo dell'hub (se manca c'e' quello disegnato dal codice), ~1000x280, sfondo trasparente.
 - `backgrounds/dialogue/<nome>.png`: sfondi dei dialoghi, richiamati con `@bg nome`. 1920x1080.
 
 ## Personaggi nuovi

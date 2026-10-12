@@ -1,0 +1,140 @@
+class_name Objectives
+extends RefCounted
+
+# Obiettivi giornalieri: tre compiti nuovi ogni giorno, con un piccolo premio.
+# Vivono nel salvataggio dell'operatore (roster["objectives"]). Si aggiornano da soli a
+# fine battaglia e il premio viene dato subito quando l'obiettivo e' completo.
+#
+# roster["objectives"] = {"day": "2026-10-12", "list": [ {kind, boss, goal, progress, done, reward} ]}
+
+const COUNT: int = 3
+const KINDS: Array = ["play", "win", "win_boss", "win_hard"]
+
+# Spento solo dai test che contano le monete al centesimo.
+static var enabled: bool = true
+
+
+static func today() -> String:
+	return Time.get_date_string_from_system()
+
+
+# Prepara gli obiettivi del giorno se non ci sono (o se sono di ieri). Ritorna true se nuovi.
+static func ensure_today(roster: Dictionary, day: String = "") -> bool:
+	var d: String = day if day != "" else today()
+	var cur: Dictionary = roster.get("objectives", {})
+	if str(cur.get("day", "")) == d and cur.get("list", []).size() > 0:
+		return false
+	roster["objectives"] = {"day": d, "list": _generate(roster, d)}
+	return true
+
+
+static func _generate(roster: Dictionary, day: String) -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(day)
+	var open_bosses: Array = []
+	for id in BattleContent.BOSS_ORDER:
+		if RosterState.is_boss_unlocked(roster, str(id)):
+			open_bosses.append(str(id))
+	var kinds: Array = ["play", "win"]
+	kinds.append("win_boss")
+	var any_hard: bool = false
+	for id in open_bosses:
+		if RosterState.cleared_tiers(roster, str(id)) >= 1:
+			any_hard = true
+	if any_hard:
+		kinds.append("win_hard")
+	# tre tipi diversi, in ordine mescolato ma ripetibile
+	for i in range(kinds.size() - 1, 0, -1):
+		var j: int = rng.randi_range(0, i)
+		var tmp: Variant = kinds[i]
+		kinds[i] = kinds[j]
+		kinds[j] = tmp
+	var out: Array = []
+	for k in mini(COUNT, kinds.size()):
+		out.append(_make(str(kinds[k]), open_bosses, rng))
+	return out
+
+
+static func _make(kind: String, open_bosses: Array, rng: RandomNumberGenerator) -> Dictionary:
+	var o: Dictionary = {"kind": kind, "boss": "", "goal": 1, "progress": 0, "done": false, "reward": {}}
+	match kind:
+		"play":
+			o["goal"] = 3
+			o["reward"] = {"coins": 150}
+		"win":
+			o["goal"] = 2
+			o["reward"] = {"coins": 250, "nucleo": 1}
+		"win_boss":
+			o["boss"] = str(open_bosses[rng.randi_range(0, open_bosses.size() - 1)])
+			o["reward"] = {"coins": 300, "lega": 1}
+		"win_hard":
+			o["reward"] = {"coins": 450, "nucleo": 2}
+	return o
+
+
+static func describe(o: Dictionary) -> String:
+	match str(o["kind"]):
+		"play":
+			return "Affronta %d battaglie" % int(o["goal"])
+		"win":
+			return "Vinci %d battaglie" % int(o["goal"])
+		"win_boss":
+			return "Sconfiggi %s" % MissionConfig.boss_title(str(o["boss"]))
+		"win_hard":
+			return "Vinci a DIFFICILE o piu'"
+	return str(o["kind"])
+
+
+static func reward_text(reward: Dictionary) -> String:
+	var parts: Array = []
+	if int(reward.get("coins", 0)) > 0:
+		parts.append("%d MONETE" % int(reward["coins"]))
+	if int(reward.get("nucleo", 0)) > 0:
+		parts.append("%d NUCLEO" % int(reward["nucleo"]))
+	if int(reward.get("lega", 0)) > 0:
+		parts.append("%d LEGA" % int(reward["lega"]))
+	return " + ".join(parts)
+
+
+# Registra una battaglia finita. Ritorna i testi degli obiettivi appena completati.
+static func record_battle(roster: Dictionary, boss_id: String, tier: int, victory: bool, day: String = "") -> Array:
+	if not enabled:
+		return []
+	ensure_today(roster, day)
+	var done_now: Array = []
+	for o in roster["objectives"]["list"]:
+		if bool(o["done"]):
+			continue
+		var hit: bool = false
+		match str(o["kind"]):
+			"play":
+				hit = true
+			"win":
+				hit = victory
+			"win_boss":
+				hit = victory and str(o["boss"]) == boss_id
+			"win_hard":
+				hit = victory and tier >= 1
+		if not hit:
+			continue
+		o["progress"] = int(o["progress"]) + 1
+		if int(o["progress"]) >= int(o["goal"]):
+			o["done"] = true
+			_give(roster, o["reward"])
+			done_now.append("OBIETTIVO: %s  (+%s)" % [describe(o), reward_text(o["reward"])])
+	return done_now
+
+
+static func _give(roster: Dictionary, reward: Dictionary) -> void:
+	roster["coins"] = int(roster.get("coins", 0)) + int(reward.get("coins", 0))
+	for mat in ["nucleo", "lega"]:
+		if int(reward.get(mat, 0)) > 0:
+			roster["materials"][mat] = int(roster["materials"].get(mat, 0)) + int(reward[mat])
+
+
+static func completed(roster: Dictionary) -> int:
+	var n: int = 0
+	for o in roster.get("objectives", {}).get("list", []):
+		if bool(o["done"]):
+			n += 1
+	return n
