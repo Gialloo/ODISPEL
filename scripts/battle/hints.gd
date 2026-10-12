@@ -146,7 +146,31 @@ static func effect_lines(m: Dictionary, u: Dictionary = {}) -> Array:
 		var amount: String = "%d" % int(round(BattleContent.move_bonus(u, m))) if not u.is_empty() else ""
 		out.append("+%s%% di %s%s." % [BattleText._pct_text(float(bn["pct"])), str(BattleContent.STAT_NAMES.get(bn["stat"], "")), (" (= +%s adesso)" % amount) if amount != "" else ""])
 	for s in m.get("status", {}):
-		out.append("Applica %s per %d turni." % [BattleText.status_name(str(s)), int(m["status"][s])])
+		if str(s) == "mark":
+			out.append("Applica %d MARCHI: ogni marchio = +10%% danni al bersaglio (+15%% ai colpi a munizioni)." % int(m["status"][s]))
+		else:
+			out.append("Applica %s per %d turni." % [BattleText.status_name(str(s)), int(m["status"][s])])
+	if int(m.get("hits", 1)) > 1:
+		out.append("%d colpi in un'azione." % int(m["hits"]))
+	if int(m.get("crit_pm", 0)) > 0:
+		out.append("Critico piu' probabile (+%.1f%%)." % (float(m["crit_pm"]) / 10.0))
+	if m.has("crit_dmg_per_mark"):
+		out.append("Danno critico +%.0f%% per marchio (max +%.0f%%)." % [float(m["crit_dmg_per_mark"]) / 10.0, float(m.get("crit_dmg_cap", 650)) / 10.0])
+	if m.has("consume_marks"):
+		out.append("CONSUMA tutti i marchi: +%d%% danno per ognuno." % int(round(float(m["consume_marks"]) * 100.0)))
+	for st in m.get("debuff", {}):
+		out.append("Bersaglio: %s -%d grado per 2 turni." % [str(BattleContent.STAT_NAMES.get(str(st), str(st).to_upper())), int(m["debuff"][st])])
+	if m.has("ally_buff"):
+		out.append("Alleati: ATK e VEL su di un grado.")
+	if m.has("team_ammo"):
+		out.append("Tutta la squadra LibraCorp: +%d munizioni." % int(m["team_ammo"]))
+	if m.has("summon"):
+		if str(m["summon"]) == "turret":
+			out.append("TORRETTA: spara ogni round (-1 mun). A secco ESPLODE sul boss.")
+		else:
+			out.append("DRONE: scosse ogni round (-1 mun). A secco ESPLODE in SCUDI per la squadra.")
+	if str(m.get("kind", "")) != "guard" and m.has("mult") and not u.is_empty() and Factions.ronda_ready(u):
+		out.append("RONDA PRONTA: esce in forma POTENZIATA (+30% danno, piu' critico).")
 	for s in m.get("self_status", {}):
 		out.append("Ti da' %s (%d turno)." % [BattleText.status_name(str(s)), int(m["self_status"][s])])
 	if bool(m.get("cleanse", false)):

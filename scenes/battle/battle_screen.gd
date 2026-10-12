@@ -404,8 +404,14 @@ func _refresh_boss() -> void:
 	_boss_bar.set_ratio(float(boss["hp"]) / float(boss["max_hp"]))
 	var tags: String = ""
 	for s in boss["statuses"]:
-		tags += "  [%s]" % BattleText.status_name(str(s))
-	_boss_hp.text = "INTEGRITA'  %d / %d%s" % [int(boss["hp"]), int(boss["max_hp"]), tags]
+		if str(s) == "mark" and int(boss.get("marks", 0)) > 0:
+			tags += "  [MARCHI x%d]" % int(boss["marks"])
+		else:
+			tags += "  [%s]" % BattleText.status_name(str(s))
+	for m in boss.get("mods", []):
+		if int(m["pm"]) < 0:
+			tags += " ▼%s" % str(BattleContent.STAT_NAMES.get(str(m["stat"]), str(m["stat"]).to_upper()))
+	_boss_hp.text = "INTEGRITA'  %d/%d%s" % [int(boss["hp"]), int(boss["max_hp"]), tags]
 
 
 func _local_player() -> Dictionary:
@@ -850,6 +856,53 @@ func _event_fx(e: Dictionary) -> float:
 			_pop("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
 		"shield":
 			_float_text("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.CY, 26)
+		"marks":
+			return _fx_marks(e)
+		"dodge":
+			Snd.play("swap")
+			_pop("SCHIVA!", str(e["unit"]), BattleTheme.OK, BattleTheme.BK, 32, 54.0, Vector2(0.0, -30.0))
+		"debuff":
+			Snd.play("down", 1.4)
+			var stat_lab: String = str(BattleContent.STAT_NAMES.get(str(e["stat"]), str(e["stat"]).to_upper()))
+			_float_text("▼ %s" % stat_lab, str(e["unit"]), BattleTheme.RD, 24)
+			ComicFx.speed_lines(_fx, _stage.anchor_of(str(e["unit"])), Color(BattleTheme.RD, 0.8), 0.2)
+		"buff":
+			Snd.play("trait")
+			for p in shown["players"]:
+				var au: Dictionary = BattleState.active_unit(shown, str(p["id"]))
+				if BattleState.is_alive(au):
+					_float_text("▲ ATK  ▲ VEL", str(au["id"]), BattleTheme.OK, 20)
+			ComicFx.flash(_fx, Color(BattleTheme.OK, 0.25), 0.18)
+		"summon":
+			Snd.play("reload")
+			_stage.summon_pulse = 1.0
+			_pop("TORRETTA!" if str(e["kind"]) == "turret" else "DRONE!", str(e["unit"]), BattleTheme.POP, BattleTheme.BK, 30, 56.0, Vector2(90.0, -30.0))
+		"summon_shot":
+			Snd.play("shot", 1.3)
+			var src: Vector2 = _stage.anchor_of(str(e["unit"])) + Vector2(90.0, 20.0)
+			var dstp: Vector2 = _stage.anchor_of(BattleState.BOSS_ID)
+			ComicFx.speed_lines(_fx, dstp, Color(BattleTheme.POP if str(e["kind"]) == "turret" else BattleTheme.CY, 0.9), 0.16)
+			_zap(src, dstp, BattleTheme.POP if str(e["kind"]) == "turret" else BattleTheme.CY)
+		"summon_end":
+			if str(e["kind"]) == "turret" and str(e["reason"]) == "ammo":
+				Snd.play("crit", 0.7)
+				_stage.impact(18.0, 0.05)
+				ComicFx.flash(_fx, Color(1.0, 0.8, 0.3, 0.7), 0.25)
+				_pop("BOOM!", BattleState.BOSS_ID, BattleTheme.POP, BattleTheme.RD, 64, 100.0, Vector2(0.0, -20.0))
+				return 0.2
+			if str(e["kind"]) == "drone" and str(e["reason"]) == "ammo":
+				Snd.play("heal")
+				ComicFx.flash(_fx, Color(BattleTheme.CY, 0.3), 0.2)
+				_pop("SCUDI!", str(e["unit"]), BattleTheme.CY, BattleTheme.BK, 40, 70.0, Vector2(60.0, -20.0))
+		"ronda":
+			if int(e["on"]) == 1:
+				_float_text("RONDA ▲", str(e["unit"]), Color("#f2fdff"), 22)
+			else:
+				Snd.play("crit", 1.2)
+				var rat: Vector2 = _stage.anchor_of(str(e["unit"]))
+				ComicFx.speed_lines(_fx, rat, Color("#f2fdff"), 0.3)
+				UltFx.play(_fx, rat, Color("#f2fdff"), "strike", _stage.anchor_of(BattleState.BOSS_ID))
+				_pop("RONDA!", str(e["unit"]), Color("#f2fdff"), BattleTheme.BK, 40, 70.0, Vector2(0.0, -50.0))
 		"boss_move":
 			Snd.play("boss_charge")
 			_announce(BattleContent.BOSSES.get(str(BattleState.boss(shown)["char"]), {}).get("name", "BOSS"), BattleText.move_name(str(e.get("move", ""))), true)
@@ -875,6 +928,40 @@ func _event_fx(e: Dictionary) -> float:
 			_pop("K.O.!", str(e["unit"]), BattleTheme.RD, BattleTheme.WH, 56, 95.0)
 			return 0.12
 	return 0.0
+
+
+# MARCHI: il mirino compare (o esplode, se consumato) sul boss.
+func _fx_marks(e: Dictionary) -> float:
+	var uid: String = str(e["unit"])
+	_stage.mark_pulse = 1.0
+	if int(e["added"]) > 0:
+		Snd.play("trait", 1.5)
+		_pop("MARCHIO x%d" % int(e["n"]), uid, BattleTheme.POP, BattleTheme.BK, 34, 60.0, Vector2(0.0, -60.0))
+		return 0.0
+	Snd.play("crit", 0.9)
+	_stage.impact(12.0, 0.04)
+	ComicFx.flash(_fx, Color(BattleTheme.POP, 0.4), 0.15)
+	_pop("MARCHI SPESI!", uid, BattleTheme.RD, BattleTheme.WH, 40, 76.0, Vector2(0.0, -60.0))
+	return 0.1
+
+
+# Scarica elettrica a zig-zag tra due punti (torretta, drone).
+func _zap(a: Vector2, b: Vector2, col: Color) -> void:
+	var line := Line2D.new()
+	line.width = 4.0
+	line.default_color = col
+	var pts := PackedVector2Array()
+	for i in 9:
+		var f: float = float(i) / 8.0
+		var p: Vector2 = a.lerp(b, f)
+		if i > 0 and i < 8:
+			p += Vector2(randf_range(-8.0, 8.0), randf_range(-14.0, 14.0))
+		pts.append(p)
+	line.points = pts
+	_fx.add_child(line)
+	var tw := create_tween()
+	tw.tween_property(line, "modulate:a", 0.0, 0.22)
+	tw.tween_callback(line.queue_free)
 
 
 # LINK: striscione al centro con il numero della catena; CROSS in ciano, UNISONO in giallo.
@@ -960,6 +1047,11 @@ func _fx_act(e: Dictionary) -> float:
 		Snd.play("shot")
 	elif int(move.get("ammo_gain", 0)) > 0:
 		Snd.play("reload")
+	if kind == "skill" and str(move.get("target", "")) == "enemy" and move.has("mult"):
+		# abilita': scia nel colore dell'operatore verso il boss
+		var scol: Color = BattleTheme.unit_color(str(unit["color"]))
+		ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), scol, 0.22)
+		_zap(_stage.anchor_of(str(unit["id"])), _stage.anchor_of(BattleState.BOSS_ID), scol)
 	if kind == "ult":
 		var at: Vector2 = _stage.anchor_of(str(unit["id"]))
 		var ucol: Color = BattleTheme.unit_color(str(unit["color"]))
@@ -996,6 +1088,8 @@ func _fx_status(e: Dictionary) -> void:
 			_pop("PROVOCA!", uid, BattleTheme.RD, BattleTheme.WH, 30, 54.0, Vector2(0.0, -40.0))
 		"mark":
 			_pop("MARCHIATO!", uid, BattleTheme.POP, BattleTheme.BK, 28, 54.0, Vector2(0.0, -40.0))
+		"hidden":
+			_pop("NASCOSTO!", uid, BattleTheme.OK, BattleTheme.BK, 28, 52.0, Vector2(0.0, -40.0))
 		"guard":
 			_pop("GUARDIA", uid, BattleTheme.CY, BattleTheme.BK, 26, 50.0, Vector2(0.0, -40.0))
 		"bleed":

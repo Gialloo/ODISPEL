@@ -126,3 +126,10 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
 - **Passive e abilita' uniche** (`scripts/battle/signatures.gd`): una passiva unica per personaggio (effetti `uniq` in per mille, perche' lo stato e' JSON senza decimali) e 1 abilita' (comuni/rari) o 2 (epici/leggendari, la seconda a rank 3). Le mosse uniche (`u_<char>_a/_b`) si aggiungono a `skills` alla creazione dell'unita' e non cadono come premio.
 - **Rank**: +8% statistiche per copia, passiva +15% per rank, rank 3 seconda abilita', rank 5 RISVEGLIO (ultimate +25%, +25 di carica iniziale). Test: `tests/unit/test_archetypes.gd`.
 - **UI**: terminale ordini largo 520 px con attacco e guardia in riga e font adattivo; fulmine del LINK procedurale (`BattleStage._draw_bolt`); font HUD `BattleTheme.hud()`.
+
+## Marchi, evocazioni e Ronda
+
+- **Marchi** (`scripts/battle/marks.gd`): pila sul boss (`marks`, max 6). +10% danni per marchio, +15% ai colpi che usano munizioni. `Marks.add` applica i marchi (e attiva la passiva di Angela), `Marks.consume` li spende (Raggio orbitale). I malus a gradi (`Marks.debuff`, -15% per grado, 2 turni) vivono in `boss["mods"]` e si leggono con `Marks.boss_mult`. `hidden` = elusione (`Marks.dodges`, tiro deterministico).
+- **Evocazioni** (`state["summons"]`): torretta e drone di Angela. Sparano a fine round per -1 munizione; a secco la torretta esplode sul boss e il drone dà scudi alla squadra.
+- **Ronda** (Rondini, `Factions.ronda_*`): con aura attiva la Rondine ha lo stato `ronda` (+8% ATK/VEL). Il suo prossimo attacco con danno esce potenziato (x1,3, x1,15 in piu' per abilita' uniche e ultimate, +25% critico), poi si ricarica in 2 round.
+- **Grafica**: `battle_screen._event_fx` (popup e scariche per marks, debuff, buff, dodge, summon*, ronda); `battle_stage` disegna mirini sul boss, frecce dei malus, torretta/drone, ali della Ronda e contorno tratteggiato del nascosto. Prova visiva: `tools/marks_shot.gd`.

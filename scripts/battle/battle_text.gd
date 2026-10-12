@@ -10,6 +10,7 @@ const STATUS_NAMES: Dictionary = {
 	"bleed": "SANGUINA",
 	"mark": "MARCHIO",
 	"hidden": "NASCOSTO",
+	"ronda": "RONDA",
 }
 
 
@@ -90,6 +91,10 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 			return {"text": "%s: PROTOCOLLO" % unit_name(state, str(e["unit"])), "kind": "info"}
 		"counter":
 			return {"text": "%s CONTRATTACCA" % unit_name(state, str(e["unit"])), "kind": "info"}
+		"ronda":
+			if int(e["on"]) == 1:
+				return {"text": "%s: RONDA PRONTA (prossimo attacco potenziato)" % unit_name(state, str(e["unit"])), "kind": "heal"}
+			return {"text": "%s LIBERA LA RONDA: ATTACCO POTENZIATO" % unit_name(state, str(e["unit"])), "kind": "hit"}
 		"marks":
 			if int(e["added"]) > 0:
 				return {"text": "MARCHI SUL BERSAGLIO: %d  (+%d)" % [int(e["n"]), int(e["added"])], "kind": "info"}
@@ -137,6 +142,13 @@ static func apply_to_display(state: Dictionary, e: Dictionary) -> void:
 					mu["statuses"].erase("mark")
 				else:
 					mu["statuses"]["mark"] = 99
+		"ronda":
+			var ru: Dictionary = BattleState.unit(state, str(e["unit"]))
+			if not ru.is_empty():
+				if int(e["on"]) == 1:
+					ru["statuses"]["ronda"] = 99
+				else:
+					ru["statuses"].erase("ronda")
 		"summon":
 			var sl: Array = state["summons"]
 			for i in range(sl.size() - 1, -1, -1):

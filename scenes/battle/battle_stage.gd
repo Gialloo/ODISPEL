@@ -46,6 +46,8 @@ var boss_hit: float = 0.0           # 1 = appena colpito, scende a 0
 var local_player_id: String = ""    # il giocatore di questo schermo: la sua etichetta e' "TU"
 var acting: String = ""             # unita' che sta agendo (segnalino rosso sopra di lei)
 var acting_target: String = ""      # e chi sta subendo l'azione (cerchio rosso)
+var mark_pulse: float = 0.0         # 1 = marchio appena applicato / consumato, scende a 0
+var summon_pulse: float = 0.0       # 1 = evocazione appena comparsa
 var hit_flash: Dictionary = {}      # unit_id -> intensita'
 var _t: float = 0.0
 var _positions: Dictionary = {}
@@ -138,6 +140,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	boss_hit = maxf(0.0, boss_hit - delta * 3.0)
+	mark_pulse = maxf(0.0, mark_pulse - delta * 2.2)
+	summon_pulse = maxf(0.0, summon_pulse - delta * 2.0)
 	for uid in hit_flash.keys():
 		hit_flash[uid] = maxf(0.0, float(hit_flash[uid]) - delta * 3.0)
 	_shake = maxf(0.0, _shake - delta * 40.0)
@@ -439,6 +443,7 @@ func _draw_boss() -> void:
 	_brackets(br, BattleTheme.RD if alive else BattleTheme.CY_DARK, 5.0, 40.0)
 	if alive:
 		draw_line(Vector2(br.position.x + br.size.x * 0.5, br.position.y), Vector2(br.position.x + br.size.x * 0.5, br.position.y - 22.0), BattleTheme.RD, 3.0)
+		_draw_boss_marks(boss, br)
 
 
 # Il boss disegnato dall'artista: i piedi sul suolo, altezza massima 440. Se esiste
@@ -781,6 +786,7 @@ func _draw_fighters() -> void:
 		var gx: float = fighter_x(i, players.size())
 		_entity_transform(gx)
 		_draw_fighter(u, Vector2(gx, GEO_FLOOR - 120.0), i, str(p["id"]) == local_player_id or (local_player_id == "" and i == 0))
+		_draw_summons(p, gx)
 
 
 func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> void:
@@ -826,6 +832,8 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 		return
 
 	var top: float = foot_y - 210.0 + bob
+	if u["statuses"].has("ronda"):
+		_draw_ronda(cx, foot_y)
 	var sprite: Texture2D = ArtLibrary.battle_sprite(str(u.get("char", "")))
 	if sprite != null:
 		_draw_fighter_sprite(sprite, cx, foot_y, bob, flash_v)
@@ -1025,6 +1033,13 @@ func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index
 	draw_colored_polygon(tab, BattleTheme.RD if is_lead else col)
 	_text(BattleTheme.display(), Vector2(rect.position.x + 6.0, rect.position.y - 10.0), tag, 16, BattleTheme.BK)
 
+	if u["statuses"].has("hidden"):
+		# nascosto: contorno tratteggiato che respira
+		var ha: float = 0.45 + 0.3 * sin(_t * 5.0)
+		draw_dashed_line(rect.position, Vector2(rect.end.x, rect.position.y), Color(BattleTheme.OK, ha), 3.0, 10.0)
+		draw_dashed_line(Vector2(rect.end.x, rect.position.y), rect.end, Color(BattleTheme.OK, ha), 3.0, 10.0)
+		draw_dashed_line(rect.end, Vector2(rect.position.x, rect.end.y), Color(BattleTheme.OK, ha), 3.0, 10.0)
+		draw_dashed_line(Vector2(rect.position.x, rect.end.y), rect.position, Color(BattleTheme.OK, ha), 3.0, 10.0)
 	# stati
 	var sx: float = rect.position.x
 	var statuses: Dictionary = u["statuses"]
@@ -1033,6 +1048,91 @@ func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index
 		sx += 92.0
 	if int(u["shield"]) > 0:
 		draw_arc(Vector2(cx, top + 100.0), 100.0, PI * 1.15, PI * 1.85, 24, Color(BattleTheme.WH, 0.65), 4.0)
+
+
+# MARCHI: un mirino a rombo per ogni marchio sopra il boss, che pulsa quando cambiano.
+func _draw_boss_marks(boss: Dictionary, br: Rect2) -> void:
+	var n: int = int(boss.get("marks", 0))
+	var cx: float = br.position.x + br.size.x * 0.5
+	if n > 0:
+		var gap: float = 56.0
+		var x0: float = cx - gap * float(n - 1) * 0.5
+		for i in n:
+			var c := Vector2(x0 + gap * float(i), br.position.y + 34.0 + sin(_t * 3.0 + float(i)) * 3.0)
+			var r: float = 22.0 + 10.0 * mark_pulse
+			var d := PackedVector2Array([c + Vector2(0, -r), c + Vector2(r, 0), c + Vector2(0, r), c + Vector2(-r, 0), c + Vector2(0, -r)])
+			draw_colored_polygon(d.slice(0, 4), Color(BattleTheme.BK, 0.7))
+			draw_polyline(d, BattleTheme.POP, 3.0)
+			var a: float = _t * 1.5 + float(i)
+			for k in 4:
+				var ang: float = a + float(k) * PI * 0.5
+				draw_line(c + Vector2(cos(ang), sin(ang)) * (r + 3.0), c + Vector2(cos(ang), sin(ang)) * (r + 9.0), Color(BattleTheme.POP, 0.85), 2.0)
+			draw_circle(c, 3.5, BattleTheme.RD)
+		_text(BattleTheme.display(), Vector2(cx + gap * float(n) * 0.5 + 8.0, br.position.y + 42.0), "x%d" % n, 28, BattleTheme.POP)
+	# malus a gradi: freccette verso il basso sotto il riquadro
+	var dx: float = br.position.x + 16.0
+	var seen: Dictionary = {}
+	for m in boss.get("mods", []):
+		if int(m["pm"]) >= 0 or seen.has(str(m["stat"])):
+			continue
+		seen[str(m["stat"])] = true
+		var lab: String = str(BattleContent.STAT_NAMES.get(str(m["stat"]), str(m["stat"]).to_upper()))
+		var by: float = br.position.y + 92.0 + 3.0 * sin(_t * 4.0 + dx)
+		draw_colored_polygon(PackedVector2Array([Vector2(dx, by - 12.0), Vector2(dx + 14.0, by - 12.0), Vector2(dx + 7.0, by + 1.0)]), BattleTheme.RD)
+		_text(BattleTheme.mono(), Vector2(dx + 18.0, by), lab, 20, BattleTheme.RD)
+		dx += 100.0
+
+
+# Torretta e drone evocati: accanto al loro operatore.
+func _draw_summons(p: Dictionary, gx: float) -> void:
+	var foot_y: float = GEO_FLOOR + 8.0
+	var grow: float = 1.35 + 0.45 * summon_pulse
+	for s in state.get("summons", []):
+		if not p["team"].has(str(s["owner"])):
+			continue
+		var owner: Dictionary = BattleState.unit(state, str(s["owner"]))
+		if not BattleState.is_alive(owner):
+			continue
+		var ammo_ratio: float = float(owner["ammo"]) / maxf(1.0, float(owner["ammo_max"]))
+		if str(s["kind"]) == "turret":
+			var b := Vector2(gx + 96.0, foot_y - 6.0)
+			draw_colored_polygon(_ellipse(Vector2(b.x, b.y + 6.0), 36.0, 8.0, 14), SHADOW_COLOR)
+			draw_colored_polygon(PackedVector2Array([b + Vector2(-26, 0) * grow, b + Vector2(26, 0) * grow, b + Vector2(16, -24) * grow, b + Vector2(-16, -24) * grow]), K_12505E)
+			draw_polyline(PackedVector2Array([b + Vector2(-26, 0) * grow, b + Vector2(-16, -24) * grow, b + Vector2(16, -24) * grow, b + Vector2(26, 0) * grow]), BattleTheme.POP, 3.0)
+			var head := b + Vector2(0, -34) * grow
+			draw_circle(head, 13.0 * grow, K_0F3844)
+			draw_arc(head, 13.0 * grow, 0.0, TAU, 20, BattleTheme.POP, 3.0)
+			draw_line(head, head + Vector2(46, -6) * grow, BattleTheme.WH, 6.0)
+			draw_line(head + Vector2(46, -6) * grow, head + Vector2(58, -7) * grow, BattleTheme.POP, 6.0)
+			if ammo_ratio < 0.35:
+				# sta per esplodere: alone rosso che lampeggia
+				draw_arc(head, 24.0 + 4.0 * sin(_t * 14.0), 0.0, TAU, 24, Color(BattleTheme.RD, 0.9), 3.0)
+		else:
+			var c := Vector2(gx + 92.0, foot_y - 190.0 + sin(_t * 3.0) * 8.0)
+			draw_colored_polygon(_ellipse(c, 30.0 * grow, 30.0 * grow, 18), Color(BattleTheme.CY, 0.12 + 0.1 * summon_pulse))
+			draw_circle(c, 13.0 * grow, K_0F3844)
+			draw_arc(c, 13.0 * grow, 0.0, TAU, 20, BattleTheme.CY, 3.0)
+			draw_circle(c, 5.0, BattleTheme.WH)
+			for k in 4:
+				var ang: float = _t * 18.0 + float(k) * PI * 0.5
+				var tip: Vector2 = c + Vector2(cos(ang), sin(ang) * 0.35) * 30.0 * grow
+				draw_line(c, tip, Color(BattleTheme.CY, 0.8), 3.0)
+			if ammo_ratio < 0.35:
+				draw_arc(c, 22.0 + 3.0 * sin(_t * 14.0), 0.0, TAU, 24, Color(BattleTheme.RD, 0.9), 3.0)
+
+
+# RONDA carica: ali di scie bianche ai lati dell'operatore e anello al suolo.
+func _draw_ronda(cx: float, foot_y: float) -> void:
+	var col := Color("#f2fdff")
+	var flap: float = sin(_t * 6.0)
+	for side in [-1.0, 1.0]:
+		for k in 3:
+			var y0: float = foot_y - 130.0 - float(k) * 22.0
+			var spread: float = 70.0 + float(k) * 18.0 + 6.0 * flap
+			var tip := Vector2(cx + side * spread, y0 - 34.0 - 8.0 * flap)
+			draw_polyline(PackedVector2Array([Vector2(cx + side * 34.0, y0), Vector2(cx + side * (spread * 0.6), y0 - 22.0 - 5.0 * flap), tip]), Color(col, 0.75 - 0.18 * float(k)), 4.0 - float(k))
+	draw_polyline(_ellipse(Vector2(cx, foot_y + 8.0), 90.0, 21.0, 28) + PackedVector2Array([Vector2(cx + 90.0, foot_y + 8.0)]), Color(col, 0.55 + 0.3 * sin(_t * 6.0)), 3.0)
+	_text(BattleTheme.display(), Vector2(cx - 30.0, foot_y - 224.0), "RONDA", 16, col)
 
 
 func _brackets(r: Rect2, col: Color, width: float, l: float) -> void:

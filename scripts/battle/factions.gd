@@ -35,6 +35,13 @@ const STYLES: Array = ["ortodosso", "atipico"]
 # Stile: l'ortodosso dà e riceve l'aura per intero; l'atipico ne dà e ne riceve la metà, ma guadagna bonus personali.
 const ATYPICAL_AURA_PCT: int = 50
 const ATYPICAL_SELF_PM: Dictionary = {"atk": 80, "spd": 50}
+# RONDA: una Rondine con aura attiva porta la "carica" (stato ronda): +8% ATK e +8% VEL finche' ce l'ha,
+# e il suo prossimo attacco (base, abilita' o ultimate) esce in forma POTENZIATA. Poi si ricarica dopo qualche round.
+const RONDA_STAT_PM: int = 80
+const RONDA_MULT: float = 1.3
+const RONDA_UNIQUE_MULT: float = 1.15       # in piu' per le abilita' uniche e per l'ultimate
+const RONDA_CRIT_PM: int = 250
+const RONDA_RECHARGE: int = 2
 const STAT_LABELS: Dictionary = {"atk": "ATK", "def": "DIF", "spd": "VEL", "crit": "CRIT"}
 
 
@@ -143,6 +150,30 @@ static func auras_for_team(state: Dictionary, team: Array) -> Dictionary:
 	return out
 
 
+static func ronda_ready(u: Dictionary) -> bool:
+	return str(u.get("faction", "")) == "rondini" and u["statuses"].has("ronda") and not u.get("aura", {}).is_empty()
+
+
+# Inizio round: chi ha l'aura e non e' carico scala la ricarica e, a zero, si carica. Chi perde l'aura perde la carica.
+static func ronda_tick(state: Dictionary, events: Array) -> void:
+	for p in state["players"]:
+		for uid in p["team"]:
+			var u: Dictionary = BattleState.unit(state, uid)
+			if u.is_empty() or str(u.get("faction", "")) != "rondini" or not BattleState.is_alive(u):
+				continue
+			if u.get("aura", {}).is_empty():
+				u["statuses"].erase("ronda")
+				continue
+			if u["statuses"].has("ronda"):
+				continue
+			var cd: int = int(u.get("ronda_cd", 0)) - 1
+			u["ronda_cd"] = maxi(0, cd)
+			if cd <= 0:
+				u["statuses"]["ronda"] = 99
+				events.append({"t": "ronda", "unit": uid, "on": 1})
+	refresh(state)
+
+
 # Ricalcola atk, def, spd e crit di tutte le unita' dei giocatori: base + aure + mods.
 static func refresh(state: Dictionary) -> void:
 	for p in state["players"]:
@@ -160,6 +191,9 @@ static func refresh(state: Dictionary) -> void:
 			if is_atypical(u):
 				for st in ATYPICAL_SELF_PM:
 					total[st] = int(total.get(st, 0)) + int(ATYPICAL_SELF_PM[st])
+			if u["statuses"].has("ronda") and not aura.is_empty():
+				total["atk"] = int(total.get("atk", 0)) + RONDA_STAT_PM
+				total["spd"] = int(total.get("spd", 0)) + RONDA_STAT_PM
 			for m in Archetypes.mods_for(u):
 				total[str(m["stat"])] = int(total.get(str(m["stat"]), 0)) + int(m["pm"])
 			for m in u["mods"]:

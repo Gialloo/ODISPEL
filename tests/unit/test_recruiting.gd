@@ -92,6 +92,8 @@ func _test_duplicates() -> void:
 	var saw_new: bool = false
 	for i in 800:
 		var res: Dictionary = Recruiting.pull(r, 1, 1000 + i)
+		if res["results"].is_empty():
+			break
 		var o: Dictionary = res["results"][0]
 		if o["outcome"] == "rank":
 			saw_rank = true

@@ -24,6 +24,7 @@ static func _save_rng(state: Dictionary, rng: RNGState) -> void:
 # ---------- Inizio round / annuncio mossa del boss ----------
 
 static func begin_round(state: Dictionary) -> void:
+	Factions.ronda_tick(state, state["events"])
 	var boss: Dictionary = BattleState.boss(state)
 	var def: Dictionary = BattleContent.BOSSES[str(boss["char"])]
 	var cycle: Array = def["cycle"]
@@ -444,6 +445,13 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 					targets.append(u)
 
 	var bonus: float = BattleContent.move_bonus(actor, move)
+	# forma potenziata delle Rondini: la carica dell'aura si spende sul prossimo attacco
+	var empowered: bool = move.has("mult") and Factions.ronda_ready(actor)
+	var emp_mult: float = 1.0
+	var emp_crit: int = 0
+	if empowered:
+		emp_mult = Factions.RONDA_MULT * (Factions.RONDA_UNIQUE_MULT if (kind == "ult" or move.has("unique")) else 1.0)
+		emp_crit = Factions.RONDA_CRIT_PM
 	var ammo_hit: bool = int(move.get("ammo", 0)) > 0
 	for t in targets:
 		if not BattleState.is_alive(t):
@@ -452,7 +460,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		if move.has("status") and str(t["side"]) == "boss" and move["status"].has("mark"):
 			Marks.add(state, t, int(move["status"]["mark"]) + Archetypes.status_extra(actor, "mark"), events)
 		if move.has("mult"):
-			var m_total: float = float(move["mult"]) * (1.0 + link_gain * float(link_n)) * awake_mult
+			var m_total: float = float(move["mult"]) * (1.0 + link_gain * float(link_n)) * awake_mult * emp_mult
 			if move.has("consume_marks"):
 				# Orbital Strike: ogni marchio sul bersaglio vale danno in piu', poi i marchi spariscono
 				m_total *= 1.0 + float(move["consume_marks"]) * float(Marks.count(t))
@@ -461,7 +469,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 				boost = mini(int(move.get("crit_dmg_cap", 650)), int(move["crit_dmg_per_mark"]) * Marks.count(t))
 			for _i in int(move.get("hits", 1)):
 				if BattleState.is_alive(t):
-					_hit(state, actor, t, m_total, events, int(move.get("pierce", 0)), bonus, ammo_hit, int(move.get("crit_pm", 0)), boost)
+					_hit(state, actor, t, m_total, events, int(move.get("pierce", 0)), bonus, ammo_hit, int(move.get("crit_pm", 0)) + emp_crit, boost)
 			if move.has("consume_marks"):
 				Marks.consume(t, events)
 		if move.has("heal"):
@@ -489,6 +497,12 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		if move.has("debuff") and BattleState.is_alive(t) and str(t["side"]) == "boss":
 			for st in move["debuff"]:
 				Marks.debuff(t, str(st), int(move["debuff"][st]), events)
+
+	if empowered:
+		actor["statuses"].erase("ronda")
+		actor["ronda_cd"] = Factions.RONDA_RECHARGE
+		events.append({"t": "ronda", "unit": actor["id"], "on": 0, "move": move_id})
+		Factions.refresh(state)
 
 	# effetti di squadra, evocazioni
 	if move.has("team_ammo"):
