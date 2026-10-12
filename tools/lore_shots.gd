@@ -9,7 +9,9 @@ func _shot(dir: String, name: String) -> void:
 
 
 func _init() -> void:
-	var dir: String = OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "/tmp"
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var dir: String = args[0] if args.size() > 0 else "/tmp"
+	TouchUi.force = args.size() > 1 and args[1] == "1"
 	var screen: Control = load("res://scenes/roster/roster_screen.tscn").instantiate()
 	screen.roster = RosterState.new_roster()
 	screen.save_path = "user://shot_lore_tmp.json"
@@ -25,4 +27,6 @@ func _init() -> void:
 	await _shot(dir, "lore_archivio0")
 	g.show_page(4, false)
 	await _shot(dir, "lore_archivio4")
+	g.show_page(7, false)
+	await _shot(dir, "lore_archivio7")
 	quit()
