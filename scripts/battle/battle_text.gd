@@ -89,6 +89,10 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 			return {"text": "%s: PROTOCOLLO" % unit_name(state, str(e["unit"])), "kind": "info"}
 		"counter":
 			return {"text": "%s CONTRATTACCA" % unit_name(state, str(e["unit"])), "kind": "info"}
+		"link":
+			return {"text": "LINK x%d · %s + %s%s" % [int(e["n"]), unit_name(state, str(e["with"])), unit_name(state, str(e["unit"])), "  (UNISONO)" if str(e["kind"]) == "unison" else "  (CROSS: ULT +%d)" % BattleTypes.LINK_GAUGE], "kind": "link"}
+		"link_break":
+			return {"text": "CATENA INTERROTTA (x%d)" % int(e["n"]), "kind": "info"}
 		"cleanse":
 			return {"text": "%s PURIFICATO" % unit_name(state, str(e["unit"])), "kind": "heal"}
 		"bleed":

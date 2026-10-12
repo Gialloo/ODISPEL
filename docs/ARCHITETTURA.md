@@ -103,3 +103,14 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
   nell'esito del reclutamento e nei premi di fine battaglia. Le rarita' del gioco sono 4 (BattleTypes.RARITIES): una quinta ("non comune")
   richiederebbe di ribilanciare quote e statistiche.
 - I menu hanno un velo leggero (solo vignettatura, senza retino ne' righe sopra le scritte); i testi secondari sono piu' chiari.
+
+## Imprese, mosse a livelli, contenuti (0.8.x)
+
+- **Imprese** (`scripts/roster/feats.gd`, schermata `scenes/feats`): obiettivi permanenti con premi fissi, calcolati dal salvataggio (`roster["stats"]`, `roster["feats"]["claimed"]`). Hub: pulsante OBIETTIVI, tasto 6.
+- **Mosse a 4 livelli**: `BattleContent.FAMILIES` genera gli id base, `_r`, `_e`, `_l`. Ogni mossa somma un bonus piatto `statistica * pct/100` a danno, cura o scudo (`BattleContent.move_bonus`, applicato in `BattleResolver._player_act`).
+- **Boss**: 7 in `BOSS_ORDER` (distributore, semaforo, tombino, cabina, ascensore, manichino, orologio). Il primo boss regala l'alleato Eco (`"ally"` nel boss, `RosterState.grant_story_allies`). Ogni boss ha una scena di storia in `scripts/story/story_data.gd`.
+
+## LINK (sinergie) e stile pop/neon
+
+- **LINK**: nello stesso round, se due compagni agiscono di fila senza che il boss si muova, nasce un anello (`BattleResolver._chain_link`): +15% di danno per anello (max 4, `BattleTypes.LINK_*`). Fazioni diverse = CROSS (ultimate +12 a entrambi); stessa fazione o colore = UNISONO (anello doppio). Il boss spezza la catena (`link_break`). Eventi `link` e `link_break`, mostrati da `battle_screen._fx_link`. Test: `tests/unit/test_link.gd`.
+- **Direzione artistica**: sfondo procedurale pop/neon in `battle_stage._paint_procedural_background` (cielo viola-magenta, sole a strisce, palazzi con insegne, griglia al neon); operatori con anello luminoso e raggio di luce.

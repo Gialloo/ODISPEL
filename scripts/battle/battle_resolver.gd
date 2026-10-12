@@ -143,6 +143,7 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 		return events
 
 	var rng: RNGState = _load_rng(state)
+	state["link"] = {"n": 0, "last": ""}
 
 	# 1. scelte mancanti: IA, oppure attacco standard se forzato
 	for p in state["players"]:
@@ -186,6 +187,7 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 		if not BattleState.is_alive(actor):
 			continue
 		if bool(a["boss"]):
+			_break_link(state, events)
 			_boss_act(state, actor, str(a["move"]), str(a["target"]), rng, events)
 		else:
 			_player_act(state, actor, str(a["move"]), str(a["target"]), events)
@@ -281,6 +283,36 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float,
 	return maxi(1, int(round(dmg)))
 
 
+# LEGAMI: se due compagni agiscono di fila nello stesso round (senza che il boss si intrometta) nasce un LINK.
+# Ogni anello aggiunge danno a chi attacca; fazioni diverse (CROSS) caricano l'ultimate di entrambi,
+# la stessa fazione o lo stesso colore (UNISONO) rende il colpo ancora piu' forte.
+static func _chain_link(state: Dictionary, actor: Dictionary, events: Array) -> int:
+	var link: Dictionary = state.get("link", {"n": 0, "last": ""})
+	var last: Dictionary = BattleState.unit(state, str(link.get("last", "")))
+	var n: int = 0
+	if not last.is_empty() and str(last["id"]) != str(actor["id"]):
+		n = mini(int(link.get("n", 0)) + 1, BattleTypes.LINK_MAX)
+		var fa: String = BattleContent.faction_of(str(actor["char"]), actor)
+		var fl: String = BattleContent.faction_of(str(last["char"]), last)
+		var kind: String = "cross"
+		if fa == fl or str(actor["color"]) == str(last["color"]):
+			kind = "unison"
+			n = mini(n + 1, BattleTypes.LINK_MAX)
+		else:
+			actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + BattleTypes.LINK_GAUGE)
+			last["gauge"] = mini(BattleTypes.GAUGE_MAX, int(last["gauge"]) + BattleTypes.LINK_GAUGE)
+		events.append({"t": "link", "unit": actor["id"], "with": last["id"], "n": n, "kind": kind})
+	state["link"] = {"n": n, "last": str(actor["id"])}
+	return n
+
+
+static func _break_link(state: Dictionary, events: Array) -> void:
+	var link: Dictionary = state.get("link", {})
+	if int(link.get("n", 0)) > 0:
+		events.append({"t": "link_break", "n": int(link["n"])})
+	state["link"] = {"n": 0, "last": ""}
+
+
 # Applica un colpo: prima lo scudo, poi i PV. Carica le barre ultimate.
 static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, mult: float, events: Array, pierce: int = 0, flat: float = 0.0) -> void:
 	var dmg: int = calc_damage(attacker, defender, mult, pierce, flat)
@@ -360,6 +392,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	elif kind == "skill":
 		actor["energy"] = int(actor["energy"]) - int(move["cost"])
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
+	var link_n: int = _chain_link(state, actor, events)
 	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
 
 	if move.has("energy"):
@@ -390,7 +423,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		if not BattleState.is_alive(t):
 			continue
 		if move.has("mult"):
-			_hit(state, actor, t, float(move["mult"]), events, int(move.get("pierce", 0)), bonus)
+			_hit(state, actor, t, float(move["mult"]) * (1.0 + BattleTypes.LINK_BONUS * float(link_n)), events, int(move.get("pierce", 0)), bonus)
 		if move.has("heal"):
 			var amount: int = int(round(float(actor["atk"]) * float(move["heal"]) + bonus))
 			var before: int = int(t["hp"])

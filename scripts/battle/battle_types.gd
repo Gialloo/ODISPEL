@@ -36,6 +36,11 @@ const GAUGE_MAX: int = 100
 const GAUGE_ON_HIT: int = 15
 const GAUGE_ON_DAMAGED: int = 10
 
+# LEGAMI (combo tra compagni nello stesso round)
+const LINK_BONUS: float = 0.15     # danno in piu' per ogni anello della catena
+const LINK_MAX: int = 4
+const LINK_GAUGE: int = 12         # ultimate caricata a entrambi quando si legano fazioni diverse (CROSS)
+
 const BLEED_FRACTION: float = 0.04
 const MARK_BONUS: float = 1.25
 const GUARD_FACTOR: float = 0.5

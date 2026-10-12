@@ -310,58 +310,100 @@ func _draw_background() -> void:
 # Lo sfondo disegnato dal codice (quando non ci sono le tue immagini). Si esegue una volta
 # sola, sul livello statico: `c` e' il nodo su cui disegnare.
 func _paint_procedural_background(c: CanvasItem) -> void:
-	# cielo a strisce
-	var top: Color = K_041015
-	var bottom: Color = K_0C3038
-	var strips: int = 22
+	# cielo pop: dal viola notte al magenta caldo sull'orizzonte
+	var strips: int = 28
+	var sky_top := Color("#0a0626")
+	var sky_mid := Color("#32116a")
+	var sky_low := Color("#d12a86")
 	for i in strips:
 		var f: float = float(i) / float(strips - 1)
-		c.draw_rect(Rect2(0.0, HORIZON * float(i) / float(strips), DW, HORIZON / float(strips) + 1.0), top.lerp(bottom, f))
+		var col: Color = sky_top.lerp(sky_mid, minf(f * 1.6, 1.0)) if f < 0.62 else sky_mid.lerp(sky_low, (f - 0.62) / 0.38)
+		c.draw_rect(Rect2(0.0, HORIZON * float(i) / float(strips), DW, HORIZON / float(strips) + 1.0), col)
 
-	# palazzi lontani
+	# fasce diagonali di colore (carta da manga pop)
+	for k in 5:
+		var x0: float = -200.0 + float(k) * 330.0
+		var band := PackedVector2Array([Vector2(x0, 0.0), Vector2(x0 + 90.0, 0.0), Vector2(x0 - 130.0, HORIZON), Vector2(x0 - 220.0, HORIZON)])
+		c.draw_colored_polygon(band, Color(1.0, 1.0, 1.0, 0.035) if k % 2 == 0 else Color(0.2, 0.9, 1.0, 0.045))
+
+	# mezzatinta (puntini) agli angoli del cielo
+	for row in 9:
+		for col_i in 26:
+			var dx: float = 20.0 + float(col_i) * 14.0 + (7.0 if row % 2 == 1 else 0.0)
+			var dy: float = 14.0 + float(row) * 14.0
+			var fade: float = clampf(1.0 - float(col_i) / 26.0 - float(row) * 0.07, 0.0, 1.0)
+			if fade > 0.05:
+				c.draw_circle(Vector2(dx, dy), 1.0 + 3.0 * fade, Color(1.0, 0.3, 0.7, 0.16))
+				c.draw_circle(Vector2(DW - dx, dy), 1.0 + 3.0 * fade, Color(0.3, 0.95, 1.0, 0.14))
+
+	# sole a strisce, dietro ai palazzi
+	var sun := Vector2(DW * 0.5, HORIZON - 40.0)
+	for i in 40:
+		var f2: float = float(i) / 39.0
+		var r_h: float = 118.0
+		var y: float = sun.y - r_h + f2 * r_h * 2.0
+		var half: float = sqrt(maxf(0.0, r_h * r_h - (y - sun.y) * (y - sun.y)))
+		var cut: bool = f2 > 0.5 and int(f2 * 40.0) % 3 == 0
+		if not cut and y < HORIZON:
+			c.draw_rect(Rect2(sun.x - half, y, half * 2.0, 5.0), Color("#ffe14d").lerp(Color("#ff3f9a"), f2))
+
+	# palazzi con insegne neon
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
+	var neon: Array = [Color("#7cf0ff"), Color("#ff3fd0"), Color("#fff36b"), Color("#b07bff")]
 	var x: float = -20.0
+	var bi: int = 0
 	while x < DW:
 		var w: float = rng.randf_range(60.0, 150.0)
-		var h: float = rng.randf_range(70.0, 190.0)
-		c.draw_rect(Rect2(x, HORIZON - h, w, h), K_08242C)
-		c.draw_rect(Rect2(x, HORIZON - h, w, 3.0), K_12505E)
+		var h: float = rng.randf_range(70.0, 200.0)
+		var tint: Color = neon[bi % neon.size()]
+		c.draw_rect(Rect2(x, HORIZON - h, w, h), Color("#14083a"))
+		c.draw_rect(Rect2(x + w - 10.0, HORIZON - h, 10.0, h), Color("#0a0424"))
+		c.draw_rect(Rect2(x, HORIZON - h, w, 4.0), tint)
+		c.draw_line(Vector2(x, HORIZON - h), Vector2(x, HORIZON), Color(tint, 0.55), 2.0)
 		var wy: float = HORIZON - h + 14.0
 		while wy < HORIZON - 12.0:
 			var wx: float = x + 8.0
-			while wx < x + w - 12.0:
-				if rng.randf() < 0.28:
-					c.draw_rect(Rect2(wx, wy, 7.0, 9.0), Color(CY_WINDOW, rng.randf_range(0.25, 0.8)))
+			while wx < x + w - 14.0:
+				if rng.randf() < 0.3:
+					c.draw_rect(Rect2(wx, wy, 7.0, 9.0), Color(neon[rng.randi() % neon.size()], rng.randf_range(0.35, 0.9)))
 				wx += 16.0
 			wy += 20.0
+		if bi % 3 == 1 and h > 110.0:
+			# insegna verticale
+			c.draw_rect(Rect2(x + w * 0.5 - 7.0, HORIZON - h - 38.0, 14.0, 36.0), Color(tint, 0.9))
+			c.draw_rect(Rect2(x + w * 0.5 - 3.0, HORIZON - h - 34.0, 6.0, 28.0), Color("#14083a"))
 		x += w + rng.randf_range(2.0, 14.0)
+		bi += 1
 
-	# asfalto
-	c.draw_rect(Rect2(0.0, HORIZON, DW, DH - HORIZON), K_071A20)
+	# asfalto: griglia neon in prospettiva
+	c.draw_rect(Rect2(0.0, HORIZON, DW, DH - HORIZON), Color("#0b0524"))
+	c.draw_rect(Rect2(0.0, HORIZON, DW, 3.0), Color("#ff3fd0"))
 	var vp := Vector2(DW * 0.5, HORIZON)
 	var lx: float = -900.0
 	while lx < DW + 900.0:
-		c.draw_line(vp, Vector2(lx, DH), Color(K_103C46, 0.75), 1.5)
+		c.draw_line(vp, Vector2(lx, DH), Color("#ff3fd0", 0.38), 1.5)
 		lx += 150.0
 	for row in 9:
-		var y: float = HORIZON + pow(float(row + 1), 2.0) * 4.6
-		c.draw_line(Vector2(0.0, y), Vector2(DW, y), Color(K_0F3640, 0.6), 1.0)
+		var gy: float = HORIZON + pow(float(row + 1), 2.0) * 4.6
+		c.draw_line(Vector2(0.0, gy), Vector2(DW, gy), Color("#7cf0ff", 0.30), 1.0)
 
 	# strisce dei parcheggi
 	for side in [-1.0, 1.0]:
 		for j in 4:
 			var base_x: float = DW * 0.5 + side * (190.0 + float(j) * 210.0)
-			c.draw_line(vp + Vector2(side * 18.0 * float(j + 1), 0.0), Vector2(base_x + side * 120.0, DH), Color(K_9CEAF5, 0.28), 3.0)
+			c.draw_line(vp + Vector2(side * 18.0 * float(j + 1), 0.0), Vector2(base_x + side * 120.0, DH), Color(K_9CEAF5, 0.3), 3.0)
 
-	# lampioni
+	# lampioni al neon
 	for lamp_x in [70.0, 1210.0]:
-		c.draw_line(Vector2(lamp_x, FLOOR_Y + 30.0), Vector2(lamp_x, 110.0), K_1A5A68, 6.0)
-		c.draw_line(Vector2(lamp_x, 110.0), Vector2(lamp_x + (46.0 if lamp_x < 640.0 else -46.0), 98.0), K_1A5A68, 5.0)
-		var lh: float = lamp_x + (46.0 if lamp_x < 640.0 else -46.0)
+		var dirx: float = 46.0 if lamp_x < 640.0 else -46.0
+		c.draw_line(Vector2(lamp_x, FLOOR_Y + 30.0), Vector2(lamp_x, 110.0), Color("#3a1a78"), 6.0)
+		c.draw_line(Vector2(lamp_x, 110.0), Vector2(lamp_x + dirx, 98.0), Color("#3a1a78"), 5.0)
+		var lh: float = lamp_x + dirx
+		c.draw_circle(Vector2(lh, 100.0), 16.0, Color("#ff3fd0", 0.25))
 		c.draw_circle(Vector2(lh, 100.0), 9.0, K_D6FFFF)
 		var cone: PackedVector2Array = PackedVector2Array([Vector2(lh, 104.0), Vector2(lh - 120.0, FLOOR_Y + 30.0), Vector2(lh + 120.0, FLOOR_Y + 30.0)])
-		c.draw_colored_polygon(cone, Color(K_7CF0FF, 0.06))
+		c.draw_colored_polygon(cone, Color("#ff7be8", 0.07))
 
 
 const CY_WINDOW: Color = Color("#8ff6ff")
@@ -752,8 +794,19 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 	if alive and flash_v > 0.0:
 		body_col = body_col.lerp(BattleTheme.WH, flash_v)
 
-	# ombra
+	# ombra e anello neon del colore dell'operatore
 	draw_colored_polygon(_ellipse(Vector2(cx, foot_y + 8.0), 54.0, 11.0, 16), SHADOW_COLOR)
+	if alive:
+		var pulse: float = 0.5 + 0.5 * sin(_t * 3.0 + float(index))
+		draw_colored_polygon(_ellipse(Vector2(cx, foot_y + 8.0), 74.0, 17.0, 24), Color(col, 0.16 + 0.1 * pulse))
+		draw_polyline(_ellipse(Vector2(cx, foot_y + 8.0), 74.0, 17.0, 24) + PackedVector2Array([Vector2(cx + 74.0, foot_y + 8.0)]), Color(col, 0.9), 3.0)
+		draw_polyline(_ellipse(Vector2(cx, foot_y + 8.0), 58.0, 12.0, 24) + PackedVector2Array([Vector2(cx + 58.0, foot_y + 8.0)]), Color(BattleTheme.WH, 0.5), 1.5)
+		if is_lead:
+			# raggio di luce e rombo sopra il proprio operatore
+			var beam := PackedVector2Array([Vector2(cx - 60.0, foot_y), Vector2(cx - 30.0, foot_y - 260.0), Vector2(cx + 30.0, foot_y - 260.0), Vector2(cx + 60.0, foot_y)])
+			draw_colored_polygon(beam, Color(col, 0.07 + 0.04 * pulse))
+			var dy: float = foot_y - 262.0 + sin(_t * 4.0) * 4.0
+			draw_colored_polygon(PackedVector2Array([Vector2(cx, dy + 14.0), Vector2(cx - 11.0, dy), Vector2(cx, dy - 14.0), Vector2(cx + 11.0, dy)]), BattleTheme.POP)
 
 	if not alive:
 		# a terra

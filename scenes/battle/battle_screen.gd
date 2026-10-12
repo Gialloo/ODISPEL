@@ -85,6 +85,8 @@ func tutorial_steps() -> Array:
 		"text": "Scegli cosa fare: ATTACCO, GUARDIA (dimezza i danni), le abilita' (costano energia) e l'ULTIMATE, che si carica combattendo. Scorciatoie: tasti 1-4. I colori contano: un colpo del colore giusto fa +50% di danni, quello sbagliato -33%."},
 		{"title": "CLASSI E FAZIONI", "target": null,
 		"text": "STRIKER fa danno, VANGUARD regge i colpi, WARDEN cura e protegge. Le FAZIONI (LibraCorp, Rondini, Magabondi, Kairos) danno bonus ai compagni dello stesso gruppo: piu' sono rari, piu' il bonus e' grande. Nell'archivio operatori trovi STRATEGIE, ARCHIVIO e la LEGENDA di ogni personaggio."},
+		{"title": "LINK: LA CATENA", "target": _panel_of(_turn_box),
+		"text": "Quando due compagni agiscono di fila (prima che il boss si muova) nasce un LINK: ogni anello da' +15% di danno. Fazioni DIVERSE = CROSS, caricano l'ultimate di entrambi. Stessa fazione o stesso colore = UNISONO, anello doppio. Metti in squadra alleati improbabili e fai agire i tuoi di fila: il boss spezza la catena."},
 		{"title": "PRONTO?", "target": null,
 		"text": "Il registro in basso racconta cosa succede ogni round. Se finisce male, non c'e' problema: si ritenta e si guadagnano comunque monete per potenziare la squadra. Buona fortuna!"},
 	]
@@ -417,6 +419,8 @@ func _refresh_telegraph() -> void:
 	var move_id: String = str(tele["move"])
 	var def: Dictionary = BattleContent.BOSS_MOVES[move_id]
 	_tele_label.text = "» %s" % BattleText.move_name(move_id)
+	var tlen: int = _tele_label.text.length()
+	_tele_label.add_theme_font_size_override("font_size", 28 if tlen <= 14 else maxi(17, int(28.0 * 14.0 / float(tlen))))
 	if str(def["target"]) == "all":
 		_tele_target.text = "COLPISCE TUTTI GLI OPERATORI"
 	else:
@@ -779,6 +783,7 @@ func _play_events(events: Array) -> void:
 		_refresh_operators()
 		await get_tree().create_timer(event_delay + extra).timeout
 	animating = false
+	_link_clear()
 	_stage.clear_markers()
 	_turn_acting = ""
 	if not is_inside_tree():
@@ -836,6 +841,10 @@ func _event_fx(e: Dictionary) -> float:
 			return _fx_act(e)
 		"swap":
 			Snd.play("swap")
+		"link":
+			return _fx_link(e)
+		"link_break":
+			_link_clear()
 		"down":
 			Snd.play("down")
 			_stage.impact(14.0, 0.04)
@@ -843,6 +852,41 @@ func _event_fx(e: Dictionary) -> float:
 			_pop("K.O.!", str(e["unit"]), BattleTheme.RD, BattleTheme.WH, 56, 95.0)
 			return 0.12
 	return 0.0
+
+
+# LINK: striscione al centro con il numero della catena; CROSS in ciano, UNISONO in giallo.
+var _link_node: Label
+
+func _fx_link(e: Dictionary) -> float:
+	var n: int = int(e["n"])
+	var unison: bool = str(e["kind"]) == "unison"
+	var col: Color = BattleTheme.POP if unison else BattleTheme.CY
+	Snd.play("crit", 1.0 + 0.12 * float(n))
+	_link_clear()
+	var l := BattleTheme.make_label("LINK x%d" % n, 54 + n * 6, col, true)
+	l.add_theme_color_override("font_outline_color", BattleTheme.BK)
+	l.add_theme_constant_override("outline_size", 14)
+	l.position = Vector2(470.0, 120.0)
+	l.rotation = deg_to_rad(-6.0)
+	l.pivot_offset = Vector2(120.0, 40.0)
+	l.scale = Vector2(1.7, 1.7)
+	_fx.add_child(l)
+	_link_node = l
+	var tw := create_tween()
+	tw.tween_property(l, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	ComicFx.speed_lines(_fx, _stage.anchor_of(str(e["unit"])), col, 0.28)
+	_pop("UNISONO!" if unison else "CROSS! ULT +%d" % BattleTypes.LINK_GAUGE, str(e["unit"]), col, BattleTheme.BK, 28, 56.0, Vector2(0.0, -40.0))
+	_stage.impact(5.0 + 2.0 * float(n), 0.0)
+	return 0.1
+
+
+func _link_clear() -> void:
+	if _link_node != null and is_instance_valid(_link_node):
+		var l: Label = _link_node
+		var tw := create_tween()
+		tw.tween_property(l, "modulate:a", 0.0, 0.25)
+		tw.tween_callback(l.queue_free)
+	_link_node = null
 
 
 func _fx_damage(e: Dictionary) -> float:
@@ -960,6 +1004,8 @@ func _push_log(text: String, kind: String) -> void:
 			color = "#f2fdff"
 		"boss":
 			color = "#ff2d55"
+		"link":
+			color = "#ffe14d"
 		"heal":
 			color = "#6bffb0"
 		"down", "end":
