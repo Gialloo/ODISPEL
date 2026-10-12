@@ -25,7 +25,7 @@ func _run() -> void:
 
 	# --- Cabina
 	var b: Dictionary = BattleContent.BOSSES["cabina"]
-	_check("cabina e' l'ultimo boss", BattleContent.BOSS_ORDER.back() == "cabina")
+	_check("cabina viene dopo il tombino", BattleContent.BOSS_ORDER.find("cabina") == BattleContent.BOSS_ORDER.find("tombino") + 1)
 	var all_moves: bool = true
 	for m in b["cycle"]:
 		if not BattleContent.BOSS_MOVES.has(str(m)):

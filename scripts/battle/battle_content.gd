@@ -122,6 +122,7 @@ const CHARACTERS: Dictionary = {
 	"rex": {"name": "Rex", "color": "rosso", "cls": "striker", "rarity": 0, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk", "faction": "rondini"},
 	"ivo": {"name": "Ivo", "color": "blu", "cls": "striker", "rarity": 1, "skill": "marchio", "ult": "spezzatutto", "passive": "p_swap", "faction": "magabondi", "style": "atipico"},
 	"sera": {"name": "Sera", "color": "verde", "cls": "warden", "rarity": 2, "skill": "barriera", "ult": "rinascita", "passive": "p_hunter", "faction": "rondini"},
+	"eco": {"name": "Eco", "color": "giallo", "cls": "striker", "rarity": 2, "skill": "marchio", "ult": "spezzatutto", "passive": "p_atk", "faction": "kairos"},
 	"tana": {"name": "Tana", "color": "giallo", "cls": "vanguard", "rarity": 3, "skill": "provoca", "ult": "bastione", "passive": "p_hunter", "faction": "libracorp"},
 }
 
@@ -173,6 +174,18 @@ const BOSS_MOVES: Dictionary = {
 	"chiamata": {"name": "Chiamata", "target": "one", "mult": 1.8},
 	"interferenza": {"name": "Interferenza", "target": "all", "mult": 0.85, "status": {"bleed": 3}, "self_shield": 0.04},
 	"linea_occupata": {"name": "Linea occupata", "target": "weakest", "mult": 0.8, "drain": 0.5},
+	"porte": {"name": "Porte che si chiudono", "target": "one", "mult": 1.9},
+	"caduta_libera": {"name": "Caduta libera", "target": "all", "mult": 0.8, "status": {"bleed": 3}},
+	"piano_zero": {"name": "Piano zero", "target": "weakest", "mult": 0.9, "drain": 0.5},
+	"manutenzione": {"name": "Manutenzione", "target": "all", "mult": 0.5, "status": {"mark": 2}, "self_shield": 0.08},
+	"posa": {"name": "Posa", "target": "one", "mult": 1.7},
+	"vetrina": {"name": "Vetrina", "target": "all", "mult": 0.6, "status": {"mark": 2}},
+	"copia": {"name": "Copia", "target": "weakest", "mult": 0.9, "drain": 0.6},
+	"sfilata": {"name": "Sfilata", "target": "all", "mult": 1.0},
+	"rintocco": {"name": "Rintocco", "target": "one", "mult": 2.0},
+	"lancette": {"name": "Lancette", "target": "all", "mult": 0.9, "status": {"bleed": 3}},
+	"ora_zero": {"name": "Ora zero", "target": "all", "mult": 0.65, "status": {"mark": 2}, "self_shield": 0.06},
+	"tempo_perso": {"name": "Tempo perso", "target": "weakest", "mult": 1.0, "drain": 0.7},
 }
 
 # Livelli di difficolta': moltiplicano PV e ATK del boss, aggiungono difesa e premi.
@@ -183,7 +196,7 @@ const TIERS: Array = [
 ]
 
 # Ordine di sblocco: si apre il boss successivo battendo il precedente (almeno a NORMALE).
-const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino", "cabina"]
+const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino", "cabina", "ascensore", "manichino", "orologio"]
 
 const BOSSES: Dictionary = {
 	"distributore": {
@@ -191,6 +204,7 @@ const BOSSES: Dictionary = {
 		"atk": 390, "def": 25, "spd": 105,
 		"desc": "Un distributore automatico impazzito. Colpi pesanti a un solo bersaglio e scosse che fanno sanguinare.",
 		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
+		"ally": "eco",
 		"atk_scale": [0.62, 0.8, 1.0],
 		"drops": 3,
 		"reward": {"coins": 600, "nucleo": [4, 8], "lega": [2, 6], "gear_chance": 65},
@@ -221,6 +235,33 @@ const BOSSES: Dictionary = {
 		"atk_scale": [0.62, 0.8, 1.0],
 		"drops": 4,
 		"reward": {"coins": 1700, "nucleo": [10, 16], "lega": [8, 14], "gear_chance": 95},
+	},
+	"ascensore": {
+		"name": "Ascensore", "title": "CLASSE ANOMALIA · MINACCIA ESTREMA", "color": "blu", "hp_per_player": 1200,
+		"atk": 380, "def": 40, "spd": 90,
+		"desc": "L'ascensore della torre LibraCorp: sale a piani che non esistono. Porte che si chiudono su un solo bersaglio, cadute su tutta la squadra, e una manutenzione che lo protegge.",
+		"cycle": ["porte", "caduta_libera", "piano_zero", "manutenzione"],
+		"atk_scale": [0.62, 0.8, 1.0],
+		"drops": 4,
+		"reward": {"coins": 2100, "nucleo": [12, 18], "lega": [9, 15], "gear_chance": 100},
+	},
+	"manichino": {
+		"name": "Manichino", "title": "CLASSE ANOMALIA · MINACCIA ESTREMA", "color": "verde", "hp_per_player": 1150,
+		"atk": 400, "def": 28, "spd": 112,
+		"desc": "Un manichino in vetrina che copia chi lo guarda. Veloce: marchia tutti dietro il vetro, posa su un bersaglio e si nutre dei feriti.",
+		"cycle": ["posa", "vetrina", "copia", "sfilata"],
+		"atk_scale": [0.62, 0.8, 1.0],
+		"drops": 4,
+		"reward": {"coins": 2500, "nucleo": [14, 20], "lega": [11, 17], "gear_chance": 100},
+	},
+	"orologio": {
+		"name": "Orologio", "title": "CLASSE ANOMALIA · MINACCIA ASSOLUTA", "color": "viola", "hp_per_player": 1500,
+		"atk": 420, "def": 45, "spd": 100,
+		"desc": "L'orologio della torre, al centro di CAM-00. Ferma il tempo per chi lo guarda: colpi pesanti, lancette che feriscono tutti e un'ora zero che marchia la squadra.",
+		"cycle": ["rintocco", "lancette", "ora_zero", "tempo_perso"],
+		"atk_scale": [0.62, 0.8, 1.0],
+		"drops": 5,
+		"reward": {"coins": 3500, "nucleo": [18, 26], "lega": [14, 22], "gear_chance": 100},
 	},
 }
 

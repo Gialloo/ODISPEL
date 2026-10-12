@@ -92,7 +92,7 @@ func _run() -> void:
 	_check("completato tutto: ripete l'ultima", str(MissionConfig.suggest(fresh)["boss"]) == MissionConfig.boss_id)
 
 	# --- sblocchi
-	_check("novita' dopo il primo normale", RosterState.unlock_news("distributore", 0).size() == 2)
+	_check("novita' dopo il primo normale", RosterState.unlock_news("distributore", 0).size() == 3)
 	_check("novita' dopo il difficile: solo incubo", RosterState.unlock_news("distributore", 1).size() == 1)
 	_check("niente dopo l'incubo", RosterState.unlock_news("cabina", 2).is_empty())
 
@@ -112,7 +112,7 @@ func _run() -> void:
 	hub.roster = hub_roster
 	root.add_child(hub)
 	await process_frame
-	_check("l'hub ha i 5 pulsanti", hub.buttons.size() == 5)
+	_check("l hub ha i 6 pulsanti", hub.buttons.size() == 6)
 	_check("CONTINUA propone la missione giusta", hub.continue_button.text.contains("DISTRIBUTORE") and hub.continue_button.text.contains("DIFFICILE"))
 	var overflow: bool = false
 	for b in hub.buttons.values():

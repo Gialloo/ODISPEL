@@ -425,6 +425,12 @@ func _draw_boss_body(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -
 			body = _draw_tombino(boss, alive, enraged, o)
 		"cabina":
 			body = _draw_cabina(boss, alive, enraged, o)
+		"ascensore":
+			body = _draw_ascensore(boss, alive, enraged, o)
+		"manichino":
+			body = _draw_manichino(boss, alive, enraged, o)
+		"orologio":
+			body = _draw_orologio(boss, alive, enraged, o)
 		_:
 			body = _draw_distributore(alive, enraged, o)
 	return body
@@ -568,6 +574,108 @@ func _draw_tombino(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> 
 
 
 # La cabina telefonica: la cornetta penzola e il display mostra la mossa annunciata.
+# L'ascensore: due porte che si aprono e si chiudono su un buio con due occhi rossi.
+func _draw_ascensore(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
+	var cx: float = BOSS_X + o.x
+	var col: Color = BattleTheme.unit_color(str(boss["color"]))
+	var move: String = str(state.get("telegraph", {}).get("move", ""))
+	var body := Rect2(cx - 150.0, 160.0 + o.y, 300.0, 440.0)
+	draw_rect(body, K_0C222A if alive else K_071218)
+	draw_rect(body, col if alive else BattleTheme.CY_DARK, false, 4.0)
+	# indicatore del piano
+	var disp := Rect2(body.position.x + 90.0, body.position.y + 14.0, 120.0, 44.0)
+	draw_rect(disp, K_02080B)
+	draw_rect(disp, BattleTheme.RD if enraged else BattleTheme.CY_DIM, false, 2.0)
+	var floors: Array = ["13", "0", "??", "-1", "13"]
+	_text(BattleTheme.display(), Vector2(disp.position.x + 30.0, disp.position.y + 34.0), str(floors[int(_t * 1.3) % floors.size()]), 28, BattleTheme.RD if alive else BattleTheme.CY_DARK)
+	# vano scuro con gli occhi
+	var shaft := Rect2(body.position.x + 30.0, body.position.y + 78.0, body.size.x - 60.0, body.size.y - 98.0)
+	draw_rect(shaft, K_02080B)
+	if alive:
+		var blink: float = 1.0 if (int(_t * 2.0) % 2 == 0 or not enraged) else 0.3
+		draw_rect(Rect2(shaft.position.x + 50.0, shaft.position.y + 110.0, 40.0, 18.0), Color(BattleTheme.RD, blink))
+		draw_rect(Rect2(shaft.end.x - 90.0, shaft.position.y + 110.0, 40.0, 18.0), Color(BattleTheme.RD, blink))
+	# porte: si chiudono di colpo quando sta per usare "porte"
+	var gap: float = (0.5 + 0.5 * sin(_t * 1.1)) * 70.0 if alive else 0.0
+	if alive and move == "porte":
+		gap = 4.0
+	var half: float = shaft.size.x * 0.5
+	draw_rect(Rect2(shaft.position.x, shaft.position.y, half - gap, shaft.size.y), K_12202A)
+	draw_rect(Rect2(shaft.position.x + half + gap, shaft.position.y, half - gap, shaft.size.y), K_12202A)
+	draw_rect(Rect2(shaft.position.x, shaft.position.y, half - gap, shaft.size.y), BattleTheme.CY_DIM, false, 2.0)
+	draw_rect(Rect2(shaft.position.x + half + gap, shaft.position.y, half - gap, shaft.size.y), BattleTheme.CY_DIM, false, 2.0)
+	return body
+
+
+# Il manichino: figura liscia in vetrina, la posa cambia piano piano.
+func _draw_manichino(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
+	var cx: float = BOSS_X + o.x
+	var col: Color = BattleTheme.unit_color(str(boss["color"]))
+	var line: Color = col if alive else BattleTheme.CY_DARK
+	var fill: Color = K_0C222A if alive else K_071218
+	var glass := Rect2(cx - 190.0, 150.0 + o.y, 380.0, 450.0)
+	draw_rect(glass, Color(BattleTheme.CY, 0.06))
+	draw_rect(glass, BattleTheme.CY_DIM, false, 3.0)
+	draw_line(glass.position + Vector2(40.0, 20.0), glass.position + Vector2(120.0, 90.0), Color(1, 1, 1, 0.12), 6.0)
+	var sway: float = sin(_t * 0.9) * (14.0 if alive else 0.0)
+	var pose: float = sin(_t * 0.6 + 1.0) * 18.0 if alive else 0.0
+	# base
+	draw_rect(Rect2(cx - 90.0, 572.0 + o.y, 180.0, 16.0), K_12202A)
+	# gambe
+	draw_line(Vector2(cx - 24.0, 380.0 + o.y), Vector2(cx - 34.0 + sway * 0.3, 570.0 + o.y), line, 14.0)
+	draw_line(Vector2(cx + 24.0, 380.0 + o.y), Vector2(cx + 40.0 - sway * 0.3, 570.0 + o.y), line, 14.0)
+	# busto
+	var torso := PackedVector2Array([
+		Vector2(cx - 62.0 + sway, 260.0 + o.y), Vector2(cx + 62.0 + sway, 260.0 + o.y),
+		Vector2(cx + 46.0, 392.0 + o.y), Vector2(cx - 46.0, 392.0 + o.y)])
+	draw_colored_polygon(torso, fill)
+	draw_polyline(PackedVector2Array([torso[0], torso[1], torso[2], torso[3], torso[0]]), line, 4.0)
+	# braccia in posa
+	draw_line(Vector2(cx - 62.0 + sway, 268.0 + o.y), Vector2(cx - 120.0, 330.0 + o.y + pose), line, 12.0)
+	draw_line(Vector2(cx - 120.0, 330.0 + o.y + pose), Vector2(cx - 96.0, 400.0 + o.y), line, 10.0)
+	draw_line(Vector2(cx + 62.0 + sway, 268.0 + o.y), Vector2(cx + 124.0, 300.0 + o.y - pose), line, 12.0)
+	draw_line(Vector2(cx + 124.0, 300.0 + o.y - pose), Vector2(cx + 150.0, 250.0 + o.y), line, 10.0)
+	# testa senza volto
+	var head := Vector2(cx + sway * 1.4, 214.0 + o.y)
+	draw_circle(head, 40.0, fill)
+	draw_arc(head, 40.0, 0.0, TAU, 32, line, 4.0)
+	if alive:
+		var blink: float = 1.0 if (int(_t * 2.0) % 2 == 0 or not enraged) else 0.3
+		draw_line(head + Vector2(-20.0, 2.0), head + Vector2(20.0, 2.0), Color(BattleTheme.RD, blink), 5.0)
+	return glass
+
+
+# L'orologio della torre: quadrante con le lancette, piu' veloci quando e' furioso.
+func _draw_orologio(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
+	var cx: float = BOSS_X + o.x
+	var col: Color = BattleTheme.unit_color(str(boss["color"]))
+	var line: Color = col if alive else BattleTheme.CY_DARK
+	var move: String = str(state.get("telegraph", {}).get("move", ""))
+	var tower := Rect2(cx - 110.0, 420.0 + o.y, 220.0, 180.0)
+	draw_rect(tower, K_0C222A if alive else K_071218)
+	draw_rect(tower, line, false, 3.0)
+	draw_colored_polygon(PackedVector2Array([Vector2(cx - 130.0, 156.0 + o.y), Vector2(cx, 120.0 + o.y), Vector2(cx + 130.0, 156.0 + o.y)]), K_12202A)
+	var face := Vector2(cx, 300.0 + o.y)
+	var r: float = 150.0
+	draw_circle(face, r, K_08181E if alive else K_050F13)
+	draw_arc(face, r, 0.0, TAU, 48, line, 6.0)
+	draw_arc(face, r - 12.0, 0.0, TAU, 48, Color(line, 0.4), 2.0)
+	for i in 12:
+		var a: float = TAU * float(i) / 12.0 - PI * 0.5
+		var d := Vector2(cos(a), sin(a))
+		draw_line(face + d * (r - 26.0), face + d * (r - 10.0), line, 4.0 if i % 3 == 0 else 2.0)
+	var speed: float = 3.0 if enraged else 1.0
+	if alive and move == "ora_zero":
+		speed = 0.0
+	var t: float = _t * speed
+	var ha: float = t * 0.15 - PI * 0.5
+	var ma: float = t * 1.8 - PI * 0.5
+	draw_line(face, face + Vector2(cos(ha), sin(ha)) * (r * 0.5), BattleTheme.WH if alive else BattleTheme.CY_DARK, 9.0)
+	draw_line(face, face + Vector2(cos(ma), sin(ma)) * (r * 0.78), BattleTheme.RD if alive else BattleTheme.CY_DARK, 6.0)
+	draw_circle(face, 10.0, line)
+	return Rect2(face.x - r, face.y - r, r * 2.0, 450.0)
+
+
 func _draw_cabina(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
 	var cx: float = BOSS_X + o.x
 	var col: Color = BattleTheme.unit_color(str(boss["color"]))

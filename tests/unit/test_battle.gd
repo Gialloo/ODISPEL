@@ -356,7 +356,7 @@ func _test_drops() -> void:
 	var rng: RNGState = RNGState.new()
 	rng.setup(5)
 	var drops: Array = BattleContent.roll_drops("distributore", rng)
-	_check("il boss lascia premi", drops.size() == 2)
+	_check("il boss lascia premi", drops.size() == 3)
 	var valid: bool = true
 	for d in drops:
 		var table: Dictionary = BattleContent.MOVES if d["kind"] == "move" else BattleContent.PASSIVES

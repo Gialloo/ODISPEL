@@ -35,7 +35,7 @@ func _rich(coins: int = 100000) -> Dictionary:
 
 func _test_content() -> void:
 	_check("contenuti coerenti (con rarita')", BattleContent.validate().is_empty())
-	_check("10 personaggi in totale", BattleContent.CHARACTERS.size() == 10)
+	_check("11 personaggi in totale", BattleContent.CHARACTERS.size() == 11)
 	var per_rarity: Array = [0, 0, 0, 0]
 	for id in BattleContent.CHARACTERS:
 		per_rarity[BattleContent.CHARACTERS[id]["rarity"]] += 1
@@ -100,7 +100,7 @@ func _test_duplicates() -> void:
 	_check("si vedono personaggi nuovi", saw_new)
 	_check("si vedono copie che fanno salire il rank", saw_rank)
 	_check("rank mai oltre il massimo", _max_rank(r) <= RosterState.MAX_RANK)
-	_check("tutti e 10 i personaggi alla fine", r["characters"].size() == 10)
+	_check("tutti e 11 i personaggi alla fine", r["characters"].size() == 11)
 	_check("collezione valida dopo 200 reclutamenti", RosterState.validate(r) == "")
 	_check("il rank di Kira non e' sceso", r["characters"]["kira"]["rank"] >= owned_rank_before)
 

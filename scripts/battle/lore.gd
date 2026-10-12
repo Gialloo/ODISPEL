@@ -21,6 +21,11 @@ const CHARACTERS: Dictionary = {
 		"lore": "Studia le anomalie per capirle prima di combatterle. Porta sempre con se' un taccuino e le erbe di sua nonna.",
 		"tactic": "CURA chi scende sotto meta' vita; RINASCITA cura e toglie i malus a tutti. L'entrata scudata la rende ottima da far entrare a meta' battaglia.",
 	},
+	"eco": {
+		"tag": "L'anomalia che si e' unita a noi",
+		"lore": "Una voce nata nei display e nelle linee della citta', che ripete cio' che sente e sta imparando cosa significa. E' dalla parte della squadra, anche se nessuno sa ancora perche'.",
+		"tactic": "MARCHIO fa piu' danno a tutto il gruppo sul bersaglio segnato: marchia, poi lascia agire i compagni. SPEZZATUTTO quando il boss e' segnato. Non da' aure: fazione Kairos.",
+	},
 	"bruno": {
 		"tag": "Scudi per tutti",
 		"lore": "Tranquillo, metodico, controlla due volte ogni serratura. La sua magia costruisce barriere dove servono.",

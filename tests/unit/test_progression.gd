@@ -104,12 +104,12 @@ func _test_level_up() -> void:
 
 func _test_rewards() -> void:
 	var win: Dictionary = BattleRewards.for_player("distributore", 123, 0, true)
-	_check("la vittoria da' monete e materiali", win["coins"] == 300 and win["materials"].size() > 0)
+	_check("la vittoria da' monete e materiali", win["coins"] == 600 and win["materials"].size() > 0)
 	_check("la vittoria da' mosse o passive", win["drops"].size() >= 2)
 	_check("premi deterministici", BattleRewards.for_player("distributore", 123, 0, true) == win)
 	_check("giocatori diversi, premi diversi", BattleRewards.for_player("distributore", 123, 1, true) != win or BattleRewards.for_player("distributore", 123, 2, true) != win)
 	var lose: Dictionary = BattleRewards.for_player("distributore", 123, 0, false)
-	_check("la sconfitta da' solo un po' di monete", lose["coins"] == 75 and lose["materials"].is_empty() and lose["drops"].is_empty())
+	_check("la sconfitta da' solo un po' di monete", lose["coins"] == 200 and lose["materials"].is_empty() and lose["drops"].is_empty())
 	_check("boss sconosciuto: nessun premio", BattleRewards.for_player("drago", 1, 0, true)["coins"] == 0)
 
 	var gear_seen: bool = false
@@ -122,7 +122,7 @@ func _test_rewards() -> void:
 				if not BattleContent.GEAR_BASE.has(d["slot"]) or d["rarity"] < 0 or d["rarity"] > 3:
 					in_range = false
 		var n: int = int(rw["materials"].get("nucleo", 0))
-		if n < 2 or n > 4:
+		if n < 4 or n > 8:
 			in_range = false
 	_check("ogni tanto il boss lascia un pezzo", gear_seen)
 	_check("pezzi e materiali nei limiti", in_range)
@@ -131,9 +131,9 @@ func _test_rewards() -> void:
 	_check("niente premi a battaglia in corso", BattleRewards.for_battle(s, "distributore", 5).is_empty())
 	s["winner"] = "players"
 	var all: Dictionary = BattleRewards.for_battle(s, "distributore", 5)
-	_check("premi per ogni giocatore", all.size() == 2 and all["a"]["coins"] == 300 and all["b"]["coins"] == 300)
+	_check("premi per ogni giocatore", all.size() == 2 and all["a"]["coins"] == 600 and all["b"]["coins"] == 600)
 	s["winner"] = "boss"
-	_check("sconfitta: premio ridotto", BattleRewards.for_battle(s, "distributore", 5)["a"]["coins"] == 75)
+	_check("sconfitta: premio ridotto", BattleRewards.for_battle(s, "distributore", 5)["a"]["coins"] == 200)
 
 
 func _test_apply_rewards() -> void:

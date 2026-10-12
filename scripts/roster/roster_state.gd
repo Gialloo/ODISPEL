@@ -522,6 +522,17 @@ static func create_solo_battle(roster: Dictionary, player_name: String, boss_id:
 
 # ---------- Progressi e sblocchi ----------
 
+# Alcuni boss, una volta battuti (anche solo a NORMALE), portano un nuovo alleato nella storia.
+# Idempotente: si puo' richiamare a ogni caricamento (chi aveva gia' battuto il boss lo riceve).
+static func grant_story_allies(roster: Dictionary) -> void:
+	for boss_id in BattleContent.BOSS_ORDER:
+		var ally: String = str(BattleContent.BOSSES.get(boss_id, {}).get("ally", ""))
+		if ally == "" or cleared_tiers(roster, str(boss_id)) < 1:
+			continue
+		if BattleContent.CHARACTERS.has(ally) and not owns(roster, ally):
+			add_character(roster, ally)
+
+
 # Quanti livelli di difficolta' di un boss sono stati battuti (0..3).
 static func cleared_tiers(roster: Dictionary, boss_id: String) -> int:
 	return int(roster.get("cleared", {}).get(boss_id, 0))
@@ -536,12 +547,16 @@ static func mark_cleared(roster: Dictionary, boss_id: String, tier: int) -> bool
 	if cleared_tiers(roster, boss_id) >= tier + 1:
 		return false
 	roster["cleared"][boss_id] = tier + 1
+	grant_story_allies(roster)
 	return true
 
 
 # Cosa si e' sbloccato battendo `boss_id` al livello `tier` per la prima volta.
 static func unlock_news(boss_id: String, tier: int) -> Array:
 	var news: Array = []
+	var ally: String = str(BattleContent.BOSSES.get(boss_id, {}).get("ally", ""))
+	if tier == 0 and ally != "":
+		news.append("NUOVO ALLEATO: %s si unisce alla squadra" % str(BattleContent.CHARACTERS[ally]["name"]).to_upper())
 	if tier + 1 < BattleContent.TIERS.size():
 		news.append("LIVELLO %s SBLOCCATO: %s" % [str(BattleContent.TIERS[tier + 1]["name"]), MissionConfig.boss_title(boss_id)])
 	var index: int = BattleContent.BOSS_ORDER.find(boss_id)
@@ -608,6 +623,7 @@ static func from_json(text: String) -> Dictionary:
 	if not roster.has("cleared"):
 		roster["cleared"] = {}
 	sync_faction_moves(roster)
+	grant_story_allies(roster)
 	if int(roster.get("version", 0)) != VERSION or validate(roster) != "":
 		return {}
 	return roster

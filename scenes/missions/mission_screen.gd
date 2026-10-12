@@ -44,11 +44,11 @@ func _build() -> void:
 	list_panel.size = Vector2(380, 520)
 	add_child(list_panel)
 	var list := VBoxContainer.new()
-	list.add_theme_constant_override("separation", 10)
+	list.add_theme_constant_override("separation", 6)
 	list_panel.set_content(list)
 	for id in BattleContent.BOSS_ORDER:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(0, 64)
+		b.custom_minimum_size = Vector2(0, 52)
 		b.pressed.connect(select_boss.bind(id))
 		list.add_child(b)
 		boss_buttons[id] = b
@@ -105,7 +105,7 @@ func _build() -> void:
 
 	UiMotion.slide_in([list_panel], Vector2(-140, 0), 0.0, 0.3)
 	UiMotion.slide_in([det], Vector2(140, 0), 0.0, 0.34)
-	add_child(_hint("INVIO avvia  ·  1-4 bersaglio  ·  SU/GIU difficolta'  ·  ESC indietro", Vector2(440, 640)))
+	add_child(_hint("INVIO avvia  ·  1-7 bersaglio  ·  SU/GIU difficolta'  ·  ESC indietro", Vector2(440, 640)))
 
 	var back := Button.new()
 	back.text = "TORNA ALL'HUB"
@@ -190,7 +190,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_ENTER, KEY_KP_ENTER:
 			if not go_button.disabled:
 				_on_go()
-		KEY_1, KEY_2, KEY_3, KEY_4:
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7:
 			select_boss(str(BattleContent.BOSS_ORDER[int(event.keycode) - int(KEY_1)]))
 		KEY_UP:
 			select_tier(selected_tier - 1)
