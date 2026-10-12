@@ -1,5 +1,7 @@
 # Dottrine delle fazioni
 
+Nomi confermati dall'autore: LibraCorp - Protocollo, Rondini - Ronda, Magabondi - Improvvisazione, Kairos - Dissonanza.
+
 Ogni fazione ha un modo di combattere tipico (la **dottrina**). Un personaggio può essere **ortodosso**
 (segue la dottrina e prende il bonus di stile) o **atipico** (stessa fazione, quindi dà e riceve l'aura,
 ma gioca in altro modo). Le fazioni danno **aure passive** ai compagni schierati della stessa fazione: statistica
@@ -8,9 +10,9 @@ fissa per fazione, bonus che cresce con la rarità di chi la dà, con un tetto.
 | Fazione | Dottrina | Statistica dell'aura | Stato |
 |---|---|---|---|
 | LibraCorp | **Protocollo** | Difesa | nome confermato |
-| Rondini | Ronda (colpi critici, danno alto, area; cannoni di vetro) | da decidere (critico, velocità o attacco) | parole chiave dell'autore, nome da confermare |
-| Magabondi | Improvvisazione (economia delle azioni, trovate non convenzionali; nessuna aura, prendono metà del bonus più forte in squadra) | nessuna | parole chiave dell'autore, nome da confermare |
-| Anomalie / Kairos (nemici) | Dissonanza (legano, indeboliscono, avvelenano; spengono per un po' le aure di una fazione) | — | parole chiave dell'autore, nome da confermare |
+| Rondini | Ronda (colpi critici, danno alto, area; cannoni di vetro) | da decidere (critico, velocità o attacco) | parole chiave dell'autore, nome confermato |
+| Magabondi | Improvvisazione (economia delle azioni, trovate non convenzionali; nessuna aura, prendono metà del bonus più forte in squadra) | nessuna | parole chiave dell'autore, nome confermato |
+| Kairos (nemici, detti anche Anomalie) | Dissonanza (legano, indeboliscono, avvelenano; spengono per un po' le aure di una fazione) | — | parole chiave dell'autore, nome confermato |
 
 ## LibraCorp: Protocollo
 Parole chiave dell'autore: risposte, counter, riposte, ricarica, munizioni, colpi con munizioni, headshot,
