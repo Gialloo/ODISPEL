@@ -321,8 +321,9 @@ func _refresh_turn_panel() -> void:
 
 func _build_operators() -> void:
 	var panel := HudPanel.new().setup("OPERATORI", BattleTheme.CY)
+	panel.margins = Vector4(14.0, 30.0, 14.0, 12.0)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 420, -18))
+	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 416, -18))
 	_ops_box = VBoxContainer.new()
 	_ops_box.add_theme_constant_override("separation", 3)
 	panel.set_content(_ops_box)
@@ -332,9 +333,9 @@ func _build_orders() -> void:
 	var panel := HudPanel.new().setup("TERMINALE ORDINI", BattleTheme.RD)
 	panel.cut = 20.0
 	add_child(panel)
-	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-620, -348, -20, -18) if TouchUi.active() else Vector4(-420, -224, -20, -18))
+	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-700, -392, -20, -18) if TouchUi.active() else Vector4(-540, -246, -20, -18))
 	_orders_box = VBoxContainer.new()
-	_orders_box.add_theme_constant_override("separation", 5)
+	_orders_box.add_theme_constant_override("separation", 7)
 	panel.set_content(_orders_box)
 
 
@@ -342,7 +343,7 @@ func _build_log() -> void:
 	var panel := HudPanel.new().setup("REGISTRO", BattleTheme.CY_DIM)
 	panel.margins = Vector4(12, 30, 12, 8)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 1.0, 1.0, 1.0), Vector4(436, -224, -636 if TouchUi.active() else -436, -18))
+	_anchor(panel, Vector4(0.0, 1.0, 1.0, 1.0), Vector4(436, -224, -716 if TouchUi.active() else -556, -18))
 	_log_label = RichTextLabel.new()
 	_log_label.bbcode_enabled = true
 	_log_label.scroll_active = false
@@ -653,10 +654,12 @@ func _refresh_orders() -> void:
 		entries.append({"id": str(s), "kind": "normal"})
 	if str(u["ult"]) != "":
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 8)
 	var grid := GridContainer.new()
 	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 6)
-	grid.add_theme_constant_override("v_separation", 5)
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 6)
 	var n: int = 1
 	for e in entries:
 		var move_id: String = str(e["id"])
@@ -666,30 +669,42 @@ func _refresh_orders() -> void:
 		var b := Button.new()
 		var suffix: String = ""
 		if str(move["kind"]) == "skill":
-			suffix = " ·%dE" % int(move["cost"])
+			suffix = "  %dE" % int(move["cost"])
 		elif str(move["kind"]) == "ult":
-			suffix = " ·%d%%" % int(u["gauge"])
-		b.text = "%d %s%s" % [n, BattleText.move_name(move_id), suffix]
+			suffix = "  %d%%" % int(u["gauge"])
+		b.text = "%d  %s%s" % [n, BattleText.move_name(move_id), suffix]
 		var order_unit_id: String = uid
 		var order_err: String = err
 		HintCard.bind(b, func() -> Dictionary: return Hints.move_card(BattleState.unit(shown, order_unit_id), move_id, order_err), self, true)
-		var primary: bool = str(e["kind"]) == "primary"
-		b.custom_minimum_size = Vector2(0, (TouchUi.COMFY_HEIGHT if primary else 80.0) if TouchUi.active() else (46.0 if primary else 38.0))
+		var primary: bool = str(e["id"]) == "attack"
+		var is_guard: bool = str(e["id"]) == "guard"
+		b.custom_minimum_size = Vector2(0, (TouchUi.COMFY_HEIGHT if (primary or is_guard) else 62.0) if TouchUi.active() else (48.0 if (primary or is_guard) else 40.0))
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.clip_text = true
-		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		BattleTheme.style_button(b, str(e["kind"]), 26 if primary else 13)
+		if primary:
+			b.size_flags_stretch_ratio = 1.7
+		# il testo non si taglia mai: si sceglie il carattere piu' grande che ci sta nel pulsante
+		var size_base: int = 26 if primary else (20 if is_guard else 17)
+		var panel_w: float = (680.0 if TouchUi.active() else 520.0) - 36.0
+		var cell_w: float = (panel_w - 8.0) / 2.0
+		var avail: float = (panel_w - 8.0) * (1.7 / 2.7) if primary else ((panel_w - 8.0) / 2.7 if is_guard else cell_w)
+		avail -= 74.0        # margini del pulsante e icona
+		var fsize: int = size_base
+		while fsize > (14 if TouchUi.active() else 10) and BattleTheme.display().get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize).x > avail:
+			fsize -= 1
+		BattleTheme.style_button(b, str(e["kind"]) if not is_guard else "normal", fsize)
+		b.add_theme_font_size_override("font_size", fsize)      # il minimo touch non deve far uscire il testo dal pulsante
 		b.disabled = err != "" or locked or animating
-		var oic: GameIcon = GameIcon.attach(b, GameIcon.move_key(move_id), BattleTheme.WH if primary else GameIcon.move_color(move_id), 30.0 if primary else 18.0)
+		var oic: GameIcon = GameIcon.attach(b, GameIcon.move_key(move_id), BattleTheme.WH if primary else GameIcon.move_color(move_id), 30.0 if primary else 20.0)
 		oic.modulate.a = 0.35 if b.disabled else 1.0
 		b.pressed.connect(_on_order_pressed.bind(move_id))
 		b.focus_mode = Control.FOCUS_NONE
-		if primary:
-			_orders_box.add_child(b)
+		if primary or is_guard:
+			top.add_child(b)
 		else:
 			grid.add_child(b)
 		_order_buttons.append(b)
 		n += 1
+	_orders_box.add_child(top)
 	_orders_box.add_child(grid)
 	var hint_text: String = "TOCCA UN OPERATORE PER IL CAMBIO" if TouchUi.active() else "TASTI 1-%d · CLICCA UN OPERATORE PER IL CAMBIO" % (n - 1)
 	_orders_box.add_child(BattleTheme.make_label(hint_text, 11, BattleTheme.CY_DIM))

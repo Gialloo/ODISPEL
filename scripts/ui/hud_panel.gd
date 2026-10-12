@@ -6,7 +6,7 @@ extends Control
 var title: String = ""
 var accent: Color = BattleTheme.CY
 var cut: float = 14.0
-var margins: Vector4 = Vector4(14.0, 30.0, 14.0, 12.0)   # sinistra, alto, destra, basso
+var margins: Vector4 = Vector4(18.0, 30.0, 18.0, 12.0)   # sinistra, alto, destra, basso
 
 
 func setup(panel_title: String, panel_accent: Color = BattleTheme.CY) -> HudPanel:
