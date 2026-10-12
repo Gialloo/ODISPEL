@@ -14,6 +14,8 @@ var locked: bool = false            # ordine inviato, si aspetta il round
 var pending_swap: String = ""       # personaggio scelto per il cambio
 var log_lines: Array = []
 var _last_won: bool = false
+var _dmg_by: Dictionary = {}      # danni al boss per operatore (per l'MVP a fine battaglia)
+var _best_hit: int = 0
 var _ended_shown: bool = false
 
 var _stage: BattleStage
@@ -834,6 +836,10 @@ func _play_events(events: Array) -> void:
 		if str(line["text"]) != "":
 			_push_log(str(line["text"]), str(line["kind"]))
 		_mark_event(e)
+		if str(e.get("t", "")) == "damage" and str(e.get("dst", "")) == BattleState.BOSS_ID and int(e.get("amount", 0)) > 0:
+			var who: String = str(e.get("src", ""))
+			_dmg_by[who] = int(_dmg_by.get(who, 0)) + int(e["amount"])
+			_best_hit = maxi(_best_hit, int(e["amount"]))
 		var extra: float = _event_fx(e)
 		BattleText.apply_to_display(shown, e)
 		_stage.set_state(shown)
@@ -1288,6 +1294,22 @@ func _check_end() -> void:
 	_show_result(won, rewards)
 
 
+func _mvp_line() -> String:
+	var best_id: String = ""
+	var best_dmg: int = 0
+	var total: int = 0
+	for k in _dmg_by:
+		total += int(_dmg_by[k])
+		if int(_dmg_by[k]) > best_dmg:
+			best_dmg = int(_dmg_by[k])
+			best_id = str(k)
+	if best_id == "" or total <= 0:
+		return ""
+	var u: Dictionary = BattleState.unit(shown, best_id)
+	var nm: String = str(u.get("name", best_id)).to_upper() if not u.is_empty() else best_id.to_upper()
+	return "MVP %s · %d DANNI (%d%%) · COLPO MIGLIORE %d" % [nm, best_dmg, int(round(100.0 * float(best_dmg) / float(total))), _best_hit]
+
+
 func _show_result(victory: bool, rewards: Dictionary) -> void:
 	Snd.duck(-14.0)
 	Snd.play("victory" if victory else "defeat")
@@ -1326,6 +1348,11 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	var mission := BattleTheme.make_label(mission_text, 16, BattleTheme.WH)
 	mission.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(mission)
+	var mvp: String = _mvp_line()
+	if mvp != "":
+		var ml := BattleTheme.make_label(mvp, 15, BattleTheme.POP)
+		ml.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(ml)
 	box.add_child(BattleTheme.make_label("PREMI", 16, BattleTheme.WH))
 	_reward_rows.clear()
 	for line in _reward_lines(rewards):
