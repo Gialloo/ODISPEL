@@ -8,7 +8,7 @@ fissa per fazione, bonus che cresce con la rarità di chi la dà, con un tetto.
 | Fazione | Dottrina | Statistica dell'aura | Stato |
 |---|---|---|---|
 | LibraCorp | **Protocollo** | Difesa | nome confermato |
-| Rondini | Ronda (tempismo e discrezione) | Velocità | bozza |
+| Rondini | Ronda (colpi critici, danno alto, area; cannoni di vetro) | da decidere (critico, velocità o attacco) | parole chiave dell'autore, nome da confermare |
 | Magabondi | Improvvisazione (rischio e adattamento; nessuna aura, prendono metà del bonus più forte in squadra) | nessuna | bozza |
 | Anomalie / Kairos (nemici) | Dissonanza (legano, indeboliscono, avvelenano; spengono per un po' le aure di una fazione) | — | parole chiave dell'autore, nome da confermare |
 
@@ -42,3 +42,14 @@ Lettura proposta (bozza):
 
 Assegnazione ai boss attuali (bozza): Semaforo = CC (stop e via), Tombino = veleno e DoT, Cabina = binding e sigilli
 (linea occupata), Distributore = debuff. I Kairos di fine gioco li combinano.
+
+## Rondini: Ronda
+Parole chiave dell'autore: colpo critico, danno alto, area (AoE), cannone di vetro.
+
+Lettura proposta (bozza):
+- **Cannone di vetro:** molto attacco, pochi punti vita e difesa; vincono se abbattono il boss prima di essere colpiti.
+- **Colpo critico:** nel gioco oggi non esiste; sarebbe una statistica nuova (probabilita' e danno critico).
+- **Danno alto e area:** mosse che colpiscono tutti i nemici o piu' bersagli (utili nelle battaglie con piu' nemici e nelle fasi con
+  scudi da sfondare).
+- Resta il tema di lore: piccoli gruppi che agiscono di notte senza dare nell'occhio, quindi agire per primi e non farsi
+  notare (velocita', mosse che attirano meno il boss).
