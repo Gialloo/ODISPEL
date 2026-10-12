@@ -39,25 +39,43 @@ var _invalid_count: int = 0
 const MAX_INVALID_WARNINGS: int = 3
 
 
-# Costruisce la lista dei server ICE.
-# STUN è sempre presente. Un TURN (relay, necessario con NAT restrittive)
-# si configura con variabili d'ambiente, così le credenziali
-# non finiscono nel repository:
-#   ODISPEL_TURN_URL   es. turn:turn.example.com:3478
-#   ODISPEL_TURN_USER
-#   ODISPEL_TURN_PASS
-static func build_ice_servers() -> Array:
+# File con le credenziali del server di inoltro (TURN). Non e' nel repository (vedi .gitignore): si crea in
+# config/turn.cfg partendo da config/turn.cfg.example e viene incluso nell'esportazione.
+const TURN_CONFIG_PATH: String = "res://config/turn.cfg"
+
+
+# Impostazioni TURN: prima le variabili d'ambiente, poi il file. {urls: Array, user, pass}; urls vuoto = niente TURN.
+#   ODISPEL_TURN_URL   uno o piu' indirizzi separati da virgola, es. turn:turn.example.com:80,turns:turn.example.com:443?transport=tcp
+#   ODISPEL_TURN_USER, ODISPEL_TURN_PASS
+static func turn_settings(config_path: String = TURN_CONFIG_PATH) -> Dictionary:
+	var url: String = OS.get_environment("ODISPEL_TURN_URL").strip_edges()
+	var user: String = OS.get_environment("ODISPEL_TURN_USER")
+	var pass_word: String = OS.get_environment("ODISPEL_TURN_PASS")
+	if url.is_empty():
+		var cfg := ConfigFile.new()
+		if cfg.load(config_path) == OK:
+			url = str(cfg.get_value("turn", "url", "")).strip_edges()
+			user = str(cfg.get_value("turn", "user", ""))
+			pass_word = str(cfg.get_value("turn", "pass", ""))
+	var urls: Array = []
+	for part in url.split(","):
+		var clean: String = part.strip_edges()
+		if clean.begins_with("turn:") or clean.begins_with("turns:"):
+			urls.append(clean)
+	return {"urls": urls, "user": user, "pass": pass_word}
+
+
+# Costruisce la lista dei server ICE. STUN e' sempre presente; il TURN (inoltro del traffico, necessario con i dati
+# mobili e le reti piu' restrittive) si aggiunge se configurato.
+static func build_ice_servers(config_path: String = TURN_CONFIG_PATH) -> Array:
 	var servers: Array = [{"urls": DEFAULT_STUN_URLS.duplicate()}]
-
-	var turn_url: String = OS.get_environment("ODISPEL_TURN_URL").strip_edges()
-
-	if not turn_url.is_empty():
+	var turn: Dictionary = turn_settings(config_path)
+	if not (turn["urls"] as Array).is_empty():
 		servers.append({
-			"urls": [turn_url],
-			"username": OS.get_environment("ODISPEL_TURN_USER"),
-			"credential": OS.get_environment("ODISPEL_TURN_PASS")
+			"urls": turn["urls"],
+			"username": turn["user"],
+			"credential": turn["pass"],
 		})
-
 	return servers
 
 

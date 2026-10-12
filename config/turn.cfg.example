@@ -1,0 +1,7 @@
+; Server di inoltro (TURN) per giocare online anche con i dati mobili o reti restrittive.
+; Copia questo file in config/turn.cfg (resta fuori da git) e metti i dati del tuo servizio TURN.
+; url: uno o piu' indirizzi separati da virgola. Meglio mettere anche le versioni sulla porta 443/TCP.
+[turn]
+url="turn:HOST:80,turn:HOST:443?transport=tcp,turns:HOST:443?transport=tcp"
+user="NOME_UTENTE"
+pass="PASSWORD"

@@ -17,6 +17,7 @@
 | "il server e' pieno" | aspetta qualche minuto e riprova |
 | "nessun host nella stanza" | l'host deve creare la stanza PRIMA; controlla il codice (maiuscole comprese) |
 | "connessione con l'host non riuscita" | la rete di uno di voi blocca i collegamenti diretti (succede su alcune reti di casa, scuola, ufficio e con i dati del telefono). Provate: un'altra rete, l'hotspot del telefono, o cambiate chi fa l'host |
+| il telefono con i dati mobili non entra | serve un server di inoltro (TURN): vedi docs/TURN.md. Nel frattempo: stesso Wi-Fi, o PC collegato all'hotspot del telefono |
 | versioni diverse | tutti devono avere lo stesso zip |
 
 ## Novita' della versione 0.7.0 (da provare!)
