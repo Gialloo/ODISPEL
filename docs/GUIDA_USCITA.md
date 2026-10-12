@@ -7,6 +7,10 @@
 3. Trovi `build\ODISPEL-<versione>.zip`: dentro ci sono `ODISPEL.exe` (con tutto il gioco), la cartella `art\` (per le tue grafiche), `dialogues\` e `LEGGIMI.md`.
 4. Prova lo zip su un altro PC (o su un altro utente Windows): decomprimi, apri l'exe, gioca una missione da solo e apri Impostazioni > APRI CARTELLA GRAFICHE.
 
+Icona: e' `icon.ico` nella cartella del progetto (gia' collegata all'esportazione). Per cambiarla, sostituisci `icon.ico` (e `icon.png`) con il tuo disegno tenendo i nomi.
+
+Avviso "file dannoso" / SmartScreen: compare per tutti gli exe non firmati. Si evita solo con la firma di codice (certificato a pagamento) o distribuendo da una piattaforma (itch.io, Steam). Con gli amici: "Ulteriori informazioni" > "Esegui comunque".
+
 
 
 ## 2. Test multiplayer tra reti diverse (la prova che manca)
