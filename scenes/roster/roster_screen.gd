@@ -27,6 +27,7 @@ var _mats_label: Label
 var _status_label: Label
 var _tab_buttons: Dictionary = {}
 var guide_button: Button
+var strategy_button: Button
 var _team_page: Control
 var _recruit_page: Control
 var _equip_page: Control
@@ -94,6 +95,15 @@ func _build() -> void:
 		add_child(b)
 		_tab_buttons[str(entry[0])] = b
 		x += 242.0
+
+	var strat := Button.new()
+	strat.text = "STRATEGIE"
+	strat.position = Vector2(x, 90)
+	strat.size = Vector2(230, 40)
+	BattleTheme.style_button(strat, "primary", 20)
+	strat.pressed.connect(open_strategy_guide)
+	add_child(strat)
+	strategy_button = strat
 
 	_build_team_page()
 	_build_equip_page()
@@ -299,6 +309,14 @@ func open_gacha_guide() -> GachaGuide:
 		if c is GachaGuide:
 			return c
 	return GachaGuide.open(self)
+
+
+# Guida a classi e fazioni: cosa fanno e cosa serve per farle funzionare.
+func open_strategy_guide() -> GachaGuide:
+	for c in get_children():
+		if c is GachaGuide:
+			return c
+	return GachaGuide.open_pages(self, "STRATEGIE: CLASSI E FAZIONI", StrategyInfo.pages())
 
 
 func select(char_id: String) -> void:

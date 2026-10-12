@@ -9,6 +9,8 @@ extends Control
 signal closed
 
 var page: int = 0
+var heading: String = "COME FUNZIONA IL RECLUTAMENTO"
+var _custom_pages: Array = []
 var _title: Label
 var _body: VBoxContainer
 var _count: Label
@@ -20,6 +22,19 @@ static func open(host: Node) -> GachaGuide:
 	var g := GachaGuide.new()
 	host.add_child(g)
 	return g
+
+
+# Stessa finestra con altre pagine (es. StrategyInfo.pages()): non tocca la "guida vista" del reclutamento.
+static func open_pages(host: Node, title: String, custom: Array) -> GachaGuide:
+	var g := GachaGuide.new()
+	g.heading = title
+	g._custom_pages = custom
+	host.add_child(g)
+	return g
+
+
+func _page_list() -> Array:
+	return _custom_pages if not _custom_pages.is_empty() else pages()
 
 
 # Pagine: [{title, lines: [{text, color}]}]. Funzione statica, cosi' si prova nei test.
@@ -84,7 +99,7 @@ func _ready() -> void:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 
-	var panel := HudPanel.new().setup("COME FUNZIONA IL RECLUTAMENTO", BattleTheme.RD)
+	var panel := HudPanel.new().setup(heading, BattleTheme.RD)
 	panel.anchor_left = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_top = 0.5
@@ -137,7 +152,7 @@ func _nav_button(parent: Control, text: String, kind: String) -> Button:
 
 # delta = di quante pagine ci si sposta (relative = true) oppure la pagina da aprire.
 func show_page(delta: int, relative: bool = true) -> void:
-	var all: Array = pages()
+	var all: Array = _page_list()
 	page = clampi(page + delta if relative else delta, 0, all.size() - 1)
 	var data: Dictionary = all[page]
 	_title.text = str(data["title"])
@@ -155,7 +170,8 @@ func show_page(delta: int, relative: bool = true) -> void:
 
 
 func _close() -> void:
-	Settings.finish_gacha_guide()
+	if _custom_pages.is_empty():
+		Settings.finish_gacha_guide()
 	closed.emit()
 	queue_free()
 
@@ -166,7 +182,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			KEY_ESCAPE:
 				_close()
 			KEY_RIGHT, KEY_ENTER, KEY_KP_ENTER:
-				if page == pages().size() - 1:
+				if page == _page_list().size() - 1:
 					_close()
 				else:
 					show_page(1, true)

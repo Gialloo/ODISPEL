@@ -68,3 +68,10 @@ Idee (bozza):
 - **Rischio:** magia illegale con contraccolpo; nessuna aura da dare, ma prendono meta' del bonus piu' forte presente in squadra.
 - Distinzione dai LibraCorp: le azioni extra dei Magabondi sono pianificate (le costruisci tu), quelle di LibraCorp sono
   reazioni (arrivano quando succede qualcosa).
+
+
+## Come si vince con ogni fazione e cosa fa ogni classe (testi di gioco)
+
+I testi che il giocatore legge (bottone STRATEGIE nell'archivio operatori) stanno in `scripts/battle/strategy_info.gd`:
+per ogni classe cosa fa e cosa serve perche' funzioni; per ogni fazione l'idea, la condizione di vittoria, cosa deve fare
+il giocatore, cosa c'e' gia' nel gioco e cosa arriva. Quando una meccanica viene implementata, spostarla da "in arrivo" a "gia' nel gioco".

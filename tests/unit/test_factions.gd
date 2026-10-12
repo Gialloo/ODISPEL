@@ -134,5 +134,26 @@ func _init() -> void:
 	cheat["style"] = "boh"
 	_check("stile non valido rifiutato", RosterState.validate_entry(cheat) != "")
 
+	# guida alle strategie: ogni classe e ogni fazione e' spiegata
+	var complete: bool = true
+	for cls in BattleTypes.CLASSES:
+		var ct: Dictionary = StrategyInfo.class_text(cls)
+		complete = complete and not ct.is_empty() and not (ct["needs"] as Array).is_empty()
+	for f in Factions.ORDER:
+		var ft: Dictionary = StrategyInfo.faction_text(f)
+		for key in ["idea", "win", "needs", "now", "soon"]:
+			complete = complete and ft.has(key)
+	_check("guida: tutte le classi e fazioni hanno i testi", complete)
+	_check("guida: una pagina per classe, fazione e stile", StrategyInfo.pages().size() == BattleTypes.CLASSES.size() + Factions.ORDER.size() + 1)
+	var host: Control = Control.new()
+	root.add_child(host)
+	var gd: GachaGuide = GachaGuide.open_pages(host, "PROVA", StrategyInfo.pages())
+	await process_frame
+	gd.show_page(2, false)
+	_check("guida strategie: apre la pagina scelta", gd.page == 2)
+	Settings.gacha_guide_seen = false
+	gd._close()
+	_check("guida strategie non tocca la guida reclutamento", not Settings.gacha_guide_seen)
+
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)
