@@ -159,6 +159,10 @@ func _refresh() -> void:
 		tb.text = str(t["name"]) if open else "%s [X]" % str(t["name"])
 		tb.disabled = not open
 		BattleTheme.style_button(tb, "primary" if i == selected_tier else "normal", 18)
+	var session: Node = get_node_or_null("/root/NetSession")
+	var in_room: bool = session != null and session.get("manager") != null
+	go_button.disabled = in_room
+	go_button.text = "ESCI DALLA STANZA PER GIOCARE DA SOLO" if in_room else "AVVIA MISSIONE"
 	var tier: Dictionary = BattleContent.TIERS[selected_tier]
 	info_label.text = "PV x%.1f   ATTACCO x%.2f   DIFESA +%d   PREMI x%.1f" % [float(tier["hp"]), float(tier["atk"]), int(tier["def"]), float(tier["reward"])]
 	if selected_tier + 1 < BattleContent.TIERS.size() and not RosterState.is_tier_unlocked(roster, selected_boss, selected_tier + 1):

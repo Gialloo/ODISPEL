@@ -9,6 +9,7 @@ signal player_left(player_id: String)
 signal network_error(reason: String)
 # Battaglia con il nuovo motore (vedi BattleState / BattleNet).
 signal battle_updated
+signal lobby_updated
 signal battle_events_received(events: Array)
 
 # Il signaling si è chiuso ma i collegamenti di gioco già aperti continuano.
@@ -38,6 +39,10 @@ var battle_time_left: float = 0.0
 var battle_planning_seconds: float = 30.0
 var battle_timer_enabled: bool = false
 var local_team: Array = []          # squadra di chi gioca (host o client)
+var lobby: Dictionary = {}           # stato della lobby condivisa (vedi _build_lobby)
+var lobby_boss: String = "distributore"
+var lobby_tier: int = 0
+var _ready_players: Dictionary = {}  # player_id -> pronto (host)
 var _player_teams: Dictionary = {}  # player_id -> squadra validata (host)
 var battle_rewards: Dictionary = {}  # premi di chi gioca qui, a battaglia finita
 var reward_save_path: String = RosterStore.DEFAULT_PATH
@@ -209,12 +214,155 @@ func set_local_team(entries: Array) -> bool:
 	if RosterState.validate_team(entries) != "":
 		return false
 
-	local_team = BattleState.normalize(entries)
+	var new_team: Array = BattleState.normalize(entries)
+	var changed: bool = new_team != local_team
+	local_team = new_team
 
 	if is_host and not local_player_id.is_empty():
 		_player_teams[local_player_id] = local_team
 
+	if changed:
+		_team_changed()
+
 	return true
+
+
+# La squadra e' cambiata: la lobby lo mostra e chi era pronto deve riconfermare.
+func _team_changed() -> void:
+	if is_host:
+		if not local_player_id.is_empty():
+			_ready_players[local_player_id] = false
+			_broadcast_lobby()
+	else:
+		var link: WebRTCLink = _links.get(_host_peer_id)
+
+		if link != null:
+			link.send_message({"type": "team", "team": local_team})
+
+
+# ---------- Lobby condivisa ----------
+
+# Chi e' nella stanza: l'host e chi e' entrato con un proprio token.
+func _lobby_player_ids() -> Array:
+	var ids: Array = []
+
+	if game == null or game.party == null:
+		return ids
+
+	var reserved: Array = _player_tokens.values()
+
+	for player: PlayerState in game.party.get_players():
+		if player.id == local_player_id or reserved.has(player.id):
+			ids.append(player.id)
+
+	return ids
+
+
+func _build_lobby() -> Dictionary:
+	var players: Array = []
+
+	for id in _lobby_player_ids():
+		var player: PlayerState = game.party.get_player_by_id(str(id))
+
+		if player == null:
+			continue
+
+		var team: Array = local_team if id == local_player_id else _player_teams.get(id, [])
+		var lead: Dictionary = {}
+
+		if not team.is_empty():
+			var first: Dictionary = team[0]
+			lead = {"char": str(first.get("char", "")), "level": int(first.get("level", 1))}
+
+		players.append({
+			"id": str(id),
+			"name": player.display_name,
+			"connected": player.connected and not player.controlled_by_ai,
+			"ready": bool(_ready_players.get(id, false)) and player.connected,
+			"host": id == local_player_id,
+			"lead": lead,
+			"team_size": team.size()
+		})
+
+	return {"players": players, "boss": lobby_boss, "tier": lobby_tier}
+
+
+func refresh_lobby() -> void:
+	_broadcast_lobby()
+
+
+func _broadcast_lobby() -> void:
+	if not is_host or game == null:
+		return
+
+	lobby = _build_lobby()
+	_broadcast({"type": "lobby", "state": lobby})
+	lobby_updated.emit()
+
+
+# Chi gioca qui segna se e' pronto.
+func set_ready(value: bool) -> void:
+	if is_host:
+		if local_player_id.is_empty():
+			return
+
+		_ready_players[local_player_id] = value
+		_broadcast_lobby()
+	else:
+		var link: WebRTCLink = _links.get(_host_peer_id)
+
+		if link != null:
+			link.send_message({"type": "ready", "ready": value})
+
+
+func is_local_ready() -> bool:
+	for p in lobby.get("players", []):
+		if str(p["id"]) == local_player_id:
+			return bool(p["ready"])
+
+	return false
+
+
+# Solo l'host: sceglie boss e difficolta' per la prossima partita.
+func host_set_mission(boss_id: String, tier: int) -> bool:
+	if not is_host or not BattleContent.BOSSES.has(boss_id):
+		return false
+
+	lobby_boss = boss_id
+	lobby_tier = clampi(tier, 0, BattleContent.TIERS.size() - 1)
+
+	for id in _ready_players.keys():
+		_ready_players[id] = false
+
+	_broadcast_lobby()
+	return true
+
+
+# Tutti i giocatori collegati hanno premuto PRONTO (e sono almeno 2).
+func all_ready() -> bool:
+	if not is_host or game == null:
+		return false
+
+	var humans: int = 0
+
+	for p in _build_lobby()["players"]:
+		if not bool(p["connected"]):
+			continue
+
+		humans += 1
+
+		if not bool(p["ready"]):
+			return false
+
+	return humans >= 2
+
+
+# Solo l'host: parte con la missione della lobby, se tutti sono pronti.
+func host_launch() -> bool:
+	if not all_ready():
+		return false
+
+	return host_start_battle(lobby_boss, int(randi()) | 1, lobby_tier)
 
 
 # Avvia la battaglia per tutti. Servono l'host e almeno un client.
@@ -252,6 +400,9 @@ func host_start_battle(boss_id: String, run_seed: int, tier: int = 0) -> bool:
 		})
 
 	battle = BattleState.create(specs, boss_id, run_seed, tier)
+	for id in _ready_players.keys():
+		_ready_players[id] = false
+
 	_battle_boss_id = boss_id
 	_battle_seed = run_seed
 	battle_rewards = {}
@@ -260,6 +411,7 @@ func host_start_battle(boss_id: String, run_seed: int, tier: int = 0) -> bool:
 	battle_timer_enabled = true
 	_broadcast_battle()
 	battle_updated.emit()
+	_broadcast_lobby()
 	return true
 
 
@@ -631,6 +783,22 @@ func _host_handle_message(message: Dictionary, peer_id: String) -> void:
 		"hello":
 			_host_handle_hello(peer_id, message)
 
+		"ready":
+			var who: String = str(_peer_players.get(peer_id, ""))
+
+			if not who.is_empty():
+				_ready_players[who] = bool(message.get("ready", false))
+				_broadcast_lobby()
+
+		"team":
+			var owner_id: String = str(_peer_players.get(peer_id, ""))
+			var checked: Dictionary = BattleNet.read_team(message)
+
+			if not owner_id.is_empty() and bool(checked["ok"]):
+				_player_teams[owner_id] = checked["team"]
+				_ready_players[owner_id] = false
+				_broadcast_lobby()
+
 		"choice":
 			var chooser: String = str(_peer_players.get(peer_id, ""))
 
@@ -775,9 +943,12 @@ func _host_handle_hello(peer_id: String, message: Dictionary) -> void:
 	# Rientro a battaglia in corso: torna a comandare lui al posto dell'IA.
 	BattleNet.set_player_ai(battle, player.id, false)
 
+	_ready_players[player.id] = false
+
 	link.send_message({"type": "welcome", "player_id": player.id})
 	player_assigned.emit(player.id)
 	_broadcast_snapshot()
+	_broadcast_lobby()
 
 
 # Gli slot non ancora occupati da un giocatore reale non devono
@@ -868,10 +1039,13 @@ func _drop_peer(peer_id: String, notify: bool = true) -> void:
 	# In battaglia gioca l'IA al posto suo finche' non rientra.
 	BattleNet.set_player_ai(battle, player_id, true)
 
+	_ready_players[player_id] = false
+
 	player_left.emit(player_id)
 	_host_try_resolve()
 	_battle_try_resolve()
 	_broadcast_snapshot()
+	_broadcast_lobby()
 
 
 func _broadcast(message: Dictionary) -> void:
@@ -972,6 +1146,13 @@ func _client_handle_message(message: Dictionary) -> void:
 					battle_rewards = BattleState.normalize(rewards)
 
 				battle_updated.emit()
+
+		"lobby":
+			var lstate: Variant = message.get("state", {})
+
+			if lstate is Dictionary:
+				lobby = BattleState.normalize(lstate)
+				lobby_updated.emit()
 
 		"battle_events":
 			var bevents: Variant = message.get("events", [])

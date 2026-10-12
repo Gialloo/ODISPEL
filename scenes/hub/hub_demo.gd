@@ -5,9 +5,6 @@ extends Control
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
-	# Tornando all'hub si chiude sempre l'eventuale sessione di rete.
-	NetSession.close()
-
 	_build_interface()
 	_apply_theme(self)
 
@@ -23,6 +20,9 @@ func _build_interface() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# In una stanza la barra occupa il fondo: il menu scorre sopra di lei.
+	if NetSession.manager != null:
+		scroll.offset_bottom = -66.0
 	add_child(scroll)
 
 	var center := CenterContainer.new()

@@ -5,6 +5,7 @@ extends Control
 # battle_events_received e submit_choice() - SoloBattleSource o NetworkManager.
 
 const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
+const LOBBY_SCENE: String = "res://scenes/lobby/lobby_demo.tscn"
 const MISSION_SCENE: String = "res://scenes/missions/mission_screen.tscn"
 
 var source: Variant = null
@@ -658,12 +659,20 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 		BattleTheme.style_button(pick, "normal", 20)
 		pick.pressed.connect(_on_pick_mission)
 		box.add_child(pick)
+	var networked: bool = source is NetworkManager
 	var hub := Button.new()
-	hub.text = "TORNA ALL'HUB"
+	hub.text = "TORNA ALLA LOBBY" if networked else "TORNA ALL'HUB"
 	hub.custom_minimum_size = Vector2(0, 44)
-	BattleTheme.style_button(hub, "normal", 20)
+	BattleTheme.style_button(hub, "primary" if networked else "normal", 20)
 	hub.pressed.connect(_on_hub)
 	box.add_child(hub)
+	if networked:
+		var leave := Button.new()
+		leave.text = "ESCI DALLA STANZA"
+		leave.custom_minimum_size = Vector2(0, 44)
+		BattleTheme.style_button(leave, "normal", 20)
+		leave.pressed.connect(_on_leave_room)
+		box.add_child(leave)
 
 
 func _reward_lines(rewards: Dictionary) -> Array:
@@ -696,11 +705,14 @@ func _on_pick_mission() -> void:
 
 
 func _on_hub() -> void:
-	# In rete, uscire chiude anche la stanza.
-	if source is NetworkManager:
-		var session: Node = get_node_or_null("/root/NetSession")
-		if session != null:
-			session.close()
-		else:
-			(source as NetworkManager).shutdown()
-	get_tree().change_scene_to_file(HUB_SCENE)
+	# In rete la stanza resta aperta: si torna alla lobby con tutti gli altri.
+	get_tree().change_scene_to_file(LOBBY_SCENE if source is NetworkManager else HUB_SCENE)
+
+
+func _on_leave_room() -> void:
+	var session: Node = get_node_or_null("/root/NetSession")
+	if session != null:
+		session.leave_room()
+	else:
+		(source as NetworkManager).shutdown()
+		get_tree().change_scene_to_file(HUB_SCENE)

@@ -1,11 +1,16 @@
 extends Control
 
+# Lobby co-op. Senza stanza: modulo per crearne una o entrare. Dentro la stanza:
+# tutti i giocatori con il loro personaggio guida, PRONTO e (per l'host) AVVIA.
+# La stanza vive in NetSession, quindi si puo' uscire da questa schermata
+# (hub, squadra, missioni) senza perderla: la barra in alto la tiene a portata.
+
 const HUB_SCENE: String = "res://scenes/hub/hub_demo.tscn"
-const BATTLE_SCENE: String = "res://scenes/battle/battle_screen.tscn"
+const ROSTER_SCENE: String = "res://scenes/roster/roster_screen.tscn"
 const DEFAULT_ROOM: String = "odispel"
 
-var form_box: VBoxContainer
-var room_box: VBoxContainer
+var form_panel: HudPanel
+var room_panel: HudPanel
 var url_edit: LineEdit
 var room_edit: LineEdit
 var name_edit: LineEdit
@@ -14,71 +19,74 @@ var host_button: Button
 var join_button: Button
 var status_label: Label
 var room_info_label: Label
-var players_label: Label
+var cards_box: HBoxContainer
+var picker: LobbyView.MissionPicker
+var ready_button: Button
 var start_button: Button
-var mission_pick: OptionButton
-var tier_pick: OptionButton
-
-var _leaving: bool = false
+var _in_room: bool = false
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-
-	# Tornando qui si riparte sempre da una sessione pulita.
-	NetSession.close()
-
+	var window: Window = get_window()
+	if window != null:
+		window.content_scale_size = Vector2i(1280, 720)
 	_build_interface()
-	_show_form()
+	if NetSession.manager != null:
+		_connect_manager()
+		_show_room()
+	else:
+		_show_form()
 
 
 func _build_interface() -> void:
 	var background := ColorRect.new()
-	background.color = Color("#11121a")
+	background.color = BattleTheme.BK
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
-	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+	var cctv := ColorRect.new()
+	cctv.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cctv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://shaders/cctv_overlay.gdshader")
+	cctv.material = mat
+	add_child(cctv)
 
-	var layout := VBoxContainer.new()
-	layout.custom_minimum_size = Vector2(480, 420)
-	layout.add_theme_constant_override("separation", 10)
-	center.add_child(layout)
+	var title := BattleTheme.make_label("LOBBY CO-OP", 34, BattleTheme.CY, true)
+	title.position = Vector2(40, 22)
+	add_child(title)
 
-	var title := Label.new()
-	title.text = "ODISPEL"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
-	layout.add_child(title)
+	status_label = BattleTheme.make_label("", 15, BattleTheme.WH)
+	status_label.position = Vector2(40, 672)
+	status_label.size = Vector2(1200, 30)
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(status_label)
 
-	var subtitle := Label.new()
-	subtitle.text = "LOBBY CO-OP"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.add_theme_font_size_override("font_size", 20)
-	layout.add_child(subtitle)
+	_build_form()
+	_build_room()
 
-	layout.add_child(HSeparator.new())
 
-	# --- Modulo di connessione ---
-	form_box = VBoxContainer.new()
-	form_box.add_theme_constant_override("separation", 8)
-	layout.add_child(form_box)
+func _build_form() -> void:
+	form_panel = HudPanel.new().setup("CONNESSIONE", BattleTheme.CY)
+	form_panel.position = Vector2(340, 90)
+	form_panel.size = Vector2(600, 540)
+	add_child(form_panel)
 
-	url_edit = _add_field(form_box, "Server di signaling", GameConfig.get_server_url())
-	room_edit = _add_field(form_box, "Stanza", DEFAULT_ROOM)
-	name_edit = _add_field(form_box, "Il tuo nome", "Giocatore")
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	form_panel.set_content(box)
+
+	url_edit = _add_field(box, "SERVER DI SIGNALING", GameConfig.get_server_url())
+	room_edit = _add_field(box, "STANZA", DEFAULT_ROOM)
+	name_edit = _add_field(box, "IL TUO NOME", "Giocatore")
 
 	var spin_row := HBoxContainer.new()
-	form_box.add_child(spin_row)
-
-	var spin_label := Label.new()
-	spin_label.text = "Posti nel party (solo host)"
+	box.add_child(spin_row)
+	var spin_label := BattleTheme.make_label("POSTI NEL PARTY (SOLO HOST)", 14, BattleTheme.CY)
 	spin_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spin_row.add_child(spin_label)
-
 	max_players_spin = SpinBox.new()
 	max_players_spin.min_value = 2
 	max_players_spin.max_value = 6
@@ -88,113 +96,113 @@ func _build_interface() -> void:
 
 	host_button = Button.new()
 	host_button.text = "CREA STANZA (HOST)"
-	host_button.custom_minimum_size.y = 44
+	host_button.custom_minimum_size.y = 52
+	BattleTheme.style_button(host_button, "primary", 22)
 	host_button.pressed.connect(_on_host_pressed)
-	form_box.add_child(host_button)
+	box.add_child(host_button)
 
 	join_button = Button.new()
-	join_button.text = "ENTRA IN UNA STANZA (CLIENT)"
-	join_button.custom_minimum_size.y = 44
+	join_button.text = "ENTRA IN UNA STANZA"
+	join_button.custom_minimum_size.y = 52
+	BattleTheme.style_button(join_button, "normal", 22)
 	join_button.pressed.connect(_on_join_pressed)
-	form_box.add_child(join_button)
+	box.add_child(join_button)
 
-	var back_button := Button.new()
-	back_button.text = "TORNA ALL'HUB"
-	back_button.custom_minimum_size.y = 40
-	back_button.pressed.connect(_on_back_pressed)
-	form_box.add_child(back_button)
+	var back := Button.new()
+	back.text = "TORNA ALL'HUB"
+	back.custom_minimum_size.y = 44
+	BattleTheme.style_button(back, "normal", 18)
+	back.pressed.connect(_on_back_pressed)
+	box.add_child(back)
 
-	# --- Stanza ---
-	room_box = VBoxContainer.new()
-	room_box.add_theme_constant_override("separation", 8)
-	layout.add_child(room_box)
 
-	room_info_label = Label.new()
-	room_info_label.add_theme_font_size_override("font_size", 18)
-	room_box.add_child(room_info_label)
+func _build_room() -> void:
+	room_panel = HudPanel.new().setup("STANZA", BattleTheme.RD)
+	room_panel.position = Vector2(40, 80)
+	room_panel.size = Vector2(1200, 580)
+	add_child(room_panel)
 
-	players_label = Label.new()
-	players_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	room_box.add_child(players_label)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	room_panel.set_content(box)
 
-	mission_pick = OptionButton.new()
-	mission_pick.custom_minimum_size.y = 40
-	for id in BattleContent.BOSS_ORDER:
-		mission_pick.add_item(MissionConfig.boss_title(id))
-	room_box.add_child(mission_pick)
+	room_info_label = BattleTheme.make_label("", 18, BattleTheme.WH)
+	box.add_child(room_info_label)
 
-	tier_pick = OptionButton.new()
-	tier_pick.custom_minimum_size.y = 40
-	for t in BattleContent.TIERS:
-		tier_pick.add_item(str(t["name"]))
-	room_box.add_child(tier_pick)
-	# L'host sceglie solo tra le missioni che ha sbloccato.
-	var host_roster: Dictionary = RosterStore.load_or_new()
-	for i in BattleContent.BOSS_ORDER.size():
-		mission_pick.set_item_disabled(i, not RosterState.is_boss_unlocked(host_roster, str(BattleContent.BOSS_ORDER[i])))
-	for i in BattleContent.TIERS.size():
-		tier_pick.set_item_disabled(i, not RosterState.is_tier_unlocked(host_roster, "distributore", i))
-	mission_pick.item_selected.connect(func(_i: int) -> void:
-		for t in BattleContent.TIERS.size():
-			tier_pick.set_item_disabled(t, not RosterState.is_tier_unlocked(host_roster, str(BattleContent.BOSS_ORDER[mission_pick.selected]), t))
-		if tier_pick.is_item_disabled(tier_pick.selected):
-			tier_pick.select(0))
+	cards_box = HBoxContainer.new()
+	cards_box.add_theme_constant_override("separation", 12)
+	cards_box.custom_minimum_size = Vector2(0, 310)
+	box.add_child(cards_box)
+
+	box.add_child(BattleTheme.make_label("MISSIONE (LA SCEGLIE L'HOST)", 14, BattleTheme.CY_DIM))
+	picker = LobbyView.MissionPicker.new()
+	box.add_child(picker)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	box.add_child(row)
+
+	ready_button = Button.new()
+	ready_button.custom_minimum_size = Vector2(240, 54)
+	ready_button.pressed.connect(_on_ready_pressed)
+	row.add_child(ready_button)
 
 	start_button = Button.new()
 	start_button.text = "AVVIA PARTITA"
-	start_button.custom_minimum_size.y = 46
+	start_button.custom_minimum_size = Vector2(260, 54)
+	BattleTheme.style_button(start_button, "primary", 24)
 	start_button.pressed.connect(_on_start_pressed)
-	room_box.add_child(start_button)
+	row.add_child(start_button)
 
-	var leave_button := Button.new()
-	leave_button.text = "ESCI DALLA STANZA"
-	leave_button.custom_minimum_size.y = 40
-	leave_button.pressed.connect(_on_leave_pressed)
-	room_box.add_child(leave_button)
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(spacer)
 
-	layout.add_child(HSeparator.new())
+	var squad := Button.new()
+	squad.text = "SQUADRA"
+	squad.custom_minimum_size = Vector2(160, 54)
+	BattleTheme.style_button(squad, "normal", 20)
+	squad.pressed.connect(func() -> void: get_tree().change_scene_to_file(ROSTER_SCENE))
+	row.add_child(squad)
 
-	status_label = Label.new()
-	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	status_label.custom_minimum_size.y = 48
-	layout.add_child(status_label)
+	var hub := Button.new()
+	hub.text = "HUB"
+	hub.custom_minimum_size = Vector2(110, 54)
+	BattleTheme.style_button(hub, "normal", 20)
+	hub.pressed.connect(func() -> void: get_tree().change_scene_to_file(HUB_SCENE))
+	row.add_child(hub)
+
+	var leave := Button.new()
+	leave.text = "ESCI"
+	leave.custom_minimum_size = Vector2(110, 54)
+	BattleTheme.style_button(leave, "normal", 20)
+	leave.pressed.connect(_on_leave_pressed)
+	row.add_child(leave)
 
 
 func _add_field(parent: Control, caption: String, value: String) -> LineEdit:
-	var label := Label.new()
-	label.text = caption
-	parent.add_child(label)
-
+	parent.add_child(BattleTheme.make_label(caption, 14, BattleTheme.CY))
 	var edit := LineEdit.new()
 	edit.text = value
-	edit.custom_minimum_size.y = 34
+	edit.custom_minimum_size.y = 36
 	parent.add_child(edit)
 	return edit
 
 
 func _show_form() -> void:
-	form_box.visible = true
-	room_box.visible = false
+	_in_room = false
+	form_panel.visible = true
+	room_panel.visible = false
 	host_button.disabled = false
 	join_button.disabled = false
 
 
 func _show_room() -> void:
-	form_box.visible = false
-	room_box.visible = true
-
-	var manager: NetworkManager = NetSession.manager
-
-	if manager == null:
-		return
-
-	room_info_label.text = (
-		"Stanza: " + room_edit.text.strip_edges()
-		+ ("  —  sei l'HOST" if manager.is_host else "  —  sei un CLIENT")
-	)
-	start_button.visible = manager.is_host
-	mission_pick.visible = manager.is_host
-	tier_pick.visible = manager.is_host
+	_in_room = true
+	form_panel.visible = false
+	room_panel.visible = true
+	if picker.manager == null and NetSession.manager != null:
+		picker.setup(NetSession.manager)
 	_refresh()
 
 
@@ -224,84 +232,56 @@ func _read_form() -> Dictionary:
 
 	url_edit.text = url
 	GameConfig.remember_server_url(url)
-
-	return {
-		"url": url,
-		"room": room,
-		"name": display_name.substr(0, 24)
-	}
+	return {"url": url, "room": room, "name": display_name.substr(0, 24)}
 
 
 func _on_host_pressed() -> void:
 	var form: Dictionary = _read_form()
-
 	if form.is_empty():
 		return
-
-	if not NetSession.start_host(
-		form["url"], form["room"], form["name"], int(max_players_spin.value)
-	):
+	if not NetSession.start_host(form["url"], form["room"], form["name"], int(max_players_spin.value)):
 		_set_status("Impossibile avviare l'host.")
 		return
-
-	_after_connect_started()
+	_after_connect_started(form["room"])
 
 
 func _on_join_pressed() -> void:
 	var form: Dictionary = _read_form()
-
 	if form.is_empty():
 		return
-
 	if not NetSession.start_client(form["url"], form["room"], form["name"]):
 		_set_status("Impossibile avviare la connessione.")
 		return
+	_after_connect_started(form["room"])
 
-	_after_connect_started()
+
+var _room_name: String = ""
 
 
-func _after_connect_started() -> void:
-	var manager: NetworkManager = NetSession.manager
-
-	# In battaglia si porta la squadra scelta nella schermata Squadra.
-	var roster: Dictionary = RosterStore.load_or_new()
-	manager.set_local_team(RosterState.team_entries(roster))
-
-	manager.room_joined.connect(_on_room_joined)
-	manager.snapshot_received.connect(_refresh)
-	manager.battle_updated.connect(_refresh)
-	manager.player_assigned.connect(_on_player_assigned)
-	manager.player_left.connect(_on_player_left)
-	manager.network_error.connect(_on_network_error)
-	manager.waiting_for_host.connect(_on_waiting_for_host)
-	manager.signaling_lost.connect(_on_signaling_lost)
-
+func _after_connect_started(room: String) -> void:
+	_room_name = room
+	_connect_manager()
 	host_button.disabled = true
 	join_button.disabled = true
 	_set_status("Connessione al server... (se è inattivo può servire fino a 1 minuto)")
 
 
+func _connect_manager() -> void:
+	var manager: NetworkManager = NetSession.manager
+	if manager == null:
+		return
+	manager.room_joined.connect(_on_room_joined)
+	manager.lobby_updated.connect(_refresh)
+	manager.waiting_for_host.connect(_on_waiting_for_host)
+	manager.signaling_lost.connect(_on_signaling_lost)
+
+
 func _on_room_joined() -> void:
 	_show_room()
-
 	if NetSession.manager.is_host:
-		_set_status("Stanza creata. Fai entrare gli altri, poi avvia la partita.")
+		_set_status("Stanza creata. Fai entrare gli altri: quando tutti sono PRONTI puoi avviare.")
 	else:
 		_set_status("Collegamento con l'host in corso...")
-
-
-func _on_player_assigned(player_id: String) -> void:
-	var manager: NetworkManager = NetSession.manager
-
-	if manager != null and not manager.is_host:
-		_set_status("Sei dentro come " + player_id + ". Attendi che l'host avvii la partita.")
-
-	_refresh()
-
-
-func _on_player_left(player_id: String) -> void:
-	_set_status(player_id + " ha lasciato la stanza.")
-	_refresh()
 
 
 func _on_waiting_for_host(attempt: int) -> void:
@@ -312,96 +292,57 @@ func _on_signaling_lost() -> void:
 	_set_status("Il server di signaling non risponde: nessun altro potrà entrare.")
 
 
-func _on_network_error(reason: String) -> void:
-	if _leaving:
-		return
-
-	NetSession.close()
-	_show_form()
-	_set_status("Errore di rete: " + reason)
+func _process(_delta: float) -> void:
+	# La stanza e' sparita (errore di rete o uscita dalla barra): torna il modulo.
+	if _in_room and NetSession.manager == null:
+		_show_form()
+		_set_status(("Errore di rete: " + NetSession.last_error) if NetSession.last_error != "" else "Sei uscito dalla stanza.")
+	elif not _in_room and NetSession.manager == null and NetSession.last_error != "" and host_button.disabled:
+		_show_form()
+		_set_status("Errore di rete: " + NetSession.last_error)
 
 
 func _refresh() -> void:
 	var manager: NetworkManager = NetSession.manager
-
-	if manager == null or _leaving:
+	if manager == null or not _in_room:
 		return
 
-	# Il client segue l'host: appena parte la battaglia, ci va anche lui.
-	if not manager.is_host and not manager.battle.is_empty() and str(manager.battle["winner"]) == "":
-		_go_to_battle()
-		return
+	var players: Array = manager.lobby.get("players", [])
+	room_info_label.text = "STANZA %s  —  %s  —  %d OPERATORI" % [
+		(_room_name if _room_name != "" else room_edit.text.strip_edges()).to_upper(),
+		"SEI L'HOST" if manager.is_host else "SEI UN CLIENT",
+		players.size()
+	]
+	LobbyView.fill_players(cards_box, manager.lobby, manager.local_player_id, true)
+	picker.refresh()
 
-	var game: GameState = manager.game
-	var lines := PackedStringArray()
+	var mine: bool = manager.is_local_ready()
+	ready_button.text = "ANNULLA PRONTO" if mine else "PRONTO"
+	BattleTheme.style_button(ready_button, "normal" if mine else "primary", 24)
+	ready_button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	start_button.visible = manager.is_host
+	start_button.disabled = not manager.all_ready()
 
-	if game != null and game.party != null:
-		for player: PlayerState in game.party.get_players():
-			var tag: String = " (tu)" if player.id == manager.local_player_id else ""
-			var state: String = "libero"
 
-			if player.connected and not player.controlled_by_ai:
-				state = "connesso"
-			elif player.controlled_by_ai and manager.is_host:
-				state = "libero / disconnesso"
-
-			lines.append("• " + player.display_name + tag + "  —  " + state)
-
-	players_label.text = (
-		"\n".join(lines) if not lines.is_empty() else "In attesa dei dati dell'host..."
-	)
-
-	if manager.is_host:
-		start_button.disabled = manager.get_connected_human_count() < 2
+func _on_ready_pressed() -> void:
+	var manager: NetworkManager = NetSession.manager
+	if manager != null:
+		manager.set_ready(not manager.is_local_ready())
 
 
 func _on_start_pressed() -> void:
 	var manager: NetworkManager = NetSession.manager
-
 	if manager == null:
 		return
-
-	# Battaglia gia' avviata (per esempio il cambio scena era fallito): riapri la schermata.
-	if not manager.battle.is_empty() and str(manager.battle["winner"]) == "":
-		_go_to_battle()
-		return
-
-	if manager.get_connected_human_count() < 2:
-		_set_status("Impossibile avviare: servono almeno 2 giocatori connessi.")
-		return
-
-	if not manager.host_start_battle(str(BattleContent.BOSS_ORDER[mission_pick.selected]), int(randi()) | 1, tier_pick.selected):
-		_set_status("Impossibile avviare la battaglia.")
-		return
-
-	_go_to_battle()
-
-
-func _go_to_battle() -> void:
-	if _leaving:
-		return
-
-	_leaving = true
-	var scene: Node = (load(BATTLE_SCENE) as PackedScene).instantiate()
-	scene.pending_source = NetSession.manager
-	var tree: SceneTree = get_tree()
-	var old: Node = tree.current_scene
-	tree.root.add_child(scene)
-	tree.current_scene = scene
-
-	if old != null:
-		old.queue_free()
+	if not manager.host_launch():
+		_set_status("Servono almeno 2 giocatori e tutti PRONTI.")
 
 
 func _on_leave_pressed() -> void:
-	NetSession.close()
+	NetSession.leave_room()
 	_show_form()
 	_set_status("Sei uscito dalla stanza.")
 
 
 func _on_back_pressed() -> void:
-	NetSession.close()
-	var error: int = get_tree().change_scene_to_file(HUB_SCENE)
-
-	if error != OK:
-		push_error("Impossibile tornare all'hub. Codice: " + str(error))
+	get_tree().change_scene_to_file(HUB_SCENE)

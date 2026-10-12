@@ -65,7 +65,7 @@ func _process(_delta: float) -> void:
 
 func _build_interface() -> void:
 	var background := ColorRect.new()
-	background.color = Color("#11121a")
+	background.color = BattleTheme.BK
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)

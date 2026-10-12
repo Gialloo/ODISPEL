@@ -15,6 +15,32 @@ var manager: NetworkManager = null
 # e rientra con lo stesso token riprende lo stesso giocatore.
 var client_token: String = ""
 
+const BATTLE_PATH: String = "res://scenes/battle/battle_screen.tscn"
+const HUB_PATH: String = "res://scenes/hub/hub_demo.tscn"
+
+var bar: RoomBar = null
+var last_error: String = ""
+var _last_scene: Node = null
+var _entering_battle: bool = false
+
+
+func _ready() -> void:
+	# Tema grafico unico per tutto il gioco, popup compresi.
+	get_tree().root.theme = UiTheme.build()
+	bar = RoomBar.new().setup(self)
+	add_child(bar)
+
+
+func _process(_delta: float) -> void:
+	# Cambio di schermata: la squadra potrebbe essere cambiata, la barra va rivista.
+	var scene: Node = get_tree().current_scene
+	if scene != _last_scene:
+		_last_scene = scene
+		if manager != null:
+			refresh_team()
+		if bar != null:
+			bar.refresh()
+
 
 func is_active() -> bool:
 	return manager != null
@@ -53,6 +79,7 @@ func start_host(
 		close()
 		return false
 
+	_attach()
 	return true
 
 
@@ -69,6 +96,7 @@ func start_client(url: String, room_id: String, display_name: String) -> bool:
 		return false
 
 	client_token = manager.session_token
+	_attach()
 	return true
 
 
@@ -99,6 +127,111 @@ func close() -> void:
 	manager.shutdown()
 	manager.queue_free()
 	manager = null
+	_entering_battle = false
+
+	if bar != null:
+		bar.expanded = false
+		bar.refresh()
+
+
+# Esce dalla stanza (da qualsiasi schermata) e torna all'hub se serve.
+func leave_room() -> void:
+	close()
+
+	var scene: Node = get_tree().current_scene
+
+	if scene != null and str(scene.scene_file_path).contains("battle_screen"):
+		get_tree().change_scene_to_file(HUB_PATH)
+
+	if bar != null:
+		bar.show_toast("Sei uscito dalla stanza.")
+
+
+func _attach() -> void:
+	last_error = ""
+	manager.set_local_team(RosterState.team_entries(RosterStore.load_or_new()))
+	manager.lobby_updated.connect(_on_lobby_updated)
+	manager.battle_updated.connect(_on_battle_updated)
+	manager.network_error.connect(_on_network_error)
+	manager.player_left.connect(_on_player_left)
+	manager.player_assigned.connect(func(_id: String) -> void: _on_lobby_updated())
+	manager.room_joined.connect(_on_lobby_updated)
+
+	if manager.is_host:
+		manager.refresh_lobby()
+
+
+# Rilegge la squadra scelta nella schermata Squadra e la comunica agli altri.
+func refresh_team() -> void:
+	if manager == null:
+		return
+
+	manager.set_local_team(RosterState.team_entries(RosterStore.load_or_new()))
+
+
+func _on_lobby_updated() -> void:
+	if bar != null:
+		bar.refresh()
+
+
+func _on_player_left(player_id: String) -> void:
+	if bar != null:
+		var name: String = player_id
+
+		for p in manager.lobby.get("players", []) if manager != null else []:
+			if str(p["id"]) == player_id:
+				name = str(p["name"])
+
+		bar.show_toast("%s ha lasciato la stanza." % name)
+
+
+func _on_network_error(reason: String) -> void:
+	last_error = reason
+	close()
+
+	if bar != null:
+		bar.show_toast("Errore di rete: " + reason, 8.0)
+
+
+# La battaglia parte: tutti i giocatori della stanza ci vengono portati,
+# da qualsiasi schermata si trovino.
+func _on_battle_updated() -> void:
+	if manager == null or _entering_battle or manager.battle.is_empty():
+		return
+
+	if str(manager.battle.get("winner", "")) != "":
+		return
+
+	var scene: Node = get_tree().current_scene
+
+	if scene != null and str(scene.scene_file_path).contains("battle_screen") and scene.get("source") == manager:
+		return
+
+	enter_battle()
+
+
+func enter_battle() -> void:
+	if manager == null or _entering_battle:
+		return
+
+	_entering_battle = true
+	var packed: PackedScene = load(BATTLE_PATH) as PackedScene
+	var battle_scene: Node = packed.instantiate()
+	battle_scene.set("pending_source", manager)
+	var tree: SceneTree = get_tree()
+	var old: Node = tree.current_scene
+	tree.root.add_child(battle_scene)
+	tree.current_scene = battle_scene
+
+	if old != null:
+		old.queue_free()
+
+	if bar != null:
+		bar.refresh()
+
+	# Pronto per la battaglia successiva.
+	await tree.process_frame
+	_entering_battle = false
 
 
 func _new_manager() -> NetworkManager:
