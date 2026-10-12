@@ -46,6 +46,8 @@ var boss_hit: float = 0.0           # 1 = appena colpito, scende a 0
 var local_player_id: String = ""    # il giocatore di questo schermo: la sua etichetta e' "TU"
 var acting: String = ""             # unita' che sta agendo (segnalino rosso sopra di lei)
 var acting_target: String = ""      # e chi sta subendo l'azione (cerchio rosso)
+var _lunge_who: String = ""
+var _lunge_t: float = 1.0
 var mark_pulse: float = 0.0         # 1 = marchio appena applicato / consumato, scende a 0
 var summon_pulse: float = 0.0       # 1 = evocazione appena comparsa
 var hit_flash: Dictionary = {}      # unit_id -> intensita'
@@ -140,6 +142,10 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	boss_hit = maxf(0.0, boss_hit - delta * 3.0)
+	if acting != _lunge_who:
+		_lunge_who = acting
+		_lunge_t = 0.0
+	_lunge_t = minf(1.0, _lunge_t + delta / 0.45)
 	mark_pulse = maxf(0.0, mark_pulse - delta * 2.2)
 	summon_pulse = maxf(0.0, summon_pulse - delta * 2.0)
 	for uid in hit_flash.keys():
@@ -282,6 +288,7 @@ func _draw() -> void:
 	if not static_background and _bg_layers.is_empty():
 		_paint_procedural_background(self)
 	_draw_background()
+	_draw_motes()
 	_entity_transform(BOSS_X)
 	_draw_boss()
 	_draw_bench()
@@ -424,6 +431,8 @@ func _draw_boss() -> void:
 	var enraged: bool = alive and ratio < BattleTypes.ENRAGE_BELOW
 	var shake: Vector2 = Vector2(sin(_t * 90.0), cos(_t * 70.0)) * 5.0 * boss_hit
 	var o: Vector2 = shake + Vector2(0.0, sin(_t * 1.3) * 1.5)
+	if _lunge_who == BattleState.BOSS_ID:
+		o.x -= _lunge_offset(60.0)
 
 	# ombra
 	draw_colored_polygon(_ellipse(Vector2(BOSS_X, GEO_FLOOR + 18.0), 210.0, 26.0, 24), SHADOW_COLOR)
@@ -784,6 +793,8 @@ func _draw_fighters() -> void:
 		if u.is_empty():
 			continue
 		var gx: float = fighter_x(i, players.size())
+		if _lunge_who == str(p["active"]):
+			gx += _lunge_offset(70.0)       # chi agisce scatta verso il boss e torna
 		_entity_transform(gx)
 		_draw_fighter(u, Vector2(gx, GEO_FLOOR - 120.0), i, str(p["id"]) == local_player_id or (local_player_id == "" and i == 0))
 		_draw_summons(p, gx)
@@ -1055,6 +1066,25 @@ func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index
 
 
 # MARCHI: un mirino a rombo per ogni marchio sopra il boss, che pulsa quando cambiano.
+# Scatto in avanti con ritorno morbido: 0 -> amount -> 0 in ~0.45 s.
+func _lunge_offset(amount: float) -> float:
+	return sin(PI * _lunge_t) * amount if _lunge_t < 1.0 else 0.0
+
+
+# Pulviscolo neon che sale lentamente: da' profondita' alla scena senza testo ne' riquadri.
+func _draw_motes() -> void:
+	for i in 26:
+		var seedv: float = float(i) * 37.1
+		var x: float = fmod(seedv * 13.7 + _t * (6.0 + float(i % 5) * 3.0), DW + 40.0) - 20.0
+		var y: float = fmod(seedv * 29.3 - _t * (10.0 + float(i % 4) * 5.0), 430.0)
+		if y < 0.0:
+			y += 430.0
+		y += 140.0
+		var tw: float = 0.5 + 0.5 * sin(_t * 1.7 + seedv)
+		var c: Color = [BattleTheme.CY, BattleTheme.POP, Color("#ff5fd2")][i % 3]
+		draw_circle(Vector2(x, y), 1.6 + float(i % 3), Color(c, 0.08 + 0.18 * tw))
+
+
 func _draw_boss_marks(boss: Dictionary, br: Rect2) -> void:
 	var n: int = int(boss.get("marks", 0))
 	var cx: float = br.position.x + br.size.x * 0.5
