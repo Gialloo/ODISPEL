@@ -243,6 +243,7 @@ func _build_team_page() -> void:
 	# illustrazione dell'operatore (la tua grafica `splash.png`, o il segnaposto)
 	_detail_portrait = PortraitView.new().setup("", "splash")
 	_detail_portrait.show_expression_text = false
+	_detail_portrait.card = true
 	_detail_portrait.position = Vector2(480.0, 40.0)
 	_detail_portrait.size = Vector2(164.0, 280.0)
 	card.add_child(_detail_portrait)

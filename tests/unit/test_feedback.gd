@@ -112,7 +112,7 @@ func _run() -> void:
 	hub.roster = hub_roster
 	root.add_child(hub)
 	await process_frame
-	_check("l hub ha i 6 pulsanti", hub.buttons.size() == 6)
+	_check("l hub ha i 7 pulsanti", hub.buttons.size() == 7)
 	_check("CONTINUA propone la missione giusta", hub.continue_button.text.contains("DISTRIBUTORE") and hub.continue_button.text.contains("DIFFICILE"))
 	var overflow: bool = false
 	for b in hub.buttons.values():

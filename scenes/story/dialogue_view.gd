@@ -47,11 +47,13 @@ func _ready() -> void:
 
 func _build() -> void:
 	_left = PortraitView.new()
+	_left.card = true
 	_left.size = PORTRAIT_SIZE
 	_left.position = Vector2(30, 40)
 	_left.visible = false
 	add_child(_left)
 	_right = PortraitView.new()
+	_right.card = true
 	_right.size = PORTRAIT_SIZE
 	_right.position = Vector2(690, 40)
 	_right.flip = true

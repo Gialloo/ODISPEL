@@ -13,6 +13,7 @@ var animating: bool = false
 var locked: bool = false            # ordine inviato, si aspetta il round
 var pending_swap: String = ""       # personaggio scelto per il cambio
 var log_lines: Array = []
+var _last_won: bool = false
 var _ended_shown: bool = false
 
 var _stage: BattleStage
@@ -111,7 +112,14 @@ func _on_tutorial_finished(_skipped: bool) -> void:
 func _start_solo() -> void:
 	var s := SoloBattleSource.new()
 	bind_source(s)
+	s.endless_floor = MissionConfig.endless_floor
 	s.start(RosterStore.load_or_new(), MissionConfig.boss_id, int(randi()) | 1, MissionConfig.tier)
+	if MissionConfig.endless_floor > 0 and DisplayServer.get_name() != "headless":
+		var emod: Dictionary = Endless.mod_for(MissionConfig.endless_floor)
+		var cap: String = "PIANO %d" % MissionConfig.endless_floor
+		if not emod.is_empty():
+			cap += "  //  %s: %s" % [str(emod["name"]), str(emod["desc"])]
+		ComicFx.caption(_fx, cap, Vector2(300.0, 300.0), BattleTheme.POP, 1.6)
 
 
 func bind_source(src: Variant) -> void:
@@ -406,6 +414,9 @@ func _refresh_boss() -> void:
 	var boss: Dictionary = BattleState.boss(shown)
 	var info: Dictionary = BattleContent.BOSSES.get(str(boss["char"]), {})
 	var tier_name: String = str(BattleContent.tier_of(int(shown.get("tier", 0)))["name"])
+	if int(shown.get("endless", 0)) > 0:
+		var emod: Dictionary = Endless.mod_for(int(shown["endless"]))
+		tier_name = "PIANO %d%s" % [int(shown["endless"]), (" · " + str(emod["name"])) if not emod.is_empty() else ""]
 	_boss_name.text = "%s · %s · %s" % [str(info.get("name", "SOGGETTO")).to_upper(), str(info.get("title", "")).to_upper(), tier_name]
 	_boss_bar.set_ratio(float(boss["hp"]) / float(boss["max_hp"]))
 	var tags: String = ""
@@ -1169,7 +1180,8 @@ func _check_end() -> void:
 		rewards = source.finish()
 	var won: bool = str(shown["winner"]) == "players"
 	# prima vittoria su questo boss: scena finale della storia, poi il riquadro dell'esito
-	if won and source is SoloBattleSource and Story.enabled():
+	_last_won = won
+	if won and source is SoloBattleSource and Story.enabled() and MissionConfig.endless_floor == 0:
 		var post: String = Story.scene_id(str(BattleState.boss(shown)["char"]), "post")
 		if Story.is_new(post):
 			var view: DialogueView = Story.play(self, post)
@@ -1203,7 +1215,11 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	var title := BattleTheme.make_label("OPERAZIONE RIUSCITA" if victory else "OPERAZIONE FALLITA", 40, BattleTheme.CY if victory else BattleTheme.RD, true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
-	var mission := BattleTheme.make_label("%s · %s" % [MissionConfig.boss_title(str(BattleState.boss(shown)["char"])), str(BattleContent.tier_of(int(shown.get("tier", 0)))["name"])], 16, BattleTheme.WH)
+	var mission_text: String = "%s · %s" % [MissionConfig.boss_title(str(BattleState.boss(shown)["char"])), str(BattleContent.tier_of(int(shown.get("tier", 0)))["name"])]
+	if MissionConfig.endless_floor > 0:
+		var best_floor: int = Endless.best(RosterStore.load_or_new()) if source is SoloBattleSource else 0
+		mission_text = "CICLO INFINITO · PIANO %d · RECORD %d" % [MissionConfig.endless_floor, best_floor]
+	var mission := BattleTheme.make_label(mission_text, 16, BattleTheme.WH)
 	mission.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(mission)
 	box.add_child(BattleTheme.make_label("PREMI", 16, BattleTheme.WH))
@@ -1223,6 +1239,8 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	if not (source is NetworkManager):
 		var again := Button.new()
 		again.text = "RIGIOCA"
+		if MissionConfig.endless_floor > 0:
+			again.text = "PIANO %d  ›" % (MissionConfig.endless_floor + 1) if victory else "NUOVA SERIE"
 		again.custom_minimum_size = Vector2(0, 50)
 		BattleTheme.style_button(again, "primary", 26)
 		again.pressed.connect(_on_again)
@@ -1292,6 +1310,8 @@ func _reward_lines(rewards: Dictionary) -> Array:
 
 
 func _on_again() -> void:
+	if MissionConfig.endless_floor > 0:
+		MissionConfig.set_endless(MissionConfig.endless_floor + 1 if _last_won else 1)
 	SceneRouter.go("battle", true)
 
 

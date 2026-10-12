@@ -6,9 +6,17 @@ extends RefCounted
 
 static var boss_id: String = "distributore"
 static var tier: int = 0
+static var endless_floor: int = 0     # 0 = missione normale; da 1 in su = CICLO INFINITO, a questo piano
+
+
+static func set_endless(floor_n: int) -> void:
+	endless_floor = maxi(1, floor_n)
+	boss_id = Endless.boss_for(endless_floor)
+	tier = Endless.tier_for(endless_floor)
 
 
 static func set_mission(new_boss: String, new_tier: int) -> void:
+	endless_floor = 0
 	if BattleContent.BOSSES.has(new_boss):
 		boss_id = new_boss
 	tier = clampi(new_tier, 0, BattleContent.TIERS.size() - 1)

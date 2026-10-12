@@ -15,6 +15,7 @@ var expression: String = "neutral"
 var dimmed: bool = false           # chi non parla e' piu' scuro
 var flip: bool = false             # specchia (personaggio a destra che guarda a sinistra)
 var show_expression_text: bool = true
+var card: bool = false             # scheda da sorveglianza: fondo scuro, tinta ciano, cornice con angoli e numero "no. NN"
 var _texture: Texture2D = null
 var _t: float = 0.0
 
@@ -74,10 +75,48 @@ func _display_name() -> String:
 
 func _draw() -> void:
 	var tint: Color = Color(0.45, 0.45, 0.5, 1.0) if dimmed else Color.WHITE
+	if card:
+		_draw_card_back()
+		if _texture != null:
+			tint *= Color(0.66, 0.92, 1.0)
 	if _texture != null:
 		_draw_texture(tint)
 	else:
 		_draw_placeholder(tint)
+	if card:
+		_draw_card_frame()
+
+
+# Numero d'archivio: la posizione del personaggio nell'elenco (01, 02...). I boss prendono il loro numero di bersaglio.
+func _card_number() -> int:
+	if is_boss:
+		return BattleContent.BOSS_ORDER.find(char_id) + 1
+	return BattleContent.CHARACTERS.keys().find(char_id) + 1
+
+
+func _draw_card_back() -> void:
+	draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.09, 0.12, 0.92))
+	for i in 6:
+		var y: float = size.y * float(i + 1) / 7.0
+		draw_line(Vector2(0.0, y), Vector2(size.x, y), Color(BattleTheme.CY, 0.05), 1.0)
+
+
+func _draw_card_frame() -> void:
+	var col: Color = Color(BattleTheme.CY, 0.55 if dimmed else 0.95)
+	draw_rect(Rect2(Vector2(1.5, 1.5), size - Vector2(3.0, 3.0)), Color(BattleTheme.CY, 0.25), false, 6.0)
+	draw_rect(Rect2(Vector2(1.5, 1.5), size - Vector2(3.0, 3.0)), col, false, 2.0)
+	var l: float = clampf(minf(size.x, size.y) * 0.12, 10.0, 26.0)
+	var m: float = 9.0
+	var tl := Vector2(m, m)
+	var br := size - Vector2(m, m)
+	draw_polyline(PackedVector2Array([tl + Vector2(0, l), tl, tl + Vector2(l, 0)]), col, 2.0)
+	draw_polyline(PackedVector2Array([Vector2(br.x - l, tl.y), Vector2(br.x, tl.y), Vector2(br.x, tl.y + l)]), col, 2.0)
+	draw_polyline(PackedVector2Array([br - Vector2(0, l), br, br - Vector2(l, 0)]), col, 2.0)
+	draw_polyline(PackedVector2Array([Vector2(tl.x + l, br.y), Vector2(tl.x, br.y), Vector2(tl.x, br.y - l)]), col, 2.0)
+	var n: int = _card_number()
+	if n > 0:
+		var fs: int = clampi(int(size.x * 0.14), 13, 30)
+		draw_string(BattleTheme.mono(), Vector2(m + 4.0, size.y - m - 6.0), "no.%02d" % n, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 
 
 # Disegna la grafica adattata all'area: i piedi/basso dell'immagine restano in basso.

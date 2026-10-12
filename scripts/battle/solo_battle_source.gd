@@ -12,6 +12,7 @@ var local_player_id: String = "p1"
 var battle_time_left: float = -1.0     # negativo = nessun timer
 var boss_id: String = "distributore"
 var tier: int = 0
+var endless_floor: int = 0       # > 0: CICLO INFINITO a questo piano
 var seed_value: int = 1
 var roster: Dictionary = {}
 var rewards: Dictionary = {}
@@ -27,6 +28,8 @@ func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier:
 	rewards = {}
 	_finished = false
 	battle = RosterState.create_solo_battle(roster, "IO", boss_id, seed_value, 2, tier)
+	if endless_floor > 0:
+		Endless.apply(battle, endless_floor)
 	battle_updated.emit()
 
 
@@ -46,8 +49,13 @@ func finish() -> Dictionary:
 	_finished = true
 	var all: Dictionary = BattleRewards.for_battle(battle, boss_id, seed_value)
 	rewards = all.get(local_player_id, {})
+	var won: bool = str(battle["winner"]) == "players"
+	if endless_floor > 0:
+		rewards = Endless.scale_rewards(rewards, endless_floor) if won else rewards
+		if Endless.record(roster, endless_floor, won):
+			Notify.success("NUOVO RECORD: PIANO %d" % endless_floor)
 	RosterState.apply_rewards(roster, rewards)
-	if str(battle["winner"]) == "players":
+	if won and endless_floor == 0:
 		if RosterState.mark_cleared(roster, boss_id, tier):
 			for line in RosterState.unlock_news(boss_id, tier):
 				Notify.success(line)
