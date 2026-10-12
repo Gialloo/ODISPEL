@@ -7,6 +7,8 @@ extends RefCounted
 # - Ogni operatore vivo di una fazione da' a tutti i compagni VIVI della stessa fazione nella squadra
 #   (se stesso compreso) un bonus alla statistica d'aura della fazione, che cresce con la sua rarita'.
 #   La somma e' limitata da AURA_CAP_PM.
+# - Stile atipico: aura data e ricevuta dimezzata, in cambio di +8% ATK e +5% VEL personali.
+# - Stile atipico: aura data e ricevuta dimezzata, in cambio di +8% ATK e +5% VEL personali.
 # - I Magabondi non danno aure: ricevono meta' dell'aura piu' forte presente nella squadra.
 # - Una fazione puo' essere "spenta" per qualche turno (state["aura_off"][fazione]): niente aure date ne' ricevute.
 # - Modifiche temporanee (mods): {id, stat, pm, turns}; stessa id = si rinnova, non si somma. Servono ai tratti
@@ -30,7 +32,14 @@ const FACTIONS: Dictionary = {
 }
 const ORDER: Array = ["libracorp", "rondini", "magabondi", "kairos"]
 const STYLES: Array = ["ortodosso", "atipico"]
+# Stile: l'ortodosso dà e riceve l'aura per intero; l'atipico ne dà e ne riceve la metà, ma guadagna bonus personali.
+const ATYPICAL_AURA_PCT: int = 50
+const ATYPICAL_SELF_PM: Dictionary = {"atk": 80, "spd": 50}
 const STAT_LABELS: Dictionary = {"atk": "ATK", "def": "DIF", "spd": "VEL", "crit": "CRIT"}
+
+
+static func is_atypical(u: Dictionary) -> bool:
+	return str(u.get("style", "ortodosso")) == "atipico"
 
 
 static func capped(pm: int) -> int:
@@ -98,14 +107,15 @@ static func tick(state: Dictionary) -> void:
 static func auras_for_team(state: Dictionary, team: Array) -> Dictionary:
 	# somma per fazione (solo unita' vive, fazione non spenta)
 	var totals: Dictionary = {}
-	var count: Dictionary = {}
 	for uid in team:
 		var u: Dictionary = BattleState.unit(state, uid)
 		var f: String = str(u.get("faction", ""))
 		if f == "" or not BattleState.is_alive(u) or is_suppressed(state, f) or aura_stat(f) == "":
 			continue
-		totals[f] = int(totals.get(f, 0)) + aura_value(int(u.get("rarity", 0)))
-		count[f] = int(count.get(f, 0)) + 1
+		var given: int = aura_value(int(u.get("rarity", 0)))
+		if is_atypical(u):
+			given = given * ATYPICAL_AURA_PCT / 100
+		totals[f] = int(totals.get(f, 0)) + given
 	for f in totals:
 		totals[f] = capped(int(totals[f]))
 
@@ -122,7 +132,11 @@ static func auras_for_team(state: Dictionary, team: Array) -> Dictionary:
 		var auras: Dictionary = {}
 		if f != "" and not is_suppressed(state, f):
 			if totals.has(f):
-				auras[aura_stat(f)] = int(totals[f])
+				var received: int = int(totals[f])
+				# i Magabondi (atipici per natura) non dimezzano due volte
+				if is_atypical(u) and f != "magabondi":
+					received = received * ATYPICAL_AURA_PCT / 100
+				auras[aura_stat(f)] = received
 			elif f == "magabondi" and best_f != "":
 				auras[aura_stat(best_f)] = int(totals[best_f]) / 2
 		out[uid] = auras
@@ -143,6 +157,9 @@ static func refresh(state: Dictionary) -> void:
 			var total: Dictionary = {}
 			for s in aura:
 				total[s] = int(total.get(s, 0)) + int(aura[s])
+			if is_atypical(u):
+				for st in ATYPICAL_SELF_PM:
+					total[st] = int(total.get(st, 0)) + int(ATYPICAL_SELF_PM[st])
 			for m in u["mods"]:
 				total[str(m["stat"])] = int(total.get(str(m["stat"]), 0)) + int(m["pm"])
 			for s in MULT_STATS:

@@ -62,3 +62,11 @@ Nota: `ArtLibrary.refresh()` si chiama cosi' perche' `reload()` e' una funzione 
 - Critico: `Factions.rolls_crit` e' deterministico (seme + round + attaccante + bersaglio + indice evento), non consuma l'RNG;
   chi ha crit 0 non cambia nulla. Danno critico x1.5; il colpo emette l'evento `crit`.
 - Le aure agiscono solo nella squadra del giocatore (in multigiocatore non attraversano i giocatori).
+
+### Stile ortodosso / atipico
+
+Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda del roster, gratuito):
+- ortodosso: da' e riceve l'aura intera;
+- atipico: da' e riceve meta' aura, ma ha +8% ATK e +5% VEL personali (i Magabondi, atipici per natura, non dimezzano due volte).
+`RosterState.validate_entry` rifiuta fazione/rarita'/stile truccati nelle squadre ricevute dalla rete.
+`BattleState._blank_unit` e' la base comune di giocatori e boss. `tools/bench_sim.gd` misura la logica di battaglia (~0,2 ms a round).

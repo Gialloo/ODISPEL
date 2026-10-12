@@ -337,6 +337,19 @@ func toggle_team(char_id: String) -> bool:
 	return _say("Squadra aggiornata.", true)
 
 
+# Alterna ortodosso/atipico (vedi Factions). Solo per chi ha una fazione.
+func toggle_style(char_id: String) -> bool:
+	if not RosterState.owns(roster, char_id):
+		return false
+	var now: String = BattleContent.style_of(char_id, roster["characters"][char_id])
+	var next: String = "atipico" if now == "ortodosso" else "ortodosso"
+	if not RosterState.set_style(roster, char_id, next):
+		return _say("Questo operatore non ha una fazione.", false)
+	_save()
+	refresh()
+	return _say("%s ora e' %s." % [str(BattleContent.CHARACTERS[char_id]["name"]), next], true)
+
+
 func upgrade(char_id: String) -> bool:
 	var err: String = RosterState.level_up_character(roster, char_id)
 	if err != "":
@@ -603,6 +616,9 @@ func _refresh_detail() -> void:
 	var lines: Array = []
 	lines.append("%s  |  %s  |  %s" % [str(def["color"]).to_upper(), str(def["cls"]).to_upper(), str(BattleTypes.RARITIES[int(def["rarity"])]).to_upper()])
 	lines.append("LIVELLO %d/%d    RANK %s" % [int(e["level"]), RosterState.MAX_LEVEL, _stars(int(e["rank"]))])
+	var faction: String = BattleContent.faction_of(selected)
+	if faction != "":
+		lines.append("%s  |  %s  |  %s" % [Factions.name_of(faction).to_upper(), str(Factions.FACTIONS[faction]["doctrine"]).to_upper(), BattleContent.style_of(selected, e).to_upper()])
 	lines.append("")
 	lines.append("PV  %-6d ATK %-5d" % [int(st["hp"]), int(st["atk"])])
 	lines.append("DEF %-6d VEL %-5d" % [int(st["def"]), int(st["spd"])])
@@ -644,6 +660,17 @@ func _refresh_detail() -> void:
 	BattleTheme.style_button(ub, "primary", 18)
 	ub.pressed.connect(upgrade.bind(selected))
 	_action_box.add_child(ub)
+
+	if faction != "":
+		var sb := Button.new()
+		sb.custom_minimum_size = Vector2(0, 50)
+		sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sb.clip_text = true
+		sb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		sb.text = "STILE: %s" % BattleContent.style_of(selected, e).to_upper()
+		BattleTheme.style_button(sb, "normal", 18)
+		sb.pressed.connect(toggle_style.bind(selected))
+		_action_box.add_child(sb)
 
 	var eb := Button.new()
 	eb.text = "EQUIPAGGIO"

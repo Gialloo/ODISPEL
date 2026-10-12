@@ -109,5 +109,30 @@ func _init() -> void:
 	Factions.refresh(back)
 	_check("JSON: aure identiche", JSON.stringify(back["units"]) == JSON.stringify(s["units"]))
 
+	# stile atipico: aura dimezzata (data e ricevuta), +8% ATK e +5% VEL
+	var at: Dictionary = _entry("dax", "libracorp", 0)
+	at["style"] = "atipico"
+	var st: Dictionary = _state([_entry("kira", "libracorp", 3), at])
+	var du: Dictionary = _u(st, "dax")
+	_check("atipico riceve meta' aura", int(du["aura"]["def"]) == 27)
+	_check("atipico: bonus personali", du["atk"] == int(round(float(du["base"]["atk"]) * 1.08)) and du["spd"] == int(round(float(du["base"]["spd"]) * 1.05)))
+	_check("atipico da' meta' aura", int(_u(st, "kira")["aura"]["def"]) == 55)
+
+	# roster: set_style e validazione anti-truffa
+	var roster: Dictionary = RosterState.new_roster()
+	_check("set_style senza fazione rifiutato", not RosterState.set_style(roster, "kira", "atipico"))
+	_check("set_style stile sconosciuto rifiutato", not RosterState.set_style(roster, "kira", "boh"))
+	var good: Dictionary = BattleContent.default_entry("kira")
+	_check("entry normale valida", RosterState.validate_entry(good) == "")
+	var cheat: Dictionary = BattleContent.default_entry("kira")
+	cheat["rarity"] = 3
+	_check("rarita' truccata rifiutata", RosterState.validate_entry(cheat) != "")
+	cheat = BattleContent.default_entry("kira")
+	cheat["faction"] = "libracorp"
+	_check("fazione truccata rifiutata", RosterState.validate_entry(cheat) != "")
+	cheat = BattleContent.default_entry("kira")
+	cheat["style"] = "boh"
+	_check("stile non valido rifiutato", RosterState.validate_entry(cheat) != "")
+
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)

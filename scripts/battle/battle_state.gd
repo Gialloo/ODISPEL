@@ -20,40 +20,51 @@ static func unit_id(player_id: String, char_id: String) -> String:
 	return "%s:%s" % [player_id, char_id]
 
 
-static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
-	var char_id: String = str(entry["char"])
-	var def: Dictionary = BattleContent.CHARACTERS[char_id]
-	var stats: Dictionary = BattleContent.compute_stats(entry)
+# Campi comuni a ogni unita' (giocatori e boss): un solo posto da aggiornare quando ne nasce uno nuovo.
+static func _blank_unit(id: String, char_id: String, side: String, owner: String, def: Dictionary, cls: String, stats: Dictionary) -> Dictionary:
 	return {
-		"id": unit_id(player_id, char_id),
+		"id": id,
 		"char": char_id,
 		"name": str(def["name"]),
-		"side": "player",
-		"owner": player_id,
+		"side": side,
+		"owner": owner,
 		"color": str(def["color"]),
-		"cls": str(def["cls"]),
-		"level": int(entry.get("level", 1)),
+		"cls": cls,
+		"level": 1,
 		"max_hp": int(stats["hp"]),
 		"hp": int(stats["hp"]),
 		"atk": int(stats["atk"]),
 		"def": int(stats["def"]),
 		"spd": int(stats["spd"]),
-		"energy": BattleTypes.START_ENERGY,
+		"energy": 0,
 		"gauge": 0,
-		"skills": entry.get("skills", []).duplicate(),
-		"ult": str(entry.get("ult", "")),
-		"passives": entry.get("passives", []).duplicate(),
+		"skills": [],
+		"ult": "",
+		"passives": [],
 		"statuses": {},
 		"shield": 0,
-		"rarity": int(entry.get("rarity", def.get("rarity", 0))),
-		"faction": BattleContent.faction_of(char_id, entry),
-		"style": BattleContent.style_of(char_id, entry),
-		"crit": 0,
-		"crit_dmg": Factions.CRIT_DMG_PM,
-		"base": {"atk": int(stats["atk"]), "def": int(stats["def"]), "spd": int(stats["spd"]), "crit": 0},
-		"aura": {},
-		"mods": [],
 	}
+
+
+static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
+	var char_id: String = str(entry["char"])
+	var def: Dictionary = BattleContent.CHARACTERS[char_id]
+	var stats: Dictionary = BattleContent.compute_stats(entry)
+	var u: Dictionary = _blank_unit(unit_id(player_id, char_id), char_id, "player", player_id, def, str(def["cls"]), stats)
+	u["level"] = int(entry.get("level", 1))
+	u["energy"] = BattleTypes.START_ENERGY
+	u["skills"] = entry.get("skills", []).duplicate()
+	u["ult"] = str(entry.get("ult", ""))
+	u["passives"] = entry.get("passives", []).duplicate()
+	u["rarity"] = int(entry.get("rarity", def.get("rarity", 0)))
+	u["faction"] = BattleContent.faction_of(char_id, entry)
+	u["style"] = BattleContent.style_of(char_id, entry)
+	u["crit"] = 0
+	u["crit_dmg"] = Factions.CRIT_DMG_PM
+	u["base"] = {"atk": int(stats["atk"]), "def": int(stats["def"]), "spd": int(stats["spd"]), "crit": 0}
+	u["aura"] = {}
+	u["mods"] = []
+	return u
 
 
 # Il boss scala con i "giocatori effettivi": un giocatore vale 1, un compagno IA
@@ -83,28 +94,13 @@ static func make_boss(boss_id: String, effective: float, tier: int = 0) -> Dicti
 	var t: Dictionary = BattleContent.tier_of(tier)
 	var hp: int = int(round(float(def["hp_per_player"]) * maxf(1.0, effective) * float(t["hp"])))
 	var atk_scale: float = _interpolate(def.get("atk_scale", [1.0]), effective)
-	return {
-		"id": BOSS_ID,
-		"char": boss_id,
-		"name": str(def["name"]),
-		"side": "boss",
-		"owner": "",
-		"color": str(def["color"]),
-		"cls": "boss",
-		"level": 1,
-		"max_hp": hp,
+	var stats: Dictionary = {
 		"hp": hp,
 		"atk": int(round(float(def["atk"]) * atk_scale * float(t["atk"]))),
 		"def": int(def["def"]) + int(t["def"]),
 		"spd": int(def["spd"]),
-		"energy": 0,
-		"gauge": 0,
-		"skills": [],
-		"ult": "",
-		"passives": [],
-		"statuses": {},
-		"shield": 0,
 	}
+	return _blank_unit(BOSS_ID, boss_id, "boss", "", def, "boss", stats)
 
 
 # specs: [{id, name, ai, team:[entry]}]

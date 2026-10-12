@@ -221,6 +221,16 @@ static func equip_passive(roster: Dictionary, char_id: String, slot: int, passiv
 	return true
 
 
+# Cambia lo stile (ortodosso/atipico). Ha senso solo per chi appartiene a una fazione. Gratuito: e' una scelta di strategia.
+static func set_style(roster: Dictionary, char_id: String, style: String) -> bool:
+	if not owns(roster, char_id) or not Factions.STYLES.has(style):
+		return false
+	if BattleContent.faction_of(char_id) == "":
+		return false
+	roster["characters"][char_id]["style"] = style
+	return true
+
+
 # ---------- Validazione (anche per le squadre ricevute dalla rete) ----------
 
 # Ritorna "" se la voce e' valida, altrimenti il motivo.
@@ -234,6 +244,14 @@ static func validate_entry(entry: Dictionary) -> String:
 	var rank: int = int(entry.get("rank", -1))
 	if rank < 0 or rank > MAX_RANK:
 		return "rank non valido"
+	# fazione e rarita' vengono dalla definizione: una squadra ricevuta dalla rete non puo' truccarle
+	var def: Dictionary = BattleContent.CHARACTERS[char_id]
+	if entry.has("faction") and str(entry["faction"]) != str(def.get("faction", "")):
+		return "fazione non valida"
+	if entry.has("rarity") and int(entry["rarity"]) != int(def["rarity"]):
+		return "rarita' non valida"
+	if entry.has("style") and not Factions.STYLES.has(str(entry["style"])):
+		return "stile non valido"
 	var skills: Array = entry.get("skills", [])
 	if skills.size() > BattleTypes.SKILL_SLOTS:
 		return "troppe skill"
