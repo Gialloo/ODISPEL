@@ -21,8 +21,8 @@ const DEFAULT_STUN_URLS: Array = [
 # Heartbeat: ogni lato manda un "ping" a intervalli regolari. Se per troppo
 # tempo non arriva nulla dall'altro lato, il collegamento è considerato
 # caduto (il data channel da solo può impiegare molto a accorgersene).
-const HEARTBEAT_INTERVAL_MSEC: int = 2000
-const HEARTBEAT_TIMEOUT_MSEC: int = 8000
+const HEARTBEAT_INTERVAL_MSEC: int = 4000
+const HEARTBEAT_TIMEOUT_MSEC: int = 12000
 
 var peer: WebRTCPeerConnection = null
 var channel: WebRTCDataChannel = null
@@ -34,6 +34,7 @@ var _was_open: bool = false
 var _closed_emitted: bool = false
 var _last_received_msec: int = 0
 var _last_ping_msec: int = 0
+var _last_sent_msec: int = 0      # ultimo messaggio spedito: se e' recente il ping non serve
 var _invalid_count: int = 0
 
 # Dopo questi avvisi i messaggi non validi si scartano in silenzio,
@@ -256,7 +257,7 @@ func check_heartbeat(now_msec: int) -> void:
 		close()
 		return
 
-	if now_msec - _last_ping_msec >= HEARTBEAT_INTERVAL_MSEC:
+	if now_msec - maxi(_last_ping_msec, _last_sent_msec) >= HEARTBEAT_INTERVAL_MSEC:
 		_last_ping_msec = now_msec
 		send_message({"type": "ping"})
 
@@ -266,6 +267,7 @@ func send_message(message: Dictionary) -> bool:
 		return false
 
 	var text: String = JSON.stringify(message)
+	_last_sent_msec = Time.get_ticks_msec()
 	return channel.put_packet(pack_text(text)) == OK
 
 
