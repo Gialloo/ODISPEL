@@ -1,17 +1,19 @@
 class_name Signatures
 extends RefCounted
 
-# Ogni operatore ha una PASSIVA UNICA e 1 o 2 ABILITA' UNICHE, pensate per il suo ruolo e la sua rarita':
-#   comune / rara    -> 1 abilita' unica (sempre disponibile)
-#   epica / leggendaria -> 2 abilita' uniche (la seconda si sblocca a rank 3)
-# Il RANK (le copie) le potenzia: la passiva sale del 15% a rank; a rank 5 c'e' il RISVEGLIO
-# (ultimate +25% e +25 di carica a inizio battaglia).
-# Le mosse uniche non si trovano come premio: appartengono al personaggio.
+# Ogni operatore ha una PASSIVA UNICA e 1 o 2 ABILITA' UNICHE (sempre disponibili), pensate per il suo ruolo e la sua rarita'.
+# Il RANK si compra con le copie (RANK UP manuale) e potenzia il kit; l'aumento dipende dalla rarita'
+# (comune < rara < epica < leggendaria):
+#   rank 1: SKILL 1 potenziata        rank 4: SKILL 1 e 2 potenziate ancora
+#   rank 2: SKILL 2 potenziata        rank 5: ULTIMATE potenziata ancora + RISVEGLIO (parte con +25 di carica)
+#   rank 3: ULTIMATE potenziata
+# SKILL 1 = prima abilita' unica; SKILL 2 = seconda abilita' unica (o, se ne ha una sola, la sua skill di base).
+# In piu' ogni rank da' statistiche e potenzia la passiva. Le mosse uniche non si trovano come premio: sono del personaggio.
 
-const PASSIVE_RANK_SCALE: float = 0.15
-const SECOND_SKILL_RANK: int = 3
+const PASSIVE_SCALE_BY_RARITY: Array = [0.08, 0.10, 0.12, 0.15]    # passiva: +% a rank
+const SKILL_UP_BY_RARITY: Array = [0.08, 0.10, 0.12, 0.15]         # skill: +% a grado
+const ULT_UP_BY_RARITY: Array = [0.10, 0.12, 0.15, 0.20]           # ultimate: +% a grado
 const AWAKEN_RANK: int = 5
-const AWAKEN_ULT: float = 1.25
 const AWAKEN_GAUGE: int = 25
 const CRIT_PER_MARK_CAP: int = 12      # marchi che contano per la passiva di Dafne
 
@@ -105,8 +107,8 @@ const MOVES: Dictionary = {
 		"bonus": {"stat": "def", "pct": 40}, "unique": "tana"},
 }
 
-# Rank che sblocca ogni abilita' unica (di base: la prima subito, la seconda a rank 3).
-const UNLOCK: Dictionary = {"dafne": [0, 0], "angela": [0, 0]}
+# Rank che sblocca ogni abilita' unica: tutte subito (il rank ora le potenzia invece di sbloccarle).
+const UNLOCK: Dictionary = {}
 
 const SKILLS: Dictionary = {
 	"kira": ["u_kira_a"], "dax": ["u_dax_a"], "elle": ["u_elle_a"], "bruno": ["u_bruno_a"],
@@ -130,7 +132,7 @@ static func passive_value(char_id: String, rank: int) -> float:
 	var d: Dictionary = PASSIVES.get(char_id, {})
 	if d.is_empty():
 		return 0.0
-	return float(d["base"]) * (1.0 + PASSIVE_RANK_SCALE * float(rank))
+	return float(d["base"]) * (1.0 + passive_scale(char_id) * float(rank))
 
 
 static func passive_text(char_id: String, rank: int) -> String:
@@ -145,7 +147,7 @@ static func passive_text(char_id: String, rank: int) -> String:
 
 # Abilita' uniche disponibili a quel rank.
 static func unlock_rank(char_id: String, index: int) -> int:
-	var table: Array = UNLOCK.get(char_id, [0, SECOND_SKILL_RANK])
+	var table: Array = UNLOCK.get(char_id, [0, 0])
 	return int(table[mini(index, table.size() - 1)])
 
 
@@ -204,31 +206,111 @@ static func crit_bonus(state: Dictionary, attacker: Dictionary, defender: Dictio
 	return total
 
 
+static func _rarity(char_id: String) -> int:
+	return clampi(int(BattleContent.CHARACTERS.get(char_id, {}).get("rarity", 0)), 0, 3)
+
+
+static func passive_scale(char_id: String) -> float:
+	return float(PASSIVE_SCALE_BY_RARITY[_rarity(char_id)])
+
+
+static func skill_pct(char_id: String) -> float:
+	return float(SKILL_UP_BY_RARITY[_rarity(char_id)])
+
+
+static func ult_pct(char_id: String) -> float:
+	return float(ULT_UP_BY_RARITY[_rarity(char_id)])
+
+
+# Quale skill del kit e' questa mossa: 1 (prima unica), 2 (seconda unica, o la skill di base se ne ha una sola), 0 = nessuna.
+static func skill_slot(char_id: String, move_id: String) -> int:
+	var all: Array = SKILLS.get(char_id, [])
+	if not all.is_empty() and str(all[0]) == move_id:
+		return 1
+	var second: String = str(all[1]) if all.size() > 1 else str(BattleContent.CHARACTERS.get(char_id, {}).get("skill", ""))
+	return 2 if second != "" and second == move_id else 0
+
+
+# Quanti gradi di potenziamento ha una skill (0-2) o l'ultimate (0-2) a quel rank.
+static func skill_grade(slot: int, rank: int) -> int:
+	if slot == 1:
+		return (1 if rank >= 1 else 0) + (1 if rank >= 4 else 0)
+	if slot == 2:
+		return (1 if rank >= 2 else 0) + (1 if rank >= 4 else 0)
+	return 0
+
+
+static func ult_grade(rank: int) -> int:
+	return (1 if rank >= 3 else 0) + (1 if rank >= 5 else 0)
+
+
+static func upgrade_grade(u: Dictionary, move_id: String, kind: String) -> int:
+	var char_id: String = str(u.get("char", ""))
+	var rank: int = int(u.get("rank", 0))
+	if kind == "ult":
+		return ult_grade(rank)
+	if kind == "skill":
+		return skill_grade(skill_slot(char_id, move_id), rank)
+	return 0
+
+
+# Moltiplicatore di potenza (danno, cure, scudi) di una mossa dell'unita', dato il suo rank.
+static func upgrade_mult(u: Dictionary, move_id: String, kind: String) -> float:
+	var char_id: String = str(u.get("char", ""))
+	var rank: int = int(u.get("rank", 0))
+	if kind == "ult":
+		return 1.0 + ult_pct(char_id) * float(ult_grade(rank))
+	if kind == "skill":
+		return 1.0 + skill_pct(char_id) * float(skill_grade(skill_slot(char_id, move_id), rank))
+	return 1.0
+
+
 # Cosa da' un rank (per la scheda e per i messaggi di rank up).
 static func rank_perk_text(char_id: String, rank: int) -> String:
-	var parts: Array = ["+%d%% STAT" % int(round(BattleContent.RANK_BONUS * 100.0 * float(rank)))]
+	var parts: Array = ["+%d%% STAT" % int(round(BattleContent.rank_bonus(_rarity(char_id)) * 100.0 * float(rank)))]
 	if has_passive(char_id):
-		parts.append("PASSIVA +%d%%" % int(round(PASSIVE_RANK_SCALE * 100.0 * float(rank))))
+		parts.append("PASSIVA +%d%%" % int(round(passive_scale(char_id) * 100.0 * float(rank))))
 	if rank >= AWAKEN_RANK:
 		parts.append("RISVEGLIO")
 	return " · ".join(parts)
 
 
-# Il prossimo traguardo: sblocco della seconda abilita' o risveglio. "" se non c'e' altro.
+# Nome della skill 1 / skill 2 del kit (per i testi).
+static func skill_name(char_id: String, slot: int) -> String:
+	var all: Array = SKILLS.get(char_id, [])
+	var id: String = ""
+	if slot == 1 and not all.is_empty():
+		id = str(all[0])
+	elif slot == 2:
+		id = str(all[1]) if all.size() > 1 else str(BattleContent.CHARACTERS.get(char_id, {}).get("skill", ""))
+	return BattleText.move_name(id) if id != "" else ""
+
+
+# Cosa da' il rank indicato, in una frase ("" per il rank 0).
+static func rank_upgrade_text(char_id: String, rank: int) -> String:
+	var sp: int = int(round(skill_pct(char_id) * 100.0))
+	var up: int = int(round(ult_pct(char_id) * 100.0))
+	match rank:
+		1:
+			return "SKILL 1 POTENZIATA: %s +%d%%" % [skill_name(char_id, 1), sp]
+		2:
+			return "SKILL 2 POTENZIATA: %s +%d%%" % [skill_name(char_id, 2), sp]
+		3:
+			return "ULTIMATE POTENZIATA: +%d%%" % up
+		4:
+			return "SKILL 1 E 2 POTENZIATE ANCORA: %s e %s +%d%%" % [skill_name(char_id, 1), skill_name(char_id, 2), sp * 2]
+		5:
+			return "ULTIMATE POTENZIATA ANCORA: +%d%% · RISVEGLIO: parte con +%d di carica" % [up * 2, AWAKEN_GAUGE]
+	return ""
+
+
+# Il prossimo traguardo ("" se si e' al massimo).
 static func next_milestone(char_id: String, rank: int) -> String:
-	for sk in all_skills(char_id):
-		if int(sk["rank"]) > rank:
-			return "RANK %d: sblocca %s" % [int(sk["rank"]), BattleText.move_name(str(sk["id"]))]
-	if rank < AWAKEN_RANK:
-		return "RANK %d: RISVEGLIO (ultimate +%d%%, parte con +%d di carica)" % [AWAKEN_RANK, int(round((AWAKEN_ULT - 1.0) * 100.0)), AWAKEN_GAUGE]
-	return ""
+	if rank >= AWAKEN_RANK:
+		return ""
+	return "RANK %d: %s" % [rank + 1, rank_upgrade_text(char_id, rank + 1)]
 
 
-# Cosa si e' appena ottenuto salendo a questo rank ("" se solo statistiche).
+# Cosa si e' appena ottenuto salendo a questo rank ("" se rank 0).
 static func rank_unlock_text(char_id: String, rank: int) -> String:
-	for sk in all_skills(char_id):
-		if int(sk["rank"]) == rank and rank > 0:
-			return "NUOVA ABILITA': %s" % BattleText.move_name(str(sk["id"])).to_upper()
-	if rank == AWAKEN_RANK:
-		return "RISVEGLIO!"
-	return ""
+	return rank_upgrade_text(char_id, rank)

@@ -95,12 +95,17 @@ func _test_duplicates() -> void:
 		if res["results"].is_empty():
 			break
 		var o: Dictionary = res["results"][0]
-		if o["outcome"] == "rank":
+		if o["outcome"] == "copy":
 			saw_rank = true
 		if o["outcome"] == "new":
 			saw_new = true
 	_check("si vedono personaggi nuovi", saw_new)
-	_check("si vedono copie che fanno salire il rank", saw_rank)
+	_check("si vedono copie conservate", saw_rank)
+	_check("il rank NON sale da solo con le copie", _max_rank(r) == 0 or _max_rank(r) == owned_rank_before)
+	var any_copies: int = 0
+	for id in r["characters"]:
+		any_copies += RosterState.copies(r, str(id))
+	_check("le copie si accumulano nel salvataggio", any_copies > 0)
 	_check("rank mai oltre il massimo", _max_rank(r) <= RosterState.MAX_RANK)
 	_check("tutti e 13 i personaggi alla fine", r["characters"].size() == 13)
 	_check("collezione valida dopo 200 reclutamenti", RosterState.validate(r) == "")
@@ -155,6 +160,7 @@ func _test_guarantees() -> void:
 	var worst: int = 0
 	var streak: int = 0
 	for i in 400:
+		p["coins"] = 300
 		var o: Dictionary = Recruiting.pull(p, 1, 9000 + i)["results"][0]
 		if o["rarity"] >= 2:
 			streak = 0

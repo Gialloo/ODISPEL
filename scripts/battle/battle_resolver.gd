@@ -423,7 +423,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
 	var link_n: int = _chain_link(state, actor, events)
 	var link_gain: float = BattleTypes.LINK_BONUS + Signatures.value(actor, "link_boost")
-	var awake_mult: float = Signatures.AWAKEN_ULT if (kind == "ult" and bool(actor.get("awake", false))) else 1.0
+	var awake_mult: float = Signatures.upgrade_mult(actor, move_id, kind)
 	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
 
 	var gsh: float = Signatures.value(actor, "guard_shield")
@@ -527,7 +527,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		for uid in BattleState.player(state, str(actor["owner"]))["team"]:
 			var mate: Dictionary = BattleState.unit(state, uid)
 			if BattleState.is_alive(mate) and int(mate["ammo_max"]) > 0:
-				_change_ammo(mate, int(move["team_ammo"]), events)
+				_change_ammo(mate, int(move["team_ammo"]) + Signatures.upgrade_grade(actor, move_id, kind), events)
 	if move.has("ally_buff"):
 		for p in state["players"]:
 			for uid in p["team"]:

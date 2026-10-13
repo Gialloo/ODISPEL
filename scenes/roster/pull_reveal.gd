@@ -100,9 +100,8 @@ func _label_of(r: Dictionary) -> String:
 	match str(r["outcome"]):
 		"new":
 			return "NUOVO!"
-		"rank":
-			var unlock: String = Signatures.rank_unlock_text(str(r["char"]), int(r.get("rank", 0)))
-			return "RANK UP!  R%d  ·  %s" % [int(r.get("rank", 0)), unlock if unlock != "" else "+%d%% STAT" % int(round(BattleContent.RANK_BONUS * 100.0))]
+		"copy":
+			return "COPIA +1  ·  %d/%d per il RANK UP" % [int(r.get("copies", 0)), RosterState.rank_cost(int(r.get("rank", 0)))]
 	return "COPIA MASSIMA  +%d" % int(r.get("refund", 0))
 
 

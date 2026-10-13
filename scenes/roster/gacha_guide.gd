@@ -66,7 +66,7 @@ static func pages() -> Array:
 	out.append({"title": "LE RARITA'", "lines": rows})
 
 	out.append({"title": "COPIE E GARANZIE", "lines": [
-		_line("Esce un operatore che hai gia'? Sale di RANK: +%d%% di statistiche a rank, fino al rank %d." % [int(round(BattleContent.RANK_BONUS * 100.0)), RosterState.MAX_RANK]),
+		_line("Esce un operatore che hai gia'? Diventa una COPIA: si conserva e la spendi tu col bottone RANK UP nella scheda (max rank %d). Ogni rank potenzia statistiche, skill e ultimate: di piu' per i leggendari, di meno per i comuni." % RosterState.MAX_RANK),
 		_line("A rank massimo la copia diventa monete: %d x (rarita' + 1)." % Recruiting.REFUND_PER_RARITY),
 		_line("RECLUTA x10 costa %d invece di %d e garantisce almeno un RARO." % [Recruiting.TEN_COST, Recruiting.SINGLE_COST * 10]),
 		_line("GARANZIA: se per %d reclutamenti di fila non esce un EPICO o un LEGGENDARIO, il successivo e' almeno EPICO." % Recruiting.PITY_LIMIT),

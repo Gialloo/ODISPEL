@@ -53,8 +53,40 @@ static func owns(roster: Dictionary, char_id: String) -> bool:
 	return roster["characters"].has(char_id)
 
 
-# Nuovo personaggio, oppure una copia in piu': sale di rank.
-# Ritorna "new", "rank" oppure "max" (rank gia' al massimo) o "" se sconosciuto.
+# Copie necessarie per salire dal rank r al rank r+1.
+const RANK_COPY_COST: Array = [1, 1, 2, 2, 3]
+
+
+static func rank_cost(rank: int) -> int:
+	return int(RANK_COPY_COST[clampi(rank, 0, RANK_COPY_COST.size() - 1)])
+
+
+# Copie di un operatore che non sono ancora state spese in un RANK UP.
+static func copies(roster: Dictionary, char_id: String) -> int:
+	if not owns(roster, char_id):
+		return 0
+	return maxi(0, int(roster["characters"][char_id].get("copies", 0)))
+
+
+static func can_rank_up(roster: Dictionary, char_id: String) -> bool:
+	if not owns(roster, char_id):
+		return false
+	var rank: int = int(roster["characters"][char_id].get("rank", 0))
+	return rank < MAX_RANK and copies(roster, char_id) >= rank_cost(rank)
+
+
+# Spende le copie e porta l'operatore al rank successivo. Il rank non sale mai da solo.
+static func rank_up(roster: Dictionary, char_id: String) -> bool:
+	if not can_rank_up(roster, char_id):
+		return false
+	var entry: Dictionary = roster["characters"][char_id]
+	entry["copies"] = copies(roster, char_id) - rank_cost(int(entry["rank"]))
+	entry["rank"] = int(entry["rank"]) + 1
+	return true
+
+
+# Nuovo personaggio, oppure una copia in piu': si conserva (poi si spende col RANK UP).
+# Ritorna "new", "copy" oppure "max" (rank gia' al massimo: la copia diventa monete) o "" se sconosciuto.
 static func add_character(roster: Dictionary, char_id: String) -> String:
 	if not BattleContent.CHARACTERS.has(char_id):
 		return ""
@@ -62,8 +94,8 @@ static func add_character(roster: Dictionary, char_id: String) -> String:
 		var entry: Dictionary = roster["characters"][char_id]
 		if int(entry["rank"]) >= MAX_RANK:
 			return "max"
-		entry["rank"] = int(entry["rank"]) + 1
-		return "rank"
+		entry["copies"] = copies(roster, char_id) + 1
+		return "copy"
 	var fresh: Dictionary = BattleContent.default_entry(char_id)
 	roster["characters"][char_id] = fresh
 	# la mossa, l'ultimate e la passiva innate sono sempre possedute
@@ -132,7 +164,9 @@ static func best_team(roster: Dictionary) -> Array:
 static func team_entries(roster: Dictionary) -> Array:
 	var out: Array = []
 	for id in roster["team"]:
-		out.append(roster["characters"][id].duplicate(true))
+		var e: Dictionary = roster["characters"][id].duplicate(true)
+		e.erase("copies")          # le copie non spese sono affari del salvataggio, non della battaglia
+		out.append(e)
 	return out
 
 
@@ -143,7 +177,9 @@ static func spare_entries(roster: Dictionary) -> Array:
 	ids.sort()
 	for id in ids:
 		if not roster["team"].has(id):
-			out.append(roster["characters"][id].duplicate(true))
+			var e: Dictionary = roster["characters"][id].duplicate(true)
+			e.erase("copies")
+			out.append(e)
 	return out
 
 

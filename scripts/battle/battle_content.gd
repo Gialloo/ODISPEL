@@ -117,7 +117,14 @@ const CLASS_STATS: Dictionary = {
 	"warden": {"hp": 1000, "atk": 80, "def": 30, "spd": 100},
 }
 const LEVEL_BONUS: float = 0.08
-const RANK_BONUS: float = 0.08
+# Bonus statistico per rank, per rarita' (comune, rara, epica, leggendaria): piu' raro = piu' forte.
+const RANK_BONUS_BY_RARITY: Array = [0.04, 0.05, 0.06, 0.08]
+
+
+static func rank_bonus(rarity: int) -> float:
+	return float(RANK_BONUS_BY_RARITY[clampi(rarity, 0, RANK_BONUS_BY_RARITY.size() - 1)])
+
+
 # Un operatore piu' raro e' piu' forte di base: moltiplicatore delle statistiche
 # per rarita' (comune, rara, epica, leggendaria). Sale come l'equipaggiamento.
 const RARITY_STAT_MULT: Array = [1.0, 1.08, 1.18, 1.32]
@@ -323,7 +330,7 @@ static func compute_stats(entry: Dictionary) -> Dictionary:
 	var level: int = int(entry.get("level", 1))
 	var rank: int = int(entry.get("rank", 0))
 	var char_rarity: int = clampi(int(def.get("rarity", 0)), 0, RARITY_STAT_MULT.size() - 1)
-	var factor: float = (1.0 + LEVEL_BONUS * float(level - 1)) * (1.0 + RANK_BONUS * float(rank)) * float(RARITY_STAT_MULT[char_rarity])
+	var factor: float = (1.0 + LEVEL_BONUS * float(level - 1)) * (1.0 + rank_bonus(char_rarity) * float(rank)) * float(RARITY_STAT_MULT[char_rarity])
 	var sm: Dictionary = def.get("stat_mult", {})
 	var hp: float = float(base["hp"]) * factor * float(sm.get("hp", 1.0))
 	var atk: float = float(base["atk"]) * factor * float(sm.get("atk", 1.0))

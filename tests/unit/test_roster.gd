@@ -90,10 +90,12 @@ func _test_equip() -> void:
 
 func _test_drops_and_copies() -> void:
 	var r: Dictionary = _full()
-	_check("copia: sale di rank", RosterState.add_character(r, "kira") == "rank" and r["characters"]["kira"]["rank"] == 1)
-	for i in 4:
+	_check("copia: si conserva, il rank non sale da solo", RosterState.add_character(r, "kira") == "copy" and r["characters"]["kira"]["rank"] == 0 and RosterState.copies(r, "kira") == 1)
+	for i in 8:
 		RosterState.add_character(r, "kira")
-	_check("rank massimo raggiunto", r["characters"]["kira"]["rank"] == RosterState.MAX_RANK)
+	while RosterState.rank_up(r, "kira"):
+		pass
+	_check("rank massimo raggiunto spendendo le copie", r["characters"]["kira"]["rank"] == RosterState.MAX_RANK)
 	_check("oltre il massimo: nessun effetto", RosterState.add_character(r, "kira") == "max" and r["characters"]["kira"]["rank"] == RosterState.MAX_RANK)
 	var empty: Dictionary = _full()
 	empty["characters"].erase("bruno")

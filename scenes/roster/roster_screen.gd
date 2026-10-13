@@ -366,7 +366,7 @@ func _build_recruit_page() -> void:
 	for r in 4:
 		var rc: Color = BattleTheme.rarity_color(r)
 		col.add_child(GameIcon.line("nucleo", rc, "%s  %d%%" % [str(BattleTypes.RARITIES[r]).to_upper(), int(odds[r])], 15, rc))
-	var note := BattleTheme.make_label("Le copie aumentano il rank (max 5).\nIl x10 garantisce almeno un raro.", 14, BattleTheme.CY_DIM)
+	var note := BattleTheme.make_label("Le copie si spendono col RANK UP.\nIl x10 garantisce almeno un raro.", 14, BattleTheme.CY_DIM)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if not TouchUi.active():        # su telefono non c'e' spazio: lo spiega gia' "COME FUNZIONA"
 		col.add_child(note)
@@ -493,6 +493,21 @@ func upgrade(char_id: String) -> bool:
 		return _say(str(msgs.get(err, "Non riuscito: " + err)), false)
 	_save()
 	return _say("%s sale al livello %d." % [BattleContent.CHARACTERS[char_id]["name"], int(roster["characters"][char_id]["level"])], true)
+
+
+func rank_up(char_id: String) -> bool:
+	if not RosterState.owns(roster, char_id):
+		return _say("Personaggio non posseduto.", false)
+	var rank: int = int(roster["characters"][char_id].get("rank", 0))
+	if rank >= RosterState.MAX_RANK:
+		return _say("Rank massimo.", false)
+	if not RosterState.rank_up(roster, char_id):
+		return _say("Servono %d copie (ne hai %d)." % [RosterState.rank_cost(rank), RosterState.copies(roster, char_id)], false)
+	_save()
+	var name: String = str(BattleContent.CHARACTERS[char_id]["name"])
+	var what: String = Signatures.rank_upgrade_text(char_id, rank + 1)
+	Notify.toast("%s: RANK %d  ·  %s" % [name.to_upper(), rank + 1, what])
+	return _say("%s sale al rank %d." % [name, rank + 1], true)
 
 
 func pull(count: int) -> bool:
@@ -754,9 +769,12 @@ func _refresh_detail() -> void:
 	if Signatures.has_passive(selected):
 		lines.append("★ %s" % Signatures.passive_text(selected, int(e["rank"])))
 	lines.append("RANK %d: %s" % [int(e["rank"]), Signatures.rank_perk_text(selected, int(e["rank"]))])
+	for rk in range(1, int(e["rank"]) + 1):
+		lines.append("  R%d  %s" % [rk, Signatures.rank_upgrade_text(selected, rk)])
 	var nm: String = Signatures.next_milestone(selected, int(e["rank"]))
 	if nm != "":
 		lines.append("PROSSIMO  %s" % nm)
+		lines.append("COPIE  %d / %d per il RANK UP" % [RosterState.copies(roster, selected), RosterState.rank_cost(int(e["rank"]))])
 	_detail_label.text = "\n".join(lines)
 
 	var in_team: bool = (roster["team"] as Array).has(selected)
@@ -791,6 +809,23 @@ func _refresh_detail() -> void:
 	BattleTheme.style_button(ub, "primary", 15)
 	ub.pressed.connect(upgrade.bind(selected))
 	_action_box.add_child(ub)
+
+	var rb := Button.new()
+	rb.custom_minimum_size = Vector2(0, 54 if TouchUi.active() else 40)
+	rb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rb.clip_text = true
+	rb.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	if int(e["rank"]) >= RosterState.MAX_RANK:
+		rb.text = "RANK MASSIMO"
+		rb.disabled = true
+	else:
+		var need: int = RosterState.rank_cost(int(e["rank"]))
+		var have: int = RosterState.copies(roster, selected)
+		rb.text = "RANK UP %d/%d" % [have, need]
+		rb.disabled = have < need
+	BattleTheme.style_button(rb, "primary" if RosterState.can_rank_up(roster, selected) else "normal", 15)
+	rb.pressed.connect(rank_up.bind(selected))
+	_action_box.add_child(rb)
 
 	if faction != "":
 		var sb := Button.new()
@@ -1034,9 +1069,8 @@ func _refresh_recruit() -> void:
 		match str(r["outcome"]):
 			"new":
 				outcome = "NUOVO!"
-			"rank":
-				var unl: String = Signatures.rank_unlock_text(str(r["char"]), int(r.get("rank", 0)))
-				outcome = "RANK %d  %s" % [int(r.get("rank", 0)), unl if unl != "" else "+%d%% STAT" % int(round(BattleContent.RANK_BONUS * 100.0))]
+			"copy":
+				outcome = "COPIA +1  (%d/%d per il RANK UP)" % [int(r.get("copies", 0)), RosterState.rank_cost(int(r.get("rank", 0)))]
 			_:
 				outcome = "RANK MAX  +%d monete" % int(r["refund"])
 		var line := "%-6s %-11s %s" % [str(def["name"]).to_upper(), str(BattleTypes.RARITIES[int(r["rarity"])]).to_upper(), outcome]
