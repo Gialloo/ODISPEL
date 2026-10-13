@@ -26,6 +26,11 @@ const CHARACTERS: Dictionary = {
 		"lore": "Una voce nata nei display e nelle linee della citta', che ripete cio' che sente e sta imparando cosa significa. E' dalla parte della squadra, anche se nessuno sa ancora perche'.",
 		"tactic": "MARCHIO fa piu' danno a tutto il gruppo sul bersaglio segnato: marchia, poi lascia agire i compagni. SPEZZATUTTO quando il boss e' segnato. Non da' aure: fazione Kairos.",
 	},
+	"nico": {
+		"tag": "Custode del rifugio · Intimidisce",
+		"lore": "Teneva aperto il rifugio per tutti, finche' il tempo non si e' fermato. La sciarpa rossa e' tornata con lui: dice di averla ritrovata in uno specchio.",
+		"tactic": "INTIMIDISCI abbassa l'attacco del boss per qualche turno e costa solo 1 energia: usalo prima delle mosse forti. BASTIONE protegge tutti. L'entrata scudata lo rende ottimo come cambio d'emergenza. Fazione Kairos, come Eco.",
+	},
 	"dafne": {
 		"tag": "Agent 02 · Tiratore scelto",
 		"lore": "La seconda agente LibraCorp a uscire dai registri. Non parla molto: marchia, aspetta, spara una volta sola. Ogni marchio che mette sul bersaglio le fa vedere meglio il punto debole.",

@@ -35,5 +35,12 @@ func _init() -> void:
 			n += 1
 	_check("tutte le scene di storia si leggono", n == 0)
 	print("---")
+	var rn: Dictionary = RosterState.new_roster()
+	_check("Nico non c'e' all'inizio", not RosterState.owns(rn, "nico"))
+	RosterState.mark_cleared(rn, "specchio", 0)
+	_check("battere lo Specchio porta Nico", RosterState.owns(rn, "nico"))
+	_check("Nico e' valido nel salvataggio", RosterState.validate(rn) == "")
+	var st: Dictionary = RosterState.create_solo_battle(rn, "Io", "distributore", 3, 2, 0)
+	_check("la battaglia con Nico parte", st["round"] == 1)
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)

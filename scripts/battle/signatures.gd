@@ -47,6 +47,7 @@ const PASSIVES: Dictionary = {
 	"tana": {"name": "Fortezza", "key": "guard_shield", "base": 0.20},
 	"dafne": {"name": "Occhio del cecchino", "key": "crit_per_mark", "base": 0.025},
 	"angela": {"name": "Rete di rifornimento", "key": "mark_ammo", "base": 1.0},
+	"nico": {"name": "Sciarpa rossa", "key": "regen", "base": 0.035},
 }
 
 # Abilita' uniche (id -> mossa). "unique" = personaggio proprietario.
@@ -96,6 +97,10 @@ const MOVES: Dictionary = {
 		"bonus": {"stat": "atk", "pct": 10}, "unique": "angela"},
 	"orbital_strike": {"name": "Raggio orbitale", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 3.4, "status": {"mark": 1}, "consume_marks": 0.15,
 		"bonus": {"stat": "atk", "pct": 30}, "unique": "angela"},
+	"u_nico_a": {"name": "Segnale di fumo", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "mult": 0.6, "debuff": {"atk": 1},
+		"bonus": {"stat": "spd", "pct": 14}, "unique": "nico"},
+	"u_nico_b": {"name": "Porta aperta", "kind": "skill", "cost": 2, "priority": 1, "target": "allies", "shield": 1.1, "energy": 1,
+		"bonus": {"stat": "def", "pct": 22}, "unique": "nico"},
 	"u_tana_b": {"name": "Muro totale", "kind": "skill", "cost": 2, "priority": 1, "target": "self", "shield": 2.0, "self_status": {"taunt": 1, "guard": 1},
 		"bonus": {"stat": "def", "pct": 40}, "unique": "tana"},
 }
@@ -108,6 +113,7 @@ const SKILLS: Dictionary = {
 	"nova": ["u_nova_a"], "mira": ["u_mira_a"], "rex": ["u_rex_a"], "ivo": ["u_ivo_a"],
 	"sera": ["u_sera_a", "u_sera_b"], "eco": ["u_eco_a", "u_eco_b"], "tana": ["u_tana_a", "u_tana_b"],
 	"dafne": ["u_dafne_b", "u_dafne_c"], "angela": ["u_angela_b", "u_angela_c"],
+	"nico": ["u_nico_a", "u_nico_b"],
 }
 
 

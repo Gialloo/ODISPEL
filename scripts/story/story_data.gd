@@ -259,6 +259,12 @@ dax [happy] R: Statisticamente trascurabile. Ma lo ammetto: mi piace.
 eco [happy] R: Ogni scheggia e' un'ora in piu'. Non una in meno.
 kira [happy] L: Allora teniamone una. Per ricordarci che questa e' quella vera.
 *: Una scheggia piu' piccola delle altre cade nella mano di Kira. Dentro, per un istante, una luce che non e' il suo riflesso.
+nico [surprised] R: ...Kira? Ho dormito tanto? Mi sembra di aver tenuto aperta una porta per sette mesi.
+kira [surprised] L: Nico. Hai... hai la sciarpa.
+nico [happy] R: Qualcuno me l'ha riportata. Un manichino, credo. Ha detto che gli dispiaceva.
+eco [happy] R: Nico. Ho il tuo ricordo. Posso restituirlo, se vuoi.
+kira [happy] L: Dopo. Prima entra. Qui c'e' posto per tutti.
+*: Nico si unisce alla squadra.
 *: Fine dell'extra della prima stagione.
 """,
 }

@@ -73,7 +73,7 @@ static func _pick(rarity: int, rng: RNGState) -> String:
 	while r >= 0:
 		var pool: Array = []
 		for id in BattleContent.CHARACTERS:
-			if int(BattleContent.CHARACTERS[id]["rarity"]) == r:
+			if int(BattleContent.CHARACTERS[id]["rarity"]) == r and not bool(BattleContent.CHARACTERS[id].get("story_only", false)):
 				pool.append(id)
 		if not pool.is_empty():
 			pool.sort()

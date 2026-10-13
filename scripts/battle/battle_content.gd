@@ -136,6 +136,9 @@ const CHARACTERS: Dictionary = {
 	"eco": {"name": "Eco", "color": "giallo", "cls": "striker", "rarity": 2, "skill": "marchio", "ult": "spezzatutto", "passive": "p_atk", "faction": "kairos"},
 	"tana": {"name": "Tana", "color": "giallo", "cls": "vanguard", "rarity": 3, "skill": "provoca", "ult": "bastione", "passive": "p_hunter", "faction": "libracorp"},
 	# Agent 02: tiratore scelto. Angela: mecamante, glass cannon con 12 munizioni.
+	# Nico: l'amico di Kira, ricomparso nello Specchio. Solo storia: non esce dai reclutamenti.
+	"nico": {"name": "Nico", "color": "rosso", "cls": "vanguard", "rarity": 2, "skill": "intimidisci", "ult": "bastione", "passive": "p_swap", "faction": "kairos",
+		"role": "Custode del rifugio", "story_only": true},
 	"dafne": {"name": "Dafne", "color": "verde", "cls": "striker", "rarity": 3, "skill": "u_dafne_a", "ult": "coordinated_shot", "passive": "p_atk", "faction": "libracorp",
 		"role": "Tiratore scelto", "ammo_max": 6, "stat_mult": {"hp": 0.9, "atk": 1.1}},
 	"angela": {"name": "Angela", "color": "giallo", "cls": "striker", "rarity": 3, "skill": "u_angela_a", "ult": "orbital_strike", "passive": "p_atk", "faction": "libracorp",
@@ -286,6 +289,7 @@ const BOSSES: Dictionary = {
 	"specchio": {
 		"name": "Specchio", "title": "CLASSE ANOMALIA · OLTRE LA SCALA", "color": "rosso", "hp_per_player": 1700,
 		"atk": 440, "def": 50, "spd": 108,
+		"ally": "nico",
 		"desc": "Lo specchio che c'era dietro l'orologio: mostra la squadra come sarebbe stata se il tempo non si fosse fermato. Un riflesso colpisce un solo bersaglio, i frantumi feriscono tutti e il doppio si nutre dei piu' deboli.",
 		"cycle": ["riflesso", "frantumi", "doppio", "simmetria"],
 		"atk_scale": [0.62, 0.8, 1.0],

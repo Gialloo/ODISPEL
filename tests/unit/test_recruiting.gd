@@ -35,7 +35,7 @@ func _rich(coins: int = 100000) -> Dictionary:
 
 func _test_content() -> void:
 	_check("contenuti coerenti (con rarita')", BattleContent.validate().is_empty())
-	_check("13 personaggi in totale", BattleContent.CHARACTERS.size() == 13)
+	_check("14 personaggi in totale (13 reclutabili + Nico)", BattleContent.CHARACTERS.size() == 14)
 	var per_rarity: Array = [0, 0, 0, 0]
 	for id in BattleContent.CHARACTERS:
 		per_rarity[BattleContent.CHARACTERS[id]["rarity"]] += 1
