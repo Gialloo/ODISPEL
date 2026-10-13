@@ -79,6 +79,49 @@ func _initialize() -> void:
 	PvpEngine.submit_choice(h, "b", {"move": "attack", "target": "a"})
 	PvpEngine.resolve_round(h)
 	_check("swap eseguito", str(PvpEngine.player(h, "a")["active"]) == "a:dax")
+	# --- abilita' uniche e passive ---
+	var ku: Dictionary = PvpEngine.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("kira")]}, {"id": "b", "name": "b", "ai": false, "team": [BattleContent.default_entry("dax")]}], "duel", false, 21)
+	var kk: Dictionary = PvpEngine.active_unit(ku, PvpEngine.player(ku, "a"))
+	_check("skill uniche tra le abilita'", PvpEngine.skills_of(kk).has("u_kira_a"))
+	_check("ult dell'operatore", PvpEngine.ult_of(kk) == "spezzatutto")
+	_check("abilita' sbagliata rifiutata", not PvpEngine.submit_choice(ku, "a", {"move": "skill", "skill": "u_elle_a", "target": "b"}))
+	_check("abilita' unica accettata", PvpEngine.submit_choice(ku, "a", {"move": "skill", "skill": "u_kira_a", "target": "b"}))
+	PvpEngine.submit_choice(ku, "b", {"move": "skill", "skill": "u_dax_a", "target": "a"})
+	var ev2: Array = PvpEngine.resolve_round(ku)
+	var dax: Dictionary = PvpEngine.unit(ku, "b:dax")
+	var names: Array = []
+	for e in ev2:
+		if str(e["t"]) == "act":
+			names.append(str(e["move"]))
+	_check("eseguite le mosse uniche", names.has("u_kira_a") and names.has("u_dax_a"))
+	_check("Kira marchia (stato mark) o Dax e' in guardia", dax["statuses"].has("mark") or int(dax["hp"]) < int(dax["max_hp"]))
+	_check("energia spesa", int(PvpEngine.unit(ku, "a:kira")["energy"]) < 4)
+	# cura su alleato in 2v2
+	var duo2: Dictionary = PvpEngine.create([_spec("a", ["mira"]), _spec("b", ["rex"]), _spec("c", ["kira"]), _spec("d", ["dax"])], "duo", false, 3)
+	PvpEngine.unit(duo2, "c:kira")["hp"] = 100
+	PvpEngine.active_unit(duo2, PvpEngine.player(duo2, "a"))["energy"] = 6
+	PvpEngine.player(duo2, "a")["choice"] = null
+	_check("cura: alleato valido", PvpEngine.validate_choice(duo2, "a", {"move": "skill", "skill": "u_mira_a", "target": "c"}) == "")
+	_check("cura: un nemico non vale", PvpEngine.validate_choice(duo2, "a", {"move": "skill", "skill": "u_mira_a", "target": "b"}) == "alleato non valido")
+	# Angela: torretta
+	var an: Dictionary = PvpEngine.create([_spec("a", ["angela"]), _spec("b", ["rex"])], "duel", false, 4)
+	var au: Dictionary = PvpEngine.active_unit(an, PvpEngine.player(an, "a"))
+	au["energy"] = 6
+	PvpEngine.player(an, "a")["choice"] = null
+	PvpEngine.player(an, "b")["choice"] = null
+	PvpEngine.submit_choice(an, "a", {"move": "skill", "skill": "u_angela_b", "target": "b"})
+	PvpEngine.submit_choice(an, "b", {"move": "guard"})
+	PvpEngine.resolve_round(an)
+	_check("drone evocato", PvpEngine.player(an, "a") != {} and an["summons"].size() == 1)
+	# malus a tempo: la difesa torna normale
+	var dm: Dictionary = PvpEngine.create([_spec("a", ["kira"]), _spec("b", ["rex"])], "duel", false, 8)
+	var tgt: Dictionary = PvpEngine.unit(dm, "b:rex")
+	var d0: int = int(tgt["def"])
+	PvpEngine._mod(tgt, "def", -300, [])
+	_check("malus abbassa la difesa", int(tgt["def"]) < d0)
+	for i in 3:
+		PvpEngine.resolve_round(dm, true)
+	_check("malus finito: difesa ripristinata", int(PvpEngine.unit(dm, "b:rex")["def"]) == d0)
 	# --- JSON ---
 	var back: Dictionary = BattleState.from_json(BattleState.to_json(h))
 	_check("JSON senza perdite", back["players"].size() == 2 and str(back["mode"]) == "duel" and int(back["round"]) == int(h["round"]))
@@ -116,6 +159,45 @@ func _initialize() -> void:
 		if str(res["winner"]) == "" or BattleState.to_json(res).length() > 60000:
 			bad2 += 1
 	_check("60 partite casuali (tutte le modalita'): finiscono, JSON contenuto", bad2 == 0)
+	# --- premi, imprese, badge ---
+	var win_bag: Dictionary = PvpRewards.for_player(123, 0, "win")
+	var loss_bag: Dictionary = PvpRewards.for_player(123, 0, "loss")
+	_check("borsa: chi vince prende di piu'", int(win_bag["coins"]) > int(loss_bag["coins"]) and int(win_bag["coins"]) >= PvpRewards.WIN_COINS[0])
+	_check("borsa deterministica", str(PvpRewards.for_player(123, 0, "win")) == str(win_bag))
+	_check("allenamento: solo una parte, niente drop", PvpRewards.for_player(123, 0, "win", true)["drops"].is_empty() and int(PvpRewards.for_player(123, 0, "win", true)["coins"]) < int(win_bag["coins"]))
+	var fin: Dictionary = PvpEngine.simulate([_spec("a", ["kira"], false), _spec("ia_1", ["rex"])], "duel", true, 9)
+	var bags: Dictionary = PvpRewards.for_battle(fin, 9)
+	_check("borse solo per gli umani", bags.has("a") and not bags.has("ia_1"))
+	var all_ok: bool = true
+	for i in 200:
+		var bg: Dictionary = PvpRewards.for_player(i, i % 4, "win")
+		var r: Dictionary = RosterState.new_roster()
+		RosterState.apply_rewards(r, bg)
+		if int(r["coins"]) < 450:
+			all_ok = false
+		for d in bg["drops"]:
+			if str(d.get("id", "")) == "l_duello":
+				all_ok = false
+	_check("200 borse: applicabili, l'icona esclusiva non cade mai", all_ok)
+	var ids: Array = []
+	for f in Feats.all():
+		if str(f["group"]) == "PVP":
+			ids.append(f["goal"])
+	_check("imprese PvP 1/3/5/10/15/20/25 + campione", ids.has(1) and ids.has(3) and ids.has(10) and ids.has(15) and ids.has(20) and ids.has(25) and Feats.by_id("pvp_wins_5").has("reward"))
+	var rost: Dictionary = RosterState.new_roster()
+	Profile.path = "user://test_pvp_profile.cfg"
+	Profile.badges = []
+	Profile.unlocked = []
+	Profile._loaded = true
+	for i in 5:
+		Feats.record_pvp(rost, true)
+	_check("5 vittorie: impresa campione pronta", Feats.can_claim(rost, Feats.by_id("pvp_wins_5")))
+	_check("5 partecipazioni: impresa pronta", Feats.can_claim(rost, Feats.by_id("pvp_plays_5")))
+	Feats.claim(rost, "pvp_wins_5")
+	_check("badge ottenuto", Profile.has_badge("duellante") and Profile.shown_badge() == "duellante")
+	_check("icona leggendaria esclusiva sbloccata", Profile.is_unlocked("l_duello") and Profile.rarity_of("l_duello") == 3)
+	_check("badge viaggia nel profilo pubblico", Profile.clean_public(Profile.current())["badge"] == "duellante" and Profile.clean_public({"badge": "falso"})["badge"] == "")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_pvp_profile.cfg"))
 	print("RESULT: %d passed, %d failed" % [passed, failed])
 	print("FAIL: %d" % failed)
 	quit(1 if failed > 0 else 0)

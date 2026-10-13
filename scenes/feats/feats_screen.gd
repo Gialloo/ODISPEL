@@ -56,7 +56,7 @@ func _build() -> void:
 		var b := Button.new()
 		b.text = str(g)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.size_flags_stretch_ratio = float({"DA RISCUOTERE": 230, "TUTTE": 100, "MISSIONI": 140, "BATTAGLIE": 150, "OPERATORI": 150, "POTENZIAMENTI": 200}.get(str(g), 140))
+		b.size_flags_stretch_ratio = float({"DA RISCUOTERE": 230, "TUTTE": 105, "MISSIONI": 130, "BATTAGLIE": 140, "OPERATORI": 140, "POTENZIAMENTI": 160, "INFINITO": 120, "PVP": 80}.get(str(g), 140))
 		b.custom_minimum_size = Vector2(0, 40)
 		b.clip_text = true
 		_style_tab(b, "normal")
@@ -98,9 +98,8 @@ func _build() -> void:
 
 # Schede: su telefono il testo e' un po' piu' piccolo cosi' ci stanno tutte e otto per intero.
 func _style_tab(b: Button, kind: String) -> void:
-	BattleTheme.style_button(b, kind, 17)
-	if TouchUi.active():
-		b.add_theme_font_size_override("font_size", 15)
+	BattleTheme.style_button(b, kind, 15)
+	b.add_theme_font_size_override("font_size", 15)
 
 
 func _icon(key: String, pos: Vector2, px: float) -> void:
@@ -155,8 +154,8 @@ func refresh() -> void:
 	_mats.text = "NUCLEI %d     LEGHE %d" % [int(mats.get("nucleo", 0)), int(mats.get("lega", 0))]
 	var ready: int = Feats.claimable_count(roster)
 	for g in group_buttons:
-		var label: String = str(g)
-		if label == "DA RISCUOTERE":
+		var label: String = str({"DA RISCUOTERE": "DA RISCUOTERE", "POTENZIAMENTI": "POTENZIAM.", "OPERATORI": "OPERATORI"}.get(str(g), str(g)))
+		if str(g) == "DA RISCUOTERE":
 			label += " (%d)" % ready
 		(group_buttons[g] as Button).text = label
 		_style_tab(group_buttons[g], "primary" if str(g) == group else "normal")

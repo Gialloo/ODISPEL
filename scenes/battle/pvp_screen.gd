@@ -14,6 +14,8 @@ var shown: Dictionary = {}
 var animating: bool = false
 var locked: bool = false
 var pending_move: String = ""          # mossa scelta che aspetta il bersaglio
+var pending_skill: String = ""
+var pending_kind: String = "enemy"     # "enemy" o "ally": chi si puo' toccare
 var cards: Dictionary = {}              # id giocatore -> PvpCard
 var buttons: Dictionary = {}            # mossa -> Button
 var swap_box: HBoxContainer
@@ -320,6 +322,7 @@ func _build_cards() -> void:
 	var x: float = 0.0
 	for p in lefts:
 		var c := PvpCard.new().setup(str(p["id"]), w, str(p["id"]) == me(), true)
+		c.picked.connect(_on_target)
 		c.position = Vector2(x, 0)
 		arena.add_child(c)
 		cards[str(p["id"])] = c
@@ -356,7 +359,8 @@ func _refresh() -> void:
 	for pid in cards:
 		var p: Dictionary = PvpEngine.player(shown, str(pid))
 		var enemy: bool = not mp.is_empty() and str(p["team"]) != str(mp["team"])
-		var selectable: bool = picking and enemy and PvpEngine.player_alive(shown, p) and not locked
+		var side_ok: bool = enemy if pending_kind == "enemy" else (not mp.is_empty() and str(p["team"]) == str(mp["team"]))
+		var selectable: bool = picking and side_ok and PvpEngine.player_alive(shown, p) and not locked
 		cards[pid].refresh(shown, p["choice"] != null and not (str(pid) == me() and false), selectable)
 	var u: Dictionary = PvpEngine.active_unit(shown, mp) if not mp.is_empty() else {}
 	var can_act: bool = mine_ok and not chosen_me and not locked and not u.is_empty()
@@ -366,8 +370,7 @@ func _refresh() -> void:
 	buttons["ult"].disabled = not can_act or not PvpEngine.alive(u) or not PvpEngine.can_ult(u)
 	buttons["swap"].disabled = not can_act or PvpEngine.swap_options(shown, mp).is_empty()
 	if not u.is_empty():
-		buttons["skill"].text = "ABILITA' %d⚡" % PvpEngine.SKILL_COST
-		buttons["ult"].text = "ULTIMATE" if PvpEngine.can_ult(u) else "ULT %d%%" % int(u["gauge"])
+		buttons["ult"].text = (str(BattleContent.MOVES.get(PvpEngine.ult_of(u), {}).get("name", "ULTIMATE")).to_upper().left(11) if PvpEngine.can_ult(u) else "ULT %d%%" % int(u["gauge"]))
 	_clear_swaps()
 	if str(shown["winner"]) != "":
 		_hint.text = ""
@@ -376,7 +379,7 @@ func _refresh() -> void:
 	elif chosen_me or locked:
 		_hint.text = "ORDINE INVIATO. ASPETTO GLI ALTRI..."
 	elif picking:
-		_hint.text = "TOCCA UN NEMICO PER COLPIRLO"
+		_hint.text = "TOCCA UN NEMICO PER COLPIRLO" if pending_kind == "enemy" else "TOCCA UN ALLEATO (O TE STESSO)"
 	else:
 		_hint.text = "SCEGLI LA MOSSA PER %s" % str(u.get("name", "")).to_upper()
 
@@ -388,7 +391,7 @@ func _clear_swaps() -> void:
 
 # ---------- Input ----------
 
-func _on_move(move: String) -> void:
+func _on_move(move: String, skill_id: String = "") -> void:
 	if locked or shown.is_empty() or animating:
 		return
 	var mp: Dictionary = PvpEngine.player(shown, me())
@@ -405,21 +408,43 @@ func _on_move(move: String) -> void:
 			swap_box.add_child(btn)
 		pending_move = ""
 		return
-	if not PvpEngine.needs_target(move, str(u.get("cls", ""))):
-		_send({"move": move})
+	if move == "skill" and skill_id == "":
+		# l'operatore puo' avere piu' abilita' (anche uniche): si sceglie quale
+		_clear_swaps()
+		for sid in PvpEngine.skills_of(u):
+			var m: Dictionary = BattleContent.MOVES[str(sid)]
+			var sb := Button.new()
+			sb.text = "%s  %d⚡" % [str(m["name"]).to_upper(), int(m["cost"])]
+			sb.custom_minimum_size = Vector2(300, 60)
+			sb.clip_text = true
+			sb.disabled = not PvpEngine.can_use(u, str(sid))
+			BattleTheme.style_button(sb, "normal", 18)
+			sb.pressed.connect(_on_move.bind("skill", str(sid)))
+			swap_box.add_child(sb)
+		pending_move = ""
 		return
-	var foes: Array = PvpEngine.enemies_of(shown, me())
-	if foes.size() == 1:
-		_send({"move": move, "target": str(foes[0]["id"])})
+	var mid: String = skill_id if move == "skill" else PvpEngine.move_id_for(u, {"move": move})
+	var kind: String = PvpEngine.target_kind(mid)
+	var base: Dictionary = {"move": move, "skill": skill_id}
+	if kind == "":
+		_send(base)
+		return
+	var pool: Array = PvpEngine.enemies_of(shown, me()) if kind == "enemy" else PvpEngine.allies_of(shown, me())
+	if pool.size() == 1:
+		base["target"] = str(pool[0]["id"])
+		_send(base)
 		return
 	pending_move = move
+	pending_skill = skill_id
+	pending_kind = kind
+	_clear_swaps()
 	_refresh()
 
 
 func _on_target(pid: String) -> void:
 	if pending_move == "" or locked:
 		return
-	_send({"move": pending_move, "target": pid})
+	_send({"move": pending_move, "skill": pending_skill, "target": pid})
 
 
 func _send(choice: Dictionary) -> void:
@@ -427,6 +452,7 @@ func _send(choice: Dictionary) -> void:
 		return
 	locked = true
 	pending_move = ""
+	pending_skill = ""
 	var ok: bool = source.submit_choice(choice)
 	if not ok:
 		locked = false
@@ -509,9 +535,9 @@ func _event(e: Dictionary) -> void:
 			if AnimFx.enabled():
 				AnimFx.round_banner(_fx, "CICLO %d" % int(e["n"]))
 		"act":
-			var move: String = {"attack": "attacca", "skill": "usa l'abilita'", "ult": "scatena l'ULTIMATE"}.get(str(e["move"]), "agisce")
-			_log_line("%s %s" % [_name_of(str(e["unit"])), move])
-			Snd.play("deploy" if str(e["move"]) != "attack" else "hit", 1.0)
+			var mname: String = str(BattleContent.MOVES.get(str(e["move"]), {}).get("name", "mossa")).to_upper()
+			_log_line("%s: %s%s" % [_name_of(str(e["unit"])), mname, "  [ULTIMATE]" if str(e.get("kind", "")) == "ult" else ""])
+			Snd.play("deploy" if str(e.get("kind", "")) != "basic" else "hit", 1.0)
 		"damage":
 			var card: PvpCard = _card_of_unit(str(e["dst"]))
 			_log_line("   %s subisce %s%s%s" % [_name_of(str(e["dst"])), BattleText.num(int(e["amount"])), "!" if bool(e.get("crit", false)) else "", " (assorbiti %s)" % BattleText.num(int(e["absorbed"])) if int(e.get("absorbed", 0)) > 0 else ""])
@@ -563,8 +589,9 @@ func _check_end() -> void:
 	if _ended_shown or shown.is_empty() or str(shown["winner"]) == "":
 		return
 	_ended_shown = true
+	var bag: Dictionary = {}
 	if source != null and source.has_method("finish"):
-		source.finish()
+		bag = source.finish()
 	var winner: String = str(shown["winner"])
 	var mp: Dictionary = PvpEngine.player(shown, me())
 	var won: bool = winner != "draw" and str(mp.get("team", "")) == winner
@@ -574,8 +601,8 @@ func _check_end() -> void:
 	for pid in PvpEngine.winner_players(shown):
 		names.append(str(PvpEngine.player(shown, str(pid))["name"]).to_upper())
 	var panel := HudPanel.new().setup("ESITO", col)
-	panel.position = Vector2(340, 150)
-	panel.size = Vector2(600, 330)
+	panel.position = Vector2(320, 130)
+	panel.size = Vector2(640, 390)
 	_fx.add_child(panel)
 	_result = panel
 	var box := VBoxContainer.new()
@@ -591,6 +618,12 @@ func _check_end() -> void:
 	var info := BattleTheme.make_label("%s · %d CICLI" % [_mode_text(), int(shown["round"])], 16, BattleTheme.CY_DIM)
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(info)
+	var bag_text: String = PvpRewards.text(bag) if bag is Dictionary else ""
+	if bag_text != "":
+		var bl := BattleTheme.make_label("BORSA FIGHT:  " + bag_text, 17, BattleTheme.GOLD, true)
+		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(bl)
 	var back := Button.new()
 	back.text = "TORNA ALLA LOBBY" if source is NetworkManager else "TORNA ALL'HUB"
 	back.custom_minimum_size = Vector2(0, 64)

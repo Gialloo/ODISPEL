@@ -700,6 +700,10 @@ func _broadcast_battle() -> void:
 	# conosce il seed, quindi non potrebbe calcolarli ne' falsificarli).
 	var all_rewards: Dictionary = {}
 
+	if str(battle.get("winner", "")) != "" and bool(battle.get("pvp", false)):
+		all_rewards = PvpRewards.for_battle(battle, _battle_seed)
+		battle_rewards = all_rewards.get(local_player_id, {})
+
 	if str(battle.get("winner", "")) != "" and not bool(battle.get("pvp", false)):
 		all_rewards = BattleRewards.for_battle(battle, _battle_boss_id, _battle_seed)
 		battle_rewards = all_rewards.get(local_player_id, {})
@@ -727,7 +731,14 @@ func finish() -> Dictionary:
 
 	if bool(battle.get("pvp", false)):
 		_rewards_applied = true
-		return {}
+		var proster: Dictionary = RosterStore.load_or_new(reward_save_path)
+		RosterState.apply_rewards(proster, battle_rewards)
+		var winner: String = str(battle["winner"])
+		var mine: Dictionary = PvpEngine.player(battle, local_player_id)
+		var won: bool = winner != "draw" and str(mine.get("team", "")) == winner
+		Feats.record_pvp(proster, won)
+		RosterStore.save(proster, reward_save_path)
+		return battle_rewards
 
 	_rewards_applied = true
 	var roster: Dictionary = RosterStore.load_or_new(reward_save_path)

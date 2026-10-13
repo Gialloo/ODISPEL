@@ -39,5 +39,21 @@ func submit_choice(choice: Dictionary) -> bool:
 	return true
 
 
+var save_path: String = RosterStore.DEFAULT_PATH
+var rewards: Dictionary = {}
+var _paid: bool = false
+
+
+# Allenamento: una piccola parte della borsa, nessun contatore per le imprese.
 func finish() -> Dictionary:
-	return {}
+	if _paid or battle.is_empty() or str(battle["winner"]) == "":
+		return rewards
+	_paid = true
+	var winner: String = str(battle["winner"])
+	var mine: Dictionary = PvpEngine.player(battle, local_player_id)
+	var outcome: String = "draw" if winner == "draw" else ("win" if str(mine.get("team", "")) == winner else "loss")
+	rewards = PvpRewards.for_player(int(str(battle["rng_seed"]).to_int()), 0, outcome, true)
+	var roster: Dictionary = RosterStore.load_or_new(save_path)
+	RosterState.apply_rewards(roster, rewards)
+	RosterStore.save(roster, save_path)
+	return rewards

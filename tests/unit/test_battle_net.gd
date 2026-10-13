@@ -96,7 +96,7 @@ func _test_helpers() -> void:
 	var r: Dictionary = BattleNet.read_team(via_json)
 	_check("squadra via JSON: numeri interi", r["ok"] and r["team"][0]["level"] is int)
 	var c: Dictionary = BattleNet.clean_choice({"swap": 5, "move": "attack", "extra": "x", "type": "choice"})
-	_check("scelta ripulita", c == {"swap": "5", "move": "attack", "target": ""})
+	_check("scelta ripulita", c == {"swap": "5", "move": "attack", "target": "", "skill": ""})
 
 
 func _test_hello_team() -> void:

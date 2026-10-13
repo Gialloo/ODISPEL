@@ -76,7 +76,11 @@ func _init() -> void:
 			m._battle_resolve(true)
 		guard += 1
 	_check("la partita finisce", str(m.battle["winner"]) != "")
-	_check("finish senza premi PvE", m.finish().is_empty())
+	m.reward_save_path = "user://test_pvp_net_roster.json"
+	m.battle_rewards = PvpRewards.for_battle(m.battle, m._battle_seed).get("player_1", {})
+	var bag: Dictionary = m.finish()
+	_check("finish: borsa fight applicata e contatori aggiornati", int(bag.get("coins", 0)) > 0 and int(Feats.stats(RosterStore.load_or_new(m.reward_save_path)).get("pvp_plays", 0)) == 1)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(m.reward_save_path))
 	# 2v2: 2 umani + 2 IA
 	var d: NetworkManager = _lobby(2)
 	d.host_set_mode("duo", false)

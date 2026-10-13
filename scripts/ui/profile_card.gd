@@ -137,3 +137,16 @@ func _draw() -> void:
 		draw_line(Vector2(size.x * sx, size.y), Vector2(size.x * (sx + 0.15), 0), Color(1, 1, 1, 0.10), size.y * 0.5)
 	draw_rect(Rect2(Vector2.ZERO, size), Color(b.r, b.g, b.b, 0.85), false, 2.0)
 	draw_rect(Rect2(Vector2(0, size.y - 3), Vector2(size.x, 3)), b)
+	var badge: String = str(data.get("badge", ""))
+	if Profile.BADGES.has(badge):
+		# medaglietta nell'angolo: un cerchio col colore del badge e una stella
+		var bc: Color = Color(str(Profile.BADGES[badge][2]))
+		var c := Vector2(size.x - size.y * 0.32 - 4.0, size.y * 0.32 + 4.0)
+		var r: float = size.y * 0.24
+		draw_circle(c, r + 2.0, Color(0, 0, 0, 0.6))
+		draw_circle(c, r, bc)
+		var star := PackedVector2Array()
+		for i in 10:
+			var ang: float = -PI * 0.5 + float(i) * TAU / 10.0
+			star.append(c + Vector2(cos(ang), sin(ang)) * (r * 0.78 if i % 2 == 0 else r * 0.34))
+		draw_colored_polygon(star, Color(1, 1, 1, 0.95))

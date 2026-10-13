@@ -61,4 +61,5 @@ static func clean_choice(message: Dictionary) -> Dictionary:
 		"swap": str(message.get("swap", "")),
 		"move": str(message.get("move", "")),
 		"target": str(message.get("target", "")),
+		"skill": str(message.get("skill", "")),
 	}

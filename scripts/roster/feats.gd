@@ -10,7 +10,7 @@ extends RefCounted
 # chi ha gia' battuto dei boss prima di questa versione trova le imprese pronte da riscuotere.
 
 const TIER_NAMES: Array = ["NORMALE", "DIFFICILE", "INCUBO"]
-const GROUPS: Array = ["MISSIONI", "BATTAGLIE", "OPERATORI", "POTENZIAMENTI", "INFINITO"]
+const GROUPS: Array = ["MISSIONI", "BATTAGLIE", "OPERATORI", "POTENZIAMENTI", "INFINITO", "PVP"]
 
 
 static func stats(roster: Dictionary) -> Dictionary:
@@ -73,7 +73,13 @@ static func all() -> Array:
 		out.append(_feat("endless_%d" % entry[0], "INFINITO", "Piano %d" % entry[0], "Raggiungi il piano %d del Ciclo Infinito." % entry[0], int(entry[0]), "endless_best", "", {"coins": int(entry[1]), "nucleo": int(entry[2]), "lega": int(entry[2]) / 2}))
 	for entry in [[3, 1000], [7, 3000], [14, 8000]]:
 		out.append(_feat("daily_%d" % entry[0], "INFINITO", "Serie di %d giorni" % entry[0], "Vinci la Sfida del giorno per %d giorni di fila." % entry[0], int(entry[0]), "daily_best", "", {"coins": int(entry[1]), "nucleo": 3 + int(entry[0]) / 2, "lega": 2}))
+	# PvP: partecipare (anche perdendo) e vincere
+	for entry in [[1, 300, 1], [3, 600, 1], [5, 1000, 2], [10, 2000, 3], [15, 3200, 4], [20, 4800, 5], [25, 7000, 6]]:
+		out.append(_feat("pvp_plays_%d" % entry[0], "PVP", "Sfidante %d" % entry[0], "Partecipa a %d duelli PvP (vinti o persi)." % entry[0], int(entry[0]), "pvp_plays", "", {"coins": int(entry[1]), "nucleo": int(entry[2])}))
+	out.append(_feat("pvp_wins_5", "PVP", "Campione del PvP", "Vinci 5 duelli PvP. Premio unico: badge e icona leggendaria DUELLANTE.", 5, "pvp_wins", "", {"coins": 5000, "nucleo": 5, "lega": 3}))
 	for f in out:
+		if Profile.FEAT_BADGES.has(str(f["id"])):
+			f["reward"]["badge"] = Profile.FEAT_BADGES[str(f["id"])]
 		if Profile.FEAT_ICONS.has(str(f["id"])):
 			f["reward"]["icon"] = Profile.FEAT_ICONS[str(f["id"])]
 	_all = out
@@ -96,6 +102,10 @@ static func value(roster: Dictionary, f: Dictionary) -> int:
 			return int(stats(roster).get("wins", 0))
 		"plays":
 			return int(stats(roster).get("plays", 0))
+		"pvp_plays":
+			return int(stats(roster).get("pvp_plays", 0))
+		"pvp_wins":
+			return int(stats(roster).get("pvp_wins", 0))
 		"pulls":
 			return int(roster.get("pulls", 0))
 		"owned":
@@ -177,6 +187,8 @@ static func claim(roster: Dictionary, id: String) -> Dictionary:
 		RosterState.add_drop(roster, reward["drop"])
 	if reward.has("icon"):
 		Profile.unlock(str(reward["icon"]))
+	if reward.has("badge"):
+		Profile.unlock_badge(str(reward["badge"]))
 	claimed(roster)[id] = true
 	return reward
 
@@ -198,6 +210,14 @@ static func record_battle(roster: Dictionary, victory: bool) -> void:
 		s["wins"] = int(s.get("wins", 0)) + 1
 
 
+# A fine duello PvP: aggiorna i contatori (partecipazioni e vittorie).
+static func record_pvp(roster: Dictionary, victory: bool) -> void:
+	var s: Dictionary = stats(roster)
+	s["pvp_plays"] = int(s.get("pvp_plays", 0)) + 1
+	if victory:
+		s["pvp_wins"] = int(s.get("pvp_wins", 0)) + 1
+
+
 static func reward_text(reward: Dictionary) -> String:
 	var parts: Array = []
 	if int(reward.get("coins", 0)) > 0:
@@ -210,4 +230,6 @@ static func reward_text(reward: Dictionary) -> String:
 		parts.append("ABILITA': %s" % BattleText.move_name(str(reward["drop"]["id"])))
 	if reward.has("icon"):
 		parts.append("ICONA: %s" % Profile.icon_name(str(reward["icon"])))
+	if reward.has("badge"):
+		parts.append("BADGE: %s" % Profile.badge_name(str(reward["badge"])).to_upper())
 	return "  +  ".join(parts)

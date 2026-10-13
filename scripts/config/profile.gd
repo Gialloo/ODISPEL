@@ -31,6 +31,15 @@ const ICONS: Dictionary = {
 	"l_striker": ["Leggenda: Fulmine", 3, "bolt", "#ffd25f", "Premio dei boss (rarissimo) / impresa «Leggende di strada»"],
 	"l_vanguard": ["Leggenda: Baluardo", 3, "vanguard", "#ffd25f", "Premio dei boss (rarissimo) / impresa «Una leggenda in squadra»"],
 	"l_warden": ["Leggenda: Custode", 3, "warden", "#ffd25f", "Premio dei boss (rarissimo) / impresa «Incubo della citta'»"],
+	"l_duello": ["Leggenda: Duellante", 3, "sword", "#ff9a5f", "SOLO con l'impresa «Campione del PvP» (5 vittorie PvP)"],
+}
+
+# Icone esclusive: non cadono come premio dei boss, si prendono solo con la loro impresa.
+const EXCLUSIVE_ICONS: Array = ["l_duello"]
+
+# Badge (distintivi) mostrati sulla carta del profilo: {id: [nome, descrizione, colore]}
+const BADGES: Dictionary = {
+	"duellante": ["Duellante", "Ha vinto 5 sfide PvP", "#ff9a5f"],
 }
 
 # Premi fissi delle imprese: id impresa -> id icona.
@@ -43,6 +52,12 @@ const FEAT_ICONS: Dictionary = {
 	"wins_40": "l_striker",
 	"legend_1": "l_vanguard",
 	"wins_100": "l_warden",
+	"pvp_wins_5": "l_duello",
+}
+
+# Premi fissi delle imprese: id impresa -> id badge.
+const FEAT_BADGES: Dictionary = {
+	"pvp_wins_5": "duellante",
 }
 
 # Banner: [nome, colore A, colore B]
@@ -62,6 +77,7 @@ static var player_name: String = DEFAULT_NAME
 static var icon: String = "c_sword"
 static var banner: int = 0
 static var unlocked: Array = []        # id delle icone non comuni ottenute
+static var badges: Array = []          # id dei badge ottenuti
 static var _loaded: bool = false
 
 
@@ -79,8 +95,36 @@ static func ensure_loaded() -> void:
 	for id in Array(cfg.get_value("profile", "unlocked", [])):
 		if ICONS.has(str(id)) and not unlocked.has(str(id)):
 			unlocked.append(str(id))
+	badges = []
+	for id in Array(cfg.get_value("profile", "badges", [])):
+		if BADGES.has(str(id)) and not badges.has(str(id)):
+			badges.append(str(id))
 	if not icon_valid(icon):
 		icon = "c_sword"
+
+
+static func has_badge(id: String) -> bool:
+	ensure_loaded()
+	return badges.has(id)
+
+
+static func unlock_badge(id: String) -> bool:
+	ensure_loaded()
+	if not BADGES.has(id) or badges.has(id):
+		return false
+	badges.append(id)
+	save()
+	return true
+
+
+# Il badge messo in mostra: l'ultimo ottenuto ("" se non ne ha).
+static func shown_badge() -> String:
+	ensure_loaded()
+	return str(badges[badges.size() - 1]) if not badges.is_empty() else ""
+
+
+static func badge_name(id: String) -> String:
+	return str(BADGES.get(id, ["", "", ""])[0])
 
 
 static func save() -> bool:
@@ -89,6 +133,7 @@ static func save() -> bool:
 	cfg.set_value("profile", "icon", icon)
 	cfg.set_value("profile", "banner", banner)
 	cfg.set_value("profile", "unlocked", unlocked)
+	cfg.set_value("profile", "badges", badges)
 	return cfg.save(path) == OK
 
 
@@ -152,7 +197,7 @@ static func icon_name(id: String) -> String:
 # Dati da mostrare/spedire: {name, icon, banner}
 static func current() -> Dictionary:
 	ensure_loaded()
-	return {"name": player_name, "icon": icon, "banner": banner}
+	return {"name": player_name, "icon": icon, "banner": banner, "badge": shown_badge()}
 
 
 # Dati ricevuti dalla rete: ripuliti, mai fidarsi.
@@ -163,6 +208,8 @@ static func clean_public(raw: Variant) -> Dictionary:
 		if icon_valid(id):
 			out["icon"] = id
 		out["banner"] = clampi(int(raw.get("banner", 0)), 0, BANNERS.size() - 1)
+		var b: String = str(raw.get("badge", ""))
+		out["badge"] = b if BADGES.has(b) else ""
 	return out
 
 
@@ -188,7 +235,7 @@ static func roll_icon(rng: RNGState, tier: int) -> String:
 		return ""
 	var pool: Array = []
 	for id in ICONS:
-		if rarity_of(str(id)) == want:
+		if rarity_of(str(id)) == want and not EXCLUSIVE_ICONS.has(str(id)):
 			pool.append(str(id))
 	pool.sort()
 	return str(pool[rng.random_int(0, pool.size() - 1)])
