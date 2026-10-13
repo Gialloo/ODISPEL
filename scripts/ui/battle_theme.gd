@@ -37,7 +37,7 @@ static func unit_color(color_name: String) -> Color:
 
 
 # FONT UNICO DEL GIOCO: Libre Caslon Condensed (Google Fonts, licenza OFL, vedi assets/fonts/OFL-LibreCaslonCondensed.txt).
-# Pesi: Regular / Medium / SemiBold / Bold, ciascuno anche in corsivo.
+# Nel pacchetto: Bold, Bold corsivo e Italic (gli altri pesi, nello zip originale, si aggiungono copiandoli in assets/fonts).
 # Il Caslon condensato e' stretto e basso: i testi normali (non i titoli) si ingrandiscono un po' per restare leggibili.
 const TEXT_SCALE: float = 1.12
 const FONT_DIR: String = "res://assets/fonts/LibreCaslonCondensed-"
@@ -81,7 +81,7 @@ static func crit() -> Font:
 
 # Pensieri, sottotitoli, citazioni: corsivo.
 static func quote() -> Font:
-	return font("Medium", true)
+	return font("Regular", true)
 
 
 static func make_label(text: String, size: int = 16, color: Color = CY, use_display: bool = false) -> Label:
