@@ -1095,7 +1095,11 @@ func _refresh_orders() -> void:
 		c.queue_free()
 	_order_buttons.clear()
 	var touch: bool = TouchUi.active()
-	_orders_box.origin = _fan_origin()
+	var fan_r: float = 340.0 if touch else 290.0
+	var fan_big: float = 620.0                   # curva dolce: raggio grande, il pulsante centrale resta dove stava
+	var fo: Vector2 = _fan_origin()
+	var mid_rad: float = deg_to_rad(6.0 if touch else 22.0)
+	_orders_box.origin = Vector2(fo.x + cos(mid_rad) * fan_r - fan_big, fo.y + sin(mid_rad) * fan_r)
 	_orders_box.tint = BattleTheme.unit_color(str(u["color"]))
 	var title_text: String = str(u["name"]).to_upper()
 	if pending_swap != "":
@@ -1114,7 +1118,7 @@ func _refresh_orders() -> void:
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
 	var bh: float = 56.0 if touch else 42.0
 	var bw: float = 232.0 if touch else 196.0
-	var pts: Array = _orders_box.layout(entries.size(), bh, 8.0, 340.0 if touch else 290.0, 6.0 if touch else 22.0, 246.0, 706.0)
+	var pts: Array = _orders_box.layout(entries.size(), bh, 4.0, fan_big, 0.0, 246.0, 706.0)
 	title.position = Vector2(float(pts[0].x) - 2.0, float(pts[0].y) - bh * 0.5 - 26.0)
 	var lo := Vector2(1e9, 1e9)
 	var hi := Vector2(-1e9, -1e9)
@@ -1132,6 +1136,9 @@ func _refresh_orders() -> void:
 		var txt: String = _order_text(str(e["id"]), mv, 100)
 		while common_fs > (14 if touch else 12) and BattleTheme.hud().get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x > bw - 44.0:
 			common_fs -= 1
+	var min_left: float = 1e9
+	for pt in pts:
+		min_left = minf(min_left, float(pt.x) - 8.0)
 	var n: int = 1
 	for e in entries:
 		var move_id: String = str(e["id"])
@@ -1160,8 +1167,9 @@ func _refresh_orders() -> void:
 		var oic: GameIcon = GameIcon.new().setup(GameIcon.move_key(move_id), BattleTheme.WH if err == "" else Color("#6b777c"), 32.0)
 		oic.anchor_top = 0.5
 		oic.anchor_bottom = 0.5
-		oic.offset_left = -32.0 - 10.0
-		oic.offset_right = -10.0
+		var btn_left: float = float(pts[n - 1].x) - 8.0
+		oic.offset_left = (min_left - 40.0) - btn_left        # tutte le icone sulla stessa colonna
+		oic.offset_right = oic.offset_left + 32.0
 		oic.offset_top = -16.0
 		oic.offset_bottom = 16.0
 		oic.mouse_filter = Control.MOUSE_FILTER_IGNORE

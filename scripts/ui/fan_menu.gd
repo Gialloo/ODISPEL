@@ -55,13 +55,4 @@ func clear_arc() -> void:
 
 
 func _draw() -> void:
-	if _a1 <= _a0:
-		return
-	var pts := PackedVector2Array()
-	var n: int = 24
-	for i in n + 1:
-		var a: float = lerpf(_a0, _a1, float(i) / float(n))
-		pts.append(origin + Vector2(cos(a), sin(a)) * (radius - 14.0))
-	draw_polyline(pts, Color(tint, 0.35), 3.0, true)
-	draw_polyline(pts, Color(1.0, 1.0, 1.0, 0.18), 1.0, true)
-	draw_circle(origin, 5.0, Color(tint, 0.8))
+	pass      # nessuna curva disegnata: solo i pulsanti
