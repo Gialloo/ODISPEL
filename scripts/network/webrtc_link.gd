@@ -175,7 +175,7 @@ func poll() -> void:
 			var packet: PackedByteArray = channel.get_packet()
 			if not _accept_packet(packet.size(), now):
 				continue
-			_handle_raw(packet.get_string_from_utf8(), now)
+			_handle_raw(unpack_text(packet), now)
 
 		check_heartbeat(now)
 
@@ -266,7 +266,43 @@ func send_message(message: Dictionary) -> bool:
 		return false
 
 	var text: String = JSON.stringify(message)
-	return channel.put_packet(text.to_utf8_buffer()) == OK
+	return channel.put_packet(pack_text(text)) == OK
+
+
+# Compressione dei messaggi grossi (le fotografie della battaglia): meno dati su rete e sul TURN.
+# Pacchetto compresso = byte 1 + dimensione originale (4 byte) + dati; un pacchetto normale e' JSON e inizia con "{".
+const COMPRESS_MIN_BYTES: int = 600
+const MAX_UNPACKED_BYTES: int = 1048576
+const PACK_MARK: int = 1
+
+
+static func pack_text(text: String) -> PackedByteArray:
+	var raw: PackedByteArray = text.to_utf8_buffer()
+	if raw.size() < COMPRESS_MIN_BYTES:
+		return raw
+	var packed: PackedByteArray = raw.compress(FileAccess.COMPRESSION_DEFLATE)
+	if packed.size() + 5 >= raw.size():
+		return raw
+	var out := PackedByteArray([PACK_MARK])
+	out.resize(5)
+	out.encode_u32(1, raw.size())
+	out.append_array(packed)
+	return out
+
+
+# Testo di un pacchetto ricevuto; stringa vuota se e' compresso male o dichiara una dimensione eccessiva.
+static func unpack_text(packet: PackedByteArray) -> String:
+	if packet.size() == 0 or packet[0] != PACK_MARK:
+		return packet.get_string_from_utf8()
+	if packet.size() < 6:
+		return ""
+	var original: int = int(packet.decode_u32(1))
+	if original <= 0 or original > MAX_UNPACKED_BYTES:
+		return ""
+	var raw: PackedByteArray = packet.slice(5).decompress(original, FileAccess.COMPRESSION_DEFLATE)
+	if raw.size() != original:
+		return ""
+	return raw.get_string_from_utf8()
 
 
 func is_open() -> bool:
