@@ -375,20 +375,23 @@ func _build_camera_info() -> void:
 	strip.alignment = BoxContainer.ALIGNMENT_END
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(strip)
-	_anchor(strip, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-260, -28, -10, -4))
-	_round_label = BattleTheme.make_label("TURNO 01", 14, BattleTheme.CY_DIM)
+	_anchor(strip, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-260, -50, -10, -14))
+	_round_label = BattleTheme.make_label("TURNO 01", 19, BattleTheme.CY_DIM)
 	_round_label.add_theme_font_override("font", BattleTheme.hud())
+	_round_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	strip.add_child(_round_label)
-	var rec := BattleTheme.make_label("REC", 15, BattleTheme.WH, true)
+	var rec := BattleTheme.make_label("REC", 19, BattleTheme.WH, true)
+	rec.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	strip.add_child(rec)
 	var holder := Control.new()
-	holder.custom_minimum_size = Vector2(12, 24)
+	holder.custom_minimum_size = Vector2(14, 24)
+	holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	strip.add_child(holder)
 	_rec_dot = ColorRect.new()
 	_rec_dot.color = BattleTheme.RD
-	_rec_dot.size = Vector2(12, 12)
-	_rec_dot.position = Vector2(0, 6)
+	_rec_dot.size = Vector2(14, 14)
+	_rec_dot.position = Vector2(0, 5)
 	_rec_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holder.add_child(_rec_dot)
 	var cam := BattleTheme.make_label("CAM-07 · VIA S. GIORGIO · PARK 3", 14, BattleTheme.CY)
