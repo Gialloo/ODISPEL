@@ -7,7 +7,7 @@ extends Control
 
 var source: Variant = null
 var pending_source: Variant = null    # sorgente da collegare appena la scena e' pronta
-var event_delay: float = 0.42
+var event_delay: float = Settings.event_delay()
 var shown: Dictionary = {}          # copia dello stato come lo vede il giocatore ora
 var animating: bool = false
 var locked: bool = false            # ordine inviato, si aspetta il round
@@ -832,6 +832,7 @@ func _on_order_pressed(move_id: String) -> void:
 
 func _open_pause() -> void:
 	_pause = PauseMenu.open(self, source is NetworkManager)
+	_pause.speed_changed.connect(func() -> void: event_delay = Settings.event_delay())
 	_pause.quit_requested.connect(func() -> void:
 		if source is NetworkManager:
 			_on_leave_room()

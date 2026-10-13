@@ -13,6 +13,7 @@ static var fps_limit: int = 144        # 0 = senza limite
 static var vsync: bool = true
 static var light_fx: bool = OS.has_feature("mobile")   # effetti ridotti: niente velo telecamera ne' pulviscolo (telefoni e PC lenti)
 const FPS_CHOICES: Array = [60, 90, 120, 144, 240, 0]
+static var fast_battle: bool = false     # animazioni di battaglia piu' veloci
 static var vibration: bool = true       # vibrazione del telefono nei momenti forti
 static var banter: bool = true          # battute dei personaggi in battaglia
 static var tutorial_done: bool = false
@@ -37,6 +38,7 @@ static func load_settings() -> void:
 	light_fx = bool(cfg.get_value("video", "light_fx", light_fx))
 	banter = bool(cfg.get_value("game", "banter", banter))
 	vibration = bool(cfg.get_value("game", "vibration", vibration))
+	fast_battle = bool(cfg.get_value("game", "fast_battle", fast_battle))
 	tutorial_done = bool(cfg.get_value("game", "tutorial_done", tutorial_done))
 	gacha_guide_seen = bool(cfg.get_value("game", "gacha_guide_seen", gacha_guide_seen))
 	seen_scenes = Array(cfg.get_value("game", "seen_scenes", []))
@@ -74,6 +76,7 @@ static func save() -> bool:
 	cfg.set_value("video", "light_fx", light_fx)
 	cfg.set_value("game", "banter", banter)
 	cfg.set_value("game", "vibration", vibration)
+	cfg.set_value("game", "fast_battle", fast_battle)
 	cfg.set_value("game", "tutorial_done", tutorial_done)
 	cfg.set_value("game", "gacha_guide_seen", gacha_guide_seen)
 	cfg.set_value("game", "seen_scenes", seen_scenes)
@@ -114,3 +117,8 @@ static func finish_gacha_guide() -> void:
 static func buzz(ms: int) -> void:
 	if vibration and TouchUi.active():
 		Input.vibrate_handheld(ms)
+
+
+# Pausa tra un evento e l'altro in battaglia.
+static func event_delay() -> float:
+	return 0.22 if fast_battle else 0.42

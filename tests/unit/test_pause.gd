@@ -32,8 +32,13 @@ func _init() -> void:
 	var btns: Array = []
 	for n in m2.find_children("*", "Button", true, false):
 		btns.append(n)
-	_check("tre pulsanti", btns.size() == 3)
-	btns[2].pressed.emit()
+	_check("quattro pulsanti", btns.size() == 4)
+	var was: bool = Settings.fast_battle
+	btns[1].pressed.emit()
+	_check("il pulsante velocita' cambia l'impostazione", Settings.fast_battle != was and Settings.event_delay() == (0.22 if Settings.fast_battle else 0.42))
+	Settings.fast_battle = was
+	Settings.save()
+	btns[3].pressed.emit()
 	await process_frame
 	await process_frame
 	_check("esci avvisa e chiude", got[1] and not is_instance_valid(m2))

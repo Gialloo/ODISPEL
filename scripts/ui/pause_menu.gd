@@ -6,6 +6,7 @@ extends Control
 
 signal resumed
 signal quit_requested
+signal speed_changed
 
 var networked: bool = false
 var resume_button: Button
@@ -28,7 +29,8 @@ func _ready() -> void:
 	add_child(dim)
 	var panel := HudPanel.new().setup("PAUSA", BattleTheme.CY)
 	panel.position = Vector2(440, 190)
-	panel.size = Vector2(400, 340)
+	panel.size = Vector2(440, 400)
+	panel.position = Vector2(420, 160)
 	add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
@@ -42,12 +44,22 @@ func _ready() -> void:
 		box.add_child(note)
 	resume_button = _button(box, "RIPRENDI", "primary", 64, 28)
 	resume_button.pressed.connect(close)
+	var speed: Button = _button(box, _speed_text(), "normal", 50, 20)
+	speed.pressed.connect(func() -> void:
+		Settings.fast_battle = not Settings.fast_battle
+		Settings.save()
+		speed.text = _speed_text()
+		speed_changed.emit())
 	var settings: Button = _button(box, "IMPOSTAZIONI", "normal", 50, 22)
 	settings.pressed.connect(func() -> void: SettingsPanel.open(self))
 	var leave: Button = _button(box, "ESCI DALLA PARTITA" if networked else "ESCI DALLA BATTAGLIA", "normal", 50, 20)
 	leave.pressed.connect(func() -> void:
 		quit_requested.emit()
 		queue_free())
+
+
+static func _speed_text() -> String:
+	return "VELOCITA' BATTAGLIA: %s" % ("VELOCE" if Settings.fast_battle else "NORMALE")
 
 
 func _button(box: Control, text: String, kind: String, h: float, fs: int) -> Button:
