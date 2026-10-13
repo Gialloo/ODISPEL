@@ -11,7 +11,7 @@ extends Control
 const KEYS: Array = [
 	"striker", "vanguard", "warden", "libracorp", "rondini", "magabondi", "kairos",
 	"sword", "bolt", "shield", "heal", "target", "taunt", "bullet", "cleanse", "burst", "passive",
-	"arma", "petto", "stivali", "coin", "nucleo", "lega",
+	"arma", "petto", "stivali", "coin", "nucleo", "lega", "book",
 ]
 
 var key: String = ""
@@ -226,6 +226,15 @@ func _draw() -> void:
 			_circle([0.5, 0.5], 0.42)
 			_poly([[0.5, 0.14], [0.62, 0.5], [0.5, 0.86], [0.38, 0.5]])
 			_line([0.14, 0.5], [0.86, 0.5], 0.04)
+		"book":
+			# libro aperto con le righe del testo
+			_poly([[0.08, 0.2], [0.46, 0.28], [0.46, 0.9], [0.08, 0.82]])
+			_poly([[0.92, 0.2], [0.54, 0.28], [0.54, 0.9], [0.92, 0.82]])
+			_line([0.5, 0.2], [0.5, 0.94], 0.05)
+			_line([0.16, 0.42], [0.38, 0.47], 0.04)
+			_line([0.62, 0.47], [0.84, 0.42], 0.04)
+			_circle([0.34, 0.1], 0.1)
+			_circle([0.66, 0.1], 0.1)
 		"kairos":
 			_poly([[0.2, 0.1], [0.8, 0.1], [0.5, 0.5]])
 			_poly([[0.5, 0.5], [0.8, 0.9], [0.2, 0.9]])

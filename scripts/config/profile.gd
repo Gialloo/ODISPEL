@@ -31,11 +31,12 @@ const ICONS: Dictionary = {
 	"l_striker": ["Leggenda: Fulmine", 3, "bolt", "#ffd25f", "Premio dei boss (rarissimo) / impresa «Leggende di strada»"],
 	"l_vanguard": ["Leggenda: Baluardo", 3, "vanguard", "#ffd25f", "Premio dei boss (rarissimo) / impresa «Una leggenda in squadra»"],
 	"l_warden": ["Leggenda: Custode", 3, "warden", "#ffd25f", "Premio dei boss (rarissimo) / impresa «Incubo della citta'»"],
+	"e_studioso": ["Studioso", 2, "book", "#7cf0ff", "SOLO con l'impresa «Studioso» (completa tutti i tutorial)"],
 	"l_duello": ["Leggenda: Duellante", 3, "sword", "#ff9a5f", "SOLO con l'impresa «Campione del PvP» (5 vittorie PvP)"],
 }
 
 # Icone esclusive: non cadono come premio dei boss, si prendono solo con la loro impresa.
-const EXCLUSIVE_ICONS: Array = ["l_duello"]
+const EXCLUSIVE_ICONS: Array = ["l_duello", "e_studioso"]
 
 # Badge (distintivi) mostrati sulla carta del profilo: {id: [nome, descrizione, colore]}
 const BADGES: Dictionary = {
@@ -53,6 +54,7 @@ const FEAT_ICONS: Dictionary = {
 	"legend_1": "l_vanguard",
 	"wins_100": "l_warden",
 	"pvp_wins_5": "l_duello",
+	"tutorials_all": "e_studioso",
 }
 
 # Premi fissi delle imprese: id impresa -> id badge.

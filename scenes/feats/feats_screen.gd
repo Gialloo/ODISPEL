@@ -3,7 +3,7 @@ extends Control
 
 # Schermata OBIETTIVI: le imprese permanenti (Feats) con progresso e premio fisso, da riscuotere a mano.
 
-const GROUP_ICONS: Dictionary = {"MISSIONI": "target", "BATTAGLIE": "sword", "OPERATORI": "striker", "POTENZIAMENTI": "arma"}
+const GROUP_ICONS: Dictionary = {"MISSIONI": "target", "BATTAGLIE": "sword", "OPERATORI": "striker", "POTENZIAMENTI": "arma", "TUTORIAL": "book"}
 
 var roster: Dictionary = {}
 var save_path: String = RosterStore.DEFAULT_PATH
@@ -56,7 +56,7 @@ func _build() -> void:
 		var b := Button.new()
 		b.text = str(g)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.size_flags_stretch_ratio = float({"DA RISCUOTERE": 230, "TUTTE": 105, "MISSIONI": 130, "BATTAGLIE": 140, "OPERATORI": 140, "POTENZIAMENTI": 160, "INFINITO": 120, "PVP": 80}.get(str(g), 140))
+		b.size_flags_stretch_ratio = float({"DA RISCUOTERE": 230, "TUTTE": 105, "MISSIONI": 130, "BATTAGLIE": 140, "OPERATORI": 140, "POTENZIAMENTI": 160, "INFINITO": 120, "PVP": 80, "TUTORIAL": 110}.get(str(g), 140))
 		b.custom_minimum_size = Vector2(0, 40)
 		b.clip_text = true
 		_style_tab(b, "normal")

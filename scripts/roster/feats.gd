@@ -10,7 +10,7 @@ extends RefCounted
 # chi ha gia' battuto dei boss prima di questa versione trova le imprese pronte da riscuotere.
 
 const TIER_NAMES: Array = ["NORMALE", "DIFFICILE", "INCUBO"]
-const GROUPS: Array = ["MISSIONI", "BATTAGLIE", "OPERATORI", "POTENZIAMENTI", "INFINITO", "PVP"]
+const GROUPS: Array = ["MISSIONI", "BATTAGLIE", "OPERATORI", "POTENZIAMENTI", "INFINITO", "PVP", "TUTORIAL"]
 
 
 static func stats(roster: Dictionary) -> Dictionary:
@@ -77,6 +77,12 @@ static func all() -> Array:
 	for entry in [[1, 300, 1], [3, 600, 1], [5, 1000, 2], [10, 2000, 3], [15, 3200, 4], [20, 4800, 5], [25, 7000, 6]]:
 		out.append(_feat("pvp_plays_%d" % entry[0], "PVP", "Sfidante %d" % entry[0], "Partecipa a %d duelli PvP (vinti o persi)." % entry[0], int(entry[0]), "pvp_plays", "", {"coins": int(entry[1]), "nucleo": int(entry[2])}))
 	out.append(_feat("pvp_wins_5", "PVP", "Campione del PvP", "Vinci 5 duelli PvP. Premio unico: badge e icona leggendaria DUELLANTE.", 5, "pvp_wins", "", {"coins": 5000, "nucleo": 5, "lega": 3}))
+	# tutorial: leggere le spiegazioni e' un'impresa (l'ultima da' l'icona epica STUDIOSO)
+	var tn: int = Tutorials.total()
+	for entry in [[1, "Curioso", 400, 2], [3, "Apprendista", 800, 3], [5, "Allievo", 1500, 4], [7, "Esperto", 2500, 5], [10, "Maestro", 4000, 6]]:
+		if int(entry[0]) < tn:
+			out.append(_feat("tutorials_%d" % entry[0], "TUTORIAL", str(entry[1]), "Supera %d tutorial." % entry[0], int(entry[0]), "tutorials", "", {"coins": int(entry[2]), "nucleo": int(entry[3]), "lega": int(entry[3]) / 2}))
+	out.append(_feat("tutorials_all", "TUTORIAL", "Studioso", "Completa tutti i tutorial (%d). Premio unico: icona epica STUDIOSO." % tn, tn, "tutorials", "", {"coins": 6000, "nucleo": 8, "lega": 4}))
 	for f in out:
 		if Profile.FEAT_BADGES.has(str(f["id"])):
 			f["reward"]["badge"] = Profile.FEAT_BADGES[str(f["id"])]
@@ -132,6 +138,8 @@ static func value(roster: Dictionary, f: Dictionary) -> int:
 			return (roster.get("gear", {}) as Dictionary).size()
 		"endless_best":
 			return Endless.best(roster)
+		"tutorials":
+			return Tutorials.done_count(roster)
 		"daily_best":
 			return int(roster.get("daily", {}).get("best", 0))
 		"move_rarity":

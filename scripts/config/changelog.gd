@@ -11,6 +11,9 @@ const ENTRIES: Array = [
 		"Nuove combo: VINCOLO + SCARICA e GUARDIA SPEZZATA. Ogni combo scatta una sola volta per causa e round: niente catene infinite.",
 		"Dalla fase 2 il boss divora la Riserva: non basta piu' accumulare.",
 		"Resoconto: cariche non gestite, Riserva sprecata e combo decisiva.",
+		"Nuova sezione TUTORIAL nell'hub: 12 lezioni su tutte le meccaniche, sempre consultabili. Ogni tutorial letto la prima volta regala 300 crediti, nuclei, leghe e un pezzo di equipaggiamento base.",
+		"Nuove imprese STUDIOSO negli obiettivi: supera 1, 3, 5, 7, 10 tutorial e completali tutti per l'icona epica Studioso.",
+		"I ritratti di Dafne nei dialoghi non sono piu' tagliati.",
 	]},
 	{"v": "0.24.16", "items": [
 		"Boss: ora hanno FASI (a meta' e a un quarto dei PV) e una barra EQUILIBRIO: a zero il boss e' stordito e salta la mossa.",

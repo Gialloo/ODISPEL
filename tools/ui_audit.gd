@@ -171,6 +171,11 @@ func _run() -> void:
 	_shot("obiettivi")
 	s.queue_free()
 
+	s = await _show("res://scenes/tutorial/tutorial_screen.tscn")
+	_audit("tutorial", s)
+	_shot("tutorial")
+	s.queue_free()
+
 	s = await _show("res://scenes/roster/roster_screen.tscn")
 	_audit("squadra", s)
 	_shot("squadra")

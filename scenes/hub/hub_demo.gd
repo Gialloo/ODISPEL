@@ -52,26 +52,28 @@ func _build() -> void:
 	add_child(_at(BattleTheme.make_label("MISSION CONTROL  ·  v" + GameConfig.VERSION, 16, BattleTheme.CY_DIM), Vector2(64, 136)))
 
 	var menu := VBoxContainer.new()
-	menu.add_theme_constant_override("separation", 6 if TouchUi.active() else 9)
-	menu.position = Vector2(60, 190)
+	menu.add_theme_constant_override("separation", 5 if TouchUi.active() else 7)
+	menu.position = Vector2(60, 172)
 	menu.size = Vector2(560, 440)
 	add_child(menu)
 
 	var next: Dictionary = MissionConfig.suggest(roster)
-	continue_button = _menu_button(menu, "continue", "CONTINUA  ·  %s  ·  %s" % [MissionConfig.boss_title(str(next["boss"])), str(BattleContent.tier_of(int(next["tier"]))["name"])], "primary", 64, 24)
-	_menu_button(menu, "missions", "SCEGLI MISSIONE", "normal", 50, 22)
+	continue_button = _menu_button(menu, "continue", "CONTINUA  ·  %s  ·  %s" % [MissionConfig.boss_title(str(next["boss"])), str(BattleContent.tier_of(int(next["tier"]))["name"])], "primary", 60, 24)
+	_menu_button(menu, "missions", "SCEGLI MISSIONE", "normal", 42, 22)
 	var can_pull: bool = int(roster["coins"]) >= Recruiting.SINGLE_COST
-	_menu_button(menu, "roster", "SQUADRA E RECLUTAMENTO" + ("  ·  RECLUTA!" if can_pull else ""), "primary" if can_pull else "normal", 50, 22)
+	_menu_button(menu, "roster", "SQUADRA E RECLUTAMENTO" + ("  ·  RECLUTA!" if can_pull else ""), "primary" if can_pull else "normal", 42, 22)
 	var can_endless: bool = Endless.available(roster)
 	var endless_text: String = "CICLO INFINITO  ·  RECORD PIANO %d" % Endless.best(roster) if can_endless else "CICLO INFINITO  ·  BATTI %d BERSAGLI" % Endless.UNLOCK_BOSSES
-	var eb: Button = _menu_button(menu, "endless", endless_text, "normal", 50, 22)
+	var eb: Button = _menu_button(menu, "endless", endless_text, "normal", 42, 22)
 	eb.disabled = not can_endless
-	_menu_button(menu, "lobby", "MULTIPLAYER CO-OP", "normal", 50, 22)
+	_menu_button(menu, "lobby", "MULTIPLAYER CO-OP", "normal", 42, 22)
 	var ready_feats: int = Feats.claimable_count(roster)
-	_menu_button(menu, "feats", "OBIETTIVI" + ("  ·  %d DA RISCUOTERE" % ready_feats if ready_feats > 0 else ""), "primary" if ready_feats > 0 else "normal", 50, 22)
-	_menu_button(menu, "settings", "IMPOSTAZIONI", "normal", 42, 18)
+	_menu_button(menu, "feats", "OBIETTIVI" + ("  ·  %d DA RISCUOTERE" % ready_feats if ready_feats > 0 else ""), "primary" if ready_feats > 0 else "normal", 42, 22)
+	var tut_left: int = Tutorials.total() - Tutorials.done_count(roster)
+	_menu_button(menu, "tutorial", "TUTORIAL" + ("  ·  %d DA LEGGERE  ·  PREMI" % tut_left if tut_left > 0 else "  ·  COMPLETATI"), "primary" if Tutorials.done_count(roster) == 0 else "normal", 38, 18)
+	_menu_button(menu, "settings", "IMPOSTAZIONI", "normal", 38, 18)
 	if not TouchUi.active():
-		menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-7 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DIM))
+		menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-8 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DIM))
 
 	_tip_index = (int(Time.get_unix_time_from_system() / 86400.0) + randi()) % TIPS.size()
 	var tip := BattleTheme.make_label("CONSIGLIO:  " + _tip(), 14, BattleTheme.CY_DIM)
@@ -345,3 +347,5 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_on_menu("feats")
 		KEY_7:
 			_on_menu("endless")
+		KEY_8:
+			_on_menu("tutorial")

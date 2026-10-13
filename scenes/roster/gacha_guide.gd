@@ -9,6 +9,7 @@ extends Control
 signal closed
 
 var page: int = 0
+var reached_end: bool = false      # ha visto l'ultima pagina (per i tutorial)
 var heading: String = "COME FUNZIONA IL RECLUTAMENTO"
 var _custom_pages: Array = []
 var _title: Label
@@ -169,6 +170,8 @@ func show_page(delta: int, relative: bool = true) -> void:
 		lab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		lab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_body.add_child(lab)
+	if page == all.size() - 1:
+		reached_end = true
 	_prev.disabled = page == 0
 	_next.disabled = page == all.size() - 1
 
