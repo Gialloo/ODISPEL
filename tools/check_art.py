@@ -55,6 +55,8 @@ def check_image(path, rel, spec, optional=False):
     w, h, kind = spec
     if img.format != "PNG":
         err("%s non e' un PNG" % rel)
+    if img.mode == "P" and "transparency" in img.info:
+        img = img.convert("RGBA")          # PNG a 256 colori con trasparenza: va bene (e' piu' leggero)
     if img.mode != "RGBA":
         err("%s: serve PNG con canale alfa (RGBA), trovato %s" % (rel, img.mode))
         img = img.convert("RGBA")
