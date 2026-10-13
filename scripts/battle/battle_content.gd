@@ -118,6 +118,8 @@ const CLASS_STATS: Dictionary = {
 }
 # Attacco base: i ruoli di supporto/tank colpiscono un po' di piu' con l'attacco semplice.
 const CLASS_BASIC: Dictionary = {"striker": 1.0, "vanguard": 1.3, "warden": 1.5}
+# Supporto dalla panchina (solo in cooperativa): un guardiano vivo in back row cura a fine round chi combatte (frazione dei PV massimi).
+const BENCH_HEAL: float = 0.03
 const LEVEL_BONUS: float = 0.08
 
 
