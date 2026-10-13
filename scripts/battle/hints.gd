@@ -120,6 +120,8 @@ static func move_card(u: Dictionary, move_id: String, err: String = "") -> Dicti
 			body.append(cost)
 		"ult":
 			body.append("ULTIMATE: serve la barra piena (%d)." % BattleTypes.GAUGE_MAX)
+		"rescue":
+			body.append("SOCCORSO: rimette in piedi un compagno caduto (25% PV). Costo: %d Riserva. Una volta a testa." % int(m["reserve"]))
 		"reaction":
 			body.append("REAZIONE: solo contro una CARICA. Costo: %d Riserva di squadra." % int(m["reserve"]))
 		_:

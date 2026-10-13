@@ -22,6 +22,7 @@ const MODS: Array = [
 	{"id": "furioso", "name": "FURIOSO", "desc": "ATTACCO +20%"},
 	{"id": "resistente", "name": "RESISTENTE", "desc": "PV +25%"},
 	{"id": "veloce", "name": "VELOCE", "desc": "VELOCITA' +20%"},
+	{"id": "vampirico", "name": "VAMPIRICO", "desc": "SI CURA COLPENDO"},
 ]
 
 
@@ -90,6 +91,8 @@ static func apply(state: Dictionary, floor_n: int, mod_override: String = "") ->
 			hp *= 1.25
 		"veloce":
 			spd *= 1.2
+		"vampirico":
+			state["boss_drain"] = 0.3
 	boss["max_hp"] = int(round(hp))
 	boss["hp"] = int(round(hp))
 	boss["atk"] = int(round(atk))
@@ -189,8 +192,10 @@ const BOONS: Dictionary = {
 	"scorta": {"name": "SCORTA", "desc": "ENERGIA +2 ALL'INIZIO"},
 	"carica": {"name": "CARICA", "desc": "ULTIMATE +30% ALL'INIZIO"},
 	"scudo": {"name": "SCUDO", "desc": "SCUDO 8% PV ALL'INIZIO"},
+	"riflessi": {"name": "RIFLESSI", "desc": "LE REAZIONI COSTANO 1 RISERVA IN MENO"},
+	"riserva": {"name": "RISERVA", "desc": "RISERVA DI SQUADRA +2 ALL'INIZIO"},
 }
-const BOON_ORDER: Array = ["furia", "tempra", "rapidita", "corazza", "scorta", "carica", "scudo"]
+const BOON_ORDER: Array = ["furia", "tempra", "rapidita", "corazza", "scorta", "carica", "scudo", "riflessi", "riserva"]
 
 
 # Tre proposte (sempre le stesse per lo stesso piano, cosi' ricaricare non cambia l'offerta).
@@ -216,6 +221,8 @@ static func boon_count(boons: Array, id: String) -> int:
 static func apply_boons(state: Dictionary, boons: Array) -> void:
 	if boons.is_empty():
 		return
+	state["react_discount"] = boon_count(boons, "riflessi")
+	state["reserve"] = mini(BattleTypes.RESERVE_MAX, int(state.get("reserve", 0)) + 2 * boon_count(boons, "riserva"))
 	for uid in state["units"]:
 		var u: Dictionary = state["units"][uid]
 		if str(u["side"]) != "player":

@@ -15,6 +15,7 @@ const BASE_MOVES: Dictionary = {
 	# REAZIONI: solo contro una CARICA del boss. Costano Riserva di squadra (condivisa), non energia.
 	"schivata": {"name": "Schivata", "kind": "reaction", "cost": 0, "reserve": 1, "priority": 3, "rarity": 0, "target": "self", "react": "dodge"},
 	"intercettazione": {"name": "Intercettazione", "kind": "reaction", "cost": 0, "reserve": 2, "priority": 3, "rarity": 0, "target": "self", "react": "intercept"},
+	"soccorso": {"name": "Soccorso", "kind": "rescue", "cost": 0, "reserve": 2, "priority": 3, "rarity": 0, "target": "self", "react": "rescue"},
 	"interruzione": {"name": "Interruzione", "kind": "reaction", "cost": 0, "reserve": 2, "priority": 3, "rarity": 0, "target": "enemy", "react": "interrupt"},
 }
 const REACTIONS: Array = ["schivata", "intercettazione", "interruzione"]

@@ -90,4 +90,5 @@ const RESERVE_PER_COMBO: int = 1          # una sola volta a round
 const RESERVE_DRAIN_PHASE: int = 2        # la fase 2 prosciuga la Riserva
 const RESERVE_DRAIN_ROUND: int = 1        # e in fase 2+ il boss ne assorbe ancora un po' ogni round
 const INTERRUPT_PTS: int = 4              # equilibrio tolto da un'Interruzione
+const RESCUE_HP: float = 0.25            # PV con cui torna chi viene soccorso
 const INTERCEPT_FACTOR: float = 0.6       # danno preso da chi intercetta

@@ -39,6 +39,7 @@ static func begin_round(state: Dictionary) -> void:
 			target = str(alive[rng.random_index(alive.size())]["id"])
 			_save_rng(state, rng)
 	state["telegraph"] = {"move": move_id, "target": target}
+	Arena.roll(state)
 	# L'IA decide subito, cosi' le sue intenzioni si vedono durante la pianificazione (non dipendono dalla scelta degli umani).
 	for p in state["players"]:
 		if bool(p["ai"]) and p["choice"] == null and BattleState.player_alive(state, p):
@@ -116,7 +117,7 @@ static func validate_choice(state: Dictionary, pid: String, choice: Dictionary) 
 				return "ultimate non equipaggiata"
 			if int(u["gauge"]) < BattleTypes.GAUGE_MAX:
 				return "barra non piena"
-		"reaction":
+		"reaction", "rescue":
 			var why: String = reaction_error(state, p, move_id)
 			if why != "":
 				return why
@@ -124,10 +125,25 @@ static func validate_choice(state: Dictionary, pid: String, choice: Dictionary) 
 
 
 # REAZIONI: solo contro una CARICA (mossa pesante) non ancora fermata; costano Riserva di squadra.
+static func reaction_cost(state: Dictionary, move_id: String) -> int:
+	return maxi(0, int(BattleContent.MOVES[move_id].get("reserve", 0)) - int(state.get("react_discount", 0)))
+
+
+# Un caduto della squadra del giocatore che puo' ancora essere soccorso (una sola volta a testa).
+static func fallen_of(state: Dictionary, p: Dictionary) -> String:
+	for uid in BattleState.party_of(state, p):
+		var u: Dictionary = BattleState.unit(state, str(uid))
+		if not u.is_empty() and int(u["hp"]) <= 0 and not bool(u.get("rescued", false)):
+			return str(uid)
+	return ""
+
+
 static func reaction_error(state: Dictionary, p: Dictionary, move_id: String) -> String:
 	var move: Dictionary = BattleContent.MOVES[move_id]
-	if int(state.get("reserve", 0)) < int(move.get("reserve", 0)):
+	if int(state.get("reserve", 0)) < reaction_cost(state, move_id):
 		return "Riserva insufficiente"
+	if str(move["kind"]) == "rescue":
+		return "" if fallen_of(state, p) != "" else "nessun caduto da soccorrere"
 	var tele: Dictionary = state.get("telegraph", {})
 	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	if bm.is_empty() or int(BattleState.boss(state).get("stun", 0)) > 0 or not is_heavy_boss_move(bm):
@@ -148,10 +164,11 @@ static func reactions_for(state: Dictionary, slot_id: String) -> Array:
 		return out
 	var tele: Dictionary = state.get("telegraph", {})
 	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
-	if bm.is_empty() or int(BattleState.boss(state).get("stun", 0)) > 0 or not is_heavy_boss_move(bm):
-		return out
-	for rid in BattleContent.REACTIONS:
-		out.append({"id": rid, "err": reaction_error(state, p, rid)})
+	if not (bm.is_empty() or int(BattleState.boss(state).get("stun", 0)) > 0 or not is_heavy_boss_move(bm)):
+		for rid in BattleContent.REACTIONS:
+			out.append({"id": rid, "err": reaction_error(state, p, rid)})
+	if fallen_of(state, p) != "":
+		out.append({"id": "soccorso", "err": reaction_error(state, p, "soccorso")})
 	return out
 
 
@@ -196,6 +213,7 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 	state["combo_used"] = []
 	state["reactions"] = []
 	state["combo_reserve"] = false
+	state["acts"] = {}
 
 	# 1. scelte mancanti: IA, oppure attacco standard se forzato
 	for p in state["players"]:
@@ -255,7 +273,10 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 			_summon_upkeep(state, events, false)
 		_check_winner(state, events)
 
-	# 4. fine round
+	# 4. fine round: prima l'evento dell'arena, poi il resto
+	if str(state["winner"]) == "":
+		Arena.resolve(state, events)
+		_check_winner(state, events)
 	if str(state["winner"]) == "":
 		_end_of_round(state, events)
 	_check_winner(state, events)
@@ -381,6 +402,7 @@ static func plan_hints(state: Dictionary, slot_id: String) -> Array:
 			if not shown_rules.has(str(r["id"])):
 				shown_rules[str(r["id"])] = true
 				hints.append("%s PRONTA con %s: %s" % [str(r["name"]), str(BattleState.unit(state, str(m["with"])).get("name", "")).to_upper(), str(r["desc"])])
+	hints.append_array(Arena.hint_lines(state))
 	if not bool(boss.get("exposed", false)) and int(boss.get("balance", 99)) <= 6:
 		hints.append("ROTTURA VICINA: equilibrio %d, colpisci col colore vantaggioso" % int(boss["balance"]))
 	var tele: Dictionary = state.get("telegraph", {})
@@ -717,6 +739,23 @@ static func _spend_reserve(state: Dictionary, n: int, why: String, events: Array
 	state["reserve"] = after
 
 
+# SOCCORSO: rimette in piedi un compagno caduto della propria squadra (25% PV). Una sola volta a testa: la sconfitta resta possibile.
+static func _rescue(state: Dictionary, actor: Dictionary, move_id: String, events: Array) -> bool:
+	var owner: Dictionary = BattleState.player(state, str(actor["owner"]))
+	if owner.is_empty() or reaction_error(state, owner, move_id) != "":
+		return false
+	var who: String = fallen_of(state, owner)
+	var u: Dictionary = BattleState.unit(state, who)
+	_spend_reserve(state, reaction_cost(state, move_id), "react", events)
+	events.append({"t": "act", "unit": actor["id"], "move": move_id})
+	var hp: int = maxi(1, int(round(float(u["max_hp"]) * BattleTypes.RESCUE_HP)))
+	u["hp"] = hp
+	u["rescued"] = true
+	u["statuses"] = {}
+	events.append({"t": "rescue", "unit": actor["id"], "who": who, "hp": hp})
+	return true
+
+
 # Esegue una reazione. Falso se non e' piu' possibile (Riserva finita per colpa di un compagno, carica gia' fermata).
 static func _react(state: Dictionary, actor: Dictionary, move_id: String, events: Array) -> bool:
 	var move: Dictionary = BattleContent.MOVES[move_id]
@@ -726,7 +765,7 @@ static func _react(state: Dictionary, actor: Dictionary, move_id: String, events
 	for r in state.get("reactions", []):
 		if str(r["react"]) == "interrupt" and str(move["react"]) == "interrupt":
 			return false             # una sola Interruzione a round
-	_spend_reserve(state, int(move["reserve"]), "react", events)
+	_spend_reserve(state, reaction_cost(state, move_id), "react", events)
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
 	var list: Array = state.get("reactions", [])
 	list.append({"unit": str(actor["id"]), "react": str(move["react"])})
@@ -742,8 +781,8 @@ static func _react(state: Dictionary, actor: Dictionary, move_id: String, events
 static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, target_pid: String, events: Array) -> void:
 	var move: Dictionary = BattleContent.MOVES[move_id]
 	var kind: String = str(move["kind"])
-	if kind == "reaction":
-		if not _react(state, actor, move_id, events):
+	if kind == "reaction" or kind == "rescue":
+		if not (_rescue(state, actor, move_id, events) if kind == "rescue" else _react(state, actor, move_id, events)):
 			move_id = BattleTypes.ACTION_GUARD
 			move = BattleContent.MOVES[move_id]
 			kind = "basic"
@@ -764,6 +803,9 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	elif kind == "skill":
 		actor["energy"] = int(actor["energy"]) - int(move["cost"])
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
+	var acts: Dictionary = state.get("acts", {})
+	acts[str(actor["id"])] = move_id
+	state["acts"] = acts
 	if move.has("self_cost_hp"):
 		# il prezzo del salvataggio: l'operatore paga con i propri PV (ne resta sempre almeno 1)
 		var paid: int = mini(int(actor["hp"]) - 1, int(round(float(actor["max_hp"]) * float(move["self_cost_hp"]))))
@@ -985,6 +1027,7 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		boss["shield"] = int(boss["shield"]) + shield
 		events.append({"t": "shield", "src": boss["id"], "dst": boss["id"], "amount": shield})
 
+	var beh_mult: float = Arena.boss_behavior(state, boss, events)
 	var reacted: bool = not state.get("reactions", []).is_empty()
 	var heavy: bool = is_heavy_boss_move(move)
 	var reserve_then: int = int(state.get("reserve", 0))
@@ -1003,7 +1046,7 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		if evaded:
 			events.append({"t": "dodge", "unit": t["id"], "react": true})
 			continue
-		var hit_mult: float = float(move["mult"])
+		var hit_mult: float = float(move["mult"]) * beh_mult
 		if not intercepted.is_empty() and BattleState.is_alive(intercepted) and str(intercepted["id"]) != str(t["id"]) and targets.size() == 1:
 			t = intercepted
 			hit_mult *= BattleTypes.INTERCEPT_FACTOR
@@ -1011,10 +1054,11 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		_hit(state, boss, t, hit_mult, events)
 		lost_total += hp_before - int(t["hp"])
 		_counter(state, boss, t, events)
-		if move.has("drain"):
+		var drain: float = float(move.get("drain", 0.0)) + float(state.get("boss_drain", 0.0))
+		if drain > 0.0:
 			var dealt: int = hp_before - int(t["hp"])
 			var before: int = int(boss["hp"])
-			boss["hp"] = mini(int(boss["max_hp"]), before + int(round(float(dealt) * float(move["drain"]))))
+			boss["hp"] = mini(int(boss["max_hp"]), before + int(round(float(dealt) * drain)))
 			if int(boss["hp"]) > before:
 				events.append({"t": "heal", "src": boss["id"], "dst": boss["id"], "amount": int(boss["hp"]) - before})
 		if move.has("status") and BattleState.is_alive(t):

@@ -138,6 +138,15 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 			return {"text": "%s SANGUINA  [-%d]" % [unit_name(state, str(e["unit"])), int(e["amount"])], "kind": "hit"}
 		"down":
 			return {"text": "%s FUORI COMBATTIMENTO" % unit_name(state, str(e["unit"])), "kind": "down"}
+		"arena":
+			if str(e["id"]) == "contaminazione":
+				return {"text": ("%s ESCE DALLA NUBE" % unit_name(state, str(e["unit"]))) if bool(e["ok"]) else ("ZONA CONTAMINATA: %s -%d PV" % [unit_name(state, str(e["unit"])), int(e["amount"])]), "kind": "info" if bool(e["ok"]) else "boss"}
+			return {"text": "SIGILLO ROTTO: BOSS DESTABILIZZATO" if bool(e["ok"]) else "SIGILLO INTATTO: IL BOSS SI COPRE", "kind": "info" if bool(e["ok"]) else "boss"}
+		"behavior":
+			var bdef: Dictionary = Arena.BEHAVIORS.get(str(e["id"]), {})
+			return {"text": "%s (x%d)" % [str(bdef.get("name", "COMPORTAMENTO")), int(e.get("n", 0))], "kind": "boss"}
+		"rescue":
+			return {"text": "%s SOCCORRE %s (%d PV)" % [unit_name(state, str(e["unit"])), unit_name(state, str(e["who"])), int(e["hp"])], "kind": "heal"}
 		"react":
 			var rk: String = str(e["kind"])
 			return {"text": "%s: %s" % [unit_name(state, str(e["unit"])), "SCHIVA LA CARICA" if rk == "dodge" else ("SI METTE IN MEZZO" if rk == "intercept" else "INTERROMPE LA CARICA")], "kind": "info"}
@@ -174,6 +183,17 @@ static func apply_to_display(state: Dictionary, e: Dictionary) -> void:
 	match str(e.get("t", "")):
 		"reserve":
 			state["reserve"] = int(e["value"])
+		"arena":
+			if int(e.get("amount", 0)) > 0:
+				var au: Dictionary = BattleState.unit(state, str(e["unit"]))
+				if not au.is_empty():
+					au["hp"] = maxi(1, int(au["hp"]) - int(e["amount"]))
+		"rescue":
+			var ru2: Dictionary = BattleState.unit(state, str(e["who"]))
+			if not ru2.is_empty():
+				ru2["hp"] = int(e["hp"])
+				ru2["rescued"] = true
+				ru2["statuses"] = {}
 		"phase":
 			state["phase"] = int(e["phase"])
 		"balance":

@@ -179,6 +179,11 @@ func _start_solo() -> void:
 				parts.append("%s%s" % [str(Endless.BOONS[bid]["name"]), (" x%d" % int(seen_b[bid])) if int(seen_b[bid]) > 1 else ""])
 			cap += "\n" + " · ".join(parts)
 		ComicFx.caption(_fx, cap, Vector2(300.0, 300.0), BattleTheme.POP, 1.6)
+	if DisplayServer.get_name() != "headless" and not shown.is_empty():
+		var bdef: Dictionary = Arena.BEHAVIORS.get(Arena.behavior_of(str(BattleState.boss(shown)["char"])), {})
+		get_tree().create_timer(2.4).timeout.connect(func() -> void:
+			if is_inside_tree() and not bdef.is_empty():
+				ComicFx.caption(_fx, "COMPORTAMENTO  //  %s\n%s" % [str(bdef["name"]), str(bdef["desc"])], Vector2(220.0, 330.0), BattleTheme.CY, 2.4))
 
 
 func bind_source(src: Variant) -> void:
@@ -824,7 +829,7 @@ func _refresh_reactions() -> void:
 	for r in list:
 		var rid: String = str(r["id"])
 		var b := Button.new()
-		b.text = "%s · %d" % [BattleText.move_name(rid).to_upper(), int(BattleContent.MOVES[rid]["reserve"])]
+		b.text = "%s · %d" % [BattleText.move_name(rid).to_upper(), BattleResolver.reaction_cost(shown, rid)]
 		b.tooltip_text = str(r["err"]) if str(r["err"]) != "" else _reaction_help(rid)
 		BattleTheme.style_button(b, "normal", 13)
 		b.disabled = str(r["err"]) != ""
@@ -834,6 +839,8 @@ func _refresh_reactions() -> void:
 
 func _reaction_help(rid: String) -> String:
 	match rid:
+		"soccorso":
+			return "Rimetti in piedi un compagno caduto (25% PV). Una volta a testa."
 		"schivata":
 			return "Eviti del tutto la carica. Costa 1 Riserva."
 		"intercettazione":
@@ -1570,6 +1577,22 @@ func _event_fx(e: Dictionary) -> float:
 				AnimFx.shield(_fx, _stage.anchor_of(str(e["dst"])), false)
 		"marks":
 			return _fx_marks(e)
+		"arena":
+			if str(e["id"]) == "contaminazione" and not bool(e["ok"]):
+				Snd.play("player_hit", 0.8)
+				_float_text("-" + BattleText.num(int(e["amount"])), str(e["unit"]), BattleTheme.OK, 26)
+				_pop("CONTAMINATO!", str(e["unit"]), BattleTheme.OK, BattleTheme.BK, 30, 56.0, Vector2(0.0, -50.0))
+			elif str(e["id"]) == "sigillo":
+				_pop("SIGILLO ROTTO!" if bool(e["ok"]) else "SIGILLO INTATTO", BattleState.BOSS_ID, BattleTheme.POP if bool(e["ok"]) else BattleTheme.RD, BattleTheme.BK, 34, 60.0, Vector2(0.0, -80.0))
+				if bool(e["ok"]):
+					Snd.play("crit", 0.9)
+		"behavior":
+			Snd.play("boss_charge", 1.2)
+			_pop(str(Arena.BEHAVIORS.get(str(e["id"]), {}).get("name", "")), BattleState.BOSS_ID, BattleTheme.RD, BattleTheme.WH, 26, 50.0, Vector2(0.0, -110.0))
+		"rescue":
+			Snd.play("heal")
+			_pop("SOCCORSO!", str(e["who"]), BattleTheme.OK, BattleTheme.BK, 36, 62.0, Vector2(0.0, -50.0))
+			_float_text("+" + BattleText.num(int(e["hp"])), str(e["who"]), BattleTheme.OK, 28)
 		"react":
 			var rk: String = str(e["kind"])
 			Snd.play("counter" if rk != "dodge" else "dodge", 1.1)
@@ -1751,7 +1774,28 @@ func _slow_motion(scale: float, seconds: float) -> void:
 var _recap: Dictionary = {"worst": 0, "worst_move": "", "worst_unit": "", "first_down": "", "breaks": 0, "synergies": 0, "last_move": "", "wills": 0, "unhandled": 0, "missed": 0, "reacts": 0, "spent": 0, "wasted": 0, "decisive": ""}
 
 
+# REPLAY TATTICO: i momenti che contano, in ordine, con il turno in cui sono successi.
+var _timeline: Array = []
+var _combos_seen: Dictionary = {}
+
+
+func _mark_moment(text: String) -> void:
+	_timeline.append("T%02d  %s" % [int(shown.get("round", 0)), text])
+
+
 func _recap_track(e: Dictionary) -> void:
+	match str(e.get("t", "")):
+		"synergy", "react", "rescue", "break", "phase", "tenacity", "arena", "behavior":
+			var line: Dictionary = BattleText.describe(shown, e)
+			if str(line.get("text", "")) != "":
+				_mark_moment(str(line["text"]))
+			if str(e["t"]) == "synergy":
+				_combos_seen[str(e["id"])] = true
+		"threat":
+			if not bool(e["handled"]):
+				_mark_moment("CARICA NON GESTITA: %s (-%d PV)" % [BattleText.move_name(str(e["move"])).to_upper(), int(e["lost"])])
+		"down":
+			_mark_moment("%s CADE" % str(BattleState.unit(shown, str(e["unit"])).get("name", "")).to_upper())
 	match str(e.get("t", "")):
 		"boss_move":
 			_recap["last_move"] = str(e.get("move", ""))
@@ -1802,6 +1846,12 @@ func _recap_text(victory: bool) -> String:
 	if _recap.has("will_unit"):
 		parts.append("Salvataggio all'ultimo: %s resiste con 1 PV" % str(_recap["will_unit"]).to_upper())
 	var tip: String = ""
+	var untried: Array = []
+	for r in Combos.RULES:
+		if not _combos_seen.has(str(r["id"])):
+			untried.append(str(r["name"]))
+	if not untried.is_empty():
+		parts.append("Combo mai provate: %s" % ", ".join(PackedStringArray(untried)))
 	if str(_recap.get("last_syn", "")) != "" and (_recap.has("break_round") or victory):
 		parts.append("Combo decisiva: %s" % str(_recap["last_syn"]))
 	if not victory:
@@ -1812,6 +1862,41 @@ func _recap_text(victory: bool) -> String:
 		elif str(_recap["first_down"]) != "":
 			tip = "Consiglio: proteggi %s, o scambialo prima della mossa che lo colpisce (leggi l'allarme)." % str(_recap["first_down"]).to_upper()
 	return "\n".join(parts) + ("\n" + tip if tip != "" else "")
+
+
+# Finestra con i momenti chiave dello scontro, uno per riga.
+func _open_replay() -> void:
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.82)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_fx.add_child(dim)
+	var panel := HudPanel.new().setup("REPLAY TATTICO", BattleTheme.CY)
+	panel.position = Vector2(250, 70)
+	panel.size = Vector2(780, 580)
+	dim.add_child(panel)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 8)
+	panel.set_content(col)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	col.add_child(scroll)
+	var lines := VBoxContainer.new()
+	lines.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(lines)
+	if _timeline.is_empty():
+		lines.add_child(BattleTheme.make_label("Nessun momento da ricordare: prova combo, reazioni e rotture.", 17, BattleTheme.CY_DIM))
+	for t in _timeline:
+		var l := BattleTheme.make_label(str(t), 16, BattleTheme.WH)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lines.add_child(l)
+	var close := Button.new()
+	close.text = "CHIUDI"
+	close.custom_minimum_size = Vector2(0, 48)
+	BattleTheme.style_button(close, "primary", 20)
+	close.pressed.connect(dim.queue_free)
+	col.add_child(close)
 
 
 # Vibrazione breve sul telefono nei momenti forti (solo touch).
@@ -2257,6 +2342,12 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	recap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	recap_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(recap_label)
+	var replay_btn := Button.new()
+	replay_btn.text = "REPLAY TATTICO"
+	replay_btn.custom_minimum_size = Vector2(0, 40)
+	BattleTheme.style_button(replay_btn, "normal", 16)
+	replay_btn.pressed.connect(_open_replay)
+	box.add_child(replay_btn)
 	box.add_child(BattleTheme.make_label("PREMI", 16, BattleTheme.WH))
 	_reward_rows.clear()
 	# i premi stanno in un'area che scorre se sono tanti: i tasti restano sempre visibili sotto
