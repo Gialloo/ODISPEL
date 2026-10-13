@@ -1997,8 +1997,25 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 			row = GameIcon.line(str(rk[0]), rk[1], str(line), 17, BattleTheme.CY)
 		else:
 			row = BattleTheme.make_label(line, 17, BattleTheme.CY)
+		var lr: int = _line_rarity(str(line))
+		if lr >= 2:
+			# epico = bordo viola, leggendario = bordo giallo: richiama l'attenzione
+			var edge: Color = Color("#ffd25f") if lr >= 3 else Color("#b07bff")
+			var frame := PanelContainer.new()
+			var sb := StyleBoxFlat.new()
+			sb.bg_color = Color(edge, 0.14)
+			sb.border_color = edge
+			sb.set_border_width_all(3)
+			sb.set_corner_radius_all(4)
+			sb.content_margin_left = 10.0
+			sb.content_margin_right = 10.0
+			sb.content_margin_top = 4.0
+			sb.content_margin_bottom = 4.0
+			frame.add_theme_stylebox_override("panel", sb)
+			frame.add_child(row)
+			row = frame
 		rbox.add_child(row)
-		_reward_rows.append([row, _line_rarity(str(line))])
+		_reward_rows.append([row, lr])
 	if not (source is NetworkManager):
 		if MissionConfig.endless_floor > 0 and victory:
 			# Ciclo Infinito: si sceglie un potenziamento (1 su 3) e si sale al piano dopo
