@@ -619,6 +619,13 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	var name_l := BattleTheme.make_label(title, 17, fg, true)
 	name_l.position = Vector2(54, -2)
 	inner.add_child(name_l)
+	# freccia del colore: ▲ danno maggiorato contro il boss, ▼ ridotto (il colore giusto fa +50%)
+	if alive:
+		var cm: float = BattleTypes.color_multiplier(str(u["color"]), str(BattleState.boss(shown)["color"]))
+		if cm != 1.0:
+			var arrow := BattleTheme.make_label("▲" if cm > 1.0 else "▼", 16, (BattleTheme.OK if cm > 1.0 else BattleTheme.RD) if not selected else BattleTheme.BK)
+			arrow.position = Vector2(54.0 + name_l.get_minimum_size().x + 6.0, 1)
+			inner.add_child(arrow)
 	# volto dell'operatore (la grafica vera se c'e', altrimenti il segnaposto anime)
 	var face := PortraitView.new().setup(str(u["char"]), "icon")
 	face.position = Vector2(10, 2)
