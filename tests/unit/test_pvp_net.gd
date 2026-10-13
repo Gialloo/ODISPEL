@@ -103,6 +103,31 @@ func _init() -> void:
 		t._ready_players[id] = true
 	_check("1v1 con 3 umani non parte", not t.all_ready() and not t.host_launch())
 	_check("messaggio di errore chiaro", t.start_problem().contains("massimo"))
+	# abbandono a meta': non si resta incastrati nella sfida lasciata
+	var a: NetworkManager = _lobby(2)
+	a.host_set_mode("duel", true)
+	for id in ["player_1", "player_2"]:
+		a._ready_players[id] = true
+	_check("abbandono: la sfida parte", a.host_launch() and not a.battle.is_empty())
+	a._host_handle_message({"type": "abandon"}, "peer_1")
+	_check("abbandono client: al suo posto l'IA", bool(PvpEngine.player(a.battle, "player_2")["ai"]) and a._abandoned_peers.has("peer_1"))
+	_check("abbandono client: la sfida continua per l'host", not a.battle.is_empty())
+	a.abandon_battle()
+	_check("abbandono host: la sfida e' chiusa", a.battle.is_empty())
+	for id in ["player_1", "player_2"]:
+		a._ready_players[id] = true
+	_check("dopo l'abbandono se ne puo' avviare un'altra", a.host_launch() and not a.battle.is_empty() and str(a.battle.get("winner", "")) == "")
+	_check("nuova sfida: nessuno e' piu' escluso", a._abandoned_peers.is_empty())
+	var c := NetworkManager.new()
+	c._client_bid = 77
+	c.battle = {"pvp": true, "winner": "", "players": []}
+	c._links["h"] = WebRTCLink.new()
+	c._host_peer_id = "h"
+	c.abandon_battle()
+	_check("abbandono client: stato locale pulito e sfida ignorata", c.battle.is_empty() and c._ignored_bid == 77)
+	c._client_handle_message({"type": "battle_snapshot", "state": {"pvp": true, "winner": "", "players": []}, "bid": 77, "time_left": 5.0})
+	_check("stati in ritardo della sfida lasciata ignorati", c.battle.is_empty())
+	_managers.append(c)
 	for mm in _managers:
 		mm.free()
 	print("RESULT: %d passed, %d failed" % [passed, failed])

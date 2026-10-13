@@ -76,6 +76,9 @@ var _display_name: String = ""
 var _host_peer_id: String = ""
 var _links: Dictionary = {}         # peer_id -> WebRTCLink
 var _peer_players: Dictionary = {}  # peer_id -> player_id
+var _abandoned_peers: Dictionary = {}  # host: chi ha lasciato la sfida in corso (non riceve piu' gli stati)
+var _client_bid: int = 0               # client: identificativo della sfida che si sta guardando
+var _ignored_bid: int = -1             # client: sfida lasciata, gli stati in ritardo si ignorano
 var _peer_numbers: Dictionary = {}  # peer_id -> numero di peer di gioco
 var _player_tokens: Dictionary = {} # token -> player_id (slot riservati)
 var _peer_counter: int = 1
@@ -567,6 +570,7 @@ func host_start_pvp(mode: String, balanced: bool, run_seed: int) -> bool:
 	for id in _ready_players.keys():
 		_ready_players[id] = false
 
+	_abandoned_peers.clear()
 	_battle_boss_id = ""
 	_battle_seed = run_seed
 	battle_rewards = {}
@@ -617,6 +621,7 @@ func host_start_battle(boss_id: String, run_seed: int, tier: int = 0) -> bool:
 	for id in _ready_players.keys():
 		_ready_players[id] = false
 
+	_abandoned_peers.clear()
 	_battle_boss_id = boss_id
 	_battle_seed = run_seed
 	battle_rewards = {}
@@ -710,18 +715,43 @@ func _broadcast_battle() -> void:
 
 	for peer_id: String in _links.keys():
 		var link: WebRTCLink = _links[peer_id]
+		if _abandoned_peers.has(peer_id):
+			continue
+
 		var viewer_id: String = str(_peer_players.get(peer_id, ""))
 
 		var message: Dictionary = {
 			"type": "battle_snapshot",
 			"state": BattleNet.snapshot_for(battle, viewer_id),
-			"time_left": battle_time_left
+			"time_left": battle_time_left,
+			"bid": _battle_seed
 		}
 
 		if not all_rewards.is_empty():
 			message["rewards"] = all_rewards.get(viewer_id, {})
 
 		link.send_message(message)
+
+
+# Chi esce da una sfida a meta' (tasto ESCI/Abbandona). L'host chiude la sfida per tutti; un client esce
+# e al suo posto gioca l'IA. In entrambi i casi la sfida lasciata non riporta piu' dentro chi e' uscito.
+func abandon_battle() -> void:
+	if battle.is_empty() or str(battle.get("winner", "")) != "":
+		return
+
+	if is_host:
+		battle = {}
+		_abandoned_peers.clear()
+		_broadcast({"type": "battle_aborted"})
+		_broadcast_lobby()
+		return
+
+	var link: WebRTCLink = _links.get(_host_peer_id)
+	_ignored_bid = _client_bid
+	battle = {}
+
+	if link != null:
+		link.send_message({"type": "abandon"})
 
 
 # A battaglia finita: assegna i premi alla collezione locale e la salva. Una volta sola.
@@ -1072,6 +1102,18 @@ func _host_handle_message(message: Dictionary, peer_id: String) -> void:
 				_ready_players[owner_id] = false
 				_broadcast_lobby()
 
+		"abandon":
+			var leaver: String = str(_peer_players.get(peer_id, ""))
+
+			if not leaver.is_empty() and not battle.is_empty():
+				_abandoned_peers[peer_id] = true
+				BattleNet.set_player_ai(battle, leaver, true)
+				_ready_players[leaver] = false
+				_battle_try_resolve()
+				_broadcast_battle()
+				battle_updated.emit()
+				_broadcast_lobby()
+
 		"choice":
 			var chooser: String = str(_peer_players.get(peer_id, ""))
 
@@ -1414,7 +1456,13 @@ func _client_handle_message(message: Dictionary) -> void:
 		"battle_snapshot":
 			var bstate: Variant = message.get("state", {})
 
+			var bid: int = int(message.get("bid", 0))
+
+			if bid != 0 and bid == _ignored_bid:
+				return
+
 			if bstate is Dictionary and not bstate.is_empty():
+				_client_bid = bid
 				battle = BattleState.normalize(bstate)
 				battle_time_left = float(message.get("time_left", 0.0))
 
@@ -1424,6 +1472,11 @@ func _client_handle_message(message: Dictionary) -> void:
 					battle_rewards = BattleState.normalize(rewards)
 
 				battle_updated.emit()
+
+		"battle_aborted":
+			battle = {}
+			Notify.warning("L'host ha chiuso la sfida.")
+			battle_updated.emit()
 
 		"chat":
 			var centry: Variant = message.get("entry", {})

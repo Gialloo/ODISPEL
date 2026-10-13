@@ -283,6 +283,10 @@ func me() -> String:
 
 
 func _on_updated() -> void:
+	if source != null and (source.battle as Dictionary).is_empty():
+		# la sfida e' stata chiusa (l'host e' uscito): si torna alla lobby
+		_go_back()
+		return
 	if animating:
 		return
 	_sync()
@@ -484,6 +488,7 @@ func _on_leave() -> void:
 
 func _go_back() -> void:
 	if source is NetworkManager:
+		(source as NetworkManager).abandon_battle()      # no-op se la sfida e' gia' finita
 		SceneRouter.go("lobby")
 	else:
 		SceneRouter.go("hub")
