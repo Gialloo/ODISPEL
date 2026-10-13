@@ -262,7 +262,7 @@ func _build_equip_page() -> void:
 	_equip_page = _page()
 
 	# chi stai equipaggiando: ritratto grande, nome, classe e frecce per cambiare operatore
-	var who_h: float = 150.0
+	var who_h: float = 196.0 if TouchUi.active() else 150.0      # su telefono i pulsanti sono piu' alti
 	var who := HudPanel.new().setup("STAI MODIFICANDO", BattleTheme.RD)
 	who.position = Vector2(20, 8)
 	who.size = Vector2(430, who_h)
@@ -272,7 +272,7 @@ func _build_equip_page() -> void:
 	who.set_content(row)
 	_equip_portrait = PortraitView.new().setup("", "splash")
 	_equip_portrait.show_expression_text = false
-	_equip_portrait.custom_minimum_size = Vector2(120, 0)
+	_equip_portrait.custom_minimum_size = Vector2(130, 0)
 	row.add_child(_equip_portrait)
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -296,14 +296,14 @@ func _build_equip_page() -> void:
 	arrows.add_theme_constant_override("separation", 8)
 	col.add_child(arrows)
 	var prev := Button.new()
-	prev.text = "<  PREC."
+	prev.text = "<" if TouchUi.active() else "<  PREC."
 	prev.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	prev.custom_minimum_size = Vector2(0, 50 if TouchUi.active() else 34)
 	BattleTheme.style_button(prev, "normal", 14)
 	prev.pressed.connect(cycle_char.bind(-1))
 	arrows.add_child(prev)
 	var nxt := Button.new()
-	nxt.text = "SUCC.  >"
+	nxt.text = ">" if TouchUi.active() else "SUCC.  >"
 	nxt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	nxt.custom_minimum_size = Vector2(0, 50 if TouchUi.active() else 34)
 	BattleTheme.style_button(nxt, "normal", 14)
