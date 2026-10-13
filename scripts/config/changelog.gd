@@ -5,6 +5,14 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.16", "items": [
+		"Boss: ora hanno FASI (a meta' e a un quarto dei PV) e una barra EQUILIBRIO: a zero il boss e' stordito e salta la mossa.",
+		"Le mosse pesanti sono CARICHE annunciate; se la mossa e' letale per qualcuno lo vedi subito.",
+		"Sinergie (COPERTURA, TRACCIA), RITMO, ADATTAMENTO, ARDORE, ULTIMA VOLONTA' e la nuova mossa SACRIFICIO.",
+		"Suggerimenti prima di scegliere, resoconto a fine battaglia, rallentatore sui momenti decisivi.",
+		"STAGIONE 2 con Dafne: 10 nuovi capitoli e 10 nuovi boss fino a INCUBO.",
+		"Nuovi obiettivi: rotture, sinergie, vittoria senza K.O.",
+	]},
 	{"v": "0.24.15", "items": [
 		"Home: il pannello squadra ora si apre col tasto TEAM, e il consiglio in basso cambia da solo.",
 		"Collezione: filtri per rarita', fazione, livello e colore.",

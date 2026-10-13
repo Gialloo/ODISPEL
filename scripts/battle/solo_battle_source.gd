@@ -140,7 +140,7 @@ func finish() -> Dictionary:
 	for line in Weekly.finish_notes(roster):
 		Notify.success(line)
 	Feats.record_battle(roster, str(battle["winner"]) == "players")
-	for line in Objectives.record_battle(roster, boss_id, tier, str(battle["winner"]) == "players"):
+	for line in Objectives.record_battle(roster, boss_id, tier, str(battle["winner"]) == "players", "", battle.get("stats", {})):
 		Notify.success(line)
 	RosterStore.save(roster, save_path)
 	return rewards

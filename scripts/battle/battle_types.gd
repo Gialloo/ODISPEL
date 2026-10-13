@@ -63,6 +63,9 @@ const BREAK_DAMAGE: float = 1.25       # danno extra sul boss stordito
 # SINERGIE tra compagni nello stesso round
 const SYN_COVER: float = 1.12         # COPERTURA: un compagno ha scudato/curato/provocato prima, il tuo colpo fa di piu'
 const SYN_TRACE_GAUGE: int = 10       # TRACCIA: colpisci un boss marchiato da un altro: ultimate +10 a te, +5 a chi ha marchiato
+const ADAPT_MULT: float = 0.85        # ADATTAMENTO: la terza volta di fila che usi la stessa mossa il boss si abitua
+const ARDOR_BELOW: float = 0.3         # ARDORE: sotto il 30% PV l'operatore colpisce piu' forte (rimonta)
+const ARDOR_BONUS: float = 1.15
 const PHASE_2_BELOW: float = 0.5
 const PHASE_3_BELOW: float = 0.25
 const PHASE_SHIELD: float = 0.05       # scudo del boss a ogni cambio di fase (in % dei PV massimi)

@@ -48,6 +48,8 @@ var _pair_arrows: Dictionary = {}      # slot -> frecce >< tra il front e il suo
 var _boss_bar: LineBar
 var _boss_hp: Label
 var _boss_bal: LineBar
+var _plan_label: Label
+var _threat_round: int = -1
 var _round_label: Label
 var _timer_label: Label
 var _clock_label: Label
@@ -460,6 +462,13 @@ func _build_telegraph() -> void:
 	_tele_target.add_theme_font_override("font", BattleTheme.hud())
 	_tele_target.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_tele_target)
+	_plan_label = BattleTheme.make_label("", 12, BattleTheme.POP)
+	_plan_label.add_theme_font_override("font", BattleTheme.hud())
+	_plan_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_plan_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_plan_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_plan_label)
+	_anchor(_plan_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 218, 192, 280))
 
 
 # Pannello "ORDINE DEL TURNO": chi agisce, in che ordine e cosa ha scelto (le IA decidono da sole).
@@ -676,6 +685,7 @@ func _watch_performance(delta: float) -> void:
 func _refresh_all() -> void:
 	if shown.is_empty():
 		return
+	_refresh_plan_hint()
 	_stage.local_player_id = str(source.local_player_id)
 	_stage.set_state(shown)
 	_refresh_boss()
@@ -744,6 +754,35 @@ func _refresh_telegraph() -> void:
 			who = str(au.get("name", "?")).to_upper()
 		var mine: bool = _my_slots().has(str(tele["target"]))
 		_tele_target.text = "BERSAGLIO: %s%s" % [who, ""]
+	if BattleResolver.is_heavy_boss_move(def) and not _tele_target.text.begins_with("STORDITO"):
+		_tele_label.text = "CARICA · " + _tele_label.text
+		_tele_label.add_theme_font_size_override("font_size", 18)
+	# MINACCIA: se la mossa annunciata e' letale per qualcuno lo si dice chiaramente
+	var threat: Dictionary = BattleResolver.threat_preview(shown)
+	var lethal: Array = threat["lethal"]
+	if lethal.is_empty():
+		_tele_target.add_theme_color_override("font_color", BattleTheme.WH)
+	else:
+		var names: Array = []
+		for uid in lethal:
+			names.append(str(BattleState.unit(shown, str(uid)).get("name", "?")).to_upper())
+		_tele_target.text = "LETALE PER %s!" % ", ".join(names)
+		_tele_target.add_theme_color_override("font_color", BattleTheme.RD)
+		if _threat_round != int(shown.get("round", 0)) and not animating:
+			_threat_round = int(shown.get("round", 0))
+			Snd.play("boss_charge", 1.3)
+			_buzz(60)
+
+
+# Suggerimenti di pianificazione: sinergie gia' pronte con le scelte dei compagni.
+func _refresh_plan_hint() -> void:
+	if _plan_label == null:
+		return
+	if locked or animating or autoplay or str(shown.get("winner", "")) != "":
+		_plan_label.text = ""
+		return
+	var hints: Array = BattleResolver.plan_hints(shown, _cur_slot_id())
+	_plan_label.text = "\n".join(hints.slice(0, 2))
 
 
 func _bar_row(label: String, ratio: float, color: Color, segs: int, width: float) -> HBoxContainer:
@@ -1564,6 +1603,9 @@ func _event_fx(e: Dictionary) -> float:
 			var su: String = str(e["unit"])
 			_pop("SINERGIA!", su, BattleTheme.POP, BattleTheme.BK, 40, 76.0, Vector2(0.0, -50.0))
 			_float_text("%s · con %s" % [str(e["name"]), str(BattleState.unit(shown, str(e.get("with", ""))).get("name", "")).to_upper()], su, BattleTheme.POP, 18)
+		"adapt":
+			Snd.play("guard", 0.8)
+			_float_text("IL BOSS SI ADATTA -%d%%" % int(round((1.0 - BattleTypes.ADAPT_MULT) * 100.0)), BattleState.BOSS_ID, BattleTheme.CY_DIM, 18)
 		"rhythm":
 			Snd.play("trait", 1.3)
 			_float_text("RITMO +%d%%" % int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0)), str(e["unit"]), BattleTheme.CY, 18)
@@ -1641,10 +1683,13 @@ func _recap_track(e: Dictionary) -> void:
 				_recap["first_down"] = str(BattleState.unit(shown, str(e["unit"])).get("name", ""))
 		"break":
 			_recap["breaks"] = int(_recap["breaks"]) + 1
+			if not _recap.has("break_round"):
+				_recap["break_round"] = int(shown.get("round", 0))
 		"synergy":
 			_recap["synergies"] = int(_recap["synergies"]) + 1
 		"tenacity":
 			_recap["wills"] = int(_recap["wills"]) + 1
+			_recap["will_unit"] = str(BattleState.unit(shown, str(e["unit"])).get("name", ""))
 
 
 func _recap_text(victory: bool) -> String:
@@ -1655,6 +1700,10 @@ func _recap_text(victory: bool) -> String:
 		parts.append("Primo a cadere: %s" % str(_recap["first_down"]).to_upper())
 	parts.append("Fase raggiunta: %d" % int(shown.get("phase", 1)))
 	parts.append("Rotture: %d  ·  Sinergie: %d" % [int(_recap["breaks"]), int(_recap["synergies"])])
+	if _recap.has("break_round"):
+		parts.append("Momento chiave: rottura al turno %d" % int(_recap["break_round"]))
+	if _recap.has("will_unit"):
+		parts.append("Salvataggio all'ultimo: %s resiste con 1 PV" % str(_recap["will_unit"]).to_upper())
 	var tip: String = ""
 	if not victory:
 		if int(_recap["breaks"]) == 0:

@@ -8,7 +8,7 @@ extends RefCounted
 # roster["objectives"] = {"day": "2026-10-12", "list": [ {kind, boss, goal, progress, done, reward} ]}
 
 const COUNT: int = 3
-const KINDS: Array = ["play", "win", "win_boss", "win_hard", "boss_variety", "win_night"]
+const KINDS: Array = ["play", "win", "win_boss", "win_hard", "boss_variety", "win_night", "breaks", "synergies", "flawless"]
 
 # Spento solo dai test che contano le monete al centesimo.
 static var enabled: bool = true
@@ -45,6 +45,11 @@ static func _generate(roster: Dictionary, day: String) -> Array:
 		kinds.append("win_hard")
 	if open_bosses.size() >= 2:
 		kinds.append("boss_variety")
+	if open_bosses.size() >= 3:
+		# obiettivi che invitano a sperimentare: rotture, sinergie, vittorie pulite
+		kinds.append("breaks")
+		kinds.append("synergies")
+		kinds.append("flawless")
 	var any_night: bool = false
 	for id in open_bosses:
 		if RosterState.cleared_tiers(roster, str(id)) >= 2:
@@ -83,6 +88,14 @@ static func _make(kind: String, open_bosses: Array, rng: RandomNumberGenerator) 
 			o["reward"] = {"coins": 700, "nucleo": 2, "lega": 1}
 		"win_night":
 			o["reward"] = {"coins": 1400, "nucleo": 4}
+		"breaks":
+			o["goal"] = 3
+			o["reward"] = {"coins": 700, "nucleo": 2}
+		"synergies":
+			o["goal"] = 5
+			o["reward"] = {"coins": 700, "lega": 2}
+		"flawless":
+			o["reward"] = {"coins": 1000, "nucleo": 3}
 	return o
 
 
@@ -100,6 +113,12 @@ static func describe(o: Dictionary) -> String:
 			return "Batti %d boss diversi" % int(o["goal"])
 		"win_night":
 			return "Vinci a INCUBO"
+		"breaks":
+			return "Causa %d ROTTURE al boss" % int(o["goal"])
+		"synergies":
+			return "Attiva %d SINERGIE tra compagni" % int(o["goal"])
+		"flawless":
+			return "Vinci senza nessun K.O."
 	return str(o["kind"])
 
 
@@ -115,7 +134,7 @@ static func reward_text(reward: Dictionary) -> String:
 
 
 # Registra una battaglia finita. Ritorna i testi degli obiettivi appena completati.
-static func record_battle(roster: Dictionary, boss_id: String, tier: int, victory: bool, day: String = "") -> Array:
+static func record_battle(roster: Dictionary, boss_id: String, tier: int, victory: bool, day: String = "", stats: Dictionary = {}) -> Array:
 	if not enabled:
 		return []
 	ensure_today(roster, day)
@@ -141,9 +160,19 @@ static func record_battle(roster: Dictionary, boss_id: String, tier: int, victor
 				if hit:
 					seen.append(boss_id)
 					o["seen"] = seen
+		var gain: int = 1
+		match str(o["kind"]):
+			"breaks":
+				gain = int(stats.get("breaks", 0))
+				hit = gain > 0
+			"synergies":
+				gain = int(stats.get("synergies", 0))
+				hit = gain > 0
+			"flawless":
+				hit = victory and not stats.is_empty() and int(stats.get("downs", 0)) == 0
 		if not hit:
 			continue
-		o["progress"] = int(o["progress"]) + 1
+		o["progress"] = int(o["progress"]) + gain
 		if int(o["progress"]) >= int(o["goal"]):
 			o["done"] = true
 			_give(roster, o["reward"])

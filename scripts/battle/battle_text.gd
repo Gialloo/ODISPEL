@@ -142,6 +142,8 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 			return {"text": "IL BOSS CAMBIA SCHEMA: FASE %d" % int(e["phase"]), "kind": "boss"}
 		"tenacity":
 			return {"text": "%s RESISTE CON 1 PV: ULTIMATE PRONTA" % unit_name(state, str(e["unit"])), "kind": "heal"}
+		"adapt":
+			return {"text": "IL BOSS SI ADATTA A %s (-%d%%)" % [move_name(str(e["move"])), int(round((1.0 - BattleTypes.ADAPT_MULT) * 100.0))], "kind": "boss"}
 		"rhythm":
 			return {"text": "%s: RITMO (+%d%% DANNO)" % [unit_name(state, str(e["unit"])), int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0))], "kind": "info"}
 		"balance":

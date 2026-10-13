@@ -30,6 +30,8 @@ const FAMILIES: Dictionary = {
 		"key": "shield", "values": [1.0, 1.3, 1.7, 2.2], "stat": "def", "pct": [10, 16, 24, 34]},
 	"cura": {"name": "Cura", "kind": "skill", "cost": 2, "priority": 0, "target": "ally",
 		"key": "heal", "values": [1.4, 1.8, 2.3, 2.8], "stat": "max_hp", "pct": [5, 6.5, 8, 10]},
+	"sacrificio": {"name": "Sacrificio", "kind": "skill", "cost": 2, "priority": 1, "target": "self", "self_status": {"taunt": 1}, "self_cost_hp": 0.15,
+		"from": 1, "key": "shield", "values": [1.9, 2.5, 3.3], "stat": "def", "pct": [16, 26, 40]},
 	"purifica": {"name": "Purifica", "kind": "skill", "cost": 1, "priority": 0, "target": "ally", "cleanse": true,
 		"key": "heal", "values": [0.4, 0.55, 0.7, 0.9], "stat": "max_hp", "pct": [2, 3, 4, 6]},
 	"frattura": {"name": "Frattura", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "debuff": {"def": 1},
@@ -67,7 +69,7 @@ static func _build_moves() -> Dictionary:
 			var id: String = str(fid) + (str(TIER_SUFFIX[rarity]) if i > 0 else "")
 			var m: Dictionary = {"name": str(f["name"]) + str(TIER_NAMES[i]), "kind": f["kind"], "cost": f["cost"], "priority": f["priority"],
 				"rarity": rarity, "target": f["target"], "family": fid, "tier": i}
-			for k in ["status", "self_status", "cleanse", "ammo", "pierce", "debuff", "hits", "ally_buff"]:
+			for k in ["status", "self_status", "cleanse", "ammo", "pierce", "debuff", "hits", "ally_buff", "self_cost_hp"]:
 				if f.has(k):
 					m[k] = f[k].duplicate(true) if f[k] is Dictionary else f[k]
 			m[str(f["key"])] = values[i]

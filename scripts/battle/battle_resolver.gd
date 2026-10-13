@@ -220,6 +220,7 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 		_end_of_round(state, events)
 	_check_winner(state, events)
 
+	_tally(state, events)
 	for p in state["players"]:
 		p["choice"] = null
 	if str(state["winner"]) == "":
@@ -232,6 +233,99 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 	else:
 		_save_rng(state, rng)
 	return events
+
+
+# Statistiche della battaglia (per obiettivi e resoconto): rotture, sinergie, ultime volonta', KO subiti.
+static func _tally(state: Dictionary, events: Array) -> void:
+	var st: Dictionary = state.get("stats", {"breaks": 0, "synergies": 0, "wills": 0, "downs": 0, "phases": 0})
+	for e in events:
+		match str(e.get("t", "")):
+			"break":
+				st["breaks"] = int(st["breaks"]) + 1
+			"synergy":
+				st["synergies"] = int(st["synergies"]) + 1
+			"tenacity":
+				st["wills"] = int(st["wills"]) + 1
+			"phase":
+				st["phases"] = int(st["phases"]) + 1
+			"adapt":
+				st["adapts"] = int(st.get("adapts", 0)) + 1
+			"down":
+				if str(e["unit"]) != BattleState.BOSS_ID:
+					st["downs"] = int(st["downs"]) + 1
+	state["stats"] = st
+
+
+# MINACCIA: quanto fara' la mossa annunciata del boss e se sarebbe letale (senza critico). {lethal: [unit id], dmg: {unit id: n}}
+static func threat_preview(state: Dictionary) -> Dictionary:
+	var out: Dictionary = {"lethal": [], "dmg": {}}
+	var tele: Dictionary = state.get("telegraph", {})
+	if tele.is_empty() or str(state["winner"]) != "":
+		return out
+	var boss: Dictionary = BattleState.boss(state)
+	if int(boss.get("stun", 0)) > 0:
+		return out
+	var move: Dictionary = BattleContent.BOSS_MOVES.get(str(tele["move"]), {})
+	if move.is_empty():
+		return out
+	var targets: Array = []
+	if str(move["target"]) == "all":
+		for p in BattleState.alive_players(state):
+			targets.append(BattleState.active_unit(state, str(p["id"])))
+	else:
+		var tp: Dictionary = BattleState.player(state, str(tele.get("target", "")))
+		if not tp.is_empty() and BattleState.player_alive(state, tp):
+			targets.append(BattleState.active_unit(state, str(tp["id"])))
+	for t in targets:
+		if not BattleState.is_alive(t):
+			continue
+		var d: int = calc_damage(boss, t, float(move["mult"]))
+		out["dmg"][str(t["id"])] = d
+		if d >= int(t["hp"]) + int(t["shield"]):
+			out["lethal"].append(str(t["id"]))
+	return out
+
+
+# Una mossa del boss e' una CARICA se colpisce forte uno solo o tutti con molta potenza: si puo' interrompere con la rottura.
+static func is_heavy_boss_move(m: Dictionary) -> bool:
+	return float(m.get("mult", 0.0)) >= 1.7 or (str(m.get("target", "")) == "all" and float(m.get("mult", 0.0)) >= 0.95)
+
+
+# SUGGERIMENTI di pianificazione per chi sta per attaccare: quali sinergie sono gia' pronte con le scelte dei compagni.
+static func plan_hints(state: Dictionary, slot_id: String) -> Array:
+	var hints: Array = []
+	var p: Dictionary = BattleState.player(state, slot_id)
+	if p.is_empty() or str(state["winner"]) != "":
+		return hints
+	var me: Dictionary = BattleState.unit(state, str(p["active"]))
+	var boss: Dictionary = BattleState.boss(state)
+	if me.is_empty() or not BattleState.is_alive(boss):
+		return hints
+	for entry in action_order(state):
+		if bool(entry["boss"]) or str(entry["unit"]) == str(me["id"]) or str(entry["move"]) == "":
+			continue
+		var mv: Dictionary = BattleContent.MOVES.get(str(entry["move"]), {})
+		if mv.is_empty() or mv.has("mult"):
+			continue
+		if mv.has("shield") or mv.has("heal") or (mv.has("self_status") and mv["self_status"].has("taunt")):
+			if int(entry["prio"]) > 0 or int(entry["spd"]) > int(me["spd"]):
+				hints.append("COPERTURA PRONTA: %s apre con %s, il tuo colpo fa +%d%%" % [str(BattleState.unit(state, str(entry["unit"])).get("name", "")).to_upper(), BattleText.move_name(str(entry["move"])).to_upper(), int(round((BattleTypes.SYN_COVER - 1.0) * 100.0))])
+				break
+	var mb: String = str(boss.get("marked_by", ""))
+	if Marks.count(boss) > 0 and mb != "" and mb != str(me["id"]) and BattleState.is_alive(BattleState.unit(state, mb)):
+		hints.append("TRACCIA PRONTA: boss marchiato da %s, colpiscilo per +%d ULT" % [str(BattleState.unit(state, mb).get("name", "")).to_upper(), BattleTypes.SYN_TRACE_GAUGE])
+	if not bool(boss.get("exposed", false)) and int(boss.get("balance", 99)) <= 6:
+		hints.append("ROTTURA VICINA: equilibrio %d, colpisci col colore vantaggioso" % int(boss["balance"]))
+	var tele: Dictionary = state.get("telegraph", {})
+	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	if not bm.is_empty() and int(boss.get("stun", 0)) == 0 and is_heavy_boss_move(bm):
+		hints.append("CARICA IN CORSO: la ROTTURA la interrompe (equilibrio %d)" % int(boss.get("balance", 0)))
+	if float(me["hp"]) < float(me["max_hp"]) * BattleTypes.ARDOR_BELOW:
+		hints.append("ARDORE: sotto il %d%% PV colpisci +%d%%" % [int(BattleTypes.ARDOR_BELOW * 100.0), int(round((BattleTypes.ARDOR_BONUS - 1.0) * 100.0))])
+	var lm: String = str(me.get("last_move", ""))
+	if lm != "" and BattleContent.MOVES.has(lm) and BattleContent.MOVES[lm].has("mult"):
+		hints.append("RITMO: cambia mossa (ora %s) per +%d%%" % [BattleText.move_name(lm).to_upper(), int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0))])
+	return hints
 
 
 # Quando lo stordimento e' passato il boss si riprende: equilibrio di nuovo pieno.
@@ -344,6 +438,8 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float,
 		dmg *= BattleTypes.ENRAGE_BONUS
 	if str(defender["side"]) == "boss" and bool(defender.get("exposed", false)):
 		dmg *= BattleTypes.BREAK_DAMAGE
+	if str(attacker["side"]) == "player" and float(attacker["hp"]) < float(attacker["max_hp"]) * BattleTypes.ARDOR_BELOW:
+		dmg *= BattleTypes.ARDOR_BONUS
 	if float(defender["hp"]) < float(defender["max_hp"]) * BattleTypes.ENRAGE_BELOW:
 		for pass_id in attacker["passives"]:
 			if bool(BattleContent.PASSIVES.get(str(pass_id), {}).get("hunter", false)):
@@ -541,6 +637,12 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	elif kind == "skill":
 		actor["energy"] = int(actor["energy"]) - int(move["cost"])
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
+	if move.has("self_cost_hp"):
+		# il prezzo del salvataggio: l'operatore paga con i propri PV (ne resta sempre almeno 1)
+		var paid: int = mini(int(actor["hp"]) - 1, int(round(float(actor["max_hp"]) * float(move["self_cost_hp"]))))
+		if paid > 0:
+			actor["hp"] = int(actor["hp"]) - paid
+			events.append({"t": "damage", "src": actor["id"], "dst": actor["id"], "amount": paid, "absorbed": 0, "cost": true})
 	if not move.has("mult") and (move.has("shield") or move.has("heal") or (move.has("self_status") and move["self_status"].has("taunt"))):
 		state["cover"] = str(actor["id"])
 	var link_n: int = _chain_link(state, actor, events)
@@ -551,6 +653,11 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	if move.has("mult") and last_move != "" and last_move != move_id and str(move["target"]) == "enemy":
 		awake_mult *= BattleTypes.RHYTHM_BONUS
 		events.append({"t": "rhythm", "unit": actor["id"]})
+	var rep: int = int(actor.get("repeat", 0)) + 1 if last_move == move_id else 0
+	actor["repeat"] = rep
+	if rep >= 2 and move.has("mult") and str(move["target"]) == "enemy":
+		awake_mult *= BattleTypes.ADAPT_MULT
+		events.append({"t": "adapt", "unit": actor["id"], "move": move_id})
 	actor["last_move"] = move_id
 	if move_id == "attack":
 		awake_mult *= BattleContent.basic_factor(actor)
