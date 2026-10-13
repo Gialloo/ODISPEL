@@ -23,17 +23,39 @@ static func add_to(parent: Control, new_accent: Color = BattleTheme.RD, at_index
 	return b
 
 
-# Le strisce scorrono pianissimo: 15 ridisegni al secondo bastano e costano meno.
-const REDRAW_EVERY: float = 0.0     # a ogni fotogramma: lo scorrimento resta fluido anche a 144 fps
-var _since_draw: float = 0.0
+# Le strisce sono disegnate UNA volta sola in un nodo figlio che poi si limita a scorrere (basta cambiare la posizione,
+# nessun ridisegno): lo scorrimento resta fluido a qualsiasi frequenza e costa quasi zero.
+const STEP: float = 90.0
+const PERIOD: float = STEP * 4.0     # i colori si ripetono ogni 4 strisce
+var _stripes: Control
+
+
+class Stripes extends Control:
+	var hot: Color = Color("#ff3fd0")
+	var cool: Color = BattleTheme.CY
+
+	func _draw() -> void:
+		var h: float = size.y
+		var x: float = -h - 5.0 * MenuBackdrop.STEP
+		var k: int = 0
+		while x < size.x + MenuBackdrop.STEP:
+			draw_line(Vector2(x, h), Vector2(x + h * 0.7, 0), Color(hot if k % 4 == 0 else cool, 0.06), 3.0)
+			x += MenuBackdrop.STEP
+			k += 1
+
+
+func _ready() -> void:
+	_stripes = Stripes.new()
+	_stripes.cool = secondary
+	_stripes.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stripes.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_stripes)
 
 
 func _process(delta: float) -> void:
 	_t += delta
-	_since_draw += delta
-	if _since_draw >= REDRAW_EVERY:
-		_since_draw = 0.0
-		queue_redraw()
+	if _stripes != null:
+		_stripes.position.x = fmod(_t * 14.0, PERIOD)
 
 
 func _draw() -> void:
@@ -55,15 +77,6 @@ func _draw() -> void:
 	var cut3 := PackedVector2Array([Vector2(w * 0.80, 0), Vector2(w * 0.86, 0), Vector2(w * 0.60, h * 0.34), Vector2(w * 0.54, h * 0.34)])
 	draw_colored_polygon(cut3, Color(hot, 0.10))
 	draw_line(Vector2(w * 0.54, h * 0.34), Vector2(w * 0.80, 0), Color(sun, 0.22), 3.0)
-	# strisce sottili che scorrono
-	var step: float = 90.0
-	var off: float = fmod(_t * 14.0, step)
-	var x: float = -h - step + off
-	var k: int = 0
-	while x < w + step:
-		draw_line(Vector2(x, h), Vector2(x + h * 0.7, 0), Color(hot if k % 4 == 0 else secondary, 0.06), 3.0)
-		x += step
-		k += 1
 	# filo bianco lungo il taglio e fila di rombi in alto
 	draw_line(Vector2(0, h * 0.55), Vector2(w * 0.62, h * 0.18), Color(1, 1, 1, 0.12), 2.0)
 	for i in 5:
