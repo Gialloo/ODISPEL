@@ -36,48 +36,59 @@ static func unit_color(color_name: String) -> Color:
 	return UNIT_COLORS.get(color_name, WH)
 
 
-# Font a spaziatura fissa (testi tecnici, numeri).
+# FONT UNICO DEL GIOCO: Libre Caslon Condensed (Google Fonts, licenza OFL, vedi assets/fonts/OFL-LibreCaslonCondensed.txt).
+# Pesi: Regular / Medium / SemiBold / Bold, ciascuno anche in corsivo.
+# Il Caslon condensato e' stretto e basso: i testi normali (non i titoli) si ingrandiscono un po' per restare leggibili.
+const TEXT_SCALE: float = 1.12
+const FONT_DIR: String = "res://assets/fonts/LibreCaslonCondensed-"
+static var _cache: Dictionary = {}
+
+
+static func font(weight: String = "Medium", italic: bool = false) -> Font:
+	var key: String = weight + ("Italic" if italic else "")
+	if key == "RegularItalic":
+		key = "Italic"
+	if not _cache.has(key):
+		_cache[key] = load(FONT_DIR + key + ".ttf")
+	return _cache[key]
+
+
+# Testo normale (descrizioni, elenchi, numeri): un peso medio, leggibile anche piccolo.
 static func mono() -> Font:
 	if _mono == null:
-		var f := SystemFont.new()
-		f.font_names = PackedStringArray(["Consolas", "Courier New", "DejaVu Sans Mono", "monospace"])
-		f.font_weight = 700
-		_mono = f
+		_mono = font("SemiBold")
 	return _mono
 
 
-# Font "da insegna": pesante e inclinato (titoli, danni, pulsanti).
+# Titoli, pulsanti, danni: il grassetto.
 static func display() -> Font:
 	if _display == null:
-		var base := SystemFont.new()
-		base.font_names = PackedStringArray(["Impact", "Arial Black", "DejaVu Sans Bold", "sans-serif"])
-		base.font_weight = 900
-		var fv := FontVariation.new()
-		fv.base_font = base
-		fv.variation_transform = Transform2D(Vector2(1.0, 0.0), Vector2(-0.22, 1.0), Vector2.ZERO)
-		_display = fv
+		_display = font("Bold")
 	return _display
 
 
-# Font dell'HUD (titoli dei pannelli, numeri): sans pesante e netto, leggermente inclinato, alla Overwatch.
-# Usa Bahnschrift (Windows) se c'e', altrimenti un grassetto di sistema.
+# Titoli dei pannelli e numeri dell'HUD.
 static func hud() -> Font:
 	if _hud == null:
-		var base := SystemFont.new()
-		base.font_names = PackedStringArray(["Bahnschrift", "Segoe UI Black", "Arial Black", "Roboto Black", "DejaVu Sans Bold", "sans-serif"])
-		base.font_weight = 800
-		var fv := FontVariation.new()
-		fv.base_font = base
-		fv.variation_transform = Transform2D(Vector2(1.0, 0.0), Vector2(-0.14, 1.0), Vector2.ZERO)
-		_hud = fv
+		_hud = font("Bold")
 	return _hud
+
+
+# Colpi critici e parole d'effetto: grassetto corsivo (da usare con testo MAIUSCOLO).
+static func crit() -> Font:
+	return font("Bold", true)
+
+
+# Pensieri, sottotitoli, citazioni: corsivo.
+static func quote() -> Font:
+	return font("Medium", true)
 
 
 static func make_label(text: String, size: int = 16, color: Color = CY, use_display: bool = false) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_override("font", display() if use_display else mono())
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", int(round(float(size) * (1.0 if use_display else TEXT_SCALE))))
 	l.add_theme_color_override("font_color", color)
 	if not use_display:
 		# ombra netta: il testo piccolo resta leggibile su qualsiasi sfondo
