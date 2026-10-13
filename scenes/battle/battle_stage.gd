@@ -9,8 +9,8 @@ const DW: float = 1280.0
 const DH: float = 720.0
 const HORIZON: float = 250.0
 const BOSS_X: float = 985.0
-const BOSS_FLOOR: float = 492.0     # il boss sta sulla stessa linea dei piedi della squadra...
-const BOSS_SCALE: float = 0.95      # ...con una figura un po' piu' grande della squadra
+const BOSS_FLOOR: float = 458.0     # il boss sta sulla stessa linea dei piedi della squadra...
+const BOSS_SCALE: float = 0.86      # ...con una figura un po' piu' grande della squadra
 const FLOOR_Y: float = 470.0        # dove i piedi toccano il suolo sullo schermo
 const GEO_FLOOR: float = 600.0      # il suolo nelle coordinate con cui sono disegnate le figure
 const ENTITY_SCALE: float = 0.76    # le figure sono disegnate in grande e ridotte qui
@@ -257,7 +257,7 @@ func _map(p: Vector2, gx: float, s: float = ENTITY_SCALE, floor_y: float = FLOOR
 # La squadra sta su una riga sola: stessa altezza e stessa scala, vicini fra loro e lontani dal boss. x = posizione, y = piedi sullo schermo, z = scala.
 func party_pose(index: int, _count: int) -> Vector3:
 	var t: float = float(index)
-	return Vector3(215.0 + t * 150.0, 492.0 - party_lift, 0.82)
+	return Vector3(215.0 + t * 150.0, 458.0 - party_lift, 0.82)
 
 
 func fighter_x(index: int, count: int) -> float:
@@ -1011,7 +1011,7 @@ const BENCH_ALPHA: float = 0.42
 
 
 # La back row e' solo quella del TUO party (dietro la front row): gli altri mostrano solo chi e' in campo.
-const BACK_X: Array = [292.0, 442.0, 592.0]
+const BACK_X: Array = [143.0, 293.0, 443.0]    # a sinistra del compagno davanti: Kira-Bruno, Dax-Nova, Elle-Mira
 
 
 func _draw_back_row() -> void:
@@ -1029,7 +1029,7 @@ func _draw_back_row() -> void:
 		var u: Dictionary = BattleState.unit(state, str(uid))
 		if u.is_empty():
 			continue
-		_draw_bench_unit(u, float(BACK_X[mini(k, BACK_X.size() - 1)]), k, 0.70, 395.0 - party_lift)
+		_draw_bench_unit(u, float(BACK_X[mini(k, BACK_X.size() - 1)]), k, 0.70, 410.0 - party_lift)
 		k += 1
 
 

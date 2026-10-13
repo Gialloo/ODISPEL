@@ -198,12 +198,12 @@ var _banner_round: int = 0
 
 func _sync() -> void:
 	if log_lines.is_empty():
-		_push_log("CICLO 01 AVVIATO", "info")
+		_push_log("TURNO 01 AVVIATO", "info")
 		_push_log("SEGNALE STABILE", "info")
 	shown = (source.battle as Dictionary).duplicate(true)
 	var rnd: int = int(shown.get("round", 0))
 	if rnd > _banner_round and str(shown.get("winner", "")) == "" and AnimFx.enabled() and _fx != null:
-		AnimFx.round_banner(_fx, "CICLO %d" % rnd)
+		AnimFx.round_banner(_fx, "TURNO %d" % rnd)
 	_banner_round = maxi(_banner_round, rnd)
 	locked = false
 	_swaps.clear()
@@ -369,15 +369,28 @@ func _speed_label() -> String:
 
 
 func _build_camera_info() -> void:
+	# REC e numero del turno: in basso a destra, nell'angolo, fuori dai pannelli
+	var strip := HBoxContainer.new()
+	strip.add_theme_constant_override("separation", 8)
+	strip.alignment = BoxContainer.ALIGNMENT_END
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(strip)
+	_anchor(strip, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-260, -28, -10, -4))
+	_round_label = BattleTheme.make_label("TURNO 01", 14, BattleTheme.CY_DIM)
+	_round_label.add_theme_font_override("font", BattleTheme.hud())
+	strip.add_child(_round_label)
+	var rec := BattleTheme.make_label("REC", 15, BattleTheme.WH, true)
+	strip.add_child(rec)
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(12, 24)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	strip.add_child(holder)
 	_rec_dot = ColorRect.new()
 	_rec_dot.color = BattleTheme.RD
 	_rec_dot.size = Vector2(12, 12)
-	_rec_dot.position = Vector2(8, 9)
+	_rec_dot.position = Vector2(0, 6)
 	_rec_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_rec_dot)
-	var rec := BattleTheme.make_label("REC", 15, BattleTheme.WH, true)
-	rec.position = Vector2(24, 2)
-	add_child(rec)
+	holder.add_child(_rec_dot)
 	var cam := BattleTheme.make_label("CAM-07 · VIA S. GIORGIO · PARK 3", 14, BattleTheme.CY)
 	cam.position = Vector2(28, 70)
 	cam.visible = false
@@ -386,10 +399,6 @@ func _build_camera_info() -> void:
 	_clock_label.position = Vector2(28, 92)
 	_clock_label.visible = false
 	add_child(_clock_label)
-	_round_label = BattleTheme.make_label("CICLO 01", 14, BattleTheme.CY_DIM)
-	_round_label.add_theme_font_override("font", BattleTheme.hud())
-	_round_label.position = Vector2(8, 24)
-	add_child(_round_label)
 
 
 func _build_boss_banner() -> void:
@@ -403,23 +412,26 @@ func _build_boss_banner() -> void:
 	panel.set_content(box)
 	_boss_name = BattleTheme.make_label("SOGGETTO", 24, BattleTheme.WH, true)       # il nome: grande, Archivo Black, bianco
 	_boss_name.clip_text = true
+	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_boss_name)
 	_boss_meta = BattleTheme.make_label("", 13, BattleTheme.WH)                  # classe, minaccia, difficolta': piccolo e chiaro
 	_boss_meta.add_theme_font_override("font", BattleTheme.hud())
 	_boss_meta.clip_text = true
+	_boss_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_boss_meta)
 	_boss_bar = LineBar.new().setup(BattleTheme.RD, Vector2(0, 12))
 	_boss_bar.color_bg = Color(BattleTheme.RD_DARK, 0.9)
 	box.add_child(_boss_bar)
 	_boss_hp = BattleTheme.make_label("INTEGRITA'", 17, BattleTheme.WH)
 	_boss_hp.add_theme_font_override("font", BattleTheme.hud())
+	_boss_hp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_boss_hp)
 
 	var timer_panel := HudPanel.new().setup("ORDINE ENTRO", BattleTheme.RD)
 	timer_panel.quiet = true
 	add_child(timer_panel)
 	timer_panel.margins = Vector4(14.0, 22.0, 14.0, 2.0)
-	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(104, 6, 244, 64))
+	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 6, 148, 64))
 	_timer_label = BattleTheme.make_label("LIBERO", 28, BattleTheme.CY, true)
 	timer_panel.set_content(_timer_label)
 
@@ -427,15 +439,17 @@ func _build_boss_banner() -> void:
 func _build_telegraph() -> void:
 	_tele_panel = HudPanel.new().setup("ALLARME", BattleTheme.RD)
 	add_child(_tele_panel)
-	_tele_panel.margins = Vector4(14.0, 24.0, 14.0, 4.0)
+	_tele_panel.margins = Vector4(14.0, 19.0, 14.0, 4.0)
 	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 150, 192, 214))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	_tele_panel.set_content(box)
-	_tele_label = BattleTheme.make_label("PROSSIMA MOSSA", 22, BattleTheme.WH, true)
+	_tele_label = BattleTheme.make_label("PROSSIMA MOSSA", 24, BattleTheme.WH, true)
+	_tele_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_tele_label)
 	_tele_target = BattleTheme.make_label("", 13, BattleTheme.WH)
 	_tele_target.add_theme_font_override("font", BattleTheme.hud())
+	_tele_target.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_tele_target)
 
 
@@ -481,7 +495,7 @@ func turn_rows() -> Array:
 				if locked or autoplay or _picks.has(str(p["id"])) or (choice is Dictionary and choice.has("move")):
 					action = BattleText.move_name(str(entry["move"])) if str(entry["move"]) != "" else ("AUTO" if autoplay else (BattleText.move_name(str(_picks[str(p["id"])]["move"])) if _picks.has(str(p["id"])) else "BLOCCATO"))
 				else:
-					action = "SCEGLI" + ("  (CAMBIO)" if pend != "" else "")
+					action = "Scegli" + (" (cambio)" if pend != "" else "")
 				row["color"] = BattleTheme.WH
 				row["slot"] = str(p["id"])
 			elif choice is Dictionary and choice.has("move"):
@@ -526,7 +540,10 @@ func _refresh_turn_panel() -> void:
 		if any_who:
 			line.add_child(_turn_cell(str(r["who"]), fs, col, 42.0))
 		line.add_child(_turn_cell(str(r["name"]).left(8), fs, col, 84.0))
-		line.add_child(_turn_cell("» " + str(r["action"]), fs, col, 0.0))
+		var act_cell: Label = _turn_cell("» " + str(r["action"]), fs, col, 0.0)
+		if str(r["action"]).begins_with("Scegli"):
+			act_cell.set_meta("keep_case", true)
+		line.add_child(act_cell)
 		_turn_box.add_child(line)
 
 
@@ -585,7 +602,7 @@ func _build_log() -> void:
 	panel.bare = true
 	panel.margins = Vector4(12, 8, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-300, -150, -20, -18))
+	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-480, -150, -20, -34))
 	_log_label = RichTextLabel.new()
 	_log_label.bbcode_enabled = true
 	_log_label.scroll_active = false
@@ -657,7 +674,7 @@ func _refresh_all() -> void:
 	_refresh_orders()
 	_refresh_turn_panel()
 	_refresh_log()
-	_round_label.text = "CICLO %02d" % int(shown["round"])
+	_round_label.text = "TURNO %02d" % int(shown["round"])
 
 
 func _refresh_boss() -> void:
@@ -694,9 +711,9 @@ func _refresh_telegraph() -> void:
 		return
 	var move_id: String = str(tele["move"])
 	var def: Dictionary = BattleContent.BOSS_MOVES[move_id]
-	_tele_label.text = "» %s" % BattleText.move_name(move_id)
+	_tele_label.text = BattleText.move_name(move_id)
 	var tlen: int = _tele_label.text.length()
-	_tele_label.add_theme_font_size_override("font_size", 22 if tlen <= 18 else maxi(15, int(22.0 * 18.0 / float(tlen))))
+	_tele_label.add_theme_font_size_override("font_size", 24 if tlen <= 17 else maxi(16, int(24.0 * 17.0 / float(tlen))))
 	if str(def["target"]) == "all":
 		_tele_target.text = "COLPISCE TUTTI GLI OPERATORI"
 	else:
@@ -748,24 +765,34 @@ func _refresh_operators() -> void:
 		c.queue_free()
 	if me.is_empty():
 		return
-	# front row: un'unita' per slot (si clicca per dare gli ordini a quello slot)
+	# front row: un'unita' per slot (si clicca per dare gli ordini a quello slot); a destra di ognuna, il compagno in panchina che sostituisce
 	var cur: String = _cur_slot_id()
 	var cur_swap: String = pending_swap
-	for sid in slots:
-		var sp: Dictionary = BattleState.player(shown, sid)
-		var u: Dictionary = BattleState.unit(shown, str(sp["active"]))
-		_ops_box.add_child(_unit_row(u, sid == cur, true, sid, _picks.has(sid)))
-	# back row: compatta; la casella evidenziata e' il cambio scelto per lo slot corrente
 	var backs: Array = []
 	for uid in BattleState.party_of(shown, me):
 		if not BattleState.is_front(shown, str(uid)):
 			backs.append(str(uid))
-	if not backs.is_empty():
+	var bi: int = 0
+	for sid in slots:
+		var sp: Dictionary = BattleState.player(shown, sid)
+		var u: Dictionary = BattleState.unit(shown, str(sp["active"]))
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 4)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var urow: Control = _unit_row(u, sid == cur, true, sid, _picks.has(sid))
+		urow.custom_minimum_size.x = 300.0
+		line.add_child(urow)
+		if bi < backs.size():
+			line.add_child(_back_row(BattleState.unit(shown, str(backs[bi])), str(backs[bi]) == cur_swap))
+			bi += 1
+		_ops_box.add_child(line)
+	if bi < backs.size():
 		var bench := HBoxContainer.new()
 		bench.add_theme_constant_override("separation", 4)
 		bench.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		for uid in backs:
-			bench.add_child(_back_row(BattleState.unit(shown, uid), uid == cur_swap))
+		while bi < backs.size():
+			bench.add_child(_back_row(BattleState.unit(shown, str(backs[bi])), str(backs[bi]) == cur_swap))
+			bi += 1
 		_ops_box.add_child(bench)
 	# altri giocatori (rete): solo l'unita' attiva, tutti su una riga
 	var allies := HBoxContainer.new()
@@ -803,22 +830,24 @@ func _all_my_slots() -> Array:
 func _fit_ops_panel(fronts: int, backs: int, with_allies: bool) -> void:
 	if _ops_panel == null:
 		return
-	var touch: bool = TouchUi.active()
-	var h: float = 22.0 + _unit_row_height() * float(maxi(fronts, 1)) + (_back_row_height() if backs > 0 else 0.0)
-	h += 3.0 * float(maxi(fronts - 1 + (1 if backs > 0 else 0), 0)) + (20.0 if with_allies else 0.0)
-	_anchor(_ops_panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(12, -(h + 12.0), 336, -12))
+	var h: float = 22.0 + _unit_row_height() * float(maxi(fronts, 1))
+	h += 3.0 * float(maxi(fronts - 1, 0)) + (20.0 if with_allies else 0.0)
+	if backs > fronts:
+		h += _unit_row_height() + 3.0
+	var right: float = 336.0 if backs == 0 else 12.0 + 20.0 + 300.0 + 4.0 + 84.0 + 8.0
+	_anchor(_ops_panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(12, -(h + 12.0), right, -12))
 
 
 func _back_row_height() -> float:
-	return 74.0 if TouchUi.active() else 66.0
+	return _unit_row_height()
 
 
-# Casella verticale di chi sta in panchina: nome in alto, barre PV ed energia in verticale.
+# Casella di chi sta in panchina, accanto alla riga di chi sostituisce: nome, barra PV e energia.
 # Tocca per mandarlo in campo al posto del personaggio selezionato.
 func _back_row(u: Dictionary, selected: bool) -> Control:
 	var alive: bool = BattleState.is_alive(u)
 	var h: float = _back_row_height()
-	var w: float = 76.0
+	var w: float = 84.0
 	var btn := Button.new()
 	btn.custom_minimum_size = Vector2(w, h)
 	btn.flat = true
@@ -841,38 +870,28 @@ func _back_row(u: Dictionary, selected: bool) -> Control:
 	btn.add_child(key)
 	var fg: Color = BattleTheme.BK if selected else (BattleTheme.CY_DIM if alive else BattleTheme.CY_DARK)
 	var name_l := BattleTheme.make_label(str(u["name"]).to_upper(), 12, fg, true)
-	name_l.position = Vector2(10, 1)
-	name_l.custom_minimum_size = Vector2(w - 12.0, 0)
+	name_l.position = Vector2(10, 2)
 	name_l.size = Vector2(w - 12.0, 16)
 	name_l.clip_text = true
 	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(name_l)
-	var bar_h: float = h - 24.0
 	var ratio: float = float(u["hp"]) / float(u["max_hp"])
-	var hp := SegBar.new().setup(8, BattleTheme.BK if selected else (BattleTheme.RD if ratio < 0.3 else BattleTheme.CY_DIM), Vector2(12, bar_h))
-	hp.vertical = true
-	hp.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
-	hp.set_ratio(ratio)
-	hp.position = Vector2(12, 20)
+	var hp := LineBar.new().setup(BattleTheme.BK if selected else (BattleTheme.RD if ratio < 0.3 else BattleTheme.OK), Vector2(w - 18.0, 6))
+	hp.color_bg = Color(0, 0, 0, 0.35) if selected else Color(0, 0, 0, 0.5)
+	hp.set_values(ratio)
+	hp.position = Vector2(10, 20)
 	btn.add_child(hp)
-	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(8, bar_h))
-	en.vertical = true
-	en.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
-	en.set_ratio(float(u["energy"]) / float(BattleTypes.MAX_ENERGY))
-	en.position = Vector2(30, 20)
-	btn.add_child(en)
-	var note := BattleTheme.make_label("K.O." if not alive else ("⇄ IN" if selected else "%d%%" % int(round(ratio * 100.0))), 11, fg, true)
-	note.position = Vector2(42, 20)
-	note.size = Vector2(32, 16)
-	note.clip_text = true
-	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var info: String = "K.O." if not alive else ("⇄ IN" if selected else "EN %d/%d" % [int(u["energy"]), BattleTypes.MAX_ENERGY])
+	var note := _row_text(info, 12, fg, Vector2(10, 27), w - 12.0)
+	note.size.y = 14.0
+	note.custom_minimum_size.y = 14.0
 	btn.add_child(note)
 	return btn
 
 
 # Altezza della riga di un operatore: sul telefono e' piu' alta, per il dito.
 func _unit_row_height() -> float:
-	return 54.0 if TouchUi.active() else 44.0
+	return 54.0 if TouchUi.active() else 48.0
 
 
 # Sotto il nome: fazione, aure, munizioni, effetti. Ognuno si puo' puntare o toccare per leggere cosa significa.
@@ -1074,11 +1093,15 @@ func _refresh_orders() -> void:
 	var touch: bool = TouchUi.active()
 	_orders_box.origin = _fan_origin()
 	_orders_box.tint = BattleTheme.unit_color(str(u["color"]))
-	var title_text: String = ("CAMBIO » %s (GRATIS)" if pending_swap != "" else "ORDINE PER %s") % str(u["name"]).to_upper()
+	var title_text: String = str(u["name"]).to_upper()
+	if pending_swap != "":
+		title_text = "CAMBIO » " + title_text
 	var n_slots: int = _my_slots().size()
 	if n_slots > 1:
-		title_text += "  (%d/%d)" % [mini(_my_slots().find(_cur_slot_id()) + 1, n_slots), n_slots]
+		var ords: Array = ["1st", "2nd", "3rd", "4th", "5th", "6th"]
+		title_text += "  " + str(ords[clampi(_my_slots().find(_cur_slot_id()), 0, ords.size() - 1)])
 	var title := BattleTheme.make_label(title_text, 14, BattleTheme.WH, true)
+	title.set_meta("keep_case", true)       # "KIRA 1st": l'ordinale resta minuscolo
 	_orders_box.add_child(title)
 	var entries: Array = [{"id": "attack", "kind": "primary"}, {"id": "guard", "kind": "normal"}]
 	for s in u["skills"]:
@@ -1087,8 +1110,8 @@ func _refresh_orders() -> void:
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
 	var bh: float = 56.0 if touch else 42.0
 	var bw: float = 232.0 if touch else 196.0
-	var pts: Array = _orders_box.layout(entries.size(), bh, 6.0, 340.0 if touch else 290.0, 6.0 if touch else 22.0, 246.0, 706.0)
-	title.position = Vector2(float(pts[0].x) + 6.0, float(pts[0].y) - bh * 0.5 - 24.0)
+	var pts: Array = _orders_box.layout(entries.size(), bh, 8.0, 340.0 if touch else 290.0, 6.0 if touch else 22.0, 246.0, 706.0)
+	title.position = Vector2(float(pts[0].x) - 2.0, float(pts[0].y) - bh * 0.5 - 26.0)
 	var lo := Vector2(1e9, 1e9)
 	var hi := Vector2(-1e9, -1e9)
 	for pt in pts:
@@ -1101,16 +1124,9 @@ func _refresh_orders() -> void:
 	# una sola misura di carattere per tutte le mosse (la piu' grande che sta in tutti i pulsanti); l'attacco base e' un po' piu' grande
 	var common_fs: int = 18
 	for e in entries:
-		if str(e["id"]) == "attack":
-			continue
 		var mv: Dictionary = BattleContent.MOVES[str(e["id"])]
-		var sfx: String = ""
-		if str(mv["kind"]) == "skill":
-			sfx = "  %dE" % int(mv["cost"])
-		elif str(mv["kind"]) == "ult":
-			sfx = "  100%"
-		var txt: String = "9  %s%s" % [BattleText.move_name(str(e["id"])), sfx]
-		while common_fs > (14 if touch else 12) and BattleTheme.menu().get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x > bw - 74.0:
+		var txt: String = _order_text(str(e["id"]), mv, 100)
+		while common_fs > (14 if touch else 12) and BattleTheme.hud().get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x > bw - 74.0:
 			common_fs -= 1
 	var n: int = 1
 	for e in entries:
@@ -1119,26 +1135,24 @@ func _refresh_orders() -> void:
 		var choice: Dictionary = _make_choice(move_id)
 		var err: String = BattleResolver.validate_choice(shown, _cur_slot_id(), choice)
 		var b := Button.new()
-		var suffix: String = ""
-		if str(move["kind"]) == "skill":
-			suffix = "  %dE" % int(move["cost"])
-		elif str(move["kind"]) == "ult":
-			suffix = "  %d%%" % int(u["gauge"])
-		b.text = "%d  %s%s" % [n, BattleText.move_name(move_id), suffix]
+		b.text = _order_text(move_id, move, int(u["gauge"]))
 		var order_unit_id: String = uid
 		var order_err: String = err
 		HintCard.bind(b, func() -> Dictionary: return Hints.move_card(BattleState.unit(shown, order_unit_id), move_id, order_err), self, true)
 		var primary: bool = str(e["id"]) == "attack"
 		var is_guard: bool = str(e["id"]) == "guard"
-		var w: float = bw + (28.0 if primary else 0.0)
+		var w: float = bw
 		b.custom_minimum_size = Vector2(w, bh)
 		b.size = Vector2(w, bh)
 		# il testo non si taglia mai: si sceglie il carattere piu' grande che ci sta nel pulsante
-		var fsize: int = common_fs + 4 if primary else common_fs
-		BattleTheme.style_button(b, str(e["kind"]) if not is_guard else "normal", fsize)
+		var fsize: int = common_fs
+		BattleTheme.style_button(b, "normal", fsize)
+		b.add_theme_font_override("font", BattleTheme.hud())
 		b.add_theme_font_size_override("font_size", fsize)
 		b.disabled = err != "" or locked or animating or autoplay
-		var oic: GameIcon = GameIcon.attach(b, GameIcon.move_key(move_id), BattleTheme.WH if primary else GameIcon.move_color(move_id), 26.0 if primary else 20.0)
+		var gprog: float = float(u["gauge"]) / float(BattleTypes.GAUGE_MAX) if str(e["kind"]) == "ultimate" else 0.0
+		_style_order(b, err == "", gprog)
+		var oic: GameIcon = GameIcon.attach(b, GameIcon.move_key(move_id), BattleTheme.BK if err == "" else Color("#aeb9be"), 26.0 if primary else 20.0)
 		oic.modulate.a = 0.35 if b.disabled else 1.0
 		b.pressed.connect(_on_order_pressed.bind(move_id))
 		b.focus_mode = Control.FOCUS_NONE
@@ -1154,6 +1168,45 @@ func _refresh_orders() -> void:
 			b.position = target
 		_order_buttons.append(b)
 		n += 1
+
+
+# Testo di una mossa nel ventaglio: MAIUSCOLO, senza numero; il costo davanti (2E), la carica dell'ultimate dietro.
+func _order_text(move_id: String, move: Dictionary, gauge: int) -> String:
+	var name: String = BattleText.move_name(move_id)
+	if str(move["kind"]) == "skill":
+		return "%dE  %s" % [int(move["cost"]), name]
+	if str(move["kind"]) == "ult":
+		return "%s  %d%%" % [name, gauge]
+	return name
+
+
+# Mossa usabile = bianca con testo nero; non usabile = nera con testo grigio. L'ultimate si riempie di bianco man mano che si carica.
+func _style_order(b: Button, usable: bool, gauge_progress: float) -> void:
+	var box: SlantBox
+	var txt_col: Color
+	var outline: int = 0
+	if usable:
+		box = SlantBox.make(Color("#f4fbff"), Color("#10181c"), 14.0, Color(0, 0, 0, 0.55), 2.0)
+		txt_col = BattleTheme.BK
+	else:
+		box = SlantBox.make(Color("#06090b"), Color("#2c373c"), 14.0, Color(0, 0, 0, 0.0), 2.0)
+		txt_col = Color("#8b969b")
+		if gauge_progress > 0.0:
+			box.progress = gauge_progress
+			box.progress_color = Color("#dfe9ec")
+			txt_col = BattleTheme.WH
+			outline = 4
+	var hov: SlantBox = box
+	if usable:
+		hov = SlantBox.make(Color("#c4f4ff"), Color("#10181c"), 14.0, Color(0, 0, 0, 0.55), 2.0)
+	b.add_theme_stylebox_override("normal", box)
+	b.add_theme_stylebox_override("disabled", box)
+	b.add_theme_stylebox_override("hover", hov)
+	b.add_theme_stylebox_override("pressed", hov)
+	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_disabled_color"]:
+		b.add_theme_color_override(k, txt_col)
+	b.add_theme_color_override("font_outline_color", BattleTheme.BK)
+	b.add_theme_constant_override("outline_size", outline)
 
 
 # Un pulsante tenuto premuto ha aperto la sua scheda: quel rilascio non e' un comando.
@@ -1423,6 +1476,7 @@ func _event_fx(e: Dictionary) -> float:
 			return _fx_act(e)
 		"swap":
 			Snd.play("swap")
+			_switch_fx(str(e.get("to", "")))
 		"link":
 			return _fx_link(e)
 		"link_break":
@@ -1715,6 +1769,28 @@ func _fx_status(e: Dictionary) -> void:
 func _announce(who: String, what: String, hostile: bool) -> void:
 	var text: String = "%s  //  %s" % [str(who).to_upper(), str(what).to_upper()]
 	ComicFx.caption(_fx, text, Vector2(380.0 if hostile else 24.0, 168.0), BattleTheme.RD if hostile else BattleTheme.CY, 0.55)
+
+
+# Cambio front/back: fumetto SWITCH! e due frecce > < che si incontrano sul personaggio che entra.
+func _switch_fx(uid: String) -> void:
+	if _stage == null or _fx == null or uid == "":
+		return
+	var at: Vector2 = _stage.anchor_of(uid)
+	_pop("SWITCH!", uid, BattleTheme.POP, BattleTheme.BK, 40, 70.0, Vector2(0.0, -70.0))
+	for side in [-1, 1]:
+		var l := BattleTheme.make_label(">" if side < 0 else "<", 72, BattleTheme.WH, true)
+		l.add_theme_color_override("font_outline_color", BattleTheme.BK)
+		l.add_theme_constant_override("outline_size", 10)
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		l.position = at + Vector2(float(side) * 90.0 - 20.0, -150.0)
+		_fx.add_child(l)
+		if DisplayServer.get_name() == "headless":
+			l.queue_free()
+			continue
+		var tw: Tween = l.create_tween().set_parallel(true)
+		tw.tween_property(l, "position:x", l.position.x - float(side) * 60.0, 0.4).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		tw.tween_property(l, "modulate:a", 0.0, 0.25).set_delay(0.35)
+		tw.chain().tween_callback(l.queue_free)
 
 
 func _pop(text: String, uid: String, fill: Color, ink: Color, size: int, radius: float, offset: Vector2 = Vector2.ZERO) -> void:

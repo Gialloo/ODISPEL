@@ -18,24 +18,32 @@ func _ready() -> void:
 # Posizioni (centro di ogni pulsante) per n comandi alti h: disposti sull'arco, centrati leggermente in alto.
 func layout(n: int, h: float, gap: float, new_radius: float, mid_deg: float = 22.0, min_top: float = 56.0, max_bottom: float = 700.0) -> Array:
 	radius = new_radius
-	var min_step: float = (h + gap) / radius
-	var step: float = maxf(min_step, deg_to_rad(16.0 if n <= 4 else (13.5 if n <= 6 else 12.0)))
-	var span: float = step * float(maxi(0, n - 1))
-	var mid: float = deg_to_rad(mid_deg)
-	# se l'arco uscirebbe dallo schermo lo si sposta senza cambiare la forma
-	var top_y: float = origin.y + sin(mid - span * 0.5) * radius - h * 0.5
-	var bot_y: float = origin.y + sin(mid + span * 0.5) * radius + h * 0.5
+	# distanza verticale FISSA fra i pulsanti; la curva decide solo quanto ognuno e' spostato in orizzontale
+	var dy: float = h + gap
+	var span: float = dy * float(maxi(0, n - 1))
+	var mid_y: float = origin.y + sin(deg_to_rad(mid_deg)) * radius
+	var top_y: float = mid_y - span * 0.5 - h * 0.5
+	var bot_y: float = mid_y + span * 0.5 + h * 0.5
 	var shift: float = 0.0
 	if top_y < min_top:
 		shift = min_top - top_y
 	elif bot_y > max_bottom:
 		shift = max_bottom - bot_y
 	var pts: Array = []
+	var lim: float = radius * 0.97
+	var first: float = 0.0
+	var last: float = 0.0
 	for i in n:
-		var a: float = mid - span * 0.5 + float(i) * step
-		pts.append(origin + Vector2(cos(a), sin(a)) * radius + Vector2(0.0, shift))
-	_a0 = mid - span * 0.5 - step * 0.5
-	_a1 = mid + span * 0.5 + step * 0.5
+		var y: float = mid_y - span * 0.5 + float(i) * dy
+		var rel: float = clampf(y - origin.y, -lim, lim)
+		var a: float = asin(rel / radius)
+		if i == 0:
+			first = a
+		last = a
+		pts.append(Vector2(origin.x + cos(a) * radius, y + shift))
+	var half: float = dy * 0.5 / radius
+	_a0 = first - half
+	_a1 = last + half
 	queue_redraw()
 	return pts
 

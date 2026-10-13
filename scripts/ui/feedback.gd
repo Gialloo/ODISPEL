@@ -184,8 +184,8 @@ func _build_spinner() -> void:
 	_spinner_box.anchor_right = 1.0
 	_spinner_box.anchor_top = 1.0
 	_spinner_box.anchor_bottom = 1.0
-	_spinner_box.offset_left = -440.0
-	_spinner_box.offset_right = -14.0
+	_spinner_box.offset_left = -600.0
+	_spinner_box.offset_right = -190.0
 	_spinner_box.visible = false
 	_safe.add_child(_spinner_box)
 

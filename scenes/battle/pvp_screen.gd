@@ -355,7 +355,7 @@ func _refresh() -> void:
 	if shown.is_empty():
 		return
 	_title.text = "PVP · " + _mode_text()
-	_round_label.text = "CICLO %02d" % int(shown["round"])
+	_round_label.text = "TURNO %02d" % int(shown["round"])
 	var mp: Dictionary = PvpEngine.player(shown, me())
 	var mine_ok: bool = not mp.is_empty() and PvpEngine.player_alive(shown, mp) and str(shown["winner"]) == ""
 	var chosen_me: bool = mine_ok and mp["choice"] != null
@@ -536,9 +536,9 @@ func _play(events: Array) -> void:
 func _event(e: Dictionary) -> void:
 	match str(e.get("t", "")):
 		"round":
-			_log_line("[color=#7cf0ff]— CICLO %d —[/color]" % int(e["n"]))
+			_log_line("[color=#7cf0ff]— TURNO %d —[/color]" % int(e["n"]))
 			if AnimFx.enabled():
-				AnimFx.round_banner(_fx, "CICLO %d" % int(e["n"]))
+				AnimFx.round_banner(_fx, "TURNO %d" % int(e["n"]))
 		"act":
 			var mname: String = str(BattleContent.MOVES.get(str(e["move"]), {}).get("name", "mossa")).to_upper()
 			_log_line("%s: %s%s" % [_name_of(str(e["unit"])), mname, "  [ULTIMATE]" if str(e.get("kind", "")) == "ult" else ""])

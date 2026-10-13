@@ -12,6 +12,8 @@ var skew: float = 14.0                         # di quanto e' inclinato il bordo
 var shadow: Color = Color(0, 0, 0, 0.0)        # ombra netta spostata in basso a destra
 var shadow_offset: Vector2 = Vector2(5, 5)
 var hatch: Color = Color(1, 1, 1, 0.0)           # righe oblique chiare sopra il riempimento (serve texture_repeat sul nodo)
+var progress: float = 0.0                        # 0..1: parte del riempimento che si colora di progress_color (barra di carica)
+var progress_color: Color = Color.WHITE
 var gloss: float = 0.0                           # lucentezza: velo chiaro nella meta' alta
 
 
@@ -43,6 +45,10 @@ func _draw(to_canvas_item: RID, rect: Rect2) -> void:
 		RenderingServer.canvas_item_add_polygon(to_canvas_item, _points(rect, shadow_offset), PackedColorArray([shadow]))
 	var pts: PackedVector2Array = _points(rect)
 	RenderingServer.canvas_item_add_polygon(to_canvas_item, pts, PackedColorArray([fill]))
+	if progress > 0.0:
+		var t: float = clampf(progress, 0.0, 1.0)
+		var part := PackedVector2Array([pts[0], pts[0].lerp(pts[1], t), pts[3].lerp(pts[2], t), pts[3]])
+		RenderingServer.canvas_item_add_polygon(to_canvas_item, part, PackedColorArray([progress_color]))
 	if hatch.a > 0.0:
 		RenderingServer.canvas_item_add_polygon(to_canvas_item, pts, PackedColorArray([hatch, hatch, hatch, hatch]), UiTex.uvs_for(pts), UiTex.hatch().get_rid())
 	if gloss > 0.0:
