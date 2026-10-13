@@ -12,7 +12,12 @@ const BASE_MOVES: Dictionary = {
 	"attack": {"name": "Attacco", "kind": "basic", "cost": 0, "priority": 0, "rarity": 0, "target": "enemy", "mult": 1.0},
 	"guard": {"name": "Guardia", "kind": "basic", "cost": 0, "priority": 1, "rarity": 0, "target": "self", "self_status": {"guard": 1}, "energy": 1, "ammo_gain": 1},
 	"ricarica": {"name": "Ricarica", "kind": "skill", "cost": 0, "priority": 1, "rarity": 0, "target": "self", "ammo_gain": 3, "energy": 1},
+	# REAZIONI: solo contro una CARICA del boss. Costano Riserva di squadra (condivisa), non energia.
+	"schivata": {"name": "Schivata", "kind": "reaction", "cost": 0, "reserve": 1, "priority": 3, "rarity": 0, "target": "self", "react": "dodge"},
+	"intercettazione": {"name": "Intercettazione", "kind": "reaction", "cost": 0, "reserve": 2, "priority": 3, "rarity": 0, "target": "self", "react": "intercept"},
+	"interruzione": {"name": "Interruzione", "kind": "reaction", "cost": 0, "reserve": 2, "priority": 3, "rarity": 0, "target": "enemy", "react": "interrupt"},
 }
+const REACTIONS: Array = ["schivata", "intercettazione", "interruzione"]
 
 # Mosse a livelli (una per rarita'). Ogni livello ha un valore base (mult / heal / shield, per il tuo ATK)
 # PIU' una parte di una statistica di chi la usa: "bonus": {"stat": ..., "pct": ...}.

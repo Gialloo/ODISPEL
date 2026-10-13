@@ -138,6 +138,13 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 			return {"text": "%s SANGUINA  [-%d]" % [unit_name(state, str(e["unit"])), int(e["amount"])], "kind": "hit"}
 		"down":
 			return {"text": "%s FUORI COMBATTIMENTO" % unit_name(state, str(e["unit"])), "kind": "down"}
+		"react":
+			var rk: String = str(e["kind"])
+			return {"text": "%s: %s" % [unit_name(state, str(e["unit"])), "SCHIVA LA CARICA" if rk == "dodge" else ("SI METTE IN MEZZO" if rk == "intercept" else "INTERROMPE LA CARICA")], "kind": "info"}
+		"reserve":
+			if int(e["delta"]) == 0:
+				return {"text": "", "kind": "info"}
+			return {"text": "RISERVA %s%d (%d)" % ["+" if int(e["delta"]) > 0 else "", int(e["delta"]), int(e["value"])], "kind": "info"}
 		"phase":
 			return {"text": "IL BOSS CAMBIA SCHEMA: FASE %d" % int(e["phase"]), "kind": "boss"}
 		"tenacity":
@@ -165,6 +172,8 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 # stati, cambi). Al termine del round la grafica si riallinea allo stato vero.
 static func apply_to_display(state: Dictionary, e: Dictionary) -> void:
 	match str(e.get("t", "")):
+		"reserve":
+			state["reserve"] = int(e["value"])
 		"phase":
 			state["phase"] = int(e["phase"])
 		"balance":

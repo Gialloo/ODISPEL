@@ -49,6 +49,9 @@ var _boss_bar: LineBar
 var _boss_hp: Label
 var _boss_bal: LineBar
 var _plan_label: Label
+var _reserve_label: Label
+var _react_row: HBoxContainer
+var _react_sig: String = ""
 var _threat_round: int = -1
 var _round_label: Label
 var _timer_label: Label
@@ -468,7 +471,18 @@ func _build_telegraph() -> void:
 	_plan_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_plan_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_plan_label)
-	_anchor(_plan_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 218, 192, 280))
+	_anchor(_plan_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 218, 192, 262))
+	_reserve_label = BattleTheme.make_label("", 12, BattleTheme.CY)
+	_reserve_label.add_theme_font_override("font", BattleTheme.hud())
+	_reserve_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_reserve_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_reserve_label)
+	_anchor(_reserve_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 264, 192, 282))
+	_react_row = HBoxContainer.new()
+	_react_row.add_theme_constant_override("separation", 6)
+	_react_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	add_child(_react_row)
+	_anchor(_react_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 284, 192, 316))
 
 
 # Pannello "ORDINE DEL TURNO": chi agisce, in che ordine e cosa ha scelto (le IA decidono da sole).
@@ -778,11 +792,54 @@ func _refresh_telegraph() -> void:
 func _refresh_plan_hint() -> void:
 	if _plan_label == null:
 		return
+	_refresh_reactions()
 	if locked or animating or autoplay or str(shown.get("winner", "")) != "":
 		_plan_label.text = ""
 		return
 	var hints: Array = BattleResolver.plan_hints(shown, _cur_slot_id())
 	_plan_label.text = "\n".join(hints.slice(0, 2))
+
+
+# RISERVA DI SQUADRA + REAZIONI: i tasti compaiono solo quando il boss prepara una CARICA.
+func _refresh_reactions() -> void:
+	if _reserve_label == null:
+		return
+	var res: int = int(shown.get("reserve", 0))
+	var pips: String = ""
+	for i in BattleTypes.RESERVE_MAX:
+		pips += "●" if i < res else "○"
+	_reserve_label.text = "RISERVA DI SQUADRA  %s" % pips
+	var list: Array = []
+	if not (locked or animating or autoplay or str(shown.get("winner", "")) != ""):
+		list = BattleResolver.reactions_for(shown, _cur_slot_id())
+	var sig: String = "%d|%s" % [res, _cur_slot_id()]
+	for r in list:
+		sig += "|%s:%s" % [str(r["id"]), str(r["err"])]
+	if sig == _react_sig:
+		return
+	_react_sig = sig
+	for c in _react_row.get_children():
+		_react_row.remove_child(c)
+		c.queue_free()
+	for r in list:
+		var rid: String = str(r["id"])
+		var b := Button.new()
+		b.text = "%s · %d" % [BattleText.move_name(rid).to_upper(), int(BattleContent.MOVES[rid]["reserve"])]
+		b.tooltip_text = str(r["err"]) if str(r["err"]) != "" else _reaction_help(rid)
+		BattleTheme.style_button(b, "normal", 13)
+		b.disabled = str(r["err"]) != ""
+		b.pressed.connect(_on_order_pressed.bind(rid))
+		_react_row.add_child(b)
+
+
+func _reaction_help(rid: String) -> String:
+	match rid:
+		"schivata":
+			return "Eviti del tutto la carica. Costa 1 Riserva."
+		"intercettazione":
+			return "Prendi tu la carica al posto del compagno (danno ridotto). Costa 2 Riserva."
+		_:
+			return "Colpisci l'equilibrio del boss: se si rompe, la carica salta. Costa 2 Riserva."
 
 
 func _bar_row(label: String, ratio: float, color: Color, segs: int, width: float) -> HBoxContainer:
@@ -1513,6 +1570,14 @@ func _event_fx(e: Dictionary) -> float:
 				AnimFx.shield(_fx, _stage.anchor_of(str(e["dst"])), false)
 		"marks":
 			return _fx_marks(e)
+		"react":
+			var rk: String = str(e["kind"])
+			Snd.play("counter" if rk != "dodge" else "dodge", 1.1)
+			_stage.impact(8.0, 0.03)
+			_pop("INTERROTTA!" if rk == "interrupt" else ("INTERCETTATA!" if rk == "intercept" else "SCHIVATA!"), str(e["unit"]), BattleTheme.OK, BattleTheme.BK, 36, 62.0, Vector2(0.0, -50.0))
+		"reserve":
+			if int(e["delta"]) > 0 and str(e["why"]) == "combo":
+				_float_text("RISERVA +%d" % int(e["delta"]), BattleState.BOSS_ID, BattleTheme.CY, 20)
 		"dodge":
 			Snd.play("dodge")
 			_pop("SCHIVA!", str(e["unit"]), BattleTheme.OK, BattleTheme.BK, 32, 54.0, Vector2(0.0, -30.0))
@@ -1683,7 +1748,7 @@ func _slow_motion(scale: float, seconds: float) -> void:
 
 # ---------- Resoconto di fine battaglia (perche' ho vinto o perso) ----------
 
-var _recap: Dictionary = {"worst": 0, "worst_move": "", "worst_unit": "", "first_down": "", "breaks": 0, "synergies": 0, "last_move": "", "wills": 0}
+var _recap: Dictionary = {"worst": 0, "worst_move": "", "worst_unit": "", "first_down": "", "breaks": 0, "synergies": 0, "last_move": "", "wills": 0, "unhandled": 0, "missed": 0, "reacts": 0, "spent": 0, "wasted": 0, "decisive": ""}
 
 
 func _recap_track(e: Dictionary) -> void:
@@ -1704,6 +1769,18 @@ func _recap_track(e: Dictionary) -> void:
 				_recap["break_round"] = int(shown.get("round", 0))
 		"synergy":
 			_recap["synergies"] = int(_recap["synergies"]) + 1
+			_recap["last_syn"] = str(e.get("name", ""))
+		"react":
+			_recap["reacts"] = int(_recap["reacts"]) + 1
+		"reserve":
+			if str(e.get("why", "")) == "react":
+				_recap["spent"] = int(_recap["spent"]) - int(e["delta"])
+			_recap["wasted"] = int(_recap["wasted"]) + int(e.get("wasted", 0))
+		"threat":
+			if not bool(e["handled"]):
+				_recap["unhandled"] = int(_recap["unhandled"]) + 1
+				if bool(e["could"]):
+					_recap["missed"] = int(_recap["missed"]) + 1
 		"tenacity":
 			_recap["wills"] = int(_recap["wills"]) + 1
 			_recap["will_unit"] = str(BattleState.unit(shown, str(e["unit"])).get("name", ""))
@@ -1717,13 +1794,20 @@ func _recap_text(victory: bool) -> String:
 		parts.append("Primo a cadere: %s" % str(_recap["first_down"]).to_upper())
 	parts.append("Fase raggiunta: %d" % int(shown.get("phase", 1)))
 	parts.append("Rotture: %d  ·  Sinergie: %d" % [int(_recap["breaks"]), int(_recap["synergies"])])
+	if int(_recap["unhandled"]) > 0:
+		parts.append("Cariche non gestite: %d%s" % [int(_recap["unhandled"]), (" (%d con Riserva disponibile)" % int(_recap["missed"])) if int(_recap["missed"]) > 0 else ""])
+	parts.append("Reazioni: %d  ·  Riserva spesa: %d  ·  sprecata: %d" % [int(_recap["reacts"]), int(_recap["spent"]), int(_recap["wasted"])])
 	if _recap.has("break_round"):
 		parts.append("Momento chiave: rottura al turno %d" % int(_recap["break_round"]))
 	if _recap.has("will_unit"):
 		parts.append("Salvataggio all'ultimo: %s resiste con 1 PV" % str(_recap["will_unit"]).to_upper())
 	var tip: String = ""
+	if str(_recap.get("last_syn", "")) != "" and (_recap.has("break_round") or victory):
+		parts.append("Combo decisiva: %s" % str(_recap["last_syn"]))
 	if not victory:
-		if int(_recap["breaks"]) == 0:
+		if int(_recap["missed"]) > 0:
+			tip = "Consiglio: quando il boss prepara una CARICA usa una reazione (Schivata, Intercettazione o Interruzione): avevi Riserva e non l'hai usata."
+		elif int(_recap["breaks"]) == 0:
 			tip = "Consiglio: marca il boss e colpisci col colore vantaggioso per rompere l'equilibrio e fargli saltare la mossa."
 		elif str(_recap["first_down"]) != "":
 			tip = "Consiglio: proteggi %s, o scambialo prima della mossa che lo colpisce (leggi l'allarme)." % str(_recap["first_down"]).to_upper()

@@ -116,7 +116,43 @@ static func validate_choice(state: Dictionary, pid: String, choice: Dictionary) 
 				return "ultimate non equipaggiata"
 			if int(u["gauge"]) < BattleTypes.GAUGE_MAX:
 				return "barra non piena"
+		"reaction":
+			var why: String = reaction_error(state, p, move_id)
+			if why != "":
+				return why
 	return ""
+
+
+# REAZIONI: solo contro una CARICA (mossa pesante) non ancora fermata; costano Riserva di squadra.
+static func reaction_error(state: Dictionary, p: Dictionary, move_id: String) -> String:
+	var move: Dictionary = BattleContent.MOVES[move_id]
+	if int(state.get("reserve", 0)) < int(move.get("reserve", 0)):
+		return "Riserva insufficiente"
+	var tele: Dictionary = state.get("telegraph", {})
+	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	if bm.is_empty() or int(BattleState.boss(state).get("stun", 0)) > 0 or not is_heavy_boss_move(bm):
+		return "nessuna carica da fermare"
+	if str(move["react"]) == "intercept":
+		if str(bm["target"]) == "all":
+			return "serve una carica su un solo bersaglio"
+		if str(tele.get("target", "")) == str(p["id"]):
+			return "la carica e' su di te"
+	return ""
+
+
+# Reazioni disponibili adesso per questo slot: [{id, err}] (vuoto se non c'e' nessuna carica).
+static func reactions_for(state: Dictionary, slot_id: String) -> Array:
+	var out: Array = []
+	var p: Dictionary = BattleState.player(state, slot_id)
+	if p.is_empty() or str(state["winner"]) != "" or not BattleState.player_alive(state, p):
+		return out
+	var tele: Dictionary = state.get("telegraph", {})
+	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	if bm.is_empty() or int(BattleState.boss(state).get("stun", 0)) > 0 or not is_heavy_boss_move(bm):
+		return out
+	for rid in BattleContent.REACTIONS:
+		out.append({"id": rid, "err": reaction_error(state, p, rid)})
+	return out
 
 
 static func submit_choice(state: Dictionary, pid: String, choice: Dictionary) -> bool:
@@ -157,6 +193,9 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 	state["link"] = {"n": 0, "last": ""}
 	state["tags"] = []
 	state["combo_n"] = 0
+	state["combo_used"] = []
+	state["reactions"] = []
+	state["combo_reserve"] = false
 
 	# 1. scelte mancanti: IA, oppure attacco standard se forzato
 	for p in state["players"]:
@@ -251,9 +290,34 @@ static func _tally(state: Dictionary, events: Array) -> void:
 				st["phases"] = int(st["phases"]) + 1
 			"adapt":
 				st["adapts"] = int(st.get("adapts", 0)) + 1
+			"react":
+				st["reactions"] = int(st.get("reactions", 0)) + 1
+			"reserve":
+				if str(e["why"]) == "react":
+					st["spent"] = int(st.get("spent", 0)) - int(e["delta"])
+				st["wasted"] = int(st.get("wasted", 0)) + int(e.get("wasted", 0))
+			"threat":
+				if not bool(e["handled"]):
+					st["unhandled"] = int(st.get("unhandled", 0)) + 1
+					if bool(e["could"]):
+						st["missed"] = int(st.get("missed", 0)) + 1
+					if int(e["lost"]) > int(st.get("worst_lost", 0)):
+						st["worst_lost"] = int(e["lost"])
+						st["worst_move"] = str(e["move"])
 			"down":
 				if str(e["unit"]) != BattleState.BOSS_ID:
 					st["downs"] = int(st["downs"]) + 1
+	# COMBO DECISIVA: l'ultima sinergia del round in cui il boss si rompe o cade
+	var last_syn: String = ""
+	var turning: bool = false
+	for e in events:
+		if str(e.get("t", "")) == "synergy":
+			last_syn = str(e["name"])
+		elif str(e.get("t", "")) == "break" or (str(e.get("t", "")) == "down" and str(e["unit"]) == BattleState.BOSS_ID):
+			turning = true
+	if last_syn != "" and turning:
+		st["decisive"] = last_syn
+		st["decisive_round"] = int(state["round"])
 	state["stats"] = st
 
 
@@ -364,6 +428,8 @@ static func _check_phase(state: Dictionary, events: Array) -> void:
 	if not bool(boss.get("exposed", false)):
 		boss["balance"] = int(boss["balance_max"])
 	events.append({"t": "phase", "phase": ph})
+	if ph == 2 and int(state.get("reserve", 0)) > 0:
+		_spend_reserve(state, BattleTypes.RESERVE_DRAIN_PHASE, "boss", events)
 	var sh: int = int(round(float(boss["max_hp"]) * BattleTypes.PHASE_SHIELD))
 	boss["shield"] = int(boss["shield"]) + sh
 	events.append({"t": "shield", "src": boss["id"], "dst": boss["id"], "amount": sh})
@@ -556,6 +622,9 @@ static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, e
 		var r: Dictionary = m["rule"]
 		var n: int = int(state.get("combo_n", 0))
 		state["combo_n"] = n + 1
+		var used: Array = state.get("combo_used", [])
+		used.append("%s|%s" % [str(r["id"]), str(m["with"])])
+		state["combo_used"] = used
 		mult *= float(r["mult"]) * (1.0 + Combos.CHAIN_BONUS * float(mini(n, Combos.CHAIN_MAX)))
 		if int(r["gauge"]) > 0:
 			actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + int(r["gauge"]))
@@ -564,6 +633,9 @@ static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, e
 		if int(r["brk"]) > 0:
 			_drain_balance(boss, int(r["brk"]), actor, events)
 		events.append({"t": "synergy", "id": str(r["id"]), "name": str(r["name"]), "unit": actor["id"], "with": str(m["with"]), "tier": mini(n, 2), "fx": str(r["fx"]), "col": str(r["col"])})
+		if not bool(state.get("combo_reserve", false)):
+			state["combo_reserve"] = true
+			_gain_reserve(state, BattleTypes.RESERVE_PER_COMBO, "combo", events)
 	return mult
 
 
@@ -631,9 +703,52 @@ static func _add_status(u: Dictionary, status: String, turns: int, events: Array
 
 # ---------- Azioni ----------
 
+# Riserva di squadra: guadagno (con tetto) e spesa. L'evento porta il valore finale, cosi' lo schermo resta coerente.
+static func _gain_reserve(state: Dictionary, n: int, why: String, events: Array) -> void:
+	var before: int = int(state.get("reserve", 0))
+	var after: int = mini(BattleTypes.RESERVE_MAX, before + n)
+	state["reserve"] = after
+	events.append({"t": "reserve", "delta": after - before, "value": after, "why": why, "wasted": n - (after - before)})
+
+
+static func _spend_reserve(state: Dictionary, n: int, why: String, events: Array) -> void:
+	var after: int = maxi(0, int(state.get("reserve", 0)) - n)
+	events.append({"t": "reserve", "delta": after - int(state.get("reserve", 0)), "value": after, "why": why, "wasted": 0})
+	state["reserve"] = after
+
+
+# Esegue una reazione. Falso se non e' piu' possibile (Riserva finita per colpa di un compagno, carica gia' fermata).
+static func _react(state: Dictionary, actor: Dictionary, move_id: String, events: Array) -> bool:
+	var move: Dictionary = BattleContent.MOVES[move_id]
+	var owner: Dictionary = BattleState.player(state, str(actor["owner"]))
+	if owner.is_empty() or reaction_error(state, owner, move_id) != "":
+		return false
+	for r in state.get("reactions", []):
+		if str(r["react"]) == "interrupt" and str(move["react"]) == "interrupt":
+			return false             # una sola Interruzione a round
+	_spend_reserve(state, int(move["reserve"]), "react", events)
+	events.append({"t": "act", "unit": actor["id"], "move": move_id})
+	var list: Array = state.get("reactions", [])
+	list.append({"unit": str(actor["id"]), "react": str(move["react"])})
+	state["reactions"] = list
+	var boss: Dictionary = BattleState.boss(state)
+	events.append({"t": "react", "unit": actor["id"], "kind": str(move["react"]), "move": str(state["telegraph"]["move"])})
+	if str(move["react"]) == "interrupt":
+		_drain_balance(boss, BattleTypes.INTERRUPT_PTS, actor, events)
+		actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + 10)
+	return true
+
+
 static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, target_pid: String, events: Array) -> void:
 	var move: Dictionary = BattleContent.MOVES[move_id]
 	var kind: String = str(move["kind"])
+	if kind == "reaction":
+		if not _react(state, actor, move_id, events):
+			move_id = BattleTypes.ACTION_GUARD
+			move = BattleContent.MOVES[move_id]
+			kind = "basic"
+		else:
+			return
 	# controlli al momento dell'esecuzione
 	if kind == "ult" and int(actor["gauge"]) < BattleTypes.GAUGE_MAX:
 		move_id = BattleTypes.ACTION_ATTACK
@@ -870,11 +985,31 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		boss["shield"] = int(boss["shield"]) + shield
 		events.append({"t": "shield", "src": boss["id"], "dst": boss["id"], "amount": shield})
 
+	var reacted: bool = not state.get("reactions", []).is_empty()
+	var heavy: bool = is_heavy_boss_move(move)
+	var reserve_then: int = int(state.get("reserve", 0))
+	var lost_total: int = 0
+	var intercepted: Dictionary = {}
+	for r in state.get("reactions", []):
+		if str(r["react"]) == "intercept":
+			intercepted = BattleState.unit(state, str(r["unit"]))
 	for t in targets:
 		if not BattleState.is_alive(t):
 			continue
+		var evaded: bool = false
+		for r in state.get("reactions", []):
+			if str(r["react"]) == "dodge" and str(r["unit"]) == str(t["id"]):
+				evaded = true
+		if evaded:
+			events.append({"t": "dodge", "unit": t["id"], "react": true})
+			continue
+		var hit_mult: float = float(move["mult"])
+		if not intercepted.is_empty() and BattleState.is_alive(intercepted) and str(intercepted["id"]) != str(t["id"]) and targets.size() == 1:
+			t = intercepted
+			hit_mult *= BattleTypes.INTERCEPT_FACTOR
 		var hp_before: int = int(t["hp"])
-		_hit(state, boss, t, float(move["mult"]), events)
+		_hit(state, boss, t, hit_mult, events)
+		lost_total += hp_before - int(t["hp"])
 		_counter(state, boss, t, events)
 		if move.has("drain"):
 			var dealt: int = hp_before - int(t["hp"])
@@ -885,6 +1020,9 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		if move.has("status") and BattleState.is_alive(t):
 			for s in move["status"]:
 				_add_status(t, str(s), int(move["status"][s]), events)
+	if heavy:
+		# resoconto: una carica e' "gestita" se qualcuno ha reagito o non ha fatto danno
+		events.append({"t": "threat", "move": move_id, "handled": reacted or lost_total <= 0, "could": reserve_then >= 1, "lost": lost_total})
 
 
 # ---------- Fine round ----------
@@ -961,6 +1099,12 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 	# se l'attivo e' caduto entra il compagno con piu' vita
 	for p in state["players"]:
 		_auto_replace(state, p, events)
+
+	# Riserva di squadra: +1 a round; dalla fase 2 il boss ne divora una parte (le priorita' cambiano: non basta piu' accumulare)
+	_gain_reserve(state, BattleTypes.RESERVE_PER_ROUND, "round", events)
+	var bs: Dictionary = BattleState.boss(state)
+	if int(state.get("phase", 1)) >= 2 and int(bs.get("stun", 0)) == 0 and int(state.get("reserve", 0)) > 0:
+		_spend_reserve(state, BattleTypes.RESERVE_DRAIN_ROUND, "boss", events)
 
 	# modifiche temporanee e aure di fazione (chi e' caduto non da' piu' aure)
 	Factions.tick(state)

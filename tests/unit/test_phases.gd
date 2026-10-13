@@ -153,6 +153,7 @@ func _init() -> void:
 	# DETONAZIONE: colpo pesante su boss marchiato da un altro
 	sy["tags"] = []
 	sy["combo_n"] = 0
+	sy["combo_used"] = []
 	var bal0: int = int(bsy["balance"])
 	var ev_det: Array = []
 	BattleResolver._synergies(sy, BattleState.unit(sy, "a:kira"), bsy, ev_det, BattleContent.MOVES["colpo_caricato"])

@@ -137,6 +137,7 @@ static func create(specs: Array, boss_id: String, seed_value: int, tier: int = 0
 		"winner": "",
 		"cycle_index": 0,
 		"phase": 1,
+		"reserve": BattleTypes.RESERVE_START,
 		"players": [],
 		"units": {},
 		"telegraph": {},

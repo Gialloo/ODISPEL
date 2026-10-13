@@ -5,6 +5,13 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.17", "items": [
+		"RISERVA DI SQUADRA: una scorta condivisa (+1 a round, +1 con una combo) che si spende per le REAZIONI.",
+		"Contro una CARICA del boss compaiono 3 reazioni: SCHIVATA (eviti il colpo), INTERCETTAZIONE (lo prendi tu al posto di un compagno), INTERRUZIONE (togli equilibrio e la carica salta).",
+		"Nuove combo: VINCOLO + SCARICA e GUARDIA SPEZZATA. Ogni combo scatta una sola volta per causa e round: niente catene infinite.",
+		"Dalla fase 2 il boss divora la Riserva: non basta piu' accumulare.",
+		"Resoconto: cariche non gestite, Riserva sprecata e combo decisiva.",
+	]},
 	{"v": "0.24.16", "items": [
 		"Boss: ora hanno FASI (a meta' e a un quarto dei PV) e una barra EQUILIBRIO: a zero il boss e' stordito e salta la mossa.",
 		"Le mosse pesanti sono CARICHE annunciate; se la mossa e' letale per qualcuno lo vedi subito.",

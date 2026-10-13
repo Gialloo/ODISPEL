@@ -20,6 +20,10 @@ const RULES: Array = [
 		"desc": "colpo pesante su un boss marchiato da un altro"},
 	{"id": "frattura", "name": "FRATTURA", "needs": "DEBUFF", "with": "HEAVY", "mult": 1.15, "gauge": 0, "brk": 2, "fx": "shatter", "col": "#b07bff",
 		"desc": "colpo pesante dopo che un compagno ha indebolito il boss"},
+	{"id": "vincolo", "name": "VINCOLO + SCARICA", "needs": "BIND", "with": "HEAVY", "mult": 1.2, "gauge": 0, "brk": 3, "fx": "lock", "col": "#7cf0ff",
+		"desc": "colpo pesante sul boss indebolito nell'attacco da un compagno"},
+	{"id": "guardia", "name": "GUARDIA SPEZZATA", "needs": "BREAKGUARD", "with": "ATTACK", "mult": 1.1, "gauge": 0, "brk": 1, "fx": "shatter", "col": "#ff9a4a",
+		"desc": "attacco coordinato su un boss con la difesa spezzata da un compagno"},
 	{"id": "assedio", "name": "ASSEDIO", "needs": "TAUNT", "with": "ATTACK", "mult": 1.08, "gauge": 5, "brk": 0, "fx": "lock", "col": "#ff9a4a",
 		"desc": "un compagno attira il boss mentre tu colpisci"},
 	{"id": "raffica", "name": "RAFFICA", "needs": "ATTACK", "with": "PIERCE", "mult": 1.1, "gauge": 0, "brk": 1, "fx": "volley", "col": "#6bffb0",
@@ -56,6 +60,10 @@ static func tags_of(move: Dictionary) -> Array:
 		t.append("MARK")
 	if move.has("debuff"):
 		t.append("DEBUFF")
+		if move["debuff"].has("atk"):
+			t.append("BIND")
+		if move["debuff"].has("def"):
+			t.append("BREAKGUARD")
 	if move.has("shield") or move.has("heal"):
 		if not hits_enemy:
 			t.append("SUPPORT")
@@ -84,12 +92,14 @@ static func matching(state: Dictionary, actor: Dictionary, boss: Dictionary, my_
 	var mb: String = str(boss.get("marked_by", ""))
 	if Marks.count(boss) > 0 and mb != "" and mb != str(actor["id"]) and BattleState.is_alive(BattleState.unit(state, mb)):
 		seen.append({"unit": mb, "tags": ["MARK"]})
+	var used: Array = state.get("combo_used", [])
 	var out: Array = []
 	for r in RULES:
 		if not my_tags.has(str(r["with"])):
 			continue
 		for entry in seen:
-			if entry["tags"].has(str(r["needs"])):
+			# NIENTE CATENE INFINITE: ogni causa (regola + compagno) produce la combo una sola volta a round
+			if entry["tags"].has(str(r["needs"])) and not used.has("%s|%s" % [str(r["id"]), str(entry["unit"])]):
 				out.append({"rule": r, "with": str(entry["unit"])})
 				break
 	return out
