@@ -598,7 +598,7 @@ func _fan_origin() -> Vector2:
 	var pose: Vector3 = _stage.party_pose(idx, players.size())
 	# il ventaglio si apre a destra di tutta la squadra, cosi' non copre nessun operatore
 	var last: Vector3 = _stage.party_pose(maxi(0, players.size() - 1), players.size())
-	return Vector2(last.x - 90.0, pose.y - 95.0 * pose.z)
+	return Vector2(last.x - 145.0, pose.y - 95.0 * pose.z)
 
 
 func _build_log() -> void:
