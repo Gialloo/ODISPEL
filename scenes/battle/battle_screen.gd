@@ -40,6 +40,7 @@ var _tele_target: Label
 var _ops_box: VBoxContainer
 var _orders_box: FanMenu
 var _fan_key: String = ""
+var _fan_anchor: Control      # riquadro invisibile attorno ai comandi (lo evidenzia il tutorial)
 var _log_label: RichTextLabel
 var _overlay: Control
 var _rec_dot: ColorRect
@@ -87,7 +88,7 @@ func tutorial_steps() -> Array:
 		"text": "La tua squadra: PV, energia e carica dell'ultimate di ciascuno. Uno solo e' in campo (il triangolo). Clicca un compagno in panchina per scambiarlo: il cambio e' gratis e avviene prima di tutto. Chi sta in panchina recupera piu' energia."},
 		{"title": "COME FUNZIONA UN TURNO", "target": _panel_of(_turn_box),
 		"text": "Ogni round TU scegli solo per il tuo operatore in campo. I compagni IA scelgono da soli (non copiano te) e la loro scelta e' gia' visibile nell'ORDINE DEL TURNO. Poi si risolve tutto in fila per priorita' e velocita': il segnalino rosso mostra chi agisce e chi subisce. Dietro di te vedi in silhouette il tuo party in panchina (solo i tuoi operatori)."},
-		{"title": "GLI ORDINI", "target": _orders_box,
+		{"title": "GLI ORDINI", "target": _fan_anchor,
 		"text": "I comandi si aprono a ventaglio attorno al tuo operatore. Scegli cosa fare: ATTACCO, GUARDIA (dimezza i danni), le abilita' (costano energia) e l'ULTIMATE, che si carica combattendo. Scorciatoie: tasti 1-4. I colori contano: un colpo del colore giusto fa +50% di danni, quello sbagliato -33%."},
 		{"title": "CLASSI E FAZIONI", "target": null,
 		"text": "STRIKER fa danno, VANGUARD regge i colpi, WARDEN cura e protegge. Le FAZIONI (LibraCorp, Rondini, Magabondi, Kairos) danno bonus ai compagni dello stesso gruppo: piu' sono rari, piu' il bonus e' grande. Nell'archivio operatori trovi STRATEGIE, ARCHIVIO e la LEGENDA di ogni personaggio."},
@@ -372,6 +373,11 @@ func _build_operators() -> void:
 
 
 func _build_orders() -> void:
+	_fan_anchor = Control.new()
+	_fan_anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fan_anchor.position = Vector2(300.0, 300.0)
+	_fan_anchor.size = Vector2(380.0, 330.0)
+	add_child(_fan_anchor)
 	_orders_box = FanMenu.new()
 	_orders_box.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_orders_box)
@@ -722,6 +728,13 @@ func _refresh_orders() -> void:
 	var bw: float = 232.0 if touch else 196.0
 	var pts: Array = _orders_box.layout(entries.size(), bh, 6.0, 340.0 if touch else 290.0, 6.0 if touch else 22.0)
 	title.position = Vector2(float(pts[0].x) + 6.0, float(pts[0].y) - bh * 0.5 - 24.0)
+	var lo := Vector2(1e9, 1e9)
+	var hi := Vector2(-1e9, -1e9)
+	for pt in pts:
+		lo = Vector2(minf(lo.x, float(pt.x) - 8.0), minf(lo.y, float(pt.y) - bh * 0.5))
+		hi = Vector2(maxf(hi.x, float(pt.x) - 8.0 + bw + 28.0), maxf(hi.y, float(pt.y) + bh * 0.5))
+	_fan_anchor.position = lo
+	_fan_anchor.size = hi - lo
 	var animate: bool = _fan_key != "%s|%d" % [uid, int(shown["round"])]
 	_fan_key = "%s|%d" % [uid, int(shown["round"])]
 	var n: int = 1
