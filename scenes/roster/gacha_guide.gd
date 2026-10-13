@@ -124,8 +124,12 @@ func _ready() -> void:
 
 	_body = VBoxContainer.new()
 	_body.add_theme_constant_override("separation", 8)
-	_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_child(_body)
+	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.add_child(_body)
+	col.add_child(scroll)
 
 	var nav := HBoxContainer.new()
 	nav.add_theme_constant_override("separation", 12)

@@ -185,6 +185,61 @@ static func legend_page(char_id: String, style: String = "", faction_override: S
 	return {"title": str(def["name"]).to_upper(), "lines": lines}
 
 
+# Una mossa spiegata in parole semplici: costo, tipo e cosa fa.
+static func move_line(move_id: String, label: String = "") -> Dictionary:
+	var m: Dictionary = BattleContent.MOVES.get(move_id, {})
+	if m.is_empty():
+		return _line("-")
+	var kind: String = str(m.get("kind", "basic"))
+	var cost: String = ""
+	if kind == "skill":
+		cost = " (%dE)" % int(m.get("cost", 0))
+	elif kind == "ult":
+		cost = " (ULTIMATE, a barra piena)"
+	var tag: String = label if label != "" else {"basic": "BASE", "skill": "SKILL", "ult": "ULT"}.get(kind, "")
+	var tgt: String = {"enemy": "sul boss", "ally": "su un alleato", "allies": "su tutta la squadra", "self": "su di te"}.get(str(m.get("target", "enemy")), "")
+	var hint: String = BattleText.move_hint(move_id)
+	var col: Color = BattleTheme.GOLD if kind == "ult" else (BattleTheme.CY if kind == "skill" else BattleTheme.WH)
+	return _line("%s - %s%s: %s %s" % [tag, BattleText.move_name(move_id), cost, hint.to_lower() if hint != "" else "effetto speciale", tgt], col)
+
+
+# Pagine "?" di un operatore: abilita' e cosa da' ogni rank.
+static func ability_pages(char_id: String, rank: int = 0) -> Array:
+	var def: Dictionary = BattleContent.CHARACTERS.get(char_id, {})
+	var out: Array = []
+	if def.is_empty():
+		return out
+	var ab: Array = []
+	ab.append(move_line("attack"))
+	ab.append(move_line("guard"))
+	var base: String = str(def.get("skill", ""))
+	if base != "":
+		ab.append(move_line(base, "SKILL BASE"))
+	for sk in Signatures.all_skills(char_id):
+		var l: Dictionary = move_line(str(sk["id"]), "SKILL UNICA")
+		if int(sk["rank"]) > 0:
+			l["text"] = str(l["text"]) + "  [si sblocca a RANK %d]" % int(sk["rank"])
+		ab.append(l)
+	ab.append(move_line(str(def.get("ult", "")), "ULTIMATE"))
+	for pid in def.get("passives", [str(def.get("passive", ""))]):
+		if BattleContent.PASSIVES.has(str(pid)):
+			ab.append(_line("PASSIVA - %s" % str(BattleContent.PASSIVES[str(pid)]["name"]), BattleTheme.CY_DIM))
+	if Signatures.has_passive(char_id):
+		ab.append(_line("PASSIVA UNICA - %s: %s" % [Signatures.passive_name(char_id), Signatures.passive_text(char_id, rank)], BattleTheme.CY_DIM))
+	if BattleContent.faction_of(char_id) != "":
+		ab.append(_line(Atypical.describe(char_id), BattleTheme.CY_DIM))
+	out.append({"title": "%s - ABILITA'" % str(def["name"]).to_upper(), "lines": ab})
+	var rk: Array = [_line("Ogni rank si compra con le COPIE (max rank %d). Cosa ottieni:" % RosterState.MAX_RANK)]
+	var stat: int = int(round(BattleContent.rank_bonus(int(def["rarity"])) * 100.0))
+	for r in range(1, RosterState.MAX_RANK + 1):
+		rk.append(_line("RANK %d: +%d%% statistiche (in totale +%d%%) · %s" % [r, stat, stat * r, Signatures.rank_upgrade_text(char_id, r)], BattleTheme.GOLD if r <= rank else BattleTheme.WH))
+	if Signatures.has_passive(char_id):
+		rk.append(_line("La passiva unica cresce di +%d%% del suo valore a ogni rank." % int(round(Signatures.passive_scale(char_id) * 100.0)), BattleTheme.CY_DIM))
+	rk.append(_line("In giallo i rank gia' raggiunti (ora RANK %d)." % rank, BattleTheme.CY_DIM))
+	out.append({"title": "%s - RANK" % str(def["name"]).to_upper(), "lines": rk})
+	return out
+
+
 # Archivio: glossario (a pagine) e poi una pagina per ogni operatore.
 static func archive_pages() -> Array:
 	var out: Array = []

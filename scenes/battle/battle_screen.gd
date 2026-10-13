@@ -359,11 +359,11 @@ func _build_camera_info() -> void:
 	_rec_dot = ColorRect.new()
 	_rec_dot.color = BattleTheme.RD
 	_rec_dot.size = Vector2(20, 20)
-	_rec_dot.position = Vector2(28, 28)
+	_rec_dot.position = Vector2(12, 12)
 	_rec_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_rec_dot)
 	var rec := BattleTheme.make_label("REC", 24, BattleTheme.WH, true)
-	rec.position = Vector2(56, 20)
+	rec.position = Vector2(38, 4)
 	add_child(rec)
 	var cam := BattleTheme.make_label("CAM-07 · VIA S. GIORGIO · PARK 3", 14, BattleTheme.CY)
 	cam.position = Vector2(28, 70)
@@ -374,7 +374,7 @@ func _build_camera_info() -> void:
 	_clock_label.visible = false
 	add_child(_clock_label)
 	_round_label = BattleTheme.make_label("CICLO 01", 22, BattleTheme.WH, true)
-	_round_label.position = Vector2(28, 52)
+	_round_label.position = Vector2(12, 32)
 	add_child(_round_label)
 
 
@@ -401,8 +401,8 @@ func _build_boss_banner() -> void:
 	timer_panel.quiet = true
 	add_child(timer_panel)
 	timer_panel.margins = Vector4(14.0, 22.0, 14.0, 2.0)
-	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(170, 20, 320, 80))
-	_timer_label = BattleTheme.make_label("LIBERO", 34, BattleTheme.CY, true)
+	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(144, 4, 284, 66))
+	_timer_label = BattleTheme.make_label("LIBERO", 28, BattleTheme.CY, true)
 	timer_panel.set_content(_timer_label)
 
 
@@ -423,10 +423,9 @@ func _build_telegraph() -> void:
 # Pannello "ORDINE DEL TURNO": chi agisce, in che ordine e cosa ha scelto (le IA decidono da sole).
 func _build_turn_panel() -> void:
 	var panel := HudPanel.new().setup("ORDINE DEL TURNO", BattleTheme.CY_DIM)
-	panel.quiet = true
 	panel.margins = Vector4(12, 26, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(20, 92, 320, 206))
+	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 80, 340, 206))
 	_turn_box = VBoxContainer.new()
 	_turn_box.add_theme_constant_override("separation", 1)
 	_turn_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -492,7 +491,7 @@ func _refresh_turn_panel() -> void:
 		c.queue_free()
 	if rows.is_empty():
 		return
-	var fs: int = 13 if not TouchUi.active() else 14
+	var fs: int = 15 if not TouchUi.active() else 16
 	for r in rows:
 		var acting_now: bool = str(r["unit"]) == _turn_acting
 		var text: String = "%s%d  %-4s %-7s » %s" % ["▶" if acting_now else " ", int(r["n"]), str(r["who"]), str(r["name"]).left(7), str(r["action"])]
@@ -508,7 +507,7 @@ func _build_operators() -> void:
 	panel.bare = true
 	panel.margins = Vector4(10.0, 10.0, 10.0, 8.0)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 372, -18))
+	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(6, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 330, -6))
 	_ops_panel = panel
 	_ops_box = VBoxContainer.new()
 	_ops_box.add_theme_constant_override("separation", 3)
@@ -716,8 +715,13 @@ func _refresh_operators() -> void:
 	for uid in BattleState.party_of(shown, me):
 		if not BattleState.is_front(shown, str(uid)):
 			backs.append(str(uid))
-	for uid in backs:
-		_ops_box.add_child(_back_row(BattleState.unit(shown, uid), uid == cur_swap))
+	if not backs.is_empty():
+		var bench := HBoxContainer.new()
+		bench.add_theme_constant_override("separation", 4)
+		bench.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for uid in backs:
+			bench.add_child(_back_row(BattleState.unit(shown, uid), uid == cur_swap))
+		_ops_box.add_child(bench)
 	# altri giocatori (rete): solo l'unita' attiva, tutti su una riga
 	var allies := HBoxContainer.new()
 	allies.add_theme_constant_override("separation", 14)
@@ -755,23 +759,26 @@ func _fit_ops_panel(fronts: int, backs: int, with_allies: bool) -> void:
 	if _ops_panel == null:
 		return
 	var touch: bool = TouchUi.active()
-	var h: float = 22.0 + _unit_row_height() * float(maxi(fronts, 1)) + _back_row_height() * float(backs)
-	h += 3.0 * float(maxi(fronts + backs - 1, 0)) + (20.0 if with_allies else 0.0)
-	_anchor(_ops_panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -(h + 18.0), 372, -18))
+	var h: float = 22.0 + _unit_row_height() * float(maxi(fronts, 1)) + (_back_row_height() if backs > 0 else 0.0)
+	h += 3.0 * float(maxi(fronts - 1 + (1 if backs > 0 else 0), 0)) + (20.0 if with_allies else 0.0)
+	_anchor(_ops_panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(6, -(h + 6.0), 330, -6))
 
 
 func _back_row_height() -> float:
-	return 30.0 if TouchUi.active() else 26.0
+	return 74.0 if TouchUi.active() else 66.0
 
 
-# Riga compatta di chi sta in back row: tocca per mandarlo in campo al posto del personaggio selezionato.
+# Casella verticale di chi sta in panchina: nome in alto, barre PV ed energia in verticale.
+# Tocca per mandarlo in campo al posto del personaggio selezionato.
 func _back_row(u: Dictionary, selected: bool) -> Control:
 	var alive: bool = BattleState.is_alive(u)
 	var h: float = _back_row_height()
+	var w: float = 76.0
 	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(0, h)
+	btn.custom_minimum_size = Vector2(w, h)
 	btn.flat = true
 	btn.disabled = not alive
+	btn.clip_contents = true
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	for st in ["normal", "hover", "pressed", "disabled"]:
@@ -784,25 +791,37 @@ func _back_row(u: Dictionary, selected: bool) -> Control:
 	btn.add_child(bgc)
 	var key := ColorRect.new()
 	key.color = BattleTheme.unit_color(str(u["color"]))
-	key.size = Vector2(6, h)
+	key.size = Vector2(5, h)
 	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(key)
 	var fg: Color = BattleTheme.BK if selected else (BattleTheme.CY_DIM if alive else BattleTheme.CY_DARK)
-	var name_l := BattleTheme.make_label(("%s%s" % [str(u["name"]).to_upper(), "  ⇄" if selected else ""]) if alive else "%s  K.O." % str(u["name"]).to_upper(), 14, fg, true)
-	name_l.position = Vector2(14, 0 if not TouchUi.active() else 5)
+	var name_l := BattleTheme.make_label(str(u["name"]).to_upper(), 12, fg, true)
+	name_l.position = Vector2(10, 1)
+	name_l.custom_minimum_size = Vector2(w - 12.0, 0)
+	name_l.size = Vector2(w - 12.0, 16)
+	name_l.clip_text = true
 	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(name_l)
+	var bar_h: float = h - 24.0
 	var ratio: float = float(u["hp"]) / float(u["max_hp"])
-	var hp := SegBar.new().setup(8, BattleTheme.BK if selected else (BattleTheme.RD if ratio < 0.3 else BattleTheme.CY_DIM), Vector2(70, 7))
+	var hp := SegBar.new().setup(8, BattleTheme.BK if selected else (BattleTheme.RD if ratio < 0.3 else BattleTheme.CY_DIM), Vector2(12, bar_h))
+	hp.vertical = true
 	hp.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
 	hp.set_ratio(ratio)
-	hp.position = Vector2(176, h * 0.5 - 4.0)
+	hp.position = Vector2(12, 20)
 	btn.add_child(hp)
-	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(60, 6))
+	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(8, bar_h))
+	en.vertical = true
 	en.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
 	en.set_ratio(float(u["energy"]) / float(BattleTypes.MAX_ENERGY))
-	en.position = Vector2(256, h * 0.5 - 3.0)
+	en.position = Vector2(30, 20)
 	btn.add_child(en)
+	var note := BattleTheme.make_label("K.O." if not alive else ("⇄ IN" if selected else "%d%%" % int(round(ratio * 100.0))), 11, fg, true)
+	note.position = Vector2(42, 20)
+	note.size = Vector2(32, 16)
+	note.clip_text = true
+	note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(note)
 	return btn
 
 
@@ -818,7 +837,7 @@ func _add_chips(inner: Control, u: Dictionary, selected: bool) -> void:
 		return
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
-	row.position = Vector2(244.0, 26.0 if not TouchUi.active() else 22.0)
+	row.position = Vector2(206.0, 25.0 if not TouchUi.active() else 22.0)
 	inner.add_child(row)
 	var tint: Color = Hints.faction_color(f)
 	if selected:
@@ -870,13 +889,16 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 	var where: String = "K.O." if not alive else ("FRONT" if is_active else "BACK")
 	var name_l := BattleTheme.make_label(title, 17, fg, true)
 	name_l.position = Vector2(54, -2)
+	name_l.clip_text = true
+	name_l.custom_minimum_size = Vector2(94, 0)
+	name_l.size = Vector2(94, 24)
 	inner.add_child(name_l)
 	# freccia del colore: ▲ danno maggiorato contro il boss, ▼ ridotto (il colore giusto fa +50%)
 	if alive:
 		var cm: float = BattleTypes.color_multiplier(str(u["color"]), str(BattleState.boss(shown)["color"]))
 		if cm != 1.0:
 			var arrow := BattleTheme.make_label("▲" if cm > 1.0 else "▼", 16, (BattleTheme.OK if cm > 1.0 else BattleTheme.RD) if not selected else BattleTheme.BK)
-			arrow.position = Vector2(54.0 + name_l.get_minimum_size().x + 6.0, 1)
+			arrow.position = Vector2(54.0 + minf(name_l.get_minimum_size().x, 70.0) + 4.0, 1)
 			inner.add_child(arrow)
 	# volto dell'operatore (la grafica vera se c'e', altrimenti il segnaposto anime)
 	var face := PortraitView.new().setup(str(u["char"]), "icon")
@@ -885,34 +907,34 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 	face.modulate = Color(1, 1, 1, 1.0 if alive else 0.4)
 	inner.add_child(face)
 	var lv_l := BattleTheme.make_label("LV%d" % int(u["level"]), 12, fg)
-	lv_l.position = Vector2(196, 3)
+	lv_l.position = Vector2(150, 4)
 	inner.add_child(lv_l)
 
 	_add_chips(inner, u, selected)
 
 	var hp_ratio: float = float(u["hp"]) / float(u["max_hp"])
-	var hp := SegBar.new().setup(14, BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.CY), Vector2(196, 8))
+	var hp := SegBar.new().setup(14, BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.CY), Vector2(144, 8))
 	hp.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
 	hp.set_ratio(hp_ratio)
 	hp.position = Vector2(54, 22)
 	inner.add_child(hp)
 	var hp_t := BattleTheme.make_label("%d" % int(u["hp"]), 18, fg, true)
-	hp_t.position = Vector2(262, 1)
+	hp_t.position = Vector2(206, 1)
 	inner.add_child(hp_t)
 
-	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(78, 6))
+	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(62, 6))
 	en.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
 	en.set_ratio(float(u["energy"]) / float(BattleTypes.MAX_ENERGY))
 	en.position = Vector2(54, 34)
 	inner.add_child(en)
-	var gauge := SegBar.new().setup(10, BattleTheme.BK if selected else BattleTheme.RD, Vector2(96, 6))
+	var gauge := SegBar.new().setup(10, BattleTheme.BK if selected else BattleTheme.RD, Vector2(76, 6))
 	gauge.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.RD_DARK
 	gauge.set_ratio(float(u["gauge"]) / float(BattleTypes.GAUGE_MAX))
-	gauge.position = Vector2(142, 34)
+	gauge.position = Vector2(122, 34)
 	inner.add_child(gauge)
 	if not alive:
 		var where_l := BattleTheme.make_label(where, 11, fg, true)
-		where_l.position = Vector2(274, 3)
+		where_l.position = Vector2(250, 3)
 		inner.add_child(where_l)
 	if int(u["gauge"]) >= BattleTypes.GAUGE_MAX and alive:
 		lv_l.text = "ULT!"
@@ -1483,7 +1505,7 @@ var _banter_low: Dictionary = {}
 var _banter_enraged: bool = false
 
 
-# Fumetto in alto a destra: volto di chi parla e una riga. Non piu' di uno ogni ~6 secondi.
+# Fumetto in basso a destra (lontano dal tasto autoplay): volto di chi parla e una riga. Non piu' di uno ogni ~6 secondi.
 func banter(uid: String, kind: String, force: bool = false) -> void:
 	var now: int = Time.get_ticks_msec()
 	if not force and now < _banter_until_ms:
@@ -1499,13 +1521,14 @@ func banter(uid: String, kind: String, force: bool = false) -> void:
 		_banter_node.queue_free()
 	var plate := Control.new()
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	plate.anchor_left = 1.0
 	plate.anchor_right = 1.0
+	plate.anchor_top = 1.0
+	plate.anchor_bottom = 1.0
 	plate.offset_left = -400.0
-	plate.offset_right = -22.0
-	plate.offset_top = 22.0
-	plate.offset_bottom = 112.0
+	plate.offset_right = -14.0
+	plate.offset_top = -104.0
+	plate.offset_bottom = -14.0
 	var bg := PanelContainer.new()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)

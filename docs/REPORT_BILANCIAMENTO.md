@@ -527,3 +527,9 @@ Squadre analizzate: 1771  |  vittorie medie: 54.8%
 | oriel + tana + vesper | 0% | 40.0 |
 | oriel + tana + yuna | 0% | 40.0 |
 
+
+## Aggiornamento 0.24.2
+
+- Nuovo moltiplicatore per l'attacco base di classe (solo operatori): guardiano x1.5, avanguardia x1.3, attaccante x1.0. Serve perche' in battaglia combatte un solo operatore per giocatore e i guardiani passavano il tempo senza fare danno.
+- Potenziati ancora Mira, Sera, Nami, Rhea, Elle, Oriel, Vesper, Silex, Bruno, Dax, Moro, Cato (statistiche e bonus di squadra delle skill unica dei guardiani).
+- Risultato: nessun operatore in tier D (vedi docs/TIERLIST.md). I guardiani restano in fondo alla tier C: il loro valore reale (cure, scudi, buff) dipende dal giocatore.

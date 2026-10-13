@@ -8,6 +8,7 @@ var ratio: float = 1.0
 var color_on: Color = BattleTheme.CY
 var color_off: Color = BattleTheme.CY_DARK
 var gap: float = 2.0
+var vertical: bool = false      # segmenti impilati, si riempiono dal basso
 var smooth: bool = false        # barre dei PV: la scia chiara mostra quanto si e' perso e poi si svuota
 var _ghost: float = 1.0
 var _ghost_wait: float = 0.0
@@ -58,8 +59,14 @@ func filled_segments() -> int:
 func _draw() -> void:
 	if segments <= 0:
 		return
-	var w: float = (size.x - gap * float(segments - 1)) / float(segments)
 	var filled: int = filled_segments()
+	if vertical:
+		var hh: float = (size.y - gap * float(segments - 1)) / float(segments)
+		for i in segments:
+			var y: float = size.y - float(i + 1) * hh - float(i) * gap
+			draw_rect(Rect2(0.0, y, size.x, hh), color_on if i < filled else color_off)
+		return
+	var w: float = (size.x - gap * float(segments - 1)) / float(segments)
 	var ghost_n: int = clampi(int(ceil(_ghost * float(segments) - 0.0001)), 0, segments) if _ghost > ratio else filled
 	for i in segments:
 		var x: float = float(i) * (w + gap)

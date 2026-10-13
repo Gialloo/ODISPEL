@@ -480,6 +480,8 @@ static func _cast(state: Dictionary, p: Dictionary, u: Dictionary, move_id: Stri
 		u["energy"] = int(u["energy"]) - int(move["cost"])
 	events.append({"t": "act", "unit": u["id"], "move": move_id, "kind": kind, "player": p["id"]})
 	var awake: float = Signatures.upgrade_mult(u, move_id, kind)
+	if move_id == "attack":
+		awake *= BattleContent.basic_factor(u)
 	BattleResolver._change_ammo(u, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
 	if move_id == "guard":
 		var gsh: float = Signatures.value(u, "guard_shield")

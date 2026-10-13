@@ -464,7 +464,9 @@ func open_legend() -> GachaGuide:
 	if selected == "" or not RosterState.owns(roster, selected):
 		return null
 	var e: Dictionary = roster["characters"][selected]
-	return GachaGuide.open_pages(self, "LEGENDA", [Lore.legend_page(selected, BattleContent.style_of(selected, e))])
+	var pages: Array = [Lore.legend_page(selected, BattleContent.style_of(selected, e))]
+	pages.append_array(Lore.ability_pages(selected, int(e["rank"])))
+	return GachaGuide.open_pages(self, "LEGENDA", pages)
 
 
 func select(char_id: String) -> void:

@@ -56,14 +56,14 @@ func _test_colors_and_stats() -> void:
 	var base: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 1, "rank": 0, "passives": [], "gear": []})
 	var lv5: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 5, "rank": 0, "passives": [], "gear": []})
 	var rk2: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 1, "rank": 2, "passives": [], "gear": []})
-	_check("statistiche base vanguard", base["hp"] == 1365 and base["atk"] == 99)   # Dax: 1300 x1,05 vita e 90 x1,1 attacco (stat_mult di bilanciamento)
+	_check("statistiche base vanguard", base["hp"] == 1495 and base["atk"] == 108)   # Dax: 1300 x1,15 vita e 90 x1,2 attacco (stat_mult di bilanciamento)
 	_check("il livello aumenta le statistiche", lv5["hp"] > base["hp"] and lv5["atk"] > base["atk"])
 	_check("il rank aumenta le statistiche", rk2["hp"] > base["hp"])
 	var geared: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 1, "rank": 0, "passives": [], "gear": [
 		{"slot": "arma", "rarity": 0, "level": 1}, {"slot": "petto", "rarity": 3, "level": 3}, {"slot": "stivali", "rarity": 1, "level": 1}]})
 	_check("l'equipaggiamento aumenta ATK, HP, DEF e SPD", geared["atk"] > base["atk"] and geared["hp"] > base["hp"] and geared["def"] > base["def"] and geared["spd"] > base["spd"])
 	var passive: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 1, "rank": 0, "passives": ["p_hp"], "gear": []})
-	_check("la passiva Tempra aumenta gli HP", passive["hp"] == 1502)
+	_check("la passiva Tempra aumenta gli HP", passive["hp"] == 1644)
 
 
 func _test_setup() -> void:

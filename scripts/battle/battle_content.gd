@@ -116,7 +116,15 @@ const CLASS_STATS: Dictionary = {
 	"vanguard": {"hp": 1300, "atk": 90, "def": 50, "spd": 90},
 	"warden": {"hp": 1000, "atk": 88, "def": 30, "spd": 100},
 }
+# Attacco base: i ruoli di supporto/tank colpiscono un po' di piu' con l'attacco semplice.
+const CLASS_BASIC: Dictionary = {"striker": 1.0, "vanguard": 1.3, "warden": 1.5}
 const LEVEL_BONUS: float = 0.08
+
+
+static func basic_factor(unit: Dictionary) -> float:
+	if not CHARACTERS.has(str(unit.get("char", ""))):
+		return 1.0
+	return float(CLASS_BASIC.get(str(unit.get("cls", "")), 1.0))
 # Bonus statistico per rank, per rarita' (comune, rara, epica, leggendaria): piu' raro = piu' forte.
 const RANK_BONUS_BY_RARITY: Array = [0.04, 0.05, 0.06, 0.08]
 
@@ -133,14 +141,14 @@ const RARITY_STAT_MULT: Array = [1.0, 1.08, 1.18, 1.32]
 const CHARACTERS: Dictionary = {
 	"kira": {"name": "Kira", "color": "viola", "cls": "striker", "rarity": 3, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk", "faction": "rondini",
 		"role": "Mascotte e volto del gioco", "stat_mult": {"hp": 1.0, "atk": 1.0}},
-	"dax": {"name": "Dax", "color": "rosso", "cls": "vanguard", "rarity": 0, "skill": "provoca", "ult": "bastione", "passive": "p_hp", "faction": "libracorp", "stat_mult": {"hp": 1.05, "atk": 1.1}},
-	"elle": {"name": "Elle", "color": "verde", "cls": "warden", "rarity": 0, "skill": "cura", "ult": "rinascita", "passive": "p_swap", "faction": "magabondi"},
-	"bruno": {"name": "Bruno", "color": "blu", "cls": "vanguard", "rarity": 0, "skill": "barriera", "ult": "bastione", "passive": "p_hp", "faction": "libracorp", "stat_mult": {"hp": 1.05, "atk": 1.1, "def": 1.05}},
+	"dax": {"name": "Dax", "color": "rosso", "cls": "vanguard", "rarity": 0, "skill": "provoca", "ult": "bastione", "passive": "p_hp", "faction": "libracorp", "stat_mult": {"hp": 1.15, "atk": 1.2}},
+	"elle": {"name": "Elle", "color": "verde", "cls": "warden", "rarity": 0, "skill": "cura", "ult": "rinascita", "passive": "p_swap", "faction": "magabondi", "stat_mult": {"hp": 1.15, "atk": 1.2}},
+	"bruno": {"name": "Bruno", "color": "blu", "cls": "vanguard", "rarity": 0, "skill": "barriera", "ult": "bastione", "passive": "p_hp", "faction": "libracorp", "stat_mult": {"hp": 1.15, "atk": 1.2, "def": 1.05}},
 	"nova": {"name": "Nova", "color": "giallo", "cls": "striker", "rarity": 1, "skill": "marchio", "ult": "spezzatutto", "passive": "p_hunter", "faction": "rondini"},
-	"mira": {"name": "Mira", "color": "blu", "cls": "warden", "rarity": 1, "skill": "purifica", "ult": "rinascita", "passive": "p_swap", "faction": "libracorp", "stat_mult": {"hp": 1.2, "atk": 1.25}},
+	"mira": {"name": "Mira", "color": "blu", "cls": "warden", "rarity": 1, "skill": "purifica", "ult": "rinascita", "passive": "p_swap", "faction": "libracorp", "stat_mult": {"hp": 1.35, "atk": 1.4}},
 	"rex": {"name": "Rex", "color": "rosso", "cls": "striker", "rarity": 0, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_atk", "faction": "rondini", "stat_mult": {"atk": 0.95}},
 	"ivo": {"name": "Ivo", "color": "blu", "cls": "striker", "rarity": 1, "skill": "marchio", "ult": "spezzatutto", "passive": "p_swap", "faction": "magabondi", "style": "atipico"},
-	"sera": {"name": "Sera", "color": "verde", "cls": "warden", "rarity": 2, "skill": "barriera", "ult": "rinascita", "passive": "p_hunter", "faction": "rondini", "stat_mult": {"hp": 1.1, "atk": 1.2}},
+	"sera": {"name": "Sera", "color": "verde", "cls": "warden", "rarity": 2, "skill": "barriera", "ult": "rinascita", "passive": "p_hunter", "faction": "rondini", "stat_mult": {"hp": 1.25, "atk": 1.35}},
 	"eco": {"name": "Eco", "color": "giallo", "cls": "striker", "rarity": 2, "skill": "marchio", "ult": "spezzatutto", "passive": "p_atk", "faction": "kairos", "stat_mult": {"atk": 0.94}},
 	"tana": {"name": "Tana", "color": "giallo", "cls": "vanguard", "rarity": 3, "skill": "provoca", "ult": "bastione", "passive": "p_hunter", "faction": "libracorp", "stat_mult": {"hp": 1.3, "atk": 1.35}},
 	# Agent 02: tiratore scelto. Angela: mecamante, glass cannon con 12 munizioni.
@@ -153,23 +161,23 @@ const CHARACTERS: Dictionary = {
 		"role": "Mecamante", "ammo_max": 12, "stat_mult": {"hp": 0.75, "atk": 1.12, "def": 0.8}},
 	# Roster 2: dieci operatori nuovi (3 Magabondi, 3 Kairos, 2 Rondini, 2 LibraCorp).
 	"moro": {"name": "Moro", "color": "rosso", "cls": "vanguard", "rarity": 1, "skill": "provoca", "ult": "u_moro_ult", "passive": "p_hp", "faction": "magabondi",
-		"role": "Difensore resistente", "stat_mult": {"atk": 1.15, "def": 1.05}},
+		"role": "Difensore resistente", "stat_mult": {"hp": 1.15, "atk": 1.25, "def": 1.1}},
 	"vesper": {"name": "Vesper", "color": "viola", "cls": "striker", "rarity": 2, "skill": "marchio", "ult": "u_vesper_ult", "passive": "p_atk", "faction": "magabondi",
-		"role": "Cacciatore di marchiati"},
+		"role": "Cacciatore di marchiati", "stat_mult": {"hp": 1.0, "atk": 1.08}},
 	"nami": {"name": "Nami", "color": "verde", "cls": "warden", "rarity": 0, "skill": "barriera", "ult": "u_nami_ult", "passive": "p_hp", "faction": "magabondi",
-		"role": "Custode dei piccoli rituali", "stat_mult": {"hp": 1.3, "atk": 1.6}},
+		"role": "Custode dei piccoli rituali", "stat_mult": {"hp": 1.6, "atk": 1.95}},
 	"oriel": {"name": "Oriel", "color": "blu", "cls": "warden", "rarity": 3, "skill": "cura", "ult": "u_oriel_ult", "passive": "p_swap", "faction": "kairos",
-		"role": "Custode della soglia", "stat_mult": {"hp": 1.25, "atk": 1.35}},
+		"role": "Custode della soglia", "stat_mult": {"hp": 1.35, "atk": 1.45}},
 	"silex": {"name": "Silex", "color": "viola", "cls": "vanguard", "rarity": 1, "skill": "provoca", "ult": "u_silex_ult", "passive": "p_hp", "faction": "kairos",
-		"role": "Il muro che avanza"},
+		"role": "Il muro che avanza", "stat_mult": {"hp": 1.12, "atk": 1.15}},
 	"yuna": {"name": "Yuna", "color": "blu", "cls": "striker", "rarity": 2, "skill": "colpo_caricato", "ult": "u_yuna_ult", "passive": "p_atk", "faction": "kairos",
 		"role": "Attaccante rapido"},
 	"rhea": {"name": "Rhea", "color": "verde", "cls": "warden", "rarity": 1, "skill": "purifica", "ult": "u_rhea_ult", "passive": "p_swap", "faction": "rondini",
-		"role": "Specialista del contenimento", "stat_mult": {"hp": 1.08, "atk": 1.1}},
+		"role": "Specialista del contenimento", "stat_mult": {"hp": 1.25, "atk": 1.3}},
 	"flux": {"name": "Flux", "color": "blu", "cls": "striker", "rarity": 3, "skill": "colpo_caricato", "ult": "u_flux_ult", "passive": "p_atk", "faction": "rondini",
 		"role": "Picco di potenza", "stat_mult": {"hp": 0.9, "atk": 0.95}},
 	"cato": {"name": "Cato", "color": "viola", "cls": "vanguard", "rarity": 0, "skill": "barriera", "ult": "u_cato_ult", "passive": "p_hp", "faction": "libracorp",
-		"role": "Operatore standard", "stat_mult": {"hp": 1.1, "atk": 1.3, "def": 1.1}},
+		"role": "Operatore standard", "stat_mult": {"hp": 1.2, "atk": 1.5, "def": 1.15}},
 	"lyra": {"name": "Lyra", "color": "viola", "cls": "striker", "rarity": 3, "skill": "marchio", "ult": "u_lyra_ult", "passive": "p_atk", "faction": "libracorp",
 		"role": "Stratega del bersaglio", "stat_mult": {"hp": 0.92, "atk": 0.95}},
 }

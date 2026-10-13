@@ -443,6 +443,8 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	var link_n: int = _chain_link(state, actor, events)
 	var link_gain: float = BattleTypes.LINK_BONUS + Signatures.value(actor, "link_boost")
 	var awake_mult: float = Signatures.upgrade_mult(actor, move_id, kind)
+	if move_id == "attack":
+		awake_mult *= BattleContent.basic_factor(actor)
 	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
 
 	var gsh: float = Signatures.value(actor, "guard_shield")

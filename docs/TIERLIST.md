@@ -1,4 +1,4 @@
-# ODISPEL - Tier list (versione 0.24.1)
+# ODISPEL - Tier list (versione 0.24.2)
 
 Valutazione dopo l'ultimo bilanciamento, fatta con simulazioni (vedi `docs/REPORT_BILANCIAMENTO.md`). Non e' un'opinione: e' quanto vincono le squadre che contengono quell'operatore.
 
@@ -6,52 +6,49 @@ Valutazione dopo l'ultimo bilanciamento, fatta con simulazioni (vedi `docs/REPOR
 
 **Attenzione:** i guardiani hanno punteggi bassi soprattutto perche' il computer li usa in modo prudente e perche' il loro valore (salvare un compagno) non si vede nelle vittorie contro un boss con poca vita. Con un giocatore vero valgono di piu'. La tier list e' una guida, non una condanna.
 
+**Soglie (0.24.2):** S da +5, A da +3, B da -2, C da -9; nessuno sotto. Dopo i potenziamenti la media sale, quindi i numeri sono piu' vicini tra loro di prima.
+
 ## Tier S
 
 | Operatore | Classe | Fazione | Rarita' | Punteggio | Boss duri | PvP |
 |---|---|---|---|---|---|---|
-| **Eco** | attaccante | Kairos | epico | +10 | +9 | +13 |
-| **Kira** | attaccante | Rondini | leggendario | +10 | +16 | -3 |
-| **Angela** | attaccante | Libracorp | leggendario | +9 | +13 | +2 |
+| **Eco** | attaccante | Kairos | epico | +6 | +5 | +10 |
+| **Ivo** | attaccante | Magabondi | raro | +5 | +5 | +4 |
 
 ## Tier A
 
 | Operatore | Classe | Fazione | Rarita' | Punteggio | Boss duri | PvP |
 |---|---|---|---|---|---|---|
-| **Flux** | attaccante | Rondini | leggendario | +8 | +16 | -9 |
-| **Ivo** | attaccante | Magabondi | raro | +7 | +8 | +7 |
-| **Rex** | attaccante | Rondini | comune | +6 | +3 | +13 |
-| **Dafne** | attaccante | Libracorp | leggendario | +6 | +9 | -1 |
-| **Yuna** | attaccante | Kairos | epico | +6 | +10 | -2 |
-| **Lyra** | attaccante | Libracorp | leggendario | +4 | +9 | -8 |
-| **Nova** | attaccante | Rondini | raro | +4 | +1 | +10 |
+| **Angela** | attaccante | Libracorp | leggendario | +4 | +8 | -2 |
+| **Silex** | avanguardia | Kairos | raro | +4 | +3 | +7 |
+| **Oriel** | guardiano | Kairos | leggendario | +4 | +11 | -11 |
+| **Rex** | attaccante | Rondini | comune | +4 | +0 | +11 |
+| **Yuna** | attaccante | Kairos | epico | +3 | +6 | -3 |
+| **Moro** | avanguardia | Magabondi | raro | +3 | +2 | +5 |
 
 ## Tier B
 
 | Operatore | Classe | Fazione | Rarita' | Punteggio | Boss duri | PvP |
 |---|---|---|---|---|---|---|
-| **Oriel** | guardiano | Kairos | leggendario | +3 | +14 | -19 |
-| **Vesper** | attaccante | Magabondi | epico | +2 | +1 | +3 |
-| **Silex** | avanguardia | Kairos | raro | +0 | -2 | +6 |
-| **Bruno** | avanguardia | Libracorp | comune | -0 | -4 | +7 |
-| **Dax** | avanguardia | Libracorp | comune | -0 | -3 | +5 |
-| **Moro** | avanguardia | Magabondi | raro | -0 | -2 | +2 |
+| **Flux** | attaccante | Rondini | leggendario | +2 | +9 | -13 |
+| **Bruno** | avanguardia | Libracorp | comune | +2 | -3 | +13 |
+| **Kira** | attaccante | Rondini | leggendario | +2 | +8 | -11 |
+| **Nova** | attaccante | Rondini | raro | +1 | -0 | +4 |
+| **Dafne** | attaccante | Libracorp | leggendario | +1 | +4 | -5 |
+| **Dax** | avanguardia | Libracorp | comune | +1 | -0 | +2 |
+| **Lyra** | attaccante | Libracorp | leggendario | -1 | +5 | -15 |
+| **Vesper** | attaccante | Magabondi | epico | -1 | -0 | -2 |
 
 ## Tier C
 
 | Operatore | Classe | Fazione | Rarita' | Punteggio | Boss duri | PvP |
 |---|---|---|---|---|---|---|
-| **Tana** | avanguardia | Libracorp | leggendario | -5 | -1 | -15 |
-| **Cato** | avanguardia | Libracorp | comune | -7 | -10 | -1 |
-
-## Tier D
-
-| Operatore | Classe | Fazione | Rarita' | Punteggio | Boss duri | PvP |
-|---|---|---|---|---|---|---|
-| **Mira** | guardiano | Libracorp | raro | -10 | -8 | -16 |
-| **Elle** | guardiano | Magabondi | comune | -12 | -24 | +13 |
-| **Rhea** | guardiano | Rondini | raro | -12 | -20 | +6 |
-| **Sera** | guardiano | Rondini | epico | -13 | -18 | -2 |
-| **Nami** | guardiano | Magabondi | comune | -15 | -16 | -11 |
+| **Mira** | guardiano | Libracorp | raro | -3 | -1 | -8 |
+| **Tana** | avanguardia | Libracorp | leggendario | -4 | -1 | -15 |
+| **Cato** | avanguardia | Libracorp | comune | -5 | -6 | -2 |
+| **Rhea** | guardiano | Rondini | raro | -5 | -14 | +15 |
+| **Nami** | guardiano | Magabondi | comune | -7 | -10 | +0 |
+| **Elle** | guardiano | Magabondi | comune | -7 | -19 | +17 |
+| **Sera** | guardiano | Rondini | epico | -8 | -12 | +0 |
 
 Nico non e' in lista: compare solo nella storia e non si recluta.
