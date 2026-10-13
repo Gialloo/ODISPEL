@@ -31,8 +31,8 @@ static func bonus_mult(defender: Dictionary, ammo_hit: bool) -> float:
 
 # Applica n marchi al nemico. Fa scattare le passive ("ogni marchio ricarica munizioni").
 static func add(state: Dictionary, target: Dictionary, n: int, events: Array) -> void:
-	if n <= 0:
-		return
+	if n <= 0 or int(target.get("hp", 1)) <= 0:
+		return       # niente marchi su chi e' gia' a terra
 	target["marks"] = mini(MAX, count(target) + n)
 	target["statuses"]["mark"] = 99
 	state["marks_applied"] = int(state.get("marks_applied", 0)) + n

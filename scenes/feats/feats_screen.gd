@@ -45,23 +45,28 @@ func _build() -> void:
 	add_child(_mats)
 	_icon("nucleo", Vector2(1014, 52), 22.0)
 
-	var x: float = 24.0
 	var names: Array = ["DA RISCUOTERE", "TUTTE"]
 	names.append_array(Feats.GROUPS)
+	var tabs := HBoxContainer.new()      # le schede si dividono la larghezza: mai fuori dallo schermo
+	tabs.position = Vector2(24, 82 if TouchUi.active() else 88)
+	tabs.size = Vector2(1232, 46)
+	tabs.add_theme_constant_override("separation", 6)
+	add_child(tabs)
 	for g in names:
 		var b := Button.new()
 		b.text = str(g)
-		b.position = Vector2(x, 90)
-		b.size = Vector2(float({"DA RISCUOTERE": 230, "TUTTE": 100, "MISSIONI": 140, "BATTAGLIE": 150, "OPERATORI": 150, "POTENZIAMENTI": 200}.get(str(g), 140)), 40)
-		BattleTheme.style_button(b, "normal", 17)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.size_flags_stretch_ratio = float({"DA RISCUOTERE": 230, "TUTTE": 100, "MISSIONI": 140, "BATTAGLIE": 150, "OPERATORI": 150, "POTENZIAMENTI": 200}.get(str(g), 140))
+		b.custom_minimum_size = Vector2(0, 40)
+		b.clip_text = true
+		_style_tab(b, "normal")
 		b.pressed.connect(show_group.bind(str(g)))
-		add_child(b)
+		tabs.add_child(b)
 		group_buttons[str(g)] = b
-		x += b.size.x + 10.0
 
 	var panel := HudPanel.new().setup("IMPRESE", BattleTheme.CY)
-	panel.position = Vector2(20, 142)
-	panel.size = Vector2(1240, 502)
+	panel.position = Vector2(20, 152 if TouchUi.active() else 142)
+	panel.size = Vector2(1240, 454 if TouchUi.active() else 502)
 	add_child(panel)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -72,23 +77,30 @@ func _build() -> void:
 	panel.set_content(scroll)
 
 	_summary = BattleTheme.make_label("", 16, BattleTheme.WH)
-	_summary.position = Vector2(296, 676)
+	_summary.position = Vector2(296, 640 if TouchUi.active() else 676)
 	_summary.size = Vector2(620, 28)
 	add_child(_summary)
 	claim_all_button = Button.new()
-	claim_all_button.position = Vector2(930, 660)
+	claim_all_button.position = Vector2(930, 620 if TouchUi.active() else 660)
 	claim_all_button.size = Vector2(330, 52)
 	BattleTheme.style_button(claim_all_button, "primary", 20)
 	claim_all_button.pressed.connect(claim_all)
 	add_child(claim_all_button)
 	var back := Button.new()
 	back.text = "TORNA ALL'HUB"
-	back.position = Vector2(24, 664)
+	back.position = Vector2(24, 620 if TouchUi.active() else 664)
 	back.size = Vector2(250, 44)
 	BattleTheme.style_button(back, "normal", 20)
 	back.pressed.connect(func() -> void: SceneRouter.go("hub"))
 	add_child(back)
 	ScreenFx.menu_overlays(self, BattleTheme.RD)
+
+
+# Schede: su telefono il testo e' un po' piu' piccolo cosi' ci stanno tutte e otto per intero.
+func _style_tab(b: Button, kind: String) -> void:
+	BattleTheme.style_button(b, kind, 17)
+	if TouchUi.active():
+		b.add_theme_font_size_override("font_size", 15)
 
 
 func _icon(key: String, pos: Vector2, px: float) -> void:
@@ -147,7 +159,7 @@ func refresh() -> void:
 		if label == "DA RISCUOTERE":
 			label += " (%d)" % ready
 		(group_buttons[g] as Button).text = label
-		BattleTheme.style_button(group_buttons[g], "primary" if str(g) == group else "normal", 17)
+		_style_tab(group_buttons[g], "primary" if str(g) == group else "normal")
 	_summary.text = "RISCOSSE %d / %d" % [Feats.done_count(roster), Feats.all().size()]
 	claim_all_button.text = "RISCUOTI TUTTO (%d)" % ready
 	claim_all_button.disabled = ready == 0

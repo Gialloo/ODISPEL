@@ -14,6 +14,21 @@ const STATUS_NAMES: Dictionary = {
 }
 
 
+# Numero breve per i fumetti: 12345 resta com'e', da 100000 in su diventa 123K, 1.2M, 3.4B (non esce mai dallo schermo).
+static func num(n: int) -> String:
+	var a: int = absi(n)
+	if a < 100000:
+		return str(n)
+	var sign: String = "-" if n < 0 else ""
+	if a < 1000000:
+		return "%s%dK" % [sign, a / 1000]
+	if a < 1000000000:
+		return "%s%.1fM" % [sign, float(a) / 1000000.0]
+	if a < 1000000000000:
+		return "%s%.1fB" % [sign, float(a) / 1000000000.0]
+	return "%s%.1fT" % [sign, float(a) / 1000000000000.0]
+
+
 static func move_name(move_id: String) -> String:
 	if BattleContent.MOVES.has(move_id):
 		return str(BattleContent.MOVES[move_id]["name"]).to_upper()

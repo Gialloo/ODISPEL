@@ -16,6 +16,7 @@ var _picks: Dictionary = {}          # slot -> ordine gia' scelto in questo roun
 var _cur_slot: String = ""           # slot di front row di cui si scelgono gli ordini
 var autoplay: bool = false           # AUTOPLAY: l'IA combatte da sola
 var _auto_button: Button
+var speed_button: Button
 var _veil: ColorRect
 var _perf_time: float = 0.0
 var _perf_frames: int = 0
@@ -328,6 +329,23 @@ func _build_autoplay() -> void:
 	add_child(_auto_button)
 	_anchor(_auto_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-236, 24, -20, 72 if not TouchUi.active() else 80))
 	_auto_button.pressed.connect(func() -> void: set_autoplay(not autoplay))
+	# velocita' dell'animazione sempre a portata di dito: NORMALE -> VELOCE -> TURBO
+	speed_button = Button.new()
+	speed_button.focus_mode = Control.FOCUS_NONE
+	BattleTheme.style_button(speed_button, "normal", 15)
+	speed_button.text = _speed_label()
+	add_child(speed_button)
+	var top: float = 80.0 if TouchUi.active() else 72.0
+	_anchor(speed_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-236, top + 8.0, -20, top + (8.0 + 52.0 if TouchUi.active() else 8.0 + 38.0)))
+	speed_button.pressed.connect(func() -> void:
+		Settings.next_speed()
+		Settings.save()
+		event_delay = Settings.event_delay()
+		speed_button.text = _speed_label())
+
+
+func _speed_label() -> String:
+	return ["▶  NORMALE", "▶▶  VELOCE", "▶▶▶  TURBO"][Settings.speed_level()]
 
 
 func _build_camera_info() -> void:
@@ -1164,6 +1182,8 @@ func _on_events(events: Array) -> void:
 func _play_events(events: Array) -> void:
 	animating = true
 	_refresh_orders()
+	# un round con tantissimi eventi (6 giocatori) non deve durare minuti: al massimo ~14 s a velocita' normale
+	var step: float = minf(event_delay, maxf(0.06, ROUND_BUDGET / float(maxi(1, events.size()))))
 	for e in events:
 		if not is_inside_tree():
 			return
@@ -1180,7 +1200,7 @@ func _play_events(events: Array) -> void:
 		_stage.set_state(shown)
 		_refresh_boss()
 		_refresh_operators()
-		await get_tree().create_timer(event_delay + extra).timeout
+		await get_tree().create_timer(step + extra).timeout
 	animating = false
 	_link_clear()
 	_stage.clear_markers()
@@ -1206,6 +1226,7 @@ func _mark_event(e: Dictionary) -> void:
 	_refresh_turn_panel()
 
 
+const ROUND_BUDGET: float = 14.0       # secondi massimi di animazione per round (a velocita' normale)
 const HIT_WORDS: Array = ["BAM!", "POW!", "CRACK!", "WHAM!", "BOOM!"]
 const BIG_HIT_FRACTION: float = 0.12     # un colpo cosi' grande (rispetto ai PV massimi) e' "pesante"
 
@@ -1216,7 +1237,7 @@ func _event_fx(e: Dictionary) -> float:
 		"damage":
 			return _fx_damage(e)
 		"bleed":
-			_float_text("-%d" % int(e["amount"]), str(e["unit"]), BattleTheme.RD, 28)
+			_float_text("-" + BattleText.num(int(e["amount"])), str(e["unit"]), BattleTheme.RD, 28)
 		"counter":
 			Snd.play("counter")
 			_stage.impact(6.0, 0.02)
@@ -1233,9 +1254,9 @@ func _event_fx(e: Dictionary) -> float:
 			_fx_status(e)
 		"heal":
 			Snd.play("heal")
-			_pop(("+%d!" if bool(e.get("crit", false)) else "+%d") % int(e["amount"]), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
+			_pop("+" + BattleText.num(int(e["amount"])) + ("!" if bool(e.get("crit", false)) else ""), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
 		"shield":
-			_float_text("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.CY, 26)
+			_float_text("+" + BattleText.num(int(e["amount"])), str(e["dst"]), BattleTheme.CY, 26)
 		"marks":
 			return _fx_marks(e)
 		"dodge":
@@ -1407,7 +1428,7 @@ func _fx_damage(e: Dictionary) -> float:
 	var heavy: bool = float(amount) >= float(target.get("max_hp", 1)) * BIG_HIT_FRACTION
 	var fill: Color = BattleTheme.POP if to_boss else BattleTheme.RD
 	# un solo fumetto per colpo: il critico e' semplicemente piu' grande, col punto esclamativo
-	_pop("-%d%s" % [amount, "!" if is_crit else ""], dst, fill, BattleTheme.BK, 52 if is_crit else (44 if heavy else 32), 84.0 if is_crit else (74.0 if heavy else 56.0))
+	_pop("-%s%s" % [BattleText.num(amount), "!" if is_crit else ""], dst, fill, BattleTheme.BK, 52 if is_crit else (44 if heavy else 32), 84.0 if is_crit else (74.0 if heavy else 56.0))
 	if heavy or is_crit:
 		var at: Vector2 = _stage.anchor_of(dst)
 		ComicFx.speed_lines(_fx, at, Color(1, 1, 1, 0.9) if to_boss else BattleTheme.RD, 0.22)

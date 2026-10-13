@@ -356,6 +356,8 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		var returned: int = maxi(1, int(round(float(absorbed) * float(reflect) / 1000.0)))
 		attacker["hp"] = maxi(0, int(attacker["hp"]) - returned)
 		events.append({"t": "damage", "src": defender["id"], "dst": attacker["id"], "amount": returned, "absorbed": 0, "thorns": true})
+		if int(attacker["hp"]) <= 0:
+			_on_down(attacker, events)
 		events.append({"t": "trait", "trait": "atipico", "unit": defender["id"], "name": Atypical.trait_name(str(defender["char"]))})
 	if str(attacker["side"]) == "player":
 		attacker["gauge"] = mini(BattleTypes.GAUGE_MAX, int(attacker["gauge"]) + Archetypes.gauge_on_hit(attacker))
@@ -377,6 +379,8 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 			var back: int = maxi(1, int(round(float(defender["atk"]) * thorn)))
 			attacker["hp"] = maxi(0, int(attacker["hp"]) - back)
 			events.append({"t": "damage", "src": defender["id"], "dst": attacker["id"], "amount": back, "absorbed": 0, "thorns": true})
+			if int(attacker["hp"]) <= 0:
+				_on_down(attacker, events)
 
 
 # Munizioni: positivo = ricarica, negativo = si spendono. Resta tra 0 e il massimo dell'unita'.

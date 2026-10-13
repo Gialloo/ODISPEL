@@ -78,6 +78,8 @@ static func suppress(state: Dictionary, faction: String, turns: int) -> void:
 
 # Aggiunge (o rinnova) una modifica temporanea. pm negativo = debuff.
 static func add_mod(u: Dictionary, id: String, stat: String, pm: int, turns: int) -> void:
+	if not u.has("mods"):
+		u["mods"] = []      # il boss non ha modifiche all'inizio
 	var mods: Array = u["mods"]
 	for m in mods:
 		if str(m["id"]) == id:

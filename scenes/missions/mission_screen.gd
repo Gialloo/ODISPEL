@@ -42,8 +42,12 @@ func _build() -> void:
 	list_panel.size = Vector2(380, 520)
 	add_child(list_panel)
 	var list := VBoxContainer.new()
-	list.add_theme_constant_override("separation", 6)
-	list_panel.set_content(list)
+	list.add_theme_constant_override("separation", 4 if TouchUi.active() else 6)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var list_scroll := ScrollContainer.new()      # con 8 bersagli su un telefono l'elenco scorre: nessuno resta nascosto
+	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	list_scroll.add_child(list)
+	list_panel.set_content(list_scroll)
 	for id in BattleContent.BOSS_ORDER:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(0, 48)
@@ -97,10 +101,11 @@ func _build() -> void:
 	var dboss: String = Daily.boss_for(roster)
 	var dmod: Dictionary = Daily.mod_for()
 	daily_button = Button.new()
-	daily_button.text = "SFIDA DEL GIORNO  ·  %s  ·  %s  ·  %s" % [MissionConfig.boss_title(dboss), str(dmod["name"]), ("BONUS RISCOSSO" if Daily.done_today(roster) else "x%.1f  ·  SERIE %d" % [Daily.reward_mult(roster), Daily.streak(roster)])]
-	daily_button.custom_minimum_size = Vector2(0, 44)
+	daily_button.text = "SFIDA DEL GIORNO  ·  %s\n%s  ·  %s" % [MissionConfig.boss_title(dboss), str(dmod["name"]), ("BONUS RISCOSSO" if Daily.done_today(roster) else "x%.1f  ·  SERIE %d" % [Daily.reward_mult(roster), Daily.streak(roster)])]
+	daily_button.custom_minimum_size = Vector2(0, 56)
 	daily_button.clip_text = true
 	BattleTheme.style_button(daily_button, "normal", 16)
+	daily_button.add_theme_font_size_override("font_size", 16)
 	daily_button.pressed.connect(_on_daily)
 	dbox.add_child(daily_button)
 	go_button = Button.new()

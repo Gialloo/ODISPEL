@@ -57,7 +57,8 @@ func _build() -> void:
 	var next: Dictionary = MissionConfig.suggest(roster)
 	continue_button = _menu_button(menu, "continue", "CONTINUA  ·  %s  ·  %s" % [MissionConfig.boss_title(str(next["boss"])), str(BattleContent.tier_of(int(next["tier"]))["name"])], "primary", 70, 24)
 	_menu_button(menu, "missions", "SCEGLI MISSIONE", "normal", 56, 22)
-	_menu_button(menu, "roster", "SQUADRA E RECLUTAMENTO", "normal", 56, 22)
+	var can_pull: bool = int(roster["coins"]) >= Recruiting.SINGLE_COST
+	_menu_button(menu, "roster", "SQUADRA E RECLUTAMENTO" + ("  ·  RECLUTA!" if can_pull else ""), "primary" if can_pull else "normal", 56, 22)
 	var can_endless: bool = Endless.available(roster)
 	var endless_text: String = "CICLO INFINITO  ·  RECORD PIANO %d" % Endless.best(roster) if can_endless else "CICLO INFINITO  ·  BATTI %d BERSAGLI" % Endless.UNLOCK_BOSSES
 	var eb: Button = _menu_button(menu, "endless", endless_text, "normal", 56, 22)
@@ -69,9 +70,35 @@ func _build() -> void:
 	if not TouchUi.active():
 		menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-7 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DIM))
 
+	var tip := BattleTheme.make_label("CONSIGLIO:  " + _tip(), 14, BattleTheme.CY_DIM)
+	tip.position = Vector2(64, 688)
+	tip.size = Vector2(590, 22)
+	tip.clip_text = true
+	add_child(tip)
+
 	_build_status_panel()
 	UiMotion.slide_in(buttons.values(), Vector2(-180, 0), 0.07, 0.3)
 	UiMotion.slide_in([_status_panel], Vector2(120, 0), 0.0, 0.34)
+
+
+const TIPS: Array = [
+	"Colore vantaggioso = +50% di danno. Rosso > Verde > Blu > Rosso, Giallo <-> Viola.",
+	"Due compagni che agiscono di fila formano un LEGAME: ogni anello da' piu' danno.",
+	"Chi sta in BACK ROW recupera piu' energia. Il cambio e' gratis.",
+	"Leggi sempre l'ALLARME: mostra la mossa del boss e chi colpira'.",
+	"La GUARDIA dimezza i danni e ricarica le munizioni dei LibraCorp.",
+	"Gli obiettivi danno icone rare per il profilo: controlla la schermata OBIETTIVI.",
+	"Le icone leggendarie cadono (di rado) dai boss, piu' spesso a difficolta' alta.",
+	"Nelle impostazioni puoi scegliere velocita', scosse, lampi e qualita' grafica.",
+	"In multiplayer puoi scrivere ai compagni col tasto CHAT per coordinare le ultimate.",
+	"Dopo 30 reclutamenti senza un epico o un leggendario, il successivo e' garantito.",
+]
+
+
+# Un consiglio al giorno (uno diverso a ogni apertura dell'hub, in ordine).
+func _tip() -> String:
+	var day: int = int(Time.get_unix_time_from_system() / 86400.0)
+	return str(TIPS[(day + int(Time.get_ticks_msec() / 1000.0 / 60.0)) % TIPS.size()])
 
 
 func _at(c: Control, pos: Vector2) -> Control:

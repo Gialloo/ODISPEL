@@ -43,6 +43,7 @@ var _equip_slots_box: VBoxContainer
 var _equip_list: VBoxContainer
 var _equip_action: HBoxContainer
 var _equip_title: HudPanel
+var _pity_bar: ProgressBar
 var _list_box: GridContainer
 var _slots_box: HBoxContainer
 var _detail_label: Label
@@ -152,9 +153,6 @@ func _header_icon(key: String, pos: Vector2, px: float) -> void:
 
 # Sul telefono le liste lunghe si scorrono con il dito; sul PC restano com'erano.
 func _set_scrolled(panel: HudPanel, box: Container) -> void:
-	if not TouchUi.active():
-		panel.set_content(box)
-		return
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -178,7 +176,7 @@ func _build_team_page() -> void:
 	squad.position = Vector2(20, 8)
 	squad.size = Vector2(1240, 158)
 	if TouchUi.active():
-		squad.margins = Vector4(12.0, 46.0, 12.0, 8.0)      # le carte stanno sotto il pulsante MIGLIORE
+		squad.margins = Vector4(12.0, 50.0, 12.0, 6.0)      # le carte stanno sotto il pulsante MIGLIORE
 	_team_page.add_child(squad)
 	_slots_box = HBoxContainer.new()
 	_slots_box.add_theme_constant_override("separation", 8)
@@ -192,7 +190,9 @@ func _build_team_page() -> void:
 	auto.size = Vector2(160 if TouchUi.active() else 236, 28)
 	BattleTheme.style_button(auto, "normal", 14)
 	if TouchUi.active():
-		auto.size = Vector2(160, 40)
+		auto.custom_minimum_size = Vector2(0, 0)
+		auto.size = Vector2(160, 38)
+		auto.position.y = 2.0
 	auto.pressed.connect(auto_team)
 	squad.add_child(auto)
 
@@ -201,7 +201,7 @@ func _build_team_page() -> void:
 	coll.size = Vector2(522, 332)
 	_team_page.add_child(coll)
 	_list_box = GridContainer.new()
-	_list_box.columns = 5
+	_list_box.columns = 4      # 4 colonne: stanno nel pannello; con tanti operatori la griglia scorre
 	_list_box.add_theme_constant_override("h_separation", 6)
 	_list_box.add_theme_constant_override("v_separation", 6)
 	_set_scrolled(coll, _list_box)
@@ -350,6 +350,19 @@ func _build_recruit_page() -> void:
 	_pity_label = BattleTheme.make_label("", 16, BattleTheme.CY)
 	_pity_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(_pity_label)
+	_pity_bar = ProgressBar.new()          # avanzamento verso l'epico garantito
+	_pity_bar.max_value = float(Recruiting.PITY_LIMIT)
+	_pity_bar.show_percentage = false
+	_pity_bar.custom_minimum_size = Vector2(0, 14)
+	var bar_bg := StyleBoxFlat.new()
+	bar_bg.bg_color = Color(0.04, 0.07, 0.1, 0.95)
+	bar_bg.set_border_width_all(1)
+	bar_bg.border_color = BattleTheme.CY_DIM
+	var bar_fill := StyleBoxFlat.new()
+	bar_fill.bg_color = Color("#c07bff")
+	_pity_bar.add_theme_stylebox_override("background", bar_bg)
+	_pity_bar.add_theme_stylebox_override("fill", bar_fill)
+	col.add_child(_pity_bar)
 	for entry in [[1, "RECLUTA x1"], [10, "RECLUTA x10"]]:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(0, 64)
@@ -371,10 +384,7 @@ func _build_recruit_page() -> void:
 		col.add_child(GameIcon.line("nucleo", rc, "%s  %d%%" % [str(BattleTypes.RARITIES[r]).to_upper(), int(odds[r])], 15, rc))
 	var note := BattleTheme.make_label("Le copie si spendono col RANK UP.\nIl x10 garantisce almeno un raro.", 14, BattleTheme.CY_DIM)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if not TouchUi.active():        # su telefono non c'e' spazio: lo spiega gia' "COME FUNZIONA"
-		col.add_child(note)
-	else:
-		note.queue_free()
+	note.queue_free()        # lo spiega gia' "COME FUNZIONA"
 
 	var res := HudPanel.new().setup("ESITO", BattleTheme.CY)
 	res.position = Vector2(466, 14)
@@ -1086,6 +1096,7 @@ func _refresh_equip_gear(key: String) -> void:
 func _refresh_recruit() -> void:
 	var left: int = Recruiting.PITY_LIMIT - int(roster["pity"])
 	_pity_label.text = "Reclutamenti totali: %d\nEpico garantito entro %d reclutamenti.\nMonete: %d" % [int(roster["pulls"]), left, int(roster["coins"])]
+	_pity_bar.value = float(int(roster["pity"]))
 	for entry in _pull_buttons:
 		var b: Button = entry[0]
 		var cost: int = Recruiting.cost_for(int(entry[1]))
@@ -1095,7 +1106,25 @@ func _refresh_recruit() -> void:
 
 	_clear(_results_box)
 	if last_results.is_empty():
-		_results_box.add_child(BattleTheme.make_label("Nessun reclutamento ancora.", 18, BattleTheme.CY_DIM))
+		var empty := BattleTheme.make_label("Nessun reclutamento ancora.  Premi RECLUTA per chiamare un nuovo operatore.", 18, BattleTheme.CY_DIM)
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		empty.custom_minimum_size = Vector2(700, 0)
+		_results_box.add_child(empty)
+		var owned_n: int = 0
+		for cid in BattleContent.CHARACTERS:
+			if RosterState.owns(roster, str(cid)):
+				owned_n += 1
+		_results_box.add_child(BattleTheme.make_label("COLLEZIONE: %d / %d OPERATORI" % [owned_n, BattleContent.CHARACTERS.size()], 16, BattleTheme.CY))
+		var faces := HFlowContainer.new()
+		faces.add_theme_constant_override("h_separation", 8)
+		faces.add_theme_constant_override("v_separation", 8)
+		for cid in BattleContent.CHARACTERS:
+			var face := PortraitView.new().setup(str(cid), "icon")
+			face.show_expression_text = false
+			face.dimmed = not RosterState.owns(roster, str(cid))
+			face.custom_minimum_size = Vector2(64, 64)
+			faces.add_child(face)
+		_results_box.add_child(faces)
 		return
 	var delay: float = 0.0
 	for r in last_results:

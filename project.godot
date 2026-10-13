@@ -36,6 +36,12 @@ window/handheld/orientation=0
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[debug]
+
+file_logging/enable_file_logging=true
+file_logging/enable_file_logging.pc=true
+file_logging/max_log_files=5
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

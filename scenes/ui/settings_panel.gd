@@ -23,6 +23,7 @@ var flash_button: Button
 var cutin_box: Button
 var story_box: Button
 var fps_show_box: Button
+var diag_button: Button
 var profile_button: Button
 var new_game_button: Button
 var art_folder_button: Button
@@ -111,6 +112,9 @@ func _ready() -> void:
 	tutorial_button.pressed.connect(_on_tutorial)
 	g4.add_child(tutorial_button)
 
+	_section(box, "DIAGNOSTICA")
+	diag_button = _plain(box, "COPIA RAPPORTO TECNICO (da mandare se qualcosa non va)", "normal", _on_diag)
+
 	_section(box, "GRAFICHE")
 	art_label = BattleTheme.make_label("", 15, BattleTheme.CY_DIM)
 	box.add_child(art_label)
@@ -150,6 +154,11 @@ func _plain(parent: Control, text: String, kind: String, handler: Callable) -> B
 	b.pressed.connect(handler)
 	parent.add_child(b)
 	return b
+
+
+func _on_diag() -> void:
+	Diagnostics.copy_to_clipboard()
+	Notify.success("Rapporto copiato negli appunti.")
 
 
 func _on_profile() -> void:
