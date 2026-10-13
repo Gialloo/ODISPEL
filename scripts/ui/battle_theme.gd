@@ -126,6 +126,19 @@ static func _styles_for(kind: String) -> Dictionary:
 			normal = SlantBox.make(BK, CY, 14.0, CY_DARK, 2.0)
 			hover = SlantBox.make(CY, BK, 14.0, CY_DIM, 2.0)
 			colors = {"text": WH, "hover": BK}
+	# grana leggera e lucentezza: chiare, cosi' si vedono anche sui colori scuri
+	match kind:
+		"primary":
+			normal.hatch = Color(1, 1, 1, 0.16)
+			hover.hatch = Color(0.8, 0.1, 0.2, 0.14)
+		"ultimate":
+			normal.hatch = Color(1, 1, 1, 0.12)
+			hover.hatch = Color(0.8, 0.1, 0.2, 0.14)
+		_:
+			normal.hatch = Color(CY, 0.11)
+			hover.hatch = Color(0, 0.1, 0.15, 0.12)
+	normal.gloss = 0.13
+	hover.gloss = 0.22
 	var styles: Dictionary = {
 		"normal": normal,
 		"hover": hover,
@@ -158,6 +171,7 @@ static func style_button(b: Button, kind: String = "normal", size: int = 22) -> 
 	b.add_theme_font_size_override("font_size", TouchUi.fit(b, size))
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 
 
 # Colore di una rarita' (comune, rara, epica, leggendaria).

@@ -12,6 +12,9 @@ func _init() -> void:
 	if args.size() > 0:
 		_out = args[0]
 	TouchUi.force = args.size() > 1 and args[1] == "1"
+	if args.size() > 2:
+		var v: PackedStringArray = args[2].split(",")
+		ScreenFrame.test_insets = Vector4(float(v[0]), float(v[1]), float(v[2]), float(v[3]))      # notch simulato
 	_run()
 
 
@@ -62,6 +65,13 @@ func _run() -> void:
 		if c is TutorialOverlay:
 			c.queue_free()
 	await _shot("battaglia")
+	for i in 3:
+		if not s.animating and not s.locked:
+			s._on_order_pressed("attack")
+	await create_timer(0.6).timeout
+	await _shot("battaglia_azione")
+	while s.animating:
+		await create_timer(0.1).timeout
 	var guard: int = 0
 	while str(s.source.battle["winner"]) == "" and guard < 80:
 		var c2: Dictionary = BattleAI.choose(s.source.battle, "p1")

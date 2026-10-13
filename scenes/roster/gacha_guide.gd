@@ -96,7 +96,7 @@ func _ready() -> void:
 
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.8)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ScreenFrame.overshoot(dim)
 	add_child(dim)
 
 	var panel := HudPanel.new().setup(heading, BattleTheme.RD)

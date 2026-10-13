@@ -117,6 +117,7 @@ func _run() -> void:
 	var overflow: bool = false
 	for b in hub.buttons.values():
 		var rect: Rect2 = (b as Control).get_global_rect()
+		rect.position -= hub.get_global_rect().position      # la schermata e' un riquadro 1280x720 centrato nello schermo
 		if rect.end.y > 720.0 or rect.end.x > 1280.0:
 			overflow = true
 	_check("l'hub sta nella finestra senza scorrere", not overflow)

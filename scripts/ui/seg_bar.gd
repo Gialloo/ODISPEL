@@ -67,3 +67,9 @@ func _draw() -> void:
 		if i >= filled and i < ghost_n:
 			c = Color(1, 1, 1, 0.85)
 		draw_rect(Rect2(x, 0.0, w, size.y), c)
+		if i < filled and size.y >= 6.0:
+			# rilievo: luce in alto, ombra in basso; l'ultimo segmento acceso ha un alone
+			draw_rect(Rect2(x, 0.0, w, size.y * 0.42), Color(1, 1, 1, 0.22))
+			draw_rect(Rect2(x, size.y * 0.78, w, size.y * 0.22), Color(0, 0, 0, 0.22))
+			if i == filled - 1 and size.y >= 10.0:
+				draw_rect(Rect2(x - 1.0, -1.0, w + 2.0, size.y + 2.0), Color(c, 0.35), false, 1.5)

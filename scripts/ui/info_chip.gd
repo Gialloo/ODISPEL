@@ -46,11 +46,24 @@ func _font_size() -> int:
 	return 14 if TouchUi.active() else FONT_SIZE
 
 
+const MAX_PIPS: int = 6      # oltre, le icone sono proporzionali: il chip non esce mai dal pannello
+
+
+func _pips() -> int:
+	return mini(max_count, MAX_PIPS)
+
+
+func _pips_loaded() -> int:
+	if max_count <= MAX_PIPS:
+		return count
+	return ceili(float(count) * float(MAX_PIPS) / float(max_count)) if count > 0 else 0
+
+
 func _fit() -> void:
 	var h: float = chip_height()
 	if kind == "ammo":
 		var num_w: float = BattleTheme.mono().get_string_size("x%d" % count, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size()).x
-		custom_minimum_size = Vector2(8.0 + float(max_count) * 9.0 + num_w + 6.0, h)
+		custom_minimum_size = Vector2(8.0 + float(_pips()) * 9.0 + num_w + 6.0, h)
 	else:
 		var tw: float = BattleTheme.mono().get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size()).x
 		custom_minimum_size = Vector2(tw + 10.0, h)
@@ -75,10 +88,11 @@ func _draw_ammo(h: float, fs: int, font: Font) -> void:
 	draw_rect(Rect2(0, 0, size.x, h), Color(color, 0.7), false, 1.0)
 	var top: float = 3.0
 	var bh: float = h - 6.0
-	for i in max_count:
-		_bullet(Vector2(6.0 + float(i) * 9.0, top), bh, i < count)
+	var loaded: int = _pips_loaded()
+	for i in _pips():
+		_bullet(Vector2(6.0 + float(i) * 9.0, top), bh, i < loaded)
 	var low: bool = count == 0
-	draw_string(font, Vector2(8.0 + float(max_count) * 9.0, h - 4.0 - (h - fs) * 0.25), "x%d" % count, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, BattleTheme.RD if low else color)
+	draw_string(font, Vector2(8.0 + float(_pips()) * 9.0, h - 4.0 - (h - fs) * 0.25), "x%d" % count, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, BattleTheme.RD if low else color)
 
 
 # Un proiettile in piedi: punta, corpo e fondello. Pieno se carico, solo contorno se scarico.

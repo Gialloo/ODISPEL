@@ -126,7 +126,7 @@ static func flash(parent: Node, color: Color = Color.WHITE, seconds: float = 0.1
 	var r := ColorRect.new()
 	r.color = color
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	r.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ScreenFrame.overshoot(r)
 	parent.add_child(r)
 	var tw: Tween = r.create_tween()
 	tw.tween_property(r, "modulate:a", 0.0, seconds)

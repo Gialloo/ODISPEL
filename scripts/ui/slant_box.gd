@@ -11,6 +11,8 @@ var border_width: float = 2.0
 var skew: float = 14.0                         # di quanto e' inclinato il bordo
 var shadow: Color = Color(0, 0, 0, 0.0)        # ombra netta spostata in basso a destra
 var shadow_offset: Vector2 = Vector2(5, 5)
+var hatch: Color = Color(1, 1, 1, 0.0)           # righe oblique chiare sopra il riempimento (serve texture_repeat sul nodo)
+var gloss: float = 0.0                           # lucentezza: velo chiaro nella meta' alta
 
 
 static func make(new_fill: Color, new_border: Color, new_skew: float = 14.0, new_shadow: Color = Color(0, 0, 0, 0), width: float = 2.0) -> SlantBox:
@@ -41,6 +43,14 @@ func _draw(to_canvas_item: RID, rect: Rect2) -> void:
 		RenderingServer.canvas_item_add_polygon(to_canvas_item, _points(rect, shadow_offset), PackedColorArray([shadow]))
 	var pts: PackedVector2Array = _points(rect)
 	RenderingServer.canvas_item_add_polygon(to_canvas_item, pts, PackedColorArray([fill]))
+	if hatch.a > 0.0:
+		RenderingServer.canvas_item_add_polygon(to_canvas_item, pts, PackedColorArray([hatch, hatch, hatch, hatch]), UiTex.uvs_for(pts), UiTex.hatch().get_rid())
+	if gloss > 0.0:
+		var mid: float = (pts[0].y + pts[3].y) * 0.5
+		var top := PackedVector2Array([pts[0], pts[1], Vector2(pts[1].x - skew * 0.5, mid), Vector2(pts[0].x - skew * 0.5, mid)])
+		var hi := Color(1, 1, 1, gloss)
+		var lo := Color(1, 1, 1, 0.0)
+		RenderingServer.canvas_item_add_polygon(to_canvas_item, top, PackedColorArray([hi, hi, lo, lo]))
 	if border_width > 0.0 and border.a > 0.0:
 		var ring: PackedVector2Array = pts.duplicate()
 		ring.append(pts[0])

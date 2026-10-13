@@ -17,10 +17,7 @@ var _boss_sub: Label
 
 
 func _ready() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var window: Window = get_window()
-	if window != null:
-		window.content_scale_size = Vector2i(1280, 720)
+	ScreenFrame.setup(self)   # riquadro 1280x720 nell'area sicura dello schermo
 	if roster.is_empty():
 		roster = RosterStore.load_or_new()
 	# Si apre sulla missione consigliata: il primo boss non ancora finito.

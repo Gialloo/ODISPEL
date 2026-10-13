@@ -91,7 +91,7 @@ func _run() -> void:
 	_check("ordini: annullare il cambio rimette i pulsanti", scene._order_buttons.size() == 2 + (BattleState.unit(scene.shown, scene.shown["players"][0]["active"])["skills"] as Array).size() + 1 and scene._orders_box.get_child_count() > 0)
 	scene.locked = true
 	scene._refresh_orders()
-	_check("ordini: bloccando la schermata i pulsanti si spengono", scene._order_buttons[0].disabled)
+	_check("ordini: bloccando la schermata il ventaglio sparisce", scene._order_buttons.is_empty() and scene._orders_box.get_child_count() == 0)
 	scene.locked = false
 	scene._refresh_orders()
 	_check("ordini: sbloccando si riaccendono", not scene._order_buttons[0].disabled)

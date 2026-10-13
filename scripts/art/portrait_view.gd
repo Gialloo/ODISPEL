@@ -94,8 +94,46 @@ func _draw_texture(tint: Color) -> void:
 	var rect := Rect2(pos, draw_size)
 	if flip:
 		draw_set_transform(Vector2(size.x, 0.0), 0.0, Vector2(-1.0, 1.0))
-	draw_texture_rect(_texture, rect, false, tint)
+	if kind == "splash" and _cut_at_bottom(_texture):
+		_draw_faded_bottom(rect, tint)
+	else:
+		draw_texture_rect(_texture, rect, false, tint)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# Le illustrazioni tagliate a meta' (busto, cosce) sfumano in basso invece di finire con un taglio netto.
+static var _cut_cache: Dictionary = {}
+
+
+static func _cut_at_bottom(tex: Texture2D) -> bool:
+	var key: int = tex.get_instance_id()
+	if _cut_cache.has(key):
+		return bool(_cut_cache[key])
+	var cut: bool = false
+	var img: Image = tex.get_image()
+	if img != null and not img.is_empty():
+		var w: int = img.get_width()
+		var y: int = img.get_height() - 2
+		var solid: int = 0
+		for x in range(0, w, 6):
+			if img.get_pixel(x, y).a > 0.6:
+				solid += 1
+		cut = solid >= 6          # sei punti opachi lungo il bordo basso: la figura continua oltre l'immagine
+	_cut_cache[key] = cut
+	return cut
+
+
+func _draw_faded_bottom(rect: Rect2, tint: Color) -> void:
+	var ts: Vector2 = _texture.get_size()
+	const STRIPS: int = 14
+	const FADE: float = 0.16
+	var solid_h: float = 1.0 - FADE
+	draw_texture_rect_region(_texture, Rect2(rect.position, Vector2(rect.size.x, rect.size.y * solid_h)), Rect2(0.0, 0.0, ts.x, ts.y * solid_h), tint)
+	for i in STRIPS:
+		var a0: float = solid_h + FADE * float(i) / float(STRIPS)
+		var a1: float = solid_h + FADE * float(i + 1) / float(STRIPS)
+		var c := Color(tint.r, tint.g, tint.b, tint.a * (1.0 - (float(i) + 0.5) / float(STRIPS)))
+		draw_texture_rect_region(_texture, Rect2(rect.position + Vector2(0.0, rect.size.y * a0), Vector2(rect.size.x, rect.size.y * (a1 - a0) + 0.5)), Rect2(0.0, ts.y * a0, ts.x, ts.y * (a1 - a0)), c)
 
 
 func _draw_placeholder(tint: Color) -> void:

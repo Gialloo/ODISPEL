@@ -25,10 +25,7 @@ var _in_room: bool = false
 
 
 func _ready() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var window: Window = get_window()
-	if window != null:
-		window.content_scale_size = Vector2i(1280, 720)
+	ScreenFrame.setup(self)   # riquadro 1280x720 nell'area sicura dello schermo
 	_build_interface()
 	if NetSession.manager != null:
 		_connect_manager()

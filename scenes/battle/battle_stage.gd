@@ -130,6 +130,35 @@ class StaticLayer extends Control:
 			refresh()
 
 
+# Quando la schermata e' un riquadro 1280x720 dentro uno schermo piu' largo (telefono lungo), il
+# palco copre tutto lo schermo ma i personaggi si disegnano in scala 1:1 dentro il riquadro,
+# senza stirarli. `framed` = il palco e' gestito da ScreenFrame.
+var framed: bool = false
+var party_lift: float = 0.0       # alza la squadra (su telefono il pannello operatori e' piu' alto)
+var _rest_pos: Vector2 = Vector2.ZERO
+var select_slot: String = ""      # slot a cui tocca scegliere (freccia); vuoto = nessuno
+var box_origin: Vector2 = Vector2.ZERO
+
+
+func set_frame_origin(o: Vector2) -> void:
+	framed = true
+	box_origin = o
+
+
+# Scala (uguale in x e y) e angolo in alto a sinistra del riquadro 1280x720 dentro il palco.
+func _fit_scale() -> float:
+	if framed:
+		return 1.0
+	return minf(size.x / DW, size.y / DH) if size.x > 0.0 and size.y > 0.0 else 1.0
+
+
+func _fit_origin() -> Vector2:
+	if framed:
+		return box_origin
+	var s: float = _fit_scale()
+	return Vector2((size.x - DW * s) * 0.5, (size.y - DH * s) * 0.5)
+
+
 func _ready() -> void:
 	_bg_static = StaticLayer.new()
 	_bg_static.painter = _paint_procedural_background
@@ -160,11 +189,13 @@ func _process(delta: float) -> void:
 		want = Vector2(clampf(m.x / size.x * 2.0 - 1.0, -1.0, 1.0), clampf(m.y / size.y * 2.0 - 1.0, -1.0, 1.0))
 	want.x += sin(_t * 0.4) * 0.35
 	_cam = _cam.lerp(want, minf(1.0, delta * 3.0))
+	if not _moved:
+		_rest_pos = position          # il riposo cambia se ScreenFrame sposta il palco
 	if _shake > 0.0:
-		position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake
+		position = _rest_pos + Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake
 		_moved = true
 	elif _moved:
-		position = Vector2.ZERO
+		position = _rest_pos
 		_moved = false
 	if _punch > 0.0:
 		pivot_offset = size * 0.5
@@ -204,7 +235,10 @@ func flash(uid: String) -> void:
 # Posizione sullo schermo (nelle coordinate di questo controllo) del petto di un'unita'.
 func anchor_of(uid: String) -> Vector2:
 	var p: Vector2 = _positions.get(uid, Vector2(DW * 0.5, DH * 0.5))
-	return Vector2(p.x * size.x / DW, p.y * size.y / DH)
+	# nelle coordinate dello schermo-riquadro (come `_fx`): quando e' incorniciato coincidono con quelle 1280x720
+	if framed:
+		return p
+	return _fit_origin() + p * _fit_scale()
 
 
 # Da coordinate "figura" a coordinate dell'inquadratura, per un'entita' ancorata in gx.
@@ -216,7 +250,7 @@ func _map(p: Vector2, gx: float, s: float = ENTITY_SCALE, floor_y: float = FLOOR
 # gli altri salgono verso il centro e rimpiccioliscono. x = posizione, y = piedi sullo schermo, z = scala.
 func party_pose(index: int, _count: int) -> Vector3:
 	var t: float = float(index)
-	return Vector3(190.0 + t * 170.0, 474.0 - t * 38.0, 0.88 - t * 0.07)
+	return Vector3(190.0 + t * 170.0, 474.0 - t * 38.0 - party_lift, 0.88 - t * 0.07)
 
 
 func fighter_x(index: int, count: int) -> float:
@@ -277,9 +311,9 @@ func _text(font: Font, pos: Vector2, text: String, font_size: int, color: Color)
 
 # Imposta la trasformazione per disegnare una figura ancorata in gx.
 func _entity_transform(gx: float, s: float = ENTITY_SCALE, floor_y: float = FLOOR_Y) -> void:
-	var base := Vector2(size.x / DW, size.y / DH)
+	var k: float = _fit_scale()
 	var t := Vector2(gx * (1.0 - s), floor_y - GEO_FLOOR * s)
-	draw_set_transform(Vector2(t.x * base.x, t.y * base.y), 0.0, base * s)
+	draw_set_transform(_fit_origin() + t * k, 0.0, Vector2(k, k) * s)
 
 
 # Strumenti di misura (usati da tools/bench.gd): tempo speso a disegnare l'inquadratura.
@@ -846,7 +880,7 @@ func _draw_party() -> void:
 		if _lunge_who == str(p["active"]):
 			gx += _lunge_offset(70.0 * pose.z)       # chi agisce scatta verso il boss e torna
 		_entity_transform(gx, pose.z, pose.y)
-		_draw_fighter(u, Vector2(gx, GEO_FLOOR - 120.0), i, str(p["id"]) == local_player_id or (local_player_id == "" and i == 0))
+		_draw_fighter(u, Vector2(gx, GEO_FLOOR - 120.0), i, str(p["id"]) == select_slot)
 		_draw_summons(p, gx)
 
 
@@ -869,11 +903,9 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 		draw_polyline(_ellipse(Vector2(cx, foot_y + 8.0), 74.0, 17.0, 24) + PackedVector2Array([Vector2(cx + 74.0, foot_y + 8.0)]), Color(col, 0.9), 3.0)
 		draw_polyline(_ellipse(Vector2(cx, foot_y + 8.0), 58.0, 12.0, 24) + PackedVector2Array([Vector2(cx + 58.0, foot_y + 8.0)]), Color(BattleTheme.WH, 0.5), 1.5)
 		if is_lead:
-			# raggio di luce e rombo sopra il proprio operatore
+			# raggio di luce e grossa freccia che rimbalza sul personaggio a cui tocca scegliere
 			var beam := PackedVector2Array([Vector2(cx - 60.0, foot_y), Vector2(cx - 30.0, foot_y - 260.0), Vector2(cx + 30.0, foot_y - 260.0), Vector2(cx + 60.0, foot_y)])
-			draw_colored_polygon(beam, Color(col, 0.07 + 0.04 * pulse))
-			var dy: float = foot_y - 262.0 + sin(_t * 4.0) * 4.0
-			draw_colored_polygon(PackedVector2Array([Vector2(cx, dy + 14.0), Vector2(cx - 11.0, dy), Vector2(cx, dy - 14.0), Vector2(cx + 11.0, dy)]), BattleTheme.POP)
+			draw_colored_polygon(beam, Color(col, 0.10 + 0.05 * pulse))
 
 	if alive and int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
 		# ultimate pronta: aura a raggi e scritta che pulsa
@@ -945,16 +977,16 @@ func _draw_back_row() -> void:
 		var u: Dictionary = BattleState.unit(state, str(uid))
 		if u.is_empty():
 			continue
-		_draw_bench_unit(u, float(BACK_X[mini(k, BACK_X.size() - 1)]), k, 0.70, 395.0)
+		_draw_bench_unit(u, float(BACK_X[mini(k, BACK_X.size() - 1)]), k, 0.70, 395.0 - party_lift)
 		k += 1
 
 
 func _draw_bench_unit(u: Dictionary, gx: float, slot: int, depth_scale: float = ENTITY_SCALE, floor_y: float = FLOOR_Y) -> void:
-	var base := Vector2(size.x / DW, size.y / DH)
+	var k: float = _fit_scale()
 	var s: float = depth_scale * BENCH_SCALE
 	var lift: float = 30.0 + float(slot) * 6.0
 	var origin := Vector2(gx * (1.0 - s), floor_y - lift - GEO_FLOOR * s)
-	draw_set_transform(Vector2(origin.x * base.x, origin.y * base.y), 0.0, base * s)
+	draw_set_transform(_fit_origin() + origin * k, 0.0, Vector2(k, k) * s)
 	var alive: bool = BattleState.is_alive(u)
 	var col: Color = BattleTheme.unit_color(str(u["color"]))
 	var foot_y: float = GEO_FLOOR + 8.0
@@ -986,7 +1018,8 @@ var link_col: Color = Color("#7cf0ff")
 
 
 func _draw_markers() -> void:
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2(size.x / DW, size.y / DH))
+	var mk: float = _fit_scale()
+	draw_set_transform(_fit_origin(), 0.0, Vector2(mk, mk))
 	var pulse: float = 0.5 + 0.5 * sin(_t * 8.0)
 	if link_n > 0 and _positions.has(link_from) and _positions.has(link_to):
 		# fulmine neon tra i due compagni legati
@@ -1102,7 +1135,7 @@ func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index
 	var tab: PackedVector2Array = PackedVector2Array([
 		Vector2(rect.position.x, rect.position.y - 28.0), Vector2(rect.position.x + tw + 26.0, rect.position.y - 28.0),
 		Vector2(rect.position.x + tw + 14.0, rect.position.y - 2.0), Vector2(rect.position.x - 8.0, rect.position.y - 2.0)])
-	draw_colored_polygon(tab, BattleTheme.RD if is_lead else col)
+	draw_colored_polygon(tab, BattleTheme.POP if is_lead else col)
 	_text(BattleTheme.display(), Vector2(rect.position.x + 6.0, rect.position.y - 10.0), tag, 16, BattleTheme.BK)
 
 	if u["statuses"].has("hidden"):

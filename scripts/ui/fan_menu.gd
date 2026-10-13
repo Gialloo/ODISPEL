@@ -16,7 +16,7 @@ func _ready() -> void:
 
 
 # Posizioni (centro di ogni pulsante) per n comandi alti h: disposti sull'arco, centrati leggermente in alto.
-func layout(n: int, h: float, gap: float, new_radius: float, mid_deg: float = 22.0) -> Array:
+func layout(n: int, h: float, gap: float, new_radius: float, mid_deg: float = 22.0, min_top: float = 56.0, max_bottom: float = 700.0) -> Array:
 	radius = new_radius
 	var min_step: float = (h + gap) / radius
 	var step: float = maxf(min_step, deg_to_rad(16.0 if n <= 4 else (13.5 if n <= 6 else 12.0)))
@@ -26,10 +26,10 @@ func layout(n: int, h: float, gap: float, new_radius: float, mid_deg: float = 22
 	var top_y: float = origin.y + sin(mid - span * 0.5) * radius - h * 0.5
 	var bot_y: float = origin.y + sin(mid + span * 0.5) * radius + h * 0.5
 	var shift: float = 0.0
-	if top_y < 56.0:
-		shift = 56.0 - top_y
-	elif bot_y > 700.0:
-		shift = 700.0 - bot_y
+	if top_y < min_top:
+		shift = min_top - top_y
+	elif bot_y > max_bottom:
+		shift = max_bottom - bot_y
 	var pts: Array = []
 	for i in n:
 		var a: float = mid - span * 0.5 + float(i) * step

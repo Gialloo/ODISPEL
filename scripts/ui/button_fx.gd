@@ -21,6 +21,20 @@ static func hook(b: BaseButton) -> void:
 	b.button_down.connect(_down.bind(b))
 	b.button_up.connect(_up.bind(b))
 	b.pressed.connect(_confirm.bind(b))
+	_tune.call_deferred(b)
+
+
+# Sul telefono i pulsanti scattano al tocco, non al rilascio (risposta immediata). Restano al rilascio quelli
+# dentro una lista che scorre (il dito che scorre non deve premere) e quelli con scheda a pressione lunga.
+static func _tune(b: BaseButton) -> void:
+	if not is_instance_valid(b) or not TouchUi.active() or b.has_meta("hinted"):
+		return
+	var n: Node = b.get_parent()
+	while n != null:
+		if n is ScrollContainer:
+			return
+		n = n.get_parent()
+	b.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 
 
 static func _tween(b: BaseButton, scale: float, time: float, bounce: bool = false) -> void:

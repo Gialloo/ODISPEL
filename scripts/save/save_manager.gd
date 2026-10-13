@@ -21,13 +21,11 @@ func save_game(data: Dictionary) -> bool:
 	file.store_string(JSON.stringify(save_data, "\t"))
 	file.close()
 
-	print("SALVATAGGIO COMPLETATO: ", SAVE_PATH)
 	return true
 
 
 func load_game() -> Dictionary:
 	if not FileAccess.file_exists(SAVE_PATH):
-		print("Nessun salvataggio trovato.")
 		return {}
 
 	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
@@ -54,5 +52,4 @@ func load_game() -> Dictionary:
 		push_warning("Versione del salvataggio non compatibile.")
 		return {}
 
-	print("SALVATAGGIO CARICATO: ", SAVE_PATH)
 	return save_data

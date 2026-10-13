@@ -57,10 +57,7 @@ var _t: float = 0.0
 
 
 func _ready() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var window: Window = get_window()
-	if window != null:
-		window.content_scale_size = Vector2i(1280, 720)
+	ScreenFrame.setup(self)   # riquadro 1280x720 nell'area sicura dello schermo
 	if roster.is_empty():
 		roster = RosterStore.load_or_new(save_path)
 	_build()
@@ -180,6 +177,8 @@ func _build_team_page() -> void:
 	var squad := HudPanel.new().setup("LA TUA SQUADRA  -  3 FRONT + 3 BACK", BattleTheme.RD)
 	squad.position = Vector2(20, 8)
 	squad.size = Vector2(1240, 158)
+	if TouchUi.active():
+		squad.margins = Vector4(12.0, 46.0, 12.0, 8.0)      # le carte stanno sotto il pulsante MIGLIORE
 	_team_page.add_child(squad)
 	_slots_box = HBoxContainer.new()
 	_slots_box.add_theme_constant_override("separation", 8)
@@ -192,12 +191,14 @@ func _build_team_page() -> void:
 	auto.position = Vector2(1080 if TouchUi.active() else 990, 2)
 	auto.size = Vector2(160 if TouchUi.active() else 236, 28)
 	BattleTheme.style_button(auto, "normal", 14)
+	if TouchUi.active():
+		auto.size = Vector2(160, 40)
 	auto.pressed.connect(auto_team)
 	squad.add_child(auto)
 
 	var coll := HudPanel.new().setup("COLLEZIONE  -  TOCCA PER SCEGLIERE", BattleTheme.CY)
 	coll.position = Vector2(20, 176)
-	coll.size = Vector2(572, 332)
+	coll.size = Vector2(522, 332)
 	_team_page.add_child(coll)
 	_list_box = GridContainer.new()
 	_list_box.columns = 5
@@ -206,15 +207,17 @@ func _build_team_page() -> void:
 	_set_scrolled(coll, _list_box)
 
 	var card := HudPanel.new().setup("SCHEDA OPERATORE", BattleTheme.CY)
-	card.margins = Vector4(14.0, 30.0, 186.0, 12.0)
-	card.position = Vector2(606, 176)
-	card.size = Vector2(654, 332)
+	card.margins = Vector4(14.0, 30.0, 250.0, 12.0)
+	card.position = Vector2(556, 176)
+	card.size = Vector2(704, 332)
 	_team_page.add_child(card)
 	var leg := Button.new()
 	leg.text = "?" if TouchUi.active() else "LEGENDA  ?"
-	leg.position = Vector2(500 if TouchUi.active() else 466, 2)
-	leg.size = Vector2(180, 28)
+	leg.position = Vector2(640 if TouchUi.active() else 466, 2)
+	leg.size = Vector2(56 if TouchUi.active() else 180, 30)
 	BattleTheme.style_button(leg, "normal", 14)
+	leg.custom_minimum_size = Vector2(0, 0)
+	leg.size = Vector2(56 if TouchUi.active() else 180, 30)
 	leg.pressed.connect(open_legend)
 	card.add_child(leg)
 	legend_button = leg
@@ -250,8 +253,8 @@ func _build_team_page() -> void:
 	# illustrazione dell'operatore (la tua grafica `splash.png`, o il segnaposto)
 	_detail_portrait = PortraitView.new().setup("", "splash")
 	_detail_portrait.show_expression_text = false
-	_detail_portrait.position = Vector2(480.0, 40.0)
-	_detail_portrait.size = Vector2(164.0, 280.0)
+	_detail_portrait.position = Vector2(458.0, 34.0)
+	_detail_portrait.size = Vector2(240.0, 292.0)
 	card.add_child(_detail_portrait)
 
 

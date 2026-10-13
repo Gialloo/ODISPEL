@@ -38,6 +38,9 @@ static func style_for(move: Dictionary) -> String:
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	material = LightningFx.additive()       # i bagliori si sommano alla scena: luce vera, non vernice
+	if style == "strike" and target != Vector2.ZERO and get_parent() != null:
+		LightningFx.play(get_parent(), center, target, color, 0.5, 1.7)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(center.x * 31.0 + center.y)
 	for i in 46:

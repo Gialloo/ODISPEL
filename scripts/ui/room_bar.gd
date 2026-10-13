@@ -39,6 +39,7 @@ func _build() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.theme = UiTheme.build()   # una CanvasLayer non eredita il tema della finestra
 	add_child(_root)
+	var safe: Control = ScreenFrame.safe_holder(_root)
 
 	_strip = PanelContainer.new()
 	_strip.add_theme_stylebox_override("panel", LobbyView._style(BattleTheme.CY))
@@ -50,7 +51,7 @@ func _build() -> void:
 	_strip.offset_right = -10.0
 	_strip.offset_top = -58.0
 	_strip.offset_bottom = -8.0
-	_root.add_child(_strip)
+	safe.add_child(_strip)
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
@@ -81,7 +82,7 @@ func _build() -> void:
 	_drop.offset_right = -10.0
 	_drop.offset_bottom = -64.0
 	_drop.offset_top = -64.0
-	_root.add_child(_drop)
+	safe.add_child(_drop)
 
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)

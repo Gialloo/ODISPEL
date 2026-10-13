@@ -116,12 +116,16 @@ func _notification(what: int) -> void:
 			Input.parse_input_event(ev)
 
 
+var _safe: Control
+
+
 func _ready() -> void:
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.theme = UiTheme.build()
 	add_child(_root)
+	_safe = ScreenFrame.safe_holder(_root)
 	_build_toasts()
 	_build_spinner()
 	_build_loading()
@@ -142,7 +146,7 @@ func _build_toasts() -> void:
 	_toasts.offset_right = 185.0
 	_toasts.offset_top = 10.0
 	_toasts.offset_bottom = 300.0
-	_root.add_child(_toasts)
+	_safe.add_child(_toasts)
 
 
 func _build_spinner() -> void:
@@ -157,7 +161,7 @@ func _build_spinner() -> void:
 	_spinner_box.offset_left = -440.0
 	_spinner_box.offset_right = -14.0
 	_spinner_box.visible = false
-	_root.add_child(_spinner_box)
+	_safe.add_child(_spinner_box)
 
 	_spinner_label = BattleTheme.make_label("", 14, BattleTheme.CY)
 	_spinner_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER

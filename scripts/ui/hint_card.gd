@@ -20,6 +20,7 @@ var _auto_hide: float = 0.0
 # Collega una scheda a un elemento. provider: Callable() -> {title, body, color}. host: nodo schermo che ospita la scheda.
 # hold: per i pulsanti che fanno gia' qualcosa al tocco, la scheda compare tenendo premuto (e il tocco non vale come azione).
 static func bind(node: Control, provider: Callable, host: Control, hold: bool = false) -> void:
+	node.set_meta("hinted", true)       # tiene la pressione lunga per la scheda: si conferma al rilascio
 	node.mouse_entered.connect(func() -> void:
 		if not TouchUi.active():
 			show_for(host, node, provider.call()))

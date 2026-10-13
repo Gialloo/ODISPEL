@@ -12,6 +12,7 @@ var margins: Vector4 = Vector4(18.0, 30.0, 18.0, 12.0)   # sinistra, alto, destr
 
 
 func setup(panel_title: String, panel_accent: Color = BattleTheme.CY) -> HudPanel:
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	title = panel_title
 	accent = panel_accent
 	return self
@@ -36,8 +37,23 @@ func _shape(offset: Vector2 = Vector2.ZERO) -> PackedVector2Array:
 	])
 
 
+# Grana e riflesso del pannello: righe oblique chiare, velo di luce in alto, tacche negli angoli.
+func _draw_surface(strength: float) -> void:
+	var shape: PackedVector2Array = _shape()
+	var tint := Color(1, 1, 1, 0.045 * strength).lerp(Color(accent, 0.07 * strength), 0.5)
+	draw_polygon(shape, PackedColorArray([tint, tint, tint, tint, tint, tint]), UiTex.uvs_for(shape), UiTex.hatch())
+	var gh: float = minf(44.0, size.y * 0.35)
+	var hi := Color(accent, 0.20 * strength)
+	var lo := Color(accent, 0.0)
+	draw_polygon(PackedVector2Array([Vector2(cut, 0.0), Vector2(size.x, 0.0), Vector2(size.x, gh), Vector2(0.0, gh)]), PackedColorArray([hi, hi, lo, lo]))
+	var tick := Color(1, 1, 1, 0.55 * strength)
+	draw_polyline(PackedVector2Array([Vector2(size.x - 22.0, 3.0), Vector2(size.x - 4.0, 3.0), Vector2(size.x - 4.0, 21.0)]), tick, 2.0)
+	draw_polyline(PackedVector2Array([Vector2(4.0, size.y - 21.0), Vector2(4.0, size.y - 4.0), Vector2(22.0, size.y - 4.0)]), tick, 2.0)
+
+
 func _draw_quiet() -> void:
 	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.5))
+	_draw_surface(0.5)
 	var outline: PackedVector2Array = _shape()
 	outline.append(outline[0])
 	draw_polyline(outline, Color(accent, 0.55), 1.5)
@@ -54,6 +70,7 @@ func _draw() -> void:
 		return
 	draw_colored_polygon(_shape(Vector2(5.0, 5.0)), Color(accent, 0.28))
 	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.80))
+	_draw_surface(1.0)
 	var outline: PackedVector2Array = _shape()
 	outline.append(outline[0])
 	draw_polyline(outline, accent, 2.0)

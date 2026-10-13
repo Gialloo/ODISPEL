@@ -53,6 +53,7 @@ var _tele_label: Label
 var _tele_target: Label
 var _ops_box: VBoxContainer
 var _orders_box: FanMenu
+var _select_arrow: SelectArrow
 var _fan_key: String = ""
 var _fan_anchor: Control      # riquadro invisibile attorno ai comandi (lo evidenzia il tutorial)
 var _log_label: RichTextLabel
@@ -67,11 +68,7 @@ var _order_buttons: Array = []
 
 
 func _ready() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# L'interfaccia e' disegnata per 1280x720: la finestra si adatta a quella base.
-	var window: Window = get_window()
-	if window != null:
-		window.content_scale_size = Vector2i(1280, 720)
+	ScreenFrame.setup(self)   # riquadro 1280x720 nell'area sicura dello schermo
 	_build()
 	if pending_source != null:
 		bind_source(pending_source)
@@ -268,6 +265,7 @@ func _build() -> void:
 	_stage = BattleStage.new()
 	_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stage.party_lift = 28.0 if TouchUi.active() else 0.0
 	add_child(_stage)
 
 	# velatura ciano, telecamera e retino da fumetto: un solo passaggio a tutto schermo
@@ -291,6 +289,29 @@ func _build() -> void:
 	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_overlay)
+
+
+# La freccia sopra chi sta scegliendo (nello strato degli effetti: sempre sopra pannelli e targhette).
+func _update_select_arrow(picking: bool) -> void:
+	if _select_arrow == null:
+		if _fx == null:
+			return
+		_select_arrow = SelectArrow.new()
+		_fx.add_child(_select_arrow)
+	var p: Dictionary = BattleState.player(shown, _cur_slot_id()) if picking else {}
+	if p.is_empty():
+		_select_arrow.visible = false
+		return
+	var uid: String = str(p["active"])
+	var idx: int = 0
+	var players: Array = shown.get("players", [])
+	for i in players.size():
+		if str(players[i]["id"]) == str(p["id"]):
+			idx = i
+	var pose: Vector3 = _stage.party_pose(idx, players.size())
+	var tip: Vector2 = _stage.anchor_of(uid) + Vector2(0.0, -(126.0 * pose.z) - 4.0)
+	_select_arrow.visible = true
+	_select_arrow.point_at(tip)
 
 
 func _build_autoplay() -> void:
@@ -332,7 +353,7 @@ func _build_boss_banner() -> void:
 	_boss_panel = panel
 	add_child(panel)
 	panel.margins = Vector4(18.0, 26.0, 18.0, 8.0)
-	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-300, 24, 140, 120))
+	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 24, 192, 120))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 3)
 	panel.set_content(box)
@@ -350,7 +371,7 @@ func _build_boss_banner() -> void:
 	timer_panel.quiet = true
 	add_child(timer_panel)
 	timer_panel.margins = Vector4(14.0, 22.0, 14.0, 2.0)
-	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(170, 20, 330, 80))
+	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(170, 20, 320, 80))
 	_timer_label = BattleTheme.make_label("LIBERO", 34, BattleTheme.CY, true)
 	timer_panel.set_content(_timer_label)
 
@@ -359,7 +380,7 @@ func _build_telegraph() -> void:
 	_tele_panel = HudPanel.new().setup("ALLARME", BattleTheme.RD)
 	add_child(_tele_panel)
 	_tele_panel.margins = Vector4(18.0, 26.0, 18.0, 6.0)
-	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-300, 128, 140, 204))
+	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 128, 192, 212))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	_tele_panel.set_content(box)
@@ -375,7 +396,7 @@ func _build_turn_panel() -> void:
 	panel.quiet = true
 	panel.margins = Vector4(12, 26, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(20, 92, 330, 218))
+	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(20, 92, 320, 206))
 	_turn_box = VBoxContainer.new()
 	_turn_box.add_theme_constant_override("separation", 1)
 	_turn_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -491,14 +512,14 @@ func _build_log() -> void:
 	panel.bare = true
 	panel.margins = Vector4(12, 8, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 1.0, 1.0, 1.0), Vector4(392, -86, -716 if TouchUi.active() else -556, -18))
+	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-300, -150, -20, -18))
 	_log_label = RichTextLabel.new()
 	_log_label.bbcode_enabled = true
 	_log_label.scroll_active = false
 	_log_label.fit_content = false
 	_log_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_log_label.add_theme_font_override("normal_font", BattleTheme.mono())
-	_log_label.add_theme_font_size_override("normal_font_size", 14)
+	_log_label.add_theme_font_size_override("normal_font_size", 16 if TouchUi.active() else 15)
 	panel.set_content(_log_label)
 
 
@@ -507,6 +528,10 @@ func _build_log() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_watch_performance(delta)
+	if _stage != null:
+		var picking: bool = not locked and not animating and not autoplay and not shown.is_empty() and str(shown.get("winner", "")) == ""
+		_stage.select_slot = _cur_slot_id() if picking else ""
+		_update_select_arrow(picking)
 	if _rec_dot != null:
 		var on: bool = int(_t * 1.6) % 2 == 0
 		if _rec_dot.visible != on:
@@ -706,7 +731,7 @@ func _fit_ops_panel(fronts: int, backs: int, with_allies: bool) -> void:
 
 
 func _back_row_height() -> float:
-	return 36.0 if TouchUi.active() else 26.0
+	return 30.0 if TouchUi.active() else 26.0
 
 
 # Riga compatta di chi sta in back row: tocca per mandarlo in campo al posto del personaggio selezionato.
@@ -753,7 +778,7 @@ func _back_row(u: Dictionary, selected: bool) -> Control:
 
 # Altezza della riga di un operatore: sul telefono e' piu' alta, per il dito.
 func _unit_row_height() -> float:
-	return 60.0 if TouchUi.active() else 44.0
+	return 54.0 if TouchUi.active() else 44.0
 
 
 # Sotto il nome: fazione, aure, munizioni, effetti. Ognuno si puo' puntare o toccare per leggere cosa significa.
@@ -899,6 +924,15 @@ func _refresh_orders() -> void:
 		_order_buttons.clear()
 		_orders_box.clear_arc()
 		return
+	# scelte fatte (o round in corso / autoplay): il ventaglio sparisce e si vede lo scontro
+	if locked or animating or autoplay:
+		_orders_sig = ""
+		for c in _orders_box.get_children():
+			_orders_box.remove_child(c)
+			c.queue_free()
+		_order_buttons.clear()
+		_orders_box.clear_arc()
+		return
 	var cur_p: Dictionary = BattleState.player(shown, _cur_slot_id())
 	if cur_p.is_empty():
 		cur_p = me
@@ -935,7 +969,7 @@ func _refresh_orders() -> void:
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
 	var bh: float = 56.0 if touch else 42.0
 	var bw: float = 232.0 if touch else 196.0
-	var pts: Array = _orders_box.layout(entries.size(), bh, 6.0, 340.0 if touch else 290.0, 6.0 if touch else 22.0)
+	var pts: Array = _orders_box.layout(entries.size(), bh, 6.0, 340.0 if touch else 290.0, 6.0 if touch else 22.0, 246.0, 706.0)
 	title.position = Vector2(float(pts[0].x) + 6.0, float(pts[0].y) - bh * 0.5 - 24.0)
 	var lo := Vector2(1e9, 1e9)
 	var hi := Vector2(-1e9, -1e9)
@@ -1298,21 +1332,7 @@ func _fx_marks(e: Dictionary) -> float:
 
 # Scarica elettrica a zig-zag tra due punti (torretta, drone).
 func _zap(a: Vector2, b: Vector2, col: Color) -> void:
-	var line := Line2D.new()
-	line.width = 4.0
-	line.default_color = col
-	var pts := PackedVector2Array()
-	for i in 9:
-		var f: float = float(i) / 8.0
-		var p: Vector2 = a.lerp(b, f)
-		if i > 0 and i < 8:
-			p += Vector2(randf_range(-8.0, 8.0), randf_range(-14.0, 14.0))
-		pts.append(p)
-	line.points = pts
-	_fx.add_child(line)
-	var tw := create_tween()
-	tw.tween_property(line, "modulate:a", 0.0, 0.22)
-	tw.tween_callback(line.queue_free)
+	LightningFx.play(_fx, a, b, col, 0.3, 0.9)
 
 
 # LINK: striscione al centro con il numero della catena; CROSS in ciano, UNISONO in giallo.
@@ -1625,7 +1645,7 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	Snd.play("victory" if victory else "defeat")
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.72)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ScreenFrame.overshoot(dim)
 	_overlay.add_child(dim)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 
