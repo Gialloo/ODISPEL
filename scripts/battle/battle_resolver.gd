@@ -706,20 +706,16 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 		if gr > 0.0:
 			pu["gauge"] = mini(BattleTypes.GAUGE_MAX, int(pu["gauge"]) + int(round(gr)))
 
-	# supporto dalla panchina: i guardiani a riposo curano chi combatte
+	# sostegno dalla panchina: i guardiani a riposo aiutano chi combatte (un guardiano per giocatore)
 	for p in state["players"]:
 		var act: Dictionary = BattleState.unit(state, str(p["active"]))
 		if act.is_empty() or not BattleState.is_alive(act):
 			continue
 		for uid in BattleState.party_of(state, p):
 			var bu: Dictionary = BattleState.unit(state, str(uid))
-			if str(uid) == str(p["active"]) or not BattleState.is_alive(bu) or str(bu.get("cls", "")) != "warden":
+			if str(uid) == str(p["active"]) or not BattleState.is_alive(bu) or not Signatures.has_bench(str(bu.get("char", ""))):
 				continue
-			var hb: int = int(act["hp"])
-			act["hp"] = mini(int(act["max_hp"]), hb + int(round(float(act["max_hp"]) * BattleContent.BENCH_HEAL)))
-			if int(act["hp"]) > hb:
-				events.append({"t": "heal", "src": str(uid), "dst": str(act["id"]), "amount": int(act["hp"]) - hb})
-			break   # un solo guardiano in panchina cura per round: i bonus non si sommano
+			events.append_array(Signatures.apply_bench(bu, act, Signatures.BENCH_PVE_FACTOR))
 
 	Atypical.end_of_round(state, events)
 

@@ -14,6 +14,7 @@ var boss_id: String = "distributore"
 var tier: int = 0
 var endless_floor: int = 0       # > 0: CICLO INFINITO a questo piano
 var daily_mod: String = ""       # non vuoto: SFIDA DEL GIORNO con questo modificatore
+var weekly: bool = false         # con daily_mod: EVENTO DELLA SETTIMANA
 var daily_first: bool = false    # vera se questa vittoria ha pagato il bonus del giorno
 var seed_value: int = 1
 var roster: Dictionary = {}
@@ -31,7 +32,7 @@ func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier:
 	_finished = false
 	battle = RosterState.create_solo_battle(roster, "IO", boss_id, seed_value, 0, tier)
 	if daily_mod != "":
-		Endless.apply(battle, Daily.FLOOR, daily_mod)
+		Endless.apply(battle, Weekly.FLOOR if weekly else Daily.FLOOR, daily_mod)
 	elif endless_floor > 0:
 		Endless.apply(battle, endless_floor)
 		if endless_floor > 1:
@@ -119,7 +120,12 @@ func finish() -> Dictionary:
 			Endless.finish_run(roster, endless_floor - 1)
 		if Endless.record(roster, endless_floor, won):
 			Notify.success("NUOVO RECORD: PIANO %d" % endless_floor)
-	if daily_mod != "" and won and Daily.record_win(roster):
+	if daily_mod != "" and weekly:
+		if won and Weekly.record_event(roster):
+			daily_first = true
+			rewards = Daily.scale_rewards(rewards, Weekly.reward_mult(roster))
+			Notify.success("EVENTO DELLA SETTIMANA SUPERATO · SERIE %d" % Weekly.streak(roster))
+	elif daily_mod != "" and won and Daily.record_win(roster):
 		daily_first = true
 		rewards = Daily.scale_rewards(rewards, Daily.reward_mult(roster))
 		Notify.success("SFIDA DEL GIORNO SUPERATA · SERIE %d" % Daily.streak(roster))
@@ -128,6 +134,11 @@ func finish() -> Dictionary:
 		if RosterState.mark_cleared(roster, boss_id, tier):
 			for line in RosterState.unlock_news(boss_id, tier):
 				Notify.success(line)
+	if won:
+		for line in Weekly.record_win(roster, daily_mod != "" and not weekly and daily_first):
+			Notify.success(line)
+	for line in Weekly.finish_notes(roster):
+		Notify.success(line)
 	Feats.record_battle(roster, str(battle["winner"]) == "players")
 	for line in Objectives.record_battle(roster, boss_id, tier, str(battle["winner"]) == "players"):
 		Notify.success(line)

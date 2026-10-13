@@ -114,12 +114,10 @@ const PASSIVES: Dictionary = {
 const CLASS_STATS: Dictionary = {
 	"striker": {"hp": 900, "atk": 100, "def": 20, "spd": 110},
 	"vanguard": {"hp": 1300, "atk": 90, "def": 50, "spd": 90},
-	"warden": {"hp": 1000, "atk": 88, "def": 30, "spd": 100},
+	"warden": {"hp": 940, "atk": 84, "def": 28, "spd": 100},
 }
 # Attacco base: i ruoli di supporto/tank colpiscono un po' di piu' con l'attacco semplice.
-const CLASS_BASIC: Dictionary = {"striker": 1.0, "vanguard": 1.3, "warden": 1.5}
-# Supporto dalla panchina (solo in cooperativa): un guardiano vivo in back row cura a fine round chi combatte (frazione dei PV massimi).
-const BENCH_HEAL: float = 0.03
+const CLASS_BASIC: Dictionary = {"striker": 1.0, "vanguard": 1.2, "warden": 1.3}
 const LEVEL_BONUS: float = 0.08
 
 

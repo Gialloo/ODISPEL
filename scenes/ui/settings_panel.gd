@@ -339,6 +339,7 @@ func _on_fullscreen(on: bool) -> void:
 
 func _on_tutorial() -> void:
 	Settings.tutorial_done = false
+	Settings.coach_step = 0
 	Settings.seen_scenes = []
 	Settings.save()
 	Notify.success("Tutorial e scene di storia ripartiranno dal prossimo combattimento.")

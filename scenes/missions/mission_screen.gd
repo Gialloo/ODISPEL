@@ -50,7 +50,7 @@ func _build() -> void:
 	list_panel.set_content(list_scroll)
 	for id in BattleContent.BOSS_ORDER:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(0, 48)
+		b.custom_minimum_size = Vector2(0, 64)
 		b.pressed.connect(select_boss.bind(id))
 		list.add_child(b)
 		boss_buttons[id] = b
@@ -101,13 +101,32 @@ func _build() -> void:
 	var dboss: String = Daily.boss_for(roster)
 	var dmod: Dictionary = Daily.mod_for()
 	daily_button = Button.new()
-	daily_button.text = "SFIDA DEL GIORNO  ·  %s\n%s  ·  %s" % [MissionConfig.boss_title(dboss), str(dmod["name"]), ("BONUS RISCOSSO" if Daily.done_today(roster) else "x%.1f  ·  SERIE %d" % [Daily.reward_mult(roster), Daily.streak(roster)])]
-	daily_button.custom_minimum_size = Vector2(0, 56)
+	daily_button.text = "SFIDA DEL GIORNO\n%s · %s\n%s" % [MissionConfig.boss_title(dboss), str(dmod["name"]), ("BONUS RISCOSSO" if Daily.done_today(roster) else "x%.1f  ·  SERIE %d" % [Daily.reward_mult(roster), Daily.streak(roster)])]
+	daily_button.custom_minimum_size = Vector2(0, 64)
 	daily_button.clip_text = true
 	BattleTheme.style_button(daily_button, "normal", 16)
-	daily_button.add_theme_font_size_override("font_size", 16)
+	daily_button.add_theme_font_size_override("font_size", 13)
 	daily_button.pressed.connect(_on_daily)
-	dbox.add_child(daily_button)
+	var ev_row := HBoxContainer.new()
+	ev_row.add_theme_constant_override("separation", 8)
+	dbox.add_child(ev_row)
+	daily_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ev_row.add_child(daily_button)
+	var wboss: String = Weekly.boss_for(roster)
+	var wmod: Dictionary = Weekly.mod_for()
+	var weekly_button := Button.new()
+	weekly_button.text = "EVENTO DELLA SETTIMANA\n%s · %s\n%s" % [MissionConfig.boss_title(wboss), str(wmod["name"]), ("BONUS RISCOSSO" if Weekly.event_done(roster) else "PREMIO x%.1f  ·  SERIE %d" % [Weekly.reward_mult(roster), Weekly.streak(roster)])]
+	weekly_button.custom_minimum_size = Vector2(0, 64)
+	weekly_button.clip_text = true
+	BattleTheme.style_button(weekly_button, "normal", 16)
+	weekly_button.add_theme_font_size_override("font_size", 13)
+	weekly_button.pressed.connect(func() -> void: Weekly.start(roster))
+	weekly_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ev_row.add_child(weekly_button)
+	var wk_info := BattleTheme.make_label("SETTIMANA  %s\n%s" % [Weekly.missions_text(roster).replace("\n", "   "), Weekly.records_text(roster)], 12, BattleTheme.WH)
+	wk_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	wk_info.custom_minimum_size = Vector2(740, 0)
+	dbox.add_child(wk_info)
 	go_button = Button.new()
 	go_button.text = "AVVIA MISSIONE"
 	go_button.custom_minimum_size = Vector2(0, 56)

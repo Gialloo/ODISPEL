@@ -50,6 +50,7 @@ var _clock_label: Label
 var _tele_panel: HudPanel
 var _boss_panel: HudPanel
 var _tutorial: TutorialOverlay = null
+var _coach: BattleCoach = null
 var _tele_label: Label
 var _tele_target: Label
 var _ops_box: VBoxContainer
@@ -78,6 +79,8 @@ func _ready() -> void:
 		_start_solo()
 	if source is SoloBattleSource and Settings.should_show_tutorial():
 		_start_tutorial.call_deferred()
+	elif source is SoloBattleSource and BattleCoach.active():
+		_start_coach.call_deferred()
 
 
 # ---------- Tutorial ----------
@@ -92,23 +95,11 @@ func _panel_of(c: Control) -> Control:
 func tutorial_steps() -> Array:
 	return [
 		{"title": "BENVENUTO, OPERATORE", "target": null,
-		"text": "Una anomalia ti sta davanti. Il tuo compito: metterla a terra prima che metta K.O. tutta la tua squadra. Si combatte a round: ogni round scegli un ordine, poi si risolve tutto insieme."},
+		"text": "Una anomalia ti sta davanti: mettila a terra prima che metta K.O. la tua squadra. Si combatte a round: scegli un ordine, poi si risolve tutto insieme."},
 		{"title": "IL BERSAGLIO", "target": _boss_panel,
-		"text": "Qui vedi il nome del boss e la sua integrita'. Quando la barra arriva a zero, hai vinto. Sotto meta' integrita' il boss va in furia e colpisce piu' forte."},
-		{"title": "ALLARME", "target": _tele_panel,
-		"text": "Il boss ti avvisa: questa e' la mossa che usera' in QUESTO round e chi colpira'. Cambia ogni round, quindi leggila sempre prima di scegliere."},
-		{"title": "I TUOI OPERATORI", "target": _panel_of(_ops_box),
-		"text": "Il tuo party: in alto la FRONT ROW (fino a 3 operatori in campo), sotto la BACK ROW (le riserve). Clicca un front per dargli gli ordini; clicca uno della back row per mandarlo in campo al suo posto: il cambio e' gratis e avviene prima di tutto. Chi sta in back row recupera piu' energia."},
-		{"title": "COME FUNZIONA UN TURNO", "target": _panel_of(_turn_box),
-		"text": "Ogni round decidi TU le mosse di tutti i front, uno dopo l'altro (tasto TAB per passare dall'uno all'altro). Quando hai dato l'ultimo ordine si risolve tutto in fila per priorita' e velocita': il segnalino rosso mostra chi agisce e chi subisce. Non hai voglia di scegliere? Il tasto AUTOPLAY (o A) fa combattere l'IA al posto tuo, e lo spegni quando vuoi."},
-		{"title": "GLI ORDINI", "target": _fan_anchor,
-		"text": "I comandi si aprono a ventaglio attorno al tuo operatore. Scegli cosa fare: ATTACCO, GUARDIA (dimezza i danni), le abilita' (costano energia) e l'ULTIMATE, che si carica combattendo. Scorciatoie: tasti 1-4. I colori contano: un colpo del colore giusto fa +50% di danni, quello sbagliato -33%."},
-		{"title": "CLASSI E FAZIONI", "target": null,
-		"text": "STRIKER fa danno, VANGUARD regge i colpi, WARDEN cura e protegge. Le FAZIONI (LibraCorp, Rondini, Magabondi, Kairos) danno bonus ai compagni dello stesso gruppo: piu' sono rari, piu' il bonus e' grande. Nell'archivio operatori trovi STRATEGIE, ARCHIVIO e la LEGENDA di ogni personaggio."},
-		{"title": "LINK: LA CATENA", "target": _panel_of(_turn_box),
-		"text": "Quando due compagni agiscono di fila (prima che il boss si muova) nasce un LINK: ogni anello da' +15% di danno. Fazioni DIVERSE = CROSS, caricano l'ultimate di entrambi. Stessa fazione o stesso colore = UNISONO, anello doppio. Metti in squadra alleati improbabili e fai agire i tuoi di fila: il boss spezza la catena."},
-		{"title": "PRONTO?", "target": null,
-		"text": "Il registro in basso racconta cosa succede ogni round. Se finisce male, non c'e' problema: si ritenta e si guadagnano comunque monete per potenziare la squadra. Buona fortuna!"},
+		"text": "Qui vedi il boss e la sua integrita': a zero hai vinto. Sotto, ALLARME ti dice che mossa usera' in questo round."},
+		{"title": "TI GUIDO IO", "target": null,
+		"text": "Non serve ricordare tutto: ti spieghero' una cosa alla volta, mentre giochi. Quando vuoi puoi saltare la guida."},
 	]
 
 
@@ -121,9 +112,29 @@ func _start_tutorial() -> void:
 	_tutorial.finished.connect(_on_tutorial_finished)
 
 
-func _on_tutorial_finished(_skipped: bool) -> void:
+func _on_tutorial_finished(skipped: bool) -> void:
 	_tutorial = null
 	Settings.finish_tutorial()
+	if skipped:
+		Settings.coach_step = BattleCoach.STEPS.size()
+		Settings.save()
+	elif BattleCoach.active():
+		_start_coach.call_deferred()
+
+
+# Prima partita guidata: una cosa alla volta, aspettando che il giocatore la faccia.
+func _start_coach() -> void:
+	if _coach != null or not is_inside_tree() or not BattleCoach.active():
+		return
+	await get_tree().process_frame
+	_coach = BattleCoach.new().setup(self)
+	add_child(_coach)
+	_coach.finished.connect(func() -> void: _coach = null)
+
+
+func _coach_note(event: String, data: String = "") -> void:
+	if _coach != null and is_instance_valid(_coach):
+		_coach.note(event, data)
 
 
 # ---------- Avvio ----------
@@ -133,6 +144,7 @@ func _start_solo() -> void:
 	bind_source(s)
 	s.endless_floor = MissionConfig.endless_floor
 	s.daily_mod = MissionConfig.daily_mod
+	s.weekly = MissionConfig.weekly
 	s.start(RosterStore.load_or_new(), MissionConfig.boss_id, int(randi()) | 1, MissionConfig.tier)
 	if DisplayServer.get_name() != "headless":
 		get_tree().create_timer(1.4).timeout.connect(func() -> void:
@@ -143,7 +155,7 @@ func _start_solo() -> void:
 		for m in Endless.MODS:
 			if str(m["id"]) == MissionConfig.daily_mod:
 				dm = m
-		ComicFx.caption(_fx, "SFIDA DEL GIORNO  //  %s: %s" % [str(dm.get("name", "")), str(dm.get("desc", ""))], Vector2(240.0, 300.0), BattleTheme.POP, 1.8)
+		ComicFx.caption(_fx, "%s  //  %s: %s" % ["EVENTO DELLA SETTIMANA" if MissionConfig.weekly else "SFIDA DEL GIORNO", str(dm.get("name", "")), str(dm.get("desc", ""))], Vector2(240.0, 300.0), BattleTheme.POP, 1.8)
 	elif MissionConfig.endless_floor > 0 and DisplayServer.get_name() != "headless":
 		var emod: Dictionary = Endless.mod_for(MissionConfig.endless_floor)
 		var cap: String = "PIANO %d" % MissionConfig.endless_floor
@@ -960,6 +972,8 @@ func _on_unit_pressed(uid: String) -> void:
 				_swaps[other] = ""
 		_swaps[cur] = "" if same else uid
 		_picks.erase(cur)
+		if not same:
+			_coach_note("swap")
 	_ops_sig = ""
 	_refresh_operators()
 	_refresh_orders()
@@ -1119,6 +1133,7 @@ func _on_order_pressed(move_id: String) -> void:
 	var slot: String = _cur_slot_id()
 	if BattleResolver.validate_choice(shown, slot, choice) != "":
 		return
+	_coach_note("pick", move_id)
 	var slots: Array = _my_slots()
 	if slots.size() <= 1 or not source.has_method("submit_party"):
 		locked = true
@@ -1236,6 +1251,7 @@ func _play_events(events: Array) -> void:
 	_turn_acting = ""
 	if not is_inside_tree():
 		return
+	_coach_note("round")
 	_sync()
 
 
@@ -1513,6 +1529,8 @@ func banter(uid: String, kind: String, force: bool = false) -> void:
 	var u: Dictionary = BattleState.unit(shown, uid)
 	if u.is_empty() or str(u["side"]) != "player" or not Settings.banter:
 		return
+	if _coach != null and is_instance_valid(_coach) and _coach.panel.visible:
+		return      # la guida passo-passo ha la precedenza sullo stesso angolo
 	var text: String = Banter.line(kind, str(u["color"]), int(shown.get("round", 0)) + uid.length())
 	if text == "":
 		return
@@ -1756,9 +1774,11 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	box.add_child(title)
 	var mission_text: String = "%s · %s" % [MissionConfig.boss_title(str(BattleState.boss(shown)["char"])), str(BattleContent.tier_of(int(shown.get("tier", 0)))["name"])]
 	if MissionConfig.daily_mod != "":
-		mission_text = "SFIDA DEL GIORNO · %s" % MissionConfig.boss_title(MissionConfig.boss_id)
+		var wk: bool = MissionConfig.weekly
+		mission_text = "%s · %s" % ["EVENTO DELLA SETTIMANA" if wk else "SFIDA DEL GIORNO", MissionConfig.boss_title(MissionConfig.boss_id)]
 		if victory and source is SoloBattleSource and bool(source.daily_first):
-			mission_text += " · SERIE %d (PREMI x%.1f)" % [Daily.streak(RosterStore.load_or_new()), Daily.reward_mult(RosterStore.load_or_new())]
+			var rs: Dictionary = RosterStore.load_or_new()
+			mission_text += " · SERIE %d (PREMI x%.1f)" % [Weekly.streak(rs) if wk else Daily.streak(rs), Weekly.reward_mult(rs) if wk else Daily.reward_mult(rs)]
 		elif victory:
 			mission_text += " · BONUS GIA' RISCOSSO"
 	elif MissionConfig.endless_floor > 0:

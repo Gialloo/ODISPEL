@@ -23,6 +23,7 @@ static var show_fps: bool = false        # contatore dei fotogrammi in un angolo
 static var vibration: bool = true       # vibrazione del telefono nei momenti forti
 static var banter: bool = true          # battute dei personaggi in battaglia
 static var tutorial_done: bool = false
+static var coach_step: int = 0           # prima partita guidata: passo raggiunto (8 = finita)
 static var gacha_guide_seen: bool = false
 static var seen_scenes: Array = []      # scene di storia gia' viste
 static var _loaded: bool = false
@@ -52,6 +53,8 @@ static func load_settings() -> void:
 	skip_story = bool(cfg.get_value("game", "skip_story", skip_story))
 	show_fps = bool(cfg.get_value("video", "show_fps", show_fps))
 	tutorial_done = bool(cfg.get_value("game", "tutorial_done", tutorial_done))
+	# chi ha gia' visto il vecchio tutorial non e' un principiante: la guida passo-passo la salta
+	coach_step = int(cfg.get_value("game", "coach_step", 99 if tutorial_done else 0))
 	gacha_guide_seen = bool(cfg.get_value("game", "gacha_guide_seen", gacha_guide_seen))
 	seen_scenes = Array(cfg.get_value("game", "seen_scenes", []))
 
@@ -106,6 +109,7 @@ static func save() -> bool:
 	cfg.set_value("game", "skip_story", skip_story)
 	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("game", "tutorial_done", tutorial_done)
+	cfg.set_value("game", "coach_step", coach_step)
 	cfg.set_value("game", "gacha_guide_seen", gacha_guide_seen)
 	cfg.set_value("game", "seen_scenes", seen_scenes)
 	return cfg.save(path) == OK

@@ -123,14 +123,14 @@ func _run() -> void:
 	await process_frame
 	var t: TutorialOverlay = scene._tutorial
 	_check("il tutorial parte", t != null and t.is_inside_tree())
-	_check("nove passi", t.steps.size() == 9)
+	_check("tre passi", t.steps.size() == 3)
 	var targets_ok: bool = true
-	for i in range(1, 5):
+	for i in range(1, 2):
 		t.index = i
 		if t.target_rect().size.x < 50.0 or t.target_rect().size.y < 20.0:
 			targets_ok = false
 			print("riquadro non valido al passo ", i, ": ", t.target_rect())
-	_check("i passi 2-5 illuminano un pannello vero", targets_ok)
+	_check("il passo 2 illumina un pannello vero", targets_ok)
 	t.index = 0
 	t._show_step()
 	_check("il primo passo non ha riquadro", t.target_rect().size == Vector2.ZERO)

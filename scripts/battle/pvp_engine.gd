@@ -734,6 +734,16 @@ static func _end_of_round(state: Dictionary, g: RandomNumberGenerator, events: A
 		var gr: float = Signatures.value(pu, "gauge_regen")
 		if gr > 0.0:
 			pu["gauge"] = mini(BattleTypes.GAUGE_MAX, int(pu["gauge"]) + int(round(gr)))
+	# sostegno dalla panchina (meta' del valore del co-op)
+	for p in state["players"]:
+		var fa: Dictionary = active_unit(state, p)
+		if not alive(fa):
+			continue
+		for uid in p["units"]:
+			var bu: Dictionary = unit(state, str(uid))
+			if str(uid) == str(p["active"]) or not alive(bu) or not Signatures.has_bench(str(bu.get("char", ""))):
+				continue
+			events.append_array(Signatures.apply_bench(bu, fa, Signatures.BENCH_PVP_FACTOR))
 	for p in state["players"]:
 		var act: Dictionary = active_unit(state, p)
 		# chi e' caduto in campo viene sostituito dal primo compagno vivo

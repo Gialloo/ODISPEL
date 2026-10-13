@@ -35,6 +35,75 @@ const KEY_TEXT: Dictionary = {
 }
 
 # base: valore a rank 0 (frazione, tranne gauge_regen e crit_marked che sono punti)
+# SOSTEGNO DALLA PANCHINA: un guardiano vivo in back row aiuta chi combatte a fine round, anche senza entrare in campo.
+# Ogni guardiano ha il suo aiuto; cresce del 10% a rank. heal/shield = frazione dei PV massimi di chi combatte,
+# gauge = carica dell'ultimate, energy = energia.
+const BENCH: Dictionary = {
+	"elle": {"heal": 0.03},
+	"nami": {"shield": 0.08},
+	"sera": {"gauge": 8},
+	"rhea": {"energy": 1},
+	"mira": {"shield": 0.04, "gauge": 4},
+	"oriel": {"heal": 0.02, "shield": 0.04},
+}
+const BENCH_RANK_STEP: float = 0.10
+const BENCH_PVP_FACTOR: float = 0.3          # in PvP l'aiuto vale meno (le squadre di guardiani erano troppo forti)
+const BENCH_PVE_FACTOR: float = 1.5          # contro i boss serve di piu' (un solo operatore in campo)
+
+
+static func has_bench(char_id: String) -> bool:
+	return BENCH.has(char_id)
+
+
+static func bench_value(char_id: String, key: String, rank: int) -> float:
+	var base: float = float(BENCH.get(char_id, {}).get(key, 0.0))
+	if key == "energy":
+		return base + (1.0 if rank >= 3 else 0.0)
+	return base * (1.0 + BENCH_RANK_STEP * float(rank))
+
+
+static func bench_text(char_id: String, rank: int) -> String:
+	var parts: Array = []
+	var d: Dictionary = BENCH.get(char_id, {})
+	if d.has("heal"):
+		parts.append("cura chi combatte del %.1f%% dei PV" % (bench_value(char_id, "heal", rank) * 100.0))
+	if d.has("shield"):
+		parts.append("da' a chi combatte uno scudo del %.1f%% dei PV" % (bench_value(char_id, "shield", rank) * 100.0))
+	if d.has("gauge"):
+		parts.append("carica l'ultimate di %d" % int(round(bench_value(char_id, "gauge", rank))))
+	if d.has("energy"):
+		parts.append("da' +%d energia" % int(bench_value(char_id, "energy", rank)))
+	return ("IN PANCHINA, a fine round: " + ", ".join(parts)) if not parts.is_empty() else ""
+
+
+# Applica l'aiuto di un guardiano in panchina a chi combatte. Ritorna gli eventi (cura/scudo) da registrare.
+static func apply_bench(helper: Dictionary, target: Dictionary, factor: float = 1.0) -> Array:
+	var out: Array = []
+	var cid: String = str(helper.get("char", ""))
+	if not BENCH.has(cid):
+		return out
+	var rank: int = int(helper.get("rank", 0))
+	var heal: float = bench_value(cid, "heal", rank) * factor
+	if heal > 0.0:
+		var before: int = int(target["hp"])
+		target["hp"] = mini(int(target["max_hp"]), before + int(round(float(target["max_hp"]) * heal)))
+		if int(target["hp"]) > before:
+			out.append({"t": "heal", "src": str(helper["id"]), "dst": str(target["id"]), "amount": int(target["hp"]) - before})
+	var sh: float = bench_value(cid, "shield", rank) * factor
+	if sh > 0.0:
+		var amount: int = int(round(float(target["max_hp"]) * sh))
+		target["shield"] = int(target.get("shield", 0)) + amount
+		out.append({"t": "shield", "src": str(helper["id"]), "dst": str(target["id"]), "amount": amount})
+	var g: float = bench_value(cid, "gauge", rank) * factor
+	if g > 0.0:
+		target["gauge"] = mini(BattleTypes.GAUGE_MAX, int(target["gauge"]) + int(round(g)))
+	var en: float = bench_value(cid, "energy", rank) * factor
+	if en >= 1.0:
+		target["energy"] = mini(BattleTypes.MAX_ENERGY, int(target["energy"]) + int(round(en)))
+	return out
+
+
+
 const PASSIVES: Dictionary = {
 	"kira": {"name": "Scintilla viola", "key": "dmg_vs_mark", "base": 0.15},
 	"dax": {"name": "Muro di spine", "key": "thorns", "base": 0.25},

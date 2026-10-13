@@ -226,6 +226,8 @@ static func ability_pages(char_id: String, rank: int = 0) -> Array:
 			ab.append(_line("PASSIVA - %s" % str(BattleContent.PASSIVES[str(pid)]["name"]), BattleTheme.CY_DIM))
 	if Signatures.has_passive(char_id):
 		ab.append(_line("PASSIVA UNICA - %s: %s" % [Signatures.passive_name(char_id), Signatures.passive_text(char_id, rank)], BattleTheme.CY_DIM))
+	if Signatures.has_bench(char_id):
+		ab.append(_line("SOSTEGNO - " + Signatures.bench_text(char_id, rank) + " (in PvP vale la meta').", BattleTheme.OK))
 	if BattleContent.faction_of(char_id) != "":
 		ab.append(_line(Atypical.describe(char_id), BattleTheme.CY_DIM))
 	out.append({"title": "%s - ABILITA'" % str(def["name"]).to_upper(), "lines": ab})

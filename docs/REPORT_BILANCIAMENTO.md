@@ -534,3 +534,10 @@ Squadre analizzate: 1771  |  vittorie medie: 54.8%
 - Potenziati ancora Mira, Sera, Nami, Rhea, Elle, Oriel, Vesper, Silex, Bruno, Dax, Moro, Cato (statistiche e bonus di squadra delle skill unica dei guardiani).
 - Risultato: nessun operatore in tier D (vedi docs/TIERLIST.md). I guardiani restano in fondo alla tier C: il loro valore reale (cure, scudi, buff) dipende dal giocatore.
 - **Supporto dalla panchina (solo co-op):** a fine round un guardiano vivo in back row cura del 3% dei PV massimi chi combatte (un solo guardiano per round, non si somma). In PvP l'ho provato e tolto: faceva vincere troppo le squadre di guardiani (80% contro 54%).
+
+## Aggiornamento 0.24.7 - ruolo dei guardiani
+
+- Ogni guardiano ha un **sostegno dalla panchina** (cura, scudo, ultimate o energia a fine round per chi combatte). Vale x1,5 contro i boss e x0,3 in PvP.
+- L'attacco semplice di avanguardie e guardiani e' leggermente piu' forte (x1,2 / x1,3); le statistiche base del guardiano sono state abbassate un po' (940 PV, 84 ATT, 28 DIF).
+- Misure (4500-9000 partite): in PvP le squadre di guardiani restano forti (3 guardiani ~65%, Elle ~+25 punti). Scelta consapevole: verranno gestiti con pick e ban in PvP e con il blocco temporaneo di alcuni personaggi fino al rework. Contro i boss duri la squadra mista ora e' in linea con le altre.
+- Il vecchio testo "3% da un solo guardiano, provato in PvP e tolto" non e' piu' valido.
