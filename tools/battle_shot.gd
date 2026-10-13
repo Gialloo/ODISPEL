@@ -36,6 +36,9 @@ func _run() -> void:
 	if scene._tutorial != null:
 		scene._tutorial.queue_free()
 	await _shot("1_inizio")
+	if OS.get_cmdline_user_args().size() > 1:
+		quit(0)
+		return
 
 	# qualche round giocato con l'IA, poi lo stato a meta' battaglia
 	var guard: int = 0

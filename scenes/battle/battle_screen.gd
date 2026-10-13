@@ -43,7 +43,7 @@ var _turn_acting: String = ""
 var _fx: Control
 var _boss_name: Label
 var _boss_meta: Label
-var _boss_bar: SegBar
+var _boss_bar: LineBar
 var _boss_hp: Label
 var _round_label: Label
 var _timer_label: Label
@@ -404,13 +404,12 @@ func _build_boss_banner() -> void:
 	_boss_name = BattleTheme.make_label("SOGGETTO", 24, BattleTheme.WH, true)       # il nome: grande, Archivo Black, bianco
 	_boss_name.clip_text = true
 	box.add_child(_boss_name)
-	_boss_meta = BattleTheme.make_label("", 13, BattleTheme.CY_DIM)                  # classe, minaccia, difficolta': piccolo e chiaro
+	_boss_meta = BattleTheme.make_label("", 13, BattleTheme.WH)                  # classe, minaccia, difficolta': piccolo e chiaro
 	_boss_meta.add_theme_font_override("font", BattleTheme.hud())
 	_boss_meta.clip_text = true
 	box.add_child(_boss_meta)
-	_boss_bar = SegBar.new().setup(30, BattleTheme.RD, Vector2(0, 18))
-	_boss_bar.color_off = BattleTheme.RD_DARK
-	_boss_bar.smooth = true
+	_boss_bar = LineBar.new().setup(BattleTheme.RD, Vector2(0, 12))
+	_boss_bar.color_bg = Color(BattleTheme.RD_DARK, 0.9)
 	box.add_child(_boss_bar)
 	_boss_hp = BattleTheme.make_label("INTEGRITA'", 17, BattleTheme.WH)
 	_boss_hp.add_theme_font_override("font", BattleTheme.hud())
@@ -428,14 +427,14 @@ func _build_boss_banner() -> void:
 func _build_telegraph() -> void:
 	_tele_panel = HudPanel.new().setup("ALLARME", BattleTheme.RD)
 	add_child(_tele_panel)
-	_tele_panel.margins = Vector4(18.0, 26.0, 18.0, 6.0)
-	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 150, 192, 232))
+	_tele_panel.margins = Vector4(14.0, 24.0, 14.0, 4.0)
+	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 150, 192, 214))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	_tele_panel.set_content(box)
-	_tele_label = BattleTheme.make_label("PROSSIMA MOSSA", 28, BattleTheme.WH, true)
+	_tele_label = BattleTheme.make_label("PROSSIMA MOSSA", 22, BattleTheme.WH, true)
 	box.add_child(_tele_label)
-	_tele_target = BattleTheme.make_label("", 15, BattleTheme.RD)
+	_tele_target = BattleTheme.make_label("", 13, BattleTheme.WH)
 	_tele_target.add_theme_font_override("font", BattleTheme.hud())
 	box.add_child(_tele_target)
 
@@ -475,14 +474,14 @@ func turn_rows() -> Array:
 			var mine: bool = not me.is_empty() and mine_slots.has(str(p["id"]))
 			row["mine"] = mine
 			row["name"] = str(u.get("name", "?")).to_upper()
-			row["who"] = "TU" if mine else ("IA" if bool(p["ai"]) else str(p["name"]).to_upper().left(4))
+			row["who"] = "" if mine else ("IA" if bool(p["ai"]) else str(p["name"]).to_upper().left(4))
 			var choice: Variant = p["choice"]
 			if mine:
 				var pend: String = str(_swaps.get(str(p["id"]), ""))
 				if locked or autoplay or _picks.has(str(p["id"])) or (choice is Dictionary and choice.has("move")):
 					action = BattleText.move_name(str(entry["move"])) if str(entry["move"]) != "" else ("AUTO" if autoplay else (BattleText.move_name(str(_picks[str(p["id"])]["move"])) if _picks.has(str(p["id"])) else "BLOCCATO"))
 				else:
-					action = "SCEGLI TU" + ("  (CAMBIO)" if pend != "" else "")
+					action = "SCEGLI" + ("  (CAMBIO)" if pend != "" else "")
 				row["color"] = BattleTheme.WH
 				row["slot"] = str(p["id"])
 			elif choice is Dictionary and choice.has("move"):
@@ -512,6 +511,10 @@ func _refresh_turn_panel() -> void:
 	if rows.is_empty():
 		return
 	var fs: int = 15 if not TouchUi.active() else 16
+	var any_who: bool = false
+	for r in rows:
+		if str(r["who"]) != "":
+			any_who = true
 	# una riga = una HBox con colonne a larghezza fissa e lo stesso font (Roboto Bold, MAIUSCOLO): stessa baseline per tutti
 	for r in rows:
 		var acting_now: bool = str(r["unit"]) == _turn_acting
@@ -520,7 +523,8 @@ func _refresh_turn_panel() -> void:
 		line.add_theme_constant_override("separation", 6)
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		line.add_child(_turn_cell(("▶ " if acting_now else "") + str(int(r["n"])), fs, col, 30.0, true))
-		line.add_child(_turn_cell(str(r["who"]), fs, col, 42.0))
+		if any_who:
+			line.add_child(_turn_cell(str(r["who"]), fs, col, 42.0))
 		line.add_child(_turn_cell(str(r["name"]).left(8), fs, col, 84.0))
 		line.add_child(_turn_cell("» " + str(r["action"]), fs, col, 0.0))
 		_turn_box.add_child(line)
@@ -665,7 +669,7 @@ func _refresh_boss() -> void:
 		tier_name = "PIANO %d%s" % [int(shown["endless"]), (" · " + str(emod["name"])) if not emod.is_empty() else ""]
 	_boss_name.text = str(info.get("name", "SOGGETTO")).to_upper()
 	_boss_meta.text = ("%s · %s" % [str(info.get("title", "")), tier_name]).to_upper()
-	_boss_bar.set_ratio(float(boss["hp"]) / float(boss["max_hp"]))
+	_boss_bar.set_values(float(boss["hp"]) / float(boss["max_hp"]), float(boss.get("shield", 0)) / float(boss["max_hp"]))
 	var tags: String = ""
 	for s in boss["statuses"]:
 		if str(s) == "mark" and int(boss.get("marks", 0)) > 0:
@@ -692,7 +696,7 @@ func _refresh_telegraph() -> void:
 	var def: Dictionary = BattleContent.BOSS_MOVES[move_id]
 	_tele_label.text = "» %s" % BattleText.move_name(move_id)
 	var tlen: int = _tele_label.text.length()
-	_tele_label.add_theme_font_size_override("font_size", 28 if tlen <= 14 else maxi(17, int(28.0 * 14.0 / float(tlen))))
+	_tele_label.add_theme_font_size_override("font_size", 22 if tlen <= 18 else maxi(15, int(22.0 * 18.0 / float(tlen))))
 	if str(def["target"]) == "all":
 		_tele_target.text = "COLPISCE TUTTI GLI OPERATORI"
 	else:
@@ -702,7 +706,7 @@ func _refresh_telegraph() -> void:
 			var au: Dictionary = BattleState.unit(shown, str(tp["active"]))
 			who = str(au.get("name", "?")).to_upper()
 		var mine: bool = _my_slots().has(str(tele["target"]))
-		_tele_target.text = "BERSAGLIO: %s%s" % [who, "  ◄ TU" if mine else ""]
+		_tele_target.text = "BERSAGLIO: %s%s" % [who, ""]
 
 
 func _bar_row(label: String, ratio: float, color: Color, segs: int, width: float) -> HBoxContainer:
@@ -730,7 +734,7 @@ func _refresh_operators() -> void:
 		sig = "%s|%s|%s|" % [_cur_slot_id(), str(_swaps), str(_picks.keys())]
 		for uid in BattleState.party_of(shown, me):
 			var tu: Dictionary = BattleState.unit(shown, uid)
-			sig += "%s,%s,%d,%d,%d,%d,%d,%s,%d,%d;" % [uid, str(BattleState.is_front(shown, uid)), int(tu["hp"]), int(tu["max_hp"]), int(tu["energy"]), int(tu["gauge"]), int(tu["level"]), Factions.aura_text(tu), int(tu["ammo"]), (tu["mods"] as Array).size()]
+			sig += "%s,%s,%d,%d,%d,%d,%d,%s,%d,%d,%d;" % [uid, str(BattleState.is_front(shown, uid)), int(tu["hp"]), int(tu["max_hp"]), int(tu["energy"]), int(tu["gauge"]), int(tu["level"]), Factions.aura_text(tu), int(tu["ammo"]), (tu["mods"] as Array).size(), int(tu.get("shield", 0))]
 		for p in shown["players"]:
 			if p["id"] != me["id"] and not slots.has(str(p["id"])):
 				var ta: Dictionary = BattleState.unit(shown, str(p["active"]))
@@ -878,14 +882,15 @@ func _add_chips(inner: Control, u: Dictionary, selected: bool) -> void:
 		return
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
-	row.position = Vector2(206.0, 25.0 if not TouchUi.active() else 22.0)
 	inner.add_child(row)
 	var tint: Color = Hints.faction_color(f)
 	if selected:
 		tint = BattleTheme.BK
-	var fac: InfoChip = InfoChip.badge(Hints.faction_code(f), tint)
+	var fac: InfoChip = InfoChip.faction_icon(f, tint)
 	HintCard.bind(fac, func() -> Dictionary: return Hints.faction_card(BattleState.unit(shown, str(u["id"]))), self)
-	row.add_child(fac)
+	fac.position = Vector2(196.0, 2.0 if not TouchUi.active() else 0.0)
+	inner.add_child(fac)
+	row.position = Vector2(206.0, 25.0 if not TouchUi.active() else 22.0)
 	if int(u.get("ammo_max", 0)) > 0:
 		var am: InfoChip = InfoChip.ammo(int(u["ammo"]), int(u["ammo_max"]), tint if selected else Hints.faction_color("libracorp"))
 		HintCard.bind(am, func() -> Dictionary: return Hints.ammo_card(BattleState.unit(shown, str(u["id"]))), self)
@@ -951,24 +956,31 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 	_add_chips(inner, u, selected)
 
 	var hp_ratio: float = float(u["hp"]) / float(u["max_hp"])
-	var hp := SegBar.new().setup(14, BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.CY), Vector2(144, 8))
-	hp.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
-	hp.set_ratio(hp_ratio)
+	var hp := LineBar.new().setup(BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.OK), Vector2(144, 8))
+	if selected:
+		hp.color_bg = Color(0, 0, 0, 0.35)
+		hp.color_shield = Color("#1a6a99")
+	hp.set_values(hp_ratio, float(u.get("shield", 0)) / float(u["max_hp"]))
 	hp.position = Vector2(54, 22)
 	inner.add_child(hp)
-	var hp_t := _row_text("%d" % int(u["hp"]), 18, fg, Vector2(206, 0), 60.0)
+	var hp_t := _row_text("%d" % int(u["hp"]), 18, fg, Vector2(220, 0), 60.0)
 	inner.add_child(hp_t)
 
-	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(62, 6))
-	en.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
-	en.set_ratio(float(u["energy"]) / float(BattleTypes.MAX_ENERGY))
-	en.position = Vector2(54, 34)
-	inner.add_child(en)
-	var gauge := SegBar.new().setup(10, BattleTheme.BK if selected else BattleTheme.RD, Vector2(76, 6))
-	gauge.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.RD_DARK
-	gauge.set_ratio(float(u["gauge"]) / float(BattleTypes.GAUGE_MAX))
-	gauge.position = Vector2(122, 34)
+	# energia come numero (2/6), ultimate come barra con la percentuale accanto
+	var en_t := _row_text("EN %d/%d" % [int(u["energy"]), BattleTypes.MAX_ENERGY], 12, fg, Vector2(54, 31), 52.0)
+	en_t.size.y = 14.0
+	en_t.custom_minimum_size.y = 14.0
+	inner.add_child(en_t)
+	var gauge := LineBar.new().setup(BattleTheme.BK if selected else BattleTheme.RD, Vector2(62, 6))
+	gauge.color_bg = Color(0, 0, 0, 0.35) if selected else Color(BattleTheme.RD_DARK, 0.8)
+	var gr: float = float(u["gauge"]) / float(BattleTypes.GAUGE_MAX)
+	gauge.set_values(gr)
+	gauge.position = Vector2(110, 35)
 	inner.add_child(gauge)
+	var gp_t := _row_text("%d%%" % int(round(clampf(gr, 0.0, 1.0) * 100.0)), 12, fg, Vector2(176, 31), 34.0)
+	gp_t.size.y = 14.0
+	gp_t.custom_minimum_size.y = 14.0
+	inner.add_child(gp_t)
 	if not alive:
 		var where_l := BattleTheme.make_label(where, 11, fg, true)
 		where_l.position = Vector2(250, 3)

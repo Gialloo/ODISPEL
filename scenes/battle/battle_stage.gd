@@ -8,9 +8,9 @@ extends Control
 const DW: float = 1280.0
 const DH: float = 720.0
 const HORIZON: float = 250.0
-const BOSS_X: float = 950.0
-const BOSS_FLOOR: float = 378.0     # il boss sta piu' lontano: piedi piu' in alto sullo schermo...
-const BOSS_SCALE: float = 0.66      # ...e figura piu' piccola (prospettiva)
+const BOSS_X: float = 985.0
+const BOSS_FLOOR: float = 492.0     # il boss sta sulla stessa linea dei piedi della squadra...
+const BOSS_SCALE: float = 0.95      # ...con una figura un po' piu' grande della squadra
 const FLOOR_Y: float = 470.0        # dove i piedi toccano il suolo sullo schermo
 const GEO_FLOOR: float = 600.0      # il suolo nelle coordinate con cui sono disegnate le figure
 const ENTITY_SCALE: float = 0.76    # le figure sono disegnate in grande e ridotte qui
@@ -266,7 +266,7 @@ func fighter_x(index: int, count: int) -> float:
 
 func _layout() -> void:
 	_positions.clear()
-	_positions[BattleState.BOSS_ID] = _map(Vector2(BOSS_X, 360.0), BOSS_X, BOSS_SCALE, BOSS_FLOOR)
+	_positions[BattleState.BOSS_ID] = _map(Vector2(BOSS_X, 360.0), BOSS_X, BOSS_SCALE, BOSS_FLOOR - party_lift)
 	if state.is_empty():
 		return
 	var players: Array = state["players"]
@@ -338,7 +338,7 @@ func _draw() -> void:
 		_paint_procedural_background(self)
 	_draw_background()
 	_draw_motes()
-	_entity_transform(BOSS_X, BOSS_SCALE, BOSS_FLOOR)
+	_entity_transform(BOSS_X, BOSS_SCALE, BOSS_FLOOR - party_lift)
 	_draw_boss()
 	_draw_party()
 	_draw_markers()
@@ -998,7 +998,7 @@ func _draw_status_fx(u: Dictionary, cx: float, foot_y: float) -> void:
 # Chi comanda quell'operatore: TU, un compagno IA o un altro giocatore.
 func _who_label(index: int, owner_id: String) -> String:
 	if owner_id == local_player_id or (local_player_id == "" and index == 0):
-		return "TU"
+		return ""      # e' tuo: non serve dirlo
 	var p: Dictionary = BattleState.player(state, owner_id)
 	if bool(p.get("ai", false)):
 		return "IA" + str(index)
@@ -1064,7 +1064,7 @@ func _draw_bench_unit(u: Dictionary, gx: float, slot: int, depth_scale: float = 
 	_text(BattleTheme.display(), Vector2(gx - 60.0, foot_y + 52.0), str(u["name"]).to_upper(), 30, Color(BattleTheme.WH, 0.75 if alive else 0.35))
 	draw_rect(Rect2(gx - 60.0, foot_y + 62.0, 120.0, 10.0), Color(0, 0, 0, 0.5))
 	draw_rect(Rect2(gx - 60.0, foot_y + 62.0, 120.0 * ratio, 10.0), Color(BattleTheme.RD if ratio < 0.3 else BattleTheme.CY, 0.75))
-	_entity_transform(BOSS_X, BOSS_SCALE, BOSS_FLOOR)
+	_entity_transform(BOSS_X, BOSS_SCALE, BOSS_FLOOR - party_lift)
 
 
 # Segnalini di chi agisce (triangolo rosso) e di chi subisce (cerchio rosso), durante la riproduzione del round.
@@ -1207,7 +1207,8 @@ func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index
 	var rect := Rect2(cx - 82.0, top - 12.0, 164.0, 236.0)
 	if is_lead:
 		_brackets(rect, BattleTheme.RD, 5.0, 24.0)
-	var tag: String = "%s · %s" % [_who_label(index, str(u.get("owner", ""))), str(u["name"]).to_upper()]
+	var who: String = _who_label(index, str(u.get("owner", "")))
+	var tag: String = ("%s · %s" % [who, str(u["name"]).to_upper()]) if who != "" else str(u["name"]).to_upper()
 	var tw: float = _tag_width(tag)
 	var tab: PackedVector2Array = PackedVector2Array([
 		Vector2(rect.position.x, rect.position.y - 28.0), Vector2(rect.position.x + tw + 26.0, rect.position.y - 28.0),

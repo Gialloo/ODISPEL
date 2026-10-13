@@ -23,6 +23,17 @@ static func badge(label: String, tint: Color, solid: bool = true) -> InfoChip:
 	return c
 
 
+# Icona della fazione al posto della sigla (LC, RN, MB): simboli semplici disegnati, nel colore della fazione.
+static func faction_icon(faction: String, tint: Color) -> InfoChip:
+	var c := InfoChip.new()
+	c.kind = "faction"
+	c.text = faction
+	c.color = tint
+	c.custom_minimum_size = Vector2(c.chip_height(), c.chip_height())
+	c.size = c.custom_minimum_size
+	return c
+
+
 static func ammo(now: int, most: int, tint: Color) -> InfoChip:
 	var c := InfoChip.new()
 	c.kind = "ammo"
@@ -77,6 +88,9 @@ func _draw() -> void:
 	if kind == "ammo":
 		_draw_ammo(h, fs, font)
 		return
+	if kind == "faction":
+		_draw_faction(h)
+		return
 	if filled:
 		draw_rect(Rect2(0, 0, size.x, h), Color(color, 0.22))
 		draw_rect(Rect2(0, 0, size.x, h), Color(color, 0.8), false, 1.0)
@@ -110,3 +124,28 @@ func _bullet(at: Vector2, height: float, loaded: bool) -> void:
 		var closed: PackedVector2Array = pts.duplicate()
 		closed.append(pts[0])
 		draw_polyline(closed, Color(color, 0.4), 1.0)
+
+
+func _draw_faction(h: float) -> void:
+	draw_rect(Rect2(0, 0, h, h), Color(color, 0.18))
+	draw_rect(Rect2(0, 0, h, h), Color(color, 0.8), false, 1.0)
+	var m: float = h * 0.5
+	var u: float = h / 17.0
+	var w: float = maxf(1.5, 1.6 * u)
+	match text:
+		"libracorp":     # bilancia
+			draw_line(Vector2(m, 3.0 * u), Vector2(m, 13.0 * u), color, w)
+			draw_line(Vector2(3.0 * u, 5.0 * u), Vector2(14.0 * u, 5.0 * u), color, w)
+			draw_line(Vector2(5.0 * u, 13.5 * u), Vector2(12.0 * u, 13.5 * u), color, w)
+			draw_colored_polygon(PackedVector2Array([Vector2(1.5 * u, 10.0 * u), Vector2(6.0 * u, 10.0 * u), Vector2(3.75 * u, 5.0 * u)]), color)
+			draw_colored_polygon(PackedVector2Array([Vector2(11.0 * u, 10.0 * u), Vector2(15.5 * u, 10.0 * u), Vector2(13.25 * u, 5.0 * u)]), color)
+		"rondini":       # rondine: ali a V
+			draw_colored_polygon(PackedVector2Array([Vector2(m, 12.0 * u), Vector2(1.5 * u, 4.0 * u), Vector2(6.0 * u, 9.0 * u)]), color)
+			draw_colored_polygon(PackedVector2Array([Vector2(m, 12.0 * u), Vector2(15.5 * u, 4.0 * u), Vector2(11.0 * u, 9.0 * u)]), color)
+			draw_line(Vector2(m, 8.0 * u), Vector2(m, 15.0 * u), color, w)
+		"magabondi":     # rombo con punto: la rotta
+			draw_polyline(PackedVector2Array([Vector2(m, 2.0 * u), Vector2(15.0 * u, m), Vector2(m, 15.0 * u), Vector2(2.0 * u, m), Vector2(m, 2.0 * u)]), color, w)
+			draw_circle(Vector2(m, m), 2.2 * u, color)
+		_:                # kairos: occhio
+			draw_arc(Vector2(m, m), 5.5 * u, 0.0, TAU, 20, color, w)
+			draw_circle(Vector2(m, m), 2.2 * u, color)
