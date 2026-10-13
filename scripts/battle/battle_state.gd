@@ -120,7 +120,13 @@ static func make_boss(boss_id: String, effective: float, tier: int = 0) -> Dicti
 		"def": int(def["def"]) + int(t["def"]),
 		"spd": int(def["spd"]),
 	}
-	return _blank_unit(BOSS_ID, boss_id, "boss", "", def, "boss", stats)
+	var u: Dictionary = _blank_unit(BOSS_ID, boss_id, "boss", "", def, "boss", stats)
+	var bmax: int = int(round(BattleTypes.BREAK_BASE + BattleTypes.BREAK_PER_PLAYER * maxf(1.0, effective))) + BattleTypes.BREAK_PER_TIER * tier
+	u["balance_max"] = bmax
+	u["balance"] = bmax
+	u["stun"] = 0
+	u["exposed"] = false
+	return u
 
 
 # specs: [{id, name, ai, team:[entry]}]
@@ -130,6 +136,7 @@ static func create(specs: Array, boss_id: String, seed_value: int, tier: int = 0
 		"round": 1,
 		"winner": "",
 		"cycle_index": 0,
+		"phase": 1,
 		"players": [],
 		"units": {},
 		"telegraph": {},

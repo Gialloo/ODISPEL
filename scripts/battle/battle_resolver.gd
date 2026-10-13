@@ -27,7 +27,7 @@ static func begin_round(state: Dictionary) -> void:
 	Factions.ronda_tick(state, state["events"])
 	var boss: Dictionary = BattleState.boss(state)
 	var def: Dictionary = BattleContent.BOSSES[str(boss["char"])]
-	var cycle: Array = def["cycle"]
+	var cycle: Array = BattleContent.cycle_for(str(boss["char"]), int(state.get("phase", 1)))
 	var move_id: String = str(cycle[int(state["cycle_index"]) % cycle.size()])
 	var alive: Array = BattleState.alive_players(state)
 	var target: String = ""
@@ -155,6 +155,7 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 
 	var rng: RNGState = _load_rng(state)
 	state["link"] = {"n": 0, "last": ""}
+	state["cover"] = ""
 
 	# 1. scelte mancanti: IA, oppure attacco standard se forzato
 	for p in state["players"]:
@@ -204,6 +205,10 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 			continue
 		if bool(a["boss"]):
 			_break_link(state, events)
+			if int(actor.get("stun", 0)) > 0:
+				actor["stun"] = int(actor["stun"]) - 1
+				events.append({"t": "boss_stunned", "move": str(a["move"])})
+				continue
 			_boss_act(state, actor, str(a["move"]), str(a["target"]), rng, events)
 		else:
 			_player_act(state, actor, str(a["move"]), str(a["target"]), events)
@@ -220,11 +225,57 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 	if str(state["winner"]) == "":
 		state["round"] = int(state["round"]) + 1
 		state["cycle_index"] = int(state["cycle_index"]) + 1
+		_recover_balance(state, events)
+		_check_phase(state, events)
 		_save_rng(state, rng)
 		begin_round(state)
 	else:
 		_save_rng(state, rng)
 	return events
+
+
+# Quando lo stordimento e' passato il boss si riprende: equilibrio di nuovo pieno.
+static func _recover_balance(state: Dictionary, events: Array) -> void:
+	var boss: Dictionary = BattleState.boss(state)
+	if bool(boss.get("exposed", false)) and int(boss.get("stun", 0)) == 0:
+		boss["exposed"] = false
+		boss["balance"] = int(boss["balance_max"])
+		events.append({"t": "recover"})
+
+
+# FASI DEL BOSS: a meta' e a un quarto dei PV cambia ciclo, si copre con uno scudo e toglie 1 energia alla squadra,
+# che in cambio riceve carica dell'ultimate (la rimonta e' possibile). Succede a fine round, prima di annunciare la mossa.
+static func _phase_of(boss: Dictionary) -> int:
+	var ratio: float = float(boss["hp"]) / float(maxi(1, int(boss["max_hp"])))
+	if ratio < BattleTypes.PHASE_3_BELOW:
+		return 3
+	if ratio < BattleTypes.PHASE_2_BELOW:
+		return 2
+	return 1
+
+
+static func _check_phase(state: Dictionary, events: Array) -> void:
+	var boss: Dictionary = BattleState.boss(state)
+	if not BattleState.is_alive(boss):
+		return
+	var ph: int = _phase_of(boss)
+	if ph <= int(state.get("phase", 1)):
+		return
+	state["phase"] = ph
+	state["cycle_index"] = 0
+	boss["balance_max"] = int(boss["balance_max"]) + BattleTypes.BREAK_PER_PHASE
+	if not bool(boss.get("exposed", false)):
+		boss["balance"] = int(boss["balance_max"])
+	events.append({"t": "phase", "phase": ph})
+	var sh: int = int(round(float(boss["max_hp"]) * BattleTypes.PHASE_SHIELD))
+	boss["shield"] = int(boss["shield"]) + sh
+	events.append({"t": "shield", "src": boss["id"], "dst": boss["id"], "amount": sh})
+	for uid in state["units"]:
+		var u: Dictionary = state["units"][uid]
+		if str(u["side"]) != "player" or not BattleState.is_alive(u):
+			continue
+		u["energy"] = maxi(0, int(u["energy"]) - 1)
+		u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + BattleTypes.PHASE_GAUGE)
 
 
 # Ordine in cui agiranno le unita' in questo round, anche prima che tutti abbiano scelto (per mostrarlo al giocatore).
@@ -291,6 +342,8 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float,
 	dmg *= Signatures.damage_mult(attacker, defender)
 	if str(attacker["side"]) == "boss" and float(attacker["hp"]) < float(attacker["max_hp"]) * BattleTypes.ENRAGE_BELOW:
 		dmg *= BattleTypes.ENRAGE_BONUS
+	if str(defender["side"]) == "boss" and bool(defender.get("exposed", false)):
+		dmg *= BattleTypes.BREAK_DAMAGE
 	if float(defender["hp"]) < float(defender["max_hp"]) * BattleTypes.ENRAGE_BELOW:
 		for pass_id in attacker["passives"]:
 			if bool(BattleContent.PASSIVES.get(str(pass_id), {}).get("hunter", false)):
@@ -344,11 +397,22 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 	var absorbed: int = mini(int(defender["shield"]), dmg)
 	defender["shield"] = int(defender["shield"]) - absorbed
 	var lost: int = dmg - absorbed
+	var tenacious: bool = false
+	if lost >= int(defender["hp"]) and str(defender["side"]) == "player" and str(attacker["side"]) == "boss" and not bool(defender.get("tenacity_used", false)):
+		# TENACIA: la prima volta che un colpo sarebbe mortale, l'operatore resta in piedi con 1 PV e la barra piena
+		tenacious = true
+		defender["tenacity_used"] = true
+		lost = maxi(0, int(defender["hp"]) - 1)
+		defender["gauge"] = BattleTypes.GAUGE_MAX
 	defender["hp"] = maxi(0, int(defender["hp"]) - lost)
 	var hit_event: Dictionary = {"t": "damage", "src": attacker["id"], "dst": defender["id"], "amount": lost, "absorbed": absorbed}
 	if crit:
 		hit_event["crit"] = true
 	events.append(hit_event)
+	if tenacious:
+		events.append({"t": "tenacity", "unit": defender["id"]})
+	if str(defender["side"]) == "boss" and str(attacker["side"]) == "player" and int(defender["hp"]) > 0:
+		_chip_balance(defender, attacker, mult, events)
 	if crit and Atypical.fx(attacker, "crit_ammo") > 0:
 		_change_ammo(attacker, Atypical.fx(attacker, "crit_ammo"), events)
 	var reflect: int = Atypical.fx(defender, "reflect_shield")
@@ -381,6 +445,43 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 			events.append({"t": "damage", "src": defender["id"], "dst": attacker["id"], "amount": back, "absorbed": 0, "thorns": true})
 			if int(attacker["hp"]) <= 0:
 				_on_down(attacker, events)
+
+
+# SINERGIE: quello che fa un compagno nello stesso round cambia il tuo colpo.
+# COPERTURA: se prima di te un compagno ha scudato, curato o provocato, il tuo colpo fa +12%.
+# TRACCIA: se il boss e' marchiato da un altro operatore, colpirlo ti carica l'ultimate (e un po' anche a chi ha marchiato).
+static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, events: Array) -> float:
+	var mult: float = 1.0
+	var cover: String = str(state.get("cover", ""))
+	if cover != "" and cover != str(actor["id"]) and BattleState.is_alive(BattleState.unit(state, cover)):
+		mult *= BattleTypes.SYN_COVER
+		events.append({"t": "synergy", "name": "COPERTURA", "unit": actor["id"], "with": cover})
+		state["cover"] = ""
+	var mb: String = str(boss.get("marked_by", ""))
+	if Marks.count(boss) > 0 and mb != "" and mb != str(actor["id"]) and BattleState.is_alive(BattleState.unit(state, mb)):
+		actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + BattleTypes.SYN_TRACE_GAUGE)
+		var mk: Dictionary = BattleState.unit(state, mb)
+		mk["gauge"] = mini(BattleTypes.GAUGE_MAX, int(mk["gauge"]) + BattleTypes.SYN_TRACE_GAUGE / 2)
+		events.append({"t": "synergy", "name": "TRACCIA", "unit": actor["id"], "with": mb})
+	return mult
+
+
+# Equilibrio del boss: ogni colpo lo consuma (di piu' col vantaggio di colore, sui marchiati e coi colpi pesanti).
+static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, events: Array) -> void:
+	if int(boss.get("stun", 0)) > 0 or bool(boss.get("exposed", false)):
+		return
+	var cm: float = BattleTypes.color_multiplier(str(attacker["color"]), str(boss["color"]))
+	var pts: int = BattleTypes.BREAK_ADV if cm > 1.0 else (BattleTypes.BREAK_DISADV if cm < 1.0 else BattleTypes.BREAK_NEUTRAL)
+	if Marks.count(boss) > 0:
+		pts += BattleTypes.BREAK_MARKED
+	if mult >= 2.0:
+		pts += BattleTypes.BREAK_HEAVY
+	boss["balance"] = maxi(0, int(boss["balance"]) - pts)
+	events.append({"t": "balance", "src": attacker["id"], "amount": pts, "left": int(boss["balance"])})
+	if int(boss["balance"]) <= 0:
+		boss["stun"] = 1
+		boss["exposed"] = true
+		events.append({"t": "break", "src": attacker["id"]})
 
 
 # Munizioni: positivo = ricarica, negativo = si spendono. Resta tra 0 e il massimo dell'unita'.
@@ -440,9 +541,17 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	elif kind == "skill":
 		actor["energy"] = int(actor["energy"]) - int(move["cost"])
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
+	if not move.has("mult") and (move.has("shield") or move.has("heal") or (move.has("self_status") and move["self_status"].has("taunt"))):
+		state["cover"] = str(actor["id"])
 	var link_n: int = _chain_link(state, actor, events)
 	var link_gain: float = BattleTypes.LINK_BONUS + Signatures.value(actor, "link_boost")
 	var awake_mult: float = Signatures.upgrade_mult(actor, move_id, kind)
+	# RITMO: cambiare mossa rispetto al round prima da' un po' di danno in piu' (chi ripete sempre lo stesso colpo non ne gode)
+	var last_move: String = str(actor.get("last_move", ""))
+	if move.has("mult") and last_move != "" and last_move != move_id and str(move["target"]) == "enemy":
+		awake_mult *= BattleTypes.RHYTHM_BONUS
+		events.append({"t": "rhythm", "unit": actor["id"]})
+	actor["last_move"] = move_id
 	if move_id == "attack":
 		awake_mult *= BattleContent.basic_factor(actor)
 	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
@@ -490,8 +599,11 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		# i marchi si applicano PRIMA del colpo (cosi' il colpo ne beneficia)
 		if move.has("status") and str(t["side"]) == "boss" and move["status"].has("mark"):
 			Marks.add(state, t, int(move["status"]["mark"]) + Archetypes.status_extra(actor, "mark"), events)
+			t["marked_by"] = str(actor["id"])
 		if move.has("mult"):
 			var m_total: float = float(move["mult"]) * (1.0 + link_gain * float(link_n)) * awake_mult * emp_mult
+			if str(t["side"]) == "boss":
+				m_total *= _synergies(state, actor, t, events)
 			if move.has("consume_marks"):
 				# Orbital Strike: ogni marchio sul bersaglio vale danno in piu', poi i marchi spariscono
 				m_total *= 1.0 + float(move["consume_marks"]) * float(Marks.count(t))

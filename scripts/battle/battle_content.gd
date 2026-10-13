@@ -245,6 +245,8 @@ const BOSS_MOVES: Dictionary = {
 	"riflesso": {"name": "Riflesso", "target": "one", "mult": 2.1},
 	"frantumi": {"name": "Frantumi", "target": "all", "mult": 0.95, "status": {"bleed": 3}},
 	"doppio": {"name": "Doppio", "target": "weakest", "mult": 0.85, "drain": 0.5, "self_shield": 0.05},
+	"furia": {"name": "Furia", "target": "all", "mult": 0.7, "status": {"bleed": 2}},
+	"ultimo_respiro": {"name": "Ultimo respiro", "target": "all", "mult": 0.9, "status": {"mark": 3}, "self_shield": 0.04},
 	"simmetria": {"name": "Simmetria", "target": "all", "mult": 0.7, "status": {"mark": 3}, "self_shield": 0.06},
 	"ululato": {"name": "Ululato", "target": "all", "mult": 0.6, "status": {"mark": 2}},
 	"allarme": {"name": "Allarme rosso", "target": "one", "mult": 1.9},
@@ -466,6 +468,16 @@ const BOSSES: Dictionary = {
 		"reward": {"coins": 15000, "nucleo": [44, 54], "lega": [40, 50], "gear_chance": 100},
 	},
 }
+
+
+# Il ciclo di mosse del boss cambia a ogni fase (meta' e un quarto dei PV): ordine diverso e mosse nuove.
+static func cycle_for(boss_id: String, phase: int) -> Array:
+	var c: Array = BOSSES[boss_id]["cycle"]
+	if phase >= 3 and c.size() >= 4:
+		return ["ultimo_respiro", c[1], c[3], "furia", c[0], c[2]]
+	if phase == 2 and c.size() >= 4:
+		return [c[2], c[0], "furia", c[3], c[1]]
+	return c
 
 
 static func tier_of(tier: int) -> Dictionary:

@@ -224,6 +224,8 @@ func _test_ult_and_energy() -> void:
 	var s: Dictionary = BattleState.create([_spec("a", ["kira"])], "distributore", 11)
 	var k: Dictionary = BattleState.unit(s, "a:kira")
 	k["energy"] = 4
+	BattleState.boss(s)["max_hp"] = 100000       # niente cambio di fase in questo round
+	BattleState.boss(s)["hp"] = 100000
 	BattleResolver.submit_choice(s, "a", {"move": "colpo_caricato"})
 	BattleResolver.resolve_round(s)
 	_check("la skill consuma energia (+ rigenerazione)", k["energy"] == 4 - 2 + BattleTypes.REGEN_ACTIVE)
@@ -252,6 +254,7 @@ func _test_death_and_end() -> void:
 	# l'attivo cade: entra il compagno con piu' vita
 	var s: Dictionary = BattleState.create([_spec("a", ["kira", "dax", "elle"])], "distributore", 13)
 	BattleState.unit(s, "a:kira")["hp"] = 1
+	BattleState.unit(s, "a:kira")["tenacity_used"] = true
 	BattleState.unit(s, "a:elle")["hp"] = 100
 	s["telegraph"] = {"move": "scarica", "target": "a"}
 	BattleResolver.submit_choice(s, "a", {"move": "attack"})
@@ -270,6 +273,7 @@ func _test_death_and_end() -> void:
 	# vittoria del boss
 	var l: Dictionary = BattleState.create([_spec("a", ["kira"])], "distributore", 15)
 	BattleState.unit(l, "a:kira")["hp"] = 1
+	BattleState.unit(l, "a:kira")["tenacity_used"] = true
 	BattleResolver.submit_choice(l, "a", {"move": "attack"})
 	BattleResolver.resolve_round(l)
 	_check("vittoria del boss se cadono tutti", l["winner"] == "boss")

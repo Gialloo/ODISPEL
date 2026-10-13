@@ -138,6 +138,22 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 			return {"text": "%s SANGUINA  [-%d]" % [unit_name(state, str(e["unit"])), int(e["amount"])], "kind": "hit"}
 		"down":
 			return {"text": "%s FUORI COMBATTIMENTO" % unit_name(state, str(e["unit"])), "kind": "down"}
+		"phase":
+			return {"text": "IL BOSS CAMBIA SCHEMA: FASE %d" % int(e["phase"]), "kind": "boss"}
+		"tenacity":
+			return {"text": "%s RESISTE CON 1 PV: ULTIMATE PRONTA" % unit_name(state, str(e["unit"])), "kind": "heal"}
+		"rhythm":
+			return {"text": "%s: RITMO (+%d%% DANNO)" % [unit_name(state, str(e["unit"])), int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0))], "kind": "info"}
+		"balance":
+			return {"text": "EQUILIBRIO DEL BOSS -%d  (RESTANO %d)" % [int(e["amount"]), int(e["left"])], "kind": "info"}
+		"break":
+			return {"text": "ROTTURA! IL BOSS E' STORDITO", "kind": "link"}
+		"boss_stunned":
+			return {"text": "BOSS STORDITO: %s ANNULLATA" % move_name(str(e.get("move", ""))), "kind": "link"}
+		"recover":
+			return {"text": "IL BOSS SI RIPRENDE", "kind": "info"}
+		"synergy":
+			return {"text": "SINERGIA %s · %s + %s" % [str(e["name"]), unit_name(state, str(e["with"])), unit_name(state, str(e["unit"]))], "kind": "link"}
 		"end":
 			return {"text": "OPERAZIONE RIUSCITA" if str(e["winner"]) == "players" else "OPERAZIONE FALLITA", "kind": "end"}
 	return {"text": "", "kind": "info"}
@@ -147,6 +163,23 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 # stati, cambi). Al termine del round la grafica si riallinea allo stato vero.
 static func apply_to_display(state: Dictionary, e: Dictionary) -> void:
 	match str(e.get("t", "")):
+		"phase":
+			state["phase"] = int(e["phase"])
+		"balance":
+			BattleState.boss(state)["balance"] = int(e["left"])
+		"break":
+			BattleState.boss(state)["stun"] = 1
+			BattleState.boss(state)["exposed"] = true
+		"boss_stunned":
+			BattleState.boss(state)["stun"] = 0
+		"recover":
+			var bs: Dictionary = BattleState.boss(state)
+			bs["exposed"] = false
+			bs["balance"] = int(bs.get("balance_max", 1))
+		"tenacity":
+			var tu: Dictionary = BattleState.unit(state, str(e["unit"]))
+			if not tu.is_empty():
+				tu["gauge"] = BattleTypes.GAUGE_MAX
 		"swap":
 			var p: Dictionary = BattleState.player(state, str(e["player"]))
 			if not p.is_empty():

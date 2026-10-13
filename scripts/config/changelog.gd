@@ -15,6 +15,9 @@ const ENTRIES: Array = [
 		"Dafne ha finalmente il suo aspetto: ritratti, figura in battaglia, illustrazione e ultimate.",
 		"Le monete ora si chiamano CREDITI.",
 		"STAGIONE 2: Dafne si unisce alla squadra CAM. 10 nuovi capitoli, 10 nuovi bersagli (Sirena, Lampione, Bancomat, Scala mobile, Radio, Metro, Cassaforte, Faro, Registro, Eclissi), tutti fino a INCUBO.",
+		"Battaglia: il boss cambia schema a meta' e a un quarto dei PV (nuove mosse, scudo, e la tua squadra riceve ULTIMATE).",
+		"Nuova barra EQUILIBRIO sotto i PV del boss: a zero il boss e' STORDITO e salta la mossa annunciata. Marcare prepara, colpire col colore giusto rompe.",
+		"Sinergie tra compagni (COPERTURA e TRACCIA), RITMO per chi cambia mossa, ULTIMA VOLONTA' a 1 PV, rallentatore sui momenti decisivi, resoconto a fine battaglia.",
 		"Costi con le icone di crediti, nuclei e leghe sui pulsanti. Premi epici e leggendari con bordo viola o giallo.",
 	]},
 ]

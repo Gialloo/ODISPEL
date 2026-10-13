@@ -47,6 +47,7 @@ var _pending_balloon: String = ""
 var _pair_arrows: Dictionary = {}      # slot -> frecce >< tra il front e il suo compagno in panchina
 var _boss_bar: LineBar
 var _boss_hp: Label
+var _boss_bal: LineBar
 var _round_label: Label
 var _timer_label: Label
 var _clock_label: Label
@@ -427,6 +428,9 @@ func _build_boss_banner() -> void:
 	_boss_bar = LineBar.new().setup(BattleTheme.RD, Vector2(0, 12))
 	_boss_bar.color_bg = Color(BattleTheme.RD_DARK, 0.9)
 	box.add_child(_boss_bar)
+	_boss_bal = LineBar.new().setup(BattleTheme.CY, Vector2(0, 6))
+	_boss_bal.color_bg = Color(BattleTheme.CY_DARK, 0.9)
+	box.add_child(_boss_bal)
 	_boss_hp = BattleTheme.make_label("INTEGRITA'", 17, BattleTheme.WH)
 	_boss_hp.add_theme_font_override("font", BattleTheme.hud())
 	_boss_hp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -693,7 +697,13 @@ func _refresh_boss() -> void:
 	_boss_name.text = str(info.get("name", "SOGGETTO")).to_upper()
 	_boss_meta.text = ("%s · %s" % [str(info.get("title", "")), tier_name]).to_upper()
 	_boss_bar.set_values(float(boss["hp"]) / float(boss["max_hp"]), float(boss.get("shield", 0)) / float(boss["max_hp"]))
+	var stunned: bool = int(boss.get("stun", 0)) > 0 or bool(boss.get("exposed", false))
+	_boss_bal.set_values(0.0 if stunned else float(boss.get("balance", 0)) / float(maxi(1, int(boss.get("balance_max", 1)))), 0.0)
 	var tags: String = ""
+	if int(boss.get("stun", 0)) > 0:
+		tags += "  [STORDITO]"
+	elif int(shown.get("phase", 1)) > 1:
+		tags += "  [FASE %d]" % int(shown["phase"])
 	for s in boss["statuses"]:
 		if str(s) == "mark" and int(boss.get("marks", 0)) > 0:
 			tags += "  [MARCHI x%d]" % int(boss["marks"])
@@ -717,6 +727,10 @@ func _refresh_telegraph() -> void:
 		return
 	var move_id: String = str(tele["move"])
 	var def: Dictionary = BattleContent.BOSS_MOVES[move_id]
+	if int(BattleState.boss(shown).get("stun", 0)) > 0:
+		_tele_label.text = "STORDITO"
+		_tele_target.text = "SALTERA' LA MOSSA: %s" % BattleText.move_name(move_id).to_upper()
+		return
 	_tele_label.text = BattleText.move_name(move_id)
 	var tlen: int = _tele_label.text.length()
 	_tele_label.add_theme_font_size_override("font_size", 24 if tlen <= 17 else maxi(16, int(24.0 * 17.0 / float(tlen))))
@@ -1429,6 +1443,7 @@ const BIG_HIT_FRACTION: float = 0.12     # un colpo cosi' grande (rispetto ai PV
 
 # Effetti grafici e sonori di un evento. Ritorna i secondi di pausa in piu' (hit-stop).
 func _event_fx(e: Dictionary) -> float:
+	_recap_track(e)
 	match str(e.get("t", "")):
 		"damage":
 			return _fx_damage(e)
@@ -1510,6 +1525,48 @@ func _event_fx(e: Dictionary) -> float:
 			_announce(BattleContent.BOSSES.get(str(BattleState.boss(shown)["char"]), {}).get("name", "BOSS"), BattleText.move_name(str(e.get("move", ""))), true)
 		"act":
 			return _fx_act(e)
+		"phase":
+			return _fx_phase(int(e.get("phase", 2)))
+		"tenacity":
+			Snd.play("crit", 0.6)
+			_buzz(160)
+			var tu: String = str(e["unit"])
+			_stage.impact(18.0, 0.06)
+			ComicFx.flash(_fx, Color(1.0, 0.85, 0.3, 0.55), 0.3)
+			_pop("ULTIMA VOLONTA'!", tu, BattleTheme.POP, BattleTheme.BK, 58, 100.0, Vector2(0.0, -40.0))
+			_float_text("1 PV · ULTIMATE PRONTA", tu, BattleTheme.POP, 20)
+			if AnimFx.enabled():
+				AnimFx.shockwave(_fx, _stage.anchor_of(tu), BattleTheme.POP, 160.0)
+			_slow_motion(0.35, 0.35)
+			return 0.3
+		"balance":
+			pass
+		"break":
+			Snd.play("crit", 0.5)
+			_buzz(220)
+			_stage.impact(24.0, 0.08)
+			ComicFx.flash(_fx, Color(0.7, 0.95, 1.0, 0.6), 0.3)
+			ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color(0.7, 0.95, 1.0, 0.95), 0.4)
+			_pop("ROTTURA!", BattleState.BOSS_ID, BattleTheme.CY, BattleTheme.BK, 72, 125.0, Vector2(0.0, -30.0))
+			ComicFx.caption(_fx, "BOSS STORDITO · SALTA LA MOSSA · +%d%% DANNO" % int(round((BattleTypes.BREAK_DAMAGE - 1.0) * 100.0)), Vector2(300.0, 300.0), BattleTheme.CY, 1.3)
+			_slow_motion(0.3, 0.4)
+			return 0.4
+		"boss_stunned":
+			Snd.play("down", 0.8)
+			_stage.impact(10.0, 0.03)
+			_pop("INTERROTTO!", BattleState.BOSS_ID, BattleTheme.CY, BattleTheme.BK, 56, 100.0, Vector2(0.0, -20.0))
+			_announce(BattleContent.BOSSES.get(str(BattleState.boss(shown)["char"]), {}).get("name", "BOSS"), "STORDITO · " + BattleText.move_name(str(e.get("move", ""))) + " ANNULLATA", false)
+			return 0.2
+		"recover":
+			_float_text("IL BOSS SI RIPRENDE", BattleState.BOSS_ID, BattleTheme.WH, 20)
+		"synergy":
+			Snd.play("trait", 1.5)
+			var su: String = str(e["unit"])
+			_pop("SINERGIA!", su, BattleTheme.POP, BattleTheme.BK, 40, 76.0, Vector2(0.0, -50.0))
+			_float_text("%s · con %s" % [str(e["name"]), str(BattleState.unit(shown, str(e.get("with", ""))).get("name", "")).to_upper()], su, BattleTheme.POP, 18)
+		"rhythm":
+			Snd.play("trait", 1.3)
+			_float_text("RITMO +%d%%" % int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0)), str(e["unit"]), BattleTheme.CY, 18)
 		"swap":
 			Snd.play("swap")
 			_switch_fx(str(e.get("from", "")), str(e.get("to", "")))
@@ -1526,6 +1583,7 @@ func _event_fx(e: Dictionary) -> float:
 				ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color.WHITE, 0.5)
 				ComicFx.flash(_fx, Color(1, 1, 1, 0.85), 0.35)
 				_pop("FINISH!", BattleState.BOSS_ID, BattleTheme.POP, BattleTheme.RD, 84, 120.0, Vector2(0.0, -20.0))
+				_slow_motion(0.25, 0.5)
 				if AnimFx.enabled():
 					AnimFx.shards(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color("#ffd166"))
 					ComicFx.flash(_fx, Color(1.0, 0.85, 0.3, 0.5), 0.5)
@@ -1537,6 +1595,73 @@ func _event_fx(e: Dictionary) -> float:
 			banter(_local_active_id(), "ko")
 			return 0.12
 	return 0.0
+
+
+# Cambio di fase del boss: annuncio grande, lampo e un attimo di pausa per far capire che le regole sono cambiate.
+func _fx_phase(phase: int) -> float:
+	Snd.play("boss_charge", 0.7)
+	_buzz(200)
+	_stage.impact(22.0, 0.07)
+	var col: Color = BattleTheme.RD if phase >= 3 else BattleTheme.POP
+	ComicFx.flash(_fx, Color(col, 0.6), 0.35)
+	ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color(col, 0.9), 0.45)
+	var title: String = "ULTIMO RESPIRO!" if phase >= 3 else "FASE 2!"
+	_pop(title, BattleState.BOSS_ID, col, BattleTheme.BK, 72, 130.0, Vector2(0.0, -30.0))
+	ComicFx.caption(_fx, "IL BOSS CAMBIA SCHEMA · SCUDO · -1 ENERGIA · +%d ULTIMATE" % BattleTypes.PHASE_GAUGE, Vector2(260.0, 300.0), col, 1.4)
+	banter(_local_active_id(), "enrage", true)
+	_slow_motion(0.3, 0.45)
+	return 0.5
+
+
+# Rallenta il tempo per un attimo (colpo finale, momenti decisivi) e lo riporta alla normalita'.
+func _slow_motion(scale: float, seconds: float) -> void:
+	if not AnimFx.enabled() or DisplayServer.get_name() == "headless":
+		return
+	Engine.time_scale = scale
+	var t: SceneTreeTimer = get_tree().create_timer(seconds * scale, true, false, true)
+	t.timeout.connect(func() -> void: Engine.time_scale = 1.0)
+
+
+# ---------- Resoconto di fine battaglia (perche' ho vinto o perso) ----------
+
+var _recap: Dictionary = {"worst": 0, "worst_move": "", "worst_unit": "", "first_down": "", "breaks": 0, "synergies": 0, "last_move": "", "wills": 0}
+
+
+func _recap_track(e: Dictionary) -> void:
+	match str(e.get("t", "")):
+		"boss_move":
+			_recap["last_move"] = str(e.get("move", ""))
+		"damage":
+			if str(e.get("src", "")) == BattleState.BOSS_ID and int(e.get("amount", 0)) > int(_recap["worst"]):
+				_recap["worst"] = int(e["amount"])
+				_recap["worst_move"] = str(_recap["last_move"])
+				_recap["worst_unit"] = str(BattleState.unit(shown, str(e.get("dst", ""))).get("name", ""))
+		"down":
+			if str(e.get("unit", "")) != BattleState.BOSS_ID and str(_recap["first_down"]) == "":
+				_recap["first_down"] = str(BattleState.unit(shown, str(e["unit"])).get("name", ""))
+		"break":
+			_recap["breaks"] = int(_recap["breaks"]) + 1
+		"synergy":
+			_recap["synergies"] = int(_recap["synergies"]) + 1
+		"tenacity":
+			_recap["wills"] = int(_recap["wills"]) + 1
+
+
+func _recap_text(victory: bool) -> String:
+	var parts: Array = []
+	if int(_recap["worst"]) > 0:
+		parts.append("Colpo piu' duro subito: %s su %s (%s)" % [BattleText.move_name(str(_recap["worst_move"])), str(_recap["worst_unit"]).to_upper(), BattleText.num(int(_recap["worst"]))])
+	if str(_recap["first_down"]) != "":
+		parts.append("Primo a cadere: %s" % str(_recap["first_down"]).to_upper())
+	parts.append("Fase raggiunta: %d" % int(shown.get("phase", 1)))
+	parts.append("Rotture: %d  ·  Sinergie: %d" % [int(_recap["breaks"]), int(_recap["synergies"])])
+	var tip: String = ""
+	if not victory:
+		if int(_recap["breaks"]) == 0:
+			tip = "Consiglio: marca il boss e colpisci col colore vantaggioso per rompere l'equilibrio e fargli saltare la mossa."
+		elif str(_recap["first_down"]) != "":
+			tip = "Consiglio: proteggi %s, o scambialo prima della mossa che lo colpisce (leggi l'allarme)." % str(_recap["first_down"]).to_upper()
+	return "\n".join(parts) + ("\n" + tip if tip != "" else "")
 
 
 # Vibrazione breve sul telefono nei momenti forti (solo touch).
@@ -1978,6 +2103,10 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 		var ml := BattleTheme.make_label(mvp, 15, BattleTheme.POP)
 		ml.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(ml)
+	var recap_label := BattleTheme.make_label(_recap_text(victory), 13, BattleTheme.CY_DIM)
+	recap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	recap_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(recap_label)
 	box.add_child(BattleTheme.make_label("PREMI", 16, BattleTheme.WH))
 	_reward_rows.clear()
 	# i premi stanno in un'area che scorre se sono tanti: i tasti restano sempre visibili sotto
