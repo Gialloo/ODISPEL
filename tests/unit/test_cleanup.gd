@@ -104,7 +104,7 @@ func _run() -> void:
 
 	# --- Livello statico dello sfondo
 	var stage: BattleStage = scene._stage
-	_check("sfondo disegnato: livello statico presente", stage._bg_static != null and stage._bg_static.visible)
+	_check("sfondo: il livello statico c'e' e si vede solo se non ci sono le tue immagini", stage._bg_static != null and stage._bg_static.visible == stage._bg_layers.is_empty())
 	_check("sfondo disegnato: dietro al resto", stage._bg_static.show_behind_parent)
 	_check("coseni gia' pronti per le ellissi", stage._ellipse(Vector2.ZERO, 10.0, 5.0, 16).size() == 16)
 	_check("ellisse: punti sul bordo", is_equal_approx(stage._ellipse(Vector2(100, 50), 10.0, 5.0, 4)[0].x, 110.0))
