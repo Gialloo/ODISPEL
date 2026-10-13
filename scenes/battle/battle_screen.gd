@@ -16,6 +16,7 @@ var log_lines: Array = []
 var _last_won: bool = false
 var _dmg_by: Dictionary = {}      # danni al boss per operatore (per l'MVP a fine battaglia)
 var _best_hit: int = 0
+var _boon_buttons: Array = []
 var _ended_shown: bool = false
 
 var _stage: BattleStage
@@ -133,6 +134,14 @@ func _start_solo() -> void:
 		var cap: String = "PIANO %d" % MissionConfig.endless_floor
 		if not emod.is_empty():
 			cap += "  //  %s: %s" % [str(emod["name"]), str(emod["desc"])]
+		if not MissionConfig.endless_boons.is_empty():
+			var seen_b: Dictionary = {}
+			for bid in MissionConfig.endless_boons:
+				seen_b[str(bid)] = int(seen_b.get(str(bid), 0)) + 1
+			var parts: Array = []
+			for bid in seen_b:
+				parts.append("%s%s" % [str(Endless.BOONS[bid]["name"]), (" x%d" % int(seen_b[bid])) if int(seen_b[bid]) > 1 else ""])
+			cap += "\n" + " · ".join(parts)
 		ComicFx.caption(_fx, cap, Vector2(300.0, 300.0), BattleTheme.POP, 1.6)
 
 
@@ -805,6 +814,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	# A battaglia finita: INVIO = rigioca / torna alla lobby, ESC = esci.
 	if _ended_shown:
+		if not _boon_buttons.is_empty() and event.keycode >= KEY_1 and event.keycode <= KEY_3:
+			var bi: int = int(event.keycode) - int(KEY_1)
+			if bi < _boon_buttons.size():
+				_boon_buttons[bi].pressed.emit()
+			return
+		if (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER) and not _boon_buttons.is_empty():
+			_boon_buttons[0].pressed.emit()
+			return
 		if event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
 			if source is NetworkManager:
 				_on_hub()
@@ -1378,14 +1395,35 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(spacer)
 	if not (source is NetworkManager):
-		var again := Button.new()
-		again.text = "RIGIOCA"
-		if MissionConfig.endless_floor > 0:
-			again.text = "PIANO %d  ›" % (MissionConfig.endless_floor + 1) if victory else "NUOVA SERIE"
-		again.custom_minimum_size = Vector2(0, 50)
-		BattleTheme.style_button(again, "primary", 26)
-		again.pressed.connect(_on_again)
-		box.add_child(again)
+		if MissionConfig.endless_floor > 0 and victory:
+			# Ciclo Infinito: si sceglie un potenziamento (1 su 3) e si sale al piano dopo
+			box.add_child(BattleTheme.make_label("SCEGLI UN POTENZIAMENTO · PIANO %d" % (MissionConfig.endless_floor + 1), 15, BattleTheme.POP))
+			_boon_buttons.clear()
+			var boon_row := HBoxContainer.new()
+			boon_row.add_theme_constant_override("separation", 8)
+			box.add_child(boon_row)
+			var n_boon: int = 1
+			for bid in Endless.offer(MissionConfig.endless_floor):
+				var def: Dictionary = Endless.BOONS[bid]
+				var bb := Button.new()
+				bb.text = "%d  %s  %s" % [n_boon, str(def["name"]), str(def["desc"])]
+				bb.custom_minimum_size = Vector2(0, 68)
+				bb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				BattleTheme.style_button(bb, "primary" if n_boon == 1 else "normal", 13)
+				bb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				bb.pressed.connect(_pick_boon.bind(str(bid)))
+				boon_row.add_child(bb)
+				_boon_buttons.append(bb)
+				n_boon += 1
+		else:
+			var again := Button.new()
+			again.text = "RIGIOCA"
+			if MissionConfig.endless_floor > 0:
+				again.text = "NUOVA SERIE"
+			again.custom_minimum_size = Vector2(0, 50)
+			BattleTheme.style_button(again, "primary", 26)
+			again.pressed.connect(_on_again)
+			box.add_child(again)
 		var pick := Button.new()
 		pick.text = "SCEGLI MISSIONE"
 		pick.custom_minimum_size = Vector2(0, 44)
@@ -1448,6 +1486,13 @@ func _reward_lines(rewards: Dictionary) -> Array:
 	if lines.is_empty():
 		lines.append("—")
 	return lines
+
+
+func _pick_boon(id: String) -> void:
+	if MissionConfig.endless_floor <= 0:
+		return
+	MissionConfig.endless_boons.append(id)
+	_on_again()
 
 
 func _on_again() -> void:

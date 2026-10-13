@@ -146,3 +146,6 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
   dal suo torace sul palco (`BattleStage.party_pose`). `_refresh_orders` ricostruisce i pulsanti solo se cambia la firma.
 - **MVP** a fine battaglia: `battle_screen._dmg_by` somma i danni al boss per operatore.
 - Suoni nuovi (`tools/make_audio.py --combat`): mark, mark_burst, dodge, ronda, deploy.
+- **Potenziamenti di serie** (Ciclo Infinito): dopo ogni piano vinto si sceglie 1 di 3 (`Endless.offer`, `BOONS`): furia, tempra,
+  rapidita', corazza, scorta, carica, scudo. Si sommano fino a fine serie (`MissionConfig.endless_boons`) e si applicano a inizio
+  piano con `Endless.apply_boons`. Classifica locale dei 5 migliori (`Endless.finish_run`, `roster["endless"]["top"]`).

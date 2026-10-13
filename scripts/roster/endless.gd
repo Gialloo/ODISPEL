@@ -175,3 +175,65 @@ static func apply_carry(state: Dictionary, carry: Dictionary) -> void:
 		else:
 			hp = hp + int(ceil(float(mx) * CARRY_HEAL))
 		u["hp"] = clampi(hp, 1, mx)
+
+
+# ---------- Potenziamenti di serie ----------
+# Dopo ogni piano vinto se ne sceglie uno su tre; durano fino alla fine della serie e si possono ripetere (si sommano).
+const BOONS: Dictionary = {
+	"furia": {"name": "FURIA", "desc": "ATTACCO +8%"},
+	"tempra": {"name": "TEMPRA", "desc": "PV MAX +10%"},
+	"rapidita": {"name": "RAPIDITA'", "desc": "VELOCITA' +8%"},
+	"corazza": {"name": "CORAZZA", "desc": "DIFESA +10%"},
+	"scorta": {"name": "SCORTA", "desc": "ENERGIA +2 ALL'INIZIO"},
+	"carica": {"name": "CARICA", "desc": "ULTIMATE +30% ALL'INIZIO"},
+	"scudo": {"name": "SCUDO", "desc": "SCUDO 8% PV ALL'INIZIO"},
+}
+const BOON_ORDER: Array = ["furia", "tempra", "rapidita", "corazza", "scorta", "carica", "scudo"]
+
+
+# Tre proposte (sempre le stesse per lo stesso piano, cosi' ricaricare non cambia l'offerta).
+static func offer(floor_n: int, count: int = 3) -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("boon|%d" % floor_n)
+	var pool: Array = BOON_ORDER.duplicate()
+	var out: Array = []
+	while out.size() < count and not pool.is_empty():
+		out.append(pool.pop_at(rng.randi() % pool.size()))
+	return out
+
+
+static func boon_count(boons: Array, id: String) -> int:
+	var n: int = 0
+	for b in boons:
+		if str(b) == id:
+			n += 1
+	return n
+
+
+# Applica i potenziamenti agli operatori dei giocatori (dopo BattleState.create, prima del riporto PV).
+static func apply_boons(state: Dictionary, boons: Array) -> void:
+	if boons.is_empty():
+		return
+	for uid in state["units"]:
+		var u: Dictionary = state["units"][uid]
+		if str(u["side"]) != "player":
+			continue
+		var base: Dictionary = u["base"]
+		var f: int = boon_count(boons, "furia")
+		var t: int = boon_count(boons, "tempra")
+		var r: int = boon_count(boons, "rapidita")
+		var c: int = boon_count(boons, "corazza")
+		if f > 0:
+			base["atk"] = int(round(float(base["atk"]) * (1.0 + 0.08 * float(f))))
+		if r > 0:
+			base["spd"] = int(round(float(base["spd"]) * (1.0 + 0.08 * float(r))))
+		if c > 0:
+			base["def"] = int(round(float(base["def"]) * (1.0 + 0.10 * float(c))))
+		if t > 0:
+			var extra: int = int(round(float(u["max_hp"]) * 0.10 * float(t)))
+			u["max_hp"] = int(u["max_hp"]) + extra
+			u["hp"] = int(u["hp"]) + extra
+		u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + 2 * boon_count(boons, "scorta"))
+		u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + 30 * boon_count(boons, "carica"))
+		u["shield"] = int(u["shield"]) + int(round(float(u["max_hp"]) * 0.08 * float(boon_count(boons, "scudo"))))
+	Factions.refresh(state)

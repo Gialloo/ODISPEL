@@ -8,6 +8,7 @@ static var boss_id: String = "distributore"
 static var tier: int = 0
 static var endless_floor: int = 0     # 0 = missione normale; da 1 in su = CICLO INFINITO, a questo piano
 static var daily_mod: String = ""       # non vuoto = SFIDA DEL GIORNO (con questo modificatore)
+static var endless_boons: Array = []        # potenziamenti scelti nella serie in corso
 static var endless_carry: Dictionary = {}   # PV della squadra a fine piano (vuoto al primo piano)
 
 
@@ -21,6 +22,7 @@ static func set_endless(floor_n: int) -> void:
 	endless_floor = maxi(1, floor_n)
 	if endless_floor == 1:
 		endless_carry = {}
+		endless_boons = []
 	boss_id = Endless.boss_for(endless_floor)
 	tier = Endless.tier_for(endless_floor)
 
@@ -29,6 +31,7 @@ static func set_mission(new_boss: String, new_tier: int) -> void:
 	endless_floor = 0
 	daily_mod = ""
 	endless_carry = {}
+	endless_boons = []
 	if BattleContent.BOSSES.has(new_boss):
 		boss_id = new_boss
 	tier = clampi(new_tier, 0, BattleContent.TIERS.size() - 1)

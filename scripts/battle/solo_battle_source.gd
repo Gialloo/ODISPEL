@@ -35,6 +35,7 @@ func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier:
 	elif endless_floor > 0:
 		Endless.apply(battle, endless_floor)
 		if endless_floor > 1:
+			Endless.apply_boons(battle, MissionConfig.endless_boons)
 			Endless.apply_carry(battle, MissionConfig.endless_carry)
 	battle_updated.emit()
 
