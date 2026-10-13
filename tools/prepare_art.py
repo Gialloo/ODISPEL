@@ -66,10 +66,10 @@ def key_out(img, key, tol_low=40.0, tol_high=110.0):
     return Image.fromarray(res, "RGBA")
 
 
-def fit(img, size, anchor):
+def fit(img, size, anchor, mode="auto"):
     w, h = size
     iw, ih = img.size
-    if abs((iw / ih) / (w / h) - 1.0) < 0.15:         # proporzioni vicine: riempie (taglia i margini in eccesso)
+    if mode != "contain" and abs((iw / ih) / (w / h) - 1.0) < 0.15:         # proporzioni vicine: riempie (taglia i margini in eccesso)
         k = max(w / iw, h / ih)
         r = img.resize((max(1, round(iw * k)), max(1, round(ih * k))), Image.LANCZOS)
         left = (r.width - w) // 2
@@ -93,7 +93,7 @@ def save_light(img, path):
     return os.path.getsize(path)
 
 
-def prepare(src, dst, size, key, anchor):
+def prepare(src, dst, size, key, anchor, mode="auto"):
     img = Image.open(src).convert("RGBA")
     if has_real_alpha(img):
         pass
@@ -101,7 +101,7 @@ def prepare(src, dst, size, key, anchor):
         img = key_out(img, key)
     else:
         print("  attenzione: %s non ha trasparenza e non e' stata data --key" % os.path.basename(src))
-    out = fit(img, size, anchor)
+    out = fit(img, size, anchor, mode)
     n = save_light(out, dst)
     print("%s -> %s  %dx%d  %.2f MB" % (os.path.basename(src), dst, size[0], size[1], n / 1e6))
 
@@ -145,13 +145,14 @@ def main():
     ap.add_argument("--size", default="1000x1400")
     ap.add_argument("--key", default=None, help="colore dello sfondo da togliere, es. 00ff00")
     ap.add_argument("--anchor", default="bottom", choices=["bottom", "center"])
+    ap.add_argument("--fit", default="auto", choices=["auto", "contain"], help="contain = non taglia mai nulla (consigliato per figure intere)")
     args = ap.parse_args()
     key = parse_color(args.key) if args.key else None
     if args.cmd == "facce":
         faces(args.a)
     elif args.cmd == "file":
         w, h = (int(v) for v in args.size.lower().split("x"))
-        prepare(args.a, args.b, (w, h), key, args.anchor)
+        prepare(args.a, args.b, (w, h), key, args.anchor, args.fit)
     else:
         for f in sorted(os.listdir(args.a)):
             stem, ext = os.path.splitext(f)
@@ -159,7 +160,7 @@ def main():
                 print("salto", f, "(nome non riconosciuto)")
                 continue
             w, h, anchor = SIZES[stem]
-            prepare(os.path.join(args.a, f), os.path.join(args.b, f), (w, h), key, anchor)
+            prepare(os.path.join(args.a, f), os.path.join(args.b, f), (w, h), key, anchor, "contain" if stem in ("battle",) else args.fit)
 
 
 if __name__ == "__main__":
