@@ -603,7 +603,7 @@ func _build_log() -> void:
 	panel.bare = true
 	panel.margins = Vector4(12, 8, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-480, -150, -20, -34))
+	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-400, -150, -10, -34))
 	_log_label = RichTextLabel.new()
 	_log_label.bbcode_enabled = true
 	_log_label.scroll_active = false

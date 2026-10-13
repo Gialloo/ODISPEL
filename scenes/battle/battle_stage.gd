@@ -9,7 +9,7 @@ const DW: float = 1280.0
 const DH: float = 720.0
 const HORIZON: float = 250.0
 const BOSS_X: float = 985.0
-const BOSS_FLOOR: float = 458.0     # il boss sta sulla stessa linea dei piedi della squadra...
+const BOSS_FLOOR: float = 472.0     # il boss sta sulla stessa linea dei piedi della squadra...
 const BOSS_SCALE: float = 0.86      # ...con una figura un po' piu' grande della squadra
 const FLOOR_Y: float = 470.0        # dove i piedi toccano il suolo sullo schermo
 const GEO_FLOOR: float = 600.0      # il suolo nelle coordinate con cui sono disegnate le figure
@@ -257,7 +257,7 @@ func _map(p: Vector2, gx: float, s: float = ENTITY_SCALE, floor_y: float = FLOOR
 # La squadra sta su una riga sola: stessa altezza e stessa scala, vicini fra loro e lontani dal boss. x = posizione, y = piedi sullo schermo, z = scala.
 func party_pose(index: int, _count: int) -> Vector3:
 	var t: float = float(index)
-	return Vector3(215.0 + t * 150.0, 458.0 - party_lift, 0.82)
+	return Vector3(215.0 + t * 150.0, 472.0 - party_lift, 0.82)
 
 
 func fighter_x(index: int, count: int) -> float:
@@ -1029,7 +1029,7 @@ func _draw_back_row() -> void:
 		var u: Dictionary = BattleState.unit(state, str(uid))
 		if u.is_empty():
 			continue
-		_draw_bench_unit(u, float(BACK_X[mini(k, BACK_X.size() - 1)]), k, 0.70, 410.0 - party_lift)
+		_draw_bench_unit(u, float(BACK_X[mini(k, BACK_X.size() - 1)]), k, 0.70, 424.0 - party_lift)
 		k += 1
 
 
