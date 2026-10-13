@@ -987,7 +987,8 @@ func _refresh_detail() -> void:
 		ub.disabled = true
 	else:
 		var cost: Dictionary = BattleContent.character_upgrade_cost(int(e["level"]))
-		ub.text = "POTENZIA %dM+%dN" % [int(cost["coins"]), int(cost["nucleo"])]
+		ub.text = "POTENZIA"
+		_cost_row(ub, [["coin", int(cost["coins"])], ["nucleo", int(cost["nucleo"])]], 15)
 		ub.size_flags_stretch_ratio = 1.6
 	BattleTheme.style_button(ub, "primary", 15)
 	ub.pressed.connect(upgrade.bind(selected))
@@ -1225,7 +1226,8 @@ func _refresh_equip_gear(key: String) -> void:
 			ub.disabled = true
 		else:
 			var cost: Dictionary = BattleContent.gear_upgrade_cost(int(g2["rarity"]), int(g2["level"]))
-			ub.text = "POTENZIA PEZZO  %dM + %dL" % [int(cost["coins"]), int(cost["lega"])]
+			ub.text = "POTENZIA PEZZO"
+			_cost_row(ub, [["coin", int(cost["coins"])], ["lega", int(cost["lega"])]], 15)
 		BattleTheme.style_button(ub, "primary", 15)
 		ub.pressed.connect(upgrade_gear.bind(cur))
 		_equip_action.add_child(ub)
@@ -1241,9 +1243,10 @@ func _refresh_recruit() -> void:
 	for entry in _pull_buttons:
 		var b: Button = entry[0]
 		var cost: int = Recruiting.cost_for(int(entry[1]))
-		b.text = "%s  (%d)" % [str(entry[2]), cost]
+		b.text = str(entry[2])
 		b.disabled = int(roster["coins"]) < cost
 		BattleTheme.style_button(b, "primary", 24)
+		_cost_row(b, [["coin", cost]], 24)
 
 	_clear(_results_box)
 	if last_results.is_empty():
@@ -1288,3 +1291,26 @@ func _refresh_recruit() -> void:
 			RarityFx.reveal_row(self, l, int(r["rarity"]), delay)
 			delay += float(RarityFx.STAGGER[clampi(int(r["rarity"]), 0, 3)])
 	_reveal_rows = false
+
+
+# Costo di un'azione scritto con le icone delle valute (crediti, nuclei, leghe) a destra del pulsante.
+func _cost_row(b: Button, costs: Array, fs: int) -> void:
+	var old: Node = b.get_node_or_null("cost_row")
+	if old != null:
+		b.remove_child(old)
+		old.queue_free()
+	var row := HBoxContainer.new()
+	row.name = "cost_row"
+	row.alignment = BoxContainer.ALIGNMENT_END
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 10)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_right = -16.0
+	var col: Color = Color("#6b777c") if b.disabled else BattleTheme.WH
+	for c in costs:
+		var key: String = str(c[0])
+		var item := GameIcon.line(key, GameIcon.currency_color(key) if not b.disabled else col, str(int(c[1])), fs, col, float(fs) + 6.0)
+		item.add_theme_constant_override("separation", 5)
+		row.add_child(item)
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.add_child(row)
