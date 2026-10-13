@@ -108,8 +108,9 @@ func _draw_placeholder(tint: Color) -> void:
 		draw_rect(Rect2(Vector2.ZERO, size), body)
 		var ir: float = minf(w, h) * 0.34
 		var ihead := Vector2(w * 0.5, h * 0.5)
-		AnimeFace.hair_back(self, ihead, ir, char_id, col, tint)
-		AnimeFace.face(self, ihead, ir, char_id, col, tint, expression)
+		if not HeadCache.draw(self, ihead, ir, char_id, col, expression, tint):
+			AnimeFace.hair_back(self, ihead, ir, char_id, col, tint)
+			AnimeFace.face(self, ihead, ir, char_id, col, tint, expression)
 		draw_rect(Rect2(Vector2.ZERO, size), line, false, 2.0)
 		return
 
@@ -151,7 +152,9 @@ func _draw_anime_bust(col: Color, tint: Color) -> void:
 	var head := Vector2(cx, h * 0.40 + bob)
 	var skin_sh: Color = Color("#e3b9a4") * tint
 	var cloth: Color = col.darkened(0.55) * tint
-	AnimeFace.hair_back(self, head, r, char_id, col, tint)
+	var cached_back: bool = HeadCache.draw(self, head, r, char_id, col, expression, tint, HeadCache.BACK)
+	if not cached_back:
+		AnimeFace.hair_back(self, head, r, char_id, col, tint)
 	# spalle e giacca
 	var sh := PackedVector2Array([
 		Vector2(cx - w * 0.46, h), Vector2(cx - w * 0.40, h * 0.72 + bob), Vector2(cx - w * 0.16, h * 0.64 + bob),
@@ -160,4 +163,5 @@ func _draw_anime_bust(col: Color, tint: Color) -> void:
 	draw_polyline(sh, col * tint, 3.0)
 	draw_colored_polygon(PackedVector2Array([Vector2(cx - w * 0.14, h * 0.64 + bob), Vector2(cx, h * 0.80 + bob), Vector2(cx + w * 0.14, h * 0.64 + bob)]), skin_sh)
 	draw_rect(Rect2(cx - r * 0.3, head.y + r * 0.9, r * 0.6, r * 0.8), skin_sh)       # collo
-	AnimeFace.face(self, head, r, char_id, col, tint, expression)
+	if not HeadCache.draw(self, head, r, char_id, col, expression, tint, HeadCache.FRONT):
+		AnimeFace.face(self, head, r, char_id, col, tint, expression)
