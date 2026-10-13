@@ -961,17 +961,25 @@ func _event_fx(e: Dictionary) -> float:
 			Snd.play("down")
 			if str(e["unit"]) == BattleState.BOSS_ID:
 				# colpo di grazia: lampo, linee e scritta gigante
+				_buzz(220)
 				_stage.impact(26.0, 0.08)
 				ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color.WHITE, 0.5)
 				ComicFx.flash(_fx, Color(1, 1, 1, 0.85), 0.35)
 				_pop("FINISH!", BattleState.BOSS_ID, BattleTheme.POP, BattleTheme.RD, 84, 120.0, Vector2(0.0, -20.0))
 				return 0.35
+			_buzz(110)
 			_stage.impact(14.0, 0.04)
 			ComicFx.flash(_fx, Color(1, 1, 1, 0.5), 0.15)
 			_pop("K.O.!", str(e["unit"]), BattleTheme.RD, BattleTheme.WH, 56, 95.0)
 			banter(_local_active_id(), "ko")
 			return 0.12
 	return 0.0
+
+
+# Vibrazione breve sul telefono nei momenti forti (solo touch).
+func _buzz(ms: int) -> void:
+	if TouchUi.active():
+		Input.vibrate_handheld(ms)
 
 
 # MARCHI: il mirino compare (o esplode, se consumato) sul boss.
@@ -983,6 +991,7 @@ func _fx_marks(e: Dictionary) -> float:
 		_pop("MARCHIO x%d" % int(e["n"]), uid, BattleTheme.POP, BattleTheme.BK, 34, 60.0, Vector2(0.0, -60.0))
 		return 0.0
 	Snd.play("mark_burst")
+	_buzz(60)
 	_stage.impact(12.0, 0.04)
 	ComicFx.flash(_fx, Color(BattleTheme.POP, 0.4), 0.15)
 	_pop("MARCHI SPESI!", uid, BattleTheme.RD, BattleTheme.WH, 40, 76.0, Vector2(0.0, -60.0))
@@ -1060,6 +1069,7 @@ func _fx_damage(e: Dictionary) -> float:
 	var target: Dictionary = BattleState.unit(shown, dst)
 	if bool(e.get("crit", false)) and amount > 0:
 		Snd.play("crit")
+		_buzz(30)
 		_stage.impact(10.0, 0.03)
 	var is_crit: bool = bool(e.get("crit", false))
 	if to_boss:
