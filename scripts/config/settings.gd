@@ -9,7 +9,7 @@ static var music: float = 0.6        # 0..1
 static var sfx: float = 0.8          # 0..1
 static var muted: bool = false
 static var fullscreen: bool = false
-static var fps_limit: int = 144        # 0 = senza limite
+static var fps_limit: int = 60         # 0 = senza limite (60 di base: meno CPU/GPU e batteria; si puo' alzare nelle impostazioni)
 static var vsync: bool = true
 static var light_fx: bool = OS.has_feature("mobile")   # effetti ridotti: niente velo telecamera ne' pulviscolo (telefoni e PC lenti)
 const FPS_CHOICES: Array = [60, 90, 120, 144, 240, 0]
@@ -33,7 +33,7 @@ static func load_settings() -> void:
 	fullscreen = bool(cfg.get_value("video", "fullscreen", fullscreen))
 	fps_limit = int(cfg.get_value("video", "fps_limit", fps_limit))
 	if not FPS_CHOICES.has(fps_limit):
-		fps_limit = 144
+		fps_limit = 60
 	vsync = bool(cfg.get_value("video", "vsync", vsync))
 	light_fx = bool(cfg.get_value("video", "light_fx", light_fx))
 	banter = bool(cfg.get_value("game", "banter", banter))

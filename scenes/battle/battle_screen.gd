@@ -16,6 +16,10 @@ var _picks: Dictionary = {}          # slot -> ordine gia' scelto in questo roun
 var _cur_slot: String = ""           # slot di front row di cui si scelgono gli ordini
 var autoplay: bool = false           # AUTOPLAY: l'IA combatte da sola
 var _auto_button: Button
+var _veil: ColorRect
+var _perf_time: float = 0.0
+var _perf_frames: int = 0
+var _perf_checked: bool = false
 var _ops_panel: Control
 var pending_swap: String:
 	get:
@@ -267,7 +271,7 @@ func _build() -> void:
 	add_child(_stage)
 
 	# velatura ciano, telecamera e retino da fumetto: un solo passaggio a tutto schermo
-	ScreenFx.battle(self)
+	_veil = ScreenFx.battle(self)
 
 	_fx = Control.new()
 	_fx.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -502,6 +506,7 @@ func _build_log() -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	_watch_performance(delta)
 	if _rec_dot != null:
 		var on: bool = int(_t * 1.6) % 2 == 0
 		if _rec_dot.visible != on:
@@ -523,6 +528,24 @@ func _process(delta: float) -> void:
 			else:
 				_timer_label.text = "%02d:%02d" % [secs / 60, secs % 60]
 				_timer_label.add_theme_color_override("font_color", BattleTheme.RD if secs <= 10 else BattleTheme.WH)
+
+
+# Se il dispositivo e' lento (meno di ~40 fps per 4 secondi di battaglia) si passa da soli agli effetti ridotti:
+# stessa battaglia, meno peso grafico. Si cambia una volta sola e si puo' sempre riattivare nelle impostazioni.
+func _watch_performance(delta: float) -> void:
+	if _perf_checked or Settings.light_fx or not animating or DisplayServer.get_name() == "headless":
+		return
+	_perf_time += delta
+	_perf_frames += 1
+	if _perf_time < 4.0:
+		return
+	_perf_checked = true
+	if float(_perf_frames) / _perf_time < 40.0:
+		Settings.light_fx = true
+		Settings.save()
+		if _veil != null and is_instance_valid(_veil):
+			_veil.visible = false
+		Notify.toast("EFFETTI RIDOTTI AUTOMATICAMENTE (piu' fluido)", Notify.Kind.INFO)
 
 
 func _refresh_all() -> void:

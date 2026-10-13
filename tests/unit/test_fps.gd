@@ -18,9 +18,10 @@ func _check(name: String, cond: bool) -> void:
 
 func _init() -> void:
 	Settings.path = "user://test_fps.cfg"
-	_check("di base 144 fps", Settings.fps_limit == 144)
+	_check("di base 60 fps", Settings.fps_limit == 60)
 	Settings.apply_video()
-	_check("il motore usa il limite", Engine.max_fps == 144)
+	_check("il motore usa il limite", Engine.max_fps == 60)
+	Settings.fps_limit = 144
 	Settings.fps_limit = Settings.next_fps_limit()
 	_check("il limite scorre: 240", Settings.fps_limit == 240)
 	Settings.fps_limit = Settings.next_fps_limit()
@@ -35,7 +36,7 @@ func _init() -> void:
 	Settings.load_settings()
 	_check("si salva e si ricarica", Settings.fps_limit == 120 and not Settings.vsync)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_fps.cfg"))
-	Settings.fps_limit = 144
+	Settings.fps_limit = 60
 	Settings.vsync = true
 	Settings.apply_video()
 	print("---")

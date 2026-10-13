@@ -24,6 +24,14 @@ var _last_scene: Node = null
 var _hover_gate: float = 0.0
 
 
+# Gioco in secondo piano (altra finestra, schermata bloccata): quasi niente fotogrammi, niente consumo inutile.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		Engine.max_fps = 10
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_WM_WINDOW_FOCUS_IN:
+		Settings.apply_video()
+
+
 func _ready() -> void:
 	Settings.ensure_loaded()
 	_make_bus("Music")
