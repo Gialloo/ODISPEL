@@ -457,6 +457,7 @@ func _build_telegraph() -> void:
 func _build_turn_panel() -> void:
 	var panel := HudPanel.new().setup("ORDINE DEL TURNO", BattleTheme.CY_DIM)
 	panel.margins = Vector4(12, 26, 12, 6)
+	panel.backdrop = 0.55
 	add_child(panel)
 	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 76, 332, 202))
 	_turn_box = VBoxContainer.new()

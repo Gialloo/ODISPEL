@@ -7,6 +7,7 @@ var title: String = ""
 var accent: Color = BattleTheme.CY
 var cut: float = 14.0
 var bare: bool = false       # senza cornice: solo una velatura scura, il contenuto sta sulla scena
+var backdrop: float = 1.0    # opacita' dello sfondo (il testo non cambia)
 var quiet: bool = false      # pannello secondario: solo velo e filo sottile, niente ombra ne' linguetta
 var margins: Vector4 = Vector4(18.0, 30.0, 18.0, 12.0)   # sinistra, alto, destra, basso
 
@@ -69,8 +70,8 @@ func _draw() -> void:
 	if quiet:
 		_draw_quiet()
 		return
-	draw_colored_polygon(_shape(Vector2(5.0, 5.0)), Color(accent, 0.28))
-	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.80))
+	draw_colored_polygon(_shape(Vector2(5.0, 5.0)), Color(accent, 0.28 * backdrop))
+	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.80 * backdrop))
 	_draw_surface(1.0)
 	var outline: PackedVector2Array = _shape()
 	outline.append(outline[0])
