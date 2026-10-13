@@ -59,6 +59,8 @@ func finish() -> Dictionary:
 	if endless_floor > 0:
 		rewards = Endless.scale_rewards(rewards, endless_floor) if won else rewards
 		MissionConfig.endless_carry = Endless.carry_from(battle) if won else {}
+		if not won:
+			Endless.finish_run(roster, endless_floor - 1)
 		if Endless.record(roster, endless_floor, won):
 			Notify.success("NUOVO RECORD: PIANO %d" % endless_floor)
 	if daily_mod != "" and won and Daily.record_win(roster):

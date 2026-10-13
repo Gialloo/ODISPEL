@@ -111,6 +111,28 @@ static func scale_rewards(rewards: Dictionary, floor_n: int) -> Dictionary:
 	return out
 
 
+const TOP_SIZE: int = 5
+
+
+# Fine serie (si perde): il piano raggiunto entra nella classifica locale dei migliori 5.
+static func finish_run(roster: Dictionary, reached: int, day: String = "") -> void:
+	if reached <= 0:
+		return
+	if not roster.has("endless"):
+		roster["endless"] = {"best": 0, "runs": 0}
+	var e: Dictionary = roster["endless"]
+	var top: Array = e.get("top", [])
+	top.append({"floor": reached, "day": day if day != "" else Time.get_date_string_from_system()})
+	top.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["floor"]) > int(b["floor"]))
+	while top.size() > TOP_SIZE:
+		top.pop_back()
+	e["top"] = top
+
+
+static func top(roster: Dictionary) -> Array:
+	return roster.get("endless", {}).get("top", [])
+
+
 # Registra il risultato di un piano. Ritorna true se e' un nuovo record.
 static func record(roster: Dictionary, floor_n: int, won: bool) -> bool:
 	if not roster.has("endless"):

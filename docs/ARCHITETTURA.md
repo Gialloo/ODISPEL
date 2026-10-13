@@ -108,7 +108,7 @@ Scelta di strategia per gli operatori con fazione (bottone STILE nella scheda de
 
 - **Imprese** (`scripts/roster/feats.gd`, schermata `scenes/feats`): obiettivi permanenti con premi fissi, calcolati dal salvataggio (`roster["stats"]`, `roster["feats"]["claimed"]`). Hub: pulsante OBIETTIVI, tasto 6.
 - **Mosse a 4 livelli**: `BattleContent.FAMILIES` genera gli id base, `_r`, `_e`, `_l`. Ogni mossa somma un bonus piatto `statistica * pct/100` a danno, cura o scudo (`BattleContent.move_bonus`, applicato in `BattleResolver._player_act`).
-- **Boss**: 7 in `BOSS_ORDER` (distributore, semaforo, tombino, cabina, ascensore, manichino, orologio). Il primo boss regala l'alleato Eco (`"ally"` nel boss, `RosterState.grant_story_allies`). Ogni boss ha una scena di storia in `scripts/story/story_data.gd`.
+- **Boss**: 8 in `BOSS_ORDER` (distributore, semaforo, tombino, cabina, ascensore, manichino, orologio, specchio: extra post-gioco, sbloccato dopo l'Orologio). Il primo boss regala l'alleato Eco (`"ally"` nel boss, `RosterState.grant_story_allies`). Ogni boss ha una scena di storia in `scripts/story/story_data.gd`.
 
 ## LINK (sinergie) e stile pop/neon
 

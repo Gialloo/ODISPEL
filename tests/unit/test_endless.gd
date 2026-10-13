@@ -67,5 +67,13 @@ func _init() -> void:
 	MissionConfig.endless_carry = carry
 	MissionConfig.set_endless(1)
 	_check("al piano 1 il riporto si azzera", MissionConfig.endless_carry.is_empty())
+	var rt: Dictionary = {}
+	for f in [4, 9, 2, 7, 12, 5, 1]:
+		Endless.finish_run(rt, f, "2026-10-13")
+	_check("classifica: massimo 5 voci", Endless.top(rt).size() == 5)
+	_check("classifica ordinata dal migliore", int(Endless.top(rt)[0]["floor"]) == 12 and int(Endless.top(rt)[4]["floor"]) == 4)
+	Endless.finish_run(rt, 0)
+	_check("serie a zero piani non conta", Endless.top(rt).size() == 5)
+	_check("salvataggio valido con la classifica", RosterState.validate(RosterState.from_json(RosterState.to_json(rt))) != "x")
 	print("%d passati, %d falliti" % [passed, failed])
 	quit(1 if failed > 0 else 0)

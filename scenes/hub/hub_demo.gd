@@ -139,6 +139,13 @@ func _build_status_panel() -> void:
 
 	if Endless.available(roster) and Endless.best(roster) > 0:
 		box.add_child(BattleTheme.make_label("%-12s PIANO %d" % ["INFINITO", Endless.best(roster)], 17, BattleTheme.POP))
+		var tops: Array = []
+		for t in Endless.top(roster):
+			tops.append(str(int(t["floor"])))
+		if tops.size() > 1:
+			box.add_child(BattleTheme.make_label("MIGLIORI: " + " · ".join(tops), 13, BattleTheme.CY_DIM))
+	if Daily.streak(roster) > 0 or Daily.done_today(roster):
+		box.add_child(BattleTheme.make_label("SFIDA DEL GIORNO %s  SERIE %d" % ["✓" if Daily.done_today(roster) else "·", Daily.streak(roster)], 14, BattleTheme.OK if Daily.done_today(roster) else BattleTheme.POP))
 
 	box.add_child(HSeparator.new())
 	box.add_child(BattleTheme.make_label("OBIETTIVI DI OGGI  %d/%d" % [Objectives.completed(roster), Objectives.COUNT], 14, BattleTheme.CY_DIM))
