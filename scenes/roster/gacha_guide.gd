@@ -44,13 +44,13 @@ static func pages() -> Array:
 	var out: Array = []
 
 	out.append({"title": "LE VALUTE", "lines": [
-		_line("MONETE", BattleTheme.GOLD),
+		_line("GOLD", BattleTheme.GOLD),
 		_line("Le prendi vincendo i boss (di piu' a DIFFICILE e INCUBO) e con gli obiettivi di oggi. Anche se perdi ne ottieni un po'."),
 		_line("Servono per RECLUTARE (%d per uno, %d per dieci) e per POTENZIARE operatori e pezzi." % [Recruiting.SINGLE_COST, Recruiting.TEN_COST]),
 		_line("NUCLEI", BattleTheme.CY),
-		_line("Cadono dai boss e dagli obiettivi. Servono, con le monete, per far salire di LIVELLO un operatore."),
+		_line("Cadono dai boss e dagli obiettivi. Servono, con il GOLD, per far salire di LIVELLO un operatore."),
 		_line("LEGHE", BattleTheme.CY),
-		_line("Cadono dai boss e dagli obiettivi. Servono, con le monete, per potenziare i PEZZI di equipaggiamento."),
+		_line("Cadono dai boss e dagli obiettivi. Servono, con il GOLD, per potenziare i PEZZI di equipaggiamento."),
 		_line("Niente denaro vero: tutto si guadagna giocando.", BattleTheme.CY_DIM),
 	]})
 
@@ -67,7 +67,7 @@ static func pages() -> Array:
 
 	out.append({"title": "COPIE E GARANZIE", "lines": [
 		_line("Esce un operatore che hai gia'? Diventa una COPIA: si conserva e la spendi tu col bottone RANK UP nella scheda (max rank %d). Ogni rank potenzia statistiche, skill e ultimate: di piu' per i leggendari, di meno per i comuni." % RosterState.MAX_RANK),
-		_line("A rank massimo la copia diventa monete: %d x (rarita' + 1)." % Recruiting.REFUND_PER_RARITY),
+		_line("A rank massimo la copia diventa GOLD: %d x (rarita' + 1)." % Recruiting.REFUND_PER_RARITY),
 		_line("RECLUTA x10 costa %d invece di %d e garantisce almeno un RARO." % [Recruiting.TEN_COST, Recruiting.SINGLE_COST * 10]),
 		_line("GARANZIA: se per %d reclutamenti di fila non esce un EPICO o un LEGGENDARIO, il successivo e' almeno EPICO." % Recruiting.PITY_LIMIT),
 		_line("Il contatore resta salvato: non si azzera chiudendo il gioco.", BattleTheme.CY_DIM),

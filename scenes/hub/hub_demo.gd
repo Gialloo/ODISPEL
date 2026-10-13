@@ -6,6 +6,9 @@ extends Control
 var roster: Dictionary = {}
 var continue_button: Button
 var buttons: Dictionary = {}
+var _tip_label: Label
+var _tip_index: int = 0
+var _team_button: Button
 var _status_panel: Control     # chiave -> Button (usati dai test)
 var profile_card: ProfileCard
 var profile_button: Button
@@ -70,15 +73,23 @@ func _build() -> void:
 	if not TouchUi.active():
 		menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-7 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DIM))
 
+	_tip_index = (int(Time.get_unix_time_from_system() / 86400.0) + randi()) % TIPS.size()
 	var tip := BattleTheme.make_label("CONSIGLIO:  " + _tip(), 14, BattleTheme.CY_DIM)
 	tip.position = Vector2(64, 664)
 	tip.size = Vector2(590, 44)
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(tip)
+	_tip_label = tip
+	var timer := Timer.new()
+	timer.wait_time = 20.0
+	timer.autostart = true
+	timer.timeout.connect(_next_tip)
+	add_child(timer)
 
 	_build_status_panel()
 	UiMotion.slide_in(buttons.values(), Vector2(-180, 0), 0.07, 0.3)
-	UiMotion.slide_in([_status_panel], Vector2(120, 0), 0.0, 0.34)
+	_status_panel.visible = false
+	_build_team_toggle()
 
 
 const TIPS: Array = [
@@ -92,13 +103,48 @@ const TIPS: Array = [
 	"Nelle impostazioni puoi scegliere velocita', scosse, lampi e qualita' grafica.",
 	"In multiplayer puoi scrivere ai compagni col tasto CHAT per coordinare le ultimate.",
 	"Dopo 30 reclutamenti senza un epico o un leggendario, il successivo e' garantito.",
+	"Le ultimate si caricano subendo e infliggendo danno: usale quando il boss prepara una mossa forte.",
+	"Cambiare unita' tra front e back row non costa il turno: sfrutta lo SWITCH!",
+	"Nel PvP vince chi legge meglio l'avversario: varia le mosse.",
+	"Il TEAM in alto a destra mostra risorse, squadra e obiettivi in corso.",
+	"Ripeti i boss a difficolta' piu' alta per ricompense migliori.",
 ]
 
 
 # Un consiglio al giorno (uno diverso a ogni apertura dell'hub, in ordine).
 func _tip() -> String:
-	var day: int = int(Time.get_unix_time_from_system() / 86400.0)
-	return str(TIPS[(day + int(Time.get_ticks_msec() / 1000.0 / 60.0)) % TIPS.size()])
+	return str(TIPS[_tip_index % TIPS.size()])
+
+
+# Ogni 20 secondi il consiglio cambia, con una breve dissolvenza.
+func _next_tip() -> void:
+	if _tip_label == null or not is_instance_valid(_tip_label):
+		return
+	_tip_index += 1
+	var tw := create_tween()
+	tw.tween_property(_tip_label, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(func() -> void: _tip_label.text = "CONSIGLIO:  " + _tip())
+	tw.tween_property(_tip_label, "modulate:a", 1.0, 0.25)
+
+
+func _build_team_toggle() -> void:
+	_team_button = Button.new()
+	_team_button.text = "TEAM  ▼"
+	_team_button.position = Vector2(1080, 88)
+	_team_button.size = Vector2(160, 40)
+	_team_button.add_theme_font_size_override("font_size", 18)
+	_team_button.pressed.connect(_toggle_team)
+	add_child(_team_button)
+
+
+func _toggle_team() -> void:
+	var show: bool = not _status_panel.visible
+	_status_panel.visible = show
+	_team_button.text = "TEAM  ▲" if show else "TEAM  ▼"
+	if show:
+		_status_panel.position = Vector2(680, 140)
+		_status_panel.size = Vector2(560, 556)
+		UiMotion.slide_in([_status_panel], Vector2(120, 0), 0.0, 0.25)
 
 
 func _at(c: Control, pos: Vector2) -> Control:
@@ -165,7 +211,7 @@ func _build_status_panel() -> void:
 	var mats: Dictionary = roster["materials"]
 	var res_row := HBoxContainer.new()
 	res_row.add_theme_constant_override("separation", 0)
-	for entry in [["coin", "MONETE %d" % int(roster["coins"])], ["nucleo", "NUCLEI %d" % int(mats.get("nucleo", 0))], ["lega", "LEGHE %d" % int(mats.get("lega", 0))]]:
+	for entry in [["coin", "GOLD %d" % int(roster["coins"])], ["nucleo", "NUCLEI %d" % int(mats.get("nucleo", 0))], ["lega", "LEGHE %d" % int(mats.get("lega", 0))]]:
 		res_row.add_child(_resource_cell(str(entry[0]), str(entry[1])))
 	box.add_child(res_row)
 

@@ -56,7 +56,7 @@ static func for_battle(state: Dictionary, seed_value: int) -> Dictionary:
 static func text(rewards: Dictionary) -> String:
 	var parts: Array = []
 	if int(rewards.get("coins", 0)) > 0:
-		parts.append("%d MONETE" % int(rewards["coins"]))
+		parts.append("%d GOLD" % int(rewards["coins"]))
 	var mats: Dictionary = rewards.get("materials", {})
 	if int(mats.get("nucleo", 0)) > 0:
 		parts.append("%d NUCLEI" % int(mats["nucleo"]))

@@ -48,6 +48,12 @@ var _equip_action: HBoxContainer
 var _equip_title: HudPanel
 var _pity_bar: ProgressBar
 var _list_box: GridContainer
+var _filter_rarity: int = 0        # 0 = tutte, altrimenti rarita' + 1
+var _filter_faction: int = 0       # 0 = tutte, altrimenti indice in Factions.ORDER + 1
+var _filter_level: int = 0         # 0 = tutti, 1.. = fasce di livello (vedi LEVEL_BANDS)
+var _filter_color: int = 0         # 0 = tutti, altrimenti indice in COLOR_ORDER + 1
+const LEVEL_BANDS: Array = [[1, 9], [10, 24], [25, 39], [40, 50]]
+const COLOR_ORDER: Array = ["rosso", "verde", "blu", "giallo", "viola"]
 var _slots_box: HBoxContainer
 var _detail_label: Label
 var _detail_portrait: PortraitView
@@ -74,6 +80,7 @@ func _ready() -> void:
 
 func _build() -> void:
 	ScreenFx.solid(self, BattleTheme.BK)
+	var bg_end: int = get_child_count()
 
 	var title := BattleTheme.make_label("ARCHIVIO OPERATORI", 40, BattleTheme.WH, true)
 	title.position = Vector2(24, 10)
@@ -134,7 +141,11 @@ func _build() -> void:
 	_status_label.size = Vector2(960, 28)
 	add_child(_status_label)
 
+	# velo e pioggia stanno DIETRO ai pannelli: le immagini degli operatori restano con i loro colori e senza righe sopra
+	var n_before: int = get_child_count()
 	ScreenFx.menu_overlays(self, BattleTheme.RD)
+	for i in range(get_child_count() - n_before):
+		move_child(get_child(n_before + i), bg_end + i)
 
 
 func _header_icon(key: String, pos: Vector2, px: float) -> void:
@@ -150,6 +161,76 @@ func _set_scrolled(panel: HudPanel, box: Container) -> void:
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(box)
 	panel.set_content(scroll)
+
+
+# Collezione: sopra la griglia quattro filtri (rarita', fazione, livello, colore); la griglia scorre sotto.
+func _set_filtered(panel: HudPanel, box: Container) -> void:
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 6)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	col.add_child(row)
+	var rar: Array = ["Rarita'"]
+	for r in BattleTypes.RARITIES:
+		rar.append(str(r).capitalize())
+	var fac: Array = ["Fazione"]
+	for f in Factions.ORDER:
+		fac.append(str(Factions.FACTIONS[f]["name"]))
+	var lev: Array = ["Livello"]
+	for b in LEVEL_BANDS:
+		lev.append("Lv %d-%d" % [int(b[0]), int(b[1])])
+	var colr: Array = ["Colore"]
+	for c in COLOR_ORDER:
+		colr.append(str(c).capitalize())
+	for spec in [["rarity", rar], ["faction", fac], ["level", lev], ["color", colr]]:
+		var ob := OptionButton.new()
+		for it in spec[1]:
+			ob.add_item(str(it))
+		BattleTheme.style_button(ob, "normal", 13)
+		ob.custom_minimum_size = Vector2(0, 38 if TouchUi.active() else 28)
+		ob.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ob.fit_to_longest_item = false
+		ob.item_selected.connect(_on_filter.bind(str(spec[0])))
+		row.add_child(ob)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(box)
+	col.add_child(scroll)
+	panel.set_content(col)
+
+
+func _on_filter(index: int, which: String) -> void:
+	match which:
+		"rarity":
+			_filter_rarity = index
+		"faction":
+			_filter_faction = index
+		"level":
+			_filter_level = index
+		"color":
+			_filter_color = index
+	_refresh_list()
+
+
+# Un operatore passa i filtri attivi? (il livello vale solo per chi e' stato reclutato)
+func _passes_filters(id: String) -> bool:
+	var def: Dictionary = BattleContent.CHARACTERS[id]
+	if _filter_rarity > 0 and int(def["rarity"]) != _filter_rarity - 1:
+		return false
+	if _filter_faction > 0 and str(def.get("faction", "")) != str(Factions.ORDER[_filter_faction - 1]):
+		return false
+	if _filter_color > 0 and str(def.get("color", "")) != str(COLOR_ORDER[_filter_color - 1]):
+		return false
+	if _filter_level > 0:
+		if not RosterState.owns(roster, id):
+			return false
+		var lv: int = int(roster["characters"][id]["level"])
+		var band: Array = LEVEL_BANDS[_filter_level - 1]
+		if lv < int(band[0]) or lv > int(band[1]):
+			return false
+	return true
 
 
 func _page() -> Control:
@@ -196,7 +277,7 @@ func _build_team_page() -> void:
 	_list_box.columns = 4      # 4 colonne: stanno nel pannello; con tanti operatori la griglia scorre
 	_list_box.add_theme_constant_override("h_separation", 6)
 	_list_box.add_theme_constant_override("v_separation", 6)
-	_set_scrolled(coll, _list_box)
+	_set_filtered(coll, _list_box)
 
 	var card := HudPanel.new().setup("SCHEDA OPERATORE", BattleTheme.CY)
 	card.margins = Vector4(14.0, 30.0, 250.0, 12.0)
@@ -531,7 +612,7 @@ func toggle_style(char_id: String) -> bool:
 func upgrade(char_id: String) -> bool:
 	var err: String = RosterState.level_up_character(roster, char_id)
 	if err != "":
-		var msgs: Dictionary = {"max": "Livello massimo.", "monete": "Monete insufficienti.",
+		var msgs: Dictionary = {"max": "Livello massimo.", "monete": "GOLD insufficiente.",
 			"nucleo": "Nuclei insufficienti.", "sconosciuto": "Personaggio non posseduto."}
 		return _say(str(msgs.get(err, "Non riuscito: " + err)), false)
 	_save()
@@ -572,7 +653,7 @@ func pull(count: int) -> bool:
 	if not bool(r["ok"]):
 		last_results = []
 		if str(r["error"]) == "monete":
-			return _say("Servono %d monete." % int(r["cost"]), false)
+			return _say("Servono %d GOLD." % int(r["cost"]), false)
 		return _say("Reclutamento non riuscito.", false)
 	last_results = r["results"]
 	_reveal_rows = DisplayServer.get_name() != "headless"
@@ -587,7 +668,7 @@ func pull(count: int) -> bool:
 		else:
 			PullReveal.play(self, last_results)
 	_announce_pulls(last_results)
-	return _say("Reclutamento completato (-%d monete)." % int(r["cost"]), true)
+	return _say("Reclutamento completato (-%d GOLD)." % int(r["cost"]), true)
 
 
 # Avvisa dei nuovi operatori ottenuti (max 3, i migliori per primi).
@@ -701,7 +782,7 @@ func _why_not(slot: int, size: int, item_id: String, field: String) -> String:
 func upgrade_gear(gear_id: String) -> bool:
 	var err: String = RosterState.level_up_gear(roster, gear_id)
 	if err != "":
-		var msgs: Dictionary = {"max": "Pezzo al livello massimo.", "monete": "Monete insufficienti.",
+		var msgs: Dictionary = {"max": "Pezzo al livello massimo.", "monete": "GOLD insufficiente.",
 			"lega": "Leghe insufficienti.", "sconosciuto": "Pezzo sconosciuto."}
 		return _say(str(msgs.get(err, "Non riuscito: " + err)), false)
 	_save()
@@ -753,7 +834,7 @@ func _header_resource(icon_key: String, x: float) -> Label:
 func refresh() -> void:
 	if _list_box == null:
 		return
-	_coins_label.text = "MONETE %d" % int(roster["coins"])
+	_coins_label.text = "GOLD %d" % int(roster["coins"])
 	var mats: Dictionary = roster["materials"]
 	_mats_label.text = "NUCLEI %d" % int(mats.get("nucleo", 0))
 	_lega_label.text = "LEGHE %d" % int(mats.get("lega", 0))
@@ -794,6 +875,8 @@ func _refresh_list() -> void:
 		return str(a) < str(b))
 	var team: Array = roster["team"]
 	for id in ids:
+		if not _passes_filters(str(id)):
+			continue
 		var owned: bool = RosterState.owns(roster, id)
 		var b: Button = OperatorCards.tile(str(id), owned, roster["characters"][id] if owned else {}, team.find(id) + 1, id == selected)
 		if owned:
@@ -1153,7 +1236,7 @@ func _refresh_recruit() -> void:
 		BattleTheme.style_button(banner_buttons[bk], "primary" if str(bk) == banner else "normal", 15)
 	_banner_note.text = "Solo i 10 operatori del secondo roster." if banner == "nuovi" else "Tutti gli operatori. I 10 nuovi escono con meta' delle probabilita'."
 	var left: int = Recruiting.PITY_LIMIT - int(roster["pity"])
-	_pity_label.text = "Reclutamenti totali: %d\nEpico garantito entro %d reclutamenti.\nMonete: %d" % [int(roster["pulls"]), left, int(roster["coins"])]
+	_pity_label.text = "Reclutamenti totali: %d\nEpico garantito entro %d reclutamenti.\nGOLD: %d" % [int(roster["pulls"]), left, int(roster["coins"])]
 	_pity_bar.value = float(int(roster["pity"]))
 	for entry in _pull_buttons:
 		var b: Button = entry[0]
@@ -1196,7 +1279,7 @@ func _refresh_recruit() -> void:
 			"copy":
 				outcome = "COPIA +1  (%d/%d per il RANK UP)" % [int(r.get("copies", 0)), RosterState.rank_cost(int(r.get("rank", 0)))]
 			_:
-				outcome = "RANK MAX  +%d monete" % int(r["refund"])
+				outcome = "RANK MAX  +%d GOLD" % int(r["refund"])
 		var line := "%-6s %-11s %s" % [str(def["name"]).to_upper(), str(BattleTypes.RARITIES[int(r["rarity"])]).to_upper(), outcome]
 		var l := BattleTheme.make_label(line, 22, RARITY_COLORS[clampi(int(r["rarity"]), 0, 3)])
 		_results_box.add_child(l)

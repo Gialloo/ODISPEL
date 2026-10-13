@@ -97,7 +97,7 @@ func _run() -> void:
 		if str(o["kind"]) == "win":
 			won = int(o["progress"])
 	_check("la sconfitta conta come battaglia giocata ma non come vittoria", played <= 1 and won == 0)
-	_check("testi leggibili", Objectives.describe(list[0]) != "" and Objectives.reward_text(list[0]["reward"]).contains("MONETE"))
+	_check("testi leggibili", Objectives.describe(list[0]) != "" and Objectives.reward_text(list[0]["reward"]).contains("GOLD"))
 	Objectives.enabled = false
 	_check("spento: niente progressi", Objectives.record_battle(RosterState.new_roster(), "distributore", 0, true).is_empty())
 	Objectives.enabled = true

@@ -145,7 +145,7 @@ static func glossary() -> Array:
 		["CACCIATORE", "Passiva: +%d%% di danno contro chi e' sotto meta' PV." % int(round((BattleTypes.HUNTER_BONUS - 1.0) * 100.0))],
 		["COLORE = STRATEGIA", "Ogni colore e' la base di un operatore. ROSSO=STR: colpi che crescono. GIALLO=PSY: energia, cure e scudi piu' forti. VIOLA=INT: marchi, sanguinamento e critici. VERDE=DEX: critici potenti che caricano l'ultimate. BLU=QCK: velocita' e ultimate sempre pronta. Classe, fazione e abilita' uniche completano la strategia."],
 		["PASSIVA E ABILITA' UNICHE", "Ogni operatore ha una passiva unica (★) e 1 o 2 abilita' uniche: 1 per comuni e rari, 2 per epici e leggendari (la seconda si sblocca a rank 3). Non cadono come premio: sono del personaggio."],
-		["LIVELLO E RANK", "Il livello si compra con monete e nuclei. Le copie di un operatore che hai gia' non fanno salire il rank da sole: si conservano e le spendi tu col bottone RANK UP (costo in copie: %s per i rank 1-%d). Ogni rank da' statistiche (comune +4%%, raro +5%%, epico +6%%, leggendario +8%%) e potenzia la passiva. Rank 1: SKILL 1 potenziata. Rank 2: SKILL 2. Rank 3: ULTIMATE. Rank 4: SKILL 1 e 2 ancora. Rank 5: ULTIMATE ancora e RISVEGLIO (parte con +%d di carica). Piu' e' raro l'operatore, piu' i potenziamenti sono grandi." % [", ".join(RosterState.RANK_COPY_COST.map(func(c: int) -> String: return str(c))), RosterState.MAX_RANK, Signatures.AWAKEN_GAUGE]],
+		["LIVELLO E RANK", "Il livello si compra con GOLD e nuclei. Le copie di un operatore che hai gia' non fanno salire il rank da sole: si conservano e le spendi tu col bottone RANK UP (costo in copie: %s per i rank 1-%d). Ogni rank da' statistiche (comune +4%%, raro +5%%, epico +6%%, leggendario +8%%) e potenzia la passiva. Rank 1: SKILL 1 potenziata. Rank 2: SKILL 2. Rank 3: ULTIMATE. Rank 4: SKILL 1 e 2 ancora. Rank 5: ULTIMATE ancora e RISVEGLIO (parte con +%d di carica). Piu' e' raro l'operatore, piu' i potenziamenti sono grandi." % [", ".join(RosterState.RANK_COPY_COST.map(func(c: int) -> String: return str(c))), RosterState.MAX_RANK, Signatures.AWAKEN_GAUGE]],
 		["MUNIZIONI", "Solo LibraCorp: massimo %d. Servono ai colpi mirati e ai contrattacchi. Si recuperano con RICARICA (+3) e con GUARDIA (+1)." % BattleTypes.AMMO_MAX],
 		["CONTRATTACCO", "Un LibraCorp ortodosso colpito dal boss che resta in piedi risponde al fuoco (danno x%.1f) spendendo una munizione." % BattleTypes.COUNTER_MULT],
 		["PERFORA", "Il colpo ignora meta' della difesa del bersaglio (Colpo mirato, Colpo alla testa)."],
@@ -153,7 +153,7 @@ static func glossary() -> Array:
 		["AURA", "Bonus passivo a una statistica per i compagni di fazione. Cresce con la rarita' di chi la da', con tetto +%d%%. Sparisce se chi la da' e' a terra." % (Factions.AURA_CAP_PM / 10)],
 		["CRITICO", "Probabilita' di colpo che fa x%.1f di danno. Lo aumentano le aure delle Rondini." % (float(Factions.CRIT_DMG_PM) / 1000.0)],
 		["STILE", "Ortodosso: segue la dottrina, aura intera. Atipico: aura dimezzata, ma +8% ATK e +5% VEL, piu' un TRATTO proprio dell'operatore: nessuno per i comuni, piccolo per i rari, evidente per gli epici, unico per i leggendari. Si cambia dalla scheda."],
-		["VALUTE", "Monete (reclutare e potenziare), Nuclei (livello degli operatori), Leghe (livello dei pezzi di equipaggiamento)."],
+		["VALUTE", "GOLD (reclutare e potenziare), Nuclei (livello degli operatori), Leghe (livello dei pezzi di equipaggiamento)."],
 	]
 
 

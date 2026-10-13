@@ -109,7 +109,7 @@ static func _claim(roster: Dictionary, week: int) -> Array:
 		if progress(roster, id, week) >= int(m["goal"]):
 			(e["claimed"] as Array).append(id)
 			RosterState.apply_rewards(roster, {"coins": int(m["coins"]), "materials": {}})
-			lines.append("MISSIONE SETTIMANALE: %s  +%d monete" % [str(m["text"]), int(m["coins"])])
+			lines.append("MISSIONE SETTIMANALE: %s  +%d GOLD" % [str(m["text"]), int(m["coins"])])
 	return lines
 
 

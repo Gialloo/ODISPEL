@@ -608,7 +608,7 @@ func _build_log() -> void:
 	panel.bare = true
 	panel.margins = Vector4(12, 8, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-400, -150, -10, -34))
+	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-370, -150, -10, -34))
 	_log_label = RichTextLabel.new()
 	_log_label.bbcode_enabled = true
 	_log_label.scroll_active = false
@@ -1134,7 +1134,12 @@ func _refresh_orders() -> void:
 	if str(u["ult"]) != "":
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
 	var bh: float = 56.0 if touch else 42.0
-	var bw: float = 240.0 if touch else 212.0
+	# una sola misura di carattere per TUTTI i personaggi: la larghezza si adatta alla mossa piu' lunga del gioco, non il carattere
+	var common_fs: int = 17 if touch else 15
+	var longest: float = 0.0
+	for mid in BattleContent.MOVES:
+		longest = maxf(longest, BattleTheme.hud().get_string_size(_order_text(str(mid), BattleContent.MOVES[mid], 100), HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x)
+	var bw: float = clampf(longest + 44.0, 212.0, 262.0)
 	var pts: Array = _orders_box.layout(entries.size(), bh, 4.0, fan_big, 0.0, 246.0, 706.0)
 	title.position = Vector2(float(pts[0].x) - 2.0, float(pts[0].y) - bh * 0.5 - 26.0)
 	var lo := Vector2(1e9, 1e9)
@@ -1146,13 +1151,6 @@ func _refresh_orders() -> void:
 	_fan_anchor.size = hi - lo
 	var animate: bool = _fan_key != "%s|%d" % [uid, int(shown["round"])]
 	_fan_key = "%s|%d" % [uid, int(shown["round"])]
-	# una sola misura di carattere per tutte le mosse (la piu' grande che sta in tutti i pulsanti); l'attacco base e' un po' piu' grande
-	var common_fs: int = 17 if touch else 15
-	for e in entries:
-		var mv: Dictionary = BattleContent.MOVES[str(e["id"])]
-		var txt: String = _order_text(str(e["id"]), mv, 100)
-		while common_fs > (14 if touch else 12) and BattleTheme.hud().get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x > bw - 44.0:
-			common_fs -= 1
 	var min_left: float = 1e9
 	for pt in pts:
 		min_left = minf(min_left, float(pt.x) - 8.0)
@@ -1947,7 +1945,7 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	var panel := HudPanel.new().setup("ESITO", BattleTheme.CY if victory else BattleTheme.RD)
 	panel.cut = 24.0
 	_overlay.add_child(panel)
-	_anchor(panel, Vector4(0.5, 0.5, 0.5, 0.5), Vector4(-300, -230, 300, 230))
+	_anchor(panel, Vector4(0.5, 0.0, 0.5, 1.0), Vector4(-300, 112, 300, -64))      # dall'alto del banner fino a quasi il bordo basso: i tasti non escono mai
 	var accent: Color = BattleTheme.CY if victory else BattleTheme.RD
 	ComicFx.flash(_overlay, Color.WHITE if victory else BattleTheme.RD, 0.18)
 	ComicFx.speed_lines(_overlay, Vector2(640, 360), Color(1, 1, 1, 0.8), 0.5)
@@ -1982,6 +1980,16 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 		box.add_child(ml)
 	box.add_child(BattleTheme.make_label("PREMI", 16, BattleTheme.WH))
 	_reward_rows.clear()
+	# i premi stanno in un'area che scorre se sono tanti: i tasti restano sempre visibili sotto
+	var rscroll := ScrollContainer.new()
+	rscroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	rscroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	rscroll.custom_minimum_size = Vector2(0, 60)
+	box.add_child(rscroll)
+	var rbox := VBoxContainer.new()
+	rbox.add_theme_constant_override("separation", 6)
+	rbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rscroll.add_child(rbox)
 	for line in _reward_lines(rewards):
 		var rk: Array = GameIcon.reward_key(str(line))
 		var row: Control
@@ -1989,11 +1997,8 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 			row = GameIcon.line(str(rk[0]), rk[1], str(line), 17, BattleTheme.CY)
 		else:
 			row = BattleTheme.make_label(line, 17, BattleTheme.CY)
-		box.add_child(row)
+		rbox.add_child(row)
 		_reward_rows.append([row, _line_rarity(str(line))])
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(spacer)
 	if not (source is NetworkManager):
 		if MissionConfig.endless_floor > 0 and victory:
 			# Ciclo Infinito: si sceglie un potenziamento (1 su 3) e si sale al piano dopo
@@ -2049,7 +2054,7 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 		_animate_rewards(_overlay)
 
 
-# Rarita' scritta in una riga di premio ("MOSSA: CURA (RARA)"); -1 = nessuna (monete, materiali).
+# Rarita' scritta in una riga di premio ("MOSSA: CURA (RARA)"); -1 = nessuna (gold, materiali).
 func _line_rarity(line: String) -> int:
 	var up: String = line.to_upper()
 	for i in range(BattleTypes.RARITIES.size() - 1, -1, -1):
@@ -2072,7 +2077,7 @@ func _reward_lines(rewards: Dictionary) -> Array:
 	if rewards.is_empty():
 		return ["—"]
 	if int(rewards.get("coins", 0)) > 0:
-		lines.append("+%d MONETE" % int(rewards["coins"]))
+		lines.append("+%d GOLD" % int(rewards["coins"]))
 	for mat in rewards.get("materials", {}):
 		lines.append("+%d %s" % [int(rewards["materials"][mat]), str(BattleContent.MATERIALS.get(mat, mat)).to_upper()])
 	for d in rewards.get("drops", []):

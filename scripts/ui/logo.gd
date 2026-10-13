@@ -43,5 +43,5 @@ func _draw() -> void:
 	draw_string(font, base, TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, BattleTheme.WH)
 	# REC
 	if _rec_on:
-		draw_circle(Vector2(tw + 26, 10), 7.0, BattleTheme.RD)
-	draw_string(BattleTheme.mono(), Vector2(tw + 38, 16), "REC", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, BattleTheme.CY)
+		draw_circle(Vector2(10, 10), 7.0, BattleTheme.RD)
+	draw_string(BattleTheme.mono(), Vector2(22, 16), "REC", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, BattleTheme.CY)
