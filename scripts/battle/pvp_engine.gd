@@ -507,15 +507,18 @@ static func _cast(state: Dictionary, p: Dictionary, u: Dictionary, move_id: Stri
 			continue
 		if move.has("status") and str(move["target"]) == "enemy" and move["status"].has("mark"):
 			_status(t, "mark", int(move["status"]["mark"]) + Archetypes.status_extra(u, "mark") + 1, events)
+			t["marks"] = mini(Marks.MAX, int(t.get("marks", 0)) + 1)   # pile reali, come in co-op
 			state["marks_applied"] = int(state.get("marks_applied", 0)) + 1
 		if move.has("mult"):
 			var total: float = float(move["mult"]) * awake
 			var boost: int = 0
-			if move.has("consume_marks") and t["statuses"].has("mark"):
-				total *= 1.0 + float(move["consume_marks"]) * 6.0
+			var n_marks: int = int(t.get("marks", 0)) if t["statuses"].has("mark") else 0
+			if move.has("consume_marks") and n_marks > 0:
+				total *= 1.0 + float(move["consume_marks"]) * float(n_marks)
 				t["statuses"].erase("mark")
-			if move.has("crit_dmg_per_mark") and t["statuses"].has("mark"):
-				boost = mini(int(move.get("crit_dmg_cap", 650)), int(move["crit_dmg_per_mark"]) * 3)
+				t["marks"] = 0
+			elif move.has("crit_dmg_per_mark") and n_marks > 0:
+				boost = mini(int(move.get("crit_dmg_cap", 650)), int(move["crit_dmg_per_mark"]) * n_marks)
 			for _i in int(move.get("hits", 1)):
 				if alive(t):
 					_hit(state, u, t, total, int(move.get("pierce", 0)), bonus, ammo_hit, int(move.get("crit_pm", 0)), boost, events)
@@ -536,6 +539,7 @@ static func _cast(state: Dictionary, p: Dictionary, u: Dictionary, move_id: Stri
 		if bool(move.get("cleanse", false)):
 			t["statuses"].erase("bleed")
 			t["statuses"].erase("mark")
+			t["marks"] = 0
 			events.append({"t": "cleanse", "unit": t["id"]})
 		if move.has("status") and alive(t):
 			for st in move["status"]:
@@ -690,6 +694,8 @@ static func _end_of_round(state: Dictionary, g: RandomNumberGenerator, events: A
 				expired.append(s)
 		for s in expired:
 			u2["statuses"].erase(s)
+			if str(s) == "mark":
+				u2["marks"] = 0
 		if u2.has("pvp_mods"):
 			var keep: Array = []
 			for m in u2["pvp_mods"]:

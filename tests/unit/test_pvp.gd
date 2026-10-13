@@ -198,6 +198,21 @@ func _initialize() -> void:
 	_check("icona leggendaria esclusiva sbloccata", Profile.is_unlocked("l_duello") and Profile.rarity_of("l_duello") == 3)
 	_check("badge viaggia nel profilo pubblico", Profile.clean_public(Profile.current())["badge"] == "duellante" and Profile.clean_public({"badge": "falso"})["badge"] == "")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_pvp_profile.cfg"))
+	# --- marchi: pile reali, come in co-op (Raggio orbitale conta quelli veri) ---
+	var dmg_by_marks: Array = []
+	for n in [2, 6]:
+		var ms: Dictionary = PvpEngine.create([_spec("a", ["angela"]), _spec("b", ["tana"])], "duel", true, 9)
+		var mtgt: Dictionary = PvpEngine.unit(ms, "b:tana")
+		mtgt["statuses"]["mark"] = 5
+		mtgt["marks"] = n
+		var mhp0: int = int(mtgt["hp"]) + int(mtgt["shield"])
+		var mrng := RandomNumberGenerator.new()
+		mrng.seed = 1
+		var mev: Array = []
+		PvpEngine._cast(ms, PvpEngine.player(ms, "a"), PvpEngine.unit(ms, "a:angela"), "orbital_strike", "b", mrng, mev)
+		dmg_by_marks.append(mhp0 - int(mtgt["hp"]) - int(mtgt["shield"]))
+		_check("marchi consumati dopo l'ult (%d)" % n, int(mtgt["marks"]) == 0 and not mtgt["statuses"].has("mark"))
+	_check("piu' marchi = piu' danno (2 < 6)", dmg_by_marks[0] < dmg_by_marks[1])
 	print("RESULT: %d passed, %d failed" % [passed, failed])
 	print("FAIL: %d" % failed)
 	quit(1 if failed > 0 else 0)
