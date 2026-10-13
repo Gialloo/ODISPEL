@@ -1,5 +1,5 @@
 (Allega neutral.png.)
 
 Genera SOLO UNA immagine e poi fermati.
-Produci cutin.png: primo piano molto dinamico di Angela per la mossa speciale (raggio orbitale). Volto e spalle, leggermente inclinata in diagonale, sguardo concentrato e quasi divino verso di noi, occhi oro luminosi, capelli mossi, canna del fucile dorata che attraversa l'inquadratura, linee di velocita' e luce gialla/oro (poche, attorno al volto, mai verdi). Proporzione orizzontale 16:9.
+Produci cutin.png: primo piano molto dinamico di Angela per la mossa speciale (raggio orbitale). Volto e spalle, leggermente inclinata in diagonale, sguardo concentrato e quasi divino verso di noi, occhi oro luminosi con il visore acceso, capelli mossi, droni che formano un cerchio dietro di lei, linee di velocita' e luce gialla/oro (poche, attorno al volto, mai verdi). Proporzione orizzontale 16:9.
 Sfondo verde #00FF00 piatto. Nessun testo o watermark.

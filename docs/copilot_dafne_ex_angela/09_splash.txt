@@ -1,0 +1,5 @@
+(Allega neutral.png e la tavola modello.)
+
+Genera SOLO UNA immagine e poi fermati.
+Produci splash.png: illustrazione di presentazione di Angela, figura intera, posa scenografica, vista leggermente dal basso, fucile-cannone in mano, ala orbitale aperta dietro di lei, molto dettaglio. Poche scintille dorate vicino a lei. Proporzione verticale 3:4, il personaggio tocca il bordo inferiore e riempie quasi tutta l'altezza.
+Sfondo verde #00FF00 piatto. Nessun testo o watermark.

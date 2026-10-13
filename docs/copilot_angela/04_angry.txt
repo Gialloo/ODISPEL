@@ -1,5 +1,5 @@
 (Allega neutral.png di Angela.)
 
 Genera SOLO UNA immagine e poi fermati.
-Modifica questa immagine, NON rigenerarla da zero. Produci angry.png. Cambia SOLO occhi, sopracciglia e bocca: sopracciglia aggrottate, sguardo feroce, bocca stretta o ringhiante. Tutto il resto deve restare IDENTICO: capelli, cerchietto, auricolare, giacca, ala orbitale, posa, dimensione e posizione.
+Modifica questa immagine, NON rigenerarla da zero. Produci angry.png. Cambia SOLO occhi, sopracciglia e bocca: sopracciglia aggrottate, sguardo feroce, bocca stretta o ringhiante. Tutto il resto deve restare IDENTICO: capelli, visore, cuffia, anello, soprabito, droni, posa, dimensione e posizione.
 Sfondo verde #00FF00 piatto. Nessun testo o watermark.
