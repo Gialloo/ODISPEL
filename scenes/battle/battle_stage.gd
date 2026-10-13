@@ -1079,8 +1079,80 @@ func _draw_fighter_body(cx: float, foot_y: float, top: float, body_col: Color, c
 	draw_line(Vector2(cx + 40.0, top + 52.0), Vector2(cx + 62.0, top + 112.0), body_col, 14.0)
 	# testa: volto anime con gli occhi che seguono lo stato (colpito, ferito, ultimate pronta)
 	var head := Vector2(cx, top + 26.0)
-	AnimeFace.hair_back(self, head, 27.0, char_id, col, tint)
-	AnimeFace.face(self, head, 27.0, char_id, col, tint, expression)
+	if not _draw_head_cached(head, char_id, col, expression, tint):
+		AnimeFace.hair_back(self, head, 27.0, char_id, col, tint)
+		AnimeFace.face(self, head, 27.0, char_id, col, tint, expression)
+
+
+# ---------- Teste in cache ----------
+# Il volto anime e' la parte piu' costosa da disegnare (decine di poligoni per operatore, a ogni fotogramma) ma cambia
+# solo con l'espressione: si disegna una volta in una piccola texture e poi si riusa, tinta come serve (panchina scura).
+const HEAD_HALF: float = 80.0          # la texture copre 160x160 unita' attorno alla testa
+const HEAD_SS: float = 2.0             # risoluzione doppia, cosi' resta nitida anche ingrandita
+var _heads: Dictionary = {}            # "personaggio|colore|espressione" -> {"vp": SubViewport, "ready_at": frame} oppure {}
+
+
+class HeadPainter extends Control:
+	var char_id: String = ""
+	var col: Color = Color.WHITE
+	var expression: String = "neutral"
+
+	func _draw() -> void:
+		var c := Vector2(BattleStage.HEAD_HALF, BattleStage.HEAD_HALF)
+		AnimeFace.hair_back(self, c, 27.0, char_id, col, Color.WHITE)
+		AnimeFace.face(self, c, 27.0, char_id, col, Color.WHITE, expression)
+
+
+func _draw_head_cached(head: Vector2, char_id: String, col: Color, expression: String, tint: Color) -> bool:
+	if not cache_background or not is_inside_tree() or DisplayServer.get_name() == "headless":
+		return false
+	var key: String = "%s|%s|%s" % [char_id, col.to_html(), expression]
+	var e: Variant = _heads.get(key)
+	if e == null:
+		_heads[key] = {}                     # creata a fine fotogramma: non si aggiungono nodi mentre si disegna
+		_make_head.call_deferred(key, char_id, col, expression)
+		return false
+	var d: Dictionary = e
+	if d.is_empty() or Engine.get_frames_drawn() < int(d["ready_at"]):
+		return false
+	var tex: Texture2D = (d["vp"] as SubViewport).get_texture()
+	draw_texture_rect(tex, Rect2(head - Vector2(HEAD_HALF, HEAD_HALF), Vector2(HEAD_HALF, HEAD_HALF) * 2.0), false, tint)
+	return true
+
+
+func _make_head(key: String, char_id: String, col: Color, expression: String) -> void:
+	if not is_inside_tree():
+		_heads.erase(key)
+		return
+	var vp := SubViewport.new()
+	vp.size = Vector2i(int(HEAD_HALF * 2.0 * HEAD_SS), int(HEAD_HALF * 2.0 * HEAD_SS))
+	vp.transparent_bg = true
+	vp.disable_3d = true
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	var painter := HeadPainter.new()
+	painter.char_id = char_id
+	painter.col = col
+	painter.expression = expression
+	painter.scale = Vector2(HEAD_SS, HEAD_SS)
+	painter.size = Vector2(HEAD_HALF, HEAD_HALF) * 2.0
+	painter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vp.add_child(painter)
+	add_child(vp)
+	_heads[key] = {"vp": vp, "ready_at": Engine.get_frames_drawn() + 3}
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED:
+		_drop_heads()
+
+
+# Dopo una pausa dell'app le texture possono andare perse: si rifanno da capo.
+func _drop_heads() -> void:
+	for k in _heads:
+		var d: Dictionary = _heads[k]
+		if d.has("vp"):
+			(d["vp"] as Node).queue_free()
+	_heads.clear()
 
 
 func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index: int, is_lead: bool, _foot_y: float) -> void:
