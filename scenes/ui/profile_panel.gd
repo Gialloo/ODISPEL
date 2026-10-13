@@ -61,6 +61,22 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation", 8)
 	scroll.add_child(box)
 
+	box.add_child(BattleTheme.make_label("STATISTICHE", 14, BattleTheme.CY_DIM))
+	var sg := GridContainer.new()
+	sg.columns = 5
+	sg.add_theme_constant_override("h_separation", 8)
+	sg.add_theme_constant_override("v_separation", 8)
+	box.add_child(sg)
+	for row in PlayerStats.rows(_roster):
+		var cell := VBoxContainer.new()
+		cell.custom_minimum_size = Vector2(140, 0)
+		cell.add_theme_constant_override("separation", 0)
+		cell.add_child(BattleTheme.make_label(str(row[0]), 12, BattleTheme.CY_DIM))
+		var val := BattleTheme.make_label(str(row[1]), 17, BattleTheme.WH, true)
+		val.set_meta("keep_case", true)
+		cell.add_child(val)
+		sg.add_child(cell)
+
 	box.add_child(BattleTheme.make_label("NOME PROFILO", 14, BattleTheme.CY_DIM))
 	name_edit = LineEdit.new()
 	name_edit.max_length = Profile.NAME_MAX
