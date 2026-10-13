@@ -442,7 +442,7 @@ func _build_boss_banner() -> void:
 func _build_telegraph() -> void:
 	_tele_panel = HudPanel.new().setup("ALLARME", BattleTheme.RD)
 	add_child(_tele_panel)
-	_tele_panel.margins = Vector4(14.0, 19.0, 14.0, 4.0)
+	_tele_panel.margins = Vector4(14.0, 9.0, 14.0, 17.0)
 	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 150, 192, 214))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
