@@ -64,8 +64,8 @@ const PASSIVES: Dictionary = {
 
 # Abilita' uniche (id -> mossa). "unique" = personaggio proprietario.
 const MOVES: Dictionary = {
-	"u_kira_a": {"name": "Taglio spettrale", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.65, "pierce": 50, "status": {"mark": 1},
-		"bonus": {"stat": "crit", "pct": 20}, "unique": "kira"},
+	"u_kira_a": {"name": "Taglio spettrale", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.8, "pierce": 60, "status": {"mark": 1},
+		"bonus": {"stat": "crit", "pct": 25}, "unique": "kira"},
 	"u_dax_a": {"name": "Ariete", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.3, "self_status": {"taunt": 1, "guard": 1},
 		"bonus": {"stat": "def", "pct": 25}, "unique": "dax"},
 	"u_elle_a": {"name": "Respiro", "kind": "skill", "cost": 3, "priority": 0, "target": "allies", "heal": 0.9, "energy": 1,
@@ -115,8 +115,8 @@ const MOVES: Dictionary = {
 		"bonus": {"stat": "def", "pct": 22}, "unique": "nico"},
 	"u_tana_b": {"name": "Muro totale", "kind": "skill", "cost": 2, "priority": 1, "target": "self", "shield": 2.0, "self_status": {"taunt": 1, "guard": 1},
 		"bonus": {"stat": "def", "pct": 40}, "unique": "tana"},
-	"u_kira_b": {"name": "Pugno incanalato", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "mult": 1.3,
-		"bonus": {"stat": "atk", "pct": 10}, "unique": "kira"},
+	"u_kira_b": {"name": "Pugno incanalato", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "mult": 1.45,
+		"bonus": {"stat": "atk", "pct": 12}, "unique": "kira"},
 	# --- Roster 2: dieci nuovi operatori (progetto con ChatGPT) ---
 	"u_vesper_b": {"name": "Taglio d'ombra", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.3, "debuff": {"def": 1}, "bonus": {"stat": "atk", "pct": 10}, "unique": "vesper"},
 	"u_yuna_b": {"name": "Scatto vettoriale", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 0.55, "hits": 3, "bonus": {"stat": "spd", "pct": 10}, "unique": "yuna"},

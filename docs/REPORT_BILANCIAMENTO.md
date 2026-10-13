@@ -50,6 +50,13 @@ Tutti i numeri vengono da simulazioni: il computer fa giocare le squadre da sole
 
 In sintesi: il PvP e' molto piu' pulito (l'effetto della rarita' e' sparito, nessun operatore e' fuori scala), e i supporti ora servono davvero. Restano, pero', differenze che non abbiamo voluto eliminare del tutto (sezione 6).
 
+## Aggiornamento 0.24.1
+
+- **Kira**: ora ha statistiche piene da leggendaria (senza riduzioni), Taglio spettrale a 1,8x con perforazione e Pugno incanalato a 1,45x. Contro i boss duri e' la 2a migliore (con Dafne) e in classifica generale e' in **tier S**. In PvP bilanciato resta come tutti gli altri (la rarita' e' livellata); con la progressione dell'account il suo vantaggio si vede.
+- **Rinforzati un po'**: Rhea, Sera, Nami, Mira, Bruno, Cato, Dax, Tana, Oriel (piu' vita e attacco).
+- **IA del PvP**: le ultimate di sola cura o scudo non si sprecano piu' a vita piena.
+- La classifica completa e' in `docs/TIERLIST.md`.
+
 ## 5. Le combinazioni piu' efficaci (test profondo)
 
 ### Classi

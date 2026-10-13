@@ -320,7 +320,15 @@ static func choose_ai(state: Dictionary, pid: String) -> Dictionary:
 			ally_id = str(a["id"])
 	var choice: Dictionary = {"move": "attack", "target": str(target["id"]), "swap": "", "skill": ""}
 	var ult: String = ult_of(u)
-	if ult != "" and can_use(u, ult):
+	var ult_now: bool = ult != "" and can_use(u, ult)
+	if ult_now:
+		var um: Dictionary = BattleContent.MOVES[ult]
+		if not um.has("mult"):          # ultimate di cura o scudo: non si sprecano a vita piena
+			if um.has("heal"):
+				ult_now = worst < 0.6
+			elif um.has("shield"):
+				ult_now = worst < 0.8 or int(state["round"]) % 3 == 0
+	if ult_now:
 		choice["move"] = "ult"
 	else:
 		# la miglior abilita' che si puo' usare: prima le offensive, le cure solo se servono
