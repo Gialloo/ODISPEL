@@ -713,7 +713,7 @@ func _refresh_orders() -> void:
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
 	var bh: float = 56.0 if touch else 42.0
 	var bw: float = 232.0 if touch else 196.0
-	var pts: Array = _orders_box.layout(entries.size(), bh, 6.0, 340.0 if touch else 290.0)
+	var pts: Array = _orders_box.layout(entries.size(), bh, 6.0, 340.0 if touch else 290.0, 6.0 if touch else 22.0)
 	title.position = Vector2(float(pts[0].x) + 6.0, float(pts[0].y) - bh * 0.5 - 24.0)
 	var animate: bool = _fan_key != "%s|%d" % [uid, int(shown["round"])]
 	_fan_key = "%s|%d" % [uid, int(shown["round"])]
