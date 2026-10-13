@@ -43,6 +43,8 @@ var _turn_acting: String = ""
 var _fx: Control
 var _boss_name: Label
 var _boss_meta: Label
+var _pending_balloon: String = ""
+var _pair_arrows: Dictionary = {}      # slot -> frecce >< tra il front e il suo compagno in panchina
 var _boss_bar: LineBar
 var _boss_hp: Label
 var _round_label: Label
@@ -777,6 +779,7 @@ func _refresh_operators() -> void:
 		if not BattleState.is_front(shown, str(uid)):
 			backs.append(str(uid))
 	var bi: int = 0
+	_pair_arrows.clear()
 	for sid in slots:
 		var sp: Dictionary = BattleState.player(shown, sid)
 		var u: Dictionary = BattleState.unit(shown, str(sp["active"]))
@@ -787,6 +790,16 @@ func _refresh_operators() -> void:
 		urow.custom_minimum_size.x = 300.0
 		line.add_child(urow)
 		if bi < backs.size():
+			# frecce >< fra chi sta davanti e chi lo sostituisce: si preme la casella per fare lo switch
+			var arrows := BattleTheme.make_label("><", 14, BattleTheme.WH if str(backs[bi]) == cur_swap else BattleTheme.CY_DIM)
+			arrows.add_theme_font_override("font", BattleTheme.hud())
+			arrows.custom_minimum_size = Vector2(22, 0)
+			arrows.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			arrows.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			arrows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			arrows.set_meta("keep_case", true)
+			line.add_child(arrows)
+			_pair_arrows[sid] = arrows
 			line.add_child(_back_row(BattleState.unit(shown, str(backs[bi])), str(backs[bi]) == cur_swap))
 			bi += 1
 		_ops_box.add_child(line)
@@ -838,7 +851,7 @@ func _fit_ops_panel(fronts: int, backs: int, with_allies: bool) -> void:
 	h += 3.0 * float(maxi(fronts - 1, 0)) + (20.0 if with_allies else 0.0)
 	if backs > fronts:
 		h += _unit_row_height() + 3.0
-	var right: float = 336.0 if backs == 0 else 12.0 + 20.0 + 300.0 + 4.0 + 84.0 + 8.0
+	var right: float = 336.0 if backs == 0 else 12.0 + 20.0 + 300.0 + 26.0 + 84.0 + 8.0
 	_anchor(_ops_panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(12, -(h + 12.0), right, -12))
 
 
@@ -1049,9 +1062,13 @@ func _on_unit_pressed(uid: String) -> void:
 		_picks.erase(cur)
 		if not same:
 			_coach_note("swap")
+			_pending_balloon = cur
 	_ops_sig = ""
 	_refresh_operators()
 	_refresh_orders()
+	if _pending_balloon != "":
+		_switch_balloon(_pending_balloon)
+		_pending_balloon = ""
 
 
 # Ordini: attacco, guardia, skill e ultimate dell'unita' che agira'.
@@ -1790,6 +1807,16 @@ func _fx_status(e: Dictionary) -> void:
 func _announce(who: String, what: String, hostile: bool) -> void:
 	var text: String = "%s  //  %s" % [str(who).to_upper(), str(what).to_upper()]
 	ComicFx.caption(_fx, text, Vector2(380.0 if hostile else 24.0, 168.0), BattleTheme.RD if hostile else BattleTheme.CY, 0.55)
+
+
+# Premendo la casella in panchina: fumetto SWITCH! proprio fra il personaggio davanti e quello che entra.
+func _switch_balloon(slot: String) -> void:
+	await get_tree().process_frame          # i nodi appena ricreati hanno la posizione solo dopo un frame
+	var node: Control = _pair_arrows.get(slot)
+	if node == null or not is_instance_valid(node) or _fx == null:
+		return
+	var c: Vector2 = node.get_global_rect().get_center() - _fx.get_global_rect().position
+	ComicFx.pop(_fx, "SWITCH!", c + Vector2(0.0, -46.0), BattleTheme.POP, BattleTheme.BK, 24, 44.0)
 
 
 # Cambio front/back: fumetto SWITCH! e due frecce > < che si incontrano sul personaggio che entra.
