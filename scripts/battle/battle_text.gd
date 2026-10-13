@@ -88,6 +88,8 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 		"status":
 			return {"text": "%s: %s" % [unit_name(state, str(e["unit"])), status_name(str(e["status"]))], "kind": "info"}
 		"trait":
+			if str(e.get("trait", "")) == "atipico":
+				return {"text": "%s: %s" % [unit_name(state, str(e["unit"])), str(e.get("name", "TRATTO ATIPICO")).to_upper()], "kind": "info"}
 			return {"text": "%s: PROTOCOLLO" % unit_name(state, str(e["unit"])), "kind": "info"}
 		"counter":
 			return {"text": "%s CONTRATTACCA" % unit_name(state, str(e["unit"])), "kind": "info"}

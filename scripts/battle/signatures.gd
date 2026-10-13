@@ -56,13 +56,13 @@ const MOVES: Dictionary = {
 		"bonus": {"stat": "crit", "pct": 20}, "unique": "kira"},
 	"u_dax_a": {"name": "Ariete", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.3, "self_status": {"taunt": 1, "guard": 1},
 		"bonus": {"stat": "def", "pct": 25}, "unique": "dax"},
-	"u_elle_a": {"name": "Respiro", "kind": "skill", "cost": 3, "priority": 0, "target": "allies", "heal": 0.9,
+	"u_elle_a": {"name": "Respiro", "kind": "skill", "cost": 3, "priority": 0, "target": "allies", "heal": 0.9, "energy": 1,
 		"bonus": {"stat": "max_hp", "pct": 4}, "unique": "elle"},
 	"u_bruno_a": {"name": "Parata lampo", "kind": "skill", "cost": 1, "priority": 2, "target": "ally", "shield": 1.2,
 		"bonus": {"stat": "def", "pct": 20}, "unique": "bruno"},
 	"u_nova_a": {"name": "Raffica marchiante", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.2, "status": {"mark": 2, "bleed": 2},
 		"bonus": {"stat": "crit", "pct": 18}, "unique": "nova"},
-	"u_mira_a": {"name": "Iniezione", "kind": "skill", "cost": 2, "priority": 0, "target": "ally", "heal": 1.0, "shield": 0.6, "cleanse": true,
+	"u_mira_a": {"name": "Iniezione", "kind": "skill", "cost": 2, "priority": 1, "target": "ally", "heal": 1.0, "shield": 0.6, "cleanse": true,
 		"bonus": {"stat": "max_hp", "pct": 5}, "unique": "mira"},
 	"u_rex_a": {"name": "Carica furiosa", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 2.2, "status": {"bleed": 2},
 		"bonus": {"stat": "atk", "pct": 20}, "unique": "rex"},
@@ -72,9 +72,9 @@ const MOVES: Dictionary = {
 		"bonus": {"stat": "def", "pct": 20}, "unique": "sera"},
 	"u_sera_b": {"name": "Vento di coda", "kind": "skill", "cost": 2, "priority": 0, "target": "allies", "heal": 0.8, "cleanse": true, "energy": 1,
 		"bonus": {"stat": "max_hp", "pct": 5}, "unique": "sera"},
-	"u_eco_a": {"name": "Eco ripetuto", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.6, "status": {"mark": 2},
+	"u_eco_a": {"name": "Eco ripetuto", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.6, "status": {"mark": 2}, "debuff": {"spd": 1},
 		"bonus": {"stat": "crit", "pct": 22}, "unique": "eco"},
-	"u_eco_b": {"name": "Frequenza critica", "kind": "skill", "cost": 3, "priority": 0, "target": "enemy", "mult": 3.0, "pierce": 40,
+	"u_eco_b": {"name": "Frequenza critica", "kind": "skill", "cost": 3, "priority": 0, "target": "enemy", "mult": 3.0, "pierce": 40, "debuff": {"def": 1},
 		"bonus": {"stat": "crit", "pct": 30}, "unique": "eco"},
 	"u_tana_a": {"name": "Bastione vivente", "kind": "skill", "cost": 2, "priority": 1, "target": "allies", "shield": 1.4, "self_status": {"taunt": 1},
 		"bonus": {"stat": "def", "pct": 24}, "unique": "tana"},
@@ -189,7 +189,7 @@ static func damage_mult(attacker: Dictionary, defender: Dictionary) -> float:
 	var low: float = value(attacker, "low_hp_atk")
 	if low > 0.0 and float(attacker["hp"]) < float(attacker["max_hp"]) * 0.5:
 		m *= 1.0 + low
-	return m
+	return m * Atypical.damage_mult(attacker, defender)
 
 
 static func crit_bonus(state: Dictionary, attacker: Dictionary, defender: Dictionary) -> int:

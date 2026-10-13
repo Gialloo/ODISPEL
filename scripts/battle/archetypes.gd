@@ -19,6 +19,7 @@ const PSY_POWER: float = 1.20           # cure e scudi (PSY)
 const INT_MARK_EXTRA: float = 1.12      # danno in piu' ai bersagli marchiati (INT)
 const DEX_CRIT_GAUGE: int = 10          # ultimate per ogni critico (DEX)
 const DEX_CRIT_DMG_PM: int = 200        # danno critico in piu' (DEX), per mille
+const DEX_SUPPORT_CRIT: float = 1.5     # cure e scudi critici (DEX): moltiplicatore
 const QCK_START_GAUGE: int = 25         # ultimate di partenza (QCK)
 const QCK_GAUGE_MULT: float = 1.4       # carica dai colpi (QCK)
 
@@ -37,7 +38,7 @@ const DEFS: Dictionary = {
 		"mods": [{"stat": "crit", "pm": 60}]},
 	"dex": {"tag": "DEX", "name": "PRECISIONE", "color": "verde",
 		"line": "Critici che caricano l'ultimate",
-		"desc": "+12% critico e +20% danno critico. Ogni critico carica +10 di ultimate.",
+		"desc": "+12% critico e +20% danno critico. Ogni critico carica +10 di ultimate. Anche cure e scudi possono essere critici (x1,5).",
 		"mods": [{"stat": "crit", "pm": 120}]},
 	"qck": {"tag": "QCK", "name": "SCATTO", "color": "blu",
 		"line": "Rapidita' e ultimate sempre pronta",
@@ -101,6 +102,13 @@ static func gauge_on_hit(attacker: Dictionary) -> int:
 	if of_unit(attacker) == "qck":
 		return int(round(float(BattleTypes.GAUGE_ON_HIT) * QCK_GAUGE_MULT))
 	return BattleTypes.GAUGE_ON_HIT
+
+
+# Cure e scudi critici (DEX): stessa probabilita' del critico d'attacco, deterministica.
+static func support_crit_mult(state: Dictionary, actor: Dictionary, target: Dictionary, salt: int) -> float:
+	if of_unit(actor) == "dex" and Factions.rolls_crit(state, actor, target, salt + 977):
+		return DEX_SUPPORT_CRIT
+	return 1.0
 
 
 # Potenza di cure e scudi.

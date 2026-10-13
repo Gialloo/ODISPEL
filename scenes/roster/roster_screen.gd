@@ -741,6 +741,8 @@ func _refresh_detail() -> void:
 	var faction: String = BattleContent.faction_of(selected)
 	if faction != "":
 		lines.append("%s  |  %s  |  %s" % [Factions.name_of(faction).to_upper(), str(Factions.FACTIONS[faction]["doctrine"]).to_upper(), BattleContent.style_of(selected, e).to_upper()])
+	if faction != "":
+		lines.append(("IN USO  " if BattleContent.style_of(selected, e) == "atipico" else "") + Atypical.describe(selected))
 	lines.append("LIV %d/%d   RANK %s" % [int(e["level"]), RosterState.MAX_LEVEL, _stars(int(e["rank"]))])
 	lines.append("PV %d  ATK %d  DEF %d  VEL %d" % [int(st["hp"]), int(st["atk"]), int(st["def"]), int(st["spd"])])
 	lines.append("SKILL  %s" % (", ".join(skills) if not skills.is_empty() else "-"))

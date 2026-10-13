@@ -62,7 +62,7 @@ const FACTIONS: Dictionary = {
 
 const STYLES: Dictionary = {
 	"ortodosso": "Segue la dottrina della fazione: da' e riceve l'aura per intero.",
-	"atipico": "Gioca a modo suo: aura data e ricevuta dimezzata, ma +8% ATK e +5% VEL.",
+	"atipico": "Gioca a modo suo: aura data e ricevuta dimezzata, ma +8% ATK e +5% VEL. In piu' ogni operatore ha un TRATTO ATIPICO: nessuno per i comuni, piccolo per i rari, proprio per gli epici, unico per i leggendari (lo leggi nella scheda).",
 }
 
 

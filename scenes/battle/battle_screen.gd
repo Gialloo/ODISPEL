@@ -943,12 +943,15 @@ func _event_fx(e: Dictionary) -> float:
 			return _fx_ammo(e)
 		"trait":
 			Snd.play("trait")
-			_float_text("▲ DIF  ▲ VEL", str(e["unit"]), Hints.faction_color("libracorp"), 20)
+			if str(e.get("trait", "")) == "atipico":
+				_float_text(str(e.get("name", "ATIPICO")).to_upper(), str(e["unit"]), BattleTheme.POP, 22)
+			else:
+				_float_text("▲ DIF  ▲ VEL", str(e["unit"]), Hints.faction_color("libracorp"), 20)
 		"status":
 			_fx_status(e)
 		"heal":
 			Snd.play("heal")
-			_pop("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
+			_pop(("+%d!" if bool(e.get("crit", false)) else "+%d") % int(e["amount"]), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
 		"shield":
 			_float_text("+%d" % int(e["amount"]), str(e["dst"]), BattleTheme.CY, 26)
 		"marks":

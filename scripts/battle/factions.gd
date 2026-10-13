@@ -191,6 +191,9 @@ static func refresh(state: Dictionary) -> void:
 			if is_atypical(u):
 				for st in ATYPICAL_SELF_PM:
 					total[st] = int(total.get(st, 0)) + int(ATYPICAL_SELF_PM[st])
+				var extra: Dictionary = Atypical.mods_for(u)
+				for st in extra:
+					total[st] = int(total.get(st, 0)) + int(extra[st])
 			if u["statuses"].has("ronda") and not aura.is_empty():
 				total["atk"] = int(total.get("atk", 0)) + RONDA_STAT_PM
 				total["spd"] = int(total.get("spd", 0)) + RONDA_STAT_PM
@@ -238,6 +241,9 @@ const PROTOCOL_HIT_PM: int = 50
 
 
 static func on_hit_taken(state: Dictionary, defender: Dictionary, events: Array = []) -> void:
+	# tratto atipico di Nico: chi viene colpito guadagna slancio
+	if Atypical.fx(defender, "rage_hit") > 0 and str(defender.get("side", "")) == "player":
+		defender["momentum"] = mini(Archetypes.MOMENTUM_MAX, int(defender.get("momentum", 0)) + 1)
 	if str(defender.get("faction", "")) != "libracorp" or str(defender.get("side", "")) != "player":
 		return
 	if is_suppressed(state, "libracorp") or str(defender.get("style", "ortodosso")) != "ortodosso":
@@ -251,6 +257,8 @@ static func on_hit_taken(state: Dictionary, defender: Dictionary, events: Array 
 # Il colpo e' critico? Deterministico: dipende solo dal seme e da cio' che sta accadendo, cosi' host e client
 # vedono lo stesso risultato e non si consuma il generatore dei tiri (chi non ha critico non cambia nulla).
 static func rolls_crit(state: Dictionary, attacker: Dictionary, defender: Dictionary, salt: int, extra_pm: int = 0) -> bool:
+	if Atypical.forces_crit(attacker, defender):
+		return true
 	var chance: int = int(attacker.get("crit", 0)) + Signatures.crit_bonus(state, attacker, defender) + extra_pm
 	if chance <= 0:
 		return false

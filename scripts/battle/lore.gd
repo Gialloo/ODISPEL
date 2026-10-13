@@ -19,27 +19,27 @@ const CHARACTERS: Dictionary = {
 	"elle": {
 		"tag": "Cura e rimette in piedi",
 		"lore": "Studia le anomalie per capirle prima di combatterle. Porta sempre con se' un taccuino e le erbe di sua nonna.",
-		"tactic": "CURA chi scende sotto meta' vita; RINASCITA cura e toglie i malus a tutti. L'entrata scudata la rende ottima da far entrare a meta' battaglia.",
+		"tactic": "VERDE = DEX: le sue cure e i suoi scudi possono essere CRITICI (x1,5). RESPIRO cura tutti e restituisce 1 energia (Magabondi: si arrangia). RINASCITA toglie i malus. L'entrata scudata la rende ottima da far entrare a meta' battaglia.",
 	},
 	"eco": {
 		"tag": "L'anomalia che si e' unita a noi",
 		"lore": "Una voce nata nei display e nelle linee della citta', che ripete cio' che sente e sta imparando cosa significa. E' dalla parte della squadra, anche se nessuno sa ancora perche'.",
-		"tactic": "MARCHIO fa piu' danno a tutto il gruppo sul bersaglio segnato: marchia, poi lascia agire i compagni. SPEZZATUTTO quando il boss e' segnato. Non da' aure: fazione Kairos.",
+		"tactic": "Kairos = logoramento: ECO RIPETUTO marchia e rallenta il boss, FREQUENZA CRITICA gli abbassa la difesa. Marchia e indebolisci, poi lascia agire la squadra. Atipico: +15% di danno ai bersagli indeboliti. Non da' aure.",
 	},
 	"nico": {
 		"tag": "Custode del rifugio · Intimidisce",
 		"lore": "Teneva aperto il rifugio per tutti, finche' il tempo non si e' fermato. La sciarpa rossa e' tornata con lui: dice di averla ritrovata in uno specchio.",
-		"tactic": "INTIMIDISCI abbassa l'attacco del boss per qualche turno e costa solo 1 energia: usalo prima delle mosse forti. BASTIONE protegge tutti. L'entrata scudata lo rende ottimo come cambio d'emergenza. Fazione Kairos, come Eco.",
+		"tactic": "INTIMIDISCI abbassa l'attacco del boss e costa solo 1 energia: usalo prima delle mosse forti. BASTIONE protegge tutti. Rosso = STR: prende slancio dai colpi e, se atipico (RABBIA LENTA), anche da quelli che subisce. Fazione Kairos, come Eco.",
 	},
 	"dafne": {
 		"tag": "Agent 02 · Tiratore scelto",
 		"lore": "La seconda agente LibraCorp a uscire dai registri. Non parla molto: marchia, aspetta, spara una volta sola. Ogni marchio che mette sul bersaglio le fa vedere meglio il punto debole.",
-		"tactic": "MARCHIO prima di tutto: i colpi con munizioni fanno +15% a marchio. COLPO MIRATO abbassa la difesa e punta al critico. COPERTURA ti nasconde (schivata) e ricarica 2 munizioni. COLPO COORDINATO mette 3 marchi e potenzia tutta la squadra.",
+		"tactic": "MARCHIO prima di tutto: i colpi con munizioni fanno +15% a marchio. COLPO MIRATO abbassa la difesa e punta al critico. COPERTURA ti nasconde (schivata) e ricarica 2 munizioni. COLPO COORDINATO mette 3 marchi e potenzia tutta la squadra. Atipica (TIRO DI GRAZIA): critico sicuro sul boss sotto il 30% dei PV, e ogni critico ridona una munizione.",
 	},
 	"angela": {
 		"tag": "Orbital Laser Goddess",
 		"lore": "Dice di parlare con un satellite. I droni le rispondono. Fragile come il vetro, ma quando il cielo si apre non resta nulla da raccogliere.",
-		"tactic": "12 munizioni: TORRETTA e DRONE sparano da soli ogni round (1 munizione a colpo) e a zero esplodono o danno scudi. MITRAGLIATRICE per i critici. RAGGIO ORBITALE consuma tutti i marchi: falli accumulare prima. I suoi marchi ricaricano le munizioni di tutti i LibraCorp.",
+		"tactic": "12 munizioni: TORRETTA e DRONE sparano da soli ogni round (1 munizione a colpo) e a zero esplodono o danno scudi. MITRAGLIATRICE per i critici. RAGGIO ORBITALE consuma tutti i marchi: falli accumulare prima. I suoi marchi ricaricano le munizioni di tutti i LibraCorp. Atipica (SURRISCALDAMENTO): ogni munizione spesa da' +3% di danno fino a fine battaglia (max 12 cariche).",
 	},
 	"bruno": {
 		"tag": "Scudi per tutti",
@@ -54,7 +54,7 @@ const CHARACTERS: Dictionary = {
 	"mira": {
 		"tag": "Toglie i malus",
 		"lore": "Dice poco e nota tutto. Quando qualcuno e' maledetto o ferito, lei lo sa prima che se ne accorga lui.",
-		"tactic": "PURIFICA solo quando c'e' un malus da togliere. RINASCITA per rimettere in piedi tutti. L'entrata scudata protegge chi la sostituisce.",
+		"tactic": "BLU = QCK: INIEZIONE ha priorita' e agisce prima del boss (cura + scudo + toglie il sanguinamento), ideale per coprire il colpo annunciato. LibraCorp: il suo scudo cresce con le cure. Atipica: +6% VEL e DIF.",
 	},
 	"rex": {
 		"tag": "Furia rossa",
@@ -69,12 +69,12 @@ const CHARACTERS: Dictionary = {
 	"sera": {
 		"tag": "Barriere e caccia",
 		"lore": "Veterana delle notti lunghe. Protegge la squadra con calma e non perde l'occasione di infierire su un nemico ferito.",
-		"tactic": "BARRIERA sulla squadra, RINASCITA quando serve davvero. CACCIATORE la rende pericolosa contro un boss sotto meta' vita.",
+		"tactic": "VERDE = DEX, Rondini: VENTO DI CODA e ALA PROTETTIVA possono essere critici (x1,5). Schiera piu' Rondini per l'aura critico. Atipica (VOLO RADENTE): a fine round passa +8 di ultimate all'alleato piu' scarico.",
 	},
 	"tana": {
 		"tag": "Baluardo leggendario",
 		"lore": "Quando arriva lei, la strada si chiude. Leggenda di quartiere: dicono che nessuna anomalia le abbia mai fatto passare un colpo.",
-		"tactic": "PROVOCA per prendere su di se' il colpo, BASTIONE per coprire gli altri. Il suo CACCIATORE trasforma la difesa in danno quando il boss e' sotto meta' vita.",
+		"tactic": "GIALLO = PSY, LibraCorp: BASTIONE VIVENTE e MURO TOTALE sono scudi piu' forti del 20%. PROVOCA per prendere su di se' il colpo. Atipica (BALUARDO CHE RISPONDE): il 40% del danno assorbito dal suo scudo torna al boss; perde pero' il contrattacco ortodosso.",
 	},
 }
 
@@ -102,7 +102,7 @@ static func glossary() -> Array:
 		["FAZIONE", "Gruppo a cui appartiene un operatore: LibraCorp, Rondini, Magabondi, Kairos. Da' un'AURA ai compagni della stessa fazione."],
 		["AURA", "Bonus passivo a una statistica per i compagni di fazione. Cresce con la rarita' di chi la da', con tetto +%d%%. Sparisce se chi la da' e' a terra." % (Factions.AURA_CAP_PM / 10)],
 		["CRITICO", "Probabilita' di colpo che fa x%.1f di danno. Lo aumentano le aure delle Rondini." % (float(Factions.CRIT_DMG_PM) / 1000.0)],
-		["STILE", "Ortodosso: segue la dottrina, aura intera. Atipico: aura dimezzata, ma +8% ATK e +5% VEL. Si cambia dalla scheda."],
+		["STILE", "Ortodosso: segue la dottrina, aura intera. Atipico: aura dimezzata, ma +8% ATK e +5% VEL, piu' un TRATTO proprio dell'operatore: nessuno per i comuni, piccolo per i rari, evidente per gli epici, unico per i leggendari. Si cambia dalla scheda."],
 		["VALUTE", "Monete (reclutare e potenziare), Nuclei (livello degli operatori), Leghe (livello dei pezzi di equipaggiamento)."],
 	]
 

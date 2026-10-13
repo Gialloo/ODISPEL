@@ -334,6 +334,14 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 	if crit:
 		hit_event["crit"] = true
 	events.append(hit_event)
+	if crit and Atypical.fx(attacker, "crit_ammo") > 0:
+		_change_ammo(attacker, Atypical.fx(attacker, "crit_ammo"), events)
+	var reflect: int = Atypical.fx(defender, "reflect_shield")
+	if reflect > 0 and absorbed > 0 and str(attacker["side"]) == "boss" and str(defender["side"]) == "player":
+		var returned: int = maxi(1, int(round(float(absorbed) * float(reflect) / 1000.0)))
+		attacker["hp"] = maxi(0, int(attacker["hp"]) - returned)
+		events.append({"t": "damage", "src": defender["id"], "dst": attacker["id"], "amount": returned, "absorbed": 0, "thorns": true})
+		events.append({"t": "trait", "trait": "atipico", "unit": defender["id"], "name": Atypical.trait_name(str(defender["char"]))})
 	if str(attacker["side"]) == "player":
 		attacker["gauge"] = mini(BattleTypes.GAUGE_MAX, int(attacker["gauge"]) + Archetypes.gauge_on_hit(attacker))
 		Archetypes.after_hit(attacker, crit)
@@ -361,6 +369,8 @@ static func _change_ammo(u: Dictionary, delta: int, events: Array) -> void:
 	if delta == 0 or int(u["ammo_max"]) <= 0:
 		return
 	var now: int = clampi(int(u["ammo"]) + delta, 0, int(u["ammo_max"]))
+	if now < int(u["ammo"]):
+		Atypical.on_ammo_spent(u, int(u["ammo"]) - now)
 	if now != int(u["ammo"]):
 		u["ammo"] = now
 		events.append({"t": "ammo", "unit": u["id"], "value": now})
@@ -473,19 +483,27 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 			if move.has("consume_marks"):
 				Marks.consume(t, events)
 		if move.has("heal"):
-			var amount: int = int(round((float(actor["atk"]) * float(move["heal"]) + bonus) * Archetypes.support_mult(actor) * awake_mult))
+			var heal_crit: float = Archetypes.support_crit_mult(state, actor, t, events.size())
+			var amount: int = int(round((float(actor["atk"]) * float(move["heal"]) + bonus) * Archetypes.support_mult(actor) * awake_mult * heal_crit))
 			var before: int = int(t["hp"])
 			t["hp"] = mini(int(t["max_hp"]), before + amount)
-			events.append({"t": "heal", "src": actor["id"], "dst": t["id"], "amount": int(t["hp"]) - before})
+			var heal_event: Dictionary = {"t": "heal", "src": actor["id"], "dst": t["id"], "amount": int(t["hp"]) - before}
+			if heal_crit > 1.0:
+				heal_event["crit"] = true
+			events.append(heal_event)
 			var hs: float = Signatures.value(actor, "heal_shield")
 			if hs > 0.0:
 				var extra: int = int(round(float(amount) * hs))
 				t["shield"] = int(t["shield"]) + extra
 				events.append({"t": "shield", "src": actor["id"], "dst": t["id"], "amount": extra})
 		if move.has("shield") and str(move["target"]) != "enemy":
-			var sh: int = int(round((float(actor["atk"]) * float(move["shield"]) + bonus) * Archetypes.support_mult(actor) * awake_mult))
+			var shield_crit: float = Archetypes.support_crit_mult(state, actor, t, events.size())
+			var sh: int = int(round((float(actor["atk"]) * float(move["shield"]) + bonus) * Archetypes.support_mult(actor) * awake_mult * shield_crit))
 			t["shield"] = int(t["shield"]) + sh
-			events.append({"t": "shield", "src": actor["id"], "dst": t["id"], "amount": sh})
+			var shield_event: Dictionary = {"t": "shield", "src": actor["id"], "dst": t["id"], "amount": sh}
+			if shield_crit > 1.0:
+				shield_event["crit"] = true
+			events.append(shield_event)
 		if bool(move.get("cleanse", false)):
 			t["statuses"].erase("bleed")
 			events.append({"t": "cleanse", "unit": t["id"]})
@@ -666,6 +684,8 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 		var gr: float = Signatures.value(pu, "gauge_regen")
 		if gr > 0.0:
 			pu["gauge"] = mini(BattleTypes.GAUGE_MAX, int(pu["gauge"]) + int(round(gr)))
+
+	Atypical.end_of_round(state, events)
 
 	# energia: chi sta in panchina recupera di piu'
 	for p in state["players"]:

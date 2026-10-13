@@ -80,6 +80,7 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	u["aura"] = {}
 	u["mods"] = []
 	Archetypes.setup(u)
+	Atypical.setup(u)
 	if bool(u.get("awake", false)):
 		u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + Signatures.AWAKEN_GAUGE)
 	return u
