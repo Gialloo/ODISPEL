@@ -150,6 +150,7 @@ func _attach() -> void:
 	last_error = ""
 	var roster: Dictionary = RosterStore.load_or_new()
 	manager.local_cleared = (roster.get("cleared", {}) as Dictionary).duplicate()
+	manager.local_profile = Profile.current()
 	manager.set_local_team(RosterState.team_entries(roster))
 	manager.lobby_updated.connect(_on_lobby_updated)
 	manager.battle_updated.connect(_on_battle_updated)

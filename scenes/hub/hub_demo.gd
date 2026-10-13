@@ -7,6 +7,8 @@ var roster: Dictionary = {}
 var continue_button: Button
 var buttons: Dictionary = {}
 var _status_panel: Control     # chiave -> Button (usati dai test)
+var profile_card: ProfileCard
+var profile_button: Button
 
 
 func _ready() -> void:
@@ -18,6 +20,8 @@ func _ready() -> void:
 	else:
 		Objectives.ensure_today(roster)
 	_build()
+	ArtLibrary.prefetch_team(roster["team"])
+	ArtLibrary.prefetch_boss(str(MissionConfig.suggest(roster)["boss"]))
 	Warmup.scenes(scene_file_path)
 	Warmup.shaders(self)
 
@@ -88,14 +92,15 @@ func _menu_button(parent: Control, key: String, text: String, kind: String, heig
 
 # Pannello con tutto cio' che serve sapere prima di giocare.
 func _build_status_panel() -> void:
+	_build_profile_card()
 	var panel := HudPanel.new().setup("OPERATORE", BattleTheme.CY)
-	panel.position = Vector2(680, 60)
-	panel.size = Vector2(560, 560)
+	panel.position = Vector2(680, 96)
+	panel.size = Vector2(560, 600)
 	add_child(panel)
 	_status_panel = panel
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
+	box.add_theme_constant_override("separation", 5)
 	panel.set_content(box)
 
 	box.add_child(BattleTheme.make_label("RISORSE", 14, BattleTheme.CY_DIM))
@@ -153,6 +158,25 @@ func _build_status_panel() -> void:
 		box.add_child(BattleTheme.make_label(txt, 16, BattleTheme.OK if done else BattleTheme.WH))
 
 
+# Carta del profilo: toccandola si apre la finestra per cambiare nome, icona e banner.
+func _build_profile_card() -> void:
+	Profile.ensure_loaded()
+	profile_card = ProfileCard.new().setup(Profile.current(), Vector2(560, 62), "TOCCA PER MODIFICARE IL PROFILO")
+	profile_card.position = Vector2(680, 18)
+	add_child(profile_card)
+	profile_button = Button.new()
+	profile_button.flat = true
+	profile_button.focus_mode = Control.FOCUS_NONE
+	profile_button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	profile_button.pressed.connect(_on_profile)
+	profile_card.add_child(profile_button)
+
+
+func _on_profile() -> void:
+	var panel := ProfilePanel.open(self)
+	panel.changed.connect(func() -> void: profile_card.update_data(Profile.current(), "TOCCA PER MODIFICARE IL PROFILO"))
+
+
 func _pips(cleared: int) -> String:
 	var out: String = ""
 	for i in BattleContent.TIERS.size():
@@ -176,24 +200,15 @@ func _on_menu(key: String) -> void:
 			SceneRouter.go(key)
 
 
-var _last_back_ms: int = -10000
-
-
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	for c in get_children():
-		if c is SettingsPanel:      # con la finestra aperta le scorciatoie dell'hub tacciono
+		if c is SettingsPanel or c is ProfilePanel or c is ConfirmBox:      # con una finestra aperta le scorciatoie dell'hub tacciono
 			return
 	match event.keycode:
 		KEY_ESCAPE:
-			# indietro dall'hub: due volte di fila per uscire (evita chiusure per errore sul telefono)
-			var now: int = Time.get_ticks_msec()
-			if now - _last_back_ms < 2200:
-				get_tree().quit()
-			else:
-				_last_back_ms = now
-				Notify.toast("Premi ancora indietro per uscire")
+			ExitGuard.ask(self)
 		KEY_ENTER, KEY_KP_ENTER, KEY_1:
 			_on_menu("continue")
 		KEY_2:

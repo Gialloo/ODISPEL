@@ -18,6 +18,8 @@ var _tex: Texture2D = null          # grafica 16:9 a tutta banda (se c'e')
 
 
 static func play(parent: Node, new_char: String, new_move: String, new_accent: Color) -> float:
+	if Settings.skip_cutin:
+		return 0.0
 	var c := CutIn.new()
 	c.char_id = new_char
 	c.move_name = new_move

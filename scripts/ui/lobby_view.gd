@@ -62,6 +62,17 @@ static func fill_players(box: Container, lobby: Dictionary, local_id: String, bi
 		inner.add_theme_constant_override("separation", 6 if big else 10)
 		card.add_child(inner)
 
+		var prof: Dictionary = Profile.clean_public(p.get("profile"))
+		if big:
+			var pc := ProfileCard.new().setup({"name": str(p["name"]), "icon": prof["icon"], "banner": prof["banner"]}, Vector2(170, 50),
+				("TU" if str(p["id"]) == local_id else "") + ("  ★ HOST" if bool(p["host"]) else ""))
+			pc.modulate = Color(1, 1, 1, 0.45 if status == "OFFLINE" else 1.0)
+			inner.add_child(pc)
+		else:
+			var mini := ProfileCard.ProfileIcon.new().setup(str(prof["icon"]), 30.0)
+			mini.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			inner.add_child(mini)
+
 		# grafica vera se c'e' (icona o ritratto), altrimenti il segnaposto
 		var portrait := PortraitView.new().setup(str(lead.get("char", "")), "bust" if big else "icon")
 		portrait.show_expression_text = false
@@ -78,7 +89,8 @@ static func fill_players(box: Container, lobby: Dictionary, local_id: String, bi
 		var who: String = str(p["name"]).to_upper() + ("  [TU]" if str(p["id"]) == local_id else "")
 		if bool(p["host"]):
 			who += "  ★"
-		text.add_child(BattleTheme.make_label("ID-%02d  %s" % [index, who], 16 if big else 14, BattleTheme.WH))
+		if not big:
+			text.add_child(BattleTheme.make_label("ID-%02d  %s" % [index, who], 14, BattleTheme.WH))
 		text.add_child(BattleTheme.make_label(lead_name(lead), 15 if big else 13, color))
 		if big:
 			text.add_child(BattleTheme.make_label("SQUADRA: %d" % int(p["team_size"]), 13, BattleTheme.CY_DIM))

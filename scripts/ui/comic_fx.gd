@@ -123,8 +123,10 @@ static func speed_lines(parent: Node, center: Vector2, color: Color = Color.WHIT
 
 # Lampo a tutto schermo (bianco o nero) che si spegne in fretta: il "fotogramma d'impatto".
 static func flash(parent: Node, color: Color = Color.WHITE, seconds: float = 0.12) -> void:
+	if Settings.flash < 0.05:
+		return
 	var r := ColorRect.new()
-	r.color = color
+	r.color = Color(color.r, color.g, color.b, color.a * Settings.flash)
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ScreenFrame.overshoot(r)
 	parent.add_child(r)

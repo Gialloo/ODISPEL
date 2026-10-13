@@ -10,6 +10,7 @@ signal network_error(reason: String)
 # Battaglia con il nuovo motore (vedi BattleState / BattleNet).
 signal battle_updated
 signal lobby_updated
+signal chat_received(entry: Dictionary)
 signal battle_events_received(events: Array)
 
 # Il signaling si è chiuso ma i collegamenti di gioco già aperti continuano.
@@ -44,6 +45,13 @@ var lobby_boss: String = "distributore"
 var lobby_tier: int = 0
 var _ready_players: Dictionary = {}  # player_id -> pronto (host)
 var _player_teams: Dictionary = {}  # player_id -> squadra validata (host)
+var local_profile: Dictionary = {}   # icona e banner di chi gioca qui ({icon, banner}); il nome va a parte
+var _player_profiles: Dictionary = {} # player_id -> {icon, banner} (host)
+var chat_log: Array = []              # ultimi messaggi: [{id, name, text, icon, banner}]
+var _chat_last_ms: Dictionary = {}    # player_id -> ora dell'ultimo messaggio (anti-spam, host)
+const CHAT_MAX_LEN: int = 140
+const CHAT_KEEP: int = 60
+const CHAT_GAP_MS: int = 400
 var local_cleared: Dictionary = {}   # boss -> livelli battuti da chi gioca (serve all'host per avvisare chi non ha sbloccato)
 var _player_cleared: Dictionary = {} # player_id -> {boss: livelli battuti} (host); manca se il giocatore non l'ha comunicato
 var battle_rewards: Dictionary = {}  # premi di chi gioca qui, a battaglia finita
@@ -283,7 +291,8 @@ func _build_lobby() -> Dictionary:
 			"ready": bool(_ready_players.get(id, false)) and player.connected,
 			"host": id == local_player_id,
 			"lead": lead,
-			"team_size": team.size()
+			"team_size": team.size(),
+			"profile": Profile.clean_public(local_profile if id == local_player_id else _player_profiles.get(id, {}))
 		})
 
 	return {"players": players, "boss": lobby_boss, "tier": lobby_tier}
@@ -312,6 +321,87 @@ func players_lacking_unlock(boss_id: String, tier: int) -> Array:
 			if player != null and player.connected:
 				names.append(player.display_name)
 	return names
+
+
+# ---------- Chat ----------
+
+# Scrive un messaggio a tutta la stanza (lobby o battaglia).
+func send_chat(text: String) -> bool:
+	var clean: String = clean_chat_text(text)
+
+	if clean.is_empty():
+		return false
+
+	if is_host:
+		return _host_chat(local_player_id, clean)
+
+	var link: WebRTCLink = _links.get(_host_peer_id)
+
+	if link == null:
+		return false
+
+	return link.send_message({"type": "chat", "text": clean})
+
+
+static func clean_chat_text(raw: String) -> String:
+	var out: String = ""
+
+	for i in raw.length():
+		var ch: String = raw[i]
+		out += " " if ch.unicode_at(0) < 32 else ch
+
+	return out.strip_edges().substr(0, CHAT_MAX_LEN)
+
+
+func _host_chat(player_id: String, raw: String) -> bool:
+	if game == null:
+		return false
+
+	var text: String = clean_chat_text(raw)
+	var player: PlayerState = game.party.get_player_by_id(player_id)
+
+	if text.is_empty() or player == null:
+		return false
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_chat_last_ms.get(player_id, -100000)) < CHAT_GAP_MS:
+		return false
+
+	_chat_last_ms[player_id] = now
+	var prof: Dictionary = Profile.clean_public(local_profile if player_id == local_player_id else _player_profiles.get(player_id, {}))
+	var entry: Dictionary = {"id": player_id, "name": player.display_name, "text": text, "icon": prof["icon"], "banner": prof["banner"]}
+	_store_chat(entry)
+	_broadcast({"type": "chat", "entry": entry})
+	return true
+
+
+func _store_chat(entry: Dictionary) -> void:
+	if entry.is_empty():
+		return
+
+	chat_log.append(entry)
+
+	while chat_log.size() > CHAT_KEEP:
+		chat_log.pop_front()
+
+	chat_received.emit(entry)
+
+
+static func _clean_chat_entry(raw: Dictionary) -> Dictionary:
+	var text: String = clean_chat_text(str(raw.get("text", "")))
+
+	if text.is_empty():
+		return {}
+
+	var prof: Dictionary = Profile.clean_public(raw)
+	return {
+		"id": str(raw.get("id", "")).substr(0, 40),
+		"name": str(raw.get("name", "")).substr(0, 24),
+		"text": text,
+		"icon": prof["icon"],
+		"banner": prof["banner"]
+	}
 
 
 func refresh_lobby() -> void:
@@ -798,7 +888,8 @@ func _on_link_opened(peer_id: String) -> void:
 				"token": session_token,
 				"version": GameConfig.VERSION,
 				"team": local_team,
-				"cleared": local_cleared
+				"cleared": local_cleared,
+				"profile": Profile.clean_public(local_profile)
 			})
 
 
@@ -825,6 +916,12 @@ func _host_handle_message(message: Dictionary, peer_id: String) -> void:
 	match str(message.get("type", "")):
 		"hello":
 			_host_handle_hello(peer_id, message)
+
+		"chat":
+			var talker: String = str(_peer_players.get(peer_id, ""))
+
+			if not talker.is_empty():
+				_host_chat(talker, str(message.get("text", "")))
 
 		"ready":
 			var who: String = str(_peer_players.get(peer_id, ""))
@@ -982,6 +1079,7 @@ func _host_handle_hello(peer_id: String, message: Dictionary) -> void:
 	_peer_numbers[peer_id] = peer_number
 	_player_tokens[token] = player.id
 	_player_teams[player.id] = team_result["team"]
+	_player_profiles[player.id] = Profile.clean_public(message.get("profile"))
 	if message.get("cleared") is Dictionary:
 		_player_cleared[player.id] = _clean_cleared(message["cleared"])
 	else:
@@ -1193,6 +1291,12 @@ func _client_handle_message(message: Dictionary) -> void:
 					battle_rewards = BattleState.normalize(rewards)
 
 				battle_updated.emit()
+
+		"chat":
+			var centry: Variant = message.get("entry", {})
+
+			if centry is Dictionary:
+				_store_chat(_clean_chat_entry(centry))
 
 		"lobby":
 			var lstate: Variant = message.get("state", {})

@@ -2,6 +2,7 @@ extends SceneTree
 func _init() -> void:
 	_run()
 func _run() -> void:
+	root.content_scale_size = Vector2i(1280, 720)
 	var host := Control.new()
 	host.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(host)

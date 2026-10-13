@@ -21,6 +21,7 @@ const BG_LAYERS: int = 4
 const MAX_SIZE: int = 2048
 
 static var extra_roots: Array = []       # cartelle in piu' (usate dai test), cercate per prime
+static var _asked: Dictionary = {}       # percorsi gia' richiesti in secondo piano
 static var _cache: Dictionary = {}       # percorso relativo -> Texture2D oppure null
 
 
@@ -56,6 +57,31 @@ static func texture(rel: String) -> Texture2D:
 		found = load("res://art/" + rel) as Texture2D
 	_cache[rel] = found
 	return found
+
+
+# Comincia a caricare in secondo piano le grafiche che serviranno tra poco (squadra, boss): quando poi
+# il gioco le chiede, sono gia' pronte. Non cambia nulla se manca il file o se c'e' una versione esterna.
+static func prefetch(rels: Array) -> void:
+	for rel in rels:
+		var r: String = str(rel)
+		if _cache.has(r) or _asked.has(r):
+			continue
+		_asked[r] = true
+		var res: String = "res://art/" + r
+		if ResourceLoader.exists(res):
+			ResourceLoader.load_threaded_request(res)
+
+
+static func prefetch_team(char_ids: Array) -> void:
+	var rels: Array = []
+	for id in char_ids:
+		for f in ["icon", "neutral", "battle", "cutin", "splash"]:
+			rels.append("characters/%s/%s.png" % [id, f])
+	prefetch(rels)
+
+
+static func prefetch_boss(boss_id: String) -> void:
+	prefetch(["bosses/%s/battle.png" % boss_id, "bosses/%s/hurt.png" % boss_id, "bosses/%s/portrait.png" % boss_id])
 
 
 # Riduce (mantenendo le proporzioni) un'immagine piu' grande di MAX_SIZE.

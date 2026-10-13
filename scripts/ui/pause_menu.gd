@@ -46,7 +46,7 @@ func _ready() -> void:
 	resume_button.pressed.connect(close)
 	var speed: Button = _button(box, _speed_text(), "normal", 50, 20)
 	speed.pressed.connect(func() -> void:
-		Settings.fast_battle = not Settings.fast_battle
+		Settings.next_speed()
 		Settings.save()
 		speed.text = _speed_text()
 		speed_changed.emit())
@@ -59,7 +59,7 @@ func _ready() -> void:
 
 
 static func _speed_text() -> String:
-	return "VELOCITA' BATTAGLIA: %s" % ("VELOCE" if Settings.fast_battle else "NORMALE")
+	return "VELOCITA' BATTAGLIA: %s" % Settings.speed_text()
 
 
 func _button(box: Control, text: String, kind: String, h: float, fs: int) -> Button:

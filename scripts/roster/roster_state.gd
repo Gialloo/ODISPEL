@@ -541,6 +541,11 @@ static func apply_rewards(roster: Dictionary, rewards: Dictionary) -> int:
 	for drop in rewards.get("drops", []):
 		if not (drop is Dictionary):
 			continue
+		if str(drop.get("kind", "")) == "icon":
+			# icona gia' posseduta: non succede nulla (le monete dei premi restano esatte)
+			if Profile.unlock(str(drop.get("id", ""))):
+				applied += 1
+			continue
 		if str(drop.get("kind", "")) == "gear":
 			if new_gear(roster, str(drop.get("slot", "")), int(drop.get("rarity", -1))) != "":
 				applied += 1

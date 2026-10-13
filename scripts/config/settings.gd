@@ -14,6 +14,12 @@ static var vsync: bool = true
 static var light_fx: bool = OS.has_feature("mobile")   # effetti ridotti: niente velo telecamera ne' pulviscolo (telefoni e PC lenti)
 const FPS_CHOICES: Array = [60, 90, 120, 144, 240, 0]
 static var fast_battle: bool = false     # animazioni di battaglia piu' veloci
+static var turbo_battle: bool = false    # velocita' massima (con fast_battle: 0 normale, 1 veloce, 2 turbo)
+static var shake: float = 1.0            # intensita' delle scosse della camera, 0..1
+static var flash: float = 1.0            # intensita' dei lampi a tutto schermo, 0..1 (0 = niente luci improvvise)
+static var skip_cutin: bool = false      # salta la sequenza dell'ultimate
+static var skip_story: bool = false      # salta da sola le scene di storia
+static var show_fps: bool = false        # contatore dei fotogrammi in un angolo
 static var vibration: bool = true       # vibrazione del telefono nei momenti forti
 static var banter: bool = true          # battute dei personaggi in battaglia
 static var tutorial_done: bool = false
@@ -39,6 +45,12 @@ static func load_settings() -> void:
 	banter = bool(cfg.get_value("game", "banter", banter))
 	vibration = bool(cfg.get_value("game", "vibration", vibration))
 	fast_battle = bool(cfg.get_value("game", "fast_battle", fast_battle))
+	turbo_battle = bool(cfg.get_value("game", "turbo_battle", turbo_battle)) and fast_battle
+	shake = clampf(float(cfg.get_value("game", "shake", shake)), 0.0, 1.0)
+	flash = clampf(float(cfg.get_value("game", "flash", flash)), 0.0, 1.0)
+	skip_cutin = bool(cfg.get_value("game", "skip_cutin", skip_cutin))
+	skip_story = bool(cfg.get_value("game", "skip_story", skip_story))
+	show_fps = bool(cfg.get_value("video", "show_fps", show_fps))
 	tutorial_done = bool(cfg.get_value("game", "tutorial_done", tutorial_done))
 	gacha_guide_seen = bool(cfg.get_value("game", "gacha_guide_seen", gacha_guide_seen))
 	seen_scenes = Array(cfg.get_value("game", "seen_scenes", []))
@@ -77,6 +89,12 @@ static func save() -> bool:
 	cfg.set_value("game", "banter", banter)
 	cfg.set_value("game", "vibration", vibration)
 	cfg.set_value("game", "fast_battle", fast_battle)
+	cfg.set_value("game", "turbo_battle", turbo_battle)
+	cfg.set_value("game", "shake", shake)
+	cfg.set_value("game", "flash", flash)
+	cfg.set_value("game", "skip_cutin", skip_cutin)
+	cfg.set_value("game", "skip_story", skip_story)
+	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("game", "tutorial_done", tutorial_done)
 	cfg.set_value("game", "gacha_guide_seen", gacha_guide_seen)
 	cfg.set_value("game", "seen_scenes", seen_scenes)
@@ -121,4 +139,50 @@ static func buzz(ms: int) -> void:
 
 # Pausa tra un evento e l'altro in battaglia.
 static func event_delay() -> float:
+	if fast_battle and turbo_battle:
+		return 0.10
 	return 0.22 if fast_battle else 0.42
+
+
+# Velocita' della battaglia a tre livelli: normale -> veloce -> turbo -> normale.
+static func speed_level() -> int:
+	return 0 if not fast_battle else (2 if turbo_battle else 1)
+
+
+static func next_speed() -> void:
+	var lv: int = (speed_level() + 1) % 3
+	fast_battle = lv >= 1
+	turbo_battle = lv == 2
+
+
+static func speed_text() -> String:
+	return ["NORMALE", "VELOCE", "TURBO"][speed_level()]
+
+
+# Qualita' grafica in un colpo solo: BASSA (effetti ridotti, 60 fps), MEDIA, ALTA (effetti pieni, 120 fps).
+static func quality_name() -> String:
+	if light_fx:
+		return "BASSA"
+	return "ALTA" if fps_limit == 0 or fps_limit >= 90 else "MEDIA"
+
+
+static func next_quality() -> void:
+	match quality_name():
+		"BASSA":
+			light_fx = false
+			fps_limit = 60
+		"MEDIA":
+			light_fx = false
+			fps_limit = 120
+		_:
+			light_fx = true
+			fps_limit = 60
+
+
+# 0, 0.5 o 1 in "0 / 50 / 100%": per le intensita' (scosse, lampi).
+static func next_level(value: float) -> float:
+	return 0.0 if value > 0.75 else (1.0 if value < 0.25 else 0.5)
+
+
+static func level_text(value: float) -> String:
+	return "NIENTE" if value < 0.25 else ("RIDOTTE" if value < 0.75 else "PIENE")

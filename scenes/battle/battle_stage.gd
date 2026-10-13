@@ -209,8 +209,9 @@ func _process(delta: float) -> void:
 
 # Scuote l'inquadratura e la ingrandisce un attimo (colpi forti).
 func impact(amount: float = 10.0, zoom: float = 0.03) -> void:
-	_shake = maxf(_shake, amount)
-	_punch = maxf(_punch, zoom)
+	var k: float = Settings.shake          # l'intensita' sceglie il giocatore (anche zero)
+	_shake = maxf(_shake, amount * k)
+	_punch = maxf(_punch, zoom * k)
 
 
 func set_state(new_state: Dictionary) -> void:

@@ -73,6 +73,9 @@ static func all() -> Array:
 		out.append(_feat("endless_%d" % entry[0], "INFINITO", "Piano %d" % entry[0], "Raggiungi il piano %d del Ciclo Infinito." % entry[0], int(entry[0]), "endless_best", "", {"coins": int(entry[1]), "nucleo": int(entry[2]), "lega": int(entry[2]) / 2}))
 	for entry in [[3, 1000], [7, 3000], [14, 8000]]:
 		out.append(_feat("daily_%d" % entry[0], "INFINITO", "Serie di %d giorni" % entry[0], "Vinci la Sfida del giorno per %d giorni di fila." % entry[0], int(entry[0]), "daily_best", "", {"coins": int(entry[1]), "nucleo": 3 + int(entry[0]) / 2, "lega": 2}))
+	for f in out:
+		if Profile.FEAT_ICONS.has(str(f["id"])):
+			f["reward"]["icon"] = Profile.FEAT_ICONS[str(f["id"])]
 	_all = out
 	return out
 
@@ -172,6 +175,8 @@ static func claim(roster: Dictionary, id: String) -> Dictionary:
 			roster["materials"][mat] = int(roster["materials"].get(mat, 0)) + int(reward[mat])
 	if reward.has("drop"):
 		RosterState.add_drop(roster, reward["drop"])
+	if reward.has("icon"):
+		Profile.unlock(str(reward["icon"]))
 	claimed(roster)[id] = true
 	return reward
 
@@ -203,4 +208,6 @@ static func reward_text(reward: Dictionary) -> String:
 		parts.append("%d LEGHE" % int(reward["lega"]))
 	if reward.has("drop"):
 		parts.append("ABILITA': %s" % BattleText.move_name(str(reward["drop"]["id"])))
+	if reward.has("icon"):
+		parts.append("ICONA: %s" % Profile.icon_name(str(reward["icon"])))
 	return "  +  ".join(parts)

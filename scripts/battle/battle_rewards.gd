@@ -35,6 +35,10 @@ static func for_player(boss_id: String, seed_value: int, player_index: int, vict
 	var drops: Array = BattleContent.roll_drops(boss_id, rng, tier)
 	if rng.random_int(1, 100) <= int(cfg.get("gear_chance", 0)):
 		drops.append(BattleContent.roll_gear(rng, tier))
+	# icone del profilo (si estrae per ultima: non cambia gli altri premi)
+	var icon_id: String = Profile.roll_icon(rng, tier)
+	if icon_id != "":
+		drops.append({"kind": "icon", "id": icon_id})
 
 	return {"coins": int(round(float(cfg.get("coins", 0)) * mult)), "materials": materials, "drops": drops}
 

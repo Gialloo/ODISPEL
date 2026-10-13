@@ -6,7 +6,7 @@ extends RefCounted
 
 
 static func enabled() -> bool:
-	return DisplayServer.get_name() != "headless"
+	return DisplayServer.get_name() != "headless" and not Settings.skip_story
 
 
 static func scene_id(boss_id: String, phase: String) -> String:

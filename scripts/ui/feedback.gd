@@ -107,7 +107,10 @@ func _init() -> void:
 
 # Il tasto "indietro" di Android diventa ESC: ogni schermata lo gestisce come gia' fa con la tastiera.
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		# chiusura della finestra (X, Alt+F4): prima si chiede conferma
+		ExitGuard.ask(null)
+	elif what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		for pressed in [true, false]:
 			var ev := InputEventKey.new()
 			ev.keycode = KEY_ESCAPE
@@ -117,9 +120,16 @@ func _notification(what: int) -> void:
 
 
 var _safe: Control
+var _fps_label: Label
+var _fps_acc: float = 0.0
+
+
+func safe_layer() -> Node:
+	return _safe if _safe != null else self
 
 
 func _ready() -> void:
+	get_tree().set_auto_accept_quit(false)    # la chiusura passa dalla domanda "Vuoi uscire?"
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -127,6 +137,7 @@ func _ready() -> void:
 	add_child(_root)
 	_safe = ScreenFrame.safe_holder(_root)
 	_build_toasts()
+	_build_fps()
 	_build_spinner()
 	_build_loading()
 	_wipe = Wipe.new()
@@ -134,6 +145,21 @@ func _ready() -> void:
 	_wipe.mouse_filter = Control.MOUSE_FILTER_STOP
 	_wipe.visible = false
 	_root.add_child(_wipe)
+
+
+# Contatore dei fotogrammi (si accende dalle impostazioni): serve a capire se il telefono tiene il ritmo.
+func _build_fps() -> void:
+	_fps_label = BattleTheme.make_label("", 15, BattleTheme.OK)
+	_fps_label.position = Vector2(8.0, 4.0)
+	_fps_label.add_theme_color_override("font_outline_color", BattleTheme.BK)
+	_fps_label.add_theme_constant_override("outline_size", 4)
+	_fps_label.visible = false
+	_safe.add_child(_fps_label)
+
+
+func refresh_fps() -> void:
+	if _fps_label != null:
+		_fps_label.visible = Settings.show_fps
 
 
 func _build_toasts() -> void:
@@ -312,6 +338,16 @@ func _place_spinner() -> void:
 
 
 func _process(delta: float) -> void:
+	if _fps_label != null and Settings.show_fps:
+		_fps_acc += delta
+		if _fps_acc >= 0.25:
+			_fps_acc = 0.0
+			var fps: int = int(Engine.get_frames_per_second())
+			_fps_label.visible = true
+			_fps_label.text = "%d FPS" % fps
+			_fps_label.add_theme_color_override("font_color", BattleTheme.OK if fps >= 50 else (BattleTheme.POP if fps >= 30 else BattleTheme.RD))
+	elif _fps_label != null and _fps_label.visible:
+		_fps_label.visible = false
 	if _spinner_box == null:
 		return
 	if _spinner_box.visible:

@@ -65,7 +65,7 @@ func _build_form() -> void:
 
 	url_edit = _add_field(box, "SERVER DI SIGNALING", GameConfig.get_server_url())
 	room_edit = _add_field(box, "STANZA", DEFAULT_ROOM)
-	name_edit = _add_field(box, "IL TUO NOME", "Giocatore")
+	name_edit = _add_field(box, "IL TUO NOME (si cambia anche dal PROFILO)", Profile.player_name)
 
 	var spin_row := HBoxContainer.new()
 	box.add_child(spin_row)
@@ -174,8 +174,14 @@ func _add_field(parent: Control, caption: String, value: String) -> LineEdit:
 	return edit
 
 
+var chat: ChatPanel
+
+
 func _show_form() -> void:
 	_in_room = false
+	if chat != null:
+		chat.queue_free()
+		chat = null
 	form_panel.visible = true
 	room_panel.visible = false
 	host_button.disabled = false
@@ -188,6 +194,10 @@ func _show_room() -> void:
 	room_panel.visible = true
 	if picker.manager == null and NetSession.manager != null:
 		picker.setup(NetSession.manager)
+	if chat == null and NetSession.manager != null:
+		chat = ChatPanel.new().setup(NetSession.manager, true, Vector2(440, 330))
+		chat.position = Vector2(800, 84)
+		add_child(chat)
 	_refresh()
 
 
@@ -212,8 +222,9 @@ func _read_form() -> Dictionary:
 		_set_status("Il nome della stanza può avere solo lettere, numeri, - e _ (max 48).")
 		return {}
 
-	if display_name.is_empty():
-		display_name = "Giocatore"
+	display_name = Profile.clean_name(display_name)
+	Profile.rename_to(display_name)
+	Profile.save()
 
 	url_edit.text = url
 	GameConfig.remember_server_url(url)

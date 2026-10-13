@@ -65,6 +65,7 @@ var _ops_sig: String = ""
 var _orders_sig: String = ""
 var _timer_secs: int = -2
 var _order_buttons: Array = []
+var _chat: ChatPanel = null          # chat di squadra (solo in rete)
 
 
 func _ready() -> void:
@@ -164,6 +165,10 @@ func bind_source(src: Variant) -> void:
 	src.battle_events_received.connect(_on_events)
 	if _auto_button != null:
 		_auto_button.visible = src.has_method("autoplay_round")
+	if src is NetworkManager and _chat == null:
+		_chat = ChatPanel.new().setup(src, true, Vector2(400, 210))
+		_chat.position = Vector2(20, 304)
+		_fx.add_child(_chat)
 	if not src.battle.is_empty():
 		_on_updated()
 
@@ -1756,7 +1761,7 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 func _line_rarity(line: String) -> int:
 	var up: String = line.to_upper()
 	for i in range(BattleTypes.RARITIES.size() - 1, -1, -1):
-		if str(BattleTypes.RARITIES[i]).to_upper() in up and (up.begins_with("MOSSA") or up.begins_with("PEZZO") or up.begins_with("PASSIVA")):
+		if str(BattleTypes.RARITIES[i]).to_upper() in up and (up.begins_with("MOSSA") or up.begins_with("PEZZO") or up.begins_with("PASSIVA") or up.begins_with("ICONA")):
 			return i
 	return -1
 
@@ -1784,6 +1789,8 @@ func _reward_lines(rewards: Dictionary) -> Array:
 				lines.append("PEZZO: %s %s" % [str(d["slot"]).to_upper(), str(BattleTypes.RARITIES[int(d["rarity"])]).to_upper()])
 			"move":
 				lines.append("MOSSA: %s (%s)" % [BattleText.move_name(str(d["id"])), str(BattleTypes.RARITIES[int(d["rarity"])]).to_upper()])
+			"icon":
+				lines.append("ICONA: %s (%s)" % [Profile.icon_name(str(d["id"])).to_upper(), str(BattleTypes.RARITIES[clampi(Profile.rarity_of(str(d["id"])), 0, 3)]).to_upper()])
 			"passive":
 				lines.append("PASSIVA: %s (%s)" % [str(BattleContent.PASSIVES[str(d["id"])]["name"]).to_upper(), str(BattleTypes.RARITIES[int(d["rarity"])]).to_upper()])
 	if lines.is_empty():
