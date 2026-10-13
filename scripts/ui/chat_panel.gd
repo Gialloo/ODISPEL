@@ -148,6 +148,10 @@ func _add_row(entry: Dictionary, scroll_after: bool) -> void:
 	l.add_theme_color_override("font_color", BattleTheme.CY if mine else Color.WHITE.lerp(cols[1], 0.35))
 	row.add_child(l)
 	log_box.add_child(row)
+	if scroll_after and AnimFx.enabled() and is_inside_tree():
+		row.modulate.a = 0.0
+		var tw: Tween = row.create_tween()
+		tw.tween_property(row, "modulate:a", 1.0, 0.25)
 	while log_box.get_child_count() > ROWS_MAX:
 		var old: Node = log_box.get_child(0)
 		log_box.remove_child(old)

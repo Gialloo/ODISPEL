@@ -63,6 +63,7 @@ static func menu_overlays(parent: Control, accent: Color = BattleTheme.RD) -> vo
 		_menu_material.set_shader_parameter("noise_strength", 0.0)
 		_menu_material.set_shader_parameter("vignette_strength", 0.35)
 	_full_rect(parent, _menu_material)
+	AnimFx.rain(parent, accent.lerp(Color("#7cf0ff"), 0.5))
 
 
 # Velo della battaglia: velatura + telecamera + retino in un solo passaggio.

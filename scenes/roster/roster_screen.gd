@@ -523,7 +523,9 @@ func upgrade(char_id: String) -> bool:
 			"nucleo": "Nuclei insufficienti.", "sconosciuto": "Personaggio non posseduto."}
 		return _say(str(msgs.get(err, "Non riuscito: " + err)), false)
 	_save()
-	return _say("%s sale al livello %d." % [BattleContent.CHARACTERS[char_id]["name"], int(roster["characters"][char_id]["level"])], true)
+	var okl: bool = _say("%s sale al livello %d." % [BattleContent.CHARACTERS[char_id]["name"], int(roster["characters"][char_id]["level"])], true)
+	_celebrate("LV +1", Color("#7cf0ff"), false)
+	return okl
 
 
 func rank_up(char_id: String) -> bool:
@@ -538,7 +540,9 @@ func rank_up(char_id: String) -> bool:
 	var name: String = str(BattleContent.CHARACTERS[char_id]["name"])
 	var what: String = Signatures.rank_upgrade_text(char_id, rank + 1)
 	Notify.toast("%s: RANK %d  ·  %s" % [name.to_upper(), rank + 1, what])
-	return _say("%s sale al rank %d." % [name, rank + 1], true)
+	var okr: bool = _say("%s sale al rank %d." % [name, rank + 1], true)
+	_celebrate("RANK UP!", Color("#ffd166"), true)
+	return okr
 
 
 func pull(count: int) -> bool:
@@ -553,7 +557,14 @@ func pull(count: int) -> bool:
 	_reveal_rows = DisplayServer.get_name() != "headless"
 	_save()
 	if DisplayServer.get_name() != "headless":
-		PullReveal.play(self, last_results)
+		if AnimFx.enabled():
+			var top: int = 0
+			for pr in last_results:
+				top = maxi(top, int(pr["rarity"]))
+			var res: Array = last_results
+			AnimFx.portal(self, top, func() -> void: PullReveal.play(self, res))
+		else:
+			PullReveal.play(self, last_results)
 	_announce_pulls(last_results)
 	return _say("Reclutamento completato (-%d monete)." % int(r["cost"]), true)
 
@@ -674,6 +685,18 @@ func upgrade_gear(gear_id: String) -> bool:
 		return _say(str(msgs.get(err, "Non riuscito: " + err)), false)
 	_save()
 	return _say("Pezzo potenziato al livello %d." % int(roster["gear"][gear_id]["level"]), true)
+
+
+# Scintille e scritta che sale quando un operatore cresce; al rank lampo dorato.
+func _celebrate(text: String, col: Color, flash: bool) -> void:
+	if not AnimFx.enabled() or not is_inside_tree():
+		return
+	var at := Vector2(900.0, 330.0)
+	AnimFx.sparks(self, at, col, 18, 300.0)
+	AnimFx.float_text(self, text, at + Vector2(-60.0, 0.0), col, 44)
+	if flash:
+		AnimFx.shockwave(self, at, col, 200.0)
+		ComicFx.flash(self, Color(1.0, 0.85, 0.3, 0.4), 0.4)
 
 
 func _say(text: String, ok: bool) -> bool:

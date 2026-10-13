@@ -114,6 +114,10 @@ func _menu_button(parent: Control, key: String, text: String, kind: String, heig
 	b.pressed.connect(_on_menu.bind(key))
 	parent.add_child(b)
 	buttons[key] = b
+	if kind == "primary":
+		AnimFx.glint(b)
+		if key != "continue":
+			b.ready.connect(func() -> void: AnimFx.nudge(b))
 	return b
 
 

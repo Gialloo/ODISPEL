@@ -104,6 +104,12 @@ static func fill_players(box: Container, lobby: Dictionary, local_id: String, bi
 			back.add_theme_stylebox_override("panel", bs)
 			back.add_child(badge)
 			inner.add_child(back)
+			if AnimFx.enabled():
+				back.ready.connect(func() -> void:
+					if back.is_inside_tree():
+						var tw: Tween = back.create_tween().set_loops()
+						tw.tween_property(back, "modulate", Color(1.5, 1.5, 1.5), 0.6)
+						tw.tween_property(back, "modulate", Color.WHITE, 0.6))
 		else:
 			inner.add_child(badge)
 

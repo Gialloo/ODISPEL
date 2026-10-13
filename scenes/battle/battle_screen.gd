@@ -180,11 +180,18 @@ func _on_updated() -> void:
 	_sync()
 
 
+var _banner_round: int = 0
+
+
 func _sync() -> void:
 	if log_lines.is_empty():
 		_push_log("CICLO 01 AVVIATO", "info")
 		_push_log("SEGNALE STABILE", "info")
 	shown = (source.battle as Dictionary).duplicate(true)
+	var rnd: int = int(shown.get("round", 0))
+	if rnd > _banner_round and str(shown.get("winner", "")) == "" and AnimFx.enabled() and _fx != null:
+		AnimFx.round_banner(_fx, "CICLO %d" % rnd)
+	_banner_round = maxi(_banner_round, rnd)
 	locked = false
 	_swaps.clear()
 	_picks.clear()
@@ -1255,8 +1262,12 @@ func _event_fx(e: Dictionary) -> float:
 		"heal":
 			Snd.play("heal")
 			_pop("+" + BattleText.num(int(e["amount"])) + ("!" if bool(e.get("crit", false)) else ""), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
+			if AnimFx.enabled():
+				AnimFx.rise(_fx, _stage.anchor_of(str(e["dst"])))
 		"shield":
 			_float_text("+" + BattleText.num(int(e["amount"])), str(e["dst"]), BattleTheme.CY, 26)
+			if AnimFx.enabled():
+				AnimFx.shield(_fx, _stage.anchor_of(str(e["dst"])), false)
 		"marks":
 			return _fx_marks(e)
 		"dodge":
@@ -1325,6 +1336,9 @@ func _event_fx(e: Dictionary) -> float:
 				ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color.WHITE, 0.5)
 				ComicFx.flash(_fx, Color(1, 1, 1, 0.85), 0.35)
 				_pop("FINISH!", BattleState.BOSS_ID, BattleTheme.POP, BattleTheme.RD, 84, 120.0, Vector2(0.0, -20.0))
+				if AnimFx.enabled():
+					AnimFx.shards(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color("#ffd166"))
+					ComicFx.flash(_fx, Color(1.0, 0.85, 0.3, 0.5), 0.5)
 				return 0.35
 			_buzz(110)
 			_stage.impact(14.0, 0.04)
@@ -1401,6 +1415,26 @@ func _link_clear() -> void:
 	_link_node = null
 
 
+# Effetto grafico del colpo, scelto per tipo: taglio, onda d'urto, scintille o proiettile (LibraCorp).
+func _hit_anim(e: Dictionary, dst: String, to_boss: bool, is_crit: bool, heavy: bool) -> void:
+	if not AnimFx.enabled():
+		return
+	var at: Vector2 = _stage.anchor_of(dst)
+	var src: Dictionary = BattleState.unit(shown, str(e.get("src", "")))
+	var fac: String = str(src.get("faction", ""))
+	var col: Color = Hints.faction_color(fac) if fac != "" else Color.WHITE
+	var power: float = 1.6 if is_crit else (1.25 if heavy else 1.0)
+	if fac == "libracorp" and not src.is_empty() and str(src.get("id", "")) != dst:
+		AnimFx.projectile(_fx, _stage.anchor_of(str(src["id"])) + Vector2(60.0, 0.0), at, col, func() -> void: AnimFx.sparks(_fx, at, col, 8, 200.0))
+	elif heavy or is_crit:
+		AnimFx.shockwave(_fx, at, col, 150.0 if to_boss else 110.0)
+		AnimFx.sparks(_fx, at, col, 16, 300.0)
+	elif randi() % 2 == 0:
+		AnimFx.slash(_fx, at, col, power)
+	else:
+		AnimFx.sparks(_fx, at, col, 8, 220.0)
+
+
 func _fx_damage(e: Dictionary) -> float:
 	var dst: String = str(e["dst"])
 	var amount: int = int(e["amount"])
@@ -1409,6 +1443,8 @@ func _fx_damage(e: Dictionary) -> float:
 	_stage.flash(dst)
 	if amount <= 0:
 		_pop("GUARD!", dst, BattleTheme.CY, BattleTheme.BK, 34, 62.0)
+		if AnimFx.enabled():
+			AnimFx.shield(_fx, _stage.anchor_of(dst), true)
 		return 0.0
 	var target: Dictionary = BattleState.unit(shown, dst)
 	if bool(e.get("crit", false)) and amount > 0:
@@ -1427,6 +1463,7 @@ func _fx_damage(e: Dictionary) -> float:
 		banter(dst, "low_hp")
 	var heavy: bool = float(amount) >= float(target.get("max_hp", 1)) * BIG_HIT_FRACTION
 	var fill: Color = BattleTheme.POP if to_boss else BattleTheme.RD
+	_hit_anim(e, dst, to_boss, is_crit, heavy)
 	# un solo fumetto per colpo: il critico e' semplicemente piu' grande, col punto esclamativo
 	_pop("-%s%s" % [BattleText.num(amount), "!" if is_crit else ""], dst, fill, BattleTheme.BK, 52 if is_crit else (44 if heavy else 32), 84.0 if is_crit else (74.0 if heavy else 56.0))
 	if heavy or is_crit:
@@ -1637,6 +1674,9 @@ func _check_end() -> void:
 	if source.has_method("finish"):
 		rewards = source.finish()
 	var won: bool = str(shown["winner"]) == "players"
+	if won and AnimFx.enabled():
+		ComicFx.flash(_fx, Color(1.0, 0.85, 0.3, 0.45), 0.6)
+		AnimFx.shards(_fx, Vector2(640.0, 300.0), Color("#ffd166"), Vector2(520.0, 160.0))
 	# prima vittoria su questo boss: scena finale della storia, poi il riquadro dell'esito
 	_last_won = won
 	if won and source is SoloBattleSource and Story.enabled() and MissionConfig.endless_floor == 0:

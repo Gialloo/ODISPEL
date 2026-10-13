@@ -50,6 +50,12 @@ var acting: String = ""             # unita' che sta agendo (segnalino rosso sop
 var acting_target: String = ""      # e chi sta subendo l'azione (cerchio rosso)
 var _lunge_who: String = ""
 var _lunge_t: float = 1.0
+var _anim_on: bool = true           # respiro e scatto: spenti con qualita' BASSA
+# posa corrente di chi si sta disegnando: scala x/y, inclinazione (rad), immagini residue dello scatto
+var _pose_sx: float = 1.0
+var _pose_sy: float = 1.0
+var _pose_rot: float = 0.0
+var _pose_ghosts: float = 0.0
 var mark_pulse: float = 0.0         # 1 = marchio appena applicato / consumato, scende a 0
 var summon_pulse: float = 0.0       # 1 = evocazione appena comparsa
 var hit_flash: Dictionary = {}      # unit_id -> intensita'
@@ -176,7 +182,8 @@ func _process(delta: float) -> void:
 	if acting != _lunge_who:
 		_lunge_who = acting
 		_lunge_t = 0.0
-	_lunge_t = minf(1.0, _lunge_t + delta / 0.45)
+	_lunge_t = minf(1.0, _lunge_t + delta / clampf(Settings.event_delay() * 1.4, 0.3, 0.6))
+	_anim_on = Settings.quality_name() != "BASSA"
 	mark_pulse = maxf(0.0, mark_pulse - delta * 2.2)
 	summon_pulse = maxf(0.0, summon_pulse - delta * 2.0)
 	for uid in hit_flash.keys():
@@ -878,17 +885,39 @@ func _draw_party() -> void:
 		if u.is_empty():
 			continue
 		var gx: float = pose.x
+		_pose_sx = 1.0
+		_pose_sy = 1.0
+		_pose_rot = 0.0
+		_pose_ghosts = 0.0
+		if _anim_on and BattleState.is_alive(u):
+			var idle: Vector3 = _idle_pose(u, float(i) * 1.9)
+			_pose_sx = idle.x
+			_pose_sy = idle.y
+			_pose_rot = idle.z
 		if _lunge_who == str(p["active"]):
-			gx += _lunge_offset(70.0 * pose.z)       # chi agisce scatta verso il boss e torna
+			var lp: Vector4 = _lunge_pose(70.0 * pose.z)       # chi agisce scatta verso il boss e torna
+			gx += lp.x
+			_pose_sx *= 1.0 + lp.y
+			_pose_sy *= 1.0 - lp.y
+			_pose_rot = lp.z
+			_pose_ghosts = lp.w
+		elif _anim_on:
+			var recoil: float = float(hit_flash.get(str(u["id"]), 0.0))
+			gx -= recoil * 16.0 * pose.z                  # chi viene colpito arretra un istante
+			_pose_rot -= recoil * 0.07
 		_entity_transform(gx, pose.z, pose.y)
 		_draw_fighter(u, Vector2(gx, GEO_FLOOR - 120.0), i, str(p["id"]) == select_slot)
+		_pose_sx = 1.0
+		_pose_sy = 1.0
+		_pose_rot = 0.0
+		_pose_ghosts = 0.0
 		_draw_summons(p, gx)
 
 
 func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> void:
 	var alive: bool = BattleState.is_alive(u)
 	var col: Color = BattleTheme.unit_color(str(u["color"]))
-	var bob: float = sin(_t * 2.0 + float(index)) * 2.5 if alive else 0.0
+	var bob: float = sin(_t * 2.0 + float(index)) * 2.5 if (alive and not _anim_on) else 0.0
 	var flash_v: float = float(hit_flash.get(u["id"], 0.0))
 	var foot_y: float = GEO_FLOOR + 8.0
 	var cx: float = chest.x
@@ -940,7 +969,30 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 		elif int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
 			expr = "angry"
 		_draw_fighter_body(cx, foot_y, top, body_col, col, str(u.get("char", "")), expr, Color.WHITE)
+	if _anim_on:
+		_draw_status_fx(u, cx, foot_y)
 	_draw_fighter_frame(u, cx, top, col, index, is_lead, foot_y)
+
+
+# Stati visibili sul personaggio: sanguinamento (gocce), marchio (mirino che ruota), provocazione (alone rosso), guardia (arco).
+func _draw_status_fx(u: Dictionary, cx: float, foot_y: float) -> void:
+	var st: Dictionary = u["statuses"]
+	var mid := Vector2(cx, foot_y - 110.0)
+	if st.has("bleed"):
+		for i in 3:
+			var ph: float = fposmod(_t * 0.9 + float(i) * 0.33, 1.0)
+			var p := Vector2(cx - 30.0 + float(i) * 30.0, foot_y - 150.0 + ph * 120.0)
+			draw_circle(p, 4.0 * (1.0 - ph * 0.4), Color(BattleTheme.RD, 1.0 - ph))
+	if st.has("mark"):
+		var a: float = _t * 1.6
+		var rr: float = 56.0
+		draw_arc(mid, rr, a, a + PI * 0.7, 14, Color(BattleTheme.POP, 0.85), 3.0)
+		draw_arc(mid, rr, a + PI, a + PI * 1.7, 14, Color(BattleTheme.POP, 0.85), 3.0)
+	if st.has("taunt"):
+		var k: float = 0.5 + 0.5 * sin(_t * 4.0)
+		draw_colored_polygon(_ellipse(mid, 70.0 + 6.0 * k, 110.0, 24), Color(BattleTheme.RD, 0.10 + 0.08 * k))
+	if st.has("guard"):
+		draw_arc(mid, 82.0, -PI * 0.8, -PI * 0.2, 16, Color(BattleTheme.CY, 0.7), 4.0)
 
 
 # Figura disegnata dall'utente: ancorata ai piedi, alta ~230 px.
@@ -1000,7 +1052,12 @@ func _draw_bench_unit(u: Dictionary, gx: float, slot: int, depth_scale: float = 
 	if sprite != null:
 		var h: float = 230.0
 		var w: float = h * sprite.get_width() / maxf(1.0, float(sprite.get_height()))
-		draw_texture_rect(sprite, Rect2(gx - w * 0.5, foot_y - h, w, h), false, Color(0.45, 0.5, 0.55, a))
+		var tint_b := Color(0.45, 0.5, 0.55, a)
+		if _anim_on and alive:
+			var ip: Vector3 = _idle_pose(u, float(slot) * 2.3 + 1.0)
+			_draw_posed(sprite, gx, foot_y, w, h, tint_b, ip.x, ip.y, ip.z)
+		else:
+			draw_texture_rect(sprite, Rect2(gx - w * 0.5, foot_y - h, w, h), false, tint_b)
 	else:
 		_draw_fighter_body(gx, foot_y, foot_y - 210.0, Color(col.darkened(0.6), a), Color(col, a), str(u.get("char", "")), "neutral", Color(1, 1, 1, a))
 	# nome e vita sotto i piedi (leggibili anche se la figura e' piccola)
@@ -1102,7 +1159,27 @@ func _draw_fighter_sprite(tex: Texture2D, cx: float, foot_y: float, bob: float, 
 	var h: float = 230.0
 	var w: float = h * tex.get_width() / maxf(1.0, float(tex.get_height()))
 	var tint: Color = Color.WHITE.lerp(Color(2.0, 2.0, 2.0), flash_v)
-	draw_texture_rect(tex, Rect2(cx - w * 0.5, foot_y - h + bob, w, h), false, tint)
+	if not _anim_on:
+		draw_texture_rect(tex, Rect2(cx - w * 0.5, foot_y - h + bob, w, h), false, tint)
+		return
+	if _pose_ghosts > 0.0:
+		# immagini residue dello scatto: due copie sfumate dietro, tinte di ciano
+		for g in 2:
+			var back: float = float(g + 1) * 22.0 * _pose_ghosts
+			_draw_posed(tex, cx - back, foot_y, w, h, Color(0.5, 0.95, 1.0, 0.28 / float(g + 1)), _pose_sx, _pose_sy, _pose_rot)
+	_draw_posed(tex, cx, foot_y, w, h, tint, _pose_sx, _pose_sy, _pose_rot)
+
+
+# Disegna la figura come un quadrilatero: scala e inclinazione partono dai piedi (non "galleggia" ne' scivola).
+func _draw_posed(tex: Texture2D, cx: float, foot_y: float, w: float, h: float, tint: Color, sx: float, sy: float, rot: float) -> void:
+	var foot := Vector2(cx, foot_y)
+	var xf := Transform2D(rot, Vector2(sx, sy), 0.0, Vector2.ZERO)
+	var corners := PackedVector2Array([Vector2(-w * 0.5, -h), Vector2(w * 0.5, -h), Vector2(w * 0.5, 0.0), Vector2(-w * 0.5, 0.0)])
+	var pts := PackedVector2Array()
+	for c in corners:
+		pts.append(foot + xf * c)
+	var uvs := PackedVector2Array([Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)])
+	draw_colored_polygon(pts, tint, uvs, tex)
 
 
 func _draw_fighter_body(cx: float, foot_y: float, top: float, body_col: Color, col: Color, char_id: String = "", expression: String = "neutral", tint: Color = Color.WHITE) -> void:
@@ -1157,9 +1234,51 @@ func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index
 
 
 # MARCHI: un mirino a rombo per ogni marchio sopra il boss, che pulsa quando cambiano.
-# Scatto in avanti con ritorno morbido: 0 -> amount -> 0 in ~0.45 s.
+# Scatto d'attacco in quattro tempi: carica indietro (anticipo), affondo veloce, colpo (si ferma un istante), ritorno morbido.
+# Ritorna x = spostamento, y = schiacciamento (>0 = piu' basso e largo), z = inclinazione in avanti, w = scia (0..1).
+func _lunge_pose(amount: float) -> Vector4:
+	if _lunge_t >= 1.0:
+		return Vector4.ZERO
+	var t: float = _lunge_t
+	if not _anim_on:
+		return Vector4(sin(PI * t) * amount, 0.0, 0.0, 0.0)
+	var back: float = 14.0
+	if t < 0.2:
+		var k: float = t / 0.2
+		k = k * k * (3.0 - 2.0 * k)
+		return Vector4(-back * k, 0.06 * k, -0.05 * k, 0.0)
+	if t < 0.42:
+		var k2: float = (t - 0.2) / 0.22
+		var e: float = 1.0 - pow(1.0 - k2, 3.0)          # parte forte e frena
+		return Vector4(lerpf(-back, amount, e), -0.05 * e, 0.16 * e, 1.0 - k2 * 0.4)
+	if t < 0.56:
+		var k3: float = (t - 0.42) / 0.14
+		return Vector4(amount + 4.0 * sin(k3 * PI), 0.0, 0.16 - 0.1 * k3, 0.0)    # il colpo: piccolo tremito in avanti
+	var k4: float = (t - 0.56) / 0.44
+	k4 = k4 * k4 * (3.0 - 2.0 * k4)
+	return Vector4(lerpf(amount, 0.0, k4), 0.0, lerpf(0.06, 0.0, k4), 0.0)
+
+
 func _lunge_offset(amount: float) -> float:
-	return sin(PI * _lunge_t) * amount if _lunge_t < 1.0 else 0.0
+	return _lunge_pose(amount).x
+
+
+# Respiro: il corpo si alza e si abbassa appena (scala dai piedi) e ondeggia. Piu' vivace con l'ultimate pronta, piu' pesante
+# e stanco con pochi PV. Ogni operatore ha la sua fase, cosi' non respirano all'unisono.
+func _idle_pose(u: Dictionary, phase: float) -> Vector3:
+	var hp_ratio: float = float(u["hp"]) / maxf(1.0, float(u["max_hp"]))
+	var speed: float = 1.7
+	var amp: float = 1.0
+	if int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
+		speed = 2.6
+		amp = 1.3
+	elif hp_ratio < 0.3:
+		speed = 3.1
+		amp = 1.6
+	var b: float = sin(_t * speed + phase)
+	var sway: float = sin(_t * 0.8 + phase * 1.7)
+	var lean: float = 0.025 if hp_ratio < 0.3 else 0.0
+	return Vector3(1.0 - 0.006 * amp * b, 1.0 + 0.016 * amp * b, sway * 0.012 + lean)
 
 
 # Pulviscolo neon che sale lentamente: da' profondita' alla scena senza testo ne' riquadri.

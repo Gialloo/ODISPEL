@@ -28,7 +28,7 @@ class ProfileIcon extends Control:
 		_glyph.custom_minimum_size = _glyph.size
 		_glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(_glyph)
-		set_process(Profile.rarity_of(icon_id) >= 3)
+		set_process(Profile.rarity_of(icon_id) >= 1 and AnimFx.enabled())
 		return self
 
 	func _process(delta: float) -> void:
@@ -45,6 +45,18 @@ class ProfileIcon extends Control:
 		draw_rect(rect.grow(-w * 0.5), col, false, w)
 		if r >= 2:
 			draw_rect(rect.grow(-w - 2.0), Color(col.r, col.g, col.b, 0.45), false, 1.0)
+		if r == 1:
+			var kr: float = 0.5 + 0.5 * sin(_t * 2.2)
+			draw_rect(rect.grow(1.0), Color(col.r, col.g, col.b, 0.10 + 0.18 * kr), false, 2.0)
+		if r == 2:
+			# scintille che si accendono e spengono
+			for i in 4:
+				var ph: float = fposmod(_t * 0.9 + float(i) * 0.25, 1.0)
+				var sp := Vector2(size.x * fposmod(0.2 + 0.31 * float(i) + float(i * i) * 0.07, 1.0), size.y * fposmod(0.15 + 0.27 * float(i), 1.0))
+				var a: float = sin(ph * PI)
+				var rr: float = 1.5 + 3.0 * a
+				draw_line(sp - Vector2(rr, 0), sp + Vector2(rr, 0), Color(1, 1, 1, 0.8 * a), 1.5)
+				draw_line(sp - Vector2(0, rr), sp + Vector2(0, rr), Color(1, 1, 1, 0.8 * a), 1.5)
 		if r >= 3:
 			var k: float = 0.5 + 0.5 * sin(_t * 3.0)
 			draw_rect(rect.grow(2.0), Color(col.r, col.g, col.b, 0.18 + 0.22 * k), false, 3.0)
@@ -54,9 +66,15 @@ class ProfileIcon extends Control:
 
 var data: Dictionary = {"name": Profile.DEFAULT_NAME, "icon": "c_sword", "banner": 0}
 var subtitle: String = ""
+var _sheen: float = 0.0
 var _icon: ProfileIcon
 var _name_label: Label
 var _sub_label: Label
+
+
+func _process(delta: float) -> void:
+	_sheen += delta
+	queue_redraw()
 
 
 # Carta con banner: size = dimensioni della carta, prima il banner, poi icona a sinistra e nome.
@@ -114,5 +132,8 @@ func _draw() -> void:
 		draw_line(Vector2(x, size.y), Vector2(x + size.y, 0), Color(1, 1, 1, 0.05), 6.0)
 		x += step
 	draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, size.y * 0.45)), Color(1, 1, 1, 0.05))
+	if AnimFx.enabled():
+		var sx: float = fposmod(_sheen * 0.22, 1.8) - 0.4
+		draw_line(Vector2(size.x * sx, size.y), Vector2(size.x * (sx + 0.15), 0), Color(1, 1, 1, 0.10), size.y * 0.5)
 	draw_rect(Rect2(Vector2.ZERO, size), Color(b.r, b.g, b.b, 0.85), false, 2.0)
 	draw_rect(Rect2(Vector2(0, size.y - 3), Vector2(size.x, 3)), b)
