@@ -214,7 +214,7 @@ func _build_status_panel() -> void:
 	var mats: Dictionary = roster["materials"]
 	var res_row := HBoxContainer.new()
 	res_row.add_theme_constant_override("separation", 0)
-	for entry in [["coin", "GOLD %d" % int(roster["coins"])], ["nucleo", "NUCLEI %d" % int(mats.get("nucleo", 0))], ["lega", "LEGHE %d" % int(mats.get("lega", 0))]]:
+	for entry in [["coin", "CREDITI %d" % int(roster["coins"])], ["nucleo", "NUCLEI %d" % int(mats.get("nucleo", 0))], ["lega", "LEGHE %d" % int(mats.get("lega", 0))]]:
 		res_row.add_child(_resource_cell(str(entry[0]), str(entry[1])))
 	box.add_child(res_row)
 

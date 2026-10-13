@@ -2054,7 +2054,7 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 		_animate_rewards(_overlay)
 
 
-# Rarita' scritta in una riga di premio ("MOSSA: CURA (RARA)"); -1 = nessuna (gold, materiali).
+# Rarita' scritta in una riga di premio ("MOSSA: CURA (RARA)"); -1 = nessuna (crediti, materiali).
 func _line_rarity(line: String) -> int:
 	var up: String = line.to_upper()
 	for i in range(BattleTypes.RARITIES.size() - 1, -1, -1):
@@ -2077,7 +2077,7 @@ func _reward_lines(rewards: Dictionary) -> Array:
 	if rewards.is_empty():
 		return ["—"]
 	if int(rewards.get("coins", 0)) > 0:
-		lines.append("+%d GOLD" % int(rewards["coins"]))
+		lines.append("+%d CREDITI" % int(rewards["coins"]))
 	for mat in rewards.get("materials", {}):
 		lines.append("+%d %s" % [int(rewards["materials"][mat]), str(BattleContent.MATERIALS.get(mat, mat)).to_upper()])
 	for d in rewards.get("drops", []):

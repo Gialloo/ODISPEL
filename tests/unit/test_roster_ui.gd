@@ -88,7 +88,7 @@ func _run() -> void:
 	_check("monete pagate", int(s.roster["coins"]) < coins0)
 	s.roster["coins"] = 0
 	_check("senza monete il potenziamento e' rifiutato", not s.upgrade("kira"))
-	_check("il messaggio dice perche'", s.status_text.contains("GOLD"))
+	_check("il messaggio dice perche'", s.status_text.contains("CREDITI"))
 	_check("potenziare un non posseduto fallisce", not s.upgrade("tana"))
 
 	# reclutamento

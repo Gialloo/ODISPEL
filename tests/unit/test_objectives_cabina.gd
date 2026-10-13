@@ -97,7 +97,7 @@ func _run() -> void:
 		if str(o["kind"]) == "win":
 			won = int(o["progress"])
 	_check("la sconfitta conta come battaglia giocata ma non come vittoria", played <= 1 and won == 0)
-	_check("testi leggibili", Objectives.describe(list[0]) != "" and Objectives.reward_text(list[0]["reward"]).contains("GOLD"))
+	_check("testi leggibili", Objectives.describe(list[0]) != "" and Objectives.reward_text(list[0]["reward"]).contains("CREDITI"))
 	# nuovi tipi: boss diversi e INCUBO
 	var rv: Dictionary = RosterState.new_roster()
 	var mk: Dictionary = {"kind": "boss_variety", "boss": "", "goal": 2, "progress": 0, "done": false, "reward": {"coins": 10}, "seen": []}

@@ -98,10 +98,10 @@ static func line(icon_key: String, col: Color, text: String, font_size: int = 18
 	return row
 
 
-# Icona e colore di una riga di premio ("+300 GOLD", "PEZZO: ARMA RARA", ...).
+# Icona e colore di una riga di premio ("+300 CREDITI", "PEZZO: ARMA RARA", ...).
 static func reward_key(text: String) -> Array:
 	var t: String = text.to_upper()
-	if "GOLD" in t:
+	if "CREDITI" in t:
 		return ["coin", currency_color("coin")]
 	if "NUCLE" in t:
 		return ["nucleo", currency_color("nucleo")]

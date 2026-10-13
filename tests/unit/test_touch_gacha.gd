@@ -70,7 +70,7 @@ func _run() -> void:
 	for p in pages:
 		for l in p["lines"]:
 			text += str(l["text"]) + "\n"
-	_check("guida: spiega monete, nuclei e leghe", text.contains("GOLD") and text.contains("NUCLEI") and text.contains("LEGHE"))
+	_check("guida: spiega monete, nuclei e leghe", text.contains("CREDITI") and text.contains("NUCLEI") and text.contains("LEGHE"))
 	_check("guida: riporta le quote reali", text.contains("55%") and text.contains("30%") and text.contains("12%") and text.contains("3%"))
 	_check("guida: riporta i costi", text.contains(str(Recruiting.SINGLE_COST)) and text.contains(str(Recruiting.TEN_COST)))
 	_check("guida: riporta la garanzia", text.contains(str(Recruiting.PITY_LIMIT)))

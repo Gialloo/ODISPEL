@@ -149,7 +149,7 @@ func claim_all() -> int:
 func refresh() -> void:
 	if _list == null:
 		return
-	_coins.text = "GOLD %d" % int(roster["coins"])
+	_coins.text = "CREDITI %d" % int(roster["coins"])
 	var mats: Dictionary = roster["materials"]
 	_mats.text = "NUCLEI %d     LEGHE %d" % [int(mats.get("nucleo", 0)), int(mats.get("lega", 0))]
 	var ready: int = Feats.claimable_count(roster)

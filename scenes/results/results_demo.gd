@@ -141,7 +141,7 @@ func _show_result(result: String) -> void:
 				"Boss sconfitto!\n"
 				+ level_up_text
 				+ "EXP totale: " + str(CampaignState.player_exp) + "\n"
-				+ "GOLD totali: " + str(CampaignState.player_currency)
+				+ "CREDITI totali: " + str(CampaignState.player_currency)
 			)
 		else:
 			details_label.text = (
@@ -149,7 +149,7 @@ func _show_result(result: String) -> void:
 				+ level_up_text
 				+ "ATTENZIONE: ricompense non risultano riscosse.\n"
 				+ "EXP prevista: " + str(encounter.reward_exp) + "\n"
-				+ "GOLD previsti: " + str(encounter.reward_currency)
+				+ "CREDITI previsti: " + str(encounter.reward_currency)
 			)
 
 	if _is_net():

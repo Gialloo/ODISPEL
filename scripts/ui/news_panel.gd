@@ -34,7 +34,7 @@ func _ready() -> void:
 		var label := BattleTheme.make_label("•  " + str(item), 20, BattleTheme.WH)
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.custom_minimum_size = Vector2(640, 0)
-		label.set_meta("keep_case", true)      # GOLD e TEAM restano scritti come nel testo
+		label.set_meta("keep_case", true)      # CREDITI e TEAM restano scritti come nel testo
 		box.add_child(label)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL

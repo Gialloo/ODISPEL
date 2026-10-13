@@ -612,7 +612,7 @@ func toggle_style(char_id: String) -> bool:
 func upgrade(char_id: String) -> bool:
 	var err: String = RosterState.level_up_character(roster, char_id)
 	if err != "":
-		var msgs: Dictionary = {"max": "Livello massimo.", "monete": "GOLD insufficiente.",
+		var msgs: Dictionary = {"max": "Livello massimo.", "monete": "CREDITI insufficiente.",
 			"nucleo": "Nuclei insufficienti.", "sconosciuto": "Personaggio non posseduto."}
 		return _say(str(msgs.get(err, "Non riuscito: " + err)), false)
 	_save()
@@ -653,7 +653,7 @@ func pull(count: int) -> bool:
 	if not bool(r["ok"]):
 		last_results = []
 		if str(r["error"]) == "monete":
-			return _say("Servono %d GOLD." % int(r["cost"]), false)
+			return _say("Servono %d CREDITI." % int(r["cost"]), false)
 		return _say("Reclutamento non riuscito.", false)
 	last_results = r["results"]
 	_reveal_rows = DisplayServer.get_name() != "headless"
@@ -668,7 +668,7 @@ func pull(count: int) -> bool:
 		else:
 			PullReveal.play(self, last_results)
 	_announce_pulls(last_results)
-	return _say("Reclutamento completato (-%d GOLD)." % int(r["cost"]), true)
+	return _say("Reclutamento completato (-%d CREDITI)." % int(r["cost"]), true)
 
 
 # Avvisa dei nuovi operatori ottenuti (max 3, i migliori per primi).
@@ -782,7 +782,7 @@ func _why_not(slot: int, size: int, item_id: String, field: String) -> String:
 func upgrade_gear(gear_id: String) -> bool:
 	var err: String = RosterState.level_up_gear(roster, gear_id)
 	if err != "":
-		var msgs: Dictionary = {"max": "Pezzo al livello massimo.", "monete": "GOLD insufficiente.",
+		var msgs: Dictionary = {"max": "Pezzo al livello massimo.", "monete": "CREDITI insufficiente.",
 			"lega": "Leghe insufficienti.", "sconosciuto": "Pezzo sconosciuto."}
 		return _say(str(msgs.get(err, "Non riuscito: " + err)), false)
 	_save()
@@ -834,7 +834,7 @@ func _header_resource(icon_key: String, x: float) -> Label:
 func refresh() -> void:
 	if _list_box == null:
 		return
-	_coins_label.text = "GOLD %d" % int(roster["coins"])
+	_coins_label.text = "CREDITI %d" % int(roster["coins"])
 	var mats: Dictionary = roster["materials"]
 	_mats_label.text = "NUCLEI %d" % int(mats.get("nucleo", 0))
 	_lega_label.text = "LEGHE %d" % int(mats.get("lega", 0))
@@ -1236,7 +1236,7 @@ func _refresh_recruit() -> void:
 		BattleTheme.style_button(banner_buttons[bk], "primary" if str(bk) == banner else "normal", 15)
 	_banner_note.text = "Solo i 10 operatori del secondo roster." if banner == "nuovi" else "Tutti gli operatori. I 10 nuovi escono con meta' delle probabilita'."
 	var left: int = Recruiting.PITY_LIMIT - int(roster["pity"])
-	_pity_label.text = "Reclutamenti totali: %d\nEpico garantito entro %d reclutamenti.\nGOLD: %d" % [int(roster["pulls"]), left, int(roster["coins"])]
+	_pity_label.text = "Reclutamenti totali: %d\nEpico garantito entro %d reclutamenti.\nCREDITI: %d" % [int(roster["pulls"]), left, int(roster["coins"])]
 	_pity_bar.value = float(int(roster["pity"]))
 	for entry in _pull_buttons:
 		var b: Button = entry[0]
@@ -1279,7 +1279,7 @@ func _refresh_recruit() -> void:
 			"copy":
 				outcome = "COPIA +1  (%d/%d per il RANK UP)" % [int(r.get("copies", 0)), RosterState.rank_cost(int(r.get("rank", 0)))]
 			_:
-				outcome = "RANK MAX  +%d GOLD" % int(r["refund"])
+				outcome = "RANK MAX  +%d CREDITI" % int(r["refund"])
 		var line := "%-6s %-11s %s" % [str(def["name"]).to_upper(), str(BattleTypes.RARITIES[int(r["rarity"])]).to_upper(), outcome]
 		var l := BattleTheme.make_label(line, 22, RARITY_COLORS[clampi(int(r["rarity"]), 0, 3)])
 		_results_box.add_child(l)

@@ -379,7 +379,7 @@ func _finish_combat(victory: bool) -> void:
 				_log(
 					"RICOMPENSE OTTENUTE: "
 					+ str(encounter.reward_exp) + " EXP, "
-					+ str(encounter.reward_currency) + " GOLD."
+					+ str(encounter.reward_currency) + " CREDITI."
 				)
 			else:
 				_log("Ricompense già riscosse per questo incontro.")

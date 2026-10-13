@@ -223,7 +223,7 @@ static func record_pvp(roster: Dictionary, victory: bool) -> void:
 static func reward_text(reward: Dictionary) -> String:
 	var parts: Array = []
 	if int(reward.get("coins", 0)) > 0:
-		parts.append("%d GOLD" % int(reward["coins"]))
+		parts.append("%d CREDITI" % int(reward["coins"]))
 	if int(reward.get("nucleo", 0)) > 0:
 		parts.append("%d NUCLEI" % int(reward["nucleo"]))
 	if int(reward.get("lega", 0)) > 0:
