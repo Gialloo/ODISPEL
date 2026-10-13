@@ -66,7 +66,7 @@ func _run() -> void:
 	await process_frame
 	_check("la battaglia usa il boss scelto", str(BattleState.boss(b.source.battle)["char"]) == "semaforo")
 	_check("la battaglia usa il livello scelto", int(b.source.battle["tier"]) == 1)
-	_check("il banner nomina il boss", b._boss_name.text.to_upper().contains("SEMAFORO") and b._boss_name.text.to_upper().contains("DIFFICILE"))
+	_check("il banner nomina il boss", b._boss_name.text.to_upper().contains("SEMAFORO") and b._boss_meta.text.to_upper().contains("DIFFICILE"))
 
 	MissionConfig.set_mission("distributore", 0)
 	print("---")

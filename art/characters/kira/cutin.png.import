@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/cutin.png-d39061003b382a06a34d0f9faf638d75.ct
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.4
+compress/lossy_quality=0.3
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

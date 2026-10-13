@@ -254,11 +254,10 @@ func _map(p: Vector2, gx: float, s: float = ENTITY_SCALE, floor_y: float = FLOOR
 	return Vector2(gx + (p.x - gx) * s, floor_y + (p.y - GEO_FLOOR) * s)
 
 
-# La squadra e' vista in diagonale: il primo e' in basso a sinistra, vicino alla camera (grande);
-# gli altri salgono verso il centro e rimpiccioliscono. x = posizione, y = piedi sullo schermo, z = scala.
+# La squadra sta su una riga sola: stessa altezza e stessa scala, vicini fra loro e lontani dal boss. x = posizione, y = piedi sullo schermo, z = scala.
 func party_pose(index: int, _count: int) -> Vector3:
 	var t: float = float(index)
-	return Vector3(190.0 + t * 170.0, 474.0 - t * 38.0 - party_lift, 0.88 - t * 0.07)
+	return Vector3(215.0 + t * 150.0, 492.0 - party_lift, 0.82)
 
 
 func fighter_x(index: int, count: int) -> float:
@@ -1012,7 +1011,7 @@ const BENCH_ALPHA: float = 0.42
 
 
 # La back row e' solo quella del TUO party (dietro la front row): gli altri mostrano solo chi e' in campo.
-const BACK_X: Array = [275.0, 445.0, 615.0]
+const BACK_X: Array = [292.0, 442.0, 592.0]
 
 
 func _draw_back_row() -> void:

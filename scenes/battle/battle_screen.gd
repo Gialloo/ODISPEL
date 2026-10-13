@@ -42,6 +42,7 @@ var _turn_sig: String = ""
 var _turn_acting: String = ""
 var _fx: Control
 var _boss_name: Label
+var _boss_meta: Label
 var _boss_bar: SegBar
 var _boss_hp: Label
 var _round_label: Label
@@ -346,7 +347,7 @@ func _build_autoplay() -> void:
 	_auto_button.visible = false
 	BattleTheme.style_button(_auto_button, "normal", 16)
 	add_child(_auto_button)
-	_anchor(_auto_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-236, 16, -16, 64 if not TouchUi.active() else 72))
+	_anchor(_auto_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-204, 6, -8, 44 if not TouchUi.active() else 58))
 	_auto_button.pressed.connect(func() -> void: set_autoplay(not autoplay))
 	# velocita' dell'animazione sempre a portata di dito: NORMALE -> VELOCE -> TURBO
 	speed_button = Button.new()
@@ -354,8 +355,8 @@ func _build_autoplay() -> void:
 	BattleTheme.style_button(speed_button, "normal", 15)
 	speed_button.text = _speed_label()
 	add_child(speed_button)
-	var top: float = 72.0 if TouchUi.active() else 64.0
-	_anchor(speed_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-236, top + 10.0, -16, top + (8.0 + 52.0 if TouchUi.active() else 8.0 + 38.0)))
+	var top: float = 58.0 if TouchUi.active() else 44.0
+	_anchor(speed_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-204, top + 6.0, -8, top + (6.0 + 44.0 if TouchUi.active() else 6.0 + 34.0)))
 	speed_button.pressed.connect(func() -> void:
 		Settings.next_speed()
 		Settings.save()
@@ -370,12 +371,12 @@ func _speed_label() -> String:
 func _build_camera_info() -> void:
 	_rec_dot = ColorRect.new()
 	_rec_dot.color = BattleTheme.RD
-	_rec_dot.size = Vector2(20, 20)
-	_rec_dot.position = Vector2(18, 16)
+	_rec_dot.size = Vector2(12, 12)
+	_rec_dot.position = Vector2(8, 9)
 	_rec_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_rec_dot)
-	var rec := BattleTheme.make_label("REC", 24, BattleTheme.WH, true)
-	rec.position = Vector2(44, 8)
+	var rec := BattleTheme.make_label("REC", 15, BattleTheme.WH, true)
+	rec.position = Vector2(24, 2)
 	add_child(rec)
 	var cam := BattleTheme.make_label("CAM-07 · VIA S. GIORGIO · PARK 3", 14, BattleTheme.CY)
 	cam.position = Vector2(28, 70)
@@ -385,8 +386,9 @@ func _build_camera_info() -> void:
 	_clock_label.position = Vector2(28, 92)
 	_clock_label.visible = false
 	add_child(_clock_label)
-	_round_label = BattleTheme.make_label("CICLO 01", 22, BattleTheme.WH, true)
-	_round_label.position = Vector2(18, 36)
+	_round_label = BattleTheme.make_label("CICLO 01", 14, BattleTheme.CY_DIM)
+	_round_label.add_theme_font_override("font", BattleTheme.hud())
+	_round_label.position = Vector2(8, 24)
 	add_child(_round_label)
 
 
@@ -395,12 +397,17 @@ func _build_boss_banner() -> void:
 	_boss_panel = panel
 	add_child(panel)
 	panel.margins = Vector4(18.0, 26.0, 18.0, 8.0)
-	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 16, 192, 112))
+	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 12, 192, 142))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 3)
 	panel.set_content(box)
-	_boss_name = BattleTheme.make_label("SOGGETTO", 13, BattleTheme.RD)
+	_boss_name = BattleTheme.make_label("SOGGETTO", 24, BattleTheme.WH, true)       # il nome: grande, Archivo Black, bianco
+	_boss_name.clip_text = true
 	box.add_child(_boss_name)
+	_boss_meta = BattleTheme.make_label("", 13, BattleTheme.CY_DIM)                  # classe, minaccia, difficolta': piccolo e chiaro
+	_boss_meta.add_theme_font_override("font", BattleTheme.hud())
+	_boss_meta.clip_text = true
+	box.add_child(_boss_meta)
 	_boss_bar = SegBar.new().setup(30, BattleTheme.RD, Vector2(0, 18))
 	_boss_bar.color_off = BattleTheme.RD_DARK
 	_boss_bar.smooth = true
@@ -413,7 +420,7 @@ func _build_boss_banner() -> void:
 	timer_panel.quiet = true
 	add_child(timer_panel)
 	timer_panel.margins = Vector4(14.0, 22.0, 14.0, 2.0)
-	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(150, 10, 290, 70))
+	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(104, 6, 244, 64))
 	_timer_label = BattleTheme.make_label("LIBERO", 28, BattleTheme.CY, true)
 	timer_panel.set_content(_timer_label)
 
@@ -422,13 +429,14 @@ func _build_telegraph() -> void:
 	_tele_panel = HudPanel.new().setup("ALLARME", BattleTheme.RD)
 	add_child(_tele_panel)
 	_tele_panel.margins = Vector4(18.0, 26.0, 18.0, 6.0)
-	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 122, 192, 206))
+	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 150, 192, 232))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	_tele_panel.set_content(box)
 	_tele_label = BattleTheme.make_label("PROSSIMA MOSSA", 28, BattleTheme.WH, true)
 	box.add_child(_tele_label)
 	_tele_target = BattleTheme.make_label("", 15, BattleTheme.RD)
+	_tele_target.add_theme_font_override("font", BattleTheme.hud())
 	box.add_child(_tele_target)
 
 
@@ -437,7 +445,7 @@ func _build_turn_panel() -> void:
 	var panel := HudPanel.new().setup("ORDINE DEL TURNO", BattleTheme.CY_DIM)
 	panel.margins = Vector4(12, 26, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(16, 82, 340, 208))
+	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 76, 332, 202))
 	_turn_box = VBoxContainer.new()
 	_turn_box.add_theme_constant_override("separation", 1)
 	_turn_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -563,7 +571,9 @@ func _fan_origin() -> Vector2:
 		if str(players[i]["id"]) == _cur_slot_id():
 			idx = i
 	var pose: Vector3 = _stage.party_pose(idx, players.size())
-	return Vector2(pose.x + 36.0, pose.y - 95.0 * pose.z)
+	# il ventaglio si apre a destra di tutta la squadra, cosi' non copre nessun operatore
+	var last: Vector3 = _stage.party_pose(maxi(0, players.size() - 1), players.size())
+	return Vector2(last.x - 90.0, pose.y - 95.0 * pose.z)
 
 
 func _build_log() -> void:
@@ -577,7 +587,7 @@ func _build_log() -> void:
 	_log_label.scroll_active = false
 	_log_label.fit_content = false
 	_log_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_log_label.add_theme_font_override("normal_font", BattleTheme.mono())
+	_log_label.add_theme_font_override("normal_font", BattleTheme.hud())
 	_log_label.add_theme_font_size_override("normal_font_size", 16 if TouchUi.active() else 15)
 	panel.set_content(_log_label)
 
@@ -653,7 +663,8 @@ func _refresh_boss() -> void:
 	if int(shown.get("endless", 0)) > 0:
 		var emod: Dictionary = Endless.mod_for(int(shown["endless"]))
 		tier_name = "PIANO %d%s" % [int(shown["endless"]), (" · " + str(emod["name"])) if not emod.is_empty() else ""]
-	_boss_name.text = "%s · %s · %s" % [str(info.get("name", "SOGGETTO")).to_upper(), str(info.get("title", "")).to_upper(), tier_name]
+	_boss_name.text = str(info.get("name", "SOGGETTO")).to_upper()
+	_boss_meta.text = ("%s · %s" % [str(info.get("title", "")), tier_name]).to_upper()
 	_boss_bar.set_ratio(float(boss["hp"]) / float(boss["max_hp"]))
 	var tags: String = ""
 	for s in boss["statuses"]:
@@ -914,8 +925,8 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 
 	var fg: Color = BattleTheme.BK if selected else (BattleTheme.CY if alive else BattleTheme.CY_DARK)
 	var title: String = str(u["name"]).to_upper()
-	if is_active:
-		title += "  ✓" if picked else "  ▶"
+	if is_active and picked:
+		title += "  ✓"
 	var where: String = "K.O." if not alive else ("FRONT" if is_active else "BACK")
 	var name_l := _row_text(title, 17, fg, Vector2(54, 0), 94.0)
 	name_l.clip_text = true
@@ -925,7 +936,8 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 		var cm: float = BattleTypes.color_multiplier(str(u["color"]), str(BattleState.boss(shown)["color"]))
 		if cm != 1.0:
 			var arrow := BattleTheme.make_label("▲" if cm > 1.0 else "▼", 16, (BattleTheme.OK if cm > 1.0 else BattleTheme.RD) if not selected else BattleTheme.BK)
-			arrow.position = Vector2(54.0 + minf(name_l.get_minimum_size().x, 70.0) + 4.0, 1)
+			arrow.position = Vector2(54.0 + minf(BattleTheme.hud().get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x, 86.0) + 4.0, 0)
+			arrow.tooltip_text = "Danno +50% contro questo boss" if cm > 1.0 else "Danno ridotto contro questo boss"
 			inner.add_child(arrow)
 	# volto dell'operatore (la grafica vera se c'e', altrimenti il segnaposto anime)
 	var face := PortraitView.new().setup(str(u["char"]), "icon")
@@ -1074,6 +1086,20 @@ func _refresh_orders() -> void:
 	_fan_anchor.size = hi - lo
 	var animate: bool = _fan_key != "%s|%d" % [uid, int(shown["round"])]
 	_fan_key = "%s|%d" % [uid, int(shown["round"])]
+	# una sola misura di carattere per tutte le mosse (la piu' grande che sta in tutti i pulsanti); l'attacco base e' un po' piu' grande
+	var common_fs: int = 18
+	for e in entries:
+		if str(e["id"]) == "attack":
+			continue
+		var mv: Dictionary = BattleContent.MOVES[str(e["id"])]
+		var sfx: String = ""
+		if str(mv["kind"]) == "skill":
+			sfx = "  %dE" % int(mv["cost"])
+		elif str(mv["kind"]) == "ult":
+			sfx = "  100%"
+		var txt: String = "9  %s%s" % [BattleText.move_name(str(e["id"])), sfx]
+		while common_fs > (14 if touch else 12) and BattleTheme.menu().get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x > bw - 74.0:
+			common_fs -= 1
 	var n: int = 1
 	for e in entries:
 		var move_id: String = str(e["id"])
@@ -1096,11 +1122,7 @@ func _refresh_orders() -> void:
 		b.custom_minimum_size = Vector2(w, bh)
 		b.size = Vector2(w, bh)
 		# il testo non si taglia mai: si sceglie il carattere piu' grande che ci sta nel pulsante
-		var size_base: int = 22 if primary else 17
-		var avail: float = w - 74.0        # margini del pulsante e icona
-		var fsize: int = size_base
-		while fsize > (14 if touch else 10) and BattleTheme.display().get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize).x > avail:
-			fsize -= 1
+		var fsize: int = common_fs + 4 if primary else common_fs
 		BattleTheme.style_button(b, str(e["kind"]) if not is_guard else "normal", fsize)
 		b.add_theme_font_size_override("font_size", fsize)
 		b.disabled = err != "" or locked or animating or autoplay
