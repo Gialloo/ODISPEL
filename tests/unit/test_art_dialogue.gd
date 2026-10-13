@@ -36,7 +36,7 @@ func _run() -> void:
 	# --- ArtLibrary
 	ArtLibrary.extra_roots = [ProjectSettings.globalize_path(FIX)]
 	ArtLibrary.refresh()
-	_check("senza file: nessun ritratto", ArtLibrary.portrait("kira", "angry") == null)
+	_check("senza file: nessun ritratto", ArtLibrary.portrait("dax", "angry") == null)
 	var rep0: Dictionary = ArtLibrary.report()
 	_check("rapporto: totale = trovati + mancanti", int(rep0["total"]) == rep0["found"].size() + rep0["missing"].size())
 	_check("rapporto: gli slot sono molti", int(rep0["total"]) > 40)
@@ -56,7 +56,7 @@ func _run() -> void:
 	_check("personaggio senza file: null", ArtLibrary.portrait("dax", "happy") == null)
 	_check("splash ripiega su neutral", ArtLibrary.splash("kira") != null)
 	_check("cutin ripiega su neutral", ArtLibrary.cutin("kira") != null)
-	_check("icona mancante: null", ArtLibrary.icon("kira") == null)
+	_check("icona mancante: null", ArtLibrary.icon("dax") == null)
 	_check("sprite di battaglia", ArtLibrary.battle_sprite("kira") != null)
 	_check("boss in battaglia", ArtLibrary.boss_image("distributore", "battle") != null)
 	_check("boss hurt mancante: null", ArtLibrary.boss_image("distributore", "hurt") == null)
