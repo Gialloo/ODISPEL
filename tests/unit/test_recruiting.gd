@@ -35,7 +35,7 @@ func _rich(coins: int = 100000) -> Dictionary:
 
 func _test_content() -> void:
 	_check("contenuti coerenti (con rarita')", BattleContent.validate().is_empty())
-	_check("14 personaggi in totale (13 reclutabili + Nico)", BattleContent.CHARACTERS.size() == 14)
+	_check("24 personaggi in totale (23 reclutabili + Nico)", BattleContent.CHARACTERS.size() == 24)
 	var per_rarity: Array = [0, 0, 0, 0]
 	for id in BattleContent.CHARACTERS:
 		per_rarity[BattleContent.CHARACTERS[id]["rarity"]] += 1
@@ -85,12 +85,12 @@ func _test_pull() -> void:
 
 
 func _test_duplicates() -> void:
-	var r: Dictionary = _rich()
+	var r: Dictionary = _rich(1000000)   # il roster e' piu' grande: servono molti reclutamenti per vederli tutti
 	# forzo un personaggio che si possiede gia': la copia sale di rank
 	var owned_rank_before: int = r["characters"]["kira"]["rank"]
 	var saw_rank: bool = false
 	var saw_new: bool = false
-	for i in 800:
+	for i in 1600:
 		var res: Dictionary = Recruiting.pull(r, 1, 1000 + i)
 		if res["results"].is_empty():
 			break
@@ -107,7 +107,7 @@ func _test_duplicates() -> void:
 		any_copies += RosterState.copies(r, str(id))
 	_check("le copie si accumulano nel salvataggio", any_copies > 0)
 	_check("rank mai oltre il massimo", _max_rank(r) <= RosterState.MAX_RANK)
-	_check("tutti e 13 i personaggi alla fine", r["characters"].size() == 13)
+	_check("tutti e 23 i reclutabili alla fine", r["characters"].size() == 23)
 	_check("collezione valida dopo 200 reclutamenti", RosterState.validate(r) == "")
 	_check("il rank di Kira non e' sceso", r["characters"]["kira"]["rank"] >= owned_rank_before)
 

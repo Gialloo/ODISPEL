@@ -33,6 +33,9 @@ var archive_button: Button
 var legend_button: Button
 var _team_page: Control
 var _recruit_page: Control
+var banner: String = "standard"        # banner di reclutamento scelto (vedi Recruiting.BANNERS)
+var banner_buttons: Dictionary = {}
+var _banner_note: Label
 var _equip_page: Control
 var _equip_name: Label
 var _equip_info: Label
@@ -345,8 +348,23 @@ func _build_recruit_page() -> void:
 	info.size = Vector2(430, 494)
 	_recruit_page.add_child(info)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 12)
+	col.add_theme_constant_override("separation", 8)
 	info.set_content(col)
+	var tabs := HBoxContainer.new()          # i due banner: standard e nuovi operatori
+	tabs.add_theme_constant_override("separation", 6)
+	col.add_child(tabs)
+	for bn in [["standard", "STANDARD"], ["nuovi", "NUOVI OPERATORI"]]:
+		var tb := Button.new()
+		tb.text = str(bn[1])
+		tb.clip_text = true
+		tb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tb.custom_minimum_size = Vector2(0, 40)
+		tb.pressed.connect(set_banner.bind(str(bn[0])))
+		tabs.add_child(tb)
+		banner_buttons[str(bn[0])] = tb
+	_banner_note = BattleTheme.make_label("", 14, BattleTheme.GOLD)
+	_banner_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(_banner_note)
 	_pity_label = BattleTheme.make_label("", 16, BattleTheme.CY)
 	_pity_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(_pity_label)
@@ -365,14 +383,14 @@ func _build_recruit_page() -> void:
 	col.add_child(_pity_bar)
 	for entry in [[1, "RECLUTA x1"], [10, "RECLUTA x10"]]:
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(0, 64)
+		b.custom_minimum_size = Vector2(0, 56)
 		BattleTheme.style_button(b, "primary", 24)
 		b.pressed.connect(pull.bind(int(entry[0])))
 		col.add_child(b)
 		_pull_buttons.append([b, int(entry[0]), str(entry[1])])
 	var guide := Button.new()
 	guide.text = "COME FUNZIONA  ?"
-	guide.custom_minimum_size = Vector2(0, 46)
+	guide.custom_minimum_size = Vector2(0, 40)
 	BattleTheme.style_button(guide, "normal", 20)
 	guide.pressed.connect(open_gacha_guide)
 	col.add_child(guide)
@@ -545,9 +563,18 @@ func rank_up(char_id: String) -> bool:
 	return okr
 
 
+func set_banner(b: String) -> void:
+	if not Recruiting.BANNERS.has(b) or b == banner:
+		return
+	banner = b
+	last_results = []
+	if _recruit_page != null:
+		_refresh_recruit()
+
+
 func pull(count: int) -> bool:
 	var s: int = next_seed if next_seed != 0 else (int(randi()) | 1)
-	var r: Dictionary = Recruiting.pull(roster, count, s)
+	var r: Dictionary = Recruiting.pull(roster, count, s, banner)
 	if not bool(r["ok"]):
 		last_results = []
 		if str(r["error"]) == "monete":
@@ -1117,6 +1144,9 @@ func _refresh_equip_gear(key: String) -> void:
 
 
 func _refresh_recruit() -> void:
+	for bk in banner_buttons:
+		BattleTheme.style_button(banner_buttons[bk], "primary" if str(bk) == banner else "normal", 15)
+	_banner_note.text = "Solo i 10 operatori del secondo roster." if banner == "nuovi" else "Tutti gli operatori. I 10 nuovi escono con meta' delle probabilita'."
 	var left: int = Recruiting.PITY_LIMIT - int(roster["pity"])
 	_pity_label.text = "Reclutamenti totali: %d\nEpico garantito entro %d reclutamenti.\nMonete: %d" % [int(roster["pulls"]), left, int(roster["coins"])]
 	_pity_bar.value = float(int(roster["pity"]))
@@ -1142,6 +1172,8 @@ func _refresh_recruit() -> void:
 		faces.add_theme_constant_override("h_separation", 8)
 		faces.add_theme_constant_override("v_separation", 8)
 		for cid in BattleContent.CHARACTERS:
+			if banner == "nuovi" and not Recruiting.NEW_IDS.has(str(cid)):
+				continue
 			var face := PortraitView.new().setup(str(cid), "icon")
 			face.show_expression_text = false
 			face.dimmed = not RosterState.owns(roster, str(cid))

@@ -31,6 +31,15 @@ const TRAITS: Dictionary = {
 	"tana": {"name": "Baluardo che risponde", "text": "Il 40% del danno assorbito dal suo scudo torna al boss.", "fx": {"reflect_shield": REFLECT_PM}},
 	"dafne": {"name": "Tiro di grazia", "text": "Colpo critico sicuro sul boss sotto il 30% dei PV; ogni critico le ridona 1 munizione.", "fx": {"execute_crit": EXECUTE_BELOW_PM, "crit_ammo": 1}},
 	"angela": {"name": "Surriscaldamento", "text": "Ogni munizione spesa da' +3% di danno fino alla fine della battaglia (max 12 cariche).", "fx": {"heat": HEAT_PM}},
+	# Roster 2 (tratti proposti da me: ChatGPT non li aveva; usano solo effetti che esistono gia')
+	"moro": {"name": "Piede fermo", "text": "+6% DIF.", "mods": {"def": 60}},
+	"silex": {"name": "Massa in moto", "text": "Parte con +15 di ultimate.", "gauge": 15},
+	"rhea": {"name": "Mano pronta", "text": "Parte con +1 energia.", "energy": 1},
+	"vesper": {"name": "Occhi da predatore", "text": "+8% critico e parte con +1 energia.", "mods": {"crit": 80}, "energy": 1},
+	"yuna": {"name": "Anticipo", "text": "+8% VEL e parte con +10 di ultimate.", "mods": {"spd": 80}, "gauge": 10},
+	"oriel": {"name": "Legge della soglia", "text": "A fine round l'alleato con meno ultimate ne riceve +%d." % GAUGE_SHARE, "fx": {"gauge_share": GAUGE_SHARE}},
+	"flux": {"name": "Punto debole", "text": "+15% di danno ai bersagli indeboliti (malus o marchi).", "fx": {"debuff_dmg": DEBUFF_DMG_PM}},
+	"lyra": {"name": "Esecuzione", "text": "Colpo critico sicuro sul boss sotto il 30% dei PV.", "fx": {"execute_crit": EXECUTE_BELOW_PM}},
 }
 
 

@@ -50,6 +50,16 @@ const PASSIVES: Dictionary = {
 	"dafne": {"name": "Occhio del cecchino", "key": "crit_per_mark", "base": 0.025},
 	"angela": {"name": "Rete di rifornimento", "key": "mark_ammo", "base": 1.0},
 	"nico": {"name": "Sciarpa rossa", "key": "regen", "base": 0.035},
+	"moro": {"name": "Contraccolpo", "key": "thorns", "base": 0.15},
+	"vesper": {"name": "Predazione", "key": "dmg_vs_mark", "base": 0.12},
+	"nami": {"name": "Guardia preparata", "key": "guard_shield", "base": 0.12},
+	"oriel": {"name": "Cura schermata", "key": "heal_shield", "base": 0.25},
+	"silex": {"name": "Armatura ciclica", "key": "round_shield", "base": 0.06},
+	"yuna": {"name": "Fiato rubato", "key": "lifesteal", "base": 0.08},
+	"rhea": {"name": "Recupero costante", "key": "regen", "base": 0.03},
+	"flux": {"name": "Precisione opportunistica", "key": "crit_marked", "base": 0.12},
+	"cato": {"name": "Corazza a spilli", "key": "thorns", "base": 0.12},
+	"lyra": {"name": "Priorita' assoluta", "key": "dmg_vs_mark", "base": 0.1},
 }
 
 # Abilita' uniche (id -> mossa). "unique" = personaggio proprietario.
@@ -105,6 +115,32 @@ const MOVES: Dictionary = {
 		"bonus": {"stat": "def", "pct": 22}, "unique": "nico"},
 	"u_tana_b": {"name": "Muro totale", "kind": "skill", "cost": 2, "priority": 1, "target": "self", "shield": 2.0, "self_status": {"taunt": 1, "guard": 1},
 		"bonus": {"stat": "def", "pct": 40}, "unique": "tana"},
+	# --- Roster 2: dieci nuovi operatori (progetto con ChatGPT) ---
+	"u_vesper_b": {"name": "Taglio d'ombra", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.3, "debuff": {"def": 1}, "bonus": {"stat": "atk", "pct": 10}, "unique": "vesper"},
+	"u_yuna_b": {"name": "Scatto vettoriale", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 0.55, "hits": 3, "bonus": {"stat": "spd", "pct": 10}, "unique": "yuna"},
+	"u_oriel_b": {"name": "Interdizione", "kind": "skill", "cost": 1, "priority": 1, "target": "ally", "shield": 1.0, "bonus": {"stat": "def", "pct": 20}, "unique": "oriel"},
+	"u_flux_b": {"name": "Scarica diretta", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "mult": 1.5, "bonus": {"stat": "crit", "pct": 15}, "unique": "flux"},
+	"u_lyra_b": {"name": "Esecuzione calibrata", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 2.0, "pierce": 40, "bonus": {"stat": "crit", "pct": 20}, "unique": "lyra"},
+	"u_moro_a": {"name": "Ritorsione", "kind": "skill", "cost": 2, "priority": 1, "target": "enemy", "mult": 1.0, "self_status": {"guard": 1}, "bonus": {"stat": "def", "pct": 20}, "unique": "moro"},
+	"u_moro_ult": {"name": "Legge del Contraccolpo", "kind": "ult", "cost": 0, "priority": 1, "target": "allies", "shield": 1.6, "bonus": {"stat": "def", "pct": 35}, "unique": "moro"},
+	"u_vesper_a": {"name": "Taglio Predatorio", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.5, "status": {"mark": 1}, "bonus": {"stat": "crit", "pct": 15}, "unique": "vesper"},
+	"u_vesper_ult": {"name": "Eclissi Cremisi", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 3.4, "pierce": 30, "bonus": {"stat": "atk", "pct": 30}, "unique": "vesper"},
+	"u_nami_a": {"name": "Riparo Improvvisato", "kind": "skill", "cost": 1, "priority": 1, "target": "ally", "shield": 0.8, "bonus": {"stat": "def", "pct": 15}, "unique": "nami"},
+	"u_nami_ult": {"name": "Cerchio Sicuro", "kind": "ult", "cost": 0, "priority": 1, "target": "allies", "shield": 1.4, "bonus": {"stat": "max_hp", "pct": 10}, "unique": "nami"},
+	"u_oriel_a": {"name": "Protocollo di Soccorso", "kind": "skill", "cost": 2, "priority": 1, "target": "ally", "heal": 0.9, "shield": 0.5, "cleanse": true, "bonus": {"stat": "max_hp", "pct": 5}, "unique": "oriel"},
+	"u_oriel_ult": {"name": "Rifugio Assoluto", "kind": "ult", "cost": 0, "priority": 1, "target": "allies", "shield": 2.0, "cleanse": true, "bonus": {"stat": "def", "pct": 40}, "unique": "oriel"},
+	"u_silex_a": {"name": "Frattura Minerale", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.2, "debuff": {"def": 1}, "bonus": {"stat": "def", "pct": 20}, "unique": "silex"},
+	"u_silex_ult": {"name": "Fortezza Geometrica", "kind": "ult", "cost": 0, "priority": 1, "target": "allies", "shield": 1.8, "bonus": {"stat": "def", "pct": 35}, "unique": "silex"},
+	"u_yuna_a": {"name": "Passo Fulmineo", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "mult": 1.0, "status": {"mark": 1}, "bonus": {"stat": "spd", "pct": 15}, "unique": "yuna"},
+	"u_yuna_ult": {"name": "Lama del Futuro", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 3.0, "pierce": 25, "bonus": {"stat": "spd", "pct": 30}, "unique": "yuna"},
+	"u_rhea_a": {"name": "Ricomposizione", "kind": "skill", "cost": 2, "priority": 0, "target": "ally", "heal": 1.2, "bonus": {"stat": "max_hp", "pct": 5}, "unique": "rhea"},
+	"u_rhea_ult": {"name": "Alba Condivisa", "kind": "ult", "cost": 0, "priority": 0, "target": "allies", "heal": 1.1, "cleanse": true, "bonus": {"stat": "max_hp", "pct": 10}, "unique": "rhea"},
+	"u_flux_a": {"name": "Raffica Sincronizzata", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 0.65, "hits": 2, "status": {"mark": 1}, "bonus": {"stat": "atk", "pct": 12}, "unique": "flux"},
+	"u_flux_ult": {"name": "Punto di Rottura", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 3.5, "pierce": 40, "bonus": {"stat": "crit", "pct": 30}, "unique": "flux"},
+	"u_cato_a": {"name": "Impatto di Contenimento", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "mult": 0.9, "self_status": {"guard": 1}, "bonus": {"stat": "def", "pct": 15}, "unique": "cato"},
+	"u_cato_ult": {"name": "Linea Invalicabile", "kind": "ult", "cost": 0, "priority": 1, "target": "allies", "shield": 1.5, "bonus": {"stat": "def", "pct": 30}, "unique": "cato"},
+	"u_lyra_a": {"name": "Marchio di Priorita'", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "mult": 0.6, "status": {"mark": 2}, "bonus": {"stat": "crit", "pct": 10}, "unique": "lyra"},
+	"u_lyra_ult": {"name": "Sentenza Coordinata", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 3.0, "status": {"mark": 1}, "debuff": {"def": 1}, "bonus": {"stat": "atk", "pct": 30}, "unique": "lyra"},
 }
 
 # Rank che sblocca ogni abilita' unica: tutte subito (il rank ora le potenzia invece di sbloccarle).
@@ -116,6 +152,16 @@ const SKILLS: Dictionary = {
 	"sera": ["u_sera_a", "u_sera_b"], "eco": ["u_eco_a", "u_eco_b"], "tana": ["u_tana_a", "u_tana_b"],
 	"dafne": ["u_dafne_b", "u_dafne_c"], "angela": ["u_angela_b", "u_angela_c"],
 	"nico": ["u_nico_a", "u_nico_b"],
+	"moro": ["u_moro_a"],
+	"vesper": ["u_vesper_a", "u_vesper_b"],
+	"nami": ["u_nami_a"],
+	"oriel": ["u_oriel_a", "u_oriel_b"],
+	"silex": ["u_silex_a"],
+	"yuna": ["u_yuna_a", "u_yuna_b"],
+	"rhea": ["u_rhea_a"],
+	"flux": ["u_flux_a", "u_flux_b"],
+	"cato": ["u_cato_a"],
+	"lyra": ["u_lyra_a", "u_lyra_b"],
 }
 
 

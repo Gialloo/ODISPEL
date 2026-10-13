@@ -15,6 +15,13 @@ const TEN_COST: int = 2700
 const PITY_LIMIT: int = 30
 const REFUND_PER_RARITY: int = 100   # monete = (rarita' + 1) * questo
 
+# BANNER: "standard" pesca da tutti gli operatori, ma i dieci nuovi hanno meta' delle probabilita' degli altri;
+# "nuovi" pesca solo tra i dieci operatori del secondo roster (stesse quote di rarita', stesso costo, stessa garanzia).
+const NEW_IDS: Array = ["moro", "vesper", "nami", "oriel", "silex", "yuna", "rhea", "flux", "cato", "lyra"]
+const BANNERS: Array = ["standard", "nuovi"]
+const NEW_WEIGHT_STANDARD: int = 1     # peso di un nuovo nel banner standard
+const OLD_WEIGHT_STANDARD: int = 2     # peso di un operatore storico nel banner standard
+
 
 static func cost_for(count: int) -> int:
 	if count == 1:
@@ -27,7 +34,7 @@ static func cost_for(count: int) -> int:
 # Ritorna {ok, error, cost, results:[{char, rarity, outcome, refund}]}.
 # outcome: "new" | "copy" | "max". Lo stesso seed e la stessa collezione
 # danno gli stessi risultati; ogni reclutamento sposta il contatore "pulls".
-static func pull(roster: Dictionary, count: int, seed_value: int) -> Dictionary:
+static func pull(roster: Dictionary, count: int, seed_value: int, banner: String = "standard") -> Dictionary:
 	var fail: Dictionary = {"ok": false, "error": "", "cost": 0, "results": []}
 	var cost: int = cost_for(count)
 	if cost < 0:
@@ -50,7 +57,7 @@ static func pull(roster: Dictionary, count: int, seed_value: int) -> Dictionary:
 			rarity = maxi(rarity, 1)
 		if int(roster["pity"]) >= PITY_LIMIT - 1 and rarity < 2:
 			rarity = 2
-		var char_id: String = _pick(rarity, rng)
+		var char_id: String = _pick(rarity, rng, banner)
 		var actual: int = int(BattleContent.CHARACTERS[char_id]["rarity"])
 		if actual >= 1:
 			got_rare = true
@@ -67,16 +74,40 @@ static func pull(roster: Dictionary, count: int, seed_value: int) -> Dictionary:
 	return {"ok": true, "error": "", "cost": cost, "results": results}
 
 
-# Un personaggio a caso della rarita' chiesta; se non ce ne sono, della piu' bassa disponibile.
-static func _pick(rarity: int, rng: RNGState) -> String:
+# Un personaggio a caso della rarita' chiesta (secondo il banner); se non ce ne sono, della piu' bassa disponibile.
+static func _pick(rarity: int, rng: RNGState, banner: String = "standard") -> String:
 	var r: int = rarity
 	while r >= 0:
-		var pool: Array = []
-		for id in BattleContent.CHARACTERS:
-			if int(BattleContent.CHARACTERS[id]["rarity"]) == r and not bool(BattleContent.CHARACTERS[id].get("story_only", false)):
-				pool.append(id)
+		var pool: Array = pool_for(r, banner)
 		if not pool.is_empty():
 			pool.sort()
-			return str(pool[rng.random_index(pool.size())])
+			var total: int = 0
+			for id in pool:
+				total += weight_of(str(id), banner)
+			var roll: int = rng.random_int(1, total)
+			for id in pool:
+				roll -= weight_of(str(id), banner)
+				if roll <= 0:
+					return str(id)
+			return str(pool[pool.size() - 1])
 		r -= 1
 	return "kira"
+
+
+# Gli operatori pescabili di una rarita' in un banner.
+static func pool_for(rarity: int, banner: String = "standard") -> Array:
+	var pool: Array = []
+	for id in BattleContent.CHARACTERS:
+		var def: Dictionary = BattleContent.CHARACTERS[id]
+		if int(def["rarity"]) != rarity or bool(def.get("story_only", false)):
+			continue
+		if banner == "nuovi" and not NEW_IDS.has(str(id)):
+			continue
+		pool.append(id)
+	return pool
+
+
+static func weight_of(char_id: String, banner: String = "standard") -> int:
+	if banner == "nuovi":
+		return 1
+	return NEW_WEIGHT_STANDARD if NEW_IDS.has(char_id) else OLD_WEIGHT_STANDARD

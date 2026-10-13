@@ -41,6 +41,56 @@ const CHARACTERS: Dictionary = {
 		"lore": "Dice di parlare con un satellite. I droni le rispondono. Fragile come il vetro, ma quando il cielo si apre non resta nulla da raccogliere.",
 		"tactic": "12 munizioni: TORRETTA e DRONE sparano da soli ogni round (1 munizione a colpo) e a zero esplodono o danno scudi. MITRAGLIATRICE per i critici. RAGGIO ORBITALE consuma tutti i marchi: falli accumulare prima. I suoi marchi ricaricano le munizioni di tutti i LibraCorp. Atipica (SURRISCALDAMENTO): ogni munizione spesa da' +3% di danno fino a fine battaglia (max 12 cariche).",
 	},
+	"moro": {
+		"tag": "Non arretra, non urla",
+		"lore": "Combattente dei quartieri bassi con le fasce rituali rosse. Fa muro con il corpo e restituisce i colpi.",
+		"tactic": "RITORSIONE colpisce e ti mette in guardia: lo vedi come primo della fila. LEGGE DEL CONTRACCOLPO copre tutta la squadra con uno scudo. CONTRACCOLPO fa male a chi lo colpisce.",
+	},
+	"vesper": {
+		"tag": "Caccia l'anomalia marchiata",
+		"lore": "Cacciatore di anomalie dal volto coperto. Parla poco, segue il bersaglio fino a quando cade.",
+		"tactic": "TAGLIO PREDATORIO marchia mentre colpisce. ECLISSI CREMISI e' il colpo che chiude. PREDAZIONE: piu' danno ai bersagli marchiati, quindi marca prima o fatti aiutare da Nova ed Eco.",
+	},
+	"nami": {
+		"tag": "Piccoli rituali, grandi scudi",
+		"lore": "Giacca troppo grande, amuleti fatti a mano. Crede che un buon rito basti a tenere in piedi chi ami.",
+		"tactic": "RIPARO IMPROVVISATO da' uno scudo a un alleato e costa 1 sola energia. CERCHIO SICURO protegge tutti. GUARDIA PREPARATA: la sua Guardia da' uno scudo extra.",
+	},
+	"oriel": {
+		"tag": "Custode della soglia",
+		"lore": "Cappotto bianco e blu, aureola spezzata. Decide chi puo' passare e chi no.",
+		"tactic": "PROTOCOLLO DI SOCCORSO cura, scherma e toglie i malus a un alleato. RIFUGIO ASSOLUTO da' scudi a tutti. CURA SCHERMATA: ogni cura diventa anche scudo. Blu: agisce presto e carica l'ultimate in fretta.",
+	},
+	"silex": {
+		"tag": "Il muro che avanza",
+		"lore": "Protezioni angolari viola e grigio grafite. Lento ma regolare: avanza e non si ferma.",
+		"tactic": "FRATTURA MINERALE colpisce e abbassa la DIF del boss. FORTEZZA GEOMETRICA protegge tutti. ARMATURA CICLICA: uno scudo gratis a ogni inizio round.",
+	},
+	"yuna": {
+		"tag": "Prima ad agire",
+		"lore": "Abiti tecnici blu elettrico, tagli asimmetrici. Arriva sempre prima del colpo.",
+		"tactic": "PASSO FULMINEO costa 1 sola energia e marchia. LAMA DEL FUTURO e' un colpo che perfora la difesa. FIATO RUBATO: recupera un poco di vita dal danno. Fragile: non farla restare sola.",
+	},
+	"rhea": {
+		"tag": "Specialista del contenimento",
+		"lore": "Equipaggiamento da campo, tasche piene, simboli di soccorso trasformati in sigilli verdi.",
+		"tactic": "RICOMPOSIZIONE cura molto un alleato. ALBA CONDIVISA cura e purifica tutti. RECUPERO COSTANTE: un poco di vita a fine round. Verde: le sue cure possono essere critiche.",
+	},
+	"flux": {
+		"tag": "Il picco in una finestra breve",
+		"lore": "Cappotto nero e blu, linee luminose spezzate. Accelera, colpisce, poi si ferma a respirare.",
+		"tactic": "RAFFICA SINCRONIZZATA: due colpi e un marchio. PUNTO DI ROTTURA e' il colpo grosso. PRECISIONE OPPORTUNISTICA: piu' critico sui marchiati, quindi falli marchiare prima.",
+	},
+	"cato": {
+		"tag": "Funziona sempre",
+		"lore": "Uniforme tattica LibraCorp, viola freddo, tutto in ordine. Non e' il migliore: e' quello su cui contare.",
+		"tactic": "IMPATTO DI CONTENIMENTO colpisce e ti mette in guardia. LINEA INVALICABILE copre tutta la squadra. CORAZZA A SPILLI: chi lo colpisce si fa male. Ottimo per iniziare.",
+	},
+	"lyra": {
+		"tag": "Sceglie il bersaglio decisivo",
+		"lore": "Taglio elegante ma militare, viola profondo. Indica chi deve cadere, gli altri eseguono.",
+		"tactic": "MARCHIO DI PRIORITA' mette due marchi con un colpo leggero. SENTENZA COORDINATA marchia e abbassa la difesa. PRIORITA' ASSOLUTA: piu' danno ai marchiati. Con Angela e Dafne il fuoco si concentra.",
+	},
 	"bruno": {
 		"tag": "Scudi per tutti",
 		"lore": "Tranquillo, metodico, controlla due volte ogni serratura. La sua magia costruisce barriere dove servono.",

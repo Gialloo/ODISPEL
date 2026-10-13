@@ -150,6 +150,27 @@ const CHARACTERS: Dictionary = {
 		"role": "Tiratore scelto", "ammo_max": 6, "stat_mult": {"hp": 0.9, "atk": 1.1}},
 	"angela": {"name": "Angela", "color": "giallo", "cls": "striker", "rarity": 3, "skill": "u_angela_a", "ult": "orbital_strike", "passive": "p_atk", "faction": "libracorp",
 		"role": "Mecamante", "ammo_max": 12, "stat_mult": {"hp": 0.75, "atk": 1.2, "def": 0.8}},
+	# Roster 2: dieci operatori nuovi (3 Magabondi, 3 Kairos, 2 Rondini, 2 LibraCorp).
+	"moro": {"name": "Moro", "color": "rosso", "cls": "vanguard", "rarity": 1, "skill": "provoca", "ult": "u_moro_ult", "passive": "p_hp", "faction": "magabondi",
+		"role": "Difensore resistente"},
+	"vesper": {"name": "Vesper", "color": "viola", "cls": "striker", "rarity": 2, "skill": "marchio", "ult": "u_vesper_ult", "passive": "p_atk", "faction": "magabondi",
+		"role": "Cacciatore di marchiati"},
+	"nami": {"name": "Nami", "color": "verde", "cls": "warden", "rarity": 0, "skill": "barriera", "ult": "u_nami_ult", "passive": "p_hp", "faction": "magabondi",
+		"role": "Custode dei piccoli rituali"},
+	"oriel": {"name": "Oriel", "color": "blu", "cls": "warden", "rarity": 3, "skill": "cura", "ult": "u_oriel_ult", "passive": "p_swap", "faction": "kairos",
+		"role": "Custode della soglia"},
+	"silex": {"name": "Silex", "color": "viola", "cls": "vanguard", "rarity": 1, "skill": "provoca", "ult": "u_silex_ult", "passive": "p_hp", "faction": "kairos",
+		"role": "Il muro che avanza"},
+	"yuna": {"name": "Yuna", "color": "blu", "cls": "striker", "rarity": 2, "skill": "colpo_caricato", "ult": "u_yuna_ult", "passive": "p_atk", "faction": "kairos",
+		"role": "Attaccante rapido"},
+	"rhea": {"name": "Rhea", "color": "verde", "cls": "warden", "rarity": 1, "skill": "purifica", "ult": "u_rhea_ult", "passive": "p_swap", "faction": "rondini",
+		"role": "Specialista del contenimento"},
+	"flux": {"name": "Flux", "color": "blu", "cls": "striker", "rarity": 3, "skill": "colpo_caricato", "ult": "u_flux_ult", "passive": "p_atk", "faction": "rondini",
+		"role": "Picco di potenza"},
+	"cato": {"name": "Cato", "color": "viola", "cls": "vanguard", "rarity": 0, "skill": "barriera", "ult": "u_cato_ult", "passive": "p_hp", "faction": "libracorp",
+		"role": "Operatore standard"},
+	"lyra": {"name": "Lyra", "color": "viola", "cls": "striker", "rarity": 3, "skill": "marchio", "ult": "u_lyra_ult", "passive": "p_atk", "faction": "libracorp",
+		"role": "Stratega del bersaglio"},
 }
 
 # Fazione e stile di un operatore (campi opzionali "faction" e "style" in CHARACTERS; l'entry del roster puo' avere
