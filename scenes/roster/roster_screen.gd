@@ -368,7 +368,10 @@ func _build_recruit_page() -> void:
 		col.add_child(GameIcon.line("nucleo", rc, "%s  %d%%" % [str(BattleTypes.RARITIES[r]).to_upper(), int(odds[r])], 15, rc))
 	var note := BattleTheme.make_label("Le copie aumentano il rank (max 5).\nIl x10 garantisce almeno un raro.", 14, BattleTheme.CY_DIM)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	col.add_child(note)
+	if not TouchUi.active():        # su telefono non c'e' spazio: lo spiega gia' "COME FUNZIONA"
+		col.add_child(note)
+	else:
+		note.queue_free()
 
 	var res := HudPanel.new().setup("ESITO", BattleTheme.CY)
 	res.position = Vector2(466, 14)
