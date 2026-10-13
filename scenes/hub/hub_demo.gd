@@ -48,7 +48,7 @@ func _build() -> void:
 	add_child(_at(BattleTheme.make_label("MISSION CONTROL  ·  v" + GameConfig.VERSION, 16, BattleTheme.CY_DIM), Vector2(64, 136)))
 
 	var menu := VBoxContainer.new()
-	menu.add_theme_constant_override("separation", 14)
+	menu.add_theme_constant_override("separation", 7 if TouchUi.active() else 14)
 	menu.position = Vector2(60, 190)
 	menu.size = Vector2(560, 440)
 	add_child(menu)
@@ -65,7 +65,8 @@ func _build() -> void:
 	var ready_feats: int = Feats.claimable_count(roster)
 	_menu_button(menu, "feats", "OBIETTIVI" + ("  ·  %d DA RISCUOTERE" % ready_feats if ready_feats > 0 else ""), "primary" if ready_feats > 0 else "normal", 56, 22)
 	_menu_button(menu, "settings", "IMPOSTAZIONI", "normal", 44, 18)
-	menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-7 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DIM))
+	if not TouchUi.active():
+		menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-7 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DIM))
 
 	_build_status_panel()
 	UiMotion.slide_in(buttons.values(), Vector2(-180, 0), 0.07, 0.3)

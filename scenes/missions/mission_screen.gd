@@ -60,7 +60,7 @@ func _build() -> void:
 	det.size = Vector2(800, 520)
 	add_child(det)
 	var dbox := VBoxContainer.new()
-	dbox.add_theme_constant_override("separation", 10)
+	dbox.add_theme_constant_override("separation", 5 if TouchUi.active() else 10)
 	det.set_content(dbox)
 	_boss_title = BattleTheme.make_label("", 30, BattleTheme.RD, true)
 	dbox.add_child(_boss_title)
@@ -100,7 +100,7 @@ func _build() -> void:
 	var dboss: String = Daily.boss_for(roster)
 	var dmod: Dictionary = Daily.mod_for()
 	daily_button = Button.new()
-	daily_button.text = "SFIDA DEL GIORNO  ·  %s  ·  %s  ·  %s" % [MissionConfig.boss_title(dboss), str(dmod["name"]), ("BONUS RISCOSSO" if Daily.done_today(roster) else "PREMI x%.1f  ·  SERIE %d" % [Daily.reward_mult(roster), Daily.streak(roster)])]
+	daily_button.text = "SFIDA DEL GIORNO  ·  %s  ·  %s  ·  %s" % [MissionConfig.boss_title(dboss), str(dmod["name"]), ("BONUS RISCOSSO" if Daily.done_today(roster) else "x%.1f  ·  SERIE %d" % [Daily.reward_mult(roster), Daily.streak(roster)])]
 	daily_button.custom_minimum_size = Vector2(0, 44)
 	daily_button.clip_text = true
 	BattleTheme.style_button(daily_button, "normal", 16)
