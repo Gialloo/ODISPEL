@@ -12,6 +12,7 @@ const ENTRIES: Array = [
 		"Multiplayer: collegamento piu' affidabile tra reti diverse e meno dati consumati.",
 		"Profilo: nuovo pannello STATISTICHE.",
 		"Obiettivi giornalieri: nuove sfide (boss diversi, vittoria a INCUBO).",
+		"Dafne ha finalmente il suo aspetto: ritratti, figura in battaglia, illustrazione e ultimate.",
 		"Le monete ora si chiamano GOLD.",
 	]},
 ]
