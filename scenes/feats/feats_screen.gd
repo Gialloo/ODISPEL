@@ -55,7 +55,7 @@ func _build() -> void:
 		var b := Button.new()
 		b.text = str(g)
 		b.position = Vector2(x, 90)
-		b.size = Vector2(float({"DA RISCUOTERE": 270, "TUTTE": 130, "MISSIONI": 170, "BATTAGLIE": 180, "OPERATORI": 180, "POTENZIAMENTI": 240}.get(str(g), 180)), 40)
+		b.size = Vector2(float({"DA RISCUOTERE": 230, "TUTTE": 100, "MISSIONI": 140, "BATTAGLIE": 150, "OPERATORI": 150, "POTENZIAMENTI": 200}.get(str(g), 140)), 40)
 		BattleTheme.style_button(b, "normal", 17)
 		b.pressed.connect(show_group.bind(str(g)))
 		add_child(b)
