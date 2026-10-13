@@ -90,6 +90,9 @@ func _build() -> void:
 	UiMotion.slide_in(buttons.values(), Vector2(-180, 0), 0.07, 0.3)
 	_status_panel.visible = false
 	_build_team_toggle()
+	var news: Dictionary = Settings.news_to_show()
+	if not news.is_empty():
+		NewsPanel.open(self, news)
 
 
 const TIPS: Array = [
@@ -323,7 +326,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	for c in get_children():
-		if c is SettingsPanel or c is ProfilePanel or c is ConfirmBox:      # con una finestra aperta le scorciatoie dell'hub tacciono
+		if c is SettingsPanel or c is ProfilePanel or c is ConfirmBox or c is NewsPanel:      # con una finestra aperta le scorciatoie dell'hub tacciono
 			return
 	match event.keycode:
 		KEY_ESCAPE:

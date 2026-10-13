@@ -25,6 +25,7 @@ static var banter: bool = true          # battute dei personaggi in battaglia
 static var tutorial_done: bool = false
 static var coach_step: int = 0           # prima partita guidata: passo raggiunto (8 = finita)
 static var gacha_guide_seen: bool = false
+static var last_seen_version: String = ""   # ultima versione di cui si sono viste le novita'
 static var seen_scenes: Array = []      # scene di storia gia' viste
 static var _loaded: bool = false
 
@@ -57,6 +58,7 @@ static func load_settings() -> void:
 	coach_step = int(cfg.get_value("game", "coach_step", 99 if tutorial_done else 0))
 	gacha_guide_seen = bool(cfg.get_value("game", "gacha_guide_seen", gacha_guide_seen))
 	seen_scenes = Array(cfg.get_value("game", "seen_scenes", []))
+	last_seen_version = str(cfg.get_value("game", "last_seen_version", ""))
 
 
 # Limite di fotogrammi e V-Sync. Con il V-Sync attivo il gioco segue il monitor (60, 144...) senza strappi.
@@ -112,6 +114,7 @@ static func save() -> bool:
 	cfg.set_value("game", "coach_step", coach_step)
 	cfg.set_value("game", "gacha_guide_seen", gacha_guide_seen)
 	cfg.set_value("game", "seen_scenes", seen_scenes)
+	cfg.set_value("game", "last_seen_version", last_seen_version)
 	return cfg.save(path) == OK
 
 
@@ -200,3 +203,16 @@ static func next_level(value: float) -> float:
 
 static func level_text(value: float) -> String:
 	return "NIENTE" if value < 0.25 else ("RIDOTTE" if value < 0.75 else "PIENE")
+
+
+# Novita' da mostrare in home: solo a chi ha gia' giocato e ha una versione diversa dall'ultima vista. Vuoto = niente.
+static func news_to_show() -> Dictionary:
+	ensure_loaded()
+	if last_seen_version == GameConfig.VERSION:
+		return {}
+	var entry: Dictionary = Changelog.entry_for(GameConfig.VERSION)
+	last_seen_version = GameConfig.VERSION
+	save()
+	if not tutorial_done or DisplayServer.get_name() == "headless":
+		return {}          # chi inizia ora non ha niente da "scoprire"; e i test non vedono finestre
+	return entry
