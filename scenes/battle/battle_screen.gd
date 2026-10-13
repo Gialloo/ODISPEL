@@ -1117,7 +1117,7 @@ func _refresh_orders() -> void:
 	if str(u["ult"]) != "":
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
 	var bh: float = 56.0 if touch else 42.0
-	var bw: float = 232.0 if touch else 196.0
+	var bw: float = 240.0 if touch else 212.0
 	var pts: Array = _orders_box.layout(entries.size(), bh, 4.0, fan_big, 0.0, 246.0, 706.0)
 	title.position = Vector2(float(pts[0].x) - 2.0, float(pts[0].y) - bh * 0.5 - 26.0)
 	var lo := Vector2(1e9, 1e9)
@@ -1130,7 +1130,7 @@ func _refresh_orders() -> void:
 	var animate: bool = _fan_key != "%s|%d" % [uid, int(shown["round"])]
 	_fan_key = "%s|%d" % [uid, int(shown["round"])]
 	# una sola misura di carattere per tutte le mosse (la piu' grande che sta in tutti i pulsanti); l'attacco base e' un po' piu' grande
-	var common_fs: int = 18
+	var common_fs: int = 17 if touch else 15
 	for e in entries:
 		var mv: Dictionary = BattleContent.MOVES[str(e["id"])]
 		var txt: String = _order_text(str(e["id"]), mv, 100)
@@ -1497,7 +1497,7 @@ func _event_fx(e: Dictionary) -> float:
 			return _fx_act(e)
 		"swap":
 			Snd.play("swap")
-			_switch_fx(str(e.get("to", "")))
+			_switch_fx(str(e.get("from", "")), str(e.get("to", "")))
 		"link":
 			return _fx_link(e)
 		"link_break":
@@ -1793,9 +1793,11 @@ func _announce(who: String, what: String, hostile: bool) -> void:
 
 
 # Cambio front/back: fumetto SWITCH! e due frecce > < che si incontrano sul personaggio che entra.
-func _switch_fx(uid: String) -> void:
-	if _stage == null or _fx == null or uid == "":
+func _switch_fx(from_uid: String, to_uid: String) -> void:
+	if _stage == null or _fx == null or from_uid == "":
 		return
+	# il compagno che entra non ha ancora una posizione: si usa quella di chi esce, che sta nello stesso punto
+	var uid: String = from_uid
 	var at: Vector2 = _stage.anchor_of(uid)
 	_pop("SWITCH!", uid, BattleTheme.POP, BattleTheme.BK, 40, 70.0, Vector2(0.0, -70.0))
 	for side in [-1, 1]:
