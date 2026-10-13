@@ -100,6 +100,17 @@ func _init() -> void:
 	name = "Feedback"
 
 
+# Il tasto "indietro" di Android diventa ESC: ogni schermata lo gestisce come gia' fa con la tastiera.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		for pressed in [true, false]:
+			var ev := InputEventKey.new()
+			ev.keycode = KEY_ESCAPE
+			ev.physical_keycode = KEY_ESCAPE
+			ev.pressed = pressed
+			Input.parse_input_event(ev)
+
+
 func _ready() -> void:
 	_root = Control.new()
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)

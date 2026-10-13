@@ -17,6 +17,7 @@ var _last_won: bool = false
 var _dmg_by: Dictionary = {}      # danni al boss per operatore (per l'MVP a fine battaglia)
 var _best_hit: int = 0
 var _boon_buttons: Array = []
+var _pause: PauseMenu = null
 var _ended_shown: bool = false
 
 var _stage: BattleStage
@@ -809,8 +810,22 @@ func _on_order_pressed(move_id: String) -> void:
 		_refresh_orders()
 
 
+func _open_pause() -> void:
+	_pause = PauseMenu.open(self, source is NetworkManager)
+	_pause.quit_requested.connect(func() -> void:
+		if source is NetworkManager:
+			_on_leave_room()
+		else:
+			SceneRouter.go("hub"))
+
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	if _pause != null and is_instance_valid(_pause):
+		return          # in pausa i comandi tacciono (la finestra gestisce i suoi tasti)
+	if event.keycode == KEY_ESCAPE and not _ended_shown and source != null and _tutorial == null:
+		_open_pause()
 		return
 	# A battaglia finita: INVIO = rigioca / torna alla lobby, ESC = esci.
 	if _ended_shown:

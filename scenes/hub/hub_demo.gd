@@ -178,6 +178,9 @@ func _on_menu(key: String) -> void:
 			SceneRouter.go(key)
 
 
+var _last_back_ms: int = -10000
+
+
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
@@ -185,6 +188,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if c is SettingsPanel:      # con la finestra aperta le scorciatoie dell'hub tacciono
 			return
 	match event.keycode:
+		KEY_ESCAPE:
+			# indietro dall'hub: due volte di fila per uscire (evita chiusure per errore sul telefono)
+			var now: int = Time.get_ticks_msec()
+			if now - _last_back_ms < 2200:
+				get_tree().quit()
+			else:
+				_last_back_ms = now
+				Notify.toast("Premi ancora indietro per uscire")
 		KEY_ENTER, KEY_KP_ENTER, KEY_1:
 			_on_menu("continue")
 		KEY_2:
