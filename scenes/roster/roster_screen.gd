@@ -82,21 +82,10 @@ func _build() -> void:
 	sub.position = Vector2(28, 62)
 	add_child(sub)
 
-	_coins_label = BattleTheme.make_label("", 22, BattleTheme.CY, true)
-	_coins_label.position = Vector2(1044, 12)
-	_coins_label.size = Vector2(216, 30)
-	add_child(_coins_label)
-	_header_icon("coin", Vector2(1012, 14), 26.0)
-	_mats_label = BattleTheme.make_label("", 16, BattleTheme.CY_DIM)
-	_mats_label.position = Vector2(1040, 52)
-	_mats_label.size = Vector2(84, 24)
-	add_child(_mats_label)
-	_header_icon("nucleo", Vector2(1014, 52), 22.0)
-	_lega_label = BattleTheme.make_label("", 16, BattleTheme.CY_DIM)
-	_lega_label.position = Vector2(1170, 52)
-	_lega_label.size = Vector2(90, 24)
-	add_child(_lega_label)
-	_header_icon("lega", Vector2(1142, 52), 22.0)
+	# le tre risorse in una riga, stesso font (Archivo Black MAIUSCOLO) e stessa larghezza
+	_coins_label = _header_resource("coin", 720.0)
+	_mats_label = _header_resource("nucleo", 900.0)
+	_lega_label = _header_resource("lega", 1080.0)
 
 	var x: float = 24.0
 	for entry in [["squadra", "SQUADRA"], ["equip", "EQUIPAGGIO"], ["reclutamento", "RECLUTAMENTO"]]:
@@ -215,12 +204,14 @@ func _build_team_page() -> void:
 	card.size = Vector2(704, 332)
 	_team_page.add_child(card)
 	var leg := Button.new()
-	leg.text = "?" if TouchUi.active() else "LEGENDA  ?"
+	leg.text = "?" if TouchUi.active() else "Legenda ?"
+	leg.set_meta("keep_case", true)
 	leg.position = Vector2(640 if TouchUi.active() else 466, 2)
 	leg.size = Vector2(56 if TouchUi.active() else 180, 30)
 	BattleTheme.style_button(leg, "normal", 14)
 	leg.custom_minimum_size = Vector2(0, 0)
 	leg.size = Vector2(56 if TouchUi.active() else 180, 30)
+	leg.add_theme_font_override("font", BattleTheme.display())
 	leg.pressed.connect(open_legend)
 	card.add_child(leg)
 	legend_button = leg
@@ -232,6 +223,7 @@ func _build_team_page() -> void:
 	title_row.add_theme_constant_override("separation", 10)
 	col.add_child(title_row)
 	_detail_title = BattleTheme.make_label("", 28, BattleTheme.WH, true)
+	_detail_title.set_meta("keep_case", true)
 	title_row.add_child(_detail_title)
 	_detail_icons = HBoxContainer.new()
 	_detail_icons.add_theme_constant_override("separation", 4)
@@ -745,6 +737,17 @@ func _on_back() -> void:
 	SceneRouter.go("hub")
 
 
+# Una risorsa nell'intestazione: icona + scritta Archivo Black. Ritorna la scritta (il testo si aggiorna in refresh).
+func _header_resource(icon_key: String, x: float) -> Label:
+	_header_icon(icon_key, Vector2(x, 40), 24.0)
+	var l := BattleTheme.make_label("", 17, BattleTheme.WH, true)
+	l.position = Vector2(x + 32.0, 38.0)
+	l.size = Vector2(142, 28)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	add_child(l)
+	return l
+
+
 # ---------- Aggiornamento grafico ----------
 
 func refresh() -> void:
@@ -822,7 +825,7 @@ func _refresh_detail() -> void:
 	var def: Dictionary = BattleContent.CHARACTERS[selected]
 	var e: Dictionary = roster["characters"][selected]
 	var st: Dictionary = BattleContent.compute_stats(e)
-	_detail_title.text = str(def["name"]).to_upper()
+	_detail_title.text = str(def["name"])
 	_fill_identity_icons(_detail_icons, selected, 28.0)
 	_detail_portrait.visible = true
 	if _detail_portrait.char_id != selected:

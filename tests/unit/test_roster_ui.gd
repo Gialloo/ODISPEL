@@ -46,13 +46,13 @@ func _run() -> void:
 			enabled += 1
 	_check("si possono scegliere solo i 4 posseduti", enabled == 4)
 	_check("6 posti in squadra (3 front + 3 back)", s._slots_box.get_child_count() == 7)
-	_check("la scheda mostra il nome", s._detail_title.text == "KIRA")
+	_check("la scheda mostra il nome", s._detail_title.text == "Kira")
 	_check("la scheda mostra le statistiche", s._detail_label.text.contains("ATK"))
 	_check("monete mostrate", s._coins_label.text.contains("500"))
 
 	# selezione
 	s.select("bruno")
-	_check("selezione cambiata", s.selected == "bruno" and s._detail_title.text == "BRUNO")
+	_check("selezione cambiata", s.selected == "bruno" and s._detail_title.text == "Bruno")
 	s.select("tana")
 	_check("un non posseduto non si sceglie", s.selected == "bruno")
 

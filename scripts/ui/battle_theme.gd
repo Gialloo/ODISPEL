@@ -39,6 +39,7 @@ static func unit_color(color_name: String) -> Color:
 # GERARCHIA TIPOGRAFICA (tutti i font sono Google Fonts, licenza OFL, vedi assets/fonts/OFL-*.txt):
 #   display()  Archivo Black   TITOLI, BOSS, SEZIONI: tutto MAIUSCOLO
 #   hud()      Roboto Bold     HUD, STATISTICHE, TIMER, NUMERI: tutto MAIUSCOLO
+#   logo()     Libre Caslon Condensed Bold   solo il titolo ODISPEL
 #   menu()     Merriweather Bold   pulsanti e menu: Prima maiuscola, resto minuscolo, grassetto
 #   mono()     Merriweather Bold   dialoghi, descrizioni, elenchi: Prima maiuscola, resto minuscolo
 #   quote()    pensieri e citazioni (per ora come il testo normale)
@@ -60,6 +61,11 @@ static func mono() -> Font:
 	if _mono == null:
 		_mono = font("OdispelSerif-Bold")
 	return _mono
+
+
+# Solo il logo ODISPEL: Libre Caslon Condensed Bold, MAIUSCOLO.
+static func logo() -> Font:
+	return font("LibreCaslonCondensed-Bold")
 
 
 static func menu() -> Font:

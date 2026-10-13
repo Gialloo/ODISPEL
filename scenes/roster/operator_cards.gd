@@ -96,9 +96,11 @@ static func slot_card(index: int, id: String, entry: Dictionary, active: bool) -
 	var def: Dictionary = BattleContent.CHARACTERS[id]
 	var col: Color = BattleTheme.WH if active else BattleTheme.unit_color(str(def["color"]))
 	b.add_child(_portrait(id, "icon", Vector2(6, 6), Vector2(56, 56)))
-	b.add_child(_label(str(def["name"]).to_upper(), 18, col, Vector2(66, 20), true, 120.0))
+	var nl := _label(str(def["name"]), 18, col, Vector2(66, 20), true, 120.0)
+	nl.set_meta("keep_case", true)
+	b.add_child(nl)
 	b.add_child(_icon(str(def["cls"]), col, Vector2(66, 45), 13.0))
-	b.add_child(_label("%s · %s" % [str(def["cls"]).to_upper(), str(def["color"]).to_upper()], 11, fg, Vector2(82, 44), false, 108.0))
+	b.add_child(_label("%s · %s" % [str(def["cls"]).capitalize(), str(def["color"]).capitalize()], 11, fg, Vector2(82, 44), false, 108.0))
 	var faction: String = BattleContent.faction_of(id)
 	if faction != "":
 		var fcol: Color = BattleTheme.WH if active else Hints.faction_color(faction)

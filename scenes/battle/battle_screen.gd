@@ -504,14 +504,32 @@ func _refresh_turn_panel() -> void:
 	if rows.is_empty():
 		return
 	var fs: int = 15 if not TouchUi.active() else 16
+	# una riga = una HBox con colonne a larghezza fissa e lo stesso font (Roboto Bold, MAIUSCOLO): stessa baseline per tutti
 	for r in rows:
 		var acting_now: bool = str(r["unit"]) == _turn_acting
-		var text: String = "%s%d  %-4s %-7s » %s" % ["▶" if acting_now else " ", int(r["n"]), str(r["who"]), str(r["name"]).left(7), str(r["action"])]
 		var col: Color = BattleTheme.GOLD if acting_now else (r["color"] as Color)
-		var l := BattleTheme.make_label(text, fs, col, bool(r["mine"]))
-		l.clip_text = true
-		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_turn_box.add_child(l)
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 6)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.add_child(_turn_cell(("▶ " if acting_now else "") + str(int(r["n"])), fs, col, 30.0, true))
+		line.add_child(_turn_cell(str(r["who"]), fs, col, 42.0))
+		line.add_child(_turn_cell(str(r["name"]).left(8), fs, col, 84.0))
+		line.add_child(_turn_cell("» " + str(r["action"]), fs, col, 0.0))
+		_turn_box.add_child(line)
+
+
+func _turn_cell(text: String, size: int, color: Color, width: float, right: bool = false) -> Label:
+	var l := BattleTheme.make_label(text, size, color)
+	l.add_theme_font_override("font", BattleTheme.hud())
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if right else HORIZONTAL_ALIGNMENT_LEFT
+	l.clip_text = true
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if width > 0.0:
+		l.custom_minimum_size = Vector2(width, 0)
+	else:
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return l
 
 
 func _build_operators() -> void:
@@ -899,11 +917,8 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 	if is_active:
 		title += "  ✓" if picked else "  ▶"
 	var where: String = "K.O." if not alive else ("FRONT" if is_active else "BACK")
-	var name_l := BattleTheme.make_label(title, 17, fg, true)
-	name_l.position = Vector2(54, -2)
+	var name_l := _row_text(title, 17, fg, Vector2(54, 0), 94.0)
 	name_l.clip_text = true
-	name_l.custom_minimum_size = Vector2(94, 0)
-	name_l.size = Vector2(94, 24)
 	inner.add_child(name_l)
 	# freccia del colore: ▲ danno maggiorato contro il boss, ▼ ridotto (il colore giusto fa +50%)
 	if alive:
@@ -918,8 +933,7 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 	face.size = Vector2(38, 38)
 	face.modulate = Color(1, 1, 1, 1.0 if alive else 0.4)
 	inner.add_child(face)
-	var lv_l := BattleTheme.make_label("LV%d" % int(u["level"]), 12, fg)
-	lv_l.position = Vector2(150, 4)
+	var lv_l := _row_text("LV%d" % int(u["level"]), 12, fg, Vector2(150, 0), 40.0)
 	inner.add_child(lv_l)
 
 	_add_chips(inner, u, selected)
@@ -930,8 +944,7 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 	hp.set_ratio(hp_ratio)
 	hp.position = Vector2(54, 22)
 	inner.add_child(hp)
-	var hp_t := BattleTheme.make_label("%d" % int(u["hp"]), 18, fg, true)
-	hp_t.position = Vector2(206, 1)
+	var hp_t := _row_text("%d" % int(u["hp"]), 18, fg, Vector2(206, 0), 60.0)
 	inner.add_child(hp_t)
 
 	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(62, 6))
@@ -952,6 +965,21 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 		lv_l.text = "ULT!"
 		lv_l.add_theme_color_override("font_color", BattleTheme.BK if selected else BattleTheme.RD)
 	return btn
+
+
+# Testo di una riga operatore: Roboto Bold (MAIUSCOLO) e altezza fissa con centratura verticale, cosi' nome, livello e PV
+# stanno sulla stessa linea ottica anche con dimensioni diverse.
+func _row_text(text: String, size: int, color: Color, pos: Vector2, width: float) -> Label:
+	var l := BattleTheme.make_label(text, size, color)
+	l.add_theme_font_override("font", BattleTheme.hud())
+	if color.get_luminance() < 0.35:
+		l.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.0))     # testo scuro su fondo chiaro: niente ombra nera che lo impasta
+	l.position = pos
+	l.size = Vector2(width, 24)
+	l.custom_minimum_size = Vector2(width, 24)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return l
 
 
 func _on_unit_pressed(uid: String) -> void:

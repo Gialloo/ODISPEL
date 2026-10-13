@@ -11,6 +11,7 @@ from fontTools.ttLib import TTFont
 UNICODES = "U+0020-007E,U+00A0-00FF,U+2013-2014,U+2018-201D,U+2022,U+2026,U+20AC,U+2190-2193,U+2212,U+25B2,U+25B6,U+25BC,U+2605,U+2713"
 JOBS = [
     ("Merriweather/static/Merriweather_24pt_SemiCondensed-Bold.ttf", "OdispelSerif-Bold.ttf", "OdispelSerif"),
+    ("Libre_Caslon_Condensed/static/LibreCaslonCondensed-Bold.ttf", "LibreCaslonCondensed-Bold.ttf", None),
     ("Archivo_Black/ArchivoBlack-Regular.ttf", "ArchivoBlack-Regular.ttf", None),
     ("Roboto/static/Roboto-Bold.ttf", "Roboto-Bold.ttf", None),
 ]

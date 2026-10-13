@@ -106,6 +106,33 @@ func _at(c: Control, pos: Vector2) -> Control:
 	return c
 
 
+# Una voce di risorsa (icona + scritta in Archivo Black MAIUSCOLO): le tre hanno la stessa larghezza, cosi' stanno in colonna.
+func _resource_cell(icon_key: String, text: String) -> Control:
+	var cell := HBoxContainer.new()
+	cell.add_theme_constant_override("separation", 8)
+	cell.custom_minimum_size = Vector2(176, 30)
+	var ic := GameIcon.new().setup(icon_key, GameIcon.currency_color(icon_key), 24.0)
+	ic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	cell.add_child(ic)
+	var l := BattleTheme.make_label(text, 17, BattleTheme.WH, true)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.size_flags_vertical = Control.SIZE_FILL
+	cell.add_child(l)
+	return cell
+
+
+# Testo di una cella della squadra: centrato in verticale. big = nome del personaggio (Archivo Black, con l'iniziale maiuscola).
+func _cell(text: String, size: int, color: Color, width: float, big: bool = false) -> Label:
+	var l := BattleTheme.make_label(text, size, color, big)
+	if big:
+		l.set_meta("keep_case", true)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.size_flags_vertical = Control.SIZE_FILL
+	l.custom_minimum_size = Vector2(width, 38)
+	l.clip_text = width > 0.0
+	return l
+
+
 func _menu_button(parent: Control, key: String, text: String, kind: String, height: float, size: int) -> Button:
 	var b := Button.new()
 	b.text = text
@@ -137,27 +164,42 @@ func _build_status_panel() -> void:
 	box.add_child(BattleTheme.make_label("RISORSE", 14, BattleTheme.CY_DIM))
 	var mats: Dictionary = roster["materials"]
 	var res_row := HBoxContainer.new()
-	res_row.add_theme_constant_override("separation", 26)
+	res_row.add_theme_constant_override("separation", 0)
 	for entry in [["coin", "MONETE %d" % int(roster["coins"])], ["nucleo", "NUCLEI %d" % int(mats.get("nucleo", 0))], ["lega", "LEGHE %d" % int(mats.get("lega", 0))]]:
-		res_row.add_child(GameIcon.line(str(entry[0]), GameIcon.currency_color(str(entry[0])), str(entry[1]), 20))
+		res_row.add_child(_resource_cell(str(entry[0]), str(entry[1])))
 	box.add_child(res_row)
 
 	box.add_child(HSeparator.new())
 	box.add_child(BattleTheme.make_label("SQUADRA ATTIVA", 14, BattleTheme.CY_DIM))
+	# una griglia: ogni colonna ha la sua larghezza e tutto e' centrato in verticale, cosi' le righe restano allineate
+	var grid := GridContainer.new()
+	grid.columns = 6
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 3)
 	for id in roster["team"]:
 		var c: Dictionary = roster["characters"][id]
 		var def: Dictionary = BattleContent.CHARACTERS[str(id)]
 		var ucol: Color = BattleTheme.unit_color(str(def["color"]))
-		var unit_row: HBoxContainer = GameIcon.line(str(def["cls"]), ucol, "%s   LV%d   %s" % [str(def["name"]).to_upper(), int(c["level"]), str(def["cls"]).to_upper()], 18, ucol)
 		var face := PortraitView.new().setup(str(id), "icon")
-		face.custom_minimum_size = Vector2(36, 36)
-		unit_row.add_child(face)
-		unit_row.move_child(face, 0)
+		face.custom_minimum_size = Vector2(38, 38)
+		grid.add_child(face)
+		var cls_icon := GameIcon.new().setup(str(def["cls"]), ucol, 24.0)
+		cls_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		grid.add_child(cls_icon)
+		grid.add_child(_cell(str(def["name"]), 21, ucol, 120.0, true))
+		grid.add_child(_cell("Lv %d" % int(c["level"]), 14, BattleTheme.WH, 52.0))
+		grid.add_child(_cell(str(def["cls"]).capitalize(), 14, ucol, 84.0))
 		var fac: String = BattleContent.faction_of(str(id))
+		var fcell := HBoxContainer.new()
+		fcell.add_theme_constant_override("separation", 6)
+		fcell.size_flags_vertical = Control.SIZE_FILL
 		if fac != "":
-			unit_row.add_child(GameIcon.new().setup(fac, Hints.faction_color(fac), 22.0))
-			unit_row.add_child(BattleTheme.make_label(Factions.name_of(fac).to_upper(), 14, Hints.faction_color(fac)))
-		box.add_child(unit_row)
+			var fic := GameIcon.new().setup(fac, Hints.faction_color(fac), 22.0)
+			fic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			fcell.add_child(fic)
+			fcell.add_child(_cell(Factions.name_of(fac), 14, Hints.faction_color(fac), 0.0))
+		grid.add_child(fcell)
+	box.add_child(grid)
 
 	box.add_child(HSeparator.new())
 	box.add_child(BattleTheme.make_label("PROGRESSI", 14, BattleTheme.CY_DIM))

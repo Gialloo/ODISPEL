@@ -32,7 +32,7 @@ func _draw() -> void:
 		var w: float = h * art.get_width() / maxf(1.0, float(art.get_height()))
 		draw_texture_rect(art, Rect2(0, 0, w, h), false)
 		return
-	var font: Font = BattleTheme.display()
+	var font: Font = BattleTheme.logo()
 	var tw: float = font.get_string_size(TEXT, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 	# taglio rosso e ombra
 	draw_colored_polygon(PackedVector2Array([Vector2(-8, 70), Vector2(tw + 40, 18), Vector2(tw + 18, 104), Vector2(-26, 112)]), BattleTheme.RD_DARK)
