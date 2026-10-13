@@ -37,6 +37,11 @@ var _invalid_count: int = 0
 # Dopo questi avvisi i messaggi non validi si scartano in silenzio,
 # così un peer ostile non riempie il log.
 const MAX_INVALID_WARNINGS: int = 3
+# Difese contro un peer che inonda il canale: pacchetti troppo grandi si scartano, troppi messaggi al secondo
+# si scartano e, se l'eccesso continua, il collegamento si chiude. I valori normali sono molto sotto (qualche messaggio al secondo).
+const MAX_PACKET_BYTES: int = 262144
+const MAX_MESSAGES_PER_SEC: int = 120
+const FLOOD_CLOSE_SECONDS: int = 5
 
 
 # File con le credenziali del server di inoltro (TURN). Non e' nel repository (vedi .gitignore): si crea in
@@ -165,7 +170,10 @@ func poll() -> void:
 
 	if state == WebRTCDataChannel.STATE_OPEN:
 		while channel.get_available_packet_count() > 0:
-			_handle_raw(channel.get_packet().get_string_from_utf8(), now)
+			var packet: PackedByteArray = channel.get_packet()
+			if not _accept_packet(packet.size(), now):
+				continue
+			_handle_raw(packet.get_string_from_utf8(), now)
 
 		check_heartbeat(now)
 
@@ -188,6 +196,31 @@ static func parse_json(raw: String) -> Variant:
 # True se il canale si è aperto almeno una volta.
 func has_been_open() -> bool:
 	return _was_open
+
+
+var _rate_window_start: int = 0
+var _rate_count: int = 0
+var _flood_seconds: int = 0
+
+
+# False se il pacchetto va scartato (troppo grande o troppi messaggi al secondo).
+func _accept_packet(size: int, now_msec: int) -> bool:
+	if now_msec - _rate_window_start >= 1000:
+		if _rate_count > MAX_MESSAGES_PER_SEC:
+			_flood_seconds += 1
+		else:
+			_flood_seconds = 0
+		_rate_window_start = now_msec
+		_rate_count = 0
+		if _flood_seconds >= FLOOD_CLOSE_SECONDS:
+			push_warning("WebRTCLink: troppi messaggi, collegamento chiuso.")
+			close()
+			return false
+	_rate_count += 1
+	if size > MAX_PACKET_BYTES:
+		_invalid_count += 1
+		return false
+	return _rate_count <= MAX_MESSAGES_PER_SEC
 
 
 # Elabora un pacchetto ricevuto. I "ping" servono solo a dimostrare che

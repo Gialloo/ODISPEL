@@ -578,7 +578,7 @@ func _event(e: Dictionary) -> void:
 			Snd.play("swap")
 		"down":
 			var dc: PvpCard = _card_of_unit(str(e["unit"]))
-			_log_line("[color=#ff2d55]   %s e' K.O.![/color]" % _name_of(str(e["unit"])))
+			_log_line("[color=#ff4630]   %s e' K.O.![/color]" % _name_of(str(e["unit"])))
 			if dc != null:
 				AnimFx.float_text(_fx, "K.O.!", _anchor(dc) + Vector2(-30.0, -60.0), BattleTheme.RD, 44)
 				if AnimFx.enabled():

@@ -169,8 +169,11 @@ func _test_json_and_store() -> void:
 	var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 	f.store_string("{ rovinato")
 	f.close()
-	_check("file rovinato: parte una collezione nuova", RosterStore.load_or_new(path) == RosterState.new_roster())
+	_check("file rovinato: torna la copia di sicurezza", RosterStore.load_or_new(path) == r)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path + ".bak"))
+	_check("file rovinato senza copia: parte una collezione nuova", RosterStore.load_or_new(path) == RosterState.new_roster())
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path + ".corrotto"))
 	_check("file mancante: collezione nuova", RosterStore.load_or_new(path) == RosterState.new_roster())
 	_check("non si salva una collezione non valida", not RosterStore.save(broken, path))
 

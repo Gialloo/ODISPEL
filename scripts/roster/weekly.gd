@@ -18,8 +18,8 @@ const STREAK_CAP: int = 5
 # id, testo, obiettivo, premio (monete)
 const MISSIONS: Array = [
 	{"id": "wins", "text": "Vinci battaglie", "goal": 6, "coins": 300},
-	{"id": "dailies", "text": "Supera la sfida del giorno", "goal": 3, "coins": 400},
-	{"id": "event", "text": "Supera l'evento della settimana", "goal": 1, "coins": 600},
+	{"id": "dailies", "text": "Sfide del giorno", "goal": 3, "coins": 400},
+	{"id": "event", "text": "Evento", "goal": 1, "coins": 600},
 ]
 
 

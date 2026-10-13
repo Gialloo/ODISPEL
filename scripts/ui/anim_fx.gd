@@ -235,7 +235,7 @@ class Shards extends Timed:
 
 class RoundBanner extends Timed:
 	var text: String = "ROUND 1"
-	var col: Color = Color("#ff2d55")
+	var col: Color = Color("#ff4630")
 
 	func _init() -> void:
 		life = 1.3

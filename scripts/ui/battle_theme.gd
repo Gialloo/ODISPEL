@@ -4,11 +4,13 @@ extends RefCounted
 # Stile grafico del combattimento: telecamera di sorveglianza + HUD "arcade".
 # Dominante celeste/ciano, accenti rossi aggressivi, bianco e nero.
 
+# PALETTE A COLORI COMPLEMENTARI: ciano (tinta ~188) contro rosso-arancio (tinta ~8), opposti sul cerchio cromatico.
+# Ciano = azione/amico/interfaccia, rosso-arancio = pericolo/nemico/attacco. Giallo = solo evidenza (punti focali), verde = esito positivo.
 const CY: Color = Color("#7cf0ff")        # ciano principale
 const CY_DIM: Color = Color("#8fd6e4")      # testi secondari: chiari, si leggono bene
 const CY_DARK: Color = Color("#0f3a44")
-const RD: Color = Color("#ff2d55")        # rosso aggressivo
-const RD_DARK: Color = Color("#5a1022")
+const RD: Color = Color("#ff4630")        # rosso-arancio, complementare del ciano
+const RD_DARK: Color = Color("#5a1a12")
 const WH: Color = Color("#f2fdff")
 const BK: Color = Color("#04080a")
 const PANEL: Color = Color("#061418")

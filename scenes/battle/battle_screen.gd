@@ -1687,13 +1687,13 @@ func _push_log(text: String, kind: String) -> void:
 		"hit":
 			color = "#f2fdff"
 		"boss":
-			color = "#ff2d55"
+			color = "#ff4630"
 		"link":
 			color = "#ffe14d"
 		"heal":
 			color = "#6bffb0"
 		"down", "end":
-			color = "#ff2d55"
+			color = "#ff4630"
 	log_lines.append("[color=%s]> %s[/color]" % [color, text])
 	while log_lines.size() > 8:
 		log_lines.pop_front()

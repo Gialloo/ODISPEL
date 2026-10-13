@@ -58,7 +58,7 @@ func _build() -> void:
 	# Dettagli
 	var det := HudPanel.new().setup("DOSSIER", BattleTheme.RD)
 	det.position = Vector2(440, 90)
-	det.size = Vector2(800, 520)
+	det.size = Vector2(800, 558)
 	add_child(det)
 	var dbox := VBoxContainer.new()
 	dbox.add_theme_constant_override("separation", 5 if TouchUi.active() else 10)
@@ -87,14 +87,14 @@ func _build() -> void:
 		tier_buttons.append(tb)
 	info_label = BattleTheme.make_label("", 16, BattleTheme.CY)
 	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info_label.custom_minimum_size = Vector2(740, 52)
+	info_label.custom_minimum_size = Vector2(740, 40)
 	dbox.add_child(info_label)
 	var sp := Control.new()
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dbox.add_child(sp)
 	var story_button := Button.new()
 	story_button.text = "RIVEDI LA SCENA INIZIALE"
-	story_button.custom_minimum_size = Vector2(0, 36)
+	story_button.custom_minimum_size = Vector2(0, 32)
 	BattleTheme.style_button(story_button, "normal", 16)
 	story_button.pressed.connect(_on_replay_story)
 	dbox.add_child(story_button)
@@ -136,7 +136,7 @@ func _build() -> void:
 
 	UiMotion.slide_in([list_panel], Vector2(-140, 0), 0.0, 0.3)
 	UiMotion.slide_in([det], Vector2(140, 0), 0.0, 0.34)
-	add_child(_hint("INVIO avvia  ·  1-8 bersaglio  ·  SU/GIU difficolta'  ·  ESC indietro", Vector2(440, 640)))
+	add_child(_hint("INVIO avvia  ·  1-8 bersaglio  ·  SU/GIU difficolta'  ·  ESC indietro", Vector2(440, 672)))
 
 	var back := Button.new()
 	back.text = "TORNA ALL'HUB"
@@ -234,6 +234,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _hint(text: String, pos: Vector2) -> Label:
-	var l := BattleTheme.make_label(text, 13, BattleTheme.CY_DARK)
+	var l := BattleTheme.make_label(text, 13, BattleTheme.CY_DIM)
 	l.position = pos
 	return l
