@@ -923,7 +923,7 @@ func _refresh_detail() -> void:
 	for p in e["passives"]:
 		passives.append(str(BattleContent.PASSIVES[str(p)]["name"]))
 	var lines: Array = []
-	var arch: Dictionary = Archetypes.DEFS.get(Archetypes.of_color(str(def["color"])), {})
+	var arch: Dictionary = Archetypes.DEFS.get(Archetypes.of_def(def), {})
 	lines.append("%s = %s  |  %s  |  %s" % [str(def["color"]).to_upper(), str(arch.get("tag", "")), str(def["cls"]).to_upper(), str(BattleTypes.RARITIES[int(def["rarity"])]).to_upper()])
 	lines.append("%s: %s" % [str(arch.get("name", "")), str(arch.get("line", ""))])
 	var faction: String = BattleContent.faction_of(selected)

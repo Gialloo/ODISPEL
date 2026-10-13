@@ -74,6 +74,7 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 		u["ammo"] = cap
 		u["ammo_max"] = cap
 	u["style"] = BattleContent.style_of(char_id, entry)
+	u["arch_override"] = str(def.get("arch", ""))
 	u["crit"] = 0
 	u["crit_dmg"] = Factions.CRIT_DMG_PM
 	u["base"] = {"atk": int(stats["atk"]), "def": int(stats["def"]), "spd": int(stats["spd"]), "crit": 0}

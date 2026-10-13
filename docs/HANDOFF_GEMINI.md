@@ -100,7 +100,7 @@ Rarita': piu' alta = piu' dettaglio e accessori (comune < rara < epica < leggend
 | eco | Eco | giallo | striker | Kairos | epica | enigmatico, dettagli dissonanti |
 | tana | Tana | giallo | vanguard | LibraCorp | leggendaria | presenza imponente, protettiva |
 | nico | Nico | rosso | vanguard | Kairos | epica | amico di Kira, custode del rifugio, **sciarpa rossa sempre al collo** |
-| dafne | Dafne | verde | striker | LibraCorp | leggendaria | tiratrice scelta, sguardo da cecchina, divisa operativa |
+| dafne | Dafne | giallo | striker | LibraCorp | leggendaria | tiratrice scelta, sguardo da cecchina, divisa operativa |
 | angela | Angela | giallo | striker | LibraCorp | leggendaria | "Dea del laser orbitale": mecamante, elementi tecnologici luminosi |
 
 ## 4. I boss (8) — 3 file ciascuno, sfondo a tinta unita

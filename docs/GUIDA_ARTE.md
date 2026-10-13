@@ -79,7 +79,7 @@ sopracciglia e bocca; il resto dell'immagine resta uguale cosi' si sovrappongono
 | eco | Eco | giallo | striker | Kairos | enigmatico, dettagli dissonanti (Kairos) |
 | tana | Tana | giallo | vanguard | LibraCorp | leggendaria: presenza imponente, protettiva |
 | nico | Nico | rosso | vanguard | Kairos | storia (sbloccato con lo Specchio): amico di Kira, custode del rifugio, sciarpa rossa sempre al collo |
-| dafne | Dafne | verde | striker | LibraCorp | leggendaria, tiratrice scelta: sguardo da cecchina, divisa operativa |
+| dafne | Dafne | giallo | striker | LibraCorp | leggendaria, tiratrice scelta: sguardo da cecchina, divisa operativa |
 | angela | Angela | giallo | striker | LibraCorp | leggendaria, "Dea del laser orbitale": mecamante, elementi tecnologici luminosi |
 
 Per la **rarita'** si puo' curare di piu' il dettaglio: comuni semplici, leggendari con accessori e illustrazione piu' ricca.

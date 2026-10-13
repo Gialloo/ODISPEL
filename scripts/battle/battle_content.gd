@@ -155,7 +155,7 @@ const CHARACTERS: Dictionary = {
 	# Nico: l'amico di Kira, ricomparso nello Specchio. Solo storia: non esce dai reclutamenti.
 	"nico": {"name": "Nico", "color": "rosso", "cls": "vanguard", "rarity": 2, "skill": "intimidisci", "ult": "bastione", "passive": "p_swap", "faction": "kairos",
 		"role": "Custode del rifugio", "story_only": true},
-	"dafne": {"name": "Dafne", "color": "verde", "cls": "striker", "rarity": 3, "skill": "u_dafne_a", "ult": "coordinated_shot", "passive": "p_atk", "faction": "libracorp",
+	"dafne": {"name": "Dafne", "color": "giallo", "arch": "dex", "cls": "striker", "rarity": 3, "skill": "u_dafne_a", "ult": "coordinated_shot", "passive": "p_atk", "faction": "libracorp",
 		"role": "Tiratore scelto", "ammo_max": 6, "stat_mult": {"hp": 0.85, "atk": 0.98}},
 	"angela": {"name": "Angela", "color": "giallo", "cls": "striker", "rarity": 3, "skill": "u_angela_a", "ult": "orbital_strike", "passive": "p_atk", "faction": "libracorp",
 		"role": "Mecamante", "ammo_max": 12, "stat_mult": {"hp": 0.75, "atk": 1.12, "def": 0.8}},

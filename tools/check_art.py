@@ -13,7 +13,7 @@ from PIL import Image
 
 CHARS = {  # id: (nome, colore, rarita')
     "kira": "viola", "dax": "rosso", "elle": "verde", "bruno": "blu", "nova": "giallo", "mira": "blu", "rex": "rosso",
-    "ivo": "blu", "sera": "verde", "eco": "giallo", "tana": "giallo", "nico": "rosso", "dafne": "verde", "angela": "giallo",
+    "ivo": "blu", "sera": "verde", "eco": "giallo", "tana": "giallo", "nico": "rosso", "dafne": "giallo", "angela": "giallo",
 }
 BOSSES = ["distributore", "semaforo", "tombino", "cabina", "ascensore", "manichino", "orologio", "specchio"]
 EXPR = ["neutral", "happy", "angry", "sad", "surprised", "hurt"]

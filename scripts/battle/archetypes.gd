@@ -51,6 +51,13 @@ static func of_color(color_name: String) -> String:
 	return str(OF_COLOR.get(color_name, ""))
 
 
+# Archetipo di un personaggio: di norma lo da' il colore, ma un personaggio puo' tenere il suo anche cambiando colore
+# (campo "arch" nella scheda: Dafne e' gialla ma conserva il kit da tiratrice precisa).
+static func of_def(def: Dictionary) -> String:
+	var forced: String = str(def.get("arch", ""))
+	return forced if DEFS.has(forced) else of_color(str(def.get("color", "")))
+
+
 static func of_unit(u: Dictionary) -> String:
 	return str(u.get("arch", ""))
 
@@ -66,7 +73,8 @@ static func mods_for(u: Dictionary) -> Array:
 
 # Alla creazione dell'unita'.
 static func setup(u: Dictionary) -> void:
-	u["arch"] = of_color(str(u.get("color", "")))
+	var forced: String = str(u.get("arch_override", ""))
+	u["arch"] = forced if DEFS.has(forced) else of_color(str(u.get("color", "")))
 	u["momentum"] = 0
 	match str(u["arch"]):
 		"qck":

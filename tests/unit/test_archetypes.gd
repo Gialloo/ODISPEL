@@ -36,6 +36,11 @@ func _init() -> void:
 	_check("QCK parte con ultimate carica", int(bruno["gauge"]) >= Archetypes.QCK_START_GAUGE)
 	var sera: Dictionary = _unit("sera")        # verde = DEX
 	_check("DEX: piu' danno critico", int(sera["crit_dmg"]) == Factions.CRIT_DMG_PM + Archetypes.DEX_CRIT_DMG_PM)
+	var daf: Dictionary = _unit("dafne")        # gialla ma conserva l'archetipo DEX del suo kit
+	_check("Dafne e' gialla", str(daf["color"]) == "giallo")
+	_check("Dafne conserva DEX (critici forti)", str(daf["arch"]) == "dex" and int(daf["crit_dmg"]) == Factions.CRIT_DMG_PM + Archetypes.DEX_CRIT_DMG_PM)
+	_check("la scheda di Dafne indica DEX", Archetypes.of_def(BattleContent.CHARACTERS["dafne"]) == "dex")
+	_check("Angela gialla segue il colore (PSY)", str(_unit("angela")["arch"]) == "psy")
 	var rex: Dictionary = _unit("rex")          # rosso = STR
 	var boss: Dictionary = BattleState.make_boss("distributore", 1.0, 0)
 	var d0: int = BattleResolver.calc_damage(rex, boss, 1.0)
