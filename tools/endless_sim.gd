@@ -11,6 +11,7 @@ func _init() -> void:
 		var best: int = 0
 		for g in n:
 			var carry: Dictionary = {}
+			var boons: Array = []
 			var floor_n: int = 1
 			while floor_n < 80:
 				var team: Array = []
@@ -21,6 +22,7 @@ func _init() -> void:
 				st["players"][0]["ai"] = true
 				Endless.apply(st, floor_n)
 				if floor_n > 1:
+					Endless.apply_boons(st, boons)
 					Endless.apply_carry(st, carry)
 				var guard: int = 0
 				while str(st["winner"]) == "" and guard < 150:
@@ -29,6 +31,7 @@ func _init() -> void:
 				if str(st["winner"]) != "players":
 					break
 				carry = Endless.carry_from(st)
+				boons.append(Endless.offer(floor_n)[(g + floor_n) % 3])
 				floor_n += 1
 			total += floor_n - 1
 			best = maxi(best, floor_n - 1)

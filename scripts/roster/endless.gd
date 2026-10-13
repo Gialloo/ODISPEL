@@ -60,11 +60,13 @@ static func mod_for(floor_n: int) -> Dictionary:
 
 
 static func hp_mult(floor_n: int) -> float:
-	return 1.0 + HP_STEP * float(maxi(1, floor_n) - 1)
+	var f: float = float(maxi(1, floor_n) - 1)
+	return 1.0 + HP_STEP * f + 0.004 * f * f       # sale piu' in fretta dopo i primi piani: i potenziamenti si sommano
 
 
 static func atk_mult(floor_n: int) -> float:
-	return 1.0 + ATK_STEP * float(maxi(1, floor_n) - 1)
+	var f: float = float(maxi(1, floor_n) - 1)
+	return 1.0 + ATK_STEP * f + 0.002 * f * f
 
 
 static func reward_mult(floor_n: int) -> float:
