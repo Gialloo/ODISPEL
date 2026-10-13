@@ -4,8 +4,8 @@ Uso: python tools/make_art_templates.py   (serve Pillow: pip install pillow)
 import os
 from PIL import Image, ImageDraw
 
-CHARS = ["kira", "dax", "elle", "bruno"]
-BOSSES = ["distributore", "semaforo", "tombino", "cabina"]
+CHARS = ["kira", "dax", "elle", "bruno", "nova", "mira", "rex", "ivo", "sera", "eco", "tana", "nico", "dafne", "angela"]
+BOSSES = ["distributore", "semaforo", "tombino", "cabina", "ascensore", "manichino", "orologio", "specchio"]
 EXPR = ["neutral", "happy", "angry", "sad", "surprised", "hurt"]
 OUT = os.path.join(os.path.dirname(__file__), "..", "art_templates")
 
@@ -34,7 +34,7 @@ for b in BOSSES:
     make("bosses/%s/hurt.png" % b, (1000, 1000), (255, 255, 255))
     make("bosses/%s/portrait.png" % b, (1000, 1400), (255, 45, 85))
 for i in range(1, 5):
-    make("backgrounds/battle/layer_%d.png" % i, (1400, 800), (42, 138, 154))
+    make("backgrounds/battle/layer_%d.png" % i, (1600, 900), (42, 138, 154))
 make("logo.png", (1000, 280), (255, 45, 85))
 make("backgrounds/hub.png", (1920, 1080), (42, 138, 154))
 make("backgrounds/dialogue/strada_notte.png", (1920, 1080), (42, 138, 154))

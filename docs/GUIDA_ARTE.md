@@ -1,5 +1,7 @@
 # GUIDA ALLE GRAFICHE DI ODISPEL
 
+> Per far produrre le grafiche a un'IA o a un artista esterno usa **`docs/HANDOFF_ARTE_IA.md`** (specifiche complete, misure, controllo automatico con `tools/check_art.py`).
+
 Il gioco usa dei segnaposto disegnati dal codice. Per sostituirne uno basta mettere un
 **PNG con trasparenza e il nome giusto** in una cartella `art`. Niente codice da toccare.
 Dove manca un file resta il segnaposto, quindi puoi aggiungere le immagini una alla volta.
@@ -26,7 +28,7 @@ Personaggi (`<id>` = kira, dax, elle, bruno, ...):
 | `characters/<id>/icon.png` | liste e lobby | 256x256 |
 | `characters/<id>/battle.png` | figura in battaglia (alta ~230 px nel gioco) | 480x640, piedi sul bordo basso |
 
-Boss (`<boss>` = distributore, semaforo, tombino, cabina):
+Boss (`<boss>` = distributore, semaforo, tombino, cabina, ascensore, manichino, orologio, specchio):
 
 | File | Uso | Misura |
 |---|---|---|
@@ -35,7 +37,7 @@ Boss (`<boss>` = distributore, semaforo, tombino, cabina):
 | `bosses/<boss>/portrait.png` | dialoghi (se manca usa battle) | 1000x1400 |
 
 Sfondi:
-- `backgrounds/battle/layer_1.png` ... `layer_4.png`: strati dal piu' lontano (1) al piu' vicino (4), 1400x800. Si muovono con la parallasse. Usane da 1 a 4.
+- `backgrounds/battle/layer_1.png` ... `layer_4.png`: strati dal piu' lontano (1) al piu' vicino (4), 1600x900. Si muovono con la parallasse. Usane da 1 a 4.
 - `backgrounds/<boss>/layer_N.png`: come sopra ma solo per quel boss (ha la precedenza).
 - `backgrounds/hub.png`: sfondo dell'hub, 1920x1080.
 - `logo.png`: logo dell'hub (se manca c'e' quello disegnato dal codice), ~1000x280, sfondo trasparente.
