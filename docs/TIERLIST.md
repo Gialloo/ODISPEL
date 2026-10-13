@@ -1,4 +1,4 @@
-# ODISPEL - Tier list (versione 0.24.2)
+# ODISPEL - Tier list (versione 0.24.3)
 
 Valutazione dopo l'ultimo bilanciamento, fatta con simulazioni (vedi `docs/REPORT_BILANCIAMENTO.md`). Non e' un'opinione: e' quanto vincono le squadre che contengono quell'operatore.
 
