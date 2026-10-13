@@ -257,14 +257,18 @@ def hat():
 CHORDS = [("A", ["A3", "C4", "E4"], "A2"), ("F", ["F3", "A3", "C4"], "F2"), ("C", ["C4", "E4", "G4"], "C2"), ("G", ["G3", "B3", "D4"], "G2")]
 
 
-def music(bpm, bars_per_chord, chords_rounds, battle):
+CHORDS_HARD = [("A", ["A3", "C4", "E4"], "A2"), ("G", ["G3", "B3", "D4"], "G2"), ("F", ["F3", "A3", "C4"], "F2"), ("E", ["E3", "G#3", "B3"], "E2")]
+
+
+def music(bpm, bars_per_chord, chords_rounds, battle, chords=None):
+    chords = chords or CHORDS
     beat = 60.0 / bpm
     bar = beat * 4
     total_bars = bars_per_chord * 4 * chords_rounds
     total = bar * total_bars
     track = np.zeros(int(SR * total))
     for b in range(total_bars):
-        ch = CHORDS[(b // bars_per_chord) % 4]
+        ch = chords[(b // bars_per_chord) % 4]
         start = int(SR * b * bar)
         if b % bars_per_chord == 0:
             put(track, pad([note_freq(n) for n in ch[1]], bar * bars_per_chord + 0.8) * (0.9 if not battle else 0.6), start)
@@ -293,11 +297,19 @@ def music(bpm, bars_per_chord, chords_rounds, battle):
 def make_music():
     save("music/menu.wav", music(84, 1, 3, False), 0.55)
     save("music/battle.wav", music(138, 2, 2, True), 0.6)
+    make_hard_music()
+
+
+def make_hard_music():
+    """Brano piu' teso per Ciclo Infinito, Sfida del giorno e gli ultimi bersagli."""
+    save("music/battle_hard.wav", music(152, 2, 2, True, CHORDS_HARD), 0.6)
 
 
 if __name__ == "__main__":
     import sys
-    if "--combat" in sys.argv:        # solo i suoni di marchi/Ronda/schivata
+    if "--hard" in sys.argv:          # solo il brano teso
+        make_hard_music()
+    elif "--combat" in sys.argv:        # solo i suoni di marchi/Ronda/schivata
         make_combat_sfx()
     elif "--faction" in sys.argv:       # solo i suoni nuovi delle fazioni (non riscrive gli altri)
         make_faction_sfx()

@@ -46,7 +46,7 @@ func _ready() -> void:
 
 # Musica ed effetti si leggono su un altro thread: al primo suono non c'e' nessuna attesa.
 func _preload_in_background() -> void:
-	var paths: Array = [MUSIC_DIR + "menu.wav", MUSIC_DIR + "battle.wav"]
+	var paths: Array = [MUSIC_DIR + "menu.wav", MUSIC_DIR + "battle.wav", MUSIC_DIR + "battle_hard.wav"]
 	for file in ResourceLoader.list_directory(SFX_DIR):
 		if str(file).ends_with(".wav"):
 			paths.append(SFX_DIR + str(file))
@@ -130,6 +130,13 @@ func _on_button_hover(b: BaseButton) -> void:
 
 # ---------- Musica ----------
 
+# Che brano suona in questa schermata: in battaglia quello teso per Ciclo Infinito, Sfida del giorno e ultimi bersagli.
+func _track_for(scene: Node) -> String:
+	if not str(scene.scene_file_path).contains("battle_screen"):
+		return "menu"
+	var hard: bool = MissionConfig.endless_floor > 0 or MissionConfig.daily_mod != "" or ["orologio", "specchio"].has(MissionConfig.boss_id)
+	return "battle_hard" if hard else "battle"
+
 func play_music(track: String) -> void:
 	if track == current_music:
 		return
@@ -178,7 +185,7 @@ func _process(_delta: float) -> void:
 		return
 	_last_scene = scene
 	if scene != null:
-		play_music("battle" if str(scene.scene_file_path).contains("battle_screen") else "menu")
+		play_music(_track_for(scene))
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
