@@ -41,7 +41,7 @@ static func build() -> Theme:
 		t.set_color("font_hover_color", cls, BattleTheme.BK)
 		t.set_color("font_pressed_color", cls, BattleTheme.BK)
 		t.set_color("font_disabled_color", cls, Color("#6aa3af"))
-		t.set_font("font", cls, display)
+		t.set_font("font", cls, BattleTheme.menu())
 		t.set_font_size("font_size", cls, 20)
 
 	# Caselle di spunta

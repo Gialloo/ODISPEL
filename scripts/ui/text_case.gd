@@ -1,6 +1,7 @@
 class_name TextCase
 extends RefCounted
 
+# Regola: font Archivo Black e Roboto (titoli, HUD) = tutto MAIUSCOLO; font Merriweather (menu, dialoghi) = "Prima maiuscola".
 # Testi leggibili: i testi scritti TUTTO IN MAIUSCOLO diventano "Prima lettera maiuscola, resto minuscolo".
 # Si applica da solo a etichette e pulsanti quando vengono disegnati (hook), cosi' non serve cambiare ogni schermata.
 # Restano maiuscole le sigle (PV, ATK, LV...), i nomi propri tornano con l'iniziale maiuscola.
@@ -15,6 +16,8 @@ const SENTENCE_BREAKS: Array = ["· ", ": ", "// ", "| ", ". ", "! ", "? ", "- "
 
 static var _names: Dictionary = {}
 static var _tag: RegEx = null
+static var _acc: RegEx = null
+const ACUTE_E: Array = ["perche", "poiche", "affinche", "benche", "finche", "anziche", "ne", "se", "Perche", "Poiche", "PERCHE", "POICHE"]
 
 
 static func _proper_names() -> Dictionary:
@@ -120,7 +123,9 @@ static func _on_draw(n: Node) -> void:
 	var t: String = str(n.get("text"))
 	if t == "":
 		return
-	var p: String = pretty(t)
+	var f: Font = n.get_theme_font("font")
+	var caps: bool = f == BattleTheme.display() or f == BattleTheme.hud()
+	var p: String = accents(t.to_upper() if caps else pretty(t))
 	if p != t:
 		_apply.call_deferred(n, p)
 
@@ -128,3 +133,32 @@ static func _on_draw(n: Node) -> void:
 static func _apply(n: Node, p: String) -> void:
 	if is_instance_valid(n):
 		n.set("text", p)
+
+
+# Gli accenti scritti con l'apostrofo ("difficolta'", "piu'", "e'") diventano lettere accentate vere ("difficoltà", "più", "è").
+static func accents(s: String) -> String:
+	if not s.contains("'"):
+		return s
+	if _acc == null:
+		_acc = RegEx.create_from_string("([A-Za-z]+)'(?![A-Za-z])")
+	var out: String = ""
+	var last: int = 0
+	for m in _acc.search_all(s):
+		var word: String = m.get_string(1)
+		var low: String = word.to_lower()
+		var tail: String = low.substr(low.length() - 1)
+		var rep: String = ""
+		var upper: bool = word == word.to_upper() and word.length() > 1
+		match tail:
+			"a": rep = "à"
+			"i": rep = "ì"
+			"o": rep = "ò"
+			"u": rep = "ù"
+			"e": rep = "é" if ACUTE_E.has(word) else "è"
+		if low == "po" or low == "l" or low == "d" or rep == "":
+			continue
+		if upper:
+			rep = rep.to_upper()
+		out += s.substr(last, m.get_start(1) - last) + word.substr(0, word.length() - 1) + rep
+		last = m.get_end()
+	return out + s.substr(last)

@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://e6scfdt4j2e1"
-path="res://.godot/imported/LibreCaslonCondensed-Italic.ttf-4febe52f7f1c07025aa494679f8b7756.fontdata"
+uid="uid://c0fr0m64olv6v"
+path="res://.godot/imported/OdispelSerif-Bold.ttf-7ca9f3b3a4a57ea5e3a5529157f9329b.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/LibreCaslonCondensed-Italic.ttf"
-dest_files=["res://.godot/imported/LibreCaslonCondensed-Italic.ttf-4febe52f7f1c07025aa494679f8b7756.fontdata"]
+source_file="res://assets/fonts/OdispelSerif-Bold.ttf"
+dest_files=["res://.godot/imported/OdispelSerif-Bold.ttf-7ca9f3b3a4a57ea5e3a5529157f9329b.fontdata"]
 
 [params]
 

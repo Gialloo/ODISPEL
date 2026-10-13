@@ -36,52 +36,55 @@ static func unit_color(color_name: String) -> Color:
 	return UNIT_COLORS.get(color_name, WH)
 
 
-# FONT UNICO DEL GIOCO: Libre Caslon Condensed (Google Fonts, licenza OFL, vedi assets/fonts/OFL-LibreCaslonCondensed.txt).
-# Nel pacchetto: Bold, Bold corsivo e Italic (gli altri pesi, nello zip originale, si aggiungono copiandoli in assets/fonts).
-# Il Caslon condensato e' stretto e basso: i testi normali (non i titoli) si ingrandiscono un po' per restare leggibili.
-const TEXT_SCALE: float = 1.12
-const FONT_DIR: String = "res://assets/fonts/LibreCaslonCondensed-"
+# GERARCHIA TIPOGRAFICA (tutti i font sono Google Fonts, licenza OFL, vedi assets/fonts/OFL-*.txt):
+#   display()  Archivo Black   TITOLI, BOSS, SEZIONI: tutto MAIUSCOLO
+#   hud()      Roboto Bold     HUD, STATISTICHE, TIMER, NUMERI: tutto MAIUSCOLO
+#   menu()     Merriweather Bold   pulsanti e menu: Prima maiuscola, resto minuscolo, grassetto
+#   mono()     Merriweather Bold   dialoghi, descrizioni, elenchi: Prima maiuscola, resto minuscolo
+#   quote()    pensieri e citazioni (per ora come il testo normale)
+# (La copia ridotta di Merriweather si chiama OdispelSerif: la licenza vieta di tenere il nome originale se si modifica il font.)
+# I font Merriweather sono larghi: la versione "SemiCondensed" a 24 punti ottici tiene i testi corti.
+# Le maiuscole/minuscole le sistema TextCase da solo in base al font del testo.
+const TEXT_SCALE: float = 1.08
+const FONT_DIR: String = "res://assets/fonts/"
 static var _cache: Dictionary = {}
 
 
-static func font(weight: String = "Medium", italic: bool = false) -> Font:
-	var key: String = weight + ("Italic" if italic else "")
-	if key == "RegularItalic":
-		key = "Italic"
-	if not _cache.has(key):
-		_cache[key] = load(FONT_DIR + key + ".ttf")
-	return _cache[key]
+static func font(file: String) -> Font:
+	if not _cache.has(file):
+		_cache[file] = load(FONT_DIR + file + ".ttf")
+	return _cache[file]
 
 
-# Testo normale (descrizioni, elenchi, numeri): un peso medio, leggibile anche piccolo.
 static func mono() -> Font:
 	if _mono == null:
-		_mono = font("Bold")
+		_mono = font("OdispelSerif-Bold")
 	return _mono
 
 
-# Titoli, pulsanti, danni: il grassetto.
+static func menu() -> Font:
+	return font("OdispelSerif-Bold")
+
+
 static func display() -> Font:
 	if _display == null:
-		_display = font("Bold")
+		_display = font("ArchivoBlack-Regular")
 	return _display
 
 
-# Titoli dei pannelli e numeri dell'HUD.
 static func hud() -> Font:
 	if _hud == null:
-		_hud = font("Bold")
+		_hud = font("Roboto-Bold")
 	return _hud
 
 
-# Colpi critici e parole d'effetto: grassetto corsivo (da usare con testo MAIUSCOLO).
+# Colpi critici e parole d'effetto: Archivo Black, MAIUSCOLO.
 static func crit() -> Font:
-	return font("Bold", true)
+	return display()
 
 
-# Pensieri, sottotitoli, citazioni: corsivo.
 static func quote() -> Font:
-	return font("Regular", true)
+	return font("OdispelSerif-Bold")
 
 
 static func make_label(text: String, size: int = 16, color: Color = CY, use_display: bool = false) -> Label:
@@ -180,7 +183,7 @@ static func style_button(b: Button, kind: String = "normal", size: int = 22) -> 
 	b.add_theme_color_override("font_disabled_color", Color("#6aa3af"))
 	b.add_theme_color_override("font_outline_color", BK if kind != "normal" else Color(0, 0, 0, 0.9))
 	b.add_theme_constant_override("outline_size", 4 if kind != "normal" else 3)
-	b.add_theme_font_override("font", display())
+	b.add_theme_font_override("font", menu())
 	b.add_theme_font_size_override("font_size", TouchUi.fit(b, size))
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
