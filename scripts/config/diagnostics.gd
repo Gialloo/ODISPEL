@@ -18,7 +18,37 @@ static func report() -> String:
 	lines.append("Contenuti: %s" % ("OK" if BattleContent.validate().is_empty() else "ERRORI: " + str(BattleContent.validate())))
 	lines.append("Profilo: %s  ·  icona %s  ·  banner %d  ·  icone sbloccate %d" % [Profile.player_name, Profile.icon, Profile.banner, Profile.unlocked.size()])
 	lines.append("Log: %s" % ProjectSettings.globalize_path("user://logs"))
+	lines.append("Rete: componente WebRTC %s  ·  TURN %s" % ["presente" if ClassDB.class_exists("WebRTCPeerConnection") else "MANCANTE", "configurato" if not (WebRTCLink.turn_settings()["urls"] as Array).is_empty() else "non configurato"])
+	var net: Array = net_log_lines(12)
+	if not net.is_empty():
+		lines.append("Ultime righe di rete:")
+		lines.append_array(net)
 	return "\n".join(lines)
+
+
+# Ultime righe "[NET" del log del gioco: dicono cosa e' successo in una stanza.
+static func net_log_lines(count: int) -> Array:
+	var out: Array = []
+	var path: String = "user://logs/godot.log"
+	if not FileAccess.file_exists(path):
+		return out
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return out
+	var text: String = f.get_as_text()
+	for line in text.split("\n"):
+		if line.contains("[NET"):
+			out.append(line.strip_edges().left(200))
+	return out.slice(maxi(0, out.size() - count))
+
+
+# Messaggio semplice per un errore di rete tecnico (per chi non e' del mestiere).
+static func friendly_network_error(reason: String) -> String:
+	if reason.contains("setup WebRTC"):
+		return "Manca un file del gioco per la rete. Estrai di nuovo TUTTO lo zip (non solo ODISPEL.exe) e riprova."
+	if reason.contains("nessun host"):
+		return "La stanza non esiste o l'host non e' ancora entrato. Controlla il codice."
+	return reason
 
 
 static func copy_to_clipboard() -> String:

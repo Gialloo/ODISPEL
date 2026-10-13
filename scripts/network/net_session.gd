@@ -251,7 +251,7 @@ func _on_network_error(reason: String) -> void:
 	last_error = reason
 	close()
 
-	Notify.error("Errore di rete: " + reason)
+	Notify.error("Errore di rete: " + Diagnostics.friendly_network_error(reason))
 
 
 # La battaglia parte: tutti i giocatori della stanza ci vengono portati,
