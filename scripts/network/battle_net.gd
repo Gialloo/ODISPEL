@@ -26,15 +26,16 @@ static func snapshot_for(state: Dictionary, viewer_id: String) -> Dictionary:
 static func set_player_ai(state: Dictionary, player_id: String, ai: bool) -> bool:
 	if state.is_empty():
 		return false
-	var p: Dictionary = BattleState.player(state, player_id)
+	var p: Dictionary = PvpEngine.player(state, player_id) if bool(state.get("pvp", false)) else BattleState.player(state, player_id)
 	if p.is_empty():
 		return false
 	var was_ai: bool = bool(p["ai"])
 	p["ai"] = ai
+	var pvp: bool = bool(state.get("pvp", false))
 	if was_ai and not ai:
 		p["choice"] = null      # chi rientra sceglie lui: la scelta dell'IA non vale
-	elif ai and p["choice"] == null and BattleState.player_alive(state, p):
-		p["choice"] = BattleAI.choose(state, player_id)
+	elif ai and p["choice"] == null and (PvpEngine.player_alive(state, p) if pvp else BattleState.player_alive(state, p)):
+		p["choice"] = PvpEngine.choose_ai(state, player_id) if pvp else BattleAI.choose(state, player_id)
 	return true
 
 

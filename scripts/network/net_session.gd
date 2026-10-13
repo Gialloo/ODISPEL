@@ -34,6 +34,10 @@ func _process(_delta: float) -> void:
 	var scene: Node = get_tree().current_scene
 	if scene != _last_scene:
 		_last_scene = scene
+		var fighting: bool = scene is PvpScreen or (scene != null and SceneRouter.is_current("battle"))
+		if fighting != Settings.in_battle:
+			Settings.in_battle = fighting
+			Settings.apply_video()
 		if manager != null:
 			refresh_team()
 		if bar != null:
@@ -140,7 +144,7 @@ func close() -> void:
 func leave_room() -> void:
 	close()
 
-	if SceneRouter.is_current("battle"):
+	if SceneRouter.is_current("battle") or SceneRouter.is_current("pvp"):
 		SceneRouter.go("hub")
 
 	Notify.toast("Sei uscito dalla stanza.")
@@ -261,7 +265,7 @@ func _on_battle_updated() -> void:
 
 	var scene: Node = get_tree().current_scene
 
-	if SceneRouter.is_current("battle") and scene.get("source") == manager:
+	if (SceneRouter.is_current("battle") or SceneRouter.is_current("pvp")) and scene.get("source") == manager:
 		return
 
 	enter_battle()
@@ -283,7 +287,8 @@ func _swap_to_battle() -> void:
 	if manager == null:
 		return
 
-	var packed: PackedScene = load(SceneRouter.path_of("battle")) as PackedScene
+	var key: String = "pvp" if bool(manager.battle.get("pvp", false)) else "battle"
+	var packed: PackedScene = load(SceneRouter.path_of(key)) as PackedScene
 	var battle_scene: Node = packed.instantiate()
 	battle_scene.set("pending_source", manager)
 	var tree: SceneTree = get_tree()

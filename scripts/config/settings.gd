@@ -57,8 +57,18 @@ static func load_settings() -> void:
 
 
 # Limite di fotogrammi e V-Sync. Con il V-Sync attivo il gioco segue il monitor (60, 144...) senza strappi.
+static var in_battle: bool = false      # in battaglia si usa il limite scelto; nei menu mai oltre MENU_FPS (meno calore e batteria)
+const MENU_FPS: int = 60
+
+
+static func effective_fps() -> int:
+	if in_battle or fps_limit == 0 or fps_limit <= MENU_FPS:
+		return fps_limit
+	return MENU_FPS
+
+
 static func apply_video() -> void:
-	Engine.max_fps = fps_limit
+	Engine.max_fps = effective_fps()
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
 

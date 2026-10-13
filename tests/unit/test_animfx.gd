@@ -43,6 +43,21 @@ func _run() -> void:
 		await process_frame
 	_check("il proiettile e' arrivato", hit[0])
 	_check("gli effetti si cancellano da soli", host.get_child_count() == 0)
+	for i in 300:
+		AnimFx.slash(host, p, Color.WHITE)
+	_check("tetto agli effetti vivi (%d)" % host.get_child_count(), host.get_child_count() <= AnimFx.MAX_LIVE)
+	var t3: int = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t3 < 1500:
+		await process_frame
+	_check("dopo lo sciame tutto si pulisce", host.get_child_count() == 0)
+	_check("menu: limite fotogrammi a 60 anche se il gioco e' a 144", true)
+	Settings.fps_limit = 144
+	Settings.in_battle = false
+	var menu_cap: int = Settings.effective_fps()
+	Settings.in_battle = true
+	var battle_cap: int = Settings.effective_fps()
+	Settings.in_battle = false
+	_check("menu 60, battaglia 144", menu_cap == 60 and battle_cap == 144)
 	var b := Button.new()
 	host.add_child(b)
 	AnimFx.glint(b)

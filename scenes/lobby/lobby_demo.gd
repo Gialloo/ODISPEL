@@ -19,6 +19,9 @@ var status_label: Label
 var room_info_label: Label
 var cards_box: HBoxContainer
 var picker: LobbyView.MissionPicker
+var mode_picker: LobbyView.ModePicker
+var train_mode: OptionButton
+var train_button: Button
 var ready_button: Button
 var start_button: Button
 var _in_room: bool = false
@@ -39,7 +42,7 @@ func _build_interface() -> void:
 
 	ScreenFx.menu_overlays(self, BattleTheme.CY)
 
-	var title := BattleTheme.make_label("LOBBY CO-OP", 34, BattleTheme.CY, true)
+	var title := BattleTheme.make_label("LOBBY", 34, BattleTheme.CY, true)
 	title.position = Vector2(40, 22)
 	add_child(title)
 
@@ -93,6 +96,22 @@ func _build_form() -> void:
 	join_button.pressed.connect(_on_join_pressed)
 	box.add_child(join_button)
 
+	var train_row := HBoxContainer.new()
+	train_row.add_theme_constant_override("separation", 8)
+	box.add_child(train_row)
+	train_mode = OptionButton.new()
+	train_mode.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	train_mode.custom_minimum_size.y = 52
+	for m in PvpEngine.MODES:
+		train_mode.add_item(str(PvpEngine.MODE_NAMES[m]))
+	train_row.add_child(train_mode)
+	train_button = Button.new()
+	train_button.text = "ALLENAMENTO PVP (IA)"
+	train_button.custom_minimum_size = Vector2(250, 52)
+	BattleTheme.style_button(train_button, "normal", 18)
+	train_button.pressed.connect(_on_train_pressed)
+	train_row.add_child(train_button)
+
 	var back := Button.new()
 	back.text = "TORNA ALL'HUB"
 	back.custom_minimum_size.y = 44
@@ -104,7 +123,7 @@ func _build_form() -> void:
 func _build_room() -> void:
 	room_panel = HudPanel.new().setup("STANZA", BattleTheme.RD)
 	room_panel.position = Vector2(40, 80)
-	room_panel.size = Vector2(1200, 580)
+	room_panel.size = Vector2(1200, 616)
 	add_child(room_panel)
 
 	var box := VBoxContainer.new()
@@ -116,12 +135,15 @@ func _build_room() -> void:
 
 	cards_box = HBoxContainer.new()
 	cards_box.add_theme_constant_override("separation", 12)
-	cards_box.custom_minimum_size = Vector2(0, 310)
+	cards_box.custom_minimum_size = Vector2(0, 250)
 	box.add_child(cards_box)
 
 	box.add_child(BattleTheme.make_label("MISSIONE (LA SCEGLIE L'HOST)", 14, BattleTheme.CY_DIM))
 	picker = LobbyView.MissionPicker.new()
 	box.add_child(picker)
+	box.add_child(BattleTheme.make_label("MODALITA' (LA SCEGLIE L'HOST)", 14, BattleTheme.CY_DIM))
+	mode_picker = LobbyView.ModePicker.new()
+	box.add_child(mode_picker)
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -194,6 +216,7 @@ func _show_room() -> void:
 	room_panel.visible = true
 	if picker.manager == null and NetSession.manager != null:
 		picker.setup(NetSession.manager)
+		mode_picker.setup(NetSession.manager)
 	if chat == null and NetSession.manager != null:
 		chat = ChatPanel.new().setup(NetSession.manager, true, Vector2(440, 330))
 		chat.position = Vector2(800, 84)
@@ -311,6 +334,7 @@ func _refresh() -> void:
 	]
 	LobbyView.fill_players(cards_box, manager.lobby, manager.local_player_id, true)
 	picker.refresh()
+	mode_picker.refresh()
 
 	var mine: bool = manager.is_local_ready()
 	ready_button.text = "ANNULLA PRONTO" if mine else "PRONTO"
@@ -334,6 +358,21 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			SceneRouter.go("hub")
 
 
+# Sfida PvP contro l'IA, senza rete: serve a provare le mosse e le modalita'.
+func _on_train_pressed() -> void:
+	var src := PvpLocalSource.new()
+	var roster: Dictionary = RosterStore.load_or_new()
+	src.start(RosterState.team_entries(roster).slice(0, BattleTypes.NET_TEAM_SIZE), str(PvpEngine.MODES[train_mode.selected]), true, int(randi()) | 1, Profile.player_name)
+	var screen: Node = (load(SceneRouter.path_of("pvp")) as PackedScene).instantiate()
+	screen.set("pending_source", src)
+	var tree: SceneTree = get_tree()
+	var old: Node = tree.current_scene
+	tree.root.add_child(screen)
+	tree.current_scene = screen
+	if old != null:
+		old.queue_free()
+
+
 func _on_ready_pressed() -> void:
 	var manager: NetworkManager = NetSession.manager
 	if manager != null:
@@ -345,10 +384,10 @@ func _on_start_pressed() -> void:
 	if manager == null:
 		return
 	if not manager.all_ready():
-		_set_status("Servono almeno 2 giocatori e tutti PRONTI.")
+		_set_status(manager.start_problem())
 		return
 	# Chi non ha ancora sbloccato quel livello puo' giocarlo lo stesso, ma l'host deve confermare.
-	var lacking: Array = manager.players_lacking_unlock(manager.lobby_boss, manager.lobby_tier)
+	var lacking: Array = manager.players_lacking_unlock(manager.lobby_boss, manager.lobby_tier) if manager.lobby_mode == "coop" else []
 	if lacking.is_empty():
 		manager.host_launch()
 		return

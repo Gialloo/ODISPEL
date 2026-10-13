@@ -10,9 +10,19 @@ static func enabled() -> bool:
 	return Settings.quality_name() != "BASSA"
 
 
+const MAX_LIVE: int = 48
+static var _live: int = 0
+
+
 static func _add(parent: Node, c: Control, pos: Vector2) -> Control:
+	# tetto agli effetti vivi insieme: con decine di colpi in un round il telefono non deve soffrire
+	if _live >= MAX_LIVE:
+		c.free()
+		return null
 	c.position = pos
 	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_live += 1
+	c.tree_exited.connect(func() -> void: _live = maxi(0, _live - 1))
 	parent.add_child(c)
 	return c
 
@@ -265,6 +275,9 @@ class Rain extends Control:
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		if Settings.quality_name() == "MEDIA":
+			drops = 24
+		visibility_changed.connect(func() -> void: set_process(is_visible_in_tree()))
 		for i in drops:
 			_x.append(randf() * 1400.0)
 			_y.append(randf() * 760.0)
@@ -302,6 +315,7 @@ class Glint extends Control:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		clip_contents = true
+		visibility_changed.connect(func() -> void: set_process(is_visible_in_tree()))
 		_t = randf() * period
 
 	func _process(delta: float) -> void:

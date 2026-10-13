@@ -43,6 +43,8 @@ var local_team: Array = []          # squadra di chi gioca (host o client)
 var lobby: Dictionary = {}           # stato della lobby condivisa (vedi _build_lobby)
 var lobby_boss: String = "distributore"
 var lobby_tier: int = 0
+var lobby_mode: String = "coop"        # "coop" (contro il boss) oppure una modalita' PvP: duel, duo, ffa
+var lobby_balanced: bool = true        # PvP: true = tutti alla pari, false = conta la progressione
 var _ready_players: Dictionary = {}  # player_id -> pronto (host)
 var _player_teams: Dictionary = {}  # player_id -> squadra validata (host)
 var local_profile: Dictionary = {}   # icona e banner di chi gioca qui ({icon, banner}); il nome va a parte
@@ -295,7 +297,7 @@ func _build_lobby() -> Dictionary:
 			"profile": Profile.clean_public(local_profile if id == local_player_id else _player_profiles.get(id, {}))
 		})
 
-	return {"players": players, "boss": lobby_boss, "tier": lobby_tier}
+	return {"players": players, "boss": lobby_boss, "tier": lobby_tier, "mode": lobby_mode, "balanced": lobby_balanced}
 
 
 # Livelli battuti, ripuliti: solo boss noti e numeri tra 0 e il massimo.
@@ -455,6 +457,21 @@ func host_set_mission(boss_id: String, tier: int) -> bool:
 	return true
 
 
+# Solo l'host: sceglie co-op o una modalita' PvP, e se la sfida e' bilanciata.
+func host_set_mode(mode: String, balanced: bool) -> bool:
+	if not is_host or not (mode == "coop" or PvpEngine.MODES.has(mode)):
+		return false
+
+	lobby_mode = mode
+	lobby_balanced = balanced
+
+	for id in _ready_players.keys():
+		_ready_players[id] = false
+
+	_broadcast_lobby()
+	return true
+
+
 # Tutti i giocatori collegati hanno premuto PRONTO (e sono almeno 2).
 func all_ready() -> bool:
 	if not is_host or game == null:
@@ -471,7 +488,27 @@ func all_ready() -> bool:
 		if not bool(p["ready"]):
 			return false
 
+	if lobby_mode != "coop" and humans > PvpEngine.seats(lobby_mode).y:
+		return false
+
 	return humans >= 2
+
+
+# Perche' non si puo' ancora partire (testo per l'host).
+func start_problem() -> String:
+	if lobby_mode != "coop":
+		var humans: int = 0
+
+		for p in _build_lobby()["players"]:
+			if bool(p["connected"]):
+				humans += 1
+
+		var most: int = PvpEngine.seats(lobby_mode).y
+
+		if humans > most:
+			return "Troppi giocatori per questa modalita': massimo %d." % most
+
+	return "Servono almeno 2 giocatori e tutti PRONTI."
 
 
 # Solo l'host: parte con la missione della lobby, se tutti sono pronti.
@@ -479,7 +516,67 @@ func host_launch() -> bool:
 	if not all_ready():
 		return false
 
+	if lobby_mode != "coop":
+		return host_start_pvp(lobby_mode, lobby_balanced, int(randi()) | 1)
+
 	return host_start_battle(lobby_boss, int(randi()) | 1, lobby_tier)
+
+
+# Avvia una sfida PvP. I posti vuoti li riempie l'IA con la squadra dell'host.
+# 1v1: 2 umani. 2v2: 2-4 umani (gli altri posti IA). Tutti contro tutti: 2-4 umani (almeno 3 posti).
+func host_start_pvp(mode: String, balanced: bool, run_seed: int) -> bool:
+	if not is_host or game == null or run_seed == 0 or not PvpEngine.MODES.has(mode):
+		return false
+
+	if not battle.is_empty() and str(battle.get("winner", "")) == "":
+		return false
+
+	var seats: Vector2i = PvpEngine.seats(mode)
+	var humans: Array = []
+
+	for player: PlayerState in game.party.get_players():
+		if player.connected and not player.controlled_by_ai:
+			humans.append(player)
+
+	if humans.size() < 2 or humans.size() > seats.y:
+		return false
+
+	host_remove_unfilled_players()
+
+	if not local_team.is_empty() and not local_player_id.is_empty():
+		_player_teams[local_player_id] = local_team
+
+	var specs: Array = []
+	var fallback: Array = local_team if not local_team.is_empty() else RosterState.team_entries(RosterState.new_roster())
+
+	for player: PlayerState in humans:
+		var team: Array = _player_teams.get(player.id, [])
+
+		if team.is_empty():
+			team = fallback
+
+		specs.append({"id": player.id, "name": player.display_name, "ai": false, "team": team})
+
+	var fill: int = 1
+
+	while specs.size() < seats.x:
+		specs.append({"id": "ia_%d" % fill, "name": "IA %d" % fill, "ai": true, "team": fallback})
+		fill += 1
+
+	battle = PvpEngine.create(specs, mode, balanced, run_seed)
+	for id in _ready_players.keys():
+		_ready_players[id] = false
+
+	_battle_boss_id = ""
+	_battle_seed = run_seed
+	battle_rewards = {}
+	_rewards_applied = false
+	battle_time_left = battle_planning_seconds
+	battle_timer_enabled = true
+	_broadcast_battle()
+	battle_updated.emit()
+	_broadcast_lobby()
+	return true
 
 
 # Avvia la battaglia per tutti. Servono l'host e almeno un client.
@@ -551,6 +648,18 @@ func _host_apply_choice(player_id: String, choice: Dictionary) -> bool:
 	if battle.is_empty():
 		return false
 
+	if bool(battle.get("pvp", false)):
+		if not PvpEngine.submit_choice(battle, player_id, choice):
+			return false
+
+		if PvpEngine.can_resolve(battle):
+			_battle_resolve(false)
+		else:
+			_broadcast_battle()
+			battle_updated.emit()
+
+		return true
+
 	if not BattleResolver.submit_choice(battle, player_id, choice):
 		return false
 
@@ -564,12 +673,21 @@ func _host_apply_choice(player_id: String, choice: Dictionary) -> bool:
 
 
 func _battle_try_resolve() -> void:
-	if not battle.is_empty() and BattleResolver.can_resolve(battle):
+	if battle.is_empty():
+		return
+
+	if bool(battle.get("pvp", false)):
+		if PvpEngine.can_resolve(battle):
+			_battle_resolve(false)
+
+		return
+
+	if BattleResolver.can_resolve(battle):
 		_battle_resolve(false)
 
 
 func _battle_resolve(force: bool) -> void:
-	var events: Array = BattleResolver.resolve_round(battle, force)
+	var events: Array = PvpEngine.resolve_round(battle, force) if bool(battle.get("pvp", false)) else BattleResolver.resolve_round(battle, force)
 	battle_time_left = battle_planning_seconds
 	_broadcast({"type": "battle_events", "events": events})
 	battle_events_received.emit(events)
@@ -582,7 +700,7 @@ func _broadcast_battle() -> void:
 	# conosce il seed, quindi non potrebbe calcolarli ne' falsificarli).
 	var all_rewards: Dictionary = {}
 
-	if str(battle.get("winner", "")) != "":
+	if str(battle.get("winner", "")) != "" and not bool(battle.get("pvp", false)):
 		all_rewards = BattleRewards.for_battle(battle, _battle_boss_id, _battle_seed)
 		battle_rewards = all_rewards.get(local_player_id, {})
 
@@ -606,6 +724,10 @@ func _broadcast_battle() -> void:
 func finish() -> Dictionary:
 	if _rewards_applied or battle.is_empty() or str(battle.get("winner", "")) == "":
 		return battle_rewards
+
+	if bool(battle.get("pvp", false)):
+		_rewards_applied = true
+		return {}
 
 	_rewards_applied = true
 	var roster: Dictionary = RosterStore.load_or_new(reward_save_path)

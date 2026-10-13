@@ -55,7 +55,7 @@ static func fill_players(box: Container, lobby: Dictionary, local_id: String, bi
 		card.add_theme_stylebox_override("panel", _style(border, status == "PRONTO"))
 		card.name = "card_" + str(p["id"])
 		if big:
-			card.custom_minimum_size = Vector2(190, 300)
+			card.custom_minimum_size = Vector2(190, 240)
 		box.add_child(card)
 
 		var inner: BoxContainer = VBoxContainer.new() if big else HBoxContainer.new()
@@ -166,3 +166,46 @@ class MissionPicker extends HBoxContainer:
 		if _updating:
 			return
 		manager.host_set_mission(str(BattleContent.BOSS_ORDER[boss_pick.selected]), index)
+
+
+# Modalita' della stanza: co-op contro il boss o PvP (1v1, 2v2, tutti contro tutti), bilanciato o con progressione.
+class ModePicker extends HBoxContainer:
+	const KEYS: Array = ["coop", "duel", "duo", "ffa"]
+	var manager: NetworkManager = null
+	var mode_pick: OptionButton
+	var balance_pick: OptionButton
+	var _updating: bool = false
+
+	func setup(new_manager: NetworkManager) -> ModePicker:
+		manager = new_manager
+		add_theme_constant_override("separation", 8)
+		mode_pick = OptionButton.new()
+		mode_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mode_pick.add_item("CO-OP CONTRO IL BOSS")
+		for m in PvpEngine.MODES:
+			mode_pick.add_item("PVP · " + str(PvpEngine.MODE_NAMES[m]))
+		balance_pick = OptionButton.new()
+		balance_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		balance_pick.add_item("PVP BILANCIATO (TUTTI ALLA PARI)")
+		balance_pick.add_item("PVP CON PROGRESSIONE")
+		add_child(mode_pick)
+		add_child(balance_pick)
+		mode_pick.item_selected.connect(_changed)
+		balance_pick.item_selected.connect(_changed)
+		refresh()
+		return self
+
+	func refresh() -> void:
+		_updating = true
+		var mode: String = manager.lobby_mode if manager.is_host else str(manager.lobby.get("mode", "coop"))
+		var balanced: bool = manager.lobby_balanced if manager.is_host else bool(manager.lobby.get("balanced", true))
+		mode_pick.select(maxi(0, KEYS.find(mode)))
+		balance_pick.select(0 if balanced else 1)
+		mode_pick.disabled = not manager.is_host
+		balance_pick.disabled = not manager.is_host or mode == "coop"
+		_updating = false
+
+	func _changed(_i: int) -> void:
+		if _updating:
+			return
+		manager.host_set_mode(str(KEYS[mode_pick.selected]), balance_pick.selected == 0)

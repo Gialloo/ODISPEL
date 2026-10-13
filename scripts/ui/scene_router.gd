@@ -11,6 +11,7 @@ const SCENES: Dictionary = {
 	"missions": "res://scenes/missions/mission_screen.tscn",
 	"feats": "res://scenes/feats/feats_screen.tscn",
 	"battle": "res://scenes/battle/battle_screen.tscn",
+	"pvp": "res://scenes/battle/pvp_screen.tscn",
 }
 
 const LOADING_TITLES: Dictionary = {
