@@ -13,7 +13,9 @@ const CHANNEL_ID: int = 1
 # e connettersi attraverso la maggior parte delle NAT domestiche.
 const DEFAULT_STUN_URLS: Array = [
 	"stun:stun.l.google.com:19302",
-	"stun:stun1.l.google.com:19302"
+	"stun:stun1.l.google.com:19302",
+	"stun:stun.cloudflare.com:3478",
+	"stun:stun.relay.metered.ca:80"
 ]
 
 # Heartbeat: ogni lato manda un "ping" a intervalli regolari. Se per troppo
