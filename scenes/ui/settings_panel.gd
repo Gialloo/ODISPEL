@@ -14,6 +14,7 @@ var vsync_box: Button
 var fps_button: Button
 var light_box: Button
 var banter_box: Button
+var vibration_box: Button
 var tutorial_button: Button
 var art_folder_button: Button
 var art_reload_button: Button
@@ -61,6 +62,7 @@ func _ready() -> void:
 	vsync_box = _toggle(box, Settings.vsync, _on_vsync, "V-SYNC: SI", "V-SYNC: NO")
 	light_box = _toggle(box, Settings.light_fx, _on_light_fx, "EFFETTI RIDOTTI: SI (piu' fluido)", "EFFETTI RIDOTTI: NO")
 	banter_box = _toggle(box, Settings.banter, _on_banter, "BATTUTE IN BATTAGLIA: SI", "BATTUTE IN BATTAGLIA: NO")
+	vibration_box = _toggle(box, Settings.vibration, _on_vibration, "VIBRAZIONE: SI", "VIBRAZIONE: NO")
 	fps_button = Button.new()
 	fps_button.text = Settings.fps_text()
 	fps_button.custom_minimum_size = Vector2(0, 40)
@@ -181,6 +183,12 @@ func _on_mute(on: bool) -> void:
 func _on_vsync(on: bool) -> void:
 	Settings.vsync = on
 	_apply()
+
+
+func _on_vibration(on: bool) -> void:
+	Settings.vibration = on
+	_apply()
+	Settings.buzz(40)
 
 
 func _on_banter(on: bool) -> void:

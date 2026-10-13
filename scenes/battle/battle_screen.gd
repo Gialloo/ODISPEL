@@ -1010,8 +1010,7 @@ func _event_fx(e: Dictionary) -> float:
 
 # Vibrazione breve sul telefono nei momenti forti (solo touch).
 func _buzz(ms: int) -> void:
-	if TouchUi.active():
-		Input.vibrate_handheld(ms)
+	Settings.buzz(ms)
 
 
 # MARCHI: il mirino compare (o esplode, se consumato) sul boss.

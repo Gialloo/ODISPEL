@@ -64,8 +64,7 @@ static func _confirm(b: BaseButton) -> void:
 	b.modulate = FLASH
 	var tw: Tween = b.create_tween()
 	tw.tween_property(b, "modulate", Color.WHITE, 0.22)
-	if TouchUi.active():
-		Input.vibrate_handheld(18)
+	Settings.buzz(18)
 
 
 # Suono giusto per il pulsante: indietro, conferma, oppure il click normale.

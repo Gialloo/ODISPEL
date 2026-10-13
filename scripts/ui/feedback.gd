@@ -17,6 +17,11 @@ const TIPS: Array = [
 	"Potenzia l'operatore guida: e' quello che tutti vedono nella lobby.",
 	"Ai livelli DIFFICILE e INCUBO i premi e i drop sono molto migliori.",
 	"In multiplayer puoi consultare squadra ed equipaggio mentre aspetti gli altri.",
+	"La SFIDA DEL GIORNO paga premi x3: vincila ogni giorno per far crescere la serie.",
+	"Nel CICLO INFINITO i PV passano da un piano all'altro: scegli bene i potenziamenti.",
+	"I MARCHI si accumulano sul boss: ogni marchio e' +10% di danno per tutta la squadra.",
+	"L'aura delle Rondini potenzia l'attacco successivo: dopo averlo usato serve qualche round per ricaricarla.",
+	"Il tasto indietro del telefono apre la PAUSA in battaglia.",
 ]
 
 const TOAST_COLORS: Array = [BattleTheme.CY, BattleTheme.OK, BattleTheme.GOLD, BattleTheme.RD]
