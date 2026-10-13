@@ -130,7 +130,7 @@ func _init() -> void:
 	var good: Dictionary = BattleContent.default_entry("kira")
 	_check("entry normale valida", RosterState.validate_entry(good) == "")
 	var cheat: Dictionary = BattleContent.default_entry("kira")
-	cheat["rarity"] = 3
+	cheat["rarity"] = 2
 	_check("rarita' truccata rifiutata", RosterState.validate_entry(cheat) != "")
 	cheat = BattleContent.default_entry("kira")
 	cheat["faction"] = "libracorp"
@@ -207,8 +207,8 @@ func _init() -> void:
 	var pa: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [at2]}], "distributore", 7)
 	BattleResolver._hit(pa, BattleState.boss(pa), BattleState.unit(pa, "a:dax"), 0.5, [])
 	_check("Protocollo: gli atipici non lo hanno", BattleState.unit(pa, "a:dax")["mods"].is_empty())
-	var rf: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("kira"), BattleContent.default_entry("elle")]}], "distributore", 7)
-	_check("Magabondi in squadra con Rondini: aura dimezzata", int(BattleState.unit(rf, "a:elle")["aura"].get("crit", 0)) == 10 and int(BattleState.unit(rf, "a:kira")["aura"].get("crit", 0)) == 20)
+	var rf: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("nova"), BattleContent.default_entry("elle")]}], "distributore", 7)
+	_check("Magabondi in squadra con Rondini: aura dimezzata", int(BattleState.unit(rf, "a:elle")["aura"].get("crit", 0)) == 10 and int(BattleState.unit(rf, "a:nova")["aura"].get("crit", 0)) == 20)
 
 	# LibraCorp: munizioni, contrattacco, colpi mirati
 	var lb: Dictionary = BattleState.create([{"id": "a", "name": "a", "ai": false, "team": [BattleContent.default_entry("dax"), BattleContent.default_entry("tana")]}], "distributore", 11)

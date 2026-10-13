@@ -113,6 +113,8 @@ static func value(roster: Dictionary, f: Dictionary) -> int:
 		"owned_rarity":
 			var n: int = 0
 			for id in roster["characters"]:
+				if str(id) == "kira" and int(f["arg"]) >= 2:
+					continue         # Kira, la mascotte, e' fornita all'inizio: non conta come bottino raro/leggendario
 				if int(BattleContent.CHARACTERS.get(str(id), {}).get("rarity", 0)) >= int(f["arg"]):
 					n += 1
 			return n

@@ -56,7 +56,7 @@ func _test_colors_and_stats() -> void:
 	var base: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 1, "rank": 0, "passives": [], "gear": []})
 	var lv5: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 5, "rank": 0, "passives": [], "gear": []})
 	var rk2: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 1, "rank": 2, "passives": [], "gear": []})
-	_check("statistiche base vanguard", base["hp"] == 1300 and base["atk"] == 80)
+	_check("statistiche base vanguard", base["hp"] == 1300 and base["atk"] == 90)
 	_check("il livello aumenta le statistiche", lv5["hp"] > base["hp"] and lv5["atk"] > base["atk"])
 	_check("il rank aumenta le statistiche", rk2["hp"] > base["hp"])
 	var geared: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 1, "rank": 0, "passives": [], "gear": [

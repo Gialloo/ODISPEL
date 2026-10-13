@@ -60,9 +60,9 @@ func _init() -> void:
 	_check("l'unita' porta le skill uniche", (_unit("sera", 0)["skills"] as Array).has("u_sera_b"))
 	_check("le skill uniche non cadono come premio", _drops_have_no_unique())
 	# rank
-	var e0: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("kira", 1, 0))
-	var e5: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("kira", 1, 5))
-	_check("rank 5 rara (Kira): +25% di statistiche", float(e5["atk"]) / float(e0["atk"]) > 1.24 and float(e5["atk"]) / float(e0["atk"]) < 1.26)
+	var e0: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("nova", 1, 0))
+	var e5: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("nova", 1, 5))
+	_check("rank 5 rara (Nova): +25% di statistiche", float(e5["atk"]) / float(e0["atk"]) > 1.24 and float(e5["atk"]) / float(e0["atk"]) < 1.26)
 	var l0: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("tana", 1, 0))
 	var l5: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("tana", 1, 5))
 	var c0: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("dax", 1, 0))

@@ -21,7 +21,7 @@ const HEAT_PM: int = 30                # Angela: +3% di danno per ogni carica
 const HEAT_MAX: int = 12
 
 const TRAITS: Dictionary = {
-	"kira": {"name": "Lama in ombra", "text": "+6% critico.", "mods": {"crit": 60}},
+	"kira": {"name": "Lama in ombra", "text": "+6% critico. Colpo critico sicuro sul boss sotto il 30% dei PV: chiude la partita in fretta.", "mods": {"crit": 60}, "fx": {"execute_crit": EXECUTE_BELOW_PM}},
 	"nova": {"name": "Occhio svelto", "text": "Parte con +1 energia.", "energy": 1},
 	"mira": {"name": "Passo di corsia", "text": "+6% VEL e +6% DIF.", "mods": {"spd": 60, "def": 60}},
 	"ivo": {"name": "Mano lesta", "text": "Parte con +15 di ultimate.", "gauge": 15},

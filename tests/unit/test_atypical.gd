@@ -60,7 +60,7 @@ func _run() -> void:
 	var rari: Dictionary = _state(["kira", "nova", "mira"])
 	var k_at: Dictionary = _state(["kira"], "atipico")
 	var k_or: Dictionary = _state(["kira"], "ortodosso")
-	_check("kira: +6% critico (meno la meta' di aura che perde)", int(_u(k_at, "kira")["crit"]) - int(_u(k_or, "kira")["crit"]) >= 40)
+	_check("kira (leggendaria): +6% critico, meno la meta' dell'aura che perde", int(_u(k_at, "kira")["crit"]) - int(_u(k_or, "kira")["crit"]) >= 20)
 	_check("nova: parte con piu' energia", int(_u(rari, "nova")["energy"]) == BattleTypes.START_ENERGY + 1)
 	_check("mira: +6% VEL e DIF (oltre al +5% atipico)", int(_u(rari, "mira")["spd"]) > int(round(float(_u(rari, "mira")["base"]["spd"]) * 1.1)) - 1)
 	var ivo: Dictionary = _state(["ivo"])

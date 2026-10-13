@@ -64,20 +64,20 @@ func _run() -> void:
 	_check("grado skill 2: rank 1=0, 2=1, 3=1, 4=2", Signatures.skill_grade(2, 1) == 0 and Signatures.skill_grade(2, 2) == 1 and Signatures.skill_grade(2, 3) == 1 and Signatures.skill_grade(2, 4) == 2)
 	_check("grado ultimate: rank 2=0, 3=1, 4=1, 5=2", Signatures.ult_grade(2) == 0 and Signatures.ult_grade(3) == 1 and Signatures.ult_grade(4) == 1 and Signatures.ult_grade(5) == 2)
 	_check("skill 1 e 2 di un operatore con due uniche", Signatures.skill_slot("sera", "u_sera_a") == 1 and Signatures.skill_slot("sera", "u_sera_b") == 2)
-	_check("skill 2 di chi ha una sola unica = la skill di base", Signatures.skill_slot("kira", "u_kira_a") == 1 and Signatures.skill_slot("kira", "colpo_caricato") == 2)
-	_check("mossa estranea al kit: nessun grado", Signatures.skill_slot("kira", "cura") == 0)
-	var k0: Dictionary = _unit("kira", 0)
-	var k1: Dictionary = _unit("kira", 1)
-	_check("rank 0: nessun potenziamento", Signatures.upgrade_mult(k0, "u_kira_a", "skill") == 1.0 and Signatures.upgrade_mult(k0, "spezzatutto", "ult") == 1.0)
-	_check("rank 1 rara: skill 1 +10%", is_equal_approx(Signatures.upgrade_mult(k1, "u_kira_a", "skill"), 1.10) and Signatures.upgrade_mult(k1, "colpo_caricato", "skill") == 1.0)
-	var k2: Dictionary = _unit("kira", 2)
-	_check("rank 2: ora anche la skill 2", is_equal_approx(Signatures.upgrade_mult(k2, "colpo_caricato", "skill"), 1.10))
+	_check("skill 2 di chi ha una sola unica = la skill di base", Signatures.skill_slot("nova", "u_nova_a") == 1 and Signatures.skill_slot("nova", "marchio") == 2)
+	_check("mossa estranea al kit: nessun grado", Signatures.skill_slot("nova", "cura") == 0)
+	var k0: Dictionary = _unit("nova", 0)
+	var k1: Dictionary = _unit("nova", 1)
+	_check("rank 0: nessun potenziamento", Signatures.upgrade_mult(k0, "u_nova_a", "skill") == 1.0 and Signatures.upgrade_mult(k0, "spezzatutto", "ult") == 1.0)
+	_check("rank 1 rara: skill 1 +10%", is_equal_approx(Signatures.upgrade_mult(k1, "u_nova_a", "skill"), 1.10) and Signatures.upgrade_mult(k1, "marchio", "skill") == 1.0)
+	var k2: Dictionary = _unit("nova", 2)
+	_check("rank 2: ora anche la skill 2", is_equal_approx(Signatures.upgrade_mult(k2, "marchio", "skill"), 1.10))
 	_check("rank 2: l'ultimate no", Signatures.upgrade_mult(k2, "spezzatutto", "ult") == 1.0)
-	var k3: Dictionary = _unit("kira", 3)
+	var k3: Dictionary = _unit("nova", 3)
 	_check("rank 3 rara: ultimate +12%", is_equal_approx(Signatures.upgrade_mult(k3, "spezzatutto", "ult"), 1.12))
-	var k4: Dictionary = _unit("kira", 4)
-	_check("rank 4: skill 1 e 2 a +20%", is_equal_approx(Signatures.upgrade_mult(k4, "u_kira_a", "skill"), 1.20) and is_equal_approx(Signatures.upgrade_mult(k4, "colpo_caricato", "skill"), 1.20))
-	var k5: Dictionary = _unit("kira", 5)
+	var k4: Dictionary = _unit("nova", 4)
+	_check("rank 4: skill 1 e 2 a +20%", is_equal_approx(Signatures.upgrade_mult(k4, "u_nova_a", "skill"), 1.20) and is_equal_approx(Signatures.upgrade_mult(k4, "marchio", "skill"), 1.20))
+	var k5: Dictionary = _unit("nova", 5)
 	_check("rank 5 rara: ultimate +24%", is_equal_approx(Signatures.upgrade_mult(k5, "spezzatutto", "ult"), 1.24))
 	_check("rank 5: risveglio con carica di partenza", bool(k5["awake"]))
 	# piu' raro = piu' potenziamento
@@ -93,9 +93,9 @@ func _run() -> void:
 	_check("la skill potenziata fa piu' danno (rank 1 > rank 0)", up_dmg > base_dmg)
 
 	# testi
-	_check("testo rank 1", Signatures.rank_upgrade_text("kira", 1).begins_with("SKILL 1 POTENZIATA: TAGLIO SPETTRALE"))
-	_check("testo rank 3", Signatures.rank_upgrade_text("kira", 3).begins_with("ULTIMATE POTENZIATA"))
-	_check("prossimo traguardo", Signatures.next_milestone("kira", 0).begins_with("RANK 1:") and Signatures.next_milestone("kira", 5) == "")
+	_check("testo rank 1", Signatures.rank_upgrade_text("nova", 1).begins_with("SKILL 1 POTENZIATA: RAFFICA MARCHIANTE"))
+	_check("testo rank 3", Signatures.rank_upgrade_text("nova", 3).begins_with("ULTIMATE POTENZIATA"))
+	_check("prossimo traguardo", Signatures.next_milestone("nova", 0).begins_with("RANK 1:") and Signatures.next_milestone("nova", 5) == "")
 
 	# Angela: il drone potenziato da' piu' munizioni alla squadra
 	var a3: Dictionary = _unit("angela", 4)
@@ -103,14 +103,14 @@ func _run() -> void:
 
 
 func _dmg(rank: int) -> int:
-	var st: Dictionary = BattleState.create([{"id": "p", "name": "P", "team": [BattleContent.default_entry("kira", 1, rank)]}], "distributore", 5, 0)
-	var actor: Dictionary = BattleState.unit(st, BattleState.unit_id("p", "kira"))
+	var st: Dictionary = BattleState.create([{"id": "p", "name": "P", "team": [BattleContent.default_entry("nova", 1, rank)]}], "distributore", 5, 0)
+	var actor: Dictionary = BattleState.unit(st, BattleState.unit_id("p", "nova"))
 	actor["energy"] = 5
 	var boss: Dictionary = BattleState.boss(st)
 	boss["hp"] = 999999
 	boss["max_hp"] = 999999
 	var ev: Array = []
-	BattleResolver._player_act(st, actor, "u_kira_a", "", ev)
+	BattleResolver._player_act(st, actor, "u_nova_a", "", ev)
 	var total: int = 0
 	for e in ev:
 		if str(e["t"]) == "damage":

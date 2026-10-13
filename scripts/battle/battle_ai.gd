@@ -47,6 +47,15 @@ static func choose(state: Dictionary, pid: String) -> Dictionary:
 	return choice
 
 
+static func _team_buffed(state: Dictionary, stat: String) -> bool:
+	for q in state["players"]:
+		var u: Dictionary = BattleState.active_unit(state, str(q["id"]))
+		for m in u.get("mods", []):
+			if str(m.get("id", "")) == "buff_" + stat and int(m.get("turns", 0)) > 0:
+				return true
+	return false
+
+
 static func _lowest_ally(state: Dictionary) -> Dictionary:
 	var worst: Dictionary = {}
 	var worst_ratio: float = 2.0
@@ -81,6 +90,11 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 		var m: Dictionary = BattleContent.MOVES[str(sid)]
 		if energy < int(m["cost"]):
 			continue
+		# i supporti tengono acceso il bonus di attacco della squadra (dura 2 turni: lo rinnovano quando scade)
+		if m.has("ally_buff") and not _team_buffed(state, "atk") and not lowest.is_empty():
+			if str(m["target"]) == "ally":
+				choice["target"] = BattleState.slot_of(state, str(lowest["id"]))
+			return str(sid)
 		if m.has("heal") and not lowest.is_empty() and (_ratio(lowest) < 0.55 or (bool(m.get("cleanse", false)) and lowest["statuses"].has("bleed"))):
 			choice["target"] = BattleState.slot_of(state, str(lowest["id"]))
 			return str(sid)

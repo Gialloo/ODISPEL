@@ -21,6 +21,9 @@ static func count(u: Dictionary) -> int:
 
 # Moltiplicatore di danno dei marchi su chi subisce il colpo.
 static func bonus_mult(defender: Dictionary, ammo_hit: bool) -> float:
+	if bool(defender.get("pvp_unit", false)):      # PvP: stesse pile del boss, solo finche' il marchio dura
+		var k: int = count(defender) if defender.get("statuses", {}).has("mark") else 0
+		return 1.0 + float(k) * (AMMO_PCT if ammo_hit else PCT)
 	if str(defender.get("side", "")) == "player":
 		return PLAYER_MARK_BONUS if defender.get("statuses", {}).has("mark") else 1.0
 	var n: int = count(defender)

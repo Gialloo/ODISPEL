@@ -50,6 +50,7 @@ static func balanced_entry(entry: Dictionary) -> Dictionary:
 	e["level"] = BALANCED_LEVEL
 	e["rank"] = BALANCED_RANK
 	e["gear"] = []
+	e["flat_rarity"] = true       # bilanciato davvero: anche la rarita' dell'operatore non da' statistiche in piu'
 	return e
 
 
@@ -76,6 +77,7 @@ static func create(specs: Array, mode: String, balanced: bool, seed_value: int) 
 		for entry in (spec["team"] as Array).slice(0, BattleTypes.NET_TEAM_SIZE):
 			var e: Dictionary = balanced_entry(entry) if balanced else entry
 			var u: Dictionary = BattleState.make_unit(pid, e)
+			u["pvp_unit"] = true       # i marchi qui sono pile (+10% l'una) come contro il boss, non il +25% fisso dei giocatori
 			u["team"] = team_of_seat(state["mode"], index)
 			state["units"][u["id"]] = u
 			ids.append(u["id"])

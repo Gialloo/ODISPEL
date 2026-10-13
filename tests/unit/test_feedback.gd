@@ -102,7 +102,7 @@ func _run() -> void:
 	RosterState.add_character(team_r, "nova")
 	var best: Array = RosterState.best_team(team_r)
 	_check("la squadra migliore ha fino a 6 posti", best.size() == mini(6, team_r["characters"].size()))
-	_check("i piu' rari vengono prima", str(best[0]) == "sera")
+	_check("i piu' rari vengono prima (Kira e' leggendaria)", str(best[0]) == "kira" and best.has("sera"))
 	_check("e' una squadra valida", RosterState.set_team(team_r, best))
 
 	# --- hub
@@ -131,7 +131,7 @@ func _run() -> void:
 	rs.save_path = TMP
 	root.add_child(rs)
 	await process_frame
-	_check("squadra migliore schierata", rs.auto_team() and str(rr["team"][0]) == "sera")
+	_check("squadra migliore schierata", rs.auto_team() and str(rr["team"][0]) == "kira")
 	_check("rifarla non cambia nulla e lo dice", rs.auto_team() and rs.status_text.contains("gia'"))
 	rr["coins"] = 5000
 	rs.next_seed = 77

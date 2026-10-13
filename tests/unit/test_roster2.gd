@@ -30,6 +30,11 @@ func _initialize() -> void:
 	_check("fazioni: 3 Magabondi, 3 Kairos, 2 Rondini, 2 LibraCorp", fac.get("magabondi", 0) == 3 and fac.get("kairos", 0) == 3 and fac.get("rondini", 0) == 2 and fac.get("libracorp", 0) == 2)
 	for id in OLD:
 		_check("%s: invariato" % id, BattleContent.CHARACTERS.has(id) and Signatures.has_passive(id))
+	# Kira, la mascotte: leggendaria, 2 abilita' uniche, non conta per l'impresa "leggenda"
+	_check("Kira e' leggendaria (5 stelle)", int(BattleContent.CHARACTERS["kira"]["rarity"]) == 3)
+	_check("Kira ha due abilita' uniche e un tratto da leggendaria", Signatures.SKILLS["kira"].size() == 2 and Atypical.has_trait("kira") and Atypical.trait_of("kira").has("fx"))
+	var start_roster: Dictionary = RosterState.new_roster()
+	_check("la mascotte iniziale non fa scattare 'Una leggenda in squadra'", not Feats.is_done(start_roster, Feats.by_id("legend_1")))
 	_check("Lyra non ha mark_ammo (resta di Angela)", str(Signatures.PASSIVES["lyra"]["key"]) != "mark_ammo")
 	# PvP: ognuno combatte e la partita finisce
 	for id in NEW:
