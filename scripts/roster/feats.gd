@@ -10,7 +10,7 @@ extends RefCounted
 # chi ha gia' battuto dei boss prima di questa versione trova le imprese pronte da riscuotere.
 
 const TIER_NAMES: Array = ["NORMALE", "DIFFICILE", "INCUBO"]
-const GROUPS: Array = ["MISSIONI", "BATTAGLIE", "OPERATORI", "POTENZIAMENTI"]
+const GROUPS: Array = ["MISSIONI", "BATTAGLIE", "OPERATORI", "POTENZIAMENTI", "INFINITO"]
 
 
 static func stats(roster: Dictionary) -> Dictionary:
@@ -68,6 +68,11 @@ static func all() -> Array:
 		out.append(_feat("gear_%d" % entry[0], "POTENZIAMENTI", "Arsenale", "Possiedi %d pezzi di equipaggiamento." % entry[0], int(entry[0]), "gear", "", {"coins": int(entry[1]), "lega": 3 + int(entry[0]) / 5}))
 	out.append(_feat("moves_epic", "POTENZIAMENTI", "Abilita' epica", "Possiedi una abilita' epica.", 1, "move_rarity", "2", {"coins": 1500, "nucleo": 3, "drop": {"kind": "move", "id": "marchio_e"}}))
 	out.append(_feat("moves_legend", "POTENZIAMENTI", "Abilita' leggendaria", "Possiedi una abilita' leggendaria.", 1, "move_rarity", "3", {"coins": 3500, "nucleo": 5, "lega": 4}))
+	# ciclo infinito e sfida del giorno
+	for entry in [[5, 800, 2], [10, 2000, 4], [20, 5000, 8], [35, 10000, 14]]:
+		out.append(_feat("endless_%d" % entry[0], "INFINITO", "Piano %d" % entry[0], "Raggiungi il piano %d del Ciclo Infinito." % entry[0], int(entry[0]), "endless_best", "", {"coins": int(entry[1]), "nucleo": int(entry[2]), "lega": int(entry[2]) / 2}))
+	for entry in [[3, 1000], [7, 3000], [14, 8000]]:
+		out.append(_feat("daily_%d" % entry[0], "INFINITO", "Serie di %d giorni" % entry[0], "Vinci la Sfida del giorno per %d giorni di fila." % entry[0], int(entry[0]), "daily_best", "", {"coins": int(entry[1]), "nucleo": 3 + int(entry[0]) / 2, "lega": 2}))
 	_all = out
 	return out
 
@@ -110,6 +115,10 @@ static func value(roster: Dictionary, f: Dictionary) -> int:
 			return top
 		"gear":
 			return (roster.get("gear", {}) as Dictionary).size()
+		"endless_best":
+			return Endless.best(roster)
+		"daily_best":
+			return int(roster.get("daily", {}).get("best", 0))
 		"move_rarity":
 			var c: int = 0
 			for id in roster.get("moves", {}):
