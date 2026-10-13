@@ -1352,6 +1352,8 @@ func _mvp_line() -> String:
 
 
 func _show_result(victory: bool, rewards: Dictionary) -> void:
+	if _pause != null and is_instance_valid(_pause):
+		_pause.queue_free()        # la battaglia e' finita (in rete puo' succedere con la pausa aperta)
 	Snd.duck(-14.0)
 	Snd.play("victory" if victory else "defeat")
 	var dim := ColorRect.new()
