@@ -1,0 +1,7 @@
+Ti mando una serie di richieste, UNA ALLA VOLTA, per le grafiche di un videogioco anime.
+Regole per tutte le richieste:
+- Per ogni mio messaggio genera UNA SOLA immagine, poi fermati e aspetta la richiesta successiva. Mai piu' immagini nello stesso messaggio, mai tavole riassuntive.
+- Sfondo verde acceso #00FF00 piatto, senza sfumature, ombre, pavimento o luci. Il verde non deve comparire sul personaggio (nemmeno come riflesso sui capelli).
+- Nessun testo, logo scritto, cornice, firma o watermark.
+- Stesso identico personaggio e stesso stile delle immagini di riferimento che ti allego.
+Per ora NON generare nulla: rispondi solo "ok, aspetto la prima richiesta".

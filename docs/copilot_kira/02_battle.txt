@@ -1,0 +1,8 @@
+(Allega l'immagine sad.png di Kira e, se ce l'hai, la tavola modello.)
+
+Genera SOLO UNA immagine e poi fermati: battle.png.
+Kira (come nelle immagini di riferimento: capelli viola scuro spettinati con coda laterale a destra e ciocche magenta, 3 fermagli, giacca bianca oversize con toppe triangolari viola, tuta nera con imbracatura, guanti senza dita, pantaloncini neri, calze nere lunghe, scarpe bianche e nere con dettagli viola)
+a FIGURA INTERA in piedi, in posa da combattimento: peso sulla gamba anteriore, corpo di tre quarti RIVOLTO VERSO DESTRA, pugnale viola luminoso nella mano destra pronto all'attacco, sguardo deciso verso destra.
+Proporzione verticale 3:4. I PIEDI toccano il bordo inferiore dell'immagine e la testa e' vicina al bordo superiore: la figura riempie quasi tutta l'altezza, centrata.
+Contorni un po' piu' spessi e forme semplici (verra' mostrata molto piccola), silhouette chiara.
+Sfondo verde #00FF00 piatto, senza pavimento ne' ombra a terra. Nessun testo o watermark.

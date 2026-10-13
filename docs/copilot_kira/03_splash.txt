@@ -1,0 +1,7 @@
+(Allega l'immagine sad.png di Kira e, se ce l'hai, la tavola modello.)
+
+Genera SOLO UNA immagine e poi fermati: splash.png.
+Illustrazione di presentazione di Kira (stesso design delle immagini di riferimento), figura intera o tre quarti, posa scenografica e sicura di se' (una mano sul fianco o il pugnale viola in mano), vista leggermente dal basso,
+molto dettaglio su capelli, giacca bianca e imbracatura. Poche piccole scintille viola vicino a lei sono ammesse.
+Proporzione verticale 3:4. Il personaggio tocca il bordo inferiore, riempie quasi tutta l'altezza ed e' centrato.
+Sfondo verde #00FF00 piatto, senza pavimento. Nessun testo o watermark.

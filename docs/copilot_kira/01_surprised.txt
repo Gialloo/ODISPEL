@@ -1,0 +1,6 @@
+(Allega l'immagine sad.png di Kira con sfondo verde.)
+
+Genera SOLO UNA immagine e poi fermati: surprised.png.
+Modifica l'immagine allegata, NON rigenerarla da zero. Cambia SOLO occhi, sopracciglia e bocca: occhi molto grandi e rotondi con pupille piccole, sopracciglia alzate, bocca aperta per la sorpresa.
+Tutto il resto deve restare IDENTICO: capelli (nessuna ciocca di altro colore), fermagli, giacca, imbracatura, posa, dimensione e posizione di testa e corpo, proporzione e sfondo verde #00FF00 piatto.
+Non ingrandire, non rimpicciolire, non spostare nulla. Nessun testo o watermark.

@@ -1,0 +1,17 @@
+COME USARE QUESTI FILE (Kira, un'immagine alla volta)
+
+1. Apri una chat nuova con Copilot (generazione immagini).
+2. Incolla il contenuto di 00_contesto.txt e invia. Copilot deve rispondere solo "ok" senza generare nulla.
+3. Poi UN file alla volta, nell'ordine, allegando l'immagine indicata tra parentesi all'inizio del testo:
+   01_surprised.txt  ->  salva l'immagine come surprised.png
+   02_battle.txt     ->  salva come battle.png
+   03_splash.txt     ->  salva come splash.png
+   04_cutin.txt      ->  salva come cutin.png
+4. Passa al file successivo SOLO quando hai salvato l'immagine del precedente.
+5. Se Copilot sbaglia, scrivi solo la correzione:
+   - proporzione: "La proporzione deve essere 3:4 verticale (16:9 per il cutin). Rigenera mantenendo tutto il resto."
+   - verde su Kira: "Il verde dello sfondo compare sui capelli/vestiti. Rigenera senza alcun verde su Kira."
+   - design cambiato: "Hai cambiato [capelli/giacca/fermagli]. Rifai uguale al riferimento."
+   - piedi non sul bordo basso: "I piedi devono toccare il bordo inferiore dell'immagine."
+   - ha fatto piu' immagini: "Ne voglio UNA sola. Tieni solo la migliore e rifai senza le altre."
+6. Mandami i 4 file con i nomi esatti: tolgo io lo sfondo verde e li metto nel gioco.
