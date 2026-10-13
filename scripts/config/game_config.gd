@@ -3,7 +3,7 @@ extends RefCounted
 
 # Versione del gioco: host e client devono averla uguale per giocare insieme.
 # Va aumentata a ogni nuova release che cambia le regole o la rete.
-const VERSION: String = "0.24.5"
+const VERSION: String = "0.24.6"
 
 # Server di signaling predefinito (se cambia, basta un file server.txt).
 const DEFAULT_SERVER_URL: String = "wss://odispel-signaling.onrender.com"

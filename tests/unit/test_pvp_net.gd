@@ -118,6 +118,17 @@ func _init() -> void:
 		a._ready_players[id] = true
 	_check("dopo l'abbandono se ne puo' avviare un'altra", a.host_launch() and not a.battle.is_empty() and str(a.battle.get("winner", "")) == "")
 	_check("nuova sfida: nessuno e' piu' escluso", a._abandoned_peers.is_empty())
+	# tutti fuori (nessun umano rimasto): la sfida residua non blocca la successiva
+	var z: NetworkManager = _lobby(2)
+	z.host_set_mode("duel", true)
+	for id in ["player_1", "player_2"]:
+		z._ready_players[id] = true
+	z.host_launch()
+	z._host_handle_message({"type": "abandon"}, "peer_1")
+	BattleNet.set_player_ai(z.battle, "player_1", true)
+	for id in ["player_1", "player_2"]:
+		z._ready_players[id] = true
+	_check("nessun umano rimasto: si puo' avviare una sfida nuova", z.host_launch() and not bool(PvpEngine.player(z.battle, "player_1")["ai"]))
 	var c := NetworkManager.new()
 	c._client_bid = 77
 	c.battle = {"pvp": true, "winner": "", "players": []}

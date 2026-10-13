@@ -244,6 +244,7 @@ func set_local_team(entries: Array) -> bool:
 
 # La squadra e' cambiata: la lobby lo mostra e chi era pronto deve riconfermare.
 func _team_changed() -> void:
+	_trace("squadra cambiata: il PRONTO locale si azzera")
 	if is_host:
 		if not local_player_id.is_empty():
 			_ready_players[local_player_id] = false
@@ -422,8 +423,29 @@ func _broadcast_lobby() -> void:
 	lobby_updated.emit()
 
 
+# C'e' una sfida davvero in corso? Se nessun umano la sta piu' giocando (tutti usciti o caduti) e' un residuo:
+# si chiude da sola, cosi' se ne puo' avviare una nuova.
+func _battle_in_progress() -> bool:
+	if battle.is_empty() or str(battle.get("winner", "")) != "":
+		return false
+
+	for p in battle.get("players", []):
+		if not bool(p.get("ai", false)):
+			return true
+
+	_trace("sfida senza giocatori umani: chiusa")
+	battle = {}
+	return false
+
+
+# Traccia di rete nel log del gioco (godot.log): serve a capire dopo cosa e' successo in una stanza.
+func _trace(text: String) -> void:
+	print("[NET %s %s] %s" % ["HOST" if is_host else "CLIENT", Time.get_time_string_from_system(), text])
+
+
 # Chi gioca qui segna se e' pronto.
 func set_ready(value: bool) -> void:
+	_trace("pronto locale -> %s" % str(value))
 	if is_host:
 		if local_player_id.is_empty():
 			return
@@ -450,6 +472,8 @@ func host_set_mission(boss_id: String, tier: int) -> bool:
 	if not is_host or not BattleContent.BOSSES.has(boss_id):
 		return false
 
+	_trace("missione scelta: %s livello %d (tutti i PRONTO azzerati)" % [boss_id, tier])
+
 	lobby_boss = boss_id
 	lobby_tier = clampi(tier, 0, BattleContent.TIERS.size() - 1)
 
@@ -465,6 +489,7 @@ func host_set_mode(mode: String, balanced: bool) -> bool:
 	if not is_host or not (mode == "coop" or PvpEngine.MODES.has(mode)):
 		return false
 
+	_trace("modalita' scelta: %s bilanciato=%s (tutti i PRONTO azzerati)" % [mode, str(balanced)])
 	lobby_mode = mode
 	lobby_balanced = balanced
 
@@ -517,7 +542,10 @@ func start_problem() -> String:
 # Solo l'host: parte con la missione della lobby, se tutti sono pronti.
 func host_launch() -> bool:
 	if not all_ready():
+		_trace("avvio rifiutato: %s" % start_problem())
 		return false
+
+	_trace("avvio partita: modalita' %s, boss %s livello %d" % [lobby_mode, lobby_boss, lobby_tier])
 
 	if lobby_mode != "coop":
 		return host_start_pvp(lobby_mode, lobby_balanced, int(randi()) | 1)
@@ -531,7 +559,7 @@ func host_start_pvp(mode: String, balanced: bool, run_seed: int) -> bool:
 	if not is_host or game == null or run_seed == 0 or not PvpEngine.MODES.has(mode):
 		return false
 
-	if not battle.is_empty() and str(battle.get("winner", "")) == "":
+	if _battle_in_progress():
 		return false
 
 	var seats: Vector2i = PvpEngine.seats(mode)
@@ -591,7 +619,7 @@ func host_start_battle(boss_id: String, run_seed: int, tier: int = 0) -> bool:
 	if not BattleContent.BOSSES.has(boss_id):
 		return false
 
-	if not battle.is_empty() and str(battle["winner"]) == "":
+	if _battle_in_progress():
 		return false
 
 	if get_connected_human_count() < 2:
@@ -736,6 +764,8 @@ func _broadcast_battle() -> void:
 # Chi esce da una sfida a meta' (tasto ESCI/Abbandona). L'host chiude la sfida per tutti; un client esce
 # e al suo posto gioca l'IA. In entrambi i casi la sfida lasciata non riporta piu' dentro chi e' uscito.
 func abandon_battle() -> void:
+	_trace("abbandono della sfida")
+
 	if battle.is_empty() or str(battle.get("winner", "")) != "":
 		return
 
@@ -1089,6 +1119,8 @@ func _host_handle_message(message: Dictionary, peer_id: String) -> void:
 		"ready":
 			var who: String = str(_peer_players.get(peer_id, ""))
 
+			_trace("pronto ricevuto da %s (%s): %s" % [peer_id, who, str(message.get("ready", false))])
+
 			if not who.is_empty():
 				_ready_players[who] = bool(message.get("ready", false))
 				_broadcast_lobby()
@@ -1096,6 +1128,7 @@ func _host_handle_message(message: Dictionary, peer_id: String) -> void:
 		"team":
 			var owner_id: String = str(_peer_players.get(peer_id, ""))
 			var checked: Dictionary = BattleNet.read_team(message)
+			_trace("squadra ricevuta da %s: valida=%s (il suo PRONTO si azzera)" % [owner_id, str(checked["ok"])])
 
 			if not owner_id.is_empty() and bool(checked["ok"]):
 				_player_teams[owner_id] = checked["team"]
@@ -1264,6 +1297,7 @@ func _host_handle_hello(peer_id: String, message: Dictionary) -> void:
 	BattleNet.set_player_ai(battle, player.id, false)
 
 	_ready_players[player.id] = false
+	_trace("ingresso/rientro di %s (%s): PRONTO azzerato" % [player.id, player.display_name])
 
 	link.send_message({"type": "welcome", "player_id": player.id})
 	player_assigned.emit(player.id)
@@ -1349,6 +1383,7 @@ func _drop_peer(peer_id: String, notify: bool = true) -> void:
 
 	var player_id: String = _peer_players[peer_id]
 	_peer_players.erase(peer_id)
+	_trace("collegamento perso con %s (%s) notifica=%s" % [peer_id, player_id, str(notify)])
 
 	if not notify:
 		return
