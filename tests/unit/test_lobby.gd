@@ -127,6 +127,42 @@ func _run() -> void:
 	_check("chi esce non e' piu' pronto/connesso", not _row(m2, "player_2")["connected"] and not _row(m2, "player_2")["ready"])
 	_check("da soli non si parte", not m2.all_ready())
 
+	# livelli non sbloccati: l'host sa chi non li ha
+	var m3: NetworkManager = _host(3)
+	m3.set_local_team(_entries(["kira"]))
+	m3.local_cleared = {"distributore": 3, "semaforo": 1}
+	m3._links["pA"] = WebRTCLink.new()
+	m3._host_handle_message({"type": "hello", "name": "Luca", "token": "tok-l", "version": GameConfig.VERSION, "team": _entries(["nova"]), "cleared": {"distributore": 1}}, "pA")
+	_check("sblocco: Luca ha battuto solo Normale", m3.players_lacking_unlock("distributore", 1).is_empty())
+	_check("sblocco: Luca non ha Incubo", m3.players_lacking_unlock("distributore", 2) == ["Luca"])
+	_check("sblocco: Normale del primo boss e' aperto a tutti", m3.players_lacking_unlock("distributore", 0).is_empty())
+	_check("sblocco: Luca ha battuto Normale del primo boss, il secondo boss e' aperto", m3.players_lacking_unlock("semaforo", 0).is_empty())
+	_check("sblocco: il terzo boss no", m3.players_lacking_unlock("tombino", 0) == ["Luca"])
+	var m4: NetworkManager = _host(2)
+	m4.set_local_team(_entries(["kira"]))
+	m4.local_cleared = {}
+	_hello(m4, "pB", "tok-b", _entries(["nova"]))
+	_check("sblocco: senza progressi comunicati non si segnala nessuno (il primo boss e' aperto)", m4.players_lacking_unlock("distributore", 0).is_empty())
+	_check("sblocco: l'host stesso si controlla", m4.players_lacking_unlock("tombino", 0) == ["P1"])
+	_check("sblocco: dati strani vengono ripuliti", NetworkManager._clean_cleared({"distributore": 99, "x": 5, "semaforo": -3}) == {"distributore": 3, "semaforo": 0, "tombino": 0, "cabina": 0, "ascensore": 0, "manichino": 0, "orologio": 0, "specchio": 0})
+
+	# finestra di conferma
+	var yes_count: Array = [0]
+	var host_node := Control.new()
+	root.add_child(host_node)
+	var cb: ConfirmBox = ConfirmBox.ask(host_node, "Luca non ha ancora sbloccato questo livello.\nProcedere lo stesso?", func() -> void: yes_count[0] += 1)
+	if cb.yes_button == null:
+		cb._ready()          # in questo test l'albero non e' ancora partito
+	_check("conferma: si apre", host_node.get_child_count() == 1 and cb.yes_button != null)
+	cb.no_button.pressed.emit()
+	_check("conferma: NO non fa nulla", yes_count[0] == 0)
+	var cb2: ConfirmBox = ConfirmBox.ask(host_node, "x", func() -> void: yes_count[0] += 1)
+	if cb2.yes_button == null:
+		cb2._ready()
+	cb2.yes_button.pressed.emit()
+	_check("conferma: SI' esegue una volta", yes_count[0] == 1)
+	host_node.free()
+
 	# lato client
 	var c := NetworkManager.new()
 	_managers.append(c)

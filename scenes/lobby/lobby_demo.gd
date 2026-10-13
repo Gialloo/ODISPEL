@@ -336,8 +336,19 @@ func _on_start_pressed() -> void:
 	var manager: NetworkManager = NetSession.manager
 	if manager == null:
 		return
-	if not manager.host_launch():
+	if not manager.all_ready():
 		_set_status("Servono almeno 2 giocatori e tutti PRONTI.")
+		return
+	# Chi non ha ancora sbloccato quel livello puo' giocarlo lo stesso, ma l'host deve confermare.
+	var lacking: Array = manager.players_lacking_unlock(manager.lobby_boss, manager.lobby_tier)
+	if lacking.is_empty():
+		manager.host_launch()
+		return
+	var who: String = " e ".join(lacking) if lacking.size() <= 2 else "%s e altri %d" % [str(lacking[0]), lacking.size() - 1]
+	var text: String = "%s non ha ancora sbloccato questo livello.\nProcedere lo stesso?" % who if lacking.size() == 1 else "%s non hanno ancora sbloccato questo livello.\nProcedere lo stesso?" % who
+	ConfirmBox.ask(self, text, func() -> void:
+		if NetSession.manager != null and not NetSession.manager.host_launch():
+			_set_status("Servono almeno 2 giocatori e tutti PRONTI."))
 
 
 func _on_leave_pressed() -> void:

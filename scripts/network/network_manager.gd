@@ -44,6 +44,8 @@ var lobby_boss: String = "distributore"
 var lobby_tier: int = 0
 var _ready_players: Dictionary = {}  # player_id -> pronto (host)
 var _player_teams: Dictionary = {}  # player_id -> squadra validata (host)
+var local_cleared: Dictionary = {}   # boss -> livelli battuti da chi gioca (serve all'host per avvisare chi non ha sbloccato)
+var _player_cleared: Dictionary = {} # player_id -> {boss: livelli battuti} (host); manca se il giocatore non l'ha comunicato
 var battle_rewards: Dictionary = {}  # premi di chi gioca qui, a battaglia finita
 var reward_save_path: String = RosterStore.DEFAULT_PATH
 var _battle_boss_id: String = ""
@@ -285,6 +287,31 @@ func _build_lobby() -> Dictionary:
 		})
 
 	return {"players": players, "boss": lobby_boss, "tier": lobby_tier}
+
+
+# Livelli battuti, ripuliti: solo boss noti e numeri tra 0 e il massimo.
+static func _clean_cleared(raw: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for id in BattleContent.BOSS_ORDER:
+		out[str(id)] = clampi(int(raw.get(str(id), 0)), 0, BattleContent.TIERS.size())
+	return out
+
+
+# Nomi dei giocatori che NON hanno sbloccato il boss/livello scelto (solo l'host ha l'elenco).
+# Chi non ha comunicato i progressi non si segnala.
+func players_lacking_unlock(boss_id: String, tier: int) -> Array:
+	var names: Array = []
+	if not is_host or game == null:
+		return names
+	for id in _lobby_player_ids():
+		var cleared: Variant = local_cleared if str(id) == local_player_id else _player_cleared.get(str(id))
+		if not (cleared is Dictionary):
+			continue
+		if not RosterState.is_tier_unlocked({"cleared": cleared}, boss_id, tier):
+			var player: PlayerState = game.party.get_player_by_id(str(id))
+			if player != null and player.connected:
+				names.append(player.display_name)
+	return names
 
 
 func refresh_lobby() -> void:
@@ -770,7 +797,8 @@ func _on_link_opened(peer_id: String) -> void:
 				"name": _display_name,
 				"token": session_token,
 				"version": GameConfig.VERSION,
-				"team": local_team
+				"team": local_team,
+				"cleared": local_cleared
 			})
 
 
@@ -954,6 +982,10 @@ func _host_handle_hello(peer_id: String, message: Dictionary) -> void:
 	_peer_numbers[peer_id] = peer_number
 	_player_tokens[token] = player.id
 	_player_teams[player.id] = team_result["team"]
+	if message.get("cleared") is Dictionary:
+		_player_cleared[player.id] = _clean_cleared(message["cleared"])
+	else:
+		_player_cleared.erase(player.id)
 
 	# Rientro a battaglia in corso: torna a comandare lui al posto dell'IA.
 	BattleNet.set_player_ai(battle, player.id, false)
