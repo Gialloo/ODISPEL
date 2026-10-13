@@ -886,7 +886,7 @@ func _back_row(u: Dictionary, selected: bool) -> Control:
 	hp.position = Vector2(10, 20)
 	btn.add_child(hp)
 	var info: String = "K.O." if not alive else ("⇄ IN" if selected else "EN %d/%d" % [int(u["energy"]), BattleTypes.MAX_ENERGY])
-	var note := _row_text(info, 12, fg, Vector2(10, 27), w - 12.0)
+	var note := _row_text(info, 12, fg, Vector2(10, 25), w - 12.0)
 	note.size.y = 14.0
 	note.custom_minimum_size.y = 14.0
 	btn.add_child(note)
@@ -990,7 +990,7 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 	inner.add_child(hp_t)
 
 	# energia come numero (2/6), ultimate come barra con la percentuale accanto
-	var en_t := _row_text("EN %d/%d" % [int(u["energy"]), BattleTypes.MAX_ENERGY], 12, fg, Vector2(54, 31), 52.0)
+	var en_t := _row_text("EN %d/%d" % [int(u["energy"]), BattleTypes.MAX_ENERGY], 12, fg, Vector2(54, 29), 52.0)
 	en_t.size.y = 14.0
 	en_t.custom_minimum_size.y = 14.0
 	inner.add_child(en_t)
@@ -998,9 +998,9 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 	gauge.color_bg = Color(0, 0, 0, 0.35) if selected else Color(BattleTheme.RD_DARK, 0.8)
 	var gr: float = float(u["gauge"]) / float(BattleTypes.GAUGE_MAX)
 	gauge.set_values(gr)
-	gauge.position = Vector2(110, 35)
+	gauge.position = Vector2(110, 33)
 	inner.add_child(gauge)
-	var gp_t := _row_text("%d%%" % int(round(clampf(gr, 0.0, 1.0) * 100.0)), 12, fg, Vector2(176, 31), 34.0)
+	var gp_t := _row_text("%d%%" % int(round(clampf(gr, 0.0, 1.0) * 100.0)), 12, fg, Vector2(176, 29), 34.0)
 	gp_t.size.y = 14.0
 	gp_t.custom_minimum_size.y = 14.0
 	inner.add_child(gp_t)
