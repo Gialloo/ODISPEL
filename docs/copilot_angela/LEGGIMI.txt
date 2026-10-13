@@ -1,0 +1,6 @@
+COME USARE QUESTI FILE (Angela, un'immagine alla volta)
+1. Chat nuova con Copilot. Incolla 00_contesto.txt: deve rispondere solo "ok".
+2. Poi UN file alla volta, nell'ordine 01 -> 11, allegando l'immagine indicata. Salva ogni risultato col nome giusto:
+   tavola modello (solo di riferimento), neutral, happy, angry, sad, hurt, surprised, battle, splash, cutin, icon (.png).
+3. Se Copilot sbaglia: "Il verde compare sul personaggio, rigenera senza verde" / "Hai cambiato [capelli/divisa]: rifai uguale al riferimento" / "Ne voglio UNA sola" / "I piedi devono toccare il bordo inferiore" / "La proporzione deve essere ... Rigenera mantenendo tutto il resto".
+4. Mandami i 10 file (neutral, happy, angry, sad, hurt, surprised, battle, splash, cutin, icon): tolgo io il verde e li metto nel gioco.

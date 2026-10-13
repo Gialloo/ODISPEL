@@ -1,0 +1,5 @@
+(Allega neutral.png e la tavola modello.)
+
+Genera SOLO UNA immagine e poi fermati.
+Produci battle.png: Angela a FIGURA INTERA in piedi, di tre quarti RIVOLTA VERSO DESTRA, in posa da tiro: fucile-cannone dorato puntato in avanti verso destra, ala orbitale alle spalle, sguardo concentrato. Proporzione verticale 3:4. I PIEDI toccano il bordo inferiore, la testa e' vicina al bordo superiore, figura centrata. Contorni un po' piu' spessi, forme semplici, silhouette chiara (verra' mostrata piccola). Niente ombra a terra.
+Sfondo verde #00FF00 piatto. Nessun testo o watermark.

@@ -1,0 +1,5 @@
+(Allega la tavola modello di Angela.)
+
+Genera SOLO UNA immagine e poi fermati.
+Ritratto neutral.png: Angela a mezzo busto, di fronte, espressione calma e sognante, sguardo diretto. Proporzione verticale 5:7. La figura e' ancorata al bordo inferiore, testa vicina al bordo superiore.
+Sfondo verde #00FF00 piatto. Nessun testo o watermark.

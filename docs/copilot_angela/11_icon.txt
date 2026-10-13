@@ -1,0 +1,5 @@
+(Allega neutral.png.)
+
+Genera SOLO UNA immagine e poi fermati.
+Produci icon.png: solo il volto e le spalle di Angela, centrato, ben leggibile anche molto piccolo, contorni netti. Proporzione quadrata 1:1.
+Sfondo verde #00FF00 piatto. Nessun testo o watermark.
