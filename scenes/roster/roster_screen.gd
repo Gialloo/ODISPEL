@@ -233,8 +233,15 @@ func _build_team_page() -> void:
 	title_row.add_child(_detail_icons)
 	_detail_label = BattleTheme.make_label("", 13, BattleTheme.WH)
 	_detail_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_detail_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_child(_detail_label)
+	# il testo scorre se non ci sta (su telefono i pulsanti sono piu' alti): cosi' i comandi restano sempre visibili
+	_detail_label.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_detail_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var dscroll := ScrollContainer.new()
+	dscroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	dscroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	dscroll.custom_minimum_size = Vector2(0, 60)
+	dscroll.add_child(_detail_label)
+	col.add_child(dscroll)
 	_action_box = GridContainer.new()
 	_action_box.columns = 2
 	_action_box.add_theme_constant_override("h_separation", 8)
