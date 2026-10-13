@@ -8,7 +8,7 @@ extends RefCounted
 # roster["objectives"] = {"day": "2026-10-12", "list": [ {kind, boss, goal, progress, done, reward} ]}
 
 const COUNT: int = 3
-const KINDS: Array = ["play", "win", "win_boss", "win_hard"]
+const KINDS: Array = ["play", "win", "win_boss", "win_hard", "boss_variety", "win_night"]
 
 # Spento solo dai test che contano le monete al centesimo.
 static var enabled: bool = true
@@ -43,6 +43,14 @@ static func _generate(roster: Dictionary, day: String) -> Array:
 			any_hard = true
 	if any_hard:
 		kinds.append("win_hard")
+	if open_bosses.size() >= 2:
+		kinds.append("boss_variety")
+	var any_night: bool = false
+	for id in open_bosses:
+		if RosterState.cleared_tiers(roster, str(id)) >= 2:
+			any_night = true
+	if any_night:
+		kinds.append("win_night")
 	# tre tipi diversi, in ordine mescolato ma ripetibile
 	for i in range(kinds.size() - 1, 0, -1):
 		var j: int = rng.randi_range(0, i)
@@ -69,6 +77,12 @@ static func _make(kind: String, open_bosses: Array, rng: RandomNumberGenerator) 
 			o["reward"] = {"coins": 600, "lega": 2}
 		"win_hard":
 			o["reward"] = {"coins": 900, "nucleo": 3}
+		"boss_variety":
+			o["goal"] = 2
+			o["seen"] = []
+			o["reward"] = {"coins": 700, "nucleo": 2, "lega": 1}
+		"win_night":
+			o["reward"] = {"coins": 1400, "nucleo": 4}
 	return o
 
 
@@ -82,6 +96,10 @@ static func describe(o: Dictionary) -> String:
 			return "Sconfiggi %s" % MissionConfig.boss_title(str(o["boss"]))
 		"win_hard":
 			return "Vinci a DIFFICILE o piu'"
+		"boss_variety":
+			return "Batti %d boss diversi" % int(o["goal"])
+		"win_night":
+			return "Vinci a INCUBO"
 	return str(o["kind"])
 
 
@@ -115,6 +133,14 @@ static func record_battle(roster: Dictionary, boss_id: String, tier: int, victor
 				hit = victory and str(o["boss"]) == boss_id
 			"win_hard":
 				hit = victory and tier >= 1
+			"win_night":
+				hit = victory and tier >= 2
+			"boss_variety":
+				var seen: Array = o.get("seen", [])
+				hit = victory and not seen.has(boss_id)
+				if hit:
+					seen.append(boss_id)
+					o["seen"] = seen
 		if not hit:
 			continue
 		o["progress"] = int(o["progress"]) + 1

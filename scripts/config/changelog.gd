@@ -10,6 +10,8 @@ const ENTRIES: Array = [
 		"Collezione: filtri per rarita', fazione, livello e colore.",
 		"PvP: la schermata ha lo stesso stile della battaglia contro il boss.",
 		"Multiplayer: collegamento piu' affidabile tra reti diverse e meno dati consumati.",
+		"Profilo: nuovo pannello STATISTICHE.",
+		"Obiettivi giornalieri: nuove sfide (boss diversi, vittoria a INCUBO).",
 		"Le monete ora si chiamano GOLD.",
 	]},
 ]

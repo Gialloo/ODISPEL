@@ -98,6 +98,23 @@ func _run() -> void:
 			won = int(o["progress"])
 	_check("la sconfitta conta come battaglia giocata ma non come vittoria", played <= 1 and won == 0)
 	_check("testi leggibili", Objectives.describe(list[0]) != "" and Objectives.reward_text(list[0]["reward"]).contains("GOLD"))
+	# nuovi tipi: boss diversi e INCUBO
+	var rv: Dictionary = RosterState.new_roster()
+	var mk: Dictionary = {"kind": "boss_variety", "boss": "", "goal": 2, "progress": 0, "done": false, "reward": {"coins": 10}, "seen": []}
+	rv["objectives"] = {"day": "2026-10-12", "list": [mk]}
+	Objectives.record_battle(rv, "distributore", 0, true, "2026-10-12")
+	Objectives.record_battle(rv, "distributore", 0, true, "2026-10-12")
+	_check("stesso boss due volte: non basta", int(mk["progress"]) == 1 and not bool(mk["done"]))
+	Objectives.record_battle(rv, "semaforo", 0, true, "2026-10-12")
+	_check("due boss diversi: completato", bool(mk["done"]))
+	var rn: Dictionary = RosterState.new_roster()
+	var nk: Dictionary = {"kind": "win_night", "boss": "", "goal": 1, "progress": 0, "done": false, "reward": {"coins": 10}}
+	rn["objectives"] = {"day": "2026-10-12", "list": [nk]}
+	Objectives.record_battle(rn, "distributore", 1, true, "2026-10-12")
+	_check("INCUBO: difficile non basta", not bool(nk["done"]))
+	Objectives.record_battle(rn, "distributore", 2, true, "2026-10-12")
+	_check("INCUBO: vinto a incubo", bool(nk["done"]))
+	_check("descrizioni nuove", Objectives.describe(mk).contains("2") and Objectives.describe(nk).contains("INCUBO"))
 	Objectives.enabled = false
 	_check("spento: niente progressi", Objectives.record_battle(RosterState.new_roster(), "distributore", 0, true).is_empty())
 	Objectives.enabled = true
