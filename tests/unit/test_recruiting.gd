@@ -41,7 +41,7 @@ func _test_content() -> void:
 		per_rarity[BattleContent.CHARACTERS[id]["rarity"]] += 1
 	_check("esiste almeno un personaggio per rarita'", per_rarity.min() >= 1)
 	var r: Dictionary = RosterState.new_roster()
-	_check("si parte con 4 personaggi e squadra di 3", r["characters"].size() == 4 and r["team"].size() == 3)
+	_check("si parte con 4 personaggi e squadra di 3", r["characters"].size() == 4 and r["team"].size() == 4)
 	_check("il roster iniziale e' valido", RosterState.validate(r) == "")
 
 
@@ -212,11 +212,10 @@ func _test_play_flow() -> void:
 	var st: Dictionary = RosterState.create_solo_battle(r, "Io", "distributore", 55)
 	var guard: int = 0
 	while st["winner"] == "" and guard < 100:
-		BattleResolver.submit_choice(st, "p1", BattleAI.choose(st, "p1"))
-		BattleResolver.resolve_round(st)
+		BattleResolver.autoplay_round(st)
 		guard += 1
 	RosterState.apply_rewards(r, BattleRewards.for_battle(st, "distributore", 55)["p1"])
-	_check("con 1 sola riserva c'e' 1 compagno IA", st["players"].size() == 2)
+	_check("con 4 nel party: 3 front + 1 back", st["players"].size() == 3 and BattleState.back_row(st, st["players"][0]).size() == 1)
 	_check("la vittoria paga almeno un reclutamento", r["coins"] >= Recruiting.SINGLE_COST)
 	var before: int = r["characters"].size()
 	var res: Dictionary = Recruiting.pull(r, 1, 55)

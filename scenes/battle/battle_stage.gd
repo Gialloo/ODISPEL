@@ -834,11 +834,11 @@ func _draw_party() -> void:
 		return
 	var players: Array = state["players"]
 	var n: int = players.size()
+	_draw_back_row()
 	for k in n:
 		var i: int = n - 1 - k
 		var p: Dictionary = players[i]
 		var pose: Vector3 = party_pose(i, n)
-		_draw_bench_for(p, i, pose)
 		var u: Dictionary = BattleState.unit(state, str(p["active"]))
 		if u.is_empty():
 			continue
@@ -926,20 +926,26 @@ const BENCH_SCALE: float = 0.62
 const BENCH_ALPHA: float = 0.42
 
 
-# La panchina e' solo quella del TUO party: gli altri mostrano solo chi e' in campo.
-func _draw_bench_for(p: Dictionary, i: int, pose: Vector3) -> void:
-	if not (str(p["id"]) == local_player_id or (local_player_id == "" and i == 0)):
+# La back row e' solo quella del TUO party (dietro la front row): gli altri mostrano solo chi e' in campo.
+const BACK_X: Array = [275.0, 445.0, 615.0]
+
+
+func _draw_back_row() -> void:
+	var players: Array = state["players"]
+	var mine: Dictionary = {}
+	for i in players.size():
+		if str(players[i]["id"]) == local_player_id or (local_player_id == "" and i == 0):
+			mine = players[i]
+	if mine.is_empty():
 		return
-	var dx: float = 96.0 * pose.z
 	var k: int = 0
-	for uid in p["team"]:
-		if str(uid) == str(p["active"]):
+	for uid in BattleState.party_of(state, mine):
+		if BattleState.is_front(state, str(uid)):
 			continue
 		var u: Dictionary = BattleState.unit(state, str(uid))
 		if u.is_empty():
 			continue
-		var side: float = -1.0 if k % 2 == 0 else 1.0
-		_draw_bench_unit(u, pose.x + side * dx, k, pose.z, pose.y)
+		_draw_bench_unit(u, float(BACK_X[mini(k, BACK_X.size() - 1)]), k, 0.70, 395.0)
 		k += 1
 
 
@@ -1180,7 +1186,7 @@ func _draw_summons(p: Dictionary, gx: float) -> void:
 	var foot_y: float = GEO_FLOOR + 8.0
 	var grow: float = 1.35 + 0.45 * summon_pulse
 	for s in state.get("summons", []):
-		if not p["team"].has(str(s["owner"])):
+		if str(s["owner"]) != str(p["active"]):
 			continue
 		var owner: Dictionary = BattleState.unit(state, str(s["owner"]))
 		if not BattleState.is_alive(owner):

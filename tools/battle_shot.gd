@@ -22,6 +22,13 @@ func _shot(name: String) -> void:
 
 
 func _run() -> void:
+	# squadra di 6 (3 front + 3 back) per vedere anche la back row
+	var rr: Dictionary = RosterState.new_roster()
+	for id in ["nova", "mira", "sera"]:
+		if BattleContent.CHARACTERS.has(id) and not RosterState.owns(rr, id):
+			RosterState.add_character(rr, id)
+	RosterState.set_team(rr, ["kira", "dax", "elle", "bruno", "nova", "mira"])
+	RosterStore.save(rr)
 	var scene: Control = load("res://scenes/battle/battle_screen.tscn").instantiate()
 	root.add_child(scene)
 	await create_timer(0.3).timeout
@@ -31,10 +38,8 @@ func _run() -> void:
 
 	# qualche round giocato con l'IA, poi lo stato a meta' battaglia
 	var guard: int = 0
-	while guard < 5 and str(scene.source.battle["winner"]) == "":
-		var choice: Dictionary = BattleAI.choose(scene.source.battle, "p1")
-		scene.pending_swap = str(choice["swap"])
-		scene._on_order_pressed(str(choice["move"]))
+	while guard < 3 and str(scene.source.battle["winner"]) == "":
+		scene.source.autoplay_round()
 		while scene.animating:
 			await create_timer(0.1).timeout
 		guard += 1
@@ -42,17 +47,14 @@ func _run() -> void:
 
 	# cambio in preparazione: clic su un compagno in panchina
 	var me: Dictionary = BattleState.player(scene.shown, "p1")
-	for uid in me["team"]:
-		if uid != me["active"] and BattleState.is_alive(BattleState.unit(scene.shown, uid)):
-			scene._on_unit_pressed(uid)
-			break
+	for uid in BattleState.back_row(scene.shown, me):
+		scene._on_unit_pressed(uid)
+		break
 	await _shot("2b_cambio")
 	scene.pending_swap = ""
 
 	while str(scene.source.battle["winner"]) == "" and guard < 80:
-		var c2: Dictionary = BattleAI.choose(scene.source.battle, "p1")
-		scene.pending_swap = str(c2["swap"])
-		scene._on_order_pressed(str(c2["move"]))
+		scene.source.autoplay_round()
 		while scene.animating:
 			await create_timer(0.1).timeout
 		await create_timer(0.05).timeout

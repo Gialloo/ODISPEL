@@ -29,8 +29,8 @@ func _init() -> void:
 func _test_new_roster() -> void:
 	var r: Dictionary = RosterState.new_roster()
 	_check("collezione iniziale valida", RosterState.validate(r) == "")
-	_check("4 personaggi di partenza", r["characters"].size() == 4 and RosterState.spare_entries(r).size() == 1)
-	_check("squadra iniziale di 3", r["team"] == ["kira", "dax", "elle"])
+	_check("4 personaggi di partenza", r["characters"].size() == 4 and RosterState.spare_entries(r).is_empty())
+	_check("squadra iniziale di 4 (3 front + 1 back)", r["team"] == ["kira", "dax", "elle", "bruno"])
 	_check("mosse innate in inventario", r["moves"].get("colpo_caricato", 0) == 1 and r["moves"].get("spezzatutto", 0) == 1)
 	_check("passive innate in inventario", r["passives"].get("p_hp", 0) == 2)
 	_check("personaggio sconosciuto non aggiungibile", RosterState.add_character(r, "drago") == "")
@@ -41,14 +41,16 @@ func _test_team() -> void:
 	_check("squadra valida", RosterState.set_team(r, ["nova", "bruno"]))
 	_check("squadra salvata in ordine", r["team"] == ["nova", "bruno"])
 	_check("squadra vuota rifiutata", not RosterState.set_team(r, []))
-	_check("squadra da 4 rifiutata", not RosterState.set_team(r, ["kira", "dax", "elle", "nova"]))
+	_check("squadra da 7 rifiutata", not RosterState.set_team(r, ["kira", "dax", "elle", "nova", "bruno", "mira", "sera"]))
+	_check("squadra da 6 accettata", RosterState.set_team(r, ["kira", "dax", "elle", "nova", "bruno", "mira"]))
+	RosterState.set_team(r, ["nova", "bruno"])
 	_check("duplicati rifiutati", not RosterState.set_team(r, ["kira", "kira"]))
 	_check("personaggio non posseduto rifiutato", not RosterState.set_team(r, ["kira", "drago"]))
 	_check("squadra invariata dopo un rifiuto", r["team"] == ["nova", "bruno"])
-	_check("compagni IA = posseduti fuori squadra", RosterState.spare_entries(r).size() == 4)
+	_check("fuori squadra = posseduti non in squadra", RosterState.spare_entries(r).size() == 4)
 	var small: Dictionary = _full()
 	small["characters"].erase("mira")
-	_check("spare non include chi non si possiede", RosterState.spare_entries(small).size() == 2)
+	_check("spare non include chi non si possiede", RosterState.spare_entries(small).size() == 1)
 
 
 func _test_equip() -> void:
@@ -144,7 +146,7 @@ func _test_validation() -> void:
 	_check("squadra valida", RosterState.validate_team([e, BattleContent.default_entry("dax")]) == "")
 	_check("squadra con duplicato", RosterState.validate_team([e, e]) != "")
 	_check("squadra vuota", RosterState.validate_team([]) != "")
-	_check("squadra da 4", RosterState.validate_team([e, BattleContent.default_entry("dax"), BattleContent.default_entry("elle"), BattleContent.default_entry("nova")]) != "")
+	_check("squadra da 4 valida", RosterState.validate_team([e, BattleContent.default_entry("dax"), BattleContent.default_entry("elle"), BattleContent.default_entry("nova")]) == "")
 
 
 func _test_json_and_store() -> void:
@@ -176,12 +178,11 @@ func _test_json_and_store() -> void:
 func _test_solo_battle() -> void:
 	var r: Dictionary = _full()
 	var s: Dictionary = RosterState.create_solo_battle(r, "Io", "distributore", 21)
-	_check("solo: squadra e 2 compagni IA", s["players"].size() == 3 and s["players"][0]["team"].size() == 3)
-	_check("solo: i compagni sono i personaggi fuori squadra", BattleState.unit(s, "ai1:bruno").size() > 0 and BattleState.unit(s, "ai1:nova").size() > 0 and BattleState.unit(s, "ai2:mira").size() > 0)
+	_check("solo: tutto il party, 3 slot di front row", s["players"].size() == 3 and s["players"][0]["team"].size() == 4)
+	_check("solo: non ci sono alleati assegnati dall'IA", BattleState.unit(s, "ai1:bruno").is_empty() and BattleState.unit(s, "p1:mira").is_empty() and BattleState.unit(s, "p1:bruno").size() > 0)
 	var guard: int = 0
 	while s["winner"] == "" and guard < 100:
-		BattleResolver.submit_choice(s, "p1", BattleAI.choose(s, "p1"))
-		BattleResolver.resolve_round(s)
+		BattleResolver.autoplay_round(s)
 		guard += 1
 	_check("la partita solo si conclude", s["winner"] != "")
 
@@ -193,7 +194,7 @@ func _test_solo_battle() -> void:
 	_check("l'arma aumenta l'ATK in battaglia", BattleState.unit(b, "p1:kira")["atk"] > BattleState.unit(a, "p1:kira")["atk"])
 	var low: Dictionary = _full()
 	low["team"] = ["kira"]
-	_check("squadra da 1: gli altri 5 sono compagni IA", RosterState.create_solo_battle(low, "Io", "distributore", 1)["players"].size() == 3)
+	_check("squadra da 1: un solo slot, nessun alleato IA", RosterState.create_solo_battle(low, "Io", "distributore", 1)["players"].size() == 1)
 
 
 # Collezione con i 6 personaggi originali (i test non dipendono dal roster iniziale).

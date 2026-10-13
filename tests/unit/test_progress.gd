@@ -105,6 +105,7 @@ func _run() -> void:
 
 	# sconfitta: nessun progresso
 	var weak: Dictionary = RosterState.new_roster()
+	RosterState.set_team(weak, ["kira"])
 	var src2 := SoloBattleSource.new()
 	src2.save_path = TMP
 	_clean()

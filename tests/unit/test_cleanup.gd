@@ -79,11 +79,7 @@ func _run() -> void:
 	_check("ordini: nodi invariati se lo stato e' lo stesso", scene._orders_box.get_child(0) == first_order)
 	_check("operatori: nodi invariati se lo stato e' lo stesso", scene._ops_box.get_child(0) == first_op)
 	var me: Dictionary = BattleState.player(scene.shown, "p1")
-	var bench: String = ""
-	for uid in me["team"]:
-		if uid != me["active"]:
-			bench = str(uid)
-			break
+	var bench: String = str(BattleState.back_row(scene.shown, me)[0])
 	scene._on_unit_pressed(bench)
 	await process_frame
 	_check("operatori: il cambio ricostruisce la lista", scene._ops_box.get_child(0) != first_op)

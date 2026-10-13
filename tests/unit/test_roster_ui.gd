@@ -45,7 +45,7 @@ func _run() -> void:
 		if not b.disabled:
 			enabled += 1
 	_check("si possono scegliere solo i 4 posseduti", enabled == 4)
-	_check("3 posti in squadra", s._slots_box.get_child_count() == 3)
+	_check("6 posti in squadra (3 front + 3 back)", s._slots_box.get_child_count() == 7)
 	_check("la scheda mostra il nome", s._detail_title.text == "KIRA")
 	_check("la scheda mostra le statistiche", s._detail_label.text.contains("ATK"))
 	_check("monete mostrate", s._coins_label.text.contains("500"))
@@ -56,19 +56,20 @@ func _run() -> void:
 	s.select("tana")
 	_check("un non posseduto non si sceglie", s.selected == "bruno")
 
-	# squadra piena: bruno prende il posto del terzo
-	_check("squadra piena: sostituzione riuscita", s.toggle_team("bruno"))
-	_check("bruno e' entrato al terzo posto", s.roster["team"] == ["kira", "dax", "bruno"])
+	# bruno e' gia' in squadra (back row): toglierlo e rimetterlo
+	_check("bruno e' in back row", s.roster["team"] == ["kira", "dax", "elle", "bruno"])
+	_check("tolto dalla squadra", s.toggle_team("bruno") and s.roster["team"] == ["kira", "dax", "elle"])
+	_check("rimesso in coda (back row)", s.toggle_team("bruno") and s.roster["team"] == ["kira", "dax", "elle", "bruno"])
 	_check("la squadra e' valida", RosterState.validate(s.roster) == "")
 	s.select_slot(0)
 	_check("scegliere un posto sceglie chi c'e'", s.selected == "kira" and s.slot_target == 0)
-	s.toggle_team("elle")
-	_check("sostituzione nel posto scelto", s.roster["team"] == ["elle", "dax", "bruno"])
+	s.select("bruno")
+	_check("scambio back/front", s.swap_with_slot("bruno") and s.roster["team"] == ["bruno", "dax", "elle", "kira"])
 
 	# togliere
 	s.select("dax")
-	_check("tolto dalla squadra", s.toggle_team("dax") and s.roster["team"].size() == 2)
-	_check("rimesso in squadra", s.toggle_team("dax") and s.roster["team"].size() == 3)
+	_check("tolto dalla squadra", s.toggle_team("dax") and s.roster["team"].size() == 3)
+	_check("rimesso in squadra", s.toggle_team("dax") and s.roster["team"].size() == 4)
 	_check("non posseduto rifiutato", not s.toggle_team("tana"))
 	var one: Control = _make(0)
 	one.roster["team"] = ["kira"]

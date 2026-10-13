@@ -147,7 +147,7 @@ func _test_source() -> void:
 	var roster: Dictionary = RosterState.new_roster()
 	src.start(roster, "distributore", 77)
 	_check("solitaria: battaglia creata e annunciata", not src.battle.is_empty() and updates[0] == 1)
-	_check("solitaria: tu + un compagno IA", src.battle["players"].size() == 2 and src.battle["players"][1]["ally"] if src.battle["players"][1].has("ally") else src.battle["players"].size() == 2)
+	_check("solitaria: tre slot di front row, tutti tuoi", src.battle["players"].size() == 3 and src.my_slots() == ["p1", "p1_f2", "p1_f3"])
 	_check("solitaria: scelta non valida rifiutata", not src.submit_choice({"move": "fulmine"}))
 	_check("solitaria: scelta valida", src.submit_choice({"move": "attack"}))
 	_check("solitaria: il round e' stato risolto subito", src.battle["round"] == 2 and event_count[0] > 0 and updates[0] == 2)
@@ -155,7 +155,7 @@ func _test_source() -> void:
 
 	var guard: int = 0
 	while src.battle["winner"] == "" and guard < 100:
-		src.submit_choice(BattleAI.choose(src.battle, "p1"))
+		src.autoplay_round()
 		guard += 1
 	_check("solitaria: la battaglia finisce", src.battle["winner"] != "")
 	var coins_before: int = int(roster["coins"])
@@ -184,7 +184,7 @@ func _test_screen() -> void:
 	_check("schermata: attacco e guardia abilitati", not scene._order_buttons[0].disabled and not scene._order_buttons[1].disabled)
 	_check("schermata: l'ultimate e' bloccata a barra vuota", scene._order_buttons[4].disabled)
 	_check("schermata: bersaglio annunciato", "SCARICA" in scene._tele_label.text)
-	_check("schermata: nome del boss e vita", "1350" in scene._boss_hp.text or "INTEGRITA" in scene._boss_hp.text)
+	_check("schermata: nome del boss e vita", str(int(BattleState.boss(scene.shown)["max_hp"])) in scene._boss_hp.text or "INTEGRITA" in scene._boss_hp.text)
 	_check("schermata: righe iniziali nel registro", scene.log_lines.size() >= 2)
 	var rows: Array = scene.turn_rows()
 	_check("turno: una riga per ogni unita' che agisce (boss compreso)", rows.size() >= 2)
@@ -196,23 +196,16 @@ func _test_screen() -> void:
 		mine_rows += 1 if bool(r["mine"]) else 0
 		all_text = all_text and str(r["action"]) != ""
 	_check("turno: il boss e' nell'ordine", has_boss)
-	_check("turno: una sola riga e' tua", mine_rows == 1)
+	_check("turno: le righe dei tuoi 3 front sono tue", mine_rows == 3)
 	_check("turno: ogni riga dice cosa fa", all_text)
 	_check("turno: pannello con le righe", scene._turn_box.get_child_count() == rows.size())
-	var ai_known: bool = false
-	for p in scene.shown["players"]:
-		if bool(p["ai"]) and p["choice"] is Dictionary and p["choice"].has("move"):
-			ai_known = true
-	_check("turno: le scelte dell'IA sono visibili", ai_known or BattleState.player(scene.shown, "p1")["team"].size() == 1)
+	_check("front row: 3 righe + 1 riga di back row nel pannello", scene._ops_box.get_child_count() == 4)
+	_check("front row: AUTOPLAY disponibile", scene._auto_button.visible and not scene.autoplay)
 	_check("palco: etichetta TU per il giocatore locale", scene._stage.local_player_id == "p1")
 
 	# cambio di personaggio
 	var me: Dictionary = BattleState.player(scene.shown, "p1")
-	var bench: String = ""
-	for uid in me["team"]:
-		if uid != me["active"]:
-			bench = str(uid)
-			break
+	var bench: String = str(BattleState.back_row(scene.shown, me)[0])
 	scene._on_unit_pressed(bench)
 	_check("schermata: il cambio viene preparato", scene.pending_swap == bench)
 	scene._on_unit_pressed(bench)
@@ -221,7 +214,17 @@ func _test_screen() -> void:
 	_check("schermata: cliccare l'attivo non cambia nulla", scene.pending_swap == "")
 	scene._on_unit_pressed(bench)
 
-	# un ordine con cambio
+	# cliccare un altro front passa a lui; il cambio resta del primo
+	scene._on_unit_pressed("p1:dax")
+	_check("front row: si sceglie un altro front", scene._cur_slot_id() == "p1_f2" and scene.pending_swap == "")
+	scene._on_unit_pressed("p1:kira")
+	_check("front row: il cambio dello slot 1 e' ricordato", scene._cur_slot_id() == "p1" and scene.pending_swap == bench)
+
+	# un ordine con cambio: servono gli ordini di tutti e tre i front
+	scene._on_order_pressed("attack")
+	_check("front row: dopo il primo ordine tocca al secondo front", scene._cur_slot_id() == "p1_f2" and not scene.locked and scene.shown["round"] == 1)
+	scene._on_order_pressed("guard")
+	_check("front row: poi al terzo", scene._cur_slot_id() == "p1_f3")
 	scene._on_order_pressed("attack")
 	_check("schermata: durante il round i comandi sono bloccati", scene.animating or scene.shown["round"] == 2)
 	var waited: int = 0
@@ -245,6 +248,8 @@ func _test_screen() -> void:
 	ev.keycode = KEY_2
 	ev.pressed = true
 	scene._unhandled_key_input(ev)
+	scene._unhandled_key_input(ev)
+	scene._unhandled_key_input(ev)
 	var w2: int = 0
 	while scene.animating and w2 < 400:
 		await process_frame
@@ -252,16 +257,12 @@ func _test_screen() -> void:
 	_check("schermata: il tasto 2 (guardia) gioca un round", scene.shown["round"] == 3)
 
 	# gioca fino alla fine
-	var guard: int = 0
-	while str(scene.shown["winner"]) == "" and guard < 120:
-		var c: Dictionary = BattleAI.choose(scene.shown, "p1")
-		scene.pending_swap = str(c["swap"])
-		scene._on_order_pressed(str(c["move"]))
-		var w: int = 0
-		while scene.animating and w < 400:
-			await process_frame
-			w += 1
-		guard += 1
+	scene.set_autoplay(true)
+	_check("autoplay: acceso, i comandi si bloccano", scene.autoplay and scene._order_buttons.all(func(b: Button) -> bool: return b.disabled))
+	var t0: int = Time.get_ticks_msec()
+	while str(scene.shown["winner"]) == "" and Time.get_ticks_msec() - t0 < 90000:
+		await process_frame
+	_check("autoplay: l'IA porta a termine la battaglia", str(scene.shown["winner"]) != "")
 	_check("schermata: la battaglia arriva alla fine", str(scene.shown["winner"]) != "")
 	await process_frame
 	_check("schermata: compare il riquadro dell'esito", scene._overlay.get_child_count() > 0)

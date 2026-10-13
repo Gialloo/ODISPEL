@@ -177,14 +177,14 @@ func _build_team_page() -> void:
 	_team_page = _page()
 
 	# in alto la squadra (anteprima dei 3 posti), sotto a sinistra la griglia, a destra la scheda
-	var squad := HudPanel.new().setup("LA TUA SQUADRA  -  3 POSTI", BattleTheme.RD)
+	var squad := HudPanel.new().setup("LA TUA SQUADRA  -  3 FRONT + 3 BACK", BattleTheme.RD)
 	squad.position = Vector2(20, 8)
 	squad.size = Vector2(1240, 158)
 	_team_page.add_child(squad)
 	_slots_box = HBoxContainer.new()
-	_slots_box.add_theme_constant_override("separation", 12)
+	_slots_box.add_theme_constant_override("separation", 8)
 	squad.set_content(_slots_box)
-	var squad_hint := BattleTheme.make_label("IL POSTO ROSSO E' QUELLO CHE CAMBI", 13, BattleTheme.CY_DIM)
+	var squad_hint := BattleTheme.make_label("FRONT = IN CAMPO · BACK = RISERVE (SCAMBIO GRATIS)", 13, BattleTheme.CY_DIM)
 	squad_hint.position = Vector2(420, 4)
 	squad.add_child(squad_hint)
 	var auto := Button.new()
@@ -450,6 +450,24 @@ func select_slot(index: int) -> void:
 	elif index >= 0 and index < BattleTypes.TEAM_SIZE:
 		slot_target = team.size()
 	refresh()
+
+
+# Scambia di posto il personaggio scelto con quello del posto selezionato (es. dalla back row al front).
+func swap_with_slot(char_id: String) -> bool:
+	var team: Array = (roster["team"] as Array).duplicate()
+	var a: int = team.find(char_id)
+	var b: int = slot_target
+	if a < 0 or b < 0 or b >= team.size() or a == b:
+		return _say("Scegli prima il posto con cui scambiare.", false)
+	var tmp: Variant = team[a]
+	team[a] = team[b]
+	team[b] = tmp
+	if not RosterState.set_team(roster, team):
+		return _say("Squadra non valida.", false)
+	selected = char_id
+	slot_target = b
+	_save()
+	return _say("Posti scambiati.", true)
 
 
 # Mette il personaggio scelto in squadra, lo toglie, o prende il posto selezionato.
@@ -722,6 +740,10 @@ func _refresh_slots() -> void:
 		var id: String = str(team[i]) if i < team.size() else ""
 		var b: Button = OperatorCards.slot_card(i, id, roster["characters"][id] if id != "" else {}, i == slot_target)
 		b.pressed.connect(select_slot.bind(i))
+		if i == BattleTypes.FRONT_SIZE:
+			var gap := Control.new()
+			gap.custom_minimum_size = Vector2(18, 0)
+			_slots_box.add_child(gap)
 		_slots_box.add_child(b)
 
 
@@ -793,6 +815,16 @@ func _refresh_detail() -> void:
 	BattleTheme.style_button(tb, "normal", 15)
 	tb.pressed.connect(toggle_team.bind(selected))
 	_action_box.add_child(tb)
+	var team_now: Array = roster["team"]
+	if in_team and team_now.size() > 1 and slot_target < team_now.size() and str(team_now[slot_target]) != selected:
+		var sb := Button.new()
+		sb.custom_minimum_size = Vector2(0, 54 if TouchUi.active() else 40)
+		sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sb.clip_text = true
+		sb.text = "SCAMBIA CON %s" % str(BattleContent.CHARACTERS[str(team_now[slot_target])]["name"]).to_upper()
+		BattleTheme.style_button(sb, "normal", 15)
+		sb.pressed.connect(swap_with_slot.bind(selected))
+		_action_box.add_child(sb)
 
 	var ub := Button.new()
 	ub.custom_minimum_size = Vector2(0, 54 if TouchUi.active() else 40)

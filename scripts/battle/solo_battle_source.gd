@@ -29,7 +29,7 @@ func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier:
 	tier = clampi(new_tier, 0, BattleContent.TIERS.size() - 1)
 	rewards = {}
 	_finished = false
-	battle = RosterState.create_solo_battle(roster, "IO", boss_id, seed_value, 2, tier)
+	battle = RosterState.create_solo_battle(roster, "IO", boss_id, seed_value, 0, tier)
 	if daily_mod != "":
 		Endless.apply(battle, Daily.FLOOR, daily_mod)
 	elif endless_floor > 0:
@@ -40,9 +40,64 @@ func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier:
 	battle_updated.emit()
 
 
+# Gli slot di front row controllati dal giocatore (in solitaria: tutti, nell'ordine).
+func my_slots() -> Array:
+	var out: Array = []
+	for p in battle.get("players", []):
+		if str(p["id"]) == local_player_id or str(p.get("leader", "")) == local_player_id:
+			out.append(str(p["id"]))
+	return out
+
+
+# Un solo slot (compatibilita'): gli altri slot ancora liberi li gioca l'IA, poi si risolve il round.
 func submit_choice(choice: Dictionary) -> bool:
 	if battle.is_empty() or not BattleResolver.submit_choice(battle, local_player_id, choice):
 		return false
+	for sid in my_slots():
+		if sid != local_player_id and not _slot_done(sid):
+			_ai_fill(sid)
+	return _resolve()
+
+
+# Tutte le scelte del giocatore insieme: {slot_id: choice}. Gli slot non indicati o non validi li gioca l'IA.
+func submit_party(choices: Dictionary) -> bool:
+	if battle.is_empty() or str(battle["winner"]) != "":
+		return false
+	for sid in my_slots():
+		var p: Dictionary = BattleState.player(battle, sid)
+		if not BattleState.player_alive(battle, p):
+			continue
+		if choices.has(sid) and BattleResolver.validate_choice(battle, sid, choices[sid]) == "":
+			p["choice"] = choices[sid].duplicate(true)
+		else:
+			_ai_fill(sid)
+	return _resolve()
+
+
+# AUTOPLAY: l'IA gioca da sola tutta la squadra per questo round.
+func autoplay_round() -> bool:
+	if battle.is_empty() or str(battle["winner"]) != "":
+		return false
+	for sid in my_slots():
+		var p: Dictionary = BattleState.player(battle, sid)
+		if BattleState.player_alive(battle, p):
+			p["choice"] = null
+			_ai_fill(sid)
+	return _resolve()
+
+
+func _slot_done(sid: String) -> bool:
+	return BattleState.player(battle, sid).get("choice") != null
+
+
+func _ai_fill(sid: String) -> void:
+	var p: Dictionary = BattleState.player(battle, sid)
+	if p.is_empty() or not BattleState.player_alive(battle, p):
+		return
+	p["choice"] = BattleAI.choose(battle, sid)
+
+
+func _resolve() -> bool:
 	var events: Array = BattleResolver.resolve_round(battle)
 	battle_events_received.emit(events)
 	battle_updated.emit()

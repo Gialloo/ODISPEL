@@ -11,7 +11,17 @@ var event_delay: float = Settings.event_delay()
 var shown: Dictionary = {}          # copia dello stato come lo vede il giocatore ora
 var animating: bool = false
 var locked: bool = false            # ordine inviato, si aspetta il round
-var pending_swap: String = ""       # personaggio scelto per il cambio
+var _swaps: Dictionary = {}          # slot -> personaggio di back row scelto per il cambio
+var _picks: Dictionary = {}          # slot -> ordine gia' scelto in questo round
+var _cur_slot: String = ""           # slot di front row di cui si scelgono gli ordini
+var autoplay: bool = false           # AUTOPLAY: l'IA combatte da sola
+var _auto_button: Button
+var _ops_panel: Control
+var pending_swap: String:
+	get:
+		return str(_swaps.get(_cur_slot_id(), ""))
+	set(value):
+		_swaps[_cur_slot_id()] = value
 var log_lines: Array = []
 var _last_won: bool = false
 var _dmg_by: Dictionary = {}      # danni al boss per operatore (per l'MVP a fine battaglia)
@@ -85,9 +95,9 @@ func tutorial_steps() -> Array:
 		{"title": "ALLARME", "target": _tele_panel,
 		"text": "Il boss ti avvisa: questa e' la mossa che usera' in QUESTO round e chi colpira'. Cambia ogni round, quindi leggila sempre prima di scegliere."},
 		{"title": "I TUOI OPERATORI", "target": _panel_of(_ops_box),
-		"text": "La tua squadra: PV, energia e carica dell'ultimate di ciascuno. Uno solo e' in campo (il triangolo). Clicca un compagno in panchina per scambiarlo: il cambio e' gratis e avviene prima di tutto. Chi sta in panchina recupera piu' energia."},
+		"text": "Il tuo party: in alto la FRONT ROW (fino a 3 operatori in campo), sotto la BACK ROW (le riserve). Clicca un front per dargli gli ordini; clicca uno della back row per mandarlo in campo al suo posto: il cambio e' gratis e avviene prima di tutto. Chi sta in back row recupera piu' energia."},
 		{"title": "COME FUNZIONA UN TURNO", "target": _panel_of(_turn_box),
-		"text": "Ogni round TU scegli solo per il tuo operatore in campo. I compagni IA scelgono da soli (non copiano te) e la loro scelta e' gia' visibile nell'ORDINE DEL TURNO. Poi si risolve tutto in fila per priorita' e velocita': il segnalino rosso mostra chi agisce e chi subisce. Dietro di te vedi in silhouette il tuo party in panchina (solo i tuoi operatori)."},
+		"text": "Ogni round decidi TU le mosse di tutti i front, uno dopo l'altro (tasto TAB per passare dall'uno all'altro). Quando hai dato l'ultimo ordine si risolve tutto in fila per priorita' e velocita': il segnalino rosso mostra chi agisce e chi subisce. Non hai voglia di scegliere? Il tasto AUTOPLAY (o A) fa combattere l'IA al posto tuo, e lo spegni quando vuoi."},
 		{"title": "GLI ORDINI", "target": _fan_anchor,
 		"text": "I comandi si aprono a ventaglio attorno al tuo operatore. Scegli cosa fare: ATTACCO, GUARDIA (dimezza i danni), le abilita' (costano energia) e l'ULTIMATE, che si carica combattendo. Scorciatoie: tasti 1-4. I colori contano: un colpo del colore giusto fa +50% di danni, quello sbagliato -33%."},
 		{"title": "CLASSI E FAZIONI", "target": null,
@@ -151,6 +161,8 @@ func bind_source(src: Variant) -> void:
 	source = src
 	src.battle_updated.connect(_on_updated)
 	src.battle_events_received.connect(_on_events)
+	if _auto_button != null:
+		_auto_button.visible = src.has_method("autoplay_round")
 	if not src.battle.is_empty():
 		_on_updated()
 
@@ -167,9 +179,70 @@ func _sync() -> void:
 		_push_log("SEGNALE STABILE", "info")
 	shown = (source.battle as Dictionary).duplicate(true)
 	locked = false
-	pending_swap = ""
+	_swaps.clear()
+	_picks.clear()
+	_cur_slot = ""
+	_cur_slot = _next_free_slot()
 	_refresh_all()
 	_check_end()
+	_maybe_autoplay()
+
+
+# Gli slot di front row vivi che il giocatore comanda (in rete: solo il suo).
+func _my_slots() -> Array:
+	var ids: Array = []
+	if source != null and source.has_method("my_slots"):
+		ids = source.my_slots()
+	elif source != null:
+		ids = [str(source.local_player_id)]
+	var out: Array = []
+	for sid in ids:
+		var p: Dictionary = BattleState.player(shown, str(sid))
+		if not p.is_empty() and BattleState.player_alive(shown, p):
+			out.append(str(sid))
+	return out
+
+
+func _cur_slot_id() -> String:
+	if _cur_slot != "":
+		return _cur_slot
+	return str(source.local_player_id) if source != null else ""
+
+
+# Il primo slot vivo che non ha ancora un ordine (se tutti ce l'hanno, il primo).
+func _next_free_slot() -> String:
+	var slots: Array = _my_slots()
+	for sid in slots:
+		if not _picks.has(sid):
+			return sid
+	return str(slots[0]) if not slots.is_empty() else (str(source.local_player_id) if source != null else "")
+
+
+func _maybe_autoplay() -> void:
+	if not autoplay or source == null or not source.has_method("autoplay_round"):
+		return
+	if str(shown.get("winner", "")) != "" or animating or locked:
+		return
+	locked = true
+	_refresh_orders()
+	get_tree().create_timer(0.25).timeout.connect(func() -> void:
+		if autoplay and is_inside_tree() and str(source.battle.get("winner", "")) == "":
+			source.autoplay_round()
+		else:
+			locked = false
+			_refresh_orders())
+
+
+func set_autoplay(on: bool) -> void:
+	autoplay = on
+	if _auto_button != null:
+		_auto_button.text = "AUTOPLAY: ON" if on else "AUTOPLAY"
+		BattleTheme.style_button(_auto_button, "primary" if on else "normal", 16)
+	if on:
+		_maybe_autoplay()
+	elif locked and not animating:
+		locked = false
+		_refresh_orders()
 
 
 # ---------- Costruzione dell'interfaccia ----------
@@ -206,6 +279,7 @@ func _build() -> void:
 	_build_operators()
 	_build_orders()
 	_build_log()
+	_build_autoplay()
 	add_child(_fx)
 	_fx.move_to_front()
 
@@ -213,6 +287,17 @@ func _build() -> void:
 	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_overlay)
+
+
+func _build_autoplay() -> void:
+	_auto_button = Button.new()
+	_auto_button.text = "AUTOPLAY"
+	_auto_button.focus_mode = Control.FOCUS_NONE
+	_auto_button.visible = false
+	BattleTheme.style_button(_auto_button, "normal", 16)
+	add_child(_auto_button)
+	_anchor(_auto_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-236, 24, -20, 72 if not TouchUi.active() else 80))
+	_auto_button.pressed.connect(func() -> void: set_autoplay(not autoplay))
 
 
 func _build_camera_info() -> void:
@@ -299,6 +384,7 @@ func turn_rows() -> Array:
 	if shown.is_empty() or str(shown["winner"]) != "":
 		return rows
 	var me: Dictionary = _local_player()
+	var mine_slots: Array = _my_slots()
 	var n: int = 0
 	for entry in BattleResolver.action_order(shown):
 		n += 1
@@ -312,18 +398,19 @@ func turn_rows() -> Array:
 		else:
 			var p: Dictionary = BattleState.player(shown, str(entry["player"]))
 			var u: Dictionary = BattleState.unit(shown, str(entry["unit"]))
-			var mine: bool = not me.is_empty() and str(p["id"]) == str(me["id"])
+			var mine: bool = not me.is_empty() and mine_slots.has(str(p["id"]))
 			row["mine"] = mine
 			row["name"] = str(u.get("name", "?")).to_upper()
 			row["who"] = "TU" if mine else ("IA" if bool(p["ai"]) else str(p["name"]).to_upper().left(4))
 			var choice: Variant = p["choice"]
 			if mine:
-				var pend: String = pending_swap
-				if locked or (choice is Dictionary and choice.has("move")):
-					action = BattleText.move_name(str(entry["move"])) if str(entry["move"]) != "" else "BLOCCATO"
+				var pend: String = str(_swaps.get(str(p["id"]), ""))
+				if locked or autoplay or _picks.has(str(p["id"])) or (choice is Dictionary and choice.has("move")):
+					action = BattleText.move_name(str(entry["move"])) if str(entry["move"]) != "" else ("AUTO" if autoplay else (BattleText.move_name(str(_picks[str(p["id"])]["move"])) if _picks.has(str(p["id"])) else "BLOCCATO"))
 				else:
 					action = "SCEGLI TU" + ("  (CAMBIO)" if pend != "" else "")
 				row["color"] = BattleTheme.WH
+				row["slot"] = str(p["id"])
 			elif choice is Dictionary and choice.has("move"):
 				action = BattleText.move_name(str(entry["move"]))
 				if str(entry["swap"]) != "" and str(entry["swap"]) != str(p["active"]):
@@ -339,7 +426,7 @@ func _refresh_turn_panel() -> void:
 	if _turn_box == null:
 		return
 	var rows: Array = turn_rows()
-	var sig: String = "%s|%d|%s|%s" % [_turn_acting, int(shown.get("round", 0)) if not shown.is_empty() else 0, str(locked), pending_swap]
+	var sig: String = "%s|%d|%s|%s|%s|%s" % [_turn_acting, int(shown.get("round", 0)) if not shown.is_empty() else 0, str(locked), str(_swaps), str(_picks.keys()), _cur_slot]
 	for r in rows:
 		sig += "|%s,%s,%s" % [str(r["unit"]), str(r["action"]), str(r["who"])]
 	if sig == _turn_sig:
@@ -367,6 +454,7 @@ func _build_operators() -> void:
 	panel.margins = Vector4(10.0, 10.0, 10.0, 8.0)
 	add_child(panel)
 	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 372, -18))
+	_ops_panel = panel
 	_ops_box = VBoxContainer.new()
 	_ops_box.add_theme_constant_override("separation", 3)
 	panel.set_content(_ops_box)
@@ -388,7 +476,7 @@ func _fan_origin() -> Vector2:
 	var idx: int = 0
 	var players: Array = shown.get("players", [])
 	for i in players.size():
-		if str(players[i]["id"]) == str(source.local_player_id):
+		if str(players[i]["id"]) == _cur_slot_id():
 			idx = i
 	var pose: Vector3 = _stage.party_pose(idx, players.size())
 	return Vector2(pose.x + 36.0, pose.y - 95.0 * pose.z)
@@ -495,7 +583,7 @@ func _refresh_telegraph() -> void:
 		if not tp.is_empty():
 			var au: Dictionary = BattleState.unit(shown, str(tp["active"]))
 			who = str(au.get("name", "?")).to_upper()
-		var mine: bool = str(tele["target"]) == str(source.local_player_id)
+		var mine: bool = _my_slots().has(str(tele["target"]))
 		_tele_target.text = "BERSAGLIO: %s%s" % [who, "  ◄ TU" if mine else ""]
 
 
@@ -515,17 +603,18 @@ func _bar_row(label: String, ratio: float, color: Color, segs: int, width: float
 
 func _refresh_operators() -> void:
 	var me: Dictionary = _local_player()
+	var slots: Array = []
+	if not me.is_empty():
+		slots = _all_my_slots()
 	# firma di cio' che si vede: se non e' cambiata nulla, i nodi restano dove sono
 	var sig: String = ""
-	var active_id: String = ""
 	if not me.is_empty():
-		active_id = pending_swap if pending_swap != "" else str(me["active"])
-		sig = "%s|%s|" % [active_id, str(me["active"])]
-		for uid in me["team"]:
+		sig = "%s|%s|%s|" % [_cur_slot_id(), str(_swaps), str(_picks.keys())]
+		for uid in BattleState.party_of(shown, me):
 			var tu: Dictionary = BattleState.unit(shown, uid)
-			sig += "%s,%d,%d,%d,%d,%d,%s,%d,%d;" % [uid, int(tu["hp"]), int(tu["max_hp"]), int(tu["energy"]), int(tu["gauge"]), int(tu["level"]), Factions.aura_text(tu), int(tu["ammo"]), (tu["mods"] as Array).size()]
+			sig += "%s,%s,%d,%d,%d,%d,%d,%s,%d,%d;" % [uid, str(BattleState.is_front(shown, uid)), int(tu["hp"]), int(tu["max_hp"]), int(tu["energy"]), int(tu["gauge"]), int(tu["level"]), Factions.aura_text(tu), int(tu["ammo"]), (tu["mods"] as Array).size()]
 		for p in shown["players"]:
-			if p["id"] != me["id"]:
+			if p["id"] != me["id"] and not slots.has(str(p["id"])):
 				var ta: Dictionary = BattleState.unit(shown, str(p["active"]))
 				sig += "%s,%d,%d;" % [str(ta.get("name", "?")), int(ta.get("hp", 0)), int(ta.get("max_hp", 1))]
 	_refresh_turn_panel()
@@ -537,15 +626,26 @@ func _refresh_operators() -> void:
 		c.queue_free()
 	if me.is_empty():
 		return
-	for uid in me["team"]:
-		var u: Dictionary = BattleState.unit(shown, uid)
-		_ops_box.add_child(_unit_row(u, uid == active_id, uid == str(me["active"])))
-	# compagni IA / altri giocatori: solo l'unita' attiva, tutti su una riga
+	# front row: un'unita' per slot (si clicca per dare gli ordini a quello slot)
+	var cur: String = _cur_slot_id()
+	var cur_swap: String = pending_swap
+	for sid in slots:
+		var sp: Dictionary = BattleState.player(shown, sid)
+		var u: Dictionary = BattleState.unit(shown, str(sp["active"]))
+		_ops_box.add_child(_unit_row(u, sid == cur, true, sid, _picks.has(sid)))
+	# back row: compatta; la casella evidenziata e' il cambio scelto per lo slot corrente
+	var backs: Array = []
+	for uid in BattleState.party_of(shown, me):
+		if not BattleState.is_front(shown, str(uid)):
+			backs.append(str(uid))
+	for uid in backs:
+		_ops_box.add_child(_back_row(BattleState.unit(shown, uid), uid == cur_swap))
+	# altri giocatori (rete): solo l'unita' attiva, tutti su una riga
 	var allies := HBoxContainer.new()
 	allies.add_theme_constant_override("separation", 14)
 	allies.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for p in shown["players"]:
-		if p["id"] == me["id"]:
+		if p["id"] == me["id"] or slots.has(str(p["id"])):
 			continue
 		var a: Dictionary = BattleState.unit(shown, str(p["active"]))
 		var cell := HBoxContainer.new()
@@ -558,6 +658,74 @@ func _refresh_operators() -> void:
 		allies.add_child(cell)
 	if allies.get_child_count() > 0:
 		_ops_box.add_child(allies)
+	_fit_ops_panel(slots.size(), backs.size(), allies.get_child_count() > 0)
+
+
+# Tutti gli slot di front row del giocatore (anche quelli senza personaggio vivo in campo).
+func _all_my_slots() -> Array:
+	var out: Array = []
+	if source != null and source.has_method("my_slots"):
+		for sid in source.my_slots():
+			out.append(str(sid))
+	else:
+		out.append(str(source.local_player_id))
+	return out
+
+
+# Il riquadro cresce con la back row (fino a 3 front + 3 back).
+func _fit_ops_panel(fronts: int, backs: int, with_allies: bool) -> void:
+	if _ops_panel == null:
+		return
+	var touch: bool = TouchUi.active()
+	var h: float = 22.0 + _unit_row_height() * float(maxi(fronts, 1)) + _back_row_height() * float(backs)
+	h += 3.0 * float(maxi(fronts + backs - 1, 0)) + (20.0 if with_allies else 0.0)
+	_anchor(_ops_panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(20, -(h + 18.0), 372, -18))
+
+
+func _back_row_height() -> float:
+	return 36.0 if TouchUi.active() else 26.0
+
+
+# Riga compatta di chi sta in back row: tocca per mandarlo in campo al posto del personaggio selezionato.
+func _back_row(u: Dictionary, selected: bool) -> Control:
+	var alive: bool = BattleState.is_alive(u)
+	var h: float = _back_row_height()
+	var btn := Button.new()
+	btn.custom_minimum_size = Vector2(0, h)
+	btn.flat = true
+	btn.disabled = not alive
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	for st in ["normal", "hover", "pressed", "disabled"]:
+		btn.add_theme_stylebox_override(st, StyleBoxEmpty.new())
+	btn.pressed.connect(_on_unit_pressed.bind(str(u["id"])))
+	var bgc := ColorRect.new()
+	bgc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bgc.color = BattleTheme.CY if selected else Color(0.03, 0.09, 0.11)
+	bgc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(bgc)
+	var key := ColorRect.new()
+	key.color = BattleTheme.unit_color(str(u["color"]))
+	key.size = Vector2(6, h)
+	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(key)
+	var fg: Color = BattleTheme.BK if selected else (BattleTheme.CY_DIM if alive else BattleTheme.CY_DARK)
+	var name_l := BattleTheme.make_label(("%s%s" % [str(u["name"]).to_upper(), "  ⇄" if selected else ""]) if alive else "%s  K.O." % str(u["name"]).to_upper(), 14, fg, true)
+	name_l.position = Vector2(14, 0 if not TouchUi.active() else 5)
+	name_l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(name_l)
+	var ratio: float = float(u["hp"]) / float(u["max_hp"])
+	var hp := SegBar.new().setup(8, BattleTheme.BK if selected else (BattleTheme.RD if ratio < 0.3 else BattleTheme.CY_DIM), Vector2(70, 7))
+	hp.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
+	hp.set_ratio(ratio)
+	hp.position = Vector2(176, h * 0.5 - 4.0)
+	btn.add_child(hp)
+	var en := SegBar.new().setup(BattleTypes.MAX_ENERGY, BattleTheme.BK if selected else BattleTheme.WH, Vector2(60, 6))
+	en.color_off = Color(0, 0, 0, 0.35) if selected else BattleTheme.CY_DARK
+	en.set_ratio(float(u["energy"]) / float(BattleTypes.MAX_ENERGY))
+	en.position = Vector2(256, h * 0.5 - 3.0)
+	btn.add_child(en)
+	return btn
 
 
 # Altezza della riga di un operatore: sul telefono e' piu' alta, per il dito.
@@ -586,7 +754,7 @@ func _add_chips(inner: Control, u: Dictionary, selected: bool) -> void:
 		row.add_child(am)
 
 
-func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
+func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = "", picked: bool = false) -> Control:
 	var alive: bool = BattleState.is_alive(u)
 	var row_h: float = _unit_row_height()
 	var btn := Button.new()
@@ -620,8 +788,8 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 	var fg: Color = BattleTheme.BK if selected else (BattleTheme.CY if alive else BattleTheme.CY_DARK)
 	var title: String = str(u["name"]).to_upper()
 	if is_active:
-		title += "  ▶"
-	var where: String = "K.O." if not alive else ("IN CAMPO" if is_active else "PANCHINA")
+		title += "  ✓" if picked else "  ▶"
+	var where: String = "K.O." if not alive else ("FRONT" if is_active else "BACK")
 	var name_l := BattleTheme.make_label(title, 17, fg, true)
 	name_l.position = Vector2(54, -2)
 	inner.add_child(name_l)
@@ -675,13 +843,24 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool) -> Control:
 
 
 func _on_unit_pressed(uid: String) -> void:
-	if animating or locked or str(shown.get("winner", "")) != "":
+	if animating or locked or autoplay or str(shown.get("winner", "")) != "":
 		return
-	var me: Dictionary = _local_player()
-	if uid == str(me["active"]):
-		pending_swap = ""
+	var slot: String = BattleState.slot_of(shown, uid)
+	if slot != "" and _my_slots().has(slot):
+		# un personaggio di front row: si danno gli ordini a lui
+		if slot != _cur_slot_id():
+			_cur_slot = slot
+			_picks.erase(slot)
 	else:
-		pending_swap = uid if pending_swap != uid else ""
+		# un personaggio di back row: entra al posto di quello selezionato (gratis, prima di tutto)
+		var cur: String = _cur_slot_id()
+		var same: bool = pending_swap == uid
+		for other in _swaps.keys():
+			if str(_swaps[other]) == uid:
+				_swaps[other] = ""
+		_swaps[cur] = "" if same else uid
+		_picks.erase(cur)
+	_ops_sig = ""
 	_refresh_operators()
 	_refresh_orders()
 
@@ -697,16 +876,19 @@ func _refresh_orders() -> void:
 		_order_buttons.clear()
 		_orders_box.clear_arc()
 		return
-	var uid: String = pending_swap if pending_swap != "" else str(me["active"])
+	var cur_p: Dictionary = BattleState.player(shown, _cur_slot_id())
+	if cur_p.is_empty():
+		cur_p = me
+	var uid: String = pending_swap if pending_swap != "" else str(cur_p["active"])
 	var u: Dictionary = BattleState.unit(shown, uid)
 	# firma di cio' che si vede (testi e pulsanti spenti): se e' uguale non si ricostruisce
-	var sig: String = "%s|%s|%s|%s|%d" % [uid, pending_swap, locked, animating, int(u["gauge"])]
+	var sig: String = "%s|%s|%s|%s|%d|%s|%s" % [uid, pending_swap, locked, animating, int(u["gauge"]), _cur_slot_id(), str(autoplay)]
 	var sig_ids: Array = ["attack", "guard"]
 	sig_ids.append_array(u["skills"])
 	if str(u["ult"]) != "":
 		sig_ids.append(str(u["ult"]))
 	for mid in sig_ids:
-		sig += "|" + str(BattleResolver.validate_choice(shown, str(source.local_player_id), _make_choice(str(mid))) == "")
+		sig += "|" + str(BattleResolver.validate_choice(shown, _cur_slot_id(), _make_choice(str(mid))) == "")
 	if sig == _orders_sig and _orders_box.get_child_count() > 0:
 		return
 	_orders_sig = sig
@@ -717,7 +899,11 @@ func _refresh_orders() -> void:
 	var touch: bool = TouchUi.active()
 	_orders_box.origin = _fan_origin()
 	_orders_box.tint = BattleTheme.unit_color(str(u["color"]))
-	var title := BattleTheme.make_label(("CAMBIO » %s (GRATIS)" if pending_swap != "" else "ORDINE PER %s") % str(u["name"]).to_upper(), 14, BattleTheme.WH, true)
+	var title_text: String = ("CAMBIO » %s (GRATIS)" if pending_swap != "" else "ORDINE PER %s") % str(u["name"]).to_upper()
+	var n_slots: int = _my_slots().size()
+	if n_slots > 1:
+		title_text += "  (%d/%d)" % [mini(_my_slots().find(_cur_slot_id()) + 1, n_slots), n_slots]
+	var title := BattleTheme.make_label(title_text, 14, BattleTheme.WH, true)
 	_orders_box.add_child(title)
 	var entries: Array = [{"id": "attack", "kind": "primary"}, {"id": "guard", "kind": "normal"}]
 	for s in u["skills"]:
@@ -742,7 +928,7 @@ func _refresh_orders() -> void:
 		var move_id: String = str(e["id"])
 		var move: Dictionary = BattleContent.MOVES[move_id]
 		var choice: Dictionary = _make_choice(move_id)
-		var err: String = BattleResolver.validate_choice(shown, str(source.local_player_id), choice)
+		var err: String = BattleResolver.validate_choice(shown, _cur_slot_id(), choice)
 		var b := Button.new()
 		var suffix: String = ""
 		if str(move["kind"]) == "skill":
@@ -766,7 +952,7 @@ func _refresh_orders() -> void:
 			fsize -= 1
 		BattleTheme.style_button(b, str(e["kind"]) if not is_guard else "normal", fsize)
 		b.add_theme_font_size_override("font_size", fsize)
-		b.disabled = err != "" or locked or animating
+		b.disabled = err != "" or locked or animating or autoplay
 		var oic: GameIcon = GameIcon.attach(b, GameIcon.move_key(move_id), BattleTheme.WH if primary else GameIcon.move_color(move_id), 26.0 if primary else 20.0)
 		oic.modulate.a = 0.35 if b.disabled else 1.0
 		b.pressed.connect(_on_order_pressed.bind(move_id))
@@ -816,16 +1002,39 @@ func _most_hurt_ally() -> String:
 
 
 func _on_order_pressed(move_id: String) -> void:
-	if animating or locked or source == null:
+	if animating or locked or autoplay or source == null:
 		return
 	if not _order_buttons.is_empty() and _held_hint_order():
 		return
 	var choice: Dictionary = _make_choice(move_id)
-	if BattleResolver.validate_choice(shown, str(source.local_player_id), choice) != "":
+	var slot: String = _cur_slot_id()
+	if BattleResolver.validate_choice(shown, slot, choice) != "":
+		return
+	var slots: Array = _my_slots()
+	if slots.size() <= 1 or not source.has_method("submit_party"):
+		locked = true
+		_refresh_orders()
+		if not source.submit_choice(choice):
+			locked = false
+			_refresh_orders()
+		return
+	# piu' front: si raccolgono gli ordini di tutti, poi parte il round
+	_picks[slot] = choice
+	var nxt: String = ""
+	for sid in slots:
+		if not _picks.has(sid):
+			nxt = sid
+			break
+	if nxt != "":
+		_cur_slot = nxt
+		_ops_sig = ""
+		_refresh_operators()
+		_refresh_orders()
 		return
 	locked = true
 	_refresh_orders()
-	if not source.submit_choice(choice):
+	_refresh_operators()
+	if not source.submit_party(_picks.duplicate(true)):
 		locked = false
 		_refresh_orders()
 
@@ -865,6 +1074,17 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_on_again()
 		elif event.keycode == KEY_ESCAPE:
 			SceneRouter.go("hub" if not (source is NetworkManager) else "lobby")
+		return
+	if event.keycode == KEY_A and _auto_button != null and _auto_button.visible:
+		set_autoplay(not autoplay)
+		return
+	if event.keycode == KEY_TAB and _tutorial == null and not locked and not animating and not autoplay:
+		var ss: Array = _my_slots()
+		if ss.size() > 1:
+			_cur_slot = str(ss[(ss.find(_cur_slot_id()) + 1) % ss.size()])
+			_ops_sig = ""
+			_refresh_operators()
+			_refresh_orders()
 		return
 	var idx: int = int(event.keycode) - int(KEY_1)
 	if idx >= 0 and idx < _order_buttons.size():

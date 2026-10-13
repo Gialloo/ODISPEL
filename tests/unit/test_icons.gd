@@ -69,7 +69,7 @@ func _run() -> void:
 	root.add_child(scene)
 	await process_frame
 	_check("griglia: 14 mattonelle in 5 colonne", scene._list_box.get_child_count() == 14 and scene._list_box.columns == 5)
-	_check("squadra: 3 carte", scene._slots_box.get_child_count() == 3)
+	_check("squadra: 6 carte (3 front + 3 back) e uno spazio", scene._slots_box.get_child_count() == 7)
 	var icons_in_card: int = 0
 	for c in scene._slots_box.get_child(0).get_children():
 		if c is GameIcon:

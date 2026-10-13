@@ -317,14 +317,39 @@ func _test_determinism_and_json() -> void:
 func _test_solo_and_ai() -> void:
 	var team: Array = [BattleContent.default_entry("kira"), BattleContent.default_entry("dax"), BattleContent.default_entry("elle")]
 	var spare: Array = [BattleContent.default_entry("nova"), BattleContent.default_entry("bruno"), BattleContent.default_entry("mira")]
-	var s: Dictionary = BattleState.create_solo("Io", team, spare, "distributore", 5, 2)
-	_check("solo: 1 umano + 2 IA", s["players"].size() == 3 and not s["players"][0]["ai"] and s["players"][1]["ai"] and s["players"][2]["ai"])
-	_check("solo: le IA usano i personaggi fuori squadra", BattleState.unit(s, "ai1:nova").size() > 0 and BattleState.unit(s, "ai2:bruno").size() > 0)
-	_check("solo: serve solo la scelta dell'umano", not BattleResolver.can_resolve(s))
-	BattleResolver.submit_choice(s, "p1", {"move": "attack"})
+	team.append_array(spare)
+	var s: Dictionary = BattleState.create_solo("Io", team, [], "distributore", 5)
+	_check("solo: 3 slot di front row, tutti del giocatore", s["players"].size() == 3 and not s["players"][0]["ai"] and not s["players"][1]["ai"] and not s["players"][2]["ai"])
+	_check("solo: nessun personaggio fuori dal party", BattleState.unit(s, "ai1:nova").is_empty() and s["units"].size() == 7)
+	_check("solo: front = primi 3 del party", s["players"][0]["active"] == "p1:kira" and s["players"][1]["active"] == "p1:dax" and s["players"][2]["active"] == "p1:elle")
+	_check("solo: gli slot condividono il party", BattleState.party_of(s, s["players"][2]).size() == 6 and s["players"][1]["team"].is_empty())
+	_check("solo: back row = gli altri 3", BattleState.back_row(s, s["players"][0]) == ["p1:nova", "p1:bruno", "p1:mira"])
+	_check("solo: servono le scelte di tutti i front", not BattleResolver.can_resolve(s))
+	BattleResolver.submit_choice(s, "p1", {"swap": "", "move": "attack", "target": ""})
+	BattleResolver.submit_choice(s, "p1_f2", {"swap": "p1:nova", "move": "attack", "target": ""})
+	_check("solo: scambio con la back row valido", BattleResolver.validate_choice(s, "p1_f2", {"swap": "p1:nova", "move": "attack", "target": ""}) == "")
+	_check("solo: non si scambia con un altro front", BattleResolver.validate_choice(s, "p1_f2", {"swap": "p1:elle", "move": "attack", "target": ""}) != "")
+	BattleResolver.submit_choice(s, "p1_f3", {"swap": "p1:nova", "move": "attack", "target": ""})
 	_check("solo: poi si risolve", BattleResolver.can_resolve(s))
 	BattleResolver.resolve_round(s)
 	_check("solo: il round avanza", s["round"] == 2)
+	_check("solo: Nova entra una volta sola (il secondo cambio cade)", s["players"][1]["active"] == "p1:nova" and s["players"][2]["active"] == "p1:elle")
+	_check("solo: Dax e' in back row", not BattleState.is_front(s, "p1:dax") and BattleState.back_row(s, s["players"][0]).has("p1:dax"))
+	var q: Dictionary = BattleState.create_solo("Io", team.slice(0, 2), [], "distributore", 5)
+	_check("solo: party da 2 = 2 front, niente back row", q["players"].size() == 2 and BattleState.back_row(q, q["players"][0]).is_empty())
+	var one: Dictionary = BattleState.create_solo("Io", team.slice(0, 1), [], "distributore", 5)
+	_check("solo: party da 1 = 1 slot", one["players"].size() == 1)
+	var ap: Dictionary = BattleState.create_solo("Io", team, [], "distributore", 9)
+	var steps: int = 0
+	while ap["winner"] == "" and steps < 80:
+		BattleResolver.autoplay_round(ap)
+		steps += 1
+	_check("autoplay: l'IA porta a termine la battaglia", ap["winner"] != "")
+	var fronts_ok: bool = true
+	for p in ap["players"]:
+		if BattleState.player_alive(ap, p) and not BattleState.is_alive(BattleState.unit(ap, str(p["active"]))):
+			fronts_ok = false
+	_check("autoplay: nessun front vivo resta con un K.O. in campo", fronts_ok or ap["winner"] != "")
 
 	# le scelte dell'IA sono sempre valide
 	var ok: bool = true
@@ -345,8 +370,8 @@ func _test_boss_scaling() -> void:
 	var humans: Dictionary = BattleState.create([_spec("a", ["kira"]), _spec("b", ["nova"], true)], "distributore", 1)
 	_check("un giocatore pilotato dall'IA vale come un umano", BattleState.boss(humans)["max_hp"] == 2 * hpp)
 	var team: Array = [BattleContent.default_entry("kira")]
-	var solo: Dictionary = BattleState.create_solo("Io", team, [BattleContent.default_entry("dax")], "distributore", 1, 1)
-	_check("un compagno IA vale mezzo giocatore", BattleState.boss(solo)["max_hp"] == int(round(1.5 * float(hpp))))
+	var solo: Dictionary = BattleState.create_solo("Io", team + [BattleContent.default_entry("dax")], [], "distributore", 1)
+	_check("un front in piu' vale mezzo giocatore", BattleState.boss(solo)["max_hp"] == int(round(1.5 * float(hpp))))
 	var alone: Dictionary = BattleState.create([_spec("a", ["kira"])], "distributore", 1)
 	_check("la forza del boss cresce con i giocatori effettivi", BattleState.boss(alone)["atk"] < BattleState.boss(solo)["atk"] and BattleState.boss(solo)["atk"] < BattleState.boss(humans)["atk"])
 	_check("effective_players non scende sotto 1", BattleState.effective_players([]) == 1.0)

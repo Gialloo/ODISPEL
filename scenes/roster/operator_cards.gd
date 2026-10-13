@@ -85,22 +85,25 @@ static func slot_card(index: int, id: String, entry: Dictionary, active: bool) -
 	BattleTheme.style_button(b, "primary" if active else "normal", 14)
 	var fg: Color = BattleTheme.WH
 	var dim: Color = BattleTheme.WH if active else BattleTheme.CY
-	b.add_child(_label("POSTO %d" % (index + 1), 12, dim, Vector2(112, 6), true))
+	var front: bool = index < BattleTypes.FRONT_SIZE
+	var tag: String = ("FRONT %d" % (index + 1)) if front else ("BACK %d" % (index - BattleTypes.FRONT_SIZE + 1))
+	b.add_child(_label(tag, 12, dim, Vector2(66, 4), true))
 	if id == "":
-		b.add_child(_portrait("", "icon", Vector2(8, 8), Vector2(92, 92), true))
-		b.add_child(_label("+ LIBERO", 22, fg, Vector2(112, 28), true))
-		b.add_child(_label("Scegli un operatore\nnella collezione.", 13, dim, Vector2(112, 62)))
+		b.add_child(_portrait("", "icon", Vector2(6, 6), Vector2(56, 56), true))
+		b.add_child(_label("+ LIBERO", 16, fg, Vector2(66, 24), true))
+		b.add_child(_label("Scegli dalla\ncollezione.", 12, dim, Vector2(66, 50)))
 		return b
 	var def: Dictionary = BattleContent.CHARACTERS[id]
-	b.add_child(_portrait(id, "splash", Vector2(6, 4), Vector2(96, 104)))
-	b.add_child(_label(str(def["name"]).to_upper(), 24, BattleTheme.WH if active else BattleTheme.unit_color(str(def["color"])), Vector2(112, 20), true, 190.0))
-	b.add_child(_icon(str(def["cls"]), BattleTheme.WH if active else BattleTheme.unit_color(str(def["color"])), Vector2(112, 51)))
-	b.add_child(_label("%s · %s" % [str(def["cls"]).to_upper(), str(def["color"]).to_upper()], 13, fg, Vector2(134, 52)))
+	var col: Color = BattleTheme.WH if active else BattleTheme.unit_color(str(def["color"]))
+	b.add_child(_portrait(id, "icon", Vector2(6, 6), Vector2(56, 56)))
+	b.add_child(_label(str(def["name"]).to_upper(), 18, col, Vector2(66, 20), true, 120.0))
+	b.add_child(_icon(str(def["cls"]), col, Vector2(66, 45), 13.0))
+	b.add_child(_label("%s · %s" % [str(def["cls"]).to_upper(), str(def["color"]).to_upper()], 11, fg, Vector2(82, 44), false, 108.0))
 	var faction: String = BattleContent.faction_of(id)
 	if faction != "":
 		var fcol: Color = BattleTheme.WH if active else Hints.faction_color(faction)
-		b.add_child(_icon(faction, fcol, Vector2(112, 69)))
-		b.add_child(_label("%s · %s" % [Factions.name_of(faction).to_upper(), BattleContent.style_of(id, entry).to_upper()], 13, fcol, Vector2(134, 70)))
-	b.add_child(_label("Lv%d  %s" % [int(entry["level"]), _stars(int(entry["rank"]))], 13, dim, Vector2(112, 88)))
-	b.tooltip_text = "Posto %d: %s" % [index + 1, str(def["name"])]
+		b.add_child(_icon(faction, fcol, Vector2(66, 61), 13.0))
+		b.add_child(_label(Factions.name_of(faction).to_upper(), 11, fcol, Vector2(82, 60), false, 108.0))
+	b.add_child(_label("Lv%d  %s" % [int(entry["level"]), _stars(int(entry["rank"]))], 11, dim, Vector2(8, 70)))
+	b.tooltip_text = "%s: %s" % [tag, str(def["name"])]
 	return b

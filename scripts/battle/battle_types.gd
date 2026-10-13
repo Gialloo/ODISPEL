@@ -19,7 +19,9 @@ const BEATS: Dictionary = {
 const COLOR_ADVANTAGE: float = 1.5
 const COLOR_DISADVANTAGE: float = 0.67
 
-const TEAM_SIZE: int = 3
+const TEAM_SIZE: int = 6          # party massimo (front row + back row)
+const FRONT_SIZE: int = 3         # personaggi in front row in solitaria
+const NET_TEAM_SIZE: int = 3      # in rete ogni giocatore porta al massimo 3 personaggi (1 in campo)
 const SKILL_SLOTS: int = 2
 const PASSIVE_SLOTS: int = 2
 

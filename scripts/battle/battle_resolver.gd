@@ -45,6 +45,14 @@ static func begin_round(state: Dictionary) -> void:
 			p["choice"] = BattleAI.choose(state, str(p["id"]))
 
 
+# Fa giocare l'IA al posto di tutti gli slot ancora senza ordine (AUTOPLAY, test), poi risolve il round.
+static func autoplay_round(state: Dictionary) -> Array:
+	for p in state["players"]:
+		if p["choice"] == null and BattleState.player_alive(state, p):
+			p["choice"] = BattleAI.choose(state, str(p["id"]))
+	return resolve_round(state)
+
+
 # Il giocatore il cui personaggio attivo ha la frazione di PV piu' bassa
 # (a parita', il primo nell'ordine dei giocatori).
 static func _weakest_player(state: Dictionary, alive: Array) -> String:
@@ -76,10 +84,12 @@ static func validate_choice(state: Dictionary, pid: String, choice: Dictionary) 
 	var uid: String = str(p["active"])
 	var swap: String = str(choice.get("swap", ""))
 	if swap != "":
-		if not p["team"].has(swap):
+		if not BattleState.party_of(state, p).has(swap):
 			return "personaggio non in squadra"
 		if not BattleState.is_alive(BattleState.unit(state, swap)):
 			return "personaggio sconfitto"
+		if swap != uid and BattleState.is_front(state, swap):
+			return "personaggio gia' in front row"
 		uid = swap
 	var u: Dictionary = BattleState.unit(state, uid)
 	if not BattleState.is_alive(u):
@@ -158,12 +168,17 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 		elif validate_choice(state, str(p["id"]), p["choice"]) != "":
 			p["choice"] = {"swap": "", "move": BattleTypes.ACTION_ATTACK, "target": ""}
 
-	# 2. cambi (gratuiti, prima di tutto)
+	# 2. cambi (gratuiti, prima di tutto). Due slot non possono chiamare in campo lo stesso personaggio.
+	var claimed: Dictionary = {}
 	for p in state["players"]:
 		if p["choice"] == null:
 			continue
 		var swap: String = str(p["choice"]["swap"])
 		if swap != "" and swap != str(p["active"]):
+			if claimed.has(swap):
+				p["choice"] = {"swap": "", "move": BattleTypes.ACTION_ATTACK, "target": ""}
+				continue
+			claimed[swap] = true
 			_do_swap(state, p, swap, events)
 
 	# 3. azioni ordinate per priorita', velocita', id
@@ -687,13 +702,13 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 
 	Atypical.end_of_round(state, events)
 
-	# energia: chi sta in panchina recupera di piu'
+	# energia: chi sta in back row recupera di piu'
 	for p in state["players"]:
 		for uid in p["team"]:
 			var u: Dictionary = BattleState.unit(state, uid)
 			if not BattleState.is_alive(u):
 				continue
-			var gain: int = (BattleTypes.REGEN_ACTIVE if uid == p["active"] else BattleTypes.REGEN_BENCH) + Archetypes.round_energy(u)
+			var gain: int = (BattleTypes.REGEN_ACTIVE if BattleState.is_front(state, str(uid)) else BattleTypes.REGEN_BENCH) + Archetypes.round_energy(u)
 			u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + gain)
 
 	# se l'attivo e' caduto entra il compagno con piu' vita
@@ -710,10 +725,8 @@ static func _auto_replace(state: Dictionary, p: Dictionary, events: Array) -> vo
 		return
 	var best: String = ""
 	var best_ratio: float = -1.0
-	for uid in p["team"]:
+	for uid in BattleState.back_row(state, p):
 		var u: Dictionary = BattleState.unit(state, uid)
-		if not BattleState.is_alive(u):
-			continue
 		var ratio: float = float(u["hp"]) / float(u["max_hp"])
 		if ratio > best_ratio:
 			best_ratio = ratio

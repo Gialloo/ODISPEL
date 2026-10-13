@@ -43,7 +43,7 @@ static func set_player_ai(state: Dictionary, player_id: String, ai: bool) -> boo
 # Senza squadra (client vecchi) si usa quella di partenza.
 static func read_team(message: Dictionary) -> Dictionary:
 	if not message.has("team"):
-		return {"ok": true, "team": RosterState.team_entries(RosterState.new_roster()), "error": ""}
+		return {"ok": true, "team": RosterState.team_entries(RosterState.new_roster()).slice(0, BattleTypes.NET_TEAM_SIZE), "error": ""}
 	var raw: Variant = message["team"]
 	if not (raw is Array):
 		return {"ok": false, "team": [], "error": "squadra non valida"}
@@ -51,7 +51,7 @@ static func read_team(message: Dictionary) -> Dictionary:
 	var err: String = RosterState.validate_team(team)
 	if err != "":
 		return {"ok": false, "team": [], "error": err}
-	return {"ok": true, "team": team, "error": ""}
+	return {"ok": true, "team": team.slice(0, BattleTypes.NET_TEAM_SIZE), "error": ""}
 
 
 # Scelta pulita da un messaggio di rete: solo i campi attesi, solo stringhe.

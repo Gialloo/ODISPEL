@@ -25,9 +25,13 @@ static func choose(state: Dictionary, pid: String) -> Dictionary:
 	if BattleState.is_alive(me) and _ratio(me) < 0.35 and targeted:
 		var best: String = ""
 		var best_ratio: float = _ratio(me) + 0.25
-		for uid in p["team"]:
+		var taken: Dictionary = {}
+		for q in state["players"]:
+			if q["choice"] is Dictionary and str(q["choice"].get("swap", "")) != "":
+				taken[str(q["choice"]["swap"])] = true
+		for uid in BattleState.back_row(state, p):
 			var u: Dictionary = BattleState.unit(state, uid)
-			if uid != p["active"] and BattleState.is_alive(u) and _ratio(u) > best_ratio:
+			if not taken.has(uid) and _ratio(u) > best_ratio:
 				best_ratio = _ratio(u)
 				best = uid
 		if best != "":
@@ -78,7 +82,7 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 		if energy < int(m["cost"]):
 			continue
 		if m.has("heal") and not lowest.is_empty() and (_ratio(lowest) < 0.55 or (bool(m.get("cleanse", false)) and lowest["statuses"].has("bleed"))):
-			choice["target"] = str(lowest["owner"])
+			choice["target"] = BattleState.slot_of(state, str(lowest["id"]))
 			return str(sid)
 		if m.has("shield") and str(m["target"]) == "allies" and heavy:
 			return str(sid)

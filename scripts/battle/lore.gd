@@ -85,7 +85,7 @@ static func glossary() -> Array:
 		["ULTIMATE", "La barra si carica colpendo (+%d) e venendo colpiti (+%d). A %d puoi usare l'ultimate, senza costo di energia." % [BattleTypes.GAUGE_ON_HIT, BattleTypes.GAUGE_ON_DAMAGED, BattleTypes.GAUGE_MAX]],
 		["VANTAGGIO DI COLORE", "Rosso batte verde, verde batte blu, blu batte rosso; giallo e viola si battono a vicenda. Colore giusto: danno x%.1f. Colore sbagliato: x%.2f." % [BattleTypes.COLOR_ADVANTAGE, BattleTypes.COLOR_DISADVANTAGE]],
 		["ALLARME", "Il boss annuncia un round prima la mossa e il bersaglio. Leggila sempre prima di scegliere."],
-		["CAMBIO", "Scambiare l'operatore in campo e' gratuito e avviene prima di ogni azione. In panchina si recupera piu' energia."],
+		["CAMBIO", "Scambiare l'operatore in campo e' gratuito e avviene prima di ogni azione. In BACK ROW si recupera piu' energia. Puoi scambiare i front con la back row a piacere."],
 		["GUARDIA", "Dimezza il danno subito in quel round (x%.1f) e ridona energia." % BattleTypes.GUARD_FACTOR],
 		["SCUDO", "Assorbe danno prima dei PV. Lo danno Barriera, Bastione, Provoca e l'entrata scudata."],
 		["PROVOCAZIONE", "Il boss, se puo', colpisce chi provoca. Utile per proteggere chi fa danno."],

@@ -46,8 +46,7 @@ func _run() -> void:
 	var st: Dictionary = BattleState.create_solo("IO", team, [], "cabina", 5, 2, 1)
 	var steps: int = 0
 	while str(st["winner"]) == "" and steps < 80:
-		BattleResolver.submit_choice(st, "p1", BattleAI.choose(st, "p1"))
-		BattleResolver.resolve_round(st)
+		BattleResolver.autoplay_round(st)
 		steps += 1
 	_check("una battaglia contro la cabina si conclude", str(st["winner"]) != "")
 	var back: Dictionary = BattleState.from_json(BattleState.to_json(st))

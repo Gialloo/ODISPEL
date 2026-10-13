@@ -95,7 +95,7 @@ const AI_WEIGHT: float = 0.5
 static func effective_players(specs: Array) -> float:
 	var total: float = 0.0
 	for spec in specs:
-		total += AI_WEIGHT if bool(spec.get("ally", false)) else 1.0
+		total += float(spec.get("weight", AI_WEIGHT if bool(spec.get("ally", false)) else 1.0))
 	return maxf(1.0, total)
 
 
@@ -144,18 +144,36 @@ static func create(specs: Array, boss_id: String, seed_value: int, tier: int = 0
 		var pid: String = str(spec["id"])
 		var team: Array = []
 		var entries: Array = spec["team"]
-		for i in mini(entries.size(), BattleTypes.TEAM_SIZE):
+		for i in mini(entries.size(), int(spec.get("max_team", BattleTypes.NET_TEAM_SIZE))):
 			var unit: Dictionary = make_unit(pid, entries[i])
 			units[unit["id"]] = unit
 			team.append(unit["id"])
-		players.append({
+		var slot: Dictionary = {
 			"id": pid,
 			"name": str(spec.get("name", pid)),
 			"ai": bool(spec.get("ai", false)),
 			"team": team,
 			"active": team[0] if not team.is_empty() else "",
 			"choice": null,
-		})
+		}
+		players.append(slot)
+		# slot di front row aggiuntivi dello stesso party: stessa squadra, un proprio personaggio in campo
+		for extra in spec.get("extra_slots", []):
+			players.append({
+				"id": str(extra),
+				"name": str(spec.get("name", pid)),
+				"ai": bool(spec.get("ai", false)),
+				"team": [],
+				"leader": pid,
+				"active": "",
+				"choice": null,
+			})
+		var front_index: int = 1
+		for extra in spec.get("extra_slots", []):
+			var sp: Dictionary = player(state, str(extra))
+			if front_index < team.size():
+				sp["active"] = team[front_index]
+			front_index += 1
 	units[BOSS_ID] = make_boss(boss_id, effective_players(specs), int(state["tier"]))
 	Factions.refresh(state)
 	var rng: RNGState = RNGState.new()
@@ -165,24 +183,63 @@ static func create(specs: Array, boss_id: String, seed_value: int, tier: int = 0
 	return state
 
 
-# Partita in solitaria: i compagni sono personaggi del roster non in squadra,
-# controllati dall'IA. Ogni compagno IA e' un giocatore a se' con 1 personaggio
-# attivo + i suoi eventuali sostituti.
-static func create_solo(player_name: String, team: Array, spare: Array, boss_id: String, seed_value: int, ai_count: int = 2, tier: int = 0) -> Dictionary:
-	var specs: Array = [{"id": "p1", "name": player_name, "ai": false, "team": team}]
-	var buckets: Array = []
-	for i in ai_count:
-		buckets.append([])
-	for i in spare.size():
-		var b: Array = buckets[i % ai_count] if ai_count > 0 else []
-		if ai_count > 0 and b.size() < BattleTypes.TEAM_SIZE:
-			b.append(spare[i])
-	for i in ai_count:
-		var b: Array = buckets[i]
-		if b.is_empty():
-			continue
-		specs.append({"id": "ai%d" % (i + 1), "name": "IA %d" % (i + 1), "ai": true, "ally": true, "team": b})
-	return create(specs, boss_id, seed_value, tier)
+# Partita in solitaria: SOLO il party del giocatore (fino a 6 personaggi). I primi 3 sono la front row
+# (uno slot ciascuno, tutti decisi dal giocatore), gli altri sono la back row e si scambiano coi front.
+# `spare` e `ai_count` restano per compatibilita': non si assegnano piu' alleati esterni.
+static func create_solo(player_name: String, team: Array, _spare: Array, boss_id: String, seed_value: int, _ai_count: int = 0, tier: int = 0) -> Dictionary:
+	var fronts: int = clampi(team.size(), 1, BattleTypes.FRONT_SIZE)
+	var extra: Array = []
+	for i in range(1, fronts):
+		extra.append("p1_f%d" % (i + 1))
+	var spec: Dictionary = {"id": "p1", "name": player_name, "ai": false, "team": team, "max_team": BattleTypes.TEAM_SIZE, "extra_slots": extra,
+		"weight": 1.0 + 0.5 * float(extra.size())}
+	return create([spec], boss_id, seed_value, tier)
+
+
+# ---------- Party, front row e back row ----------
+
+# Gli id di tutti i personaggi del party a cui appartiene lo slot (in rete: la squadra del giocatore).
+static func party_of(state: Dictionary, p: Dictionary) -> Array:
+	var lead: String = str(p.get("leader", ""))
+	if lead != "":
+		return player(state, lead).get("team", [])
+	return p["team"]
+
+
+# Gli slot (giocatori) che condividono il party dello slot dato, nell'ordine.
+static func slots_of(state: Dictionary, p: Dictionary) -> Array:
+	var lead: String = str(p.get("leader", p["id"]))
+	if lead == "":
+		lead = str(p["id"])
+	var out: Array = []
+	for q in state["players"]:
+		if str(q["id"]) == lead or str(q.get("leader", "")) == lead:
+			out.append(q)
+	return out
+
+
+static func is_front(state: Dictionary, uid: String) -> bool:
+	for q in state["players"]:
+		if str(q["active"]) == uid:
+			return true
+	return false
+
+
+# Personaggi vivi del party in back row (non in campo in nessuno slot).
+static func back_row(state: Dictionary, p: Dictionary) -> Array:
+	var out: Array = []
+	for uid in party_of(state, p):
+		if not is_front(state, str(uid)) and is_alive(unit(state, str(uid))):
+			out.append(str(uid))
+	return out
+
+
+# Lo slot in cui il personaggio e' in campo ("" se e' in back row).
+static func slot_of(state: Dictionary, uid: String) -> String:
+	for q in state["players"]:
+		if str(q["active"]) == uid:
+			return str(q["id"])
+	return ""
 
 
 static func unit(state: Dictionary, uid: String) -> Dictionary:
@@ -212,8 +269,10 @@ static func active_unit(state: Dictionary, pid: String) -> Dictionary:
 
 
 static func player_alive(state: Dictionary, p: Dictionary) -> bool:
-	for uid in p["team"]:
-		if is_alive(unit(state, uid)):
+	if is_alive(unit(state, str(p["active"]))):
+		return true
+	for uid in party_of(state, p):
+		if is_alive(unit(state, str(uid))) and not is_front(state, str(uid)):
 			return true
 	return false
 

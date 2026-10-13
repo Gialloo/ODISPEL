@@ -159,13 +159,12 @@ func _test_apply_rewards() -> void:
 	var st: Dictionary = RosterState.create_solo_battle(r, "Io", "distributore", 77)
 	var guard: int = 0
 	while st["winner"] == "" and guard < 100:
-		BattleResolver.submit_choice(st, "p1", BattleAI.choose(st, "p1"))
-		BattleResolver.resolve_round(st)
+		BattleResolver.autoplay_round(st)
 		guard += 1
 	var rewards: Dictionary = BattleRewards.for_battle(st, "distributore", 77)
 	var coins_before: int = r["coins"]
 	RosterState.apply_rewards(r, rewards["p1"])
-	_check("dopo la battaglia le monete aumentano", team.size() == 3 and r["coins"] > coins_before)
+	_check("dopo la battaglia le monete aumentano", team.size() == 4 and r["coins"] > coins_before)
 	_check("collezione ancora valida", RosterState.validate(r) == "")
 
 

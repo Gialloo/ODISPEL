@@ -22,7 +22,7 @@ const MAX_LEVEL: int = 50
 const MAX_RANK: int = 5
 # Si parte con 4 personaggi: 3 in squadra e 1 di riserva (compagno IA in solitaria).
 const STARTER_CHARACTERS: Array = ["kira", "dax", "elle", "bruno"]
-const STARTER_TEAM: Array = ["kira", "dax", "elle"]
+const STARTER_TEAM: Array = ["kira", "dax", "elle", "bruno"]
 
 
 static func new_roster() -> Dictionary:
@@ -551,9 +551,9 @@ static func apply_rewards(roster: Dictionary, rewards: Dictionary) -> int:
 
 # ---------- Battaglia ----------
 
-# Partita in solitaria: la tua squadra + compagni IA con i personaggi fuori squadra.
-static func create_solo_battle(roster: Dictionary, player_name: String, boss_id: String, seed_value: int, ai_count: int = 2, tier: int = 0) -> Dictionary:
-	return BattleState.create_solo(player_name, team_entries(roster), spare_entries(roster), boss_id, seed_value, ai_count, tier)
+# Partita in solitaria: solo il tuo party (front row + back row), niente alleati assegnati dall'IA.
+static func create_solo_battle(roster: Dictionary, player_name: String, boss_id: String, seed_value: int, ai_count: int = 0, tier: int = 0) -> Dictionary:
+	return BattleState.create_solo(player_name, team_entries(roster), [], boss_id, seed_value, ai_count, tier)
 
 
 # ---------- Progressi e sblocchi ----------
