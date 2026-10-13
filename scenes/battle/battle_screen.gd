@@ -1599,13 +1599,7 @@ func _event_fx(e: Dictionary) -> float:
 		"recover":
 			_float_text("IL BOSS SI RIPRENDE", BattleState.BOSS_ID, BattleTheme.WH, 20)
 		"synergy":
-			Snd.play("trait", 1.5)
-			var su: String = str(e["unit"])
-			_pop("SINERGIA!", su, BattleTheme.POP, BattleTheme.BK, 40, 76.0, Vector2(0.0, -50.0))
-			_float_text("%s · con %s" % [str(e["name"]), str(BattleState.unit(shown, str(e.get("with", ""))).get("name", "")).to_upper()], su, BattleTheme.POP, 18)
-		"adapt":
-			Snd.play("guard", 0.8)
-			_float_text("IL BOSS SI ADATTA -%d%%" % int(round((1.0 - BattleTypes.ADAPT_MULT) * 100.0)), BattleState.BOSS_ID, BattleTheme.CY_DIM, 18)
+			return _fx_combo(e)
 		"rhythm":
 			Snd.play("trait", 1.3)
 			_float_text("RITMO +%d%%" % int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0)), str(e["unit"]), BattleTheme.CY, 18)
@@ -1637,6 +1631,29 @@ func _event_fx(e: Dictionary) -> float:
 			banter(_local_active_id(), "ko")
 			return 0.12
 	return 0.0
+
+
+# Combo: preset visivo e peso (tier) vengono dalla regola; stessi effetti riutilizzati, intensita' diversa.
+func _fx_combo(e: Dictionary) -> float:
+	var tier: int = int(e.get("tier", 0))
+	var td: Dictionary = ComboFx.tier_def(tier)
+	var col: Color = Color(str(e.get("col", "#ffd25f")))
+	var actor: String = str(e["unit"])
+	var partner: String = str(e.get("with", actor))
+	Snd.play("trait", 1.4 + 0.15 * float(tier))
+	ComboFx.play(_fx, str(e.get("fx", "")), col, _stage.anchor_of(partner), _stage.anchor_of(actor), _stage.anchor_of(BattleState.BOSS_ID), tier)
+	_pop(str(e["name"]) + "!", actor, col, BattleTheme.BK, 40 + 6 * tier, 76.0, Vector2(0.0, -50.0))
+	_float_text("con %s" % str(BattleState.unit(shown, partner).get("name", "")).to_upper(), actor, col, 18)
+	_stage.impact(float(td["shake"]), 0.02)
+	if float(td["flash"]) > 0.0:
+		ComicFx.flash(_fx, Color(col, float(td["flash"])), 0.2)
+	if bool(td["lines"]):
+		ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color(col, 0.9), 0.3)
+	if bool(td["caption"]):
+		ComicFx.caption(_fx, "COMBO x%d" % (tier + 1), Vector2(430.0, 120.0), col, 0.9)
+	if float(td["slow"]) > 0.0:
+		_slow_motion(float(td["slow"]), 0.35)
+	return 0.05 + 0.08 * float(tier)
 
 
 # Cambio di fase del boss: annuncio grande, lampo e un attimo di pausa per far capire che le regole sono cambiate.

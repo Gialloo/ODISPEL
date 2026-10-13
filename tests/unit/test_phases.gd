@@ -136,16 +136,34 @@ func _init() -> void:
 	var sy: Dictionary = BattleState.create([_spec()], "distributore", 9)
 	BattleState.boss(sy)["max_hp"] = 1000000
 	BattleState.boss(sy)["hp"] = 1000000
-	sy["cover"] = "a:elle"
+	sy["tags"] = [{"unit": "a:elle", "tags": ["SUPPORT"]}]
+	sy["combo_n"] = 0
 	var evs: Array = []
 	var m1: float = BattleResolver._synergies(sy, BattleState.unit(sy, "a:kira"), BattleState.boss(sy), evs)
-	_check("COPERTURA: danno in piu'", is_equal_approx(m1, BattleTypes.SYN_COVER))
+	_check("COPERTURA: danno in piu'", is_equal_approx(m1, float(Combos.rule("copertura")["mult"])))
+	_check("l'evento della combo porta preset e tier", str(evs[0]["fx"]) == "aura" and int(evs[0]["tier"]) == 0)
 	var bsy: Dictionary = BattleState.boss(sy)
 	bsy["marks"] = 2
 	bsy["marked_by"] = "a:dax"
+	sy["tags"] = []
+	sy["combo_n"] = 0
 	var g0: int = int(BattleState.unit(sy, "a:kira")["gauge"])
 	BattleResolver._synergies(sy, BattleState.unit(sy, "a:kira"), bsy, evs)
-	_check("TRACCIA: ultimate caricata", int(BattleState.unit(sy, "a:kira")["gauge"]) == g0 + BattleTypes.SYN_TRACE_GAUGE)
+	_check("TRACCIA: ultimate caricata", int(BattleState.unit(sy, "a:kira")["gauge"]) == g0 + int(Combos.rule("traccia")["gauge"]))
+	# DETONAZIONE: colpo pesante su boss marchiato da un altro
+	sy["tags"] = []
+	sy["combo_n"] = 0
+	var bal0: int = int(bsy["balance"])
+	var ev_det: Array = []
+	BattleResolver._synergies(sy, BattleState.unit(sy, "a:kira"), bsy, ev_det, BattleContent.MOVES["colpo_caricato"])
+	var ids: Array = []
+	for e in ev_det:
+		if str(e["t"]) == "synergy":
+			ids.append(str(e["id"]))
+	_check("DETONAZIONE con colpo pesante", ids.has("detonazione") and ids.has("traccia"))
+	_check("la combo toglie equilibrio", int(bsy["balance"]) < bal0)
+	_check("la seconda combo ha tier piu' alto", ev_det.size() >= 2 and int(ev_det.back().get("tier", 0)) >= 1)
+	_check("tag: marchio e debuff riconosciuti", Combos.tags_of(BattleContent.MOVES["marchio"]).has("MARK") and Combos.tags_of(BattleContent.MOVES["frattura"]).has("DEBUFF") and Combos.tags_of(BattleContent.MOVES["cura"]).has("SUPPORT"))
 	# MINACCIA e SUGGERIMENTI
 	var th: Dictionary = BattleState.create([_spec()], "distributore", 10)
 	var kt: Dictionary = BattleState.unit(th, "a:kira")

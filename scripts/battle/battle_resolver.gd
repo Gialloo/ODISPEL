@@ -155,7 +155,8 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 
 	var rng: RNGState = _load_rng(state)
 	state["link"] = {"n": 0, "last": ""}
-	state["cover"] = ""
+	state["tags"] = []
+	state["combo_n"] = 0
 
 	# 1. scelte mancanti: IA, oppure attacco standard se forzato
 	for p in state["players"]:
@@ -301,19 +302,21 @@ static func plan_hints(state: Dictionary, slot_id: String) -> Array:
 	var boss: Dictionary = BattleState.boss(state)
 	if me.is_empty() or not BattleState.is_alive(boss):
 		return hints
+	# combo gia' pronte: cosa hanno scelto i compagni che agiscono prima di te
+	var fake: Dictionary = {"tags": [], "combo_n": 0}
 	for entry in action_order(state):
 		if bool(entry["boss"]) or str(entry["unit"]) == str(me["id"]) or str(entry["move"]) == "":
 			continue
-		var mv: Dictionary = BattleContent.MOVES.get(str(entry["move"]), {})
-		if mv.is_empty() or mv.has("mult"):
-			continue
-		if mv.has("shield") or mv.has("heal") or (mv.has("self_status") and mv["self_status"].has("taunt")):
-			if int(entry["prio"]) > 0 or int(entry["spd"]) > int(me["spd"]):
-				hints.append("COPERTURA PRONTA: %s apre con %s, il tuo colpo fa +%d%%" % [str(BattleState.unit(state, str(entry["unit"])).get("name", "")).to_upper(), BattleText.move_name(str(entry["move"])).to_upper(), int(round((BattleTypes.SYN_COVER - 1.0) * 100.0))])
-				break
-	var mb: String = str(boss.get("marked_by", ""))
-	if Marks.count(boss) > 0 and mb != "" and mb != str(me["id"]) and BattleState.is_alive(BattleState.unit(state, mb)):
-		hints.append("TRACCIA PRONTA: boss marchiato da %s, colpiscilo per +%d ULT" % [str(BattleState.unit(state, mb).get("name", "")).to_upper(), BattleTypes.SYN_TRACE_GAUGE])
+		if int(entry["prio"]) > 0 or int(entry["spd"]) > int(me["spd"]):
+			fake["tags"].append({"unit": str(entry["unit"]), "tags": Combos.tags_of(BattleContent.MOVES.get(str(entry["move"]), {}))})
+	fake["units"] = state["units"]
+	var shown_rules: Dictionary = {}
+	for tags in [["ATTACK"], ["ATTACK", "HEAVY"], ["ATTACK", "PIERCE"]]:
+		for m in Combos.matching(fake, me, boss, tags):
+			var r: Dictionary = m["rule"]
+			if not shown_rules.has(str(r["id"])):
+				shown_rules[str(r["id"])] = true
+				hints.append("%s PRONTA con %s: %s" % [str(r["name"]), str(BattleState.unit(state, str(m["with"])).get("name", "")).to_upper(), str(r["desc"])])
 	if not bool(boss.get("exposed", false)) and int(boss.get("balance", 99)) <= 6:
 		hints.append("ROTTURA VICINA: equilibrio %d, colpisci col colore vantaggioso" % int(boss["balance"]))
 	var tele: Dictionary = state.get("telegraph", {})
@@ -543,22 +546,24 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 				_on_down(attacker, events)
 
 
-# SINERGIE: quello che fa un compagno nello stesso round cambia il tuo colpo.
-# COPERTURA: se prima di te un compagno ha scudato, curato o provocato, il tuo colpo fa +12%.
-# TRACCIA: se il boss e' marchiato da un altro operatore, colpirlo ti carica l'ultimate (e un po' anche a chi ha marchiato).
-static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, events: Array) -> float:
+# COMBO (vedi Combos): quello che hanno fatto i compagni nello stesso round cambia il tuo colpo.
+# Ritorna il moltiplicatore di danno; applica ultimate e rottura e registra gli eventi "synergy" (con tier di presentazione).
+static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, events: Array, move: Dictionary = {}) -> float:
+	var my_tags: Array = Combos.tags_of(move) if not move.is_empty() else ["ATTACK"]
+	var found: Array = Combos.matching(state, actor, boss, my_tags)
 	var mult: float = 1.0
-	var cover: String = str(state.get("cover", ""))
-	if cover != "" and cover != str(actor["id"]) and BattleState.is_alive(BattleState.unit(state, cover)):
-		mult *= BattleTypes.SYN_COVER
-		events.append({"t": "synergy", "name": "COPERTURA", "unit": actor["id"], "with": cover})
-		state["cover"] = ""
-	var mb: String = str(boss.get("marked_by", ""))
-	if Marks.count(boss) > 0 and mb != "" and mb != str(actor["id"]) and BattleState.is_alive(BattleState.unit(state, mb)):
-		actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + BattleTypes.SYN_TRACE_GAUGE)
-		var mk: Dictionary = BattleState.unit(state, mb)
-		mk["gauge"] = mini(BattleTypes.GAUGE_MAX, int(mk["gauge"]) + BattleTypes.SYN_TRACE_GAUGE / 2)
-		events.append({"t": "synergy", "name": "TRACCIA", "unit": actor["id"], "with": mb})
+	for m in found:
+		var r: Dictionary = m["rule"]
+		var n: int = int(state.get("combo_n", 0))
+		state["combo_n"] = n + 1
+		mult *= float(r["mult"]) * (1.0 + Combos.CHAIN_BONUS * float(mini(n, Combos.CHAIN_MAX)))
+		if int(r["gauge"]) > 0:
+			actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + int(r["gauge"]))
+			var mk: Dictionary = BattleState.unit(state, str(m["with"]))
+			mk["gauge"] = mini(BattleTypes.GAUGE_MAX, int(mk["gauge"]) + int(r["gauge"]) / 2)
+		if int(r["brk"]) > 0:
+			_drain_balance(boss, int(r["brk"]), actor, events)
+		events.append({"t": "synergy", "id": str(r["id"]), "name": str(r["name"]), "unit": actor["id"], "with": str(m["with"]), "tier": mini(n, 2), "fx": str(r["fx"]), "col": str(r["col"])})
 	return mult
 
 
@@ -572,6 +577,13 @@ static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, e
 		pts += BattleTypes.BREAK_MARKED
 	if mult >= 2.0:
 		pts += BattleTypes.BREAK_HEAVY
+	_drain_balance(boss, pts, attacker, events)
+
+
+# Toglie punti di equilibrio al boss; a zero scatta la rottura.
+static func _drain_balance(boss: Dictionary, pts: int, attacker: Dictionary, events: Array) -> void:
+	if int(boss.get("stun", 0)) > 0 or bool(boss.get("exposed", false)):
+		return
 	boss["balance"] = maxi(0, int(boss["balance"]) - pts)
 	events.append({"t": "balance", "src": attacker["id"], "amount": pts, "left": int(boss["balance"])})
 	if int(boss["balance"]) <= 0:
@@ -643,8 +655,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		if paid > 0:
 			actor["hp"] = int(actor["hp"]) - paid
 			events.append({"t": "damage", "src": actor["id"], "dst": actor["id"], "amount": paid, "absorbed": 0, "cost": true})
-	if not move.has("mult") and (move.has("shield") or move.has("heal") or (move.has("self_status") and move["self_status"].has("taunt"))):
-		state["cover"] = str(actor["id"])
+	Combos.record(state, actor, move)
 	var link_n: int = _chain_link(state, actor, events)
 	var link_gain: float = BattleTypes.LINK_BONUS + Signatures.value(actor, "link_boost")
 	var awake_mult: float = Signatures.upgrade_mult(actor, move_id, kind)
@@ -710,7 +721,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		if move.has("mult"):
 			var m_total: float = float(move["mult"]) * (1.0 + link_gain * float(link_n)) * awake_mult * emp_mult
 			if str(t["side"]) == "boss":
-				m_total *= _synergies(state, actor, t, events)
+				m_total *= _synergies(state, actor, t, events, move)
 			if move.has("consume_marks"):
 				# Orbital Strike: ogni marchio sul bersaglio vale danno in piu', poi i marchi spariscono
 				m_total *= 1.0 + float(move["consume_marks"]) * float(Marks.count(t))

@@ -11,6 +11,7 @@ const ENTRIES: Array = [
 		"Sinergie (COPERTURA, TRACCIA), RITMO, ADATTAMENTO, ARDORE, ULTIMA VOLONTA' e la nuova mossa SACRIFICIO.",
 		"Suggerimenti prima di scegliere, resoconto a fine battaglia, rallentatore sui momenti decisivi.",
 		"STAGIONE 2 con Dafne: 10 nuovi capitoli e 10 nuovi boss fino a INCUBO.",
+		"Combo modulari: ogni mossa ha dei tag e le combo (COPERTURA, TRACCIA, DETONAZIONE, FRATTURA, ASSEDIO, RAFFICA) si attivano tra compagni, con effetti piu' spettacolari a ogni combo in piu'.",
 		"Nuovi obiettivi: rotture, sinergie, vittoria senza K.O.",
 	]},
 	{"v": "0.24.15", "items": [
