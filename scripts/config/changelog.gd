@@ -14,6 +14,7 @@ const ENTRIES: Array = [
 		"Nuova sezione TUTORIAL nell'hub: 12 lezioni su tutte le meccaniche, sempre consultabili. Ogni tutorial letto la prima volta regala 300 crediti, nuclei, leghe e un pezzo di equipaggiamento base.",
 		"Nuove imprese STUDIOSO negli obiettivi: supera 1, 3, 5, 7, 10 tutorial e completali tutti per l'icona epica Studioso.",
 		"I ritratti di Dafne nei dialoghi non sono piu' tagliati.",
+		"PvP e allenamento contro l'IA: i comandi ora rispondono (un riquadro invisibile li copriva) e la schermata ha lo stesso palco della storia, con personaggi in campo, targhette, ventaglio e scatti d'attacco. Il bersaglio si sceglie anche toccando il personaggio.",
 	]},
 	{"v": "0.24.16", "items": [
 		"Boss: ora hanno FASI (a meta' e a un quarto dei PV) e una barra EQUILIBRIO: a zero il boss e' stordito e salta la mossa.",

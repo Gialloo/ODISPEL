@@ -5,7 +5,7 @@ extends Control
 # battle, local_player_id, battle_time_left, battle_updated, battle_events_received e submit_choice():
 # NetworkManager (in rete) o PvpLocalSource (allenamento contro l'IA).
 
-const CARD_H: float = 318.0
+const CARD_H: float = 106.0
 const LOG_MAX: int = 40
 
 var source: Variant = null
@@ -17,6 +17,9 @@ var pending_move: String = ""          # mossa scelta che aspetta il bersaglio
 var pending_skill: String = ""
 var pending_kind: String = "enemy"     # "enemy" o "ally": chi si puo' toccare
 var cards: Dictionary = {}              # id giocatore -> PvpCard
+var zones: Dictionary = {}              # id giocatore -> PvpZone
+var _stage: PvpStage
+var _cards_layer: Control
 var buttons: Dictionary = {}            # mossa -> Button
 var swap_box: VBoxContainer
 var _fan: FanMenu
@@ -29,6 +32,7 @@ var _round_label: Label
 var _timer_label: Label
 var _log: RichTextLabel
 var _fx: Control
+var _zone_layer: Control
 var _result: Control = null
 var _chat: ChatPanel = null
 var _ended_shown: bool = false
@@ -36,7 +40,7 @@ var _timer_secs: int = -2
 var _leave: Button
 
 
-# ---------- Carta di un giocatore ----------
+# ---------- Targhetta di un giocatore (in alto, come l'intestazione del boss nella battaglia PvE) ----------
 
 class PvpCard extends Control:
 	signal picked(player_id: String)
@@ -47,7 +51,6 @@ class PvpCard extends Control:
 	var _panel: Panel
 	var _name: Label
 	var _unit: Label
-	var _face: PortraitView
 	var _hp: LineBar
 	var _hp_text: Label
 	var _gauge: LineBar
@@ -55,7 +58,6 @@ class PvpCard extends Control:
 	var _bench: Label
 	var _status: Label
 	var _flash: float = 0.0
-	var _char: String = ""
 
 	func setup(player_id: String, card_w: float, is_me: bool, is_ally: bool) -> PvpCard:
 		pid = player_id
@@ -68,49 +70,49 @@ class PvpCard extends Control:
 		_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 		add_child(_panel)
-		_name = BattleTheme.make_label("", 20, BattleTheme.WH, true)
-		_name.position = Vector2(10, 6)
-		_name.size = Vector2(card_w - 20.0, 26)
+		var iw: float = card_w - 20.0
+		_name = BattleTheme.make_label("", 18, BattleTheme.WH, true)
+		_name.position = Vector2(10, 4)
+		_name.size = Vector2(iw * 0.62, 24)
 		_name.clip_text = true
 		add_child(_name)
-		_unit = BattleTheme.make_label("", 15, BattleTheme.CY_DIM)
-		_unit.position = Vector2(10, 32)
-		_unit.size = Vector2(card_w - 20.0, 22)
-		_unit.clip_text = true
-		add_child(_unit)
-		_face = PortraitView.new()
-		_face.show_expression_text = false
-		_face.position = Vector2(10, 58)
-		_face.size = Vector2(card_w - 20.0, 112)
-		_face.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(_face)
-		_hp = LineBar.new().setup(BattleTheme.OK, Vector2(card_w - 20.0, 14))
-		_hp.position = Vector2(10, 176)
-		_hp.size = Vector2(card_w - 20.0, 14)
-		add_child(_hp)
-		_hp_text = BattleTheme.make_label("", 16, BattleTheme.WH)
-		_hp_text.position = Vector2(10, 194)
-		_hp_text.size = Vector2(card_w - 20.0, 22)
-		_hp_text.clip_text = true
-		add_child(_hp_text)
-		_gauge = LineBar.new().setup(BattleTheme.WH, Vector2(card_w - 20.0, 8))
-		_gauge.position = Vector2(10, 220)
-		_gauge.size = Vector2(card_w - 20.0, 8)
-		add_child(_gauge)
-		_info = BattleTheme.make_label("", 15, BattleTheme.CY)
-		_info.position = Vector2(10, 234)
-		_info.size = Vector2(card_w - 20.0, 22)
-		_info.clip_text = true
-		add_child(_info)
-		_status = BattleTheme.make_label("", 15, BattleTheme.POP, true)
-		_status.position = Vector2(10, 256)
-		_status.size = Vector2(card_w - 20.0, 22)
+		_status = BattleTheme.make_label("", 12, BattleTheme.POP, true)
+		_status.position = Vector2(10 + iw * 0.62, 8)
+		_status.size = Vector2(iw * 0.38, 18)
+		_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		_status.clip_text = true
 		add_child(_status)
-		_bench = BattleTheme.make_label("", 13, BattleTheme.CY_DIM)
-		_bench.position = Vector2(10, 282)
-		_bench.size = Vector2(card_w - 20.0, 30)
-		_bench.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_unit = BattleTheme.make_label("", 13, BattleTheme.CY_DIM)
+		_unit.add_theme_font_override("font", BattleTheme.hud())
+		_unit.position = Vector2(10, 28)
+		_unit.size = Vector2(iw, 18)
+		_unit.clip_text = true
+		add_child(_unit)
+		_hp = LineBar.new().setup(BattleTheme.OK, Vector2(iw, 12))
+		_hp.position = Vector2(10, 48)
+		_hp.size = Vector2(iw, 12)
+		add_child(_hp)
+		_hp_text = BattleTheme.make_label("", 14, BattleTheme.WH)
+		_hp_text.add_theme_font_override("font", BattleTheme.hud())
+		_hp_text.position = Vector2(10, 61)
+		_hp_text.size = Vector2(iw * 0.55, 18)
+		_hp_text.clip_text = true
+		add_child(_hp_text)
+		_info = BattleTheme.make_label("", 13, BattleTheme.CY)
+		_info.add_theme_font_override("font", BattleTheme.hud())
+		_info.position = Vector2(10 + iw * 0.55, 61)
+		_info.size = Vector2(iw * 0.45, 18)
+		_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_info.clip_text = true
+		add_child(_info)
+		_gauge = LineBar.new().setup(BattleTheme.WH, Vector2(iw, 6))
+		_gauge.position = Vector2(10, 81)
+		_gauge.size = Vector2(iw, 6)
+		add_child(_gauge)
+		_bench = BattleTheme.make_label("", 12, BattleTheme.CY_DIM)
+		_bench.add_theme_font_override("font", BattleTheme.hud())
+		_bench.position = Vector2(10, 87)
+		_bench.size = Vector2(iw, 16)
 		_bench.clip_text = true
 		add_child(_bench)
 		return self
@@ -144,7 +146,7 @@ class PvpCard extends Control:
 		var alive_p: bool = PvpEngine.player_alive(state, p)
 		var edge: Color = BattleTheme.CY if (mine or ally) else BattleTheme.RD
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.02, 0.06, 0.08, 0.72)
+		sb.bg_color = Color(0.02, 0.06, 0.08, 0.78)
 		sb.border_color = BattleTheme.POP if selectable else edge
 		sb.set_border_width_all(4 if selectable else 2)
 		sb.set_corner_radius_all(4)
@@ -155,15 +157,10 @@ class PvpCard extends Control:
 		if u.is_empty():
 			return
 		_unit.text = "%s · %s" % [str(u["name"]).to_upper(), str(u["cls"]).to_upper()]
-		if _char != str(u["char"]):
-			_char = str(u["char"])
-			_face.setup(_char, "bust")
-		_face.dimmed = not PvpEngine.alive(u)
-		_face.queue_redraw()
 		_hp.set_values(float(u["hp"]) / maxf(1.0, float(u["max_hp"])), float(u["shield"]) / maxf(1.0, float(u["max_hp"])))
-		_hp_text.text = "PV %s/%s%s" % [BattleText.num(int(u["hp"])), BattleText.num(int(u["max_hp"])), ("  +%s SCUDO" % BattleText.num(int(u["shield"])) if int(u["shield"]) > 0 else "")]
+		_hp_text.text = "PV %s/%s%s" % [BattleText.num(int(u["hp"])), BattleText.num(int(u["max_hp"])), ("  +%s" % BattleText.num(int(u["shield"])) if int(u["shield"]) > 0 else "")]
 		_gauge.set_values(float(u["gauge"]) / float(BattleTypes.GAUGE_MAX))
-		_info.text = "EN %d/%d   ULT %d%%" % [int(u["energy"]), BattleTypes.MAX_ENERGY, int(u["gauge"])]
+		_info.text = "EN %d/%d · ULT %d%%" % [int(u["energy"]), BattleTypes.MAX_ENERGY, int(u["gauge"])]
 		var st: String = ""
 		if not alive_p:
 			st = "FUORI GIOCO"
@@ -172,7 +169,7 @@ class PvpCard extends Control:
 		elif chosen:
 			st = "HA SCELTO ✓"
 		elif state["winner"] == "":
-			st = "STA SCEGLIENDO..."
+			st = "SCEGLIE..."
 		_status.text = st
 		var bench: Array = []
 		for uid in p["units"]:
@@ -180,7 +177,29 @@ class PvpCard extends Control:
 				continue
 			var b: Dictionary = PvpEngine.unit(state, str(uid))
 			bench.append("%s %s" % [str(b["name"]), ("KO" if not PvpEngine.alive(b) else "%d%%" % int(round(100.0 * float(b["hp"]) / maxf(1.0, float(b["max_hp"])))))])
-		_bench.text = ("RISERVE: " + " · ".join(bench)) if not bench.is_empty() else "NESSUNA RISERVA"
+		_bench.text = ("RISERVE: " + " · ".join(bench)) if not bench.is_empty() else ""
+
+
+# Zona toccabile sopra un operatore sul palco: serve a scegliere il bersaglio toccando il personaggio.
+class PvpZone extends Control:
+	signal picked(player_id: String)
+	var pid: String = ""
+	var active: bool = false
+
+	func setup(player_id: String) -> PvpZone:
+		pid = player_id
+		size = Vector2(170, 280)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return self
+
+	func set_active(on: bool) -> void:
+		active = on
+		mouse_filter = Control.MOUSE_FILTER_STOP if on else Control.MOUSE_FILTER_IGNORE
+
+	func _gui_input(event: InputEvent) -> void:
+		var tap: bool = (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) or (event is InputEventScreenTouch and event.pressed)
+		if tap and active:
+			picked.emit(pid)
 
 
 # ---------- Costruzione ----------
@@ -194,36 +213,36 @@ func _ready() -> void:
 
 func _build() -> void:
 	ScreenFx.solid(self, BattleTheme.BK)
-	# stesso sfondo della battaglia PvE: strati della tua grafica (se ci sono) e velo della telecamera
-	var layers: Array = ArtLibrary.background_layers("")
-	if not layers.is_empty():
-		var pic := TextureRect.new()
-		pic.texture = layers[0]
-		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		pic.set_anchors_preset(Control.PRESET_FULL_RECT)
-		add_child(pic)
+	# lo stesso palco della battaglia contro il boss: sfondo, anelli, targhette, scatti
+	_stage = PvpStage.new()
+	_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stage.party_lift = 28.0 if TouchUi.active() else 0.0
+	add_child(_stage)
+	# velatura ciano, telecamera e retino da fumetto, come in battaglia
 	ScreenFx.battle(self)
 
+	# zone toccabili sopra i personaggi (per scegliere il bersaglio)
+	_zone_layer = Control.new()
+	_zone_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_zone_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_zone_layer)
+
 	# in alto a sinistra il tempo per scegliere, come "ORDINE ENTRO" della battaglia PvE
-	var timer_panel := HudPanel.new().setup("", BattleTheme.CY_DIM)
-	timer_panel.bare = true
-	timer_panel.position = Vector2(8, 8)
-	timer_panel.size = Vector2(210, 62)
+	var timer_panel := HudPanel.new().setup("ORDINE ENTRO", BattleTheme.CY_DIM)
+	timer_panel.quiet = true
+	timer_panel.margins = Vector4(14.0, 22.0, 14.0, 2.0)
+	timer_panel.position = Vector2(8, 6)
+	timer_panel.size = Vector2(148, 58)
 	timer_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(timer_panel)
-	var tcap := BattleTheme.make_label("ORDINE ENTRO", 14, BattleTheme.POP, true)
-	tcap.position = Vector2(14, 6)
-	timer_panel.add_child(tcap)
-	_timer_label = BattleTheme.make_label("", 30, BattleTheme.WH, true)
-	_timer_label.position = Vector2(14, 22)
-	_timer_label.size = Vector2(190, 38)
-	timer_panel.add_child(_timer_label)
-	_title = BattleTheme.make_label("PVP", 24, BattleTheme.WH, true)
-	_title.position = Vector2(340, 12)
-	_title.size = Vector2(600, 34)
+	_timer_label = BattleTheme.make_label("LIBERO", 28, BattleTheme.CY, true)
+	timer_panel.set_content(_timer_label)
+	_title = BattleTheme.make_label("PVP", 22, BattleTheme.WH, true)
+	_title.position = Vector2(340, 8)
+	_title.size = Vector2(600, 32)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_title)
 	_leave = Button.new()
 	_leave.text = "ESCI"
@@ -231,7 +250,7 @@ func _build() -> void:
 	BattleTheme.style_button(_leave, "normal", 16)
 	add_child(_leave)
 	_leave.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_leave.offset_left = -204.0
+	_leave.offset_left = -150.0
 	_leave.offset_top = 6.0
 	_leave.offset_right = -8.0
 	_leave.offset_bottom = 44.0
@@ -239,65 +258,34 @@ func _build() -> void:
 
 	var arena := Control.new()
 	arena.name = "arena"
-	arena.position = Vector2(20, 76)
-	arena.size = Vector2(1240, CARD_H)
+	arena.position = Vector2(0, 68)
+	arena.size = Vector2(1280, CARD_H)
 	arena.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(arena)
 
 	_hint = BattleTheme.make_label("", 18, BattleTheme.POP, true)
-	_hint.position = Vector2(20, 396)
-	_hint.size = Vector2(1240, 28)
+	_hint.position = Vector2(300, 178)
+	_hint.size = Vector2(680, 28)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_hint)
 
-	# le mosse: stesso menu a ventaglio e stesso stile della battaglia PvE
+	# le mosse: stesso menu a ventaglio e stesso stile della battaglia PvE (si costruisce quando si sa dove sta il giocatore)
 	_fan = FanMenu.new()
 	_fan.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_fan)
-	var names: Dictionary = {"attack": "ATTACCO", "skill": "ABILITA'", "guard": "GUARDIA", "ult": "ULTIMATE", "swap": "CAMBIA"}
-	var order: Array = ["attack", "skill", "guard", "ult", "swap"]
-	var bh: float = 42.0
-	var bw: float = 232.0
-	var fan_r: float = 290.0
-	var fan_big: float = 620.0
-	var mid_rad: float = deg_to_rad(22.0)
-	var fo := Vector2(-20.0, 440.0)
-	_fan.origin = Vector2(fo.x + cos(mid_rad) * fan_r - fan_big, fo.y + sin(mid_rad) * fan_r)
-	_fan.tint = BattleTheme.CY
-	var pts: Array = _fan.layout(order.size(), bh, 4.0, fan_big, 0.0, 440.0, 706.0)
-	var min_left: float = 1e9
-	for pt in pts:
-		min_left = minf(min_left, float(pt.x) - 8.0)
-	for i in order.size():
-		var m: String = str(order[i])
-		var b := Button.new()
-		b.text = str(names[m])
-		b.custom_minimum_size = Vector2(bw, bh)
-		b.size = Vector2(bw, bh)
-		b.focus_mode = Control.FOCUS_NONE
-		BattleTheme.style_button(b, "normal", 15)
-		b.add_theme_font_override("font", BattleTheme.hud())
-		b.add_theme_font_size_override("font_size", 15)
-		b.position = Vector2(float(pts[i].x) - 8.0, float(pts[i].y) - bh * 0.5)
-		b.pressed.connect(_on_move.bind(m))
-		_fan.add_child(b)
-		buttons[m] = b
-		var ic := GameIcon.new().setup(_icon_key(m), BattleTheme.WH, 32.0)
-		ic.position = Vector2(min_left - 40.0, b.position.y + bh * 0.5 - 16.0)
-		ic.size = Vector2(32, 32)
-		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_fan.add_child(ic)
-		_icons[m] = ic
 	swap_box = VBoxContainer.new()
-	swap_box.position = Vector2(300, 440)
+	swap_box.position = Vector2(520, 210)
 	swap_box.size = Vector2(300, 260)
 	swap_box.add_theme_constant_override("separation", 6)
+	swap_box.mouse_filter = Control.MOUSE_FILTER_IGNORE     # un contenitore vuoto non deve coprire i comandi
 	add_child(swap_box)
 
 	# registro in basso a destra e turno con REC nell'angolo, come in battaglia
 	var panel := HudPanel.new().setup("", BattleTheme.CY_DIM)
 	panel.bare = true
 	panel.margins = Vector4(12, 8, 12, 6)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	panel.offset_left = -370.0
@@ -307,6 +295,7 @@ func _build() -> void:
 	_log = RichTextLabel.new()
 	_log.bbcode_enabled = true
 	_log.scroll_following = true
+	_log.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_log.add_theme_font_override("normal_font", BattleTheme.hud())
 	_log.add_theme_font_size_override("normal_font_size", 15)
 	_log.add_theme_font_size_override("bold_font_size", 15)
@@ -345,6 +334,52 @@ func _build() -> void:
 	_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fx.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_fx)
+
+
+# Ventaglio dei comandi: nasce a destra della squadra del giocatore, come in battaglia.
+func _build_fan() -> void:
+	for c in _fan.get_children():
+		_fan.remove_child(c)
+		c.queue_free()
+	buttons.clear()
+	_icons.clear()
+	var names: Dictionary = {"attack": "ATTACCO", "skill": "ABILITA'", "guard": "GUARDIA", "ult": "ULTIMATE", "swap": "CAMBIA"}
+	var order: Array = ["attack", "skill", "guard", "ult", "swap"]
+	var touch: bool = TouchUi.active()
+	var bh: float = 52.0 if touch else 42.0
+	var bw: float = 232.0
+	var fan_r: float = 340.0 if touch else 290.0
+	var fan_big: float = 620.0
+	var mid_rad: float = deg_to_rad(6.0 if touch else 22.0)
+	var last: Vector3 = _stage.pose_of(str(_stage.side_left[_stage.side_left.size() - 1])) if not _stage.side_left.is_empty() else Vector3(215.0, 494.0, 0.82)
+	var fo := Vector2(last.x - 145.0, last.y - 95.0 * last.z)
+	_fan.origin = Vector2(fo.x + cos(mid_rad) * fan_r - fan_big, fo.y + sin(mid_rad) * fan_r)
+	_fan.tint = BattleTheme.CY
+	var pts: Array = _fan.layout(order.size(), bh, 4.0, fan_big, 0.0, 246.0, 706.0)
+	var min_left: float = 1e9
+	for pt in pts:
+		min_left = minf(min_left, float(pt.x) - 8.0)
+	for i in order.size():
+		var m: String = str(order[i])
+		var b := Button.new()
+		b.text = str(names[m])
+		b.custom_minimum_size = Vector2(bw, bh)
+		b.size = Vector2(bw, bh)
+		b.focus_mode = Control.FOCUS_NONE
+		BattleTheme.style_button(b, "normal", 15)
+		b.add_theme_font_override("font", BattleTheme.hud())
+		b.add_theme_font_size_override("font_size", 15)
+		b.position = Vector2(float(pts[i].x) - 8.0, float(pts[i].y) - bh * 0.5)
+		b.pressed.connect(_on_move.bind(m))
+		_fan.add_child(b)
+		buttons[m] = b
+		var ic := GameIcon.new().setup(_icon_key(m), BattleTheme.WH, 32.0)
+		ic.position = Vector2(min_left - 40.0, b.position.y + bh * 0.5 - 16.0)
+		ic.size = Vector2(32, 32)
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_fan.add_child(ic)
+		_icons[m] = ic
+	swap_box.position = Vector2(float(pts[0].x) + 250.0, float(pts[0].y) - 20.0)
 
 
 # Icona di un comando del ventaglio: per abilita' e ultimate usa quella della mossa dell'operatore attivo.
@@ -424,6 +459,7 @@ func _sync() -> void:
 	locked = false
 	pending_move = ""
 	_build_cards()
+	_stage.set_state(shown)
 	_refresh()
 	_check_end()
 
@@ -435,43 +471,36 @@ func _build_cards() -> void:
 	for c in cards.values():
 		c.queue_free()
 	cards.clear()
-	var mine: Dictionary = PvpEngine.player(shown, me())
-	var mine_team: String = str(mine.get("team", ""))
-	var lefts: Array = []
-	var rights: Array = []
-	for p in shown["players"]:
-		if str(p["id"]) == me():
-			lefts.push_front(p)
-		elif str(p["team"]) == mine_team:
-			lefts.append(p)
-		else:
-			rights.append(p)
-	if lefts.is_empty():                 # spettatore: tutti a destra
-		lefts = []
-	var total: int = lefts.size() + rights.size()
-	var w: float = minf(300.0, (1240.0 - 60.0 - 16.0 * float(total - 1)) / float(maxi(1, total)))
-	var x: float = maxf(0.0, (1240.0 - (w * float(total) + 16.0 * float(total - 1) + 44.0)) * 0.5)
-	for p in lefts:
-		var c := PvpCard.new().setup(str(p["id"]), w, str(p["id"]) == me(), true)
-		c.picked.connect(_on_target)
-		c.position = Vector2(x, 0)
-		arena.add_child(c)
-		cards[str(p["id"])] = c
-		x += w + 16.0
-	# separatore VS
-	var vs := BattleTheme.make_label("VS", 34, BattleTheme.RD, true)
-	vs.position = Vector2(x - 6.0, 130)
-	vs.size = Vector2(40, 40)
-	vs.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	arena.add_child(vs)
-	x += 44.0
-	for p in rights:
-		var c := PvpCard.new().setup(str(p["id"]), w, false, false)
-		c.position = Vector2(x, 0)
-		c.picked.connect(_on_target)
-		arena.add_child(c)
-		cards[str(p["id"])] = c
-		x += w + 16.0
+	for z in zones.values():
+		z.queue_free()
+	zones.clear()
+	_stage.local_player_id = me()
+	_stage.set_state(shown)
+	var lefts: Array = _stage.side_left
+	var rights: Array = _stage.side_right
+	var most: int = maxi(1, maxi(lefts.size(), rights.size()))
+	var w: float = minf(300.0, (620.0 - 8.0 * float(most - 1)) / float(most))
+	var x: float = 12.0
+	for pid in lefts:
+		_add_card(arena, str(pid), w, x, true)
+		x += w + 8.0
+	x = 1268.0 - w
+	for pid in rights:
+		_add_card(arena, str(pid), w, x, false)
+		x -= w + 8.0
+	_build_fan()
+
+
+func _add_card(arena: Control, pid: String, w: float, x: float, friendly: bool) -> void:
+	var c := PvpCard.new().setup(pid, w, pid == me(), friendly)
+	c.position = Vector2(x, 0)
+	c.picked.connect(_on_target)
+	arena.add_child(c)
+	cards[pid] = c
+	var z := PvpZone.new().setup(pid)
+	z.picked.connect(_on_target)
+	_zone_layer.add_child(z)
+	zones[pid] = z
 
 
 func _mode_text() -> String:
@@ -493,6 +522,12 @@ func _refresh() -> void:
 		var side_ok: bool = enemy if pending_kind == "enemy" else (not mp.is_empty() and str(p["team"]) == str(mp["team"]))
 		var selectable: bool = picking and side_ok and PvpEngine.player_alive(shown, p) and not locked
 		cards[pid].refresh(shown, p["choice"] != null and not (str(pid) == me() and false), selectable)
+		if zones.has(pid):
+			var zn: PvpZone = zones[pid]
+			var pos: Vector2 = _stage.anchor_of(str(p["active"]))
+			zn.position = pos - Vector2(zn.size.x * 0.5, 170.0)
+			zn.set_active(selectable)
+	_stage.select_slot = me() if (mine_ok and not chosen_me and not locked) else ""
 	var u: Dictionary = PvpEngine.active_unit(shown, mp) if not mp.is_empty() else {}
 	var can_act: bool = mine_ok and not chosen_me and not locked and not u.is_empty()
 	buttons["attack"].disabled = not can_act or not PvpEngine.alive(u)
@@ -655,7 +690,31 @@ func _card_of_unit(uid: String) -> PvpCard:
 
 
 func _anchor(card: PvpCard) -> Vector2:
-	return Vector2(20.0, 76.0) + card.position + Vector2(card.size.x * 0.5, 120.0)
+	var p: Dictionary = PvpEngine.player(shown, card.pid)
+	return _stage.anchor_of(str(p.get("active", "")))
+
+
+# Il PV, lo scudo e l'attivo cambiano sullo schermo man mano che gli eventi scorrono (non solo alla fine del round).
+func _apply(e: Dictionary) -> void:
+	match str(e.get("t", "")):
+		"damage", "heal", "shield":
+			var u: Dictionary = PvpEngine.unit(shown, str(e.get("dst", "")))
+			if u.is_empty():
+				return
+			match str(e["t"]):
+				"damage":
+					u["shield"] = maxi(0, int(u["shield"]) - int(e.get("absorbed", 0)))
+					u["hp"] = maxi(0, int(u["hp"]) - int(e["amount"]))
+				"heal":
+					u["hp"] = mini(int(u["max_hp"]), int(u["hp"]) + int(e["amount"]))
+				"shield":
+					u["shield"] = int(u["shield"]) + int(e["amount"])
+		"swap":
+			var p: Dictionary = PvpEngine.player(shown, str(e.get("player", "")))
+			if not p.is_empty():
+				p["active"] = str(e["to"])
+	_stage.set_state(shown)
+	_refresh()
 
 
 func _play(events: Array) -> void:
@@ -665,9 +724,11 @@ func _play(events: Array) -> void:
 	var step: float = clampf(4.0 / float(maxi(1, events.size())), 0.08, minf(0.45, Settings.event_delay()))
 	for e in events:
 		_event(e)
+		_apply(e)
 		if not is_inside_tree():
 			return
 		await get_tree().create_timer(step).timeout
+	_stage.acting = ""
 	animating = false
 	_sync()
 
@@ -681,10 +742,17 @@ func _event(e: Dictionary) -> void:
 		"act":
 			var mname: String = str(BattleContent.MOVES.get(str(e["move"]), {}).get("name", "mossa")).to_upper()
 			_log_line("%s: %s%s" % [_name_of(str(e["unit"])), mname, "  [ULTIMATE]" if str(e.get("kind", "")) == "ult" else ""])
+			_stage.acting = str(e["unit"])
+			if str(e.get("kind", "")) != "basic":
+				var ac: PvpCard = _card_of_unit(str(e["unit"]))
+				if ac != null:
+					AnimFx.float_text(_fx, mname.capitalize(), _anchor(ac) + Vector2(-50.0, -120.0), BattleTheme.CY, 22)
 			Snd.play("deploy" if str(e.get("kind", "")) != "basic" else "hit", 1.0)
 		"damage":
 			var card: PvpCard = _card_of_unit(str(e["dst"]))
 			_log_line("   %s subisce %s%s%s" % [_name_of(str(e["dst"])), BattleText.num(int(e["amount"])), "!" if bool(e.get("crit", false)) else "", " (assorbiti %s)" % BattleText.num(int(e["absorbed"])) if int(e.get("absorbed", 0)) > 0 else ""])
+			_stage.flash(str(e["dst"]))
+			_stage.impact(9.0 if bool(e.get("crit", false)) else 4.0, 0.03 if bool(e.get("crit", false)) else 0.01)
 			if card != null:
 				card.flash()
 				var at: Vector2 = _anchor(card)

@@ -56,6 +56,7 @@ var _pose_sx: float = 1.0
 var _pose_sy: float = 1.0
 var _pose_rot: float = 0.0
 var _pose_ghosts: float = 0.0
+var _flip_sprite: bool = false      # PvP: la squadra a destra guarda a sinistra
 var mark_pulse: float = 0.0         # 1 = marchio appena applicato / consumato, scende a 0
 var summon_pulse: float = 0.0       # 1 = evocazione appena comparsa
 var hit_flash: Dictionary = {}      # unit_id -> intensita'
@@ -1327,6 +1328,8 @@ func _draw_posed(tex: Texture2D, cx: float, foot_y: float, w: float, h: float, t
 	for c in corners:
 		pts.append(foot + xf * c)
 	var uvs := PackedVector2Array([Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)])
+	if _flip_sprite:
+		uvs = PackedVector2Array([Vector2(1, 0), Vector2(0, 0), Vector2(0, 1), Vector2(1, 1)])
 	draw_colored_polygon(pts, tint, uvs, tex)
 
 

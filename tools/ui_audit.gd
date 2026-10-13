@@ -176,6 +176,18 @@ func _run() -> void:
 	_shot("tutorial")
 	s.queue_free()
 
+	var psrc := PvpLocalSource.new()
+	psrc.start(RosterState.team_entries(RosterState.new_roster()).slice(0, 3), "duel", true, 77)
+	var pscene: Node = (load(SceneRouter.path_of("pvp")) as PackedScene).instantiate()
+	pscene.set("pending_source", psrc)
+	root.add_child(pscene)
+	await process_frame
+	await process_frame
+	await process_frame
+	_audit("pvp", pscene)
+	_shot("pvp")
+	pscene.queue_free()
+
 	s = await _show("res://scenes/roster/roster_screen.tscn")
 	_audit("squadra", s)
 	_shot("squadra")
