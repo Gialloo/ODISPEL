@@ -40,7 +40,7 @@ func _shape(offset: Vector2 = Vector2.ZERO) -> PackedVector2Array:
 # Grana e riflesso del pannello: righe oblique chiare, velo di luce in alto, tacche negli angoli.
 func _draw_surface(strength: float) -> void:
 	var shape: PackedVector2Array = _shape()
-	var tint := Color(1, 1, 1, 0.045 * strength).lerp(Color(accent, 0.07 * strength), 0.5)
+	var tint := Color(1, 1, 1, 0.075 * strength).lerp(Color(accent, 0.12 * strength), 0.5)
 	draw_polygon(shape, PackedColorArray([tint, tint, tint, tint, tint, tint]), UiTex.uvs_for(shape), UiTex.hatch())
 	var gh: float = minf(44.0, size.y * 0.35)
 	var hi := Color(accent, 0.20 * strength)
@@ -64,6 +64,7 @@ func _draw_quiet() -> void:
 func _draw() -> void:
 	if bare:
 		draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.38))
+		_draw_surface(0.45)
 		return
 	if quiet:
 		_draw_quiet()

@@ -129,13 +129,13 @@ static func _styles_for(kind: String) -> Dictionary:
 	# grana leggera e lucentezza: chiare, cosi' si vedono anche sui colori scuri
 	match kind:
 		"primary":
-			normal.hatch = Color(1, 1, 1, 0.16)
+			normal.hatch = Color(1, 1, 1, 0.22)
 			hover.hatch = Color(0.8, 0.1, 0.2, 0.14)
 		"ultimate":
-			normal.hatch = Color(1, 1, 1, 0.12)
+			normal.hatch = Color(1, 1, 1, 0.18)
 			hover.hatch = Color(0.8, 0.1, 0.2, 0.14)
 		_:
-			normal.hatch = Color(CY, 0.11)
+			normal.hatch = Color(CY, 0.17)
 			hover.hatch = Color(0, 0.1, 0.15, 0.12)
 	normal.gloss = 0.13
 	hover.gloss = 0.22

@@ -24,10 +24,10 @@ static func hook(b: BaseButton) -> void:
 	_tune.call_deferred(b)
 
 
-# Sul telefono i pulsanti scattano al tocco, non al rilascio (risposta immediata). Restano al rilascio quelli
+# I pulsanti scattano alla pressione, non al rilascio (risposta immediata), su telefono e PC. Restano al rilascio quelli
 # dentro una lista che scorre (il dito che scorre non deve premere) e quelli con scheda a pressione lunga.
 static func _tune(b: BaseButton) -> void:
-	if not is_instance_valid(b) or not TouchUi.active() or b.has_meta("hinted"):
+	if not is_instance_valid(b) or b.has_meta("hinted"):
 		return
 	var n: Node = b.get_parent()
 	while n != null:

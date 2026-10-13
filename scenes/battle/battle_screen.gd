@@ -334,7 +334,7 @@ func _build_autoplay() -> void:
 	_auto_button.visible = false
 	BattleTheme.style_button(_auto_button, "normal", 16)
 	add_child(_auto_button)
-	_anchor(_auto_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-236, 24, -20, 72 if not TouchUi.active() else 80))
+	_anchor(_auto_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-236, 16, -16, 64 if not TouchUi.active() else 72))
 	_auto_button.pressed.connect(func() -> void: set_autoplay(not autoplay))
 	# velocita' dell'animazione sempre a portata di dito: NORMALE -> VELOCE -> TURBO
 	speed_button = Button.new()
@@ -342,8 +342,8 @@ func _build_autoplay() -> void:
 	BattleTheme.style_button(speed_button, "normal", 15)
 	speed_button.text = _speed_label()
 	add_child(speed_button)
-	var top: float = 80.0 if TouchUi.active() else 72.0
-	_anchor(speed_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-236, top + 8.0, -20, top + (8.0 + 52.0 if TouchUi.active() else 8.0 + 38.0)))
+	var top: float = 72.0 if TouchUi.active() else 64.0
+	_anchor(speed_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-236, top + 10.0, -16, top + (8.0 + 52.0 if TouchUi.active() else 8.0 + 38.0)))
 	speed_button.pressed.connect(func() -> void:
 		Settings.next_speed()
 		Settings.save()
@@ -359,11 +359,11 @@ func _build_camera_info() -> void:
 	_rec_dot = ColorRect.new()
 	_rec_dot.color = BattleTheme.RD
 	_rec_dot.size = Vector2(20, 20)
-	_rec_dot.position = Vector2(12, 12)
+	_rec_dot.position = Vector2(18, 16)
 	_rec_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_rec_dot)
 	var rec := BattleTheme.make_label("REC", 24, BattleTheme.WH, true)
-	rec.position = Vector2(38, 4)
+	rec.position = Vector2(44, 8)
 	add_child(rec)
 	var cam := BattleTheme.make_label("CAM-07 · VIA S. GIORGIO · PARK 3", 14, BattleTheme.CY)
 	cam.position = Vector2(28, 70)
@@ -374,7 +374,7 @@ func _build_camera_info() -> void:
 	_clock_label.visible = false
 	add_child(_clock_label)
 	_round_label = BattleTheme.make_label("CICLO 01", 22, BattleTheme.WH, true)
-	_round_label.position = Vector2(12, 32)
+	_round_label.position = Vector2(18, 36)
 	add_child(_round_label)
 
 
@@ -383,7 +383,7 @@ func _build_boss_banner() -> void:
 	_boss_panel = panel
 	add_child(panel)
 	panel.margins = Vector4(18.0, 26.0, 18.0, 8.0)
-	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 24, 192, 120))
+	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 16, 192, 112))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 3)
 	panel.set_content(box)
@@ -401,7 +401,7 @@ func _build_boss_banner() -> void:
 	timer_panel.quiet = true
 	add_child(timer_panel)
 	timer_panel.margins = Vector4(14.0, 22.0, 14.0, 2.0)
-	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(144, 4, 284, 66))
+	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(150, 10, 290, 70))
 	_timer_label = BattleTheme.make_label("LIBERO", 28, BattleTheme.CY, true)
 	timer_panel.set_content(_timer_label)
 
@@ -410,7 +410,7 @@ func _build_telegraph() -> void:
 	_tele_panel = HudPanel.new().setup("ALLARME", BattleTheme.RD)
 	add_child(_tele_panel)
 	_tele_panel.margins = Vector4(18.0, 26.0, 18.0, 6.0)
-	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 128, 192, 212))
+	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 122, 192, 206))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	_tele_panel.set_content(box)
@@ -425,7 +425,7 @@ func _build_turn_panel() -> void:
 	var panel := HudPanel.new().setup("ORDINE DEL TURNO", BattleTheme.CY_DIM)
 	panel.margins = Vector4(12, 26, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 80, 340, 206))
+	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(16, 82, 340, 208))
 	_turn_box = VBoxContainer.new()
 	_turn_box.add_theme_constant_override("separation", 1)
 	_turn_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -507,7 +507,7 @@ func _build_operators() -> void:
 	panel.bare = true
 	panel.margins = Vector4(10.0, 10.0, 10.0, 8.0)
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(6, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 330, -6))
+	_anchor(panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(12, -(_unit_row_height() * 3.0 + 84.0) if TouchUi.active() else -224.0, 336, -12))
 	_ops_panel = panel
 	_ops_box = VBoxContainer.new()
 	_ops_box.add_theme_constant_override("separation", 3)
@@ -761,7 +761,7 @@ func _fit_ops_panel(fronts: int, backs: int, with_allies: bool) -> void:
 	var touch: bool = TouchUi.active()
 	var h: float = 22.0 + _unit_row_height() * float(maxi(fronts, 1)) + (_back_row_height() if backs > 0 else 0.0)
 	h += 3.0 * float(maxi(fronts - 1 + (1 if backs > 0 else 0), 0)) + (20.0 if with_allies else 0.0)
-	_anchor(_ops_panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(6, -(h + 6.0), 330, -6))
+	_anchor(_ops_panel, Vector4(0.0, 1.0, 0.0, 1.0), Vector4(12, -(h + 12.0), 336, -12))
 
 
 func _back_row_height() -> float:
@@ -1526,9 +1526,9 @@ func banter(uid: String, kind: String, force: bool = false) -> void:
 	plate.anchor_top = 1.0
 	plate.anchor_bottom = 1.0
 	plate.offset_left = -400.0
-	plate.offset_right = -14.0
-	plate.offset_top = -104.0
-	plate.offset_bottom = -14.0
+	plate.offset_right = -16.0
+	plate.offset_top = -106.0
+	plate.offset_bottom = -16.0
 	var bg := PanelContainer.new()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
