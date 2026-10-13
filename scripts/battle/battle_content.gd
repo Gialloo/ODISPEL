@@ -32,6 +32,12 @@ const FAMILIES: Dictionary = {
 		"key": "heal", "values": [1.4, 1.8, 2.3, 2.8], "stat": "max_hp", "pct": [5, 6.5, 8, 10]},
 	"purifica": {"name": "Purifica", "kind": "skill", "cost": 1, "priority": 0, "target": "ally", "cleanse": true,
 		"key": "heal", "values": [0.4, 0.55, 0.7, 0.9], "stat": "max_hp", "pct": [2, 3, 4, 6]},
+	"frattura": {"name": "Frattura", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "debuff": {"def": 1},
+		"key": "mult", "values": [0.9, 1.1, 1.35, 1.6], "stat": "atk", "pct": [6, 10, 16, 24]},
+	"intimidisci": {"name": "Intimidisci", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "debuff": {"atk": 1},
+		"key": "mult", "values": [0.5, 0.65, 0.8, 1.0], "stat": "spd", "pct": [8, 12, 18, 26]},
+	"doppio_colpo": {"name": "Doppio colpo", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "hits": 2,
+		"from": 1, "key": "mult", "values": [0.9, 1.05, 1.25], "stat": "atk", "pct": [6, 10, 16]},
 	"colpo_mirato": {"name": "Colpo mirato", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "ammo": 1, "pierce": 50,
 		"from": 1, "key": "mult", "values": [1.7, 2.0, 2.4], "stat": "crit", "pct": [12, 20, 30]},
 	"colpo_alla_testa": {"name": "Colpo alla testa", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "ammo": 2, "pierce": 50,
@@ -61,7 +67,7 @@ static func _build_moves() -> Dictionary:
 			var id: String = str(fid) + (str(TIER_SUFFIX[rarity]) if i > 0 else "")
 			var m: Dictionary = {"name": str(f["name"]) + str(TIER_NAMES[i]), "kind": f["kind"], "cost": f["cost"], "priority": f["priority"],
 				"rarity": rarity, "target": f["target"], "family": fid, "tier": i}
-			for k in ["status", "self_status", "cleanse", "ammo", "pierce"]:
+			for k in ["status", "self_status", "cleanse", "ammo", "pierce", "debuff", "hits"]:
 				if f.has(k):
 					m[k] = f[k].duplicate(true) if f[k] is Dictionary else f[k]
 			m[str(f["key"])] = values[i]
