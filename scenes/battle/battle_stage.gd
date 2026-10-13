@@ -537,6 +537,8 @@ func _draw_boss_body(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -
 			body = _draw_orologio(boss, alive, enraged, o)
 		"specchio":
 			body = _draw_specchio(boss, alive, enraged, o)
+		"sirena", "lampione", "bancomat", "scala", "radio", "metro", "cassaforte", "faro", "registro", "eclissi":
+			body = _draw_anomalia(boss, alive, enraged, o)
 		_:
 			body = _draw_distributore(alive, enraged, o)
 	return body
@@ -780,6 +782,153 @@ func _draw_orologio(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) ->
 	draw_line(face, face + Vector2(cos(ma), sin(ma)) * (r * 0.78), BattleTheme.RD if alive else BattleTheme.CY_DARK, 6.0)
 	draw_circle(face, 10.0, line)
 	return Rect2(face.x - r, face.y - r, r * 2.0, 450.0)
+
+
+# Le anomalie della stagione 2: ognuna ha la sua sagoma, tutte con gli occhi rossi che lampeggiano da furiose.
+func _draw_anomalia(boss: Dictionary, alive: bool, enraged: bool, o: Vector2) -> Rect2:
+	var id: String = str(boss["char"])
+	var cx: float = BOSS_X + o.x
+	var col: Color = BattleTheme.unit_color(str(boss["color"]))
+	var line: Color = col if alive else BattleTheme.CY_DARK
+	var dark: Color = Color("#0c222a") if alive else Color("#071218")
+	var darker: Color = Color("#08181e") if alive else Color("#050f13")
+	var move: String = str(state.get("telegraph", {}).get("move", ""))
+	var blink: float = 1.0 if (int(_t * 2.0) % 2 == 0 or not enraged) else 0.3
+	var eyes_at := Vector2(cx, 280.0 + o.y)
+	var body := Rect2(cx - 150.0, 170.0 + o.y, 300.0, 430.0)
+	match id:
+		"sirena":
+			body = Rect2(cx - 130.0, 190.0 + o.y, 260.0, 410.0)
+			draw_rect(Rect2(body.position.x + 40.0, 400.0 + o.y, 180.0, 200.0), dark)
+			draw_colored_polygon(_ellipse(Vector2(cx, 400.0 + o.y), 130.0, 200.0, 32), darker)
+			draw_polyline(_ellipse(Vector2(cx, 400.0 + o.y), 130.0, 200.0, 32), line, 4.0)
+			draw_colored_polygon(PackedVector2Array([Vector2(cx - 50.0, 250.0 + o.y), Vector2(cx + 150.0, 190.0 + o.y), Vector2(cx + 150.0, 330.0 + o.y), Vector2(cx - 50.0, 300.0 + o.y)]), dark)
+			draw_polyline(PackedVector2Array([Vector2(cx - 50.0, 250.0 + o.y), Vector2(cx + 150.0, 190.0 + o.y), Vector2(cx + 150.0, 330.0 + o.y), Vector2(cx - 50.0, 300.0 + o.y), Vector2(cx - 50.0, 250.0 + o.y)]), line, 3.0)
+			if alive:
+				for r in 3:
+					var k: float = fposmod(_t * 0.9 + float(r) * 0.33, 1.0)
+					draw_arc(Vector2(cx + 150.0, 260.0 + o.y), 30.0 + k * 130.0, -0.9, 0.9, 20, Color(col, (1.0 - k) * (0.9 if move == "ululato" or move == "allarme" else 0.4)), 4.0)
+			eyes_at = Vector2(cx - 24.0, 400.0 + o.y)
+		"lampione":
+			body = Rect2(cx - 40.0, 150.0 + o.y, 80.0, 450.0)
+			draw_rect(Rect2(cx - 14.0, 220.0 + o.y, 28.0, 380.0), dark)
+			draw_rect(Rect2(cx - 14.0, 220.0 + o.y, 28.0, 380.0), line, false, 3.0)
+			draw_rect(Rect2(cx - 60.0, 560.0 + o.y, 120.0, 40.0), darker)
+			draw_colored_polygon(PackedVector2Array([Vector2(cx - 70.0, 190.0 + o.y), Vector2(cx + 70.0, 190.0 + o.y), Vector2(cx + 40.0, 150.0 + o.y), Vector2(cx - 40.0, 150.0 + o.y)]), dark)
+			draw_polyline(PackedVector2Array([Vector2(cx - 70.0, 190.0 + o.y), Vector2(cx - 40.0, 150.0 + o.y), Vector2(cx + 40.0, 150.0 + o.y), Vector2(cx + 70.0, 190.0 + o.y), Vector2(cx - 70.0, 190.0 + o.y)]), line, 3.0)
+			if alive:
+				var glow: float = 0.55 + 0.25 * sin(_t * 3.0) + (0.2 if move == "abbaglio" else 0.0)
+				draw_colored_polygon(PackedVector2Array([Vector2(cx - 36.0, 194.0 + o.y), Vector2(cx + 36.0, 194.0 + o.y), Vector2(cx + 190.0, 600.0 + o.y), Vector2(cx - 190.0, 600.0 + o.y)]), Color(col, 0.10 * glow))
+				draw_circle(Vector2(cx, 190.0 + o.y), 18.0, Color(col, glow))
+			eyes_at = Vector2(cx, 300.0 + o.y)
+		"bancomat":
+			body = Rect2(cx - 140.0, 190.0 + o.y, 280.0, 410.0)
+			draw_rect(body, dark)
+			draw_rect(body, line, false, 4.0)
+			var scr := Rect2(body.position.x + 30.0, body.position.y + 30.0, 220.0, 130.0)
+			draw_rect(scr, Color("#02080b"))
+			draw_rect(scr, line, false, 2.0)
+			if alive:
+				_text(BattleTheme.display(), Vector2(scr.position.x + 26.0, scr.position.y + 84.0), "-0000", 40, Color(BattleTheme.RD, 0.5 + 0.5 * blink))
+			draw_rect(Rect2(body.position.x + 50.0, body.position.y + 210.0, 180.0, 14.0), Color("#02080b"))
+			draw_rect(Rect2(body.position.x + 50.0, body.position.y + 300.0, 180.0, 70.0), darker)
+			draw_rect(Rect2(body.position.x + 50.0, body.position.y + 300.0, 180.0, 70.0), line, false, 2.0)
+			eyes_at = Vector2(cx, body.position.y + 120.0)
+		"scala":
+			body = Rect2(cx - 190.0, 200.0 + o.y, 380.0, 400.0)
+			for i in 9:
+				var f: float = fposmod(float(i) / 9.0 + _t * 0.12, 1.0)
+				var sx: float = body.position.x + f * 340.0
+				var sy: float = body.end.y - 30.0 - f * 330.0
+				draw_rect(Rect2(sx, sy, 46.0, 24.0), dark)
+				draw_rect(Rect2(sx, sy, 46.0, 24.0), line, false, 2.0)
+			draw_line(Vector2(body.position.x, body.end.y - 10.0), Vector2(body.end.x, body.position.y + 20.0), line, 5.0)
+			eyes_at = Vector2(cx, 360.0 + o.y)
+		"radio":
+			body = Rect2(cx - 160.0, 250.0 + o.y, 320.0, 350.0)
+			draw_rect(body, dark)
+			draw_rect(body, line, false, 4.0)
+			draw_line(Vector2(cx + 100.0, body.position.y), Vector2(cx + 190.0, 160.0 + o.y), line, 4.0)
+			draw_circle(Vector2(cx + 190.0, 160.0 + o.y), 8.0, Color(col, blink))
+			draw_circle(Vector2(cx - 60.0, body.position.y + 220.0), 70.0, darker)
+			draw_arc(Vector2(cx - 60.0, body.position.y + 220.0), 70.0, 0.0, TAU, 28, line, 3.0)
+			for r in 4:
+				draw_arc(Vector2(cx - 60.0, body.position.y + 220.0), 20.0 + float(r) * 14.0, 0.0, TAU, 20, Color(col, 0.35), 2.0)
+			var dial := Rect2(body.position.x + 200.0, body.position.y + 60.0, 100.0, 24.0)
+			draw_rect(dial, Color("#02080b"))
+			draw_line(Vector2(dial.position.x + 50.0 + sin(_t * 1.3) * 40.0, dial.position.y), Vector2(dial.position.x + 50.0 + sin(_t * 1.3) * 40.0, dial.end.y), Color(BattleTheme.RD, blink), 3.0)
+			eyes_at = Vector2(cx, body.position.y + 24.0)
+			eyes_at.y = body.position.y + 30.0
+			eyes_at.x = cx - 40.0
+		"metro":
+			body = Rect2(cx - 190.0, 240.0 + o.y, 380.0, 360.0)
+			draw_rect(body, dark)
+			draw_rect(body, line, false, 4.0)
+			draw_rect(Rect2(body.position.x + 30.0, body.position.y + 30.0, 320.0, 140.0), Color("#02080b"))
+			draw_rect(Rect2(body.position.x + 30.0, body.position.y + 30.0, 320.0, 140.0), line, false, 2.0)
+			for sx in [-1.0, 1.0]:
+				var hp := Vector2(cx + sx * 110.0, body.position.y + 250.0)
+				draw_circle(hp, 34.0, Color(1.0, 0.95, 0.7, 0.9 if alive else 0.15))
+				draw_circle(hp, 54.0, Color(1.0, 0.95, 0.7, 0.12 if alive else 0.0))
+			draw_line(Vector2(body.position.x, body.end.y - 12.0), Vector2(body.end.x, body.end.y - 12.0), line, 4.0)
+			eyes_at = Vector2(cx, body.position.y + 100.0)
+		"cassaforte":
+			body = Rect2(cx - 170.0, 200.0 + o.y, 340.0, 400.0)
+			draw_rect(body, dark)
+			draw_rect(body, line, false, 5.0)
+			draw_rect(Rect2(body.position.x + 16.0, body.position.y + 16.0, 308.0, 368.0), darker)
+			var dc := Vector2(cx, body.position.y + 250.0)
+			draw_circle(dc, 80.0, dark)
+			draw_arc(dc, 80.0, 0.0, TAU, 32, line, 4.0)
+			var spin: float = _t * (1.6 if move == "combinazione" else 0.4)
+			for i in 12:
+				var a: float = spin + TAU * float(i) / 12.0
+				draw_line(dc + Vector2(cos(a), sin(a)) * 64.0, dc + Vector2(cos(a), sin(a)) * 80.0, line, 3.0)
+			draw_line(dc, dc + Vector2(cos(spin), sin(spin)) * 50.0, Color(BattleTheme.RD, 0.8), 4.0)
+			eyes_at = Vector2(cx, body.position.y + 80.0)
+		"faro":
+			body = Rect2(cx - 90.0, 150.0 + o.y, 180.0, 450.0)
+			draw_colored_polygon(PackedVector2Array([Vector2(cx - 90.0, 600.0 + o.y), Vector2(cx - 50.0, 220.0 + o.y), Vector2(cx + 50.0, 220.0 + o.y), Vector2(cx + 90.0, 600.0 + o.y)]), dark)
+			draw_polyline(PackedVector2Array([Vector2(cx - 90.0, 600.0 + o.y), Vector2(cx - 50.0, 220.0 + o.y), Vector2(cx + 50.0, 220.0 + o.y), Vector2(cx + 90.0, 600.0 + o.y)]), line, 3.0)
+			for i in 3:
+				var yy: float = 280.0 + float(i) * 110.0 + o.y
+				draw_line(Vector2(cx - 80.0 + float(i) * 6.0, yy), Vector2(cx + 80.0 - float(i) * 6.0, yy), Color(col, 0.5), 10.0)
+			draw_rect(Rect2(cx - 56.0, 180.0 + o.y, 112.0, 44.0), darker)
+			draw_rect(Rect2(cx - 56.0, 180.0 + o.y, 112.0, 44.0), line, false, 3.0)
+			if alive:
+				var a2: float = sin(_t * 0.9) * 0.7
+				var tip := Vector2(cx + cos(a2) * 420.0, 200.0 + o.y + sin(a2) * 90.0)
+				draw_colored_polygon(PackedVector2Array([Vector2(cx, 196.0 + o.y), tip + Vector2(0, -40.0), tip + Vector2(0, 40.0)]), Color(1.0, 0.95, 0.7, 0.10 + (0.1 if move == "fascio" else 0.0)))
+				draw_circle(Vector2(cx, 202.0 + o.y), 14.0, Color(1.0, 0.95, 0.7, 0.9))
+			eyes_at = Vector2(cx, 340.0 + o.y)
+		"registro":
+			body = Rect2(cx - 190.0, 190.0 + o.y, 380.0, 410.0)
+			draw_rect(body, dark)
+			draw_rect(body, line, false, 4.0)
+			for r in 5:
+				for c in 4:
+					var dr := Rect2(body.position.x + 14.0 + float(c) * 90.0, body.position.y + 14.0 + float(r) * 78.0, 82.0, 70.0)
+					var open: bool = alive and ((r * 4 + c + int(_t * 1.2)) % 9 == 0)
+					draw_rect(dr, Color(col, 0.35) if open else darker)
+					draw_rect(dr, Color(line, 0.8), false, 2.0)
+					draw_rect(Rect2(dr.position.x + 24.0, dr.position.y + 28.0, 34.0, 8.0), Color(line, 0.6))
+			eyes_at = Vector2(cx, body.position.y + 6.0)
+		"eclissi":
+			var c := Vector2(cx, 370.0 + o.y)
+			body = Rect2(c.x - 190.0, c.y - 190.0, 380.0, 380.0)
+			if alive:
+				for i in 18:
+					var a3: float = TAU * float(i) / 18.0 + _t * 0.15
+					var r0: float = 150.0
+					var r1: float = 190.0 + 24.0 * sin(_t * 1.5 + float(i))
+					draw_line(c + Vector2(cos(a3), sin(a3)) * r0, c + Vector2(cos(a3), sin(a3)) * r1, Color(1, 1, 1, 0.45), 3.0)
+			draw_circle(c, 150.0, Color("#010305"))
+			draw_arc(c, 150.0, 0.0, TAU, 48, Color(col, 0.9) if alive else BattleTheme.CY_DARK, 5.0)
+			eyes_at = c + Vector2(0, -30.0)
+	if alive:
+		for sx in [-1.0, 1.0]:
+			draw_rect(Rect2(eyes_at.x + sx * 40.0 - 16.0, eyes_at.y, 32.0, 10.0), Color(BattleTheme.RD, blink))
+	return body
 
 
 # Lo specchio: cornice ovale, riflesso che brilla a bande e crepe che crescono con le ferite.

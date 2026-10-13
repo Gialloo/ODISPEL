@@ -38,7 +38,7 @@ func _state(boss_id: String, tier: int = 0, players: int = 2) -> Dictionary:
 func _run() -> void:
 	# --- dati
 	_check("contenuti coerenti (con i boss nuovi)", BattleContent.validate().is_empty())
-	_check("otto boss in ordine di sblocco", BattleContent.BOSS_ORDER == ["distributore", "semaforo", "tombino", "cabina", "ascensore", "manichino", "orologio", "specchio"])
+	_check("diciotto boss in ordine di sblocco (stagione 1 + stagione 2)", BattleContent.BOSS_ORDER.size() == 18 and BattleContent.BOSS_ORDER.slice(0, 8) == ["distributore", "semaforo", "tombino", "cabina", "ascensore", "manichino", "orologio", "specchio"] and BattleContent.BOSS_ORDER[8] == "sirena" and BattleContent.BOSS_ORDER[17] == "eclissi")
 	_check("tre livelli di difficolta'", BattleContent.TIERS.size() == 3)
 	for id in BattleContent.BOSS_ORDER:
 		var b: Dictionary = BattleContent.BOSSES[id]

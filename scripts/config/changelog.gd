@@ -14,6 +14,8 @@ const ENTRIES: Array = [
 		"Obiettivi giornalieri: nuove sfide (boss diversi, vittoria a INCUBO).",
 		"Dafne ha finalmente il suo aspetto: ritratti, figura in battaglia, illustrazione e ultimate.",
 		"Le monete ora si chiamano CREDITI.",
+		"STAGIONE 2: Dafne si unisce alla squadra CAM. 10 nuovi capitoli, 10 nuovi bersagli (Sirena, Lampione, Bancomat, Scala mobile, Radio, Metro, Cassaforte, Faro, Registro, Eclissi), tutti fino a INCUBO.",
+		"Costi con le icone di crediti, nuclei e leghe sui pulsanti. Premi epici e leggendari con bordo viola o giallo.",
 	]},
 ]
 

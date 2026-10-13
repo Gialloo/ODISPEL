@@ -143,7 +143,7 @@ func _on_button_hover(b: BaseButton) -> void:
 func _track_for(scene: Node) -> String:
 	if not str(scene.scene_file_path).contains("battle_screen"):
 		return "menu"
-	var hard: bool = MissionConfig.endless_floor > 0 or MissionConfig.daily_mod != "" or ["orologio", "specchio"].has(MissionConfig.boss_id)
+	var hard: bool = MissionConfig.endless_floor > 0 or MissionConfig.daily_mod != "" or ["orologio", "specchio", "metro", "cassaforte", "faro", "registro", "eclissi"].has(MissionConfig.boss_id)
 	return "battle_hard" if hard else "battle"
 
 func play_music(track: String) -> void:

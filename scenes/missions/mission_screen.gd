@@ -4,6 +4,8 @@ extends Control
 # progressi salvati nella collezione (RosterState.cleared).
 
 var roster: Dictionary = {}
+const SEASON_START: Dictionary = {"distributore": "STAGIONE 1 · LA SQUADRA CAM", "sirena": "STAGIONE 2 · CON DAFNE"}
+
 var selected_boss: String = "distributore"
 var selected_tier: int = 0
 var boss_buttons: Dictionary = {}
@@ -44,11 +46,14 @@ func _build() -> void:
 	var list := VBoxContainer.new()
 	list.add_theme_constant_override("separation", 4 if TouchUi.active() else 6)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var list_scroll := ScrollContainer.new()      # con 8 bersagli su un telefono l'elenco scorre: nessuno resta nascosto
+	var list_scroll := ScrollContainer.new()      # con 18 bersagli su un telefono l'elenco scorre: nessuno resta nascosto
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	list_scroll.add_child(list)
 	list_panel.set_content(list_scroll)
 	for id in BattleContent.BOSS_ORDER:
+		if SEASON_START.has(id):
+			var sl := BattleTheme.make_label(str(SEASON_START[id]), 14, BattleTheme.POP)
+			list.add_child(sl)
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(0, 64)
 		b.pressed.connect(select_boss.bind(id))
@@ -136,7 +141,7 @@ func _build() -> void:
 
 	UiMotion.slide_in([list_panel], Vector2(-140, 0), 0.0, 0.3)
 	UiMotion.slide_in([det], Vector2(140, 0), 0.0, 0.34)
-	add_child(_hint("INVIO avvia  ·  1-8 bersaglio  ·  SU/GIU difficolta'  ·  ESC indietro", Vector2(440, 686)))
+	add_child(_hint("INVIO avvia  ·  1-9 bersaglio  ·  SU/GIU difficolta'  ·  ESC indietro", Vector2(440, 686)))
 
 	var back := Button.new()
 	back.text = "TORNA ALL'HUB"
@@ -225,8 +230,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_ENTER, KEY_KP_ENTER:
 			if not go_button.disabled:
 				_on_go()
-		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8:
-			select_boss(str(BattleContent.BOSS_ORDER[int(event.keycode) - int(KEY_1)]))
+		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9:
+			var bi: int = int(event.keycode) - int(KEY_1)
+			if bi < BattleContent.BOSS_ORDER.size():
+				select_boss(str(BattleContent.BOSS_ORDER[bi]))
 		KEY_UP:
 			select_tier(selected_tier - 1)
 		KEY_DOWN:

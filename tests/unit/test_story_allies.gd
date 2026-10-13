@@ -28,12 +28,18 @@ func _init() -> void:
 		_check("boss %s definito" % id, BattleContent.BOSSES.has(id) and BattleContent.BOSS_ORDER.has(id))
 	_check("contenuti validi", BattleContent.validate().is_empty())
 	var n: int = 0
-	for sid in StoryData.SCENES.keys():
+	for sid in StoryData.SCENES.keys() + StorySeason2.SCENES.keys():
 		var s: DialogueScript = DialogueScript.parse(StoryData.text(str(sid)))
 		if s == null or not s.errors.is_empty():
 			print("scena rotta: ", sid)
 			n += 1
 	_check("tutte le scene di storia si leggono", n == 0)
+	var rd: Dictionary = RosterState.new_roster()
+	_check("Dafne non e' ancora nella squadra", not RosterState.owns(rd, "dafne"))
+	RosterState.mark_cleared(rd, "sirena", 0)
+	_check("battere la Sirena porta Dafne", RosterState.owns(rd, "dafne"))
+	_check("Dafne e' valida nel salvataggio", RosterState.validate(rd) == "")
+	_check("stagione 2: 10 boss con ciclo valido", BattleContent.BOSS_ORDER.size() - 8 == 10)
 	print("---")
 	var rn: Dictionary = RosterState.new_roster()
 	_check("Nico non c'e' all'inizio", not RosterState.owns(rn, "nico"))

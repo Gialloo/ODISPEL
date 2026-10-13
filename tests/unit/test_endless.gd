@@ -23,10 +23,10 @@ func _init() -> void:
 	_check("si apre con 3 bersagli battuti", Endless.available(roster))
 	_check("piano 1 = distributore", Endless.boss_for(1) == "distributore")
 	var seen: Dictionary = {}
-	for f in range(1, 15):
+	for f in range(1, 60):
 		_check("boss valido al piano %d" % f, BattleContent.BOSSES.has(Endless.boss_for(f)))
 		seen[Endless.boss_for(f)] = true
-	_check("ruotano tutti e 8 i boss", seen.size() == 8)
+	_check("ruotano tutti i boss", seen.size() == BattleContent.BOSS_ORDER.size())
 	_check("il secondo giro cambia ordine", Endless.boss_for(8) != Endless.boss_for(1))
 	_check("tier sale ogni 5 piani", Endless.tier_for(1) == 0 and Endless.tier_for(6) == 1 and Endless.tier_for(11) == 2 and Endless.tier_for(99) == 2)
 	_check("nessun modificatore ai primi piani", Endless.mod_for(1).is_empty() and Endless.mod_for(2).is_empty())

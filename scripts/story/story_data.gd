@@ -281,7 +281,9 @@ static func text(scene_id: String) -> String:
 		var path: String = str(f).path_join(scene_id + ".txt")
 		if FileAccess.file_exists(path):
 			return FileAccess.get_file_as_string(path)
-	return str(SCENES.get(scene_id, ""))
+	if SCENES.has(scene_id):
+		return str(SCENES[scene_id])
+	return str(StorySeason2.SCENES.get(scene_id, ""))
 
 
 static func has_scene(scene_id: String) -> bool:
