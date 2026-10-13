@@ -27,6 +27,7 @@ func _entries(ids: Array) -> Array:
 
 
 func _run() -> void:
+	await process_frame      # lascia partire gli autoload (font, maiuscole)
 	var ns: Node = root.get_node("NetSession")
 	var game := GameState.new()
 	game.setup("shot", 1, 1, 4)

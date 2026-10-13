@@ -58,7 +58,7 @@ func _draw_quiet() -> void:
 	outline.append(outline[0])
 	draw_polyline(outline, Color(accent, 0.55), 1.5)
 	if title != "":
-		draw_string(BattleTheme.hud(), Vector2(cut + 2.0, 19.0), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(accent, 0.9))
+		draw_string(BattleTheme.hud(), Vector2(cut + 2.0, 19.0), TextCase.pretty(title), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(accent, 0.9))
 
 
 func _draw() -> void:
@@ -77,11 +77,12 @@ func _draw() -> void:
 	draw_polyline(outline, accent, 2.0)
 	if title != "":
 		var font: Font = BattleTheme.hud()
-		var tw: float = font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+		var shown: String = TextCase.pretty(title)
+		var tw: float = font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, 19).x
 		var tab: PackedVector2Array = PackedVector2Array([
 			Vector2(12.0, -12.0), Vector2(12.0 + tw + 34.0, -12.0), Vector2(12.0 + tw + 20.0, 12.0), Vector2(12.0, 12.0)])
 		draw_colored_polygon(tab, accent)
-		draw_string(font, Vector2(24.0, 6.0), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, BattleTheme.BK)
+		draw_string(font, Vector2(24.0, 7.0), shown, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, BattleTheme.BK)
 		# tre chevron dopo la linguetta e un filo luminoso lungo il bordo alto
 		for i in 3:
 			var cx: float = 12.0 + tw + 44.0 + float(i) * 11.0

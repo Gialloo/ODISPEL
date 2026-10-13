@@ -7,6 +7,7 @@ func _init() -> void:
 
 
 func _run() -> void:
+	await process_frame      # lascia partire gli autoload (font, maiuscole)
 	var out: String = OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "user://"
 	var scene: Control = load("res://scenes/hub/hub_demo.tscn").instantiate()
 	root.add_child(scene)

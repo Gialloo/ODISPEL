@@ -20,6 +20,7 @@ func _shot(name: String) -> void:
 
 
 func _run() -> void:
+	await process_frame      # lascia partire gli autoload (font, maiuscole)
 	var r: Dictionary = RosterState.new_roster()
 	for id in ["distributore", "semaforo", "tombino"]:
 		RosterState.mark_cleared(r, id, 0)

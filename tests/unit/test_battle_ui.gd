@@ -128,7 +128,7 @@ func _test_theme() -> void:
 	_check("ogni colore di gioco ha la sua tinta", all_colors)
 	_check("font disponibili", BattleTheme.mono() != null and BattleTheme.display() != null)
 	var l: Label = BattleTheme.make_label("PROVA", 20)
-	_check("etichetta creata", l.text == "PROVA" and l.get_theme_font_size("font_size") == 20)
+	_check("etichetta creata", l.text == "PROVA" and l.get_theme_font_size("font_size") == int(round(20.0 * BattleTheme.TEXT_SCALE)))
 	l.free()
 	var btn := Button.new()
 	for kind in ["primary", "normal", "ultimate"]:

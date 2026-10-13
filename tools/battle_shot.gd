@@ -22,6 +22,7 @@ func _shot(name: String) -> void:
 
 
 func _run() -> void:
+	await process_frame
 	# squadra di 6 (3 front + 3 back) per vedere anche la back row
 	var rr: Dictionary = RosterState.new_roster()
 	for id in ["nova", "mira", "sera"]:

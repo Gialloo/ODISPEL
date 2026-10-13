@@ -56,7 +56,7 @@ static func font(weight: String = "Medium", italic: bool = false) -> Font:
 # Testo normale (descrizioni, elenchi, numeri): un peso medio, leggibile anche piccolo.
 static func mono() -> Font:
 	if _mono == null:
-		_mono = font("SemiBold")
+		_mono = font("Bold")
 	return _mono
 
 

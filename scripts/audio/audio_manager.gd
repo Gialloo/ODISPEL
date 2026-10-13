@@ -101,6 +101,7 @@ func play(sound: String, pitch: float = 1.0, volume_db: float = 0.0) -> void:
 
 
 func _on_node_added(node: Node) -> void:
+	TextCase.hook(node)
 	if node is BaseButton:
 		var b: BaseButton = node
 		b.pressed.connect(_on_button_pressed.bind(b))

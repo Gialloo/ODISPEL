@@ -131,7 +131,7 @@ func _build_status_panel() -> void:
 	_status_panel = panel
 
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 5)
+	box.add_theme_constant_override("separation", 3)
 	panel.set_content(box)
 
 	box.add_child(BattleTheme.make_label("RISORSE", 14, BattleTheme.CY_DIM))
