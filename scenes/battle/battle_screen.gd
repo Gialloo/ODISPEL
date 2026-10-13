@@ -1130,7 +1130,7 @@ func _refresh_orders() -> void:
 	for e in entries:
 		var mv: Dictionary = BattleContent.MOVES[str(e["id"])]
 		var txt: String = _order_text(str(e["id"]), mv, 100)
-		while common_fs > (14 if touch else 12) and BattleTheme.hud().get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x > bw - 74.0:
+		while common_fs > (14 if touch else 12) and BattleTheme.hud().get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x > bw - 44.0:
 			common_fs -= 1
 	var n: int = 1
 	for e in entries:
@@ -1156,8 +1156,17 @@ func _refresh_orders() -> void:
 		b.disabled = err != "" or locked or animating or autoplay
 		var gprog: float = float(u["gauge"]) / float(BattleTypes.GAUGE_MAX) if str(e["kind"]) == "ultimate" else 0.0
 		_style_order(b, err == "", gprog)
-		var oic: GameIcon = GameIcon.attach(b, GameIcon.move_key(move_id), BattleTheme.BK if err == "" else Color("#aeb9be"), 26.0 if primary else 20.0)
-		oic.modulate.a = 0.35 if b.disabled else 1.0
+		# l'icona sta fuori dal pulsante, a sinistra e sulla stessa linea: il nome della mossa ha tutto lo spazio
+		var oic: GameIcon = GameIcon.new().setup(GameIcon.move_key(move_id), BattleTheme.WH if err == "" else Color("#6b777c"), 32.0)
+		oic.anchor_top = 0.5
+		oic.anchor_bottom = 0.5
+		oic.offset_left = -32.0 - 10.0
+		oic.offset_right = -10.0
+		oic.offset_top = -16.0
+		oic.offset_bottom = 16.0
+		oic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(oic)
+		b.alignment = HORIZONTAL_ALIGNMENT_CENTER
 		b.pressed.connect(_on_order_pressed.bind(move_id))
 		b.focus_mode = Control.FOCUS_NONE
 		var target: Vector2 = Vector2(float(pts[n - 1].x) - 8.0, float(pts[n - 1].y) - bh * 0.5)
