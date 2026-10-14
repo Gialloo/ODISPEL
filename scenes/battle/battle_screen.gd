@@ -419,7 +419,7 @@ func _build_autoplay() -> void:
 	_auto_button.visible = false
 	BattleTheme.style_button(_auto_button, "normal", 14)
 	add_child(_auto_button)
-	_anchor(_auto_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(4, 4, 42, 32 if not TouchUi.active() else 44))
+	_anchor(_auto_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0, 0, 46, 34 if not TouchUi.active() else 44))
 	_auto_button.pressed.connect(func() -> void: set_autoplay(not autoplay))
 	# velocita' dell'animazione sempre a portata di dito: NORMALE -> VELOCE -> TURBO
 	speed_button = Button.new()
@@ -428,7 +428,7 @@ func _build_autoplay() -> void:
 	speed_button.text = _speed_label()
 	speed_button.tooltip_text = "Velocita' della battaglia: normale, veloce, turbo"
 	add_child(speed_button)
-	_anchor(speed_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(46, 4, 100, 32 if not TouchUi.active() else 44))
+	_anchor(speed_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(48, 0, 94, 34 if not TouchUi.active() else 44))
 	speed_button.pressed.connect(func() -> void:
 		Settings.next_speed()
 		Settings.save()
@@ -437,6 +437,8 @@ func _build_autoplay() -> void:
 
 
 func _speed_label() -> String:
+	if speed_button != null:
+		speed_button.add_theme_font_size_override("font_size", [20, 16, 12][Settings.speed_level()])
 	return ["▶", "▶▶", "▶▶▶"][Settings.speed_level()]
 
 
@@ -446,7 +448,7 @@ func _build_camera_info() -> void:
 	_round_label.add_theme_font_override("font", BattleTheme.hud())
 	_round_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_round_label)
-	_anchor(_round_label, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 36, 150, 56))
+	_anchor(_round_label, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(2, 36, 150, 56))
 	_clock_label = BattleTheme.make_label("", 15, BattleTheme.CY)
 	_clock_label.visible = false
 	add_child(_clock_label)
@@ -582,7 +584,7 @@ func _build_turn_panel() -> void:
 	panel.margins = Vector4(10, 24, 10, 4)
 	panel.backdrop = 0.4
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(4, 58, 285, 172))
+	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0, 58, 281, 172))
 	_turn_box = VBoxContainer.new()
 	_turn_box.add_theme_constant_override("separation", 1)
 	_turn_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2329,7 +2331,7 @@ func _skill_plate(u: Dictionary, move_id: String) -> void:
 	var face := PortraitView.new().setup(str(u["char"]), "bust")
 	face.show_expression_text = false
 	face.size = Vector2(150.0, 150.0)
-	face.position = Vector2(plate.offset_right - plate.offset_left - 150.0, -8.0)
+	face.position = Vector2(plate.offset_right - plate.offset_left - 132.0, -8.0)
 	plate.add_child(face)
 	_fx.add_child(plate)
 	_skill_node = plate
