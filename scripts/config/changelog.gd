@@ -5,6 +5,12 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.22", "items": [
+		"REPLAY TATTICO: ora si apre sopra la schermata dei risultati (prima restava nascosto dietro) e si chiude col tasto CHIUDI.",
+		"REGISTRO EVENTI: ora scorre, tiene piu' righe, separa i turni e si legge meglio sopra il boss.",
+		"IMPOSTAZIONI: slider piu' grandi e facili da usare col dito; la rotella non cambia piu' il volume per sbaglio.",
+		"Il suggerimento del boss non copre piu' Riserva di squadra e tasti.",
+	]},
 	{"v": "0.24.21", "items": [
 		"BATTAGLIA RIFATTA: personaggi e boss in prospettiva, HUD piu' pulita, barre vita sotto i personaggi quando serve, log a tendina, icone per AUTO e velocita'.",
 		"ABILITA': quando un operatore lancia un'abilita' compare il suo ritratto con il nome della mossa.",

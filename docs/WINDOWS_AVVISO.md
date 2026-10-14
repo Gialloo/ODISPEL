@@ -2,7 +2,7 @@
 
 Stato: **causa probabile identificata, NON ancora verificata su un PC Windows. A1 resta APERTO.**
 
-## Cosa e' stato verificato (14 ottobre 2026, versione 0.24.21)
+## Cosa e' stato verificato (14 ottobre 2026, versione 0.24.22)
 - Il pacchetto Windows contiene due file: `ODISPEL.exe` e `libwebrtc_native.windows.template_release.x86_64.dll`.
 - La DLL e' identica (SHA-256 `3a8053d325a874493f596630b0f165f3a83e265c61d9fd87d82da6cb4c2a81fd`) a quella del progetto in `addons/webrtc_native/lib/`.
   E' il plugin ufficiale di Godot "webrtc-native" (libdatachannel, libjuice, libsrtp, mbedtls, usrsctp; licenze nella cartella `addons/webrtc_native/`).
