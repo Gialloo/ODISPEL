@@ -97,6 +97,8 @@ var _chat: ChatPanel = null          # chat di squadra (solo in rete)
 func _ready() -> void:
 	ScreenFrame.setup(self)   # riquadro 1280x720 nell'area sicura dello schermo
 	_build()
+	_pin_corners.call_deferred()
+	get_viewport().size_changed.connect(func() -> void: _pin_corners.call_deferred())
 	if pending_source != null:
 		bind_source(pending_source)
 	elif source == null:
@@ -337,6 +339,38 @@ func set_autoplay(on: bool) -> void:
 
 
 # ---------- Costruzione dell'interfaccia ----------
+
+# Spazio in piu' (in unita' di gioco) fra il riquadro 1280x720 e i bordi dello schermo: su telefoni lunghi
+# i comandi d'angolo vanno proprio nell'angolo e non restano dentro il riquadro.
+var _edge_l: float = 0.0
+var _edge_r: float = 0.0
+
+
+func _pin_corners() -> void:
+	if not is_inside_tree():
+		return
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	var ins: Vector4 = ScreenFrame.view_insets(get_window(), vp)
+	var box: Rect2 = ScreenFrame.box_for(vp, ins)
+	_edge_l = maxf(0.0, box.position.x - ins.x)
+	_edge_r = maxf(0.0, vp.x - box.position.x - box.size.x - ins.z)
+	var lefts: Array = [_auto_button, speed_button, _round_label, _turn_box.get_parent() if _turn_box != null else null]
+	var rights: Array = [_boss_panel, _phase_badge, _log_handle]
+	for c in lefts:
+		_shift_edge(c, -_edge_l)
+	for c in rights:
+		_shift_edge(c, _edge_r)
+
+
+func _shift_edge(c: Control, dx: float) -> void:
+	if c == null or not is_instance_valid(c):
+		return
+	if not c.has_meta("edge_base"):
+		c.set_meta("edge_base", Vector2(c.offset_left, c.offset_right))
+	var b: Vector2 = c.get_meta("edge_base")
+	c.offset_left = b.x + dx
+	c.offset_right = b.y + dx
+
 
 func _anchor(c: Control, a: Vector4, o: Vector4) -> void:
 	c.anchor_left = a.x
@@ -2268,8 +2302,8 @@ func banter(uid: String, kind: String, force: bool = false) -> void:
 	plate.anchor_right = 1.0
 	plate.anchor_top = 1.0
 	plate.anchor_bottom = 1.0
-	plate.offset_left = -346.0
-	plate.offset_right = -2.0
+	plate.offset_left = -346.0 + _edge_r
+	plate.offset_right = -2.0 + _edge_r
 	plate.offset_top = -136.0
 	plate.offset_bottom = -40.0
 	var bg := PanelContainer.new()
@@ -2310,8 +2344,8 @@ func _skill_plate(u: Dictionary, move_id: String) -> void:
 	plate.anchor_right = 1.0
 	plate.anchor_top = 0.5
 	plate.anchor_bottom = 0.5
-	plate.offset_left = -430.0
-	plate.offset_right = -2.0
+	plate.offset_left = -430.0 + _edge_r
+	plate.offset_right = -2.0 + _edge_r
 	plate.offset_top = -170.0
 	plate.offset_bottom = -30.0
 	var bg := PanelContainer.new()
