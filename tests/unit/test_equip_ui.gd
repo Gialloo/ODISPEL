@@ -54,18 +54,18 @@ func _run() -> void:
 	await process_frame
 	s.show_tab("equip")
 	_check("pagina equipaggio", s._equip_page.visible and not s._team_page.visible)
-	_check("8 slot", s._equip_slots_box.get_child_count() == 8)
+	_check("8 slot", s._equip_slots_box.get_child_count() == 10)
 	_check("operatore mostrato", s._equip_name.text.begins_with("KIRA"))
 
-	# skill: slot 1 ha gia' colpo caricato; si aggiunge marchio al secondo
-	s.select_equip_slot("skill1")
+	# mosse: lo slot 4 e' di Guardia; si mette marchio al suo posto
+	s.select_equip_slot("skill3")
 	_check("elenco skill con voci", s._equip_list.get_child_count() >= 3)
-	_check("equipaggio marchio nel secondo slot", s.equip_item("marchio"))
-	_check("kira ha 2 skill", s.roster["characters"]["kira"]["skills"] == ["colpo_caricato", "marchio"])
-	_check("lo slot mostra la skill", s._equip_slots_box.get_child(1).text.contains("MARCHIO"))
+	_check("equipaggio marchio nel quarto slot", s.equip_item("marchio"))
+	_check("kira ha 4 mosse", s.roster["characters"]["kira"]["skills"] == ["attack", "colpo_caricato", "guard", "marchio"])
+	_check("lo slot mostra la skill", s._equip_slots_box.get_child(3).text.contains("MARCHIO"))
 	_check("la stessa skill due volte e' rifiutata", not s.equip_item("colpo_caricato"))
 	_check("il messaggio spiega perche'", s.status_text.contains("Gia'"))
-	_check("svuotare lo slot", s.equip_item("") and s.roster["characters"]["kira"]["skills"].size() == 1)
+	_check("svuotare lo slot", s.equip_item("") and s.roster["characters"]["kira"]["skills"].size() == 3)
 	s.select_equip_slot("skill0")
 	_check("cambiare skill nel primo slot", s.equip_item("marchio") and s.roster["characters"]["kira"]["skills"][0] == "marchio")
 
@@ -103,7 +103,7 @@ func _run() -> void:
 	var atk0: int = int(BattleContent.compute_stats(s.roster["characters"]["kira"])["atk"])
 	_check("equipaggio un'arma", s.equip_item("g1") and s.gear_in_slot("kira", "arma") == "g1")
 	_check("le statistiche salgono", int(BattleContent.compute_stats(s.roster["characters"]["kira"])["atk"]) > atk0)
-	_check("la scheda mostra il pezzo", s._equip_slots_box.get_child(5).text.contains("RARA"))
+	_check("la scheda mostra il pezzo", s._equip_slots_box.get_child(7).text.contains("RARA"))
 	_check("l'altra arma sostituisce la prima", s.equip_item("g2") and s.gear_in_slot("kira", "arma") == "g2" and s.roster["gear"]["g1"]["equipped_by"] == "")
 	_check("pezzo di un altro slot rifiutato", not s.equip_item("g3"))
 	_check("c'e' il pulsante di potenziamento", s._equip_action.get_child_count() == 1)

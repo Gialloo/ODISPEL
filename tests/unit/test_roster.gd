@@ -58,13 +58,16 @@ func _test_equip() -> void:
 	_check("seconda skill non posseduta rifiutata", not RosterState.equip_skill(r, "kira", 1, "cura"))
 	RosterState.add_drop(r, {"kind": "move", "id": "marchio"})
 	# marchio e' gia' posseduto da Nova (1 copia, equipaggiata): il drop ne da' una seconda
-	_check("skill posseduta equipaggiabile", RosterState.equip_skill(r, "kira", 1, "marchio"))
-	_check("la skill compare nei dati", r["characters"]["kira"]["skills"] == ["colpo_caricato", "marchio"])
-	_check("slot oltre il limite rifiutato", not RosterState.equip_skill(r, "kira", 2, "cura"))
-	_check("terza copia non esiste", not RosterState.equip_skill(r, "dax", 1, "marchio"))
+	_check("skill posseduta equipaggiabile", RosterState.equip_skill(r, "kira", 3, "marchio"))
+	_check("la skill compare nei dati", r["characters"]["kira"]["skills"] == ["attack", "colpo_caricato", "guard", "marchio"])
+	_check("slot oltre il limite rifiutato", not RosterState.equip_skill(r, "kira", 4, "cura"))
+	_check("terza copia non esiste", not RosterState.equip_skill(r, "dax", 3, "marchio"))
 	_check("skill duplicata sullo stesso personaggio rifiutata", not RosterState.equip_skill(r, "kira", 0, "marchio"))
 	_check("un'ultimate non va in uno slot skill", not RosterState.equip_skill(r, "dax", 1, "spezzatutto"))
-	_check("svuotare lo slot funziona", RosterState.equip_skill(r, "kira", 1, "") and r["characters"]["kira"]["skills"] == ["colpo_caricato"])
+	_check("svuotare lo slot funziona", RosterState.equip_skill(r, "kira", 3, "") and r["characters"]["kira"]["skills"] == ["attack", "colpo_caricato", "guard"])
+	_check("Attacco si puo' sostituire", RosterState.equip_skill(r, "kira", 0, "") and r["characters"]["kira"]["skills"] == ["colpo_caricato", "guard"])
+	_check("l'ultima mossa base non si toglie", not RosterState.equip_skill(r, "kira", 1, "") and r["characters"]["kira"]["skills"] == ["colpo_caricato", "guard"])
+	_check("Guardia nello slot: Attacco torna", RosterState.equip_skill(r, "kira", 2, "attack") and r["characters"]["kira"]["skills"] == ["colpo_caricato", "guard", "attack"])
 	_check("collezione ancora valida", RosterState.validate(r) == "")
 
 	# ultimate: Kira e Nova hanno spezzatutto (2 copie, entrambe in uso)
@@ -126,7 +129,7 @@ func _test_validation() -> void:
 	bad["rank"] = 9
 	_check("rank fuori scala", RosterState.validate_entry(bad) != "")
 	bad = e.duplicate(true)
-	bad["skills"] = ["colpo_caricato", "marchio", "cura"]
+	bad["skills"] = ["attack", "guard", "colpo_caricato", "marchio", "cura"]
 	_check("troppe skill", RosterState.validate_entry(bad) != "")
 	bad = e.duplicate(true)
 	bad["skills"] = ["spezzatutto"]

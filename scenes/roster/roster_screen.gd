@@ -9,7 +9,7 @@ const RARITY_COLORS: Array = [Color("#c9dde2"), BattleTheme.CY, BattleTheme.UNIT
 var roster: Dictionary = {}
 var save_path: String = RosterStore.DEFAULT_PATH
 const EQUIP_SLOTS: Array = [
-	["skill0", "SKILL 1"], ["skill1", "SKILL 2"], ["ult", "ULTIMATE"],
+	["skill0", "MOSSA 1"], ["skill1", "MOSSA 2"], ["skill2", "MOSSA 3"], ["skill3", "MOSSA 4"], ["ult", "ULTIMATE"],
 	["passive0", "PASSIVA 1"], ["passive1", "PASSIVA 2"],
 	["arma", "ARMA"], ["petto", "PETTO"], ["stivali", "STIVALI"],
 ]
@@ -1165,6 +1165,10 @@ func _refresh_equip_moves(key: String) -> void:
 
 	if key != "ult":
 		_equip_list.add_child(_item_button("-- SVUOTA LO SLOT --", "normal", current != "", ""))
+		if key.begins_with("skill"):
+			for bid in BattleTypes.BASIC_MOVES:
+				var bsel: bool = str(bid) == current
+				_equip_list.add_child(_item_button("%s%s   [mossa base]   %s" % ["> " if bsel else "", BattleText.move_name(str(bid)), BattleText.move_hint(str(bid))], "primary" if bsel else "normal", true, str(bid), GameIcon.move_key(str(bid)), GameIcon.move_color(str(bid))))
 
 	var table: Dictionary = roster["passives"] if is_passive else roster["moves"]
 	var ids: Array = table.keys()

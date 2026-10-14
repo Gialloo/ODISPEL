@@ -32,6 +32,7 @@ func _init() -> void:
 	_test_order_and_damage()
 	_test_swap()
 	_test_guard_taunt_status()
+	_test_kit_slots()
 	_test_ult_and_energy()
 	_test_death_and_end()
 	_test_determinism_and_json()
@@ -218,6 +219,24 @@ func _test_guard_taunt_status() -> void:
 	BattleResolver.submit_choice(mk, "a", {"move": "marchio"})
 	BattleResolver.resolve_round(mk)
 	_check("marchio resta sul boss al round dopo", BattleState.boss(mk)["statuses"].has("mark"))
+
+
+func _test_kit_slots() -> void:
+	var e: Dictionary = BattleContent.default_entry("kira")
+	e["skills"] = ["colpo_caricato", "marchio", "guard", "ricarica"]
+	var st: Dictionary = BattleState.create([{"id": "a", "name": "a", "team": [e]}], "distributore", 3)
+	var k: Dictionary = BattleState.unit(st, "a:kira")
+	_check("kit senza Attacco: l'Attacco non e' valido", BattleResolver.validate_choice(st, "a", {"move": "attack", "swap": "", "target": ""}) != "")
+	_check("kit senza Attacco: la Guardia e' valida", BattleResolver.validate_choice(st, "a", {"move": "guard", "swap": "", "target": ""}) == "")
+	var c: Dictionary = BattleAI.choose(st, "a")
+	_check("l'IA sceglie una mossa valida anche senza Attacco", BattleResolver.validate_choice(st, "a", c) == "")
+	var legacy: Dictionary = BattleContent.default_entry("kira")
+	legacy["skills"] = ["colpo_caricato"]
+	var ls: Dictionary = BattleState.create([{"id": "a", "name": "a", "team": [legacy]}], "distributore", 3)
+	var lk: Array = BattleState.unit(ls, "a:kira")["skills"]
+	_check("vecchio kit: ricevono Attacco e Guardia", lk.has("attack") and lk.has("guard") and lk.has("colpo_caricato"))
+	var many: Array = BattleState.kit_of(["attack", "guard", "a", "b", "c", "d"], [])
+	_check("non piu' di 4 mosse scelte", many.size() == BattleTypes.SKILL_SLOTS and k["skills"].size() >= 4)
 
 
 func _test_ult_and_energy() -> void:

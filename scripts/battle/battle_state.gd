@@ -49,6 +49,36 @@ static func _blank_unit(id: String, char_id: String, side: String, owner: String
 	}
 
 
+# Le mosse scelte dal giocatore (max SKILL_SLOTS): Attacco e Guardia contano come le altre; le abilita' uniche del personaggio si aggiungono.
+# Un kit senza nessuna delle due e' un vecchio salvataggio: riceve entrambe. Ne resta sempre almeno una.
+static func kit_of(equipped: Array, sigs: Array) -> Array:
+	var list: Array = []
+	for m in equipped:
+		if not list.has(str(m)) and not sigs.has(str(m)):
+			list.append(str(m))
+	var has_basic: bool = false
+	for m in list:
+		has_basic = has_basic or BattleTypes.BASIC_MOVES.has(str(m))
+	if not has_basic:
+		list = ["attack", "guard"] + list
+	var cap: int = BattleTypes.SKILL_SLOTS
+	while list.size() > cap:
+		list.pop_back()
+	has_basic = false
+	for m in list:
+		has_basic = has_basic or BattleTypes.BASIC_MOVES.has(str(m))
+	if not has_basic:
+		list[list.size() - 1] = "attack"
+	var out: Array = []
+	for m in list:
+		if BattleTypes.BASIC_MOVES.has(str(m)):
+			out.append(str(m))
+	for m in list:
+		if not BattleTypes.BASIC_MOVES.has(str(m)):
+			out.append(str(m))
+	return out
+
+
 static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	var char_id: String = str(entry["char"])
 	var def: Dictionary = BattleContent.CHARACTERS[char_id]
@@ -56,13 +86,14 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	var u: Dictionary = _blank_unit(unit_id(player_id, char_id), char_id, "player", player_id, def, str(def["cls"]), stats)
 	u["level"] = int(entry.get("level", 1))
 	u["energy"] = BattleTypes.START_ENERGY
-	u["skills"] = entry.get("skills", []).duplicate()
+	var sigs: Array = Signatures.skills_for(char_id, int(entry.get("rank", 0)))
+	u["skills"] = kit_of(entry.get("skills", []), sigs)
 	u["ult"] = str(entry.get("ult", ""))
 	u["passives"] = entry.get("passives", []).duplicate()
 	# abilita' e passiva uniche del personaggio; il rank le potenzia
 	var rank: int = int(entry.get("rank", 0))
 	u["rank"] = rank
-	for sid in Signatures.skills_for(char_id, rank):
+	for sid in sigs:
 		if not u["skills"].has(sid):
 			u["skills"].append(sid)
 	u["uniq"] = Signatures.effects_for(char_id, rank)

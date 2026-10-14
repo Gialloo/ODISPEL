@@ -43,8 +43,18 @@ static func choose(state: Dictionary, pid: String) -> Dictionary:
 	var move_id: String = _pick_move(state, p, current, tele_move, str(tele.get("target", "")), choice)
 	choice["move"] = move_id
 	if BattleResolver.validate_choice(state, pid, choice) != "":
-		choice["move"] = BattleTypes.ACTION_ATTACK
+		choice["move"] = _basic_for(current)
 	return choice
+
+
+# Mossa di ripiego: Attacco se e' nel kit, altrimenti Guardia, altrimenti la prima mossa.
+static func _basic_for(u: Dictionary) -> String:
+	var sk: Array = u.get("skills", [])
+	if sk.has(BattleTypes.ACTION_ATTACK) or sk.is_empty():
+		return BattleTypes.ACTION_ATTACK
+	if sk.has(BattleTypes.ACTION_GUARD):
+		return BattleTypes.ACTION_GUARD
+	return str(sk[0])
 
 
 static func _team_buffed(state: Dictionary, stat: String) -> bool:
@@ -88,6 +98,8 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 	var skills: Array = u["skills"]
 	for sid in skills:
 		var m: Dictionary = BattleContent.MOVES[str(sid)]
+		if str(m["kind"]) == "basic":
+			continue
 		if energy < int(m["cost"]):
 			continue
 		# i supporti tengono acceso il bonus di attacco della squadra (dura 2 turni: lo rinnovano quando scade)
@@ -114,6 +126,6 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 		if m.has("mult") and float(m["mult"]) >= 2.0 and energy >= int(m["cost"]) + 1:
 			return str(sid)
 
-	if _ratio(u) < 0.3 and tele_target == pid and str(tele_move.get("target", "")) == "one":
+	if _ratio(u) < 0.3 and tele_target == pid and str(tele_move.get("target", "")) == "one" and skills.has(BattleTypes.ACTION_GUARD):
 		return BattleTypes.ACTION_GUARD
-	return BattleTypes.ACTION_ATTACK
+	return _basic_for(u)

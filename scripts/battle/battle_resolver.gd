@@ -103,7 +103,8 @@ static func validate_choice(state: Dictionary, pid: String, choice: Dictionary) 
 	var move: Dictionary = BattleContent.MOVES[move_id]
 	match str(move["kind"]):
 		"basic":
-			pass
+			if not u["skills"].has(move_id):
+				return "mossa non equipaggiata"
 		"skill":
 			if not u["skills"].has(move_id):
 				return "mossa non equipaggiata"

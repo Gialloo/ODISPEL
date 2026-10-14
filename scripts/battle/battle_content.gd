@@ -550,10 +550,9 @@ static func compute_stats(entry: Dictionary) -> Dictionary:
 # Equipaggiamento di base di un personaggio (innata + ultimate + passiva innata).
 # Le skill di partenza: quella innata e, per la LibraCorp, Ricarica (senza munizioni il loro stile non funziona).
 static func _default_skills(char_id: String) -> Array:
-	var skills: Array = [str(CHARACTERS[char_id]["skill"])]
 	if faction_of(char_id) == "libracorp":
-		skills.append("ricarica")
-	return skills
+		return ["attack", str(CHARACTERS[char_id]["skill"]), "ricarica", "guard"]
+	return ["attack", str(CHARACTERS[char_id]["skill"]), "guard"]
 
 
 static func default_entry(char_id: String, level: int = 1, rank: int = 0) -> Dictionary:

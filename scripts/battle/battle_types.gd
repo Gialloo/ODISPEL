@@ -22,7 +22,8 @@ const COLOR_DISADVANTAGE: float = 0.67
 const TEAM_SIZE: int = 6          # party massimo (front row + back row)
 const FRONT_SIZE: int = 3         # personaggi in front row in solitaria
 const NET_TEAM_SIZE: int = 3      # in rete ogni giocatore porta al massimo 3 personaggi (1 in campo)
-const SKILL_SLOTS: int = 2
+const SKILL_SLOTS: int = 4       # mosse del menu (max 4 + ultimate); Attacco e Guardia occupano uno slot come le altre
+const BASIC_MOVES: Array = ["attack", "guard"]
 const PASSIVE_SLOTS: int = 2
 
 const MAX_ENERGY: int = 6

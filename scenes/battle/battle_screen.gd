@@ -779,7 +779,7 @@ func _build_log() -> void:
 	BattleTheme.style_button(_log_handle, "normal", 13)
 	_log_handle.tooltip_text = "Registro degli eventi"
 	add_child(_log_handle)
-	_anchor(_log_handle, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-96, -34, -10, -8 if not TouchUi.active() else -2))
+	_anchor(_log_handle, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-96 if not TouchUi.active() else -130, -34 if not TouchUi.active() else -68, -10, -8 if not TouchUi.active() else -6))
 	_log_handle.pressed.connect(toggle_log)
 	_refresh_log_handle()
 
@@ -1405,7 +1405,7 @@ func _refresh_orders() -> void:
 	var u: Dictionary = BattleState.unit(shown, uid)
 	# firma di cio' che si vede (testi e pulsanti spenti): se e' uguale non si ricostruisce
 	var sig: String = "%s|%s|%s|%s|%d|%s|%s" % [uid, pending_swap, locked, animating, int(u["gauge"]), _cur_slot_id(), str(autoplay)]
-	var sig_ids: Array = ["attack", "guard"]
+	var sig_ids: Array = []
 	sig_ids.append_array(u["skills"])
 	if str(u["ult"]) != "":
 		sig_ids.append(str(u["ult"]))
@@ -1435,9 +1435,9 @@ func _refresh_orders() -> void:
 	var title := BattleTheme.make_label(title_text, 14, BattleTheme.WH, true)
 	title.set_meta("keep_case", true)       # "KIRA 1st": l'ordinale resta minuscolo
 	_orders_box.add_child(title)
-	var entries: Array = [{"id": "attack", "kind": "primary"}, {"id": "guard", "kind": "normal"}]
+	var entries: Array = []
 	for s in u["skills"]:
-		entries.append({"id": str(s), "kind": "normal"})
+		entries.append({"id": str(s), "kind": "primary" if str(s) == "attack" else "normal"})
 	if str(u["ult"]) != "":
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
 	var bh: float = 56.0 if touch else 42.0
@@ -1447,7 +1447,7 @@ func _refresh_orders() -> void:
 	for mid in BattleContent.MOVES:
 		longest = maxf(longest, BattleTheme.hud().get_string_size(_order_text(str(mid), BattleContent.MOVES[mid], 100), HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x)
 	var bw: float = clampf(longest + 44.0, 212.0, 262.0)
-	var pts: Array = _orders_box.layout(entries.size(), bh, 4.0, fan_big, 0.0, 246.0, 706.0)
+	var pts: Array = _orders_box.layout(entries.size(), bh, 4.0, fan_big, 0.0, 214.0 if touch else 236.0, 578.0)
 	title.position = Vector2(float(pts[0].x) - 2.0, float(pts[0].y) - bh * 0.5 - 26.0)
 	var lo := Vector2(1e9, 1e9)
 	var hi := Vector2(-1e9, -1e9)

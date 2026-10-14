@@ -100,7 +100,8 @@ static func add_character(roster: Dictionary, char_id: String) -> String:
 	roster["characters"][char_id] = fresh
 	# la mossa, l'ultimate e la passiva innate sono sempre possedute
 	for sk in fresh["skills"]:
-		_inventory_add(roster["moves"], str(sk))
+		if not BattleTypes.BASIC_MOVES.has(str(sk)):
+			_inventory_add(roster["moves"], str(sk))
 	_inventory_add(roster["moves"], str(fresh["ult"]))
 	_inventory_add(roster["passives"], str(fresh["passives"][0]))
 	return "new"
@@ -210,28 +211,41 @@ static func _used(roster: Dictionary, field: String, id: String, skip_char: Stri
 	return count
 
 
+static func _basic_count(skills: Array) -> int:
+	var n: int = 0
+	for m in skills:
+		n += 1 if BattleTypes.BASIC_MOVES.has(str(m)) else 0
+	return n
+
+
 # Mette una skill nello slot (0..SKILL_SLOTS-1). id "" svuota lo slot.
 static func equip_skill(roster: Dictionary, char_id: String, slot: int, move_id: String) -> bool:
 	if not owns(roster, char_id) or slot < 0 or slot >= BattleTypes.SKILL_SLOTS:
 		return false
 	var skills: Array = roster["characters"][char_id]["skills"]
+	var after: Array = skills.duplicate()
 	if move_id == "":
-		if slot < skills.size():
-			skills.remove_at(slot)
-		return true
-	if slot > skills.size():
-		return false
-	if not BattleContent.MOVES.has(move_id) or str(BattleContent.MOVES[move_id]["kind"]) != "skill":
-		return false
-	if int(roster["moves"].get(move_id, 0)) <= _used(roster, "skills", move_id, char_id, slot):
-		return false
-	for i in skills.size():
-		if i != slot and str(skills[i]) == move_id:
-			return false
-	if slot == skills.size():
-		skills.append(move_id)
+		if slot < after.size():
+			after.remove_at(slot)
 	else:
-		skills[slot] = move_id
+		if slot > skills.size():
+			return false
+		var basic: bool = BattleTypes.BASIC_MOVES.has(move_id)
+		var kind: String = str(BattleContent.MOVES[move_id]["kind"]) if BattleContent.MOVES.has(move_id) else ""
+		if kind != "skill" and not basic:
+			return false
+		if not basic and int(roster["moves"].get(move_id, 0)) <= _used(roster, "skills", move_id, char_id, slot):
+			return false
+		for i in skills.size():
+			if i != slot and str(skills[i]) == move_id:
+				return false
+		if slot == after.size():
+			after.append(move_id)
+		else:
+			after[slot] = move_id
+	if _basic_count(after) == 0:
+		return false          # almeno una mossa base (Attacco o Guardia) resta sempre nel kit
+	roster["characters"][char_id]["skills"] = after
 	return true
 
 
@@ -314,7 +328,7 @@ static func validate_entry(entry: Dictionary) -> String:
 		return "troppe skill"
 	var seen: Dictionary = {}
 	for m in skills:
-		if not BattleContent.MOVES.has(str(m)) or str(BattleContent.MOVES[str(m)]["kind"]) != "skill":
+		if not BattleContent.MOVES.has(str(m)) or (str(BattleContent.MOVES[str(m)]["kind"]) != "skill" and not BattleTypes.BASIC_MOVES.has(str(m))):
 			return "skill non valida"
 		if seen.has(str(m)):
 			return "skill duplicata"
@@ -647,6 +661,19 @@ static func is_tier_unlocked(roster: Dictionary, boss_id: String, tier: int) -> 
 # ---------- JSON ----------
 
 # Salvataggi scritti prima delle munizioni: gli operatori LibraCorp ricevono Ricarica se hanno uno slot libero.
+# Vecchi salvataggi: Attacco e Guardia erano fissi, ora stanno negli slot.
+static func migrate_kits(roster: Dictionary) -> void:
+	var chars: Variant = roster.get("characters", {})
+	if not (chars is Dictionary):
+		return
+	for id in chars:
+		var skills: Variant = (chars[id] as Dictionary).get("skills", null)
+		if skills is Array and _basic_count(skills) == 0:
+			var fixed: Array = ["attack", "guard"]
+			fixed.append_array(skills)
+			(chars[id] as Dictionary)["skills"] = fixed.slice(0, BattleTypes.SKILL_SLOTS)
+
+
 static func sync_faction_moves(roster: Dictionary) -> void:
 	var chars: Variant = roster.get("characters", {})
 	if not (chars is Dictionary) or not (roster.get("moves", null) is Dictionary) or int(roster.get("faction_sync", 0)) >= 1:
@@ -684,6 +711,7 @@ static func from_json(text: String) -> Dictionary:
 		roster["pity"] = 0
 	if not roster.has("cleared"):
 		roster["cleared"] = {}
+	migrate_kits(roster)
 	sync_faction_moves(roster)
 	grant_story_allies(roster)
 	if int(roster.get("version", 0)) != VERSION or validate(roster) != "":
