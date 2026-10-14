@@ -8,9 +8,9 @@ extends Control
 const DW: float = 1280.0
 const DH: float = 720.0
 const HORIZON: float = 250.0
-const BOSS_X: float = 950.0
-const BOSS_FLOOR: float = 520.0     # il boss sta sulla stessa linea dei piedi della squadra...
-const BOSS_SCALE: float = 1.02      # ...con una figura un po' piu' grande della squadra
+const BOSS_X: float = 930.0
+const BOSS_FLOOR: float = 505.0     # il boss sta sulla stessa linea dei piedi della squadra...
+const BOSS_SCALE: float = 0.98      # ...con una figura un po' piu' grande della squadra
 const FLOOR_Y: float = 470.0        # dove i piedi toccano il suolo sullo schermo
 const GEO_FLOOR: float = 600.0      # il suolo nelle coordinate con cui sono disegnate le figure
 const ENTITY_SCALE: float = 0.76    # le figure sono disegnate in grande e ridotte qui
@@ -143,6 +143,10 @@ class StaticLayer extends Control:
 var framed: bool = false
 var party_lift: float = 0.0       # alza la squadra (su telefono il pannello operatori e' piu' alto)
 var _rest_pos: Vector2 = Vector2.ZERO
+var hp_visible: bool = false      # mostra le barre vita sotto i personaggi (mentre il giocatore sceglie)
+var _hp_recent: Dictionary = {}   # unita' -> secondi in cui la barra resta visibile dopo un colpo
+var _hp_last: Dictionary = {}     # unita' -> PV all'ultimo stato (per accorgersi di quanti ne perde)
+var _hp_ghost: Dictionary = {}    # unita' -> rapporto PV di prima del colpo (la parte rossa che si svuota)
 var select_slot: String = ""      # slot a cui tocca scegliere (freccia); vuoto = nessuno
 var box_origin: Vector2 = Vector2.ZERO
 
@@ -189,6 +193,11 @@ func _process(delta: float) -> void:
 	summon_pulse = maxf(0.0, summon_pulse - delta * 2.0)
 	for uid in hit_flash.keys():
 		hit_flash[uid] = maxf(0.0, float(hit_flash[uid]) - delta * 3.0)
+	for uid in _hp_recent.keys():
+		_hp_recent[uid] = float(_hp_recent[uid]) - delta
+		if float(_hp_recent[uid]) <= 0.0:
+			_hp_recent.erase(uid)
+			_hp_ghost.erase(uid)
 	_shake = maxf(0.0, _shake - delta * 40.0)
 	_punch = maxf(0.0, _punch - delta * 0.5)
 	var want := Vector2.ZERO
@@ -225,6 +234,7 @@ func impact(amount: float = 10.0, zoom: float = 0.03) -> void:
 func set_state(new_state: Dictionary) -> void:
 	state = new_state
 	if not state.is_empty():
+		_track_hp()
 		var boss_id: String = str(BattleState.boss(state)["char"])
 		if boss_id != _bg_boss:
 			_bg_boss = boss_id
@@ -239,6 +249,22 @@ func flash(uid: String) -> void:
 		boss_hit = 1.0
 	else:
 		hit_flash[uid] = 1.0
+
+
+# Chi perde PV mostra la sua barra per un po', con la parte persa in rosso.
+func _track_hp() -> void:
+	for uid in state["units"]:
+		var u: Dictionary = state["units"][uid]
+		if str(u["side"]) != "player":
+			continue
+		var hp: int = int(u["hp"])
+		var prev: int = int(_hp_last.get(uid, hp))
+		if hp < prev:
+			_hp_ghost[uid] = float(prev) / maxf(1.0, float(u["max_hp"]))
+			_hp_recent[uid] = 2.6
+		elif hp > prev:
+			_hp_recent[uid] = 1.8                # anche una cura si vede
+		_hp_last[uid] = hp
 
 
 # Posizione sullo schermo (nelle coordinate di questo controllo) del petto di un'unita'.
@@ -259,7 +285,7 @@ func _map(p: Vector2, gx: float, s: float = ENTITY_SCALE, floor_y: float = FLOOR
 func party_pose(index: int, _count: int) -> Vector3:
 	var t: float = float(index)
 	# diagonale verso lo spettatore: il primo e' in alto a sinistra, i successivi scendono e si avvicinano (come nei JRPG a squadra)
-	return Vector3(170.0 + t * 160.0, 466.0 + t * 24.0 - party_lift, 1.0 + t * 0.03)
+	return Vector3(140.0 + t * 185.0, 462.0 + t * 20.0 - party_lift, 0.92 + t * 0.05)
 
 
 func _layout() -> void:
@@ -498,6 +524,7 @@ func _draw_boss() -> void:
 	_brackets(br, BattleTheme.RD if alive else BattleTheme.CY_DARK, 5.0, 40.0)
 	if alive:
 		draw_line(Vector2(br.position.x + br.size.x * 0.5, br.position.y), Vector2(br.position.x + br.size.x * 0.5, br.position.y - 22.0), BattleTheme.RD, 3.0)
+		_draw_boss_balance(boss, br)
 		_draw_boss_marks(boss, br)
 
 
@@ -1083,6 +1110,9 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 			var beam := PackedVector2Array([Vector2(cx - 60.0, foot_y), Vector2(cx - 30.0, foot_y - 260.0), Vector2(cx + 30.0, foot_y - 260.0), Vector2(cx + 60.0, foot_y)])
 			draw_colored_polygon(beam, Color(col, 0.10 + 0.05 * pulse))
 
+	if alive and (hp_visible or float(_hp_recent.get(u["id"], 0.0)) > 0.0):
+		_draw_hp_under(u, cx, foot_y + 34.0)
+
 	if alive and int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
 		# ultimate pronta: aura a raggi e scritta che pulsa
 		var beat: float = 0.5 + 0.5 * sin(_t * 7.0)
@@ -1118,6 +1148,36 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 	if _anim_on:
 		_draw_status_fx(u, cx, foot_y)
 	_draw_fighter_frame(u, cx, top, col, index, is_lead, foot_y)
+
+
+# Barra vita sotto i piedi: PV attuali, la parte appena persa in rosso e il numero. Appare solo quando serve.
+func _draw_hp_under(u: Dictionary, cx: float, y: float) -> void:
+	var w: float = 130.0
+	var h: float = 12.0
+	var ratio: float = clampf(float(u["hp"]) / maxf(1.0, float(u["max_hp"])), 0.0, 1.0)
+	var r := Rect2(cx - w * 0.5, y, w, h)
+	draw_rect(Rect2(r.position - Vector2(2.0, 2.0), r.size + Vector2(4.0, 4.0)), Color(0.0, 0.02, 0.03, 0.85))
+	var ghost: float = float(_hp_ghost.get(u["id"], ratio))
+	if ghost > ratio:
+		draw_rect(Rect2(r.position, Vector2(w * ghost, h)), Color(BattleTheme.RD, 0.9))
+	var col: Color = BattleTheme.RD if ratio < 0.3 else (BattleTheme.POP if ratio < 0.6 else BattleTheme.OK)
+	draw_rect(Rect2(r.position, Vector2(w * ratio, h)), col)
+	if int(u.get("shield", 0)) > 0:
+		draw_rect(Rect2(r.position, Vector2(minf(w, w * float(u["shield"]) / maxf(1.0, float(u["max_hp"]))), 3.0)), Color(BattleTheme.WH, 0.85))
+	_text(BattleTheme.hud(), Vector2(cx - w * 0.5, y + h + 18.0), "%d / %d" % [int(u["hp"]), int(u["max_hp"])], 17, BattleTheme.WH)
+
+
+# Equilibrio del boss: barra blu sottile sopra la testa (quando si svuota il boss si rompe).
+func _draw_boss_balance(boss: Dictionary, br: Rect2) -> void:
+	var bmax: int = maxi(1, int(boss.get("balance_max", 1)))
+	var stunned: bool = int(boss.get("stun", 0)) > 0 or bool(boss.get("exposed", false))
+	var ratio: float = 0.0 if stunned else clampf(float(boss.get("balance", 0)) / float(bmax), 0.0, 1.0)
+	var w: float = 150.0
+	var r := Rect2(br.position.x + br.size.x * 0.5 - w * 0.5, br.position.y - 18.0, w, 10.0)
+	draw_rect(Rect2(r.position - Vector2(2.0, 2.0), r.size + Vector2(4.0, 4.0)), Color(0.0, 0.02, 0.03, 0.9))
+	draw_rect(Rect2(r.position, Vector2(w * ratio, r.size.y)), BattleTheme.POP if stunned else BattleTheme.CY)
+	var mark := PackedVector2Array([Vector2(r.position.x - 12.0, r.position.y + 5.0), Vector2(r.position.x - 6.0, r.position.y - 1.0), Vector2(r.position.x, r.position.y + 5.0), Vector2(r.position.x - 6.0, r.position.y + 11.0)])
+	draw_colored_polygon(mark, BattleTheme.POP if stunned else BattleTheme.CY)
 
 
 # Stati visibili sul personaggio: sanguinamento (gocce), marchio (mirino che ruota), provocazione (alone rosso), guardia (arco).

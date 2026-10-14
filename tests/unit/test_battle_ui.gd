@@ -199,7 +199,7 @@ func _test_screen() -> void:
 	_check("turno: le righe dei tuoi 3 front sono tue", mine_rows == 3)
 	_check("turno: ogni riga dice cosa fa", all_text)
 	_check("turno: pannello con le righe", scene._turn_box.get_child_count() == rows.size())
-	_check("front row: 3 righe (ognuna con il suo compagno in panchina) nel pannello", scene._ops_box.get_child_count() == 3)
+	_check("front row: 3 righe (ognuna con il suo compagno in panchina) nel pannello", scene._ops_box.get_child(0).get_child_count() == 3)
 	_check("front row: AUTOPLAY disponibile", scene._auto_button.visible and not scene.autoplay)
 	_check("palco: etichetta TU per il giocatore locale", scene._stage.local_player_id == "p1")
 
