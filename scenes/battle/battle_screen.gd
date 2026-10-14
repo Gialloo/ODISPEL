@@ -399,7 +399,7 @@ func _build_autoplay() -> void:
 	_auto_button.visible = false
 	BattleTheme.style_button(_auto_button, "normal", 16)
 	add_child(_auto_button)
-	_anchor(_auto_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-204, 6, -8, 44 if not TouchUi.active() else 58))
+	_anchor(_auto_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 6, 118, 42 if not TouchUi.active() else 50))
 	_auto_button.pressed.connect(func() -> void: set_autoplay(not autoplay))
 	# velocita' dell'animazione sempre a portata di dito: NORMALE -> VELOCE -> TURBO
 	speed_button = Button.new()
@@ -407,8 +407,7 @@ func _build_autoplay() -> void:
 	BattleTheme.style_button(speed_button, "normal", 15)
 	speed_button.text = _speed_label()
 	add_child(speed_button)
-	var top: float = 58.0 if TouchUi.active() else 44.0
-	_anchor(speed_button, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-204, top + 6.0, -8, top + (6.0 + 44.0 if TouchUi.active() else 6.0 + 34.0)))
+	_anchor(speed_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(126, 6, 286, 42 if not TouchUi.active() else 50))
 	speed_button.pressed.connect(func() -> void:
 		Settings.next_speed()
 		Settings.save()
@@ -421,84 +420,65 @@ func _speed_label() -> String:
 
 
 func _build_camera_info() -> void:
-	# REC e numero del turno: in basso a destra, nell'angolo, fuori dai pannelli
-	var strip := HBoxContainer.new()
-	strip.add_theme_constant_override("separation", 8)
-	strip.alignment = BoxContainer.ALIGNMENT_END
-	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(strip)
-	_anchor(strip, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-260, -50, -10, -14))
-	_round_label = BattleTheme.make_label("TURNO 01", 19, BattleTheme.CY_DIM)
+	# il numero del turno sta sotto i pulsanti, a sinistra (niente striscia REC: lo schermo resta pulito)
+	_round_label = BattleTheme.make_label("TURNO 01", 18, BattleTheme.WH)
 	_round_label.add_theme_font_override("font", BattleTheme.hud())
-	_round_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	strip.add_child(_round_label)
-	var rec := BattleTheme.make_label("REC", 19, BattleTheme.WH, true)
-	rec.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	strip.add_child(rec)
-	var holder := Control.new()
-	holder.custom_minimum_size = Vector2(14, 24)
-	holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	strip.add_child(holder)
-	_rec_dot = ColorRect.new()
-	_rec_dot.color = BattleTheme.RD
-	_rec_dot.size = Vector2(14, 14)
-	_rec_dot.position = Vector2(0, 5)
-	_rec_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(_rec_dot)
-	var cam := BattleTheme.make_label("CAM-07 · VIA S. GIORGIO · PARK 3", 14, BattleTheme.CY)
-	cam.position = Vector2(28, 70)
-	cam.visible = false
-	add_child(cam)
+	_round_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_round_label)
+	_anchor(_round_label, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(12, 48, 200, 72))
 	_clock_label = BattleTheme.make_label("", 15, BattleTheme.CY)
-	_clock_label.position = Vector2(28, 92)
 	_clock_label.visible = false
 	add_child(_clock_label)
 
 
 func _build_boss_banner() -> void:
-	var panel := HudPanel.new().setup("SOGGETTO N.07", BattleTheme.RD)
+	var panel := HudPanel.new().setup("", BattleTheme.RD)
+	panel.bare = true
+	panel.backdrop = 0.0
 	_boss_panel = panel
 	add_child(panel)
-	panel.margins = Vector4(18.0, 26.0, 18.0, 8.0)
-	_anchor(panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 12, 192, 142))
+	panel.margins = Vector4(4.0, 2.0, 4.0, 2.0)
+	_anchor(panel, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-480, 8, -12, 112))
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 3)
+	box.add_theme_constant_override("separation", 2)
 	panel.set_content(box)
-	_boss_name = BattleTheme.make_label("SOGGETTO", 24, BattleTheme.WH, true)       # il nome: grande, Archivo Black, bianco
-	_boss_name.clip_text = true
-	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(_boss_name)
-	_boss_meta = BattleTheme.make_label("", 13, BattleTheme.WH)                  # classe, minaccia, difficolta': piccolo e chiaro
-	_boss_meta.add_theme_font_override("font", BattleTheme.hud())
-	_boss_meta.clip_text = true
-	_boss_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(_boss_meta)
-	_boss_bar = LineBar.new().setup(BattleTheme.RD, Vector2(0, 12))
+	_boss_bar = LineBar.new().setup(BattleTheme.RD, Vector2(0, 10))      # barra vita sottile in alto
 	_boss_bar.color_bg = Color(BattleTheme.RD_DARK, 0.9)
 	box.add_child(_boss_bar)
-	_boss_bal = LineBar.new().setup(BattleTheme.CY, Vector2(0, 6))
+	_boss_bal = LineBar.new().setup(BattleTheme.CY, Vector2(0, 4))
 	_boss_bal.color_bg = Color(BattleTheme.CY_DARK, 0.9)
 	box.add_child(_boss_bal)
-	_boss_hp = BattleTheme.make_label("INTEGRITA'", 17, BattleTheme.WH)
+	_boss_name = BattleTheme.make_label("SOGGETTO", 26, BattleTheme.WH, true)       # il nome: a destra, sotto la barra
+	_boss_name.clip_text = true
+	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	box.add_child(_boss_name)
+	_boss_meta = BattleTheme.make_label("", 13, BattleTheme.CY)
+	_boss_meta.add_theme_font_override("font", BattleTheme.hud())
+	_boss_meta.clip_text = true
+	_boss_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	box.add_child(_boss_meta)
+	_boss_hp = BattleTheme.make_label("INTEGRITA'", 14, BattleTheme.WH)
 	_boss_hp.add_theme_font_override("font", BattleTheme.hud())
-	_boss_hp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_hp.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	box.add_child(_boss_hp)
 
-	var timer_panel := HudPanel.new().setup("ORDINE ENTRO", BattleTheme.RD)
-	timer_panel.quiet = true
+	var timer_panel := HudPanel.new().setup("", BattleTheme.RD)
+	timer_panel.bare = true
+	timer_panel.backdrop = 0.0
 	add_child(timer_panel)
-	timer_panel.margins = Vector4(14.0, 22.0, 14.0, 2.0)
-	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 6, 148, 64))
-	_timer_label = BattleTheme.make_label("LIBERO", 28, BattleTheme.CY, true)
+	timer_panel.margins = Vector4(0.0, 0.0, 0.0, 0.0)
+	_anchor(timer_panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(294, 6, 392, 42))
+	_timer_label = BattleTheme.make_label("LIBERO", 20, BattleTheme.CY, true)
+	_timer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	timer_panel.set_content(_timer_label)
 
 
 func _build_telegraph() -> void:
 	_tele_panel = HudPanel.new().setup("ALLARME", BattleTheme.RD)
+	_tele_panel.quiet = true
 	add_child(_tele_panel)
-	_tele_panel.margins = Vector4(14.0, 9.0, 14.0, 17.0)
-	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 150, 192, 214))
+	_tele_panel.margins = Vector4(12.0, 20.0, 12.0, 4.0)
+	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 6, 68, 74))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	_tele_panel.set_content(box)
@@ -515,31 +495,31 @@ func _build_telegraph() -> void:
 	_plan_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_plan_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_plan_label)
-	_anchor(_plan_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 218, 192, 262))
+	_anchor(_plan_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 78, 68, 120))
 	_reserve_label = BattleTheme.make_label("", 12, BattleTheme.CY)
 	_reserve_label.add_theme_font_override("font", BattleTheme.hud())
 	_reserve_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_reserve_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_reserve_label)
-	_anchor(_reserve_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 264, 192, 282))
+	_anchor(_reserve_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 122, 68, 140))
 	_react_row = HBoxContainer.new()
 	_react_row.add_theme_constant_override("separation", 6)
 	_react_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(_react_row)
-	_anchor(_react_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 284, 192, 316))
+	_anchor(_react_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 144, 68, 174))
 	_tact_row = HBoxContainer.new()
 	_tact_row.add_theme_constant_override("separation", 6)
 	_tact_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(_tact_row)
-	_anchor(_tact_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-250, 318, 20, 346))
+	_anchor(_tact_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 178, 68, 204))
 	_order_btn = Button.new()
-	_order_btn.custom_minimum_size = Vector2(132, 26)
+	_order_btn.custom_minimum_size = Vector2(154, 26)
 	_order_btn.clip_text = true
 	BattleTheme.style_button(_order_btn, "normal", 12)
 	_order_btn.pressed.connect(_cycle_order)
 	_tact_row.add_child(_order_btn)
 	_push_btn = Button.new()
-	_push_btn.custom_minimum_size = Vector2(132, 26)
+	_push_btn.custom_minimum_size = Vector2(154, 26)
 	_push_btn.clip_text = true
 	BattleTheme.style_button(_push_btn, "normal", 12)
 	_push_btn.pressed.connect(_cycle_push)
@@ -550,10 +530,11 @@ func _build_telegraph() -> void:
 # Pannello "ORDINE DEL TURNO": chi agisce, in che ordine e cosa ha scelto (le IA decidono da sole).
 func _build_turn_panel() -> void:
 	var panel := HudPanel.new().setup("ORDINE DEL TURNO", BattleTheme.CY_DIM)
-	panel.margins = Vector4(12, 26, 12, 6)
-	panel.backdrop = 0.55
+	panel.quiet = true
+	panel.margins = Vector4(10, 24, 10, 4)
+	panel.backdrop = 0.4
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 76, 332, 202))
+	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 80, 300, 206))
 	_turn_box = VBoxContainer.new()
 	_turn_box.add_theme_constant_override("separation", 1)
 	_turn_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2175,6 +2156,16 @@ var _banter_enraged: bool = false
 
 
 # Fumetto in basso a destra (lontano dal tasto autoplay): volto di chi parla e una riga. Non piu' di uno ogni ~6 secondi.
+# Fine del fumetto: lo toglie e ridona l'ordine del turno (si passano gli id: gli oggetti potrebbero essere gia' stati liberati).
+func _banter_done(plate_id: int, panel_id: int) -> void:
+	var plate: Object = instance_from_id(plate_id)
+	if plate != null and is_instance_valid(plate):
+		(plate as Node).queue_free()
+	var panel: Object = instance_from_id(panel_id) if panel_id != 0 else null
+	if panel != null and is_instance_valid(panel):
+		(panel as Control).modulate.a = 1.0
+
+
 func banter(uid: String, kind: String, force: bool = false) -> void:
 	var now: int = Time.get_ticks_msec()
 	if not force and now < _banter_until_ms:
@@ -2192,18 +2183,19 @@ func banter(uid: String, kind: String, force: bool = false) -> void:
 		_banter_node.queue_free()
 	var plate := Control.new()
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.anchor_left = 1.0
-	plate.anchor_right = 1.0
-	plate.anchor_top = 1.0
-	plate.anchor_bottom = 1.0
-	plate.offset_left = -400.0
-	plate.offset_right = -16.0
-	plate.offset_top = -106.0
-	plate.offset_bottom = -16.0
+	# il fumetto sta in alto a sinistra con il volto di chi parla (come nei JRPG): piu' vicino all'azione, fuori dai comandi
+	plate.anchor_left = 0.0
+	plate.anchor_right = 0.0
+	plate.anchor_top = 0.0
+	plate.anchor_bottom = 0.0
+	plate.offset_left = 0.0
+	plate.offset_right = 360.0
+	plate.offset_top = 84.0
+	plate.offset_bottom = 184.0
 	var bg := PanelContainer.new()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.offset_right = -70.0
+	bg.offset_left = 128.0
 	bg.add_theme_stylebox_override("panel", SlantBox.make(BattleTheme.BK, BattleTheme.WH, 12.0, BattleTheme.unit_color(str(u["color"])), 3.0))
 	var lab := BattleTheme.make_label(text, 20, BattleTheme.WH, true)
 	lab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -2214,17 +2206,20 @@ func banter(uid: String, kind: String, force: bool = false) -> void:
 	var face := PortraitView.new().setup(str(u["char"]), "bust")
 	face.show_expression_text = false
 	face.set_expression(Banter.expression_for(kind))
-	face.size = Vector2(120.0, 120.0)
-	face.position = Vector2(plate.offset_right - plate.offset_left - 128.0, -22.0)
+	face.size = Vector2(130.0, 130.0)
+	face.position = Vector2(0.0, -14.0)
 	plate.add_child(face)
 	_overlay_banter_host().add_child(plate)
 	_banter_node = plate
 	plate.modulate.a = 0.0
 	var tw := create_tween()
+	var turn_panel: Control = _turn_box.get_parent() as Control if _turn_box != null else null
+	if turn_panel != null:
+		turn_panel.modulate.a = 0.0          # sotto il fumetto l'ordine del turno si nasconde un attimo
 	tw.tween_property(plate, "modulate:a", 1.0, 0.15)
 	tw.tween_interval(3.4)
 	tw.tween_property(plate, "modulate:a", 0.0, 0.4)
-	tw.tween_callback(plate.queue_free)
+	tw.tween_callback(_banter_done.bind(plate.get_instance_id(), turn_panel.get_instance_id() if turn_panel != null else 0))
 
 
 func _local_active_id() -> String:

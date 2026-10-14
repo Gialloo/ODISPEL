@@ -8,9 +8,9 @@ extends Control
 const DW: float = 1280.0
 const DH: float = 720.0
 const HORIZON: float = 250.0
-const BOSS_X: float = 985.0
-const BOSS_FLOOR: float = 494.0     # il boss sta sulla stessa linea dei piedi della squadra...
-const BOSS_SCALE: float = 0.86      # ...con una figura un po' piu' grande della squadra
+const BOSS_X: float = 950.0
+const BOSS_FLOOR: float = 520.0     # il boss sta sulla stessa linea dei piedi della squadra...
+const BOSS_SCALE: float = 1.02      # ...con una figura un po' piu' grande della squadra
 const FLOOR_Y: float = 470.0        # dove i piedi toccano il suolo sullo schermo
 const GEO_FLOOR: float = 600.0      # il suolo nelle coordinate con cui sono disegnate le figure
 const ENTITY_SCALE: float = 0.76    # le figure sono disegnate in grande e ridotte qui
@@ -258,7 +258,8 @@ func _map(p: Vector2, gx: float, s: float = ENTITY_SCALE, floor_y: float = FLOOR
 # La squadra sta su una riga sola: stessa altezza e stessa scala, vicini fra loro e lontani dal boss. x = posizione, y = piedi sullo schermo, z = scala.
 func party_pose(index: int, _count: int) -> Vector3:
 	var t: float = float(index)
-	return Vector3(215.0 + t * 150.0, 494.0 - party_lift, 0.82)
+	# diagonale verso lo spettatore: il primo e' in alto a sinistra, i successivi scendono e si avvicinano (come nei JRPG a squadra)
+	return Vector3(170.0 + t * 160.0, 466.0 + t * 24.0 - party_lift, 1.0 + t * 0.03)
 
 
 func _layout() -> void:
