@@ -305,6 +305,13 @@ static func _tally(state: Dictionary, events: Array) -> void:
 				st["breaks"] = int(st["breaks"]) + 1
 			"synergy":
 				st["synergies"] = int(st["synergies"]) + 1
+				_note_seen(st, "seen_combos", str(e.get("id", "")))
+			"arena":
+				_note_seen(st, "seen_arena", str(e.get("id", "")))
+			"behavior":
+				_note_seen(st, "seen_behavior", str(e.get("id", "")))
+			"rescue":
+				st["rescues"] = int(st.get("rescues", 0)) + 1
 			"tenacity":
 				st["wills"] = int(st["wills"]) + 1
 			"phase":
@@ -340,6 +347,16 @@ static func _tally(state: Dictionary, events: Array) -> void:
 		st["decisive"] = last_syn
 		st["decisive_round"] = int(state["round"])
 	state["stats"] = st
+
+
+# Registro comune delle scoperte della battaglia (elenco senza doppioni, in ordine di comparsa).
+static func _note_seen(st: Dictionary, key: String, id: String) -> void:
+	if id == "":
+		return
+	var arr: Array = st.get(key, [])
+	if not arr.has(id):
+		arr.append(id)
+	st[key] = arr
 
 
 # MINACCIA: quanto fara' la mossa annunciata del boss e se sarebbe letale (senza critico). {lethal: [unit id], dmg: {unit id: n}}

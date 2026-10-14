@@ -69,6 +69,13 @@ static func hint_lines(state: Dictionary) -> Array:
 			out.append("ARENA · %s su %s: GUARDIA o cambio per evitarla" % [str(def["name"]), str(u.get("name", "")).to_upper()])
 		else:
 			out.append("ARENA · %s: attaccate in %d o piu' per romperlo" % [str(def["name"]), seal_need(state)])
+	var boss_id: String = str(BattleState.boss(state).get("char", ""))
+	var bid: String = behavior_of(boss_id)
+	var known: Dictionary = state.get("known", {})
+	if (known.get("behaviors", []) as Array).has(boss_id):
+		out.append("NOTO · %s: %s" % [str(BEHAVIORS[bid]["name"]), str(BEHAVIORS[bid]["desc"])])
+	elif not known.is_empty():
+		out.append("Questo boss reagisce in un modo che non conosci ancora: osserva e lo annoterai nell'ARCHIVIO.")
 	return out
 
 

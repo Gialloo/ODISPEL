@@ -5,6 +5,19 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.18", "items": [
+		"EVENTI DELL'ARENA: ogni 3 round l'arena cambia (ZONA CONTAMINATA o SIGILLO). Leggi l'annuncio e decidi: mettersi in guardia, scambiare, attaccare in due.",
+		"Ogni boss ha un COMPORTAMENTO da imparare: punisce le cure, reagisce ai marchi oppure punisce la guardia di gruppo.",
+		"Nuova reazione SOCCORSO: spendi Riserva per rialzare un compagno caduto.",
+		"Nuovi potenziamenti del Ciclo infinito (Riflessi, Riserva) e nuovo mutatore Vampirico.",
+		"REPLAY TATTICO nel resoconto: i momenti decisivi in ordine, turno per turno.",
+		"ARCHIVIO DELLE SCOPERTE: combo, eventi dell'arena e comportamenti dei boss che vedi davvero vengono registrati. Un boss di cui hai capito il comportamento te lo ricorda mentre pianifichi.",
+		"NUOVA MODALITA' SPEDIZIONE (da soli o in cooperativa dalla lobby): percorso, scontri, evento con patto, bivio e boss finale. I PV si portano dietro, ogni vittoria da' un potenziamento, le scelte contano.",
+		"In cooperativa si vota ogni scelta: decide la maggioranza, in pareggio l'host. Non si resta mai bloccati.",
+		"Conseguenze che restano: i VETERANI ottengono bonus permanenti, chi cade in una spedizione fallita resta FERITO (guarisce in 6 ore o con 300 crediti).",
+		"Nuove combo CONDANNA e CASCATA, CODICE SQUADRA da copiare e condividere, due nuovi tutorial (Arena e archivio, Spedizione).",
+		"TITOLI DI SQUADRA nel resoconto (Nessuno e' caduto, Muro di reazioni, Spezzaguardie...) e STILE della squadra. Il profilo mostra quante scoperte hai fatto.",
+	]},
 	{"v": "0.24.17", "items": [
 		"RISERVA DI SQUADRA: una scorta condivisa (+1 a round, +1 con una combo) che si spende per le REAZIONI.",
 		"Contro una CARICA del boss compaiono 3 reazioni: SCHIVATA (eviti il colpo), INTERCETTAZIONE (lo prendi tu al posto di un compagno), INTERRUZIONE (togli equilibrio e la carica salta).",

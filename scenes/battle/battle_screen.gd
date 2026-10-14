@@ -154,6 +154,8 @@ func _start_solo() -> void:
 	s.endless_floor = MissionConfig.endless_floor
 	s.daily_mod = MissionConfig.daily_mod
 	s.weekly = MissionConfig.weekly
+	if not MissionConfig.expedition.is_empty() and Expedition.kind(MissionConfig.expedition) == "fight":
+		s.expedition = MissionConfig.expedition
 	s.start(RosterStore.load_or_new(), MissionConfig.boss_id, int(randi()) | 1, MissionConfig.tier)
 	if DisplayServer.get_name() != "headless":
 		get_tree().create_timer(1.4).timeout.connect(func() -> void:
@@ -165,6 +167,12 @@ func _start_solo() -> void:
 			if str(m["id"]) == MissionConfig.daily_mod:
 				dm = m
 		ComicFx.caption(_fx, "%s  //  %s: %s" % ["EVENTO DELLA SETTIMANA" if MissionConfig.weekly else "SFIDA DEL GIORNO", str(dm.get("name", "")), str(dm.get("desc", ""))], Vector2(240.0, 300.0), BattleTheme.POP, 1.8)
+	elif not MissionConfig.expedition.is_empty() and DisplayServer.get_name() != "headless":
+		var xp: Dictionary = Expedition.battle_params(MissionConfig.expedition)
+		var xcap: String = "SPEDIZIONE  //  %s" % Expedition.stage_title(MissionConfig.expedition)
+		if str(xp["mod"]) != "":
+			xcap += "\nDISTORSIONE: %s" % Expedition.mod_name(str(xp["mod"]))
+		ComicFx.caption(_fx, xcap, Vector2(300.0, 300.0), BattleTheme.POP, 1.6)
 	elif MissionConfig.endless_floor > 0 and DisplayServer.get_name() != "headless":
 		var emod: Dictionary = Endless.mod_for(MissionConfig.endless_floor)
 		var cap: String = "PIANO %d" % MissionConfig.endless_floor
@@ -1845,6 +1853,12 @@ func _recap_text(victory: bool) -> String:
 		parts.append("Momento chiave: rottura al turno %d" % int(_recap["break_round"]))
 	if _recap.has("will_unit"):
 		parts.append("Salvataggio all'ultimo: %s resiste con 1 PV" % str(_recap["will_unit"]).to_upper())
+	var stats: Dictionary = shown.get("stats", {})
+	var tt: Array = Discoveries.titles(stats, victory)
+	if not tt.is_empty():
+		parts.append("Titoli: %s" % "  ·  ".join(PackedStringArray(tt)))
+	if Discoveries.style_of(stats) != "":
+		parts.append("Stile della squadra: %s" % Discoveries.style_of(stats))
 	var tip: String = ""
 	var untried: Array = []
 	for r in Combos.RULES:
@@ -2386,7 +2400,14 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 			row = frame
 		rbox.add_child(row)
 		_reward_rows.append([row, lr])
-	if not (source is NetworkManager):
+	if not (source is NetworkManager) and not MissionConfig.expedition.is_empty():
+		var go_on := Button.new()
+		go_on.text = "CONTINUA LA SPEDIZIONE"
+		go_on.custom_minimum_size = Vector2(0, 54)
+		BattleTheme.style_button(go_on, "primary", 26)
+		go_on.pressed.connect(func() -> void: SceneRouter.go("expedition"))
+		box.add_child(go_on)
+	elif not (source is NetworkManager):
 		if MissionConfig.endless_floor > 0 and victory:
 			# Ciclo Infinito: si sceglie un potenziamento (1 su 3) e si sale al piano dopo
 			box.add_child(BattleTheme.make_label("SCEGLI UN POTENZIAMENTO · PIANO %d" % (MissionConfig.endless_floor + 1), 15, BattleTheme.POP))
@@ -2423,6 +2444,15 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 		pick.pressed.connect(_on_pick_mission)
 		box.add_child(pick)
 	var networked: bool = source is NetworkManager
+	if networked and not (source as NetworkManager).exp_run().is_empty():
+		var back_map := Button.new()
+		back_map.text = "MAPPA DELLA SPEDIZIONE"
+		back_map.custom_minimum_size = Vector2(0, 50)
+		BattleTheme.style_button(back_map, "primary", 22)
+		back_map.pressed.connect(func() -> void:
+			ExpeditionScreen.use_net = true
+			SceneRouter.go("expedition"))
+		box.add_child(back_map)
 	var hub := Button.new()
 	hub.text = "TORNA ALLA LOBBY" if networked else "TORNA ALL'HUB"
 	hub.custom_minimum_size = Vector2(0, 44)

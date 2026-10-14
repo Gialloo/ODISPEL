@@ -134,6 +134,38 @@ static func all() -> Array:
 				_tip("Completa tutti i tutorial per l'icona epica STUDIOSO."),
 			]},
 		]},
+		{"id": "arena", "title": "ARENA, COMPORTAMENTI E ARCHIVIO", "icon": "target", "pages": [
+			{"title": "EVENTI DELL'ARENA", "lines": [
+				_h("L'arena cambia ogni 3 round"),
+				_l("Dal secondo round, ogni 3 round, l'arena annuncia un evento: lo leggi nei suggerimenti prima di scegliere e si risolve a fine round."),
+				_l("ZONA CONTAMINATA: chi e' sotto la nube perde PV, a meno che sia in GUARDIA o venga scambiato. SIGILLO: se almeno 2 operatori attaccano nello stesso round si rompe e il boss perde equilibrio; altrimenti si copre di scudo."),
+				_tip("Ogni evento offre un'opportunita' e un rischio: mai solo decorazione."),
+			]},
+			{"title": "COME REAGISCE IL BOSS", "lines": [
+				_h("Ogni boss ha un comportamento"),
+				_l("PUNISCE LE CURE: ogni cura nel round rende la sua mossa piu' forte. REAGISCE AI MARCHI: con 3 marchi si copre di scudo. PUNISCE LA GUARDIA: se due operatori si difendono la sua mossa fa di piu'."),
+				_l("La prima volta devi osservarlo; poi finisce nell'ARCHIVIO e il gioco te lo ricorda mentre pianifichi."),
+			]},
+			{"title": "ARCHIVIO E TITOLI", "lines": [
+				_h("Un'enciclopedia costruita giocando"),
+				_l("Combo, eventi dell'arena e comportamenti dei boss che vedi davvero accadere vengono registrati nell'ARCHIVIO (lo vedi nel profilo). Le nuove scoperte compaiono a fine battaglia."),
+				_l("A fine battaglia ricevi anche dei TITOLI (Nessuno e' caduto, Muro di reazioni, Spezzaguardie...) e uno STILE di squadra. Premiano come hai giocato, non solo il danno."),
+			]},
+		]},
+		{"id": "spedizione", "title": "SPEDIZIONE: LA RUN ROGUELITE", "icon": "vanguard", "pages": [
+			{"title": "LE 6 TAPPE", "lines": [
+				_h("Da soli o in cooperativa"),
+				_l("PERCORSO (3 strade con rischi diversi) -> SCONTRO -> EVENTO (il PATTO) -> SCONTRO con distorsione -> BIVIO -> BOSS FINALE. Dopo ogni scontro scegli un potenziamento."),
+				_l("I PV si portano da una tappa all'altra: nessun recupero gratuito. Il RIFUGIO e il RIPOSO curano, l'ARCHIVIO e l'ESPLORAZIONE danno INDIZI sul boss (meno equilibrio, comportamento noto)."),
+				_tip("In cooperativa si vota: decide la maggioranza, in pareggio l'host. La partita non resta mai bloccata."),
+			]},
+			{"title": "CONSEGUENZE CHE RESTANO", "lines": [
+				_h("Vittoria, checkpoint, sconfitta"),
+				_l("VETERANO: se completi la spedizione (o arrivi al checkpoint) i tuoi operatori guadagnano esperienza: ogni livello da' un piccolo bonus permanente a PV e attacco (massimo 5 livelli)."),
+				_l("FERITO: se la spedizione fallisce, chi e' caduto resta ferito: PV massimi -10% in ogni battaglia. Guarisce da solo in 6 ore oppure paghi 300 crediti nella schermata Spedizione."),
+				_tip("Perdere insegna: leggi il resoconto e cambia strategia."),
+			]},
+		]},
 	]
 	return _list
 

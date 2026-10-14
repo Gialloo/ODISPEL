@@ -28,6 +28,7 @@ static func rows(roster: Dictionary) -> Array:
 		["CICLO INFINITO", "PIANO %d" % Endless.best(roster)],
 		["SERIE SFIDA", "%d GIORNI" % int(roster.get("daily", {}).get("best", 0))],
 		["OBIETTIVI", "%d / %d" % [Feats.done_count(roster), feats_all]],
+		["ARCHIVIO SCOPERTE", "%d / %d" % [Discoveries.count(roster), Discoveries.total()]],
 	]
 
 

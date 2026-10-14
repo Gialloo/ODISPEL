@@ -25,7 +25,7 @@ func _val(rows: Array, label: String) -> String:
 func _init() -> void:
 	var roster: Dictionary = RosterState.new_roster()
 	var rows: Array = PlayerStats.rows(roster)
-	_check("dieci voci", rows.size() == 10)
+	_check("undici voci", rows.size() == 11)
 	_check("nuovo salvataggio: zero battaglie", _val(rows, "BATTAGLIE") == "0")
 	_check("zero vittorie senza divisione per zero", _val(rows, "VITTORIE") == "0  (0%)")
 	Feats.record_battle(roster, true)

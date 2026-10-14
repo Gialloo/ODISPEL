@@ -17,6 +17,7 @@ var daily_mod: String = ""       # non vuoto: SFIDA DEL GIORNO con questo modifi
 var weekly: bool = false         # con daily_mod: EVENTO DELLA SETTIMANA
 var daily_first: bool = false    # vera se questa vittoria ha pagato il bonus del giorno
 var seed_value: int = 1
+var expedition: Dictionary = {}    # SPEDIZIONE in corso (la run viene aggiornata a fine battaglia)
 var roster: Dictionary = {}
 var rewards: Dictionary = {}
 var save_path: String = RosterStore.DEFAULT_PATH
@@ -30,8 +31,14 @@ func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier:
 	tier = clampi(new_tier, 0, BattleContent.TIERS.size() - 1)
 	rewards = {}
 	_finished = false
+	if not expedition.is_empty():
+		var bp: Dictionary = Expedition.battle_params(expedition)
+		boss_id = str(bp["boss"])
+		tier = int(bp["tier"])
 	battle = RosterState.create_solo_battle(roster, "IO", boss_id, seed_value, 0, tier)
-	if daily_mod != "":
+	if not expedition.is_empty():
+		Expedition.apply_to_battle(expedition, battle)
+	elif daily_mod != "":
 		Endless.apply(battle, Weekly.FLOOR if weekly else Daily.FLOOR, daily_mod)
 	elif endless_floor > 0:
 		Endless.apply(battle, endless_floor)
@@ -113,6 +120,8 @@ func finish() -> Dictionary:
 	var all: Dictionary = BattleRewards.for_battle(battle, boss_id, seed_value)
 	rewards = all.get(local_player_id, {})
 	var won: bool = str(battle["winner"]) == "players"
+	if not expedition.is_empty():
+		return _finish_expedition(won)
 	if endless_floor > 0:
 		rewards = Endless.scale_rewards(rewards, endless_floor) if won else rewards
 		MissionConfig.endless_carry = Endless.carry_from(battle) if won else {}
@@ -140,7 +149,30 @@ func finish() -> Dictionary:
 	for line in Weekly.finish_notes(roster):
 		Notify.success(line)
 	Feats.record_battle(roster, str(battle["winner"]) == "players")
+	for line in Discoveries.record(roster, str(BattleState.boss(battle)["char"]), str(battle["winner"]) == "players", battle.get("stats", {})):
+		Notify.success(line)
 	for line in Objectives.record_battle(roster, boss_id, tier, str(battle["winner"]) == "players", "", battle.get("stats", {})):
+		Notify.success(line)
+	RosterStore.save(roster, save_path)
+	return rewards
+
+
+# Tappa della SPEDIZIONE: niente premi normali (arrivano a fine spedizione), tranne il boss finale.
+func _finish_expedition(won: bool) -> Dictionary:
+	var pays: bool = Expedition.pays_rewards(battle)
+	rewards = rewards if pays else {}
+	Expedition.after_battle(expedition, battle)
+	if pays and won:
+		RosterState.apply_rewards(roster, rewards)
+		if RosterState.mark_cleared(roster, boss_id, tier):
+			for line in RosterState.unlock_news(boss_id, tier):
+				Notify.success(line)
+	else:
+		rewards = {}
+	Feats.record_battle(roster, won)
+	Discoveries.record(roster, boss_id, won, battle.get("stats", {}))
+	Expedition.data(roster)["run"] = expedition
+	for line in Expedition.finish(roster, expedition):
 		Notify.success(line)
 	RosterStore.save(roster, save_path)
 	return rewards

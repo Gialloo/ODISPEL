@@ -166,6 +166,7 @@ static func team_entries(roster: Dictionary) -> Array:
 	for id in roster["team"]:
 		var e: Dictionary = roster["characters"][id].duplicate(true)
 		e.erase("copies")          # le copie non spese sono affari del salvataggio, non della battaglia
+		Expedition.decorate_entry(roster, e)
 		out.append(e)
 	return out
 
@@ -290,6 +291,8 @@ static func validate_entry(entry: Dictionary) -> String:
 		return "rarita' non valida"
 	if entry.has("style") and not Factions.STYLES.has(str(entry["style"])):
 		return "stile non valido"
+	if int(entry.get("vet", 0)) < 0 or int(entry.get("vet", 0)) > Expedition.VET_MAX:
+		return "veterano non valido"
 	var skills: Array = entry.get("skills", [])
 	if skills.size() > BattleTypes.SKILL_SLOTS:
 		return "troppe skill"
@@ -558,7 +561,9 @@ static func apply_rewards(roster: Dictionary, rewards: Dictionary) -> int:
 
 # Partita in solitaria: solo il tuo party (front row + back row), niente alleati assegnati dall'IA.
 static func create_solo_battle(roster: Dictionary, player_name: String, boss_id: String, seed_value: int, ai_count: int = 0, tier: int = 0) -> Dictionary:
-	return BattleState.create_solo(player_name, team_entries(roster), [], boss_id, seed_value, ai_count, tier)
+	var state: Dictionary = BattleState.create_solo(player_name, team_entries(roster), [], boss_id, seed_value, ai_count, tier)
+	state["known"] = Discoveries.known(roster)
+	return state
 
 
 # ---------- Progressi e sblocchi ----------

@@ -165,6 +165,15 @@ func _build_room() -> void:
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(spacer)
 
+	var expb := Button.new()
+	expb.text = "SPEDIZIONE"
+	expb.custom_minimum_size = Vector2(170, 54)
+	BattleTheme.style_button(expb, "primary", 20)
+	expb.pressed.connect(func() -> void:
+		ExpeditionScreen.use_net = true
+		SceneRouter.go("expedition"))
+	row.add_child(expb)
+
 	var squad := Button.new()
 	squad.text = "SQUADRA"
 	squad.custom_minimum_size = Vector2(160, 54)

@@ -521,6 +521,10 @@ static func compute_stats(entry: Dictionary) -> Dictionary:
 	var dfn: float = float(base["def"]) * factor * float(sm.get("def", 1.0))
 	var spd: float = float(base["spd"]) * factor * float(sm.get("spd", 1.0))
 
+	var xm: Dictionary = Expedition.stat_mult(entry)       # veterano (+) e ferito (-) dalla SPEDIZIONE
+	hp *= float(xm["hp"])
+	atk *= float(xm["atk"])
+
 	var gear: Array = entry.get("gear", [])
 	for piece in gear:
 		var slot: String = str(piece.get("slot", ""))

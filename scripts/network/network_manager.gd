@@ -44,6 +44,7 @@ var lobby: Dictionary = {}           # stato della lobby condivisa (vedi _build_
 var lobby_boss: String = "distributore"
 var lobby_tier: int = 0
 var lobby_mode: String = "coop"        # "coop" (contro il boss) oppure una modalita' PvP: duel, duo, ffa
+var expedition: Dictionary = {}        # SPEDIZIONE cooperativa in corso (la possiede l'host; i client la ricevono con la lobby)
 var lobby_balanced: bool = true        # PvP: true = tutti alla pari, false = conta la progressione
 var _ready_players: Dictionary = {}  # player_id -> pronto (host)
 var _player_teams: Dictionary = {}  # player_id -> squadra validata (host)
@@ -301,7 +302,7 @@ func _build_lobby() -> Dictionary:
 			"profile": Profile.clean_public(local_profile if id == local_player_id else _player_profiles.get(id, {}))
 		})
 
-	return {"players": players, "boss": lobby_boss, "tier": lobby_tier, "mode": lobby_mode, "balanced": lobby_balanced}
+	return {"players": players, "boss": lobby_boss, "tier": lobby_tier, "mode": lobby_mode, "balanced": lobby_balanced, "exp": expedition}
 
 
 # Livelli battuti, ripuliti: solo boss noti e numeri tra 0 e il massimo.
@@ -539,6 +540,98 @@ func start_problem() -> String:
 	return "Servono almeno 2 giocatori e tutti PRONTI."
 
 
+# ---------- SPEDIZIONE cooperativa ----------
+
+# La spedizione in corso, vista da chiunque (host o client).
+func exp_run() -> Dictionary:
+	if is_host:
+		return expedition
+	var raw: Variant = lobby.get("exp", {})
+	return raw if raw is Dictionary else {}
+
+
+# Solo l'host: inizia una nuova spedizione per tutta la stanza.
+func host_exp_new(boss_id: String, tier: int) -> bool:
+	if not is_host or not BattleContent.BOSSES.has(boss_id) or _battle_in_progress():
+		return false
+
+	if not expedition.is_empty() and str(expedition.get("phase", "")) != "done":
+		return false
+
+	expedition = Expedition.new_run(int(randi()) | 1, boss_id, tier, true)
+	_broadcast_lobby()
+	return true
+
+
+# Solo l'host: chiude la spedizione (anche a meta').
+func host_exp_close() -> void:
+	if not is_host:
+		return
+
+	expedition = {}
+	_broadcast_lobby()
+
+
+func exp_vote(option_id: String) -> bool:
+	if is_host:
+		return exp_vote_as(local_player_id, option_id)
+
+	var link: WebRTCLink = _links.get(_host_peer_id)
+
+	if link == null:
+		return false
+
+	return link.send_message({"type": "exp_vote", "option": option_id})
+
+
+func exp_vote_as(player_id: String, option_id: String) -> bool:
+	if not is_host or expedition.is_empty() or not Expedition.vote(expedition, player_id, option_id):
+		return false
+
+	_broadcast_lobby()
+	return true
+
+
+# Solo l'host: chiude la votazione (maggioranza; in pareggio vale il voto dell'host) e applica la scelta.
+func host_exp_confirm() -> bool:
+	if not is_host or expedition.is_empty():
+		return false
+
+	var k: String = Expedition.kind(expedition)
+
+	if not ["path", "event", "cross", "boon"].has(k):
+		return false
+
+	var winner: String = Expedition.winner_of_votes(expedition, local_player_id)
+
+	if Expedition.choose(expedition, winner) != "":
+		return false
+
+	_broadcast_lobby()
+	return true
+
+
+# Solo l'host: avvia il combattimento della tappa corrente.
+func host_exp_fight() -> bool:
+	if not is_host or expedition.is_empty() or Expedition.kind(expedition) != "fight":
+		return false
+
+	var bp: Dictionary = Expedition.battle_params(expedition)
+	return host_start_battle(str(bp["boss"]), int(randi()) | 1, int(bp["tier"]), expedition)
+
+
+# Fine di un combattimento della spedizione: l'host aggiorna la run una sola volta e la manda a tutti.
+func _expedition_after_battle() -> void:
+	if not is_host or expedition.is_empty() or battle.is_empty() or not battle.has("expedition"):
+		return
+
+	if str(battle.get("winner", "")) == "" or str(expedition.get("phase", "")) != "battle":
+		return
+
+	Expedition.after_battle(expedition, battle)
+	_broadcast_lobby()
+
+
 # Solo l'host: parte con la missione della lobby, se tutti sono pronti.
 func host_launch() -> bool:
 	if not all_ready():
@@ -612,7 +705,7 @@ func host_start_pvp(mode: String, balanced: bool, run_seed: int) -> bool:
 
 
 # Avvia la battaglia per tutti. Servono l'host e almeno un client.
-func host_start_battle(boss_id: String, run_seed: int, tier: int = 0) -> bool:
+func host_start_battle(boss_id: String, run_seed: int, tier: int = 0, exp_run: Dictionary = {}) -> bool:
 	if not is_host or game == null or run_seed == 0:
 		return false
 
@@ -646,6 +739,10 @@ func host_start_battle(boss_id: String, run_seed: int, tier: int = 0) -> bool:
 		})
 
 	battle = BattleState.create(specs, boss_id, run_seed, tier)
+
+	if not exp_run.is_empty():
+		Expedition.apply_to_battle(exp_run, battle)
+
 	for id in _ready_players.keys():
 		_ready_players[id] = false
 
@@ -721,6 +818,7 @@ func _battle_try_resolve() -> void:
 
 func _battle_resolve(force: bool) -> void:
 	var events: Array = PvpEngine.resolve_round(battle, force) if bool(battle.get("pvp", false)) else BattleResolver.resolve_round(battle, force)
+	_expedition_after_battle()
 	battle_time_left = battle_planning_seconds
 	_broadcast({"type": "battle_events", "events": events})
 	battle_events_received.emit(events)
@@ -737,7 +835,7 @@ func _broadcast_battle() -> void:
 		all_rewards = PvpRewards.for_battle(battle, _battle_seed)
 		battle_rewards = all_rewards.get(local_player_id, {})
 
-	if str(battle.get("winner", "")) != "" and not bool(battle.get("pvp", false)):
+	if str(battle.get("winner", "")) != "" and not bool(battle.get("pvp", false)) and Expedition.pays_rewards(battle):
 		all_rewards = BattleRewards.for_battle(battle, _battle_boss_id, _battle_seed)
 		battle_rewards = all_rewards.get(local_player_id, {})
 
@@ -808,11 +906,13 @@ func finish() -> Dictionary:
 		var boss_id: String = str(BattleState.boss(battle)["char"])
 		var tier: int = int(battle.get("tier", 0))
 
-		if RosterState.mark_cleared(roster, boss_id, tier):
+		if Expedition.pays_rewards(battle) and RosterState.mark_cleared(roster, boss_id, tier):
 			for line in RosterState.unlock_news(boss_id, tier):
 				Notify.success(line)
 
 	Feats.record_battle(roster, str(battle["winner"]) == "players")
+	for line in Discoveries.record(roster, str(BattleState.boss(battle)["char"]), str(battle["winner"]) == "players", battle.get("stats", {})):
+		Notify.success(line)
 	for line in Objectives.record_battle(roster, str(BattleState.boss(battle)["char"]), int(battle.get("tier", 0)), str(battle["winner"]) == "players", "", battle.get("stats", {})):
 		Notify.success(line)
 
@@ -1134,6 +1234,12 @@ func _host_handle_message(message: Dictionary, peer_id: String) -> void:
 				_player_teams[owner_id] = checked["team"]
 				_ready_players[owner_id] = false
 				_broadcast_lobby()
+
+		"exp_vote":
+			var voter: String = str(_peer_players.get(peer_id, ""))
+
+			if not voter.is_empty():
+				exp_vote_as(voter, str(message.get("option", "")))
 
 		"abandon":
 			var leaver: String = str(_peer_players.get(peer_id, ""))

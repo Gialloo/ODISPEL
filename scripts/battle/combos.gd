@@ -26,6 +26,10 @@ const RULES: Array = [
 		"desc": "attacco coordinato su un boss con la difesa spezzata da un compagno"},
 	{"id": "assedio", "name": "ASSEDIO", "needs": "TAUNT", "with": "ATTACK", "mult": 1.08, "gauge": 5, "brk": 0, "fx": "lock", "col": "#ff9a4a",
 		"desc": "un compagno attira il boss mentre tu colpisci"},
+	{"id": "condanna", "name": "CONDANNA", "needs": "DEBUFF", "with": "MARK", "mult": 1.08, "gauge": 5, "brk": 1, "fx": "chain", "col": "#b07bff",
+		"desc": "marchi un boss che un compagno ha gia' indebolito: i due stati si alimentano"},
+	{"id": "cascata", "name": "CASCATA", "needs": "MULTI", "with": "HEAVY", "mult": 1.1, "gauge": 0, "brk": 1, "fx": "volley", "col": "#6bffb0",
+		"desc": "colpo pesante subito dopo una raffica di colpi di un compagno"},
 	{"id": "raffica", "name": "RAFFICA", "needs": "ATTACK", "with": "PIERCE", "mult": 1.1, "gauge": 0, "brk": 1, "fx": "volley", "col": "#6bffb0",
 		"desc": "colpo perforante subito dopo un attacco di un compagno"},
 ]

@@ -176,6 +176,55 @@ func _run() -> void:
 	_shot("tutorial")
 	s.queue_free()
 
+	load("res://scenes/expedition/expedition_screen.gd").use_net = false
+	var xr: Dictionary = RosterStore.load_or_new()
+	Expedition.data(xr).erase("run")
+	Expedition.data(xr)["wounds"] = {}
+	for bid in BattleContent.BOSS_ORDER.slice(0, 3):
+		xr["cleared"][str(bid)] = 1
+	Expedition.data(xr)["wounds"]["kira"] = int(Time.get_unix_time_from_system()) + 3600
+	RosterStore.save(xr)
+	s = await _show("res://scenes/expedition/expedition_screen.tscn")
+	_audit("spedizione-avvio", s)
+	_shot("spedizione-avvio")
+	s.queue_free()
+	var xrun: Dictionary = Expedition.new_run(21, "distributore", 0)
+	MissionConfig.expedition = xrun
+	s = await _show("res://scenes/expedition/expedition_screen.tscn")
+	_audit("spedizione-percorso", s)
+	_shot("spedizione-percorso")
+	s.queue_free()
+	Expedition.choose(xrun, "infestata")
+	s = await _show("res://scenes/expedition/expedition_screen.tscn")
+	_audit("spedizione-scontro", s)
+	_shot("spedizione-scontro")
+	s.queue_free()
+	xrun["phase"] = "boon"
+	xrun["boon_left"] = 1
+	xrun["next"] = 2
+	xrun["stage"] = 1
+	for b in ["furia", "tempra", "furia", "scudo", "riserva", "carica"]:
+		(xrun["boons"] as Array).append(b)
+	xrun["fell"] = {"kira": true, "dax": true}
+	for i in 8:
+		(xrun["log"] as Array).append("Evento di prova %d" % i)
+	s = await _show("res://scenes/expedition/expedition_screen.tscn")
+	_audit("spedizione-bottino", s)
+	_shot("spedizione-bottino")
+	s.queue_free()
+	xrun["phase"] = "done"
+	xrun["result"] = "loss"
+	s = await _show("res://scenes/expedition/expedition_screen.tscn")
+	_audit("spedizione-fine", s)
+	_shot("spedizione-fine")
+	s.queue_free()
+	MissionConfig.expedition = {}
+	xr = RosterStore.load_or_new()
+	Expedition.data(xr).erase("run")
+	Expedition.data(xr)["wounds"] = {}
+	Expedition.data(xr)["xp"] = {}
+	RosterStore.save(xr)
+
 	var psrc := PvpLocalSource.new()
 	psrc.start(RosterState.team_entries(RosterState.new_roster()).slice(0, 3), "duel", true, 77)
 	var pscene: Node = (load(SceneRouter.path_of("pvp")) as PackedScene).instantiate()
