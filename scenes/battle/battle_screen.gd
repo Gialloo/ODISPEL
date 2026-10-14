@@ -50,6 +50,12 @@ var _boss_hp: Label
 var _boss_bal: LineBar
 var _plan_label: Label
 var _reserve_label: Label
+var _tact_row: HBoxContainer
+var _order_btn: Button
+var _push_btn: Button
+var _ping_row: HBoxContainer
+var _order_pick: String = ""
+var _push_pick: String = ""
 var _react_row: HBoxContainer
 var _react_sig: String = ""
 var _threat_round: int = -1
@@ -204,6 +210,17 @@ func bind_source(src: Variant) -> void:
 		_chat = ChatPanel.new().setup(src, true, Vector2(400, 210))
 		_chat.position = Vector2(20, 304)
 		_fx.add_child(_chat)
+		_ping_row = HBoxContainer.new()
+		_ping_row.add_theme_constant_override("separation", 4)
+		_ping_row.position = Vector2(20, 276)
+		for ping in ["INTERROMPI!", "PROTEGGIMI!", "HO UNA COMBO", "NON USARE RISORSE"]:
+			var pb := Button.new()
+			pb.text = str(ping)
+			pb.custom_minimum_size = Vector2(0, 24)
+			BattleTheme.style_button(pb, "normal", 11)
+			pb.pressed.connect(func() -> void: src.send_chat(str(ping)))
+			_ping_row.add_child(pb)
+		_fx.add_child(_ping_row)
 	if not src.battle.is_empty():
 		_on_updated()
 
@@ -229,6 +246,8 @@ func _sync() -> void:
 	locked = false
 	_swaps.clear()
 	_picks.clear()
+	_order_pick = ""
+	_push_pick = ""
 	_cur_slot = ""
 	_cur_slot = _next_free_slot()
 	_refresh_all()
@@ -496,6 +515,24 @@ func _build_telegraph() -> void:
 	_react_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(_react_row)
 	_anchor(_react_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 284, 192, 316))
+	_tact_row = HBoxContainer.new()
+	_tact_row.add_theme_constant_override("separation", 6)
+	_tact_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	add_child(_tact_row)
+	_anchor(_tact_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-250, 318, 20, 346))
+	_order_btn = Button.new()
+	_order_btn.custom_minimum_size = Vector2(132, 26)
+	_order_btn.clip_text = true
+	BattleTheme.style_button(_order_btn, "normal", 12)
+	_order_btn.pressed.connect(_cycle_order)
+	_tact_row.add_child(_order_btn)
+	_push_btn = Button.new()
+	_push_btn.custom_minimum_size = Vector2(132, 26)
+	_push_btn.clip_text = true
+	BattleTheme.style_button(_push_btn, "normal", 12)
+	_push_btn.pressed.connect(_cycle_push)
+	_tact_row.add_child(_push_btn)
+	_refresh_tactics()
 
 
 # Pannello "ORDINE DEL TURNO": chi agisce, in che ordine e cosa ha scelto (le IA decidono da sole).
@@ -802,9 +839,36 @@ func _refresh_telegraph() -> void:
 
 
 # Suggerimenti di pianificazione: sinergie gia' pronte con le scelte dei compagni.
+# ORDINE DI SQUADRA e PREZZO: due scelte facoltative che accompagnano la mossa del round.
+func _cycle_order() -> void:
+	var i: int = Tactics.ORDER_ORDER.find(_order_pick)
+	_order_pick = "" if i == Tactics.ORDER_ORDER.size() - 1 else str(Tactics.ORDER_ORDER[i + 1])
+	_refresh_tactics()
+
+
+func _cycle_push() -> void:
+	var i: int = Tactics.PUSH_ORDER.find(_push_pick)
+	_push_pick = "" if i == Tactics.PUSH_ORDER.size() - 1 else str(Tactics.PUSH_ORDER[i + 1])
+	_refresh_tactics()
+
+
+func _refresh_tactics() -> void:
+	if _order_btn == null:
+		return
+	var busy: bool = locked or animating or autoplay or str(shown.get("winner", "")) != ""
+	_tact_row.visible = not busy
+	_order_btn.text = "ORD: " + (str(Tactics.ORDERS[_order_pick]["name"]) if _order_pick != "" else "NESSUNO")
+	_order_btn.tooltip_text = str(Tactics.ORDERS[_order_pick]["desc"]) if _order_pick != "" else "Un ordine comune alla squadra: vale quello della maggioranza."
+	_push_btn.text = "COSTO: " + (str(Tactics.PUSH[_push_pick]["name"]) if _push_pick != "" else "NO")
+	_push_btn.tooltip_text = str(Tactics.PUSH[_push_pick]["desc"]) if _push_pick != "" else "Potere in cambio di PV e reazioni. Vale per il prossimo attacco."
+	BattleTheme.style_button(_order_btn, "primary" if _order_pick != "" else "normal", 12)
+	BattleTheme.style_button(_push_btn, "primary" if _push_pick != "" else "normal", 12)
+
+
 func _refresh_plan_hint() -> void:
 	if _plan_label == null:
 		return
+	_refresh_tactics()
 	_refresh_reactions()
 	if locked or animating or autoplay or str(shown.get("winner", "")) != "":
 		_plan_label.text = ""
@@ -1379,7 +1443,7 @@ func _held_hint_order() -> bool:
 
 
 func _make_choice(move_id: String) -> Dictionary:
-	var choice: Dictionary = {"swap": pending_swap, "move": move_id, "target": ""}
+	var choice: Dictionary = {"swap": pending_swap, "move": move_id, "target": "", "order": _order_pick, "push": _push_pick if BattleContent.MOVES[move_id].has("mult") else ""}
 	var move: Dictionary = BattleContent.MOVES[move_id]
 	if str(move["target"]) == "ally":
 		choice["target"] = _most_hurt_ally()
@@ -1590,10 +1654,32 @@ func _event_fx(e: Dictionary) -> float:
 				Snd.play("player_hit", 0.8)
 				_float_text("-" + BattleText.num(int(e["amount"])), str(e["unit"]), BattleTheme.OK, 26)
 				_pop("CONTAMINATO!", str(e["unit"]), BattleTheme.OK, BattleTheme.BK, 30, 56.0, Vector2(0.0, -50.0))
+			elif str(e["id"]) == "eco":
+				if bool(e["ok"]):
+					Snd.play("crit", 0.8)
+					_float_text("-" + BattleText.num(int(e["amount"])), BattleState.BOSS_ID, BattleTheme.CY, 28)
+					_pop("ECO!", BattleState.BOSS_ID, BattleTheme.CY, BattleTheme.BK, 34, 60.0, Vector2(0.0, -80.0))
 			elif str(e["id"]) == "sigillo":
 				_pop("SIGILLO ROTTO!" if bool(e["ok"]) else "SIGILLO INTATTO", BattleState.BOSS_ID, BattleTheme.POP if bool(e["ok"]) else BattleTheme.RD, BattleTheme.BK, 34, 60.0, Vector2(0.0, -80.0))
 				if bool(e["ok"]):
 					Snd.play("crit", 0.9)
+		"order":
+			Snd.play("click", 1.2)
+			_pop(str(Tactics.ORDERS[str(e["id"])]["name"]), BattleState.BOSS_ID, BattleTheme.CY, BattleTheme.BK, 30, 52.0, Vector2(0.0, 40.0))
+		"push":
+			Snd.play("player_hit", 0.7)
+			_pop("PREZZO!" if str(e["id"]) == "prezzo" else "TECNICA PROIBITA!", str(e["unit"]), BattleTheme.RD, BattleTheme.WH, 32, 58.0, Vector2(0.0, -60.0))
+		"plate":
+			if bool(e["broke"]):
+				Snd.play("crit", 1.0)
+				_stage.impact(10.0, 0.04)
+				_pop("PLACCA ROTTA!", BattleState.BOSS_ID, BattleTheme.POP, BattleTheme.BK, 36, 62.0, Vector2(0.0, -100.0))
+		"chain":
+			Snd.play("boss_charge" if bool(e["ok"]) else "dodge", 1.0)
+			_pop("CATENA!" if bool(e["ok"]) else "CATENA SPEZZATA!", BattleState.BOSS_ID, BattleTheme.RD if bool(e["ok"]) else BattleTheme.OK, BattleTheme.WH, 34, 60.0, Vector2(0.0, -90.0))
+		"resolve":
+			Snd.play("heal", 1.2)
+			_pop("DETERMINAZIONE!", str(e["unit"]), BattleTheme.OK, BattleTheme.BK, 30, 56.0, Vector2(0.0, -60.0))
 		"behavior":
 			Snd.play("boss_charge", 1.2)
 			_pop(str(Arena.BEHAVIORS.get(str(e["id"]), {}).get("name", "")), BattleState.BOSS_ID, BattleTheme.RD, BattleTheme.WH, 26, 50.0, Vector2(0.0, -110.0))
@@ -1793,7 +1879,9 @@ func _mark_moment(text: String) -> void:
 
 func _recap_track(e: Dictionary) -> void:
 	match str(e.get("t", "")):
-		"synergy", "react", "rescue", "break", "phase", "tenacity", "arena", "behavior":
+		"synergy", "react", "rescue", "break", "phase", "tenacity", "arena", "behavior", "order", "push", "plate", "chain", "resolve":
+			if str(e["t"]) == "plate" and not bool(e["broke"]):
+				return
 			var line: Dictionary = BattleText.describe(shown, e)
 			if str(line.get("text", "")) != "":
 				_mark_moment(str(line["text"]))

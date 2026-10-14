@@ -171,6 +171,16 @@ func _run() -> void:
 	_shot("obiettivi")
 	s.queue_free()
 
+	s = await _show("res://scenes/titles/titles_screen.tscn")
+	_audit("titoli", s)
+	_shot("titoli")
+	s.show_tab("POTERE DEI PERSONAGGI")
+	await process_frame
+	await process_frame
+	_audit("potere", s)
+	_shot("potere")
+	s.queue_free()
+
 	s = await _show("res://scenes/tutorial/tutorial_screen.tscn")
 	_audit("tutorial", s)
 	_shot("tutorial")
@@ -187,6 +197,13 @@ func _run() -> void:
 	s = await _show("res://scenes/expedition/expedition_screen.tscn")
 	_audit("spedizione-avvio", s)
 	_shot("spedizione-avvio")
+	s._setup_long = true
+	s._setup_mods = ["boss_furioso"]
+	s._render()
+	await process_frame
+	await process_frame
+	_audit("spedizione-avvio-lunga", s)
+	_shot("spedizione-avvio-lunga")
 	s.queue_free()
 	var xrun: Dictionary = Expedition.new_run(21, "distributore", 0)
 	MissionConfig.expedition = xrun

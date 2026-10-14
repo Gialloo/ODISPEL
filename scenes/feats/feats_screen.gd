@@ -77,8 +77,8 @@ func _build() -> void:
 	panel.set_content(scroll)
 
 	_summary = BattleTheme.make_label("", 16, BattleTheme.WH)
-	_summary.position = Vector2(296, 640 if TouchUi.active() else 676)
-	_summary.size = Vector2(620, 28)
+	_summary.position = Vector2(620, 640 if TouchUi.active() else 676)
+	_summary.size = Vector2(300, 28)
 	add_child(_summary)
 	claim_all_button = Button.new()
 	claim_all_button.position = Vector2(930, 620 if TouchUi.active() else 660)
@@ -93,6 +93,13 @@ func _build() -> void:
 	BattleTheme.style_button(back, "normal", 20)
 	back.pressed.connect(func() -> void: SceneRouter.go("hub"))
 	add_child(back)
+	var tb := Button.new()
+	tb.text = "TITOLI E POTERE"
+	tb.position = Vector2(290, 620 if TouchUi.active() else 664)
+	tb.size = Vector2(310, 44)
+	BattleTheme.style_button(tb, "primary", 20)
+	tb.pressed.connect(func() -> void: SceneRouter.go("titles"))
+	add_child(tb)
 	ScreenFx.menu_overlays(self, BattleTheme.RD)
 
 

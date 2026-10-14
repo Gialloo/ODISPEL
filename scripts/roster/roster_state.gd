@@ -167,6 +167,7 @@ static func team_entries(roster: Dictionary) -> Array:
 		var e: Dictionary = roster["characters"][id].duplicate(true)
 		e.erase("copies")          # le copie non spese sono affari del salvataggio, non della battaglia
 		Expedition.decorate_entry(roster, e)
+		Titles.decorate_entry(roster, e, Profile.owned_icons())
 		out.append(e)
 	return out
 
@@ -180,6 +181,7 @@ static func spare_entries(roster: Dictionary) -> Array:
 		if not roster["team"].has(id):
 			var e: Dictionary = roster["characters"][id].duplicate(true)
 			e.erase("copies")
+			Titles.decorate_entry(roster, e, Profile.owned_icons())
 			out.append(e)
 	return out
 
@@ -293,6 +295,12 @@ static func validate_entry(entry: Dictionary) -> String:
 		return "stile non valido"
 	if int(entry.get("vet", 0)) < 0 or int(entry.get("vet", 0)) > Expedition.VET_MAX:
 		return "veterano non valido"
+	if entry.has("acc"):
+		if not (entry["acc"] is Dictionary):
+			return "bonus titoli non valido"
+		for k in (entry["acc"] as Dictionary):
+			if not Titles.STATS.has(str(k)) or int(entry["acc"][k]) < 0 or int(entry["acc"][k]) > Titles.MAX_BP:
+				return "bonus titoli non valido"
 	var skills: Array = entry.get("skills", [])
 	if skills.size() > BattleTypes.SKILL_SLOTS:
 		return "troppe skill"

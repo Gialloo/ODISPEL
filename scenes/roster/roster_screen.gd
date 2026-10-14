@@ -907,7 +907,7 @@ func _refresh_detail() -> void:
 		return
 	var def: Dictionary = BattleContent.CHARACTERS[selected]
 	var e: Dictionary = roster["characters"][selected]
-	var st: Dictionary = BattleContent.compute_stats(e)
+	var st: Dictionary = BattleContent.compute_stats(Power.entry_of(roster, selected, Profile.owned_icons()))
 	_detail_title.text = str(def["name"])
 	_fill_identity_icons(_detail_icons, selected, 28.0)
 	_detail_portrait.visible = true
@@ -933,6 +933,8 @@ func _refresh_detail() -> void:
 		lines.append(("IN USO  " if BattleContent.style_of(selected, e) == "atipico" else "") + Atypical.describe(selected))
 	lines.append("LIV %d/%d   RANK %s" % [int(e["level"]), RosterState.MAX_LEVEL, _stars(int(e["rank"]))])
 	lines.append("PV %d  ATK %d  DEF %d  VEL %d" % [int(st["hp"]), int(st["atk"]), int(st["def"]), int(st["spd"])])
+	var pbd: Dictionary = Power.breakdown(roster, selected, Profile.owned_icons())
+	lines.append("POTERE %d (%s)  liv +%d  rank +%d  equip +%d  titoli +%d" % [pbd["total"], Power.tier_name(int(pbd["total"])), pbd["level"], pbd["rank"], pbd["gear"], pbd["titles"]])
 	lines.append("SKILL  %s" % (", ".join(skills) if not skills.is_empty() else "-"))
 	lines.append("ULT  %s" % BattleText.move_name(str(e["ult"])))
 	var pass_names: Array = passives.duplicate()

@@ -5,6 +5,13 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.19", "items": [
+		"TITOLI EPICI E LEGGENDARI con bonus PERMANENTI per tutti i personaggi: le icone epiche e leggendarie del profilo (es. Leggenda: Baluardo = +0,5% difesa a tutti) e nuove maestrie.",
+		"Nuove maestrie: dei COLORI (2 operatori = epico +0,5% danni, 4 = leggendario +1%), delle FAZIONI, delle CLASSI, Collezionista, Veterano, Esploratore, Conquistatore. Vale solo il titolo piu' alto di ogni linea.",
+		"POTERE dei personaggi: un numero solo che cresce con livello, rank, equipaggiamento e titoli. Lo vedi nella scheda operatore e nella nuova schermata TITOLI E POTERE (dagli Obiettivi), con il dettaglio e quanto sei cresciuto dall'ultima visita.",
+		"SPEDIZIONE LUNGA: 10 tappe con rifugio, guardiano, reliquia maledetta e un terzo scontro. Premi e veterani maggiori, piu' tre modificatori volontari per aumentare la sfida.",
+		"Battaglia: ORDINI di squadra, PREZZO (potere in cambio di PV) e PING rapidi per la cooperativa. Nuovi eventi: scudi del boss, attacchi a catena, ECO.",
+	]},
 	{"v": "0.24.18", "items": [
 		"EVENTI DELL'ARENA: ogni 3 round l'arena cambia (ZONA CONTAMINATA o SIGILLO). Leggi l'annuncio e decidi: mettersi in guardia, scambiare, attaccare in due.",
 		"Ogni boss ha un COMPORTAMENTO da imparare: punisce le cure, reagisce ai marchi oppure punisce la guardia di gruppo.",

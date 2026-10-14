@@ -6,7 +6,6 @@ extends Control
 
 static var use_net: bool = false        # impostata dalla lobby prima di aprire la schermata
 
-const NODE_NAMES: Array = ["PERCORSO", "SCONTRO", "EVENTO", "SCONTRO", "BIVIO", "BOSS"]
 
 var roster: Dictionary = {}
 var save_path: String = RosterStore.DEFAULT_PATH
@@ -19,6 +18,8 @@ var _title: Label = null
 var _sub: Label = null
 var _setup_boss: String = "distributore"
 var _setup_tier: int = 0
+var _setup_long: bool = false
+var _setup_mods: Array = []
 var _finish_lines: Array = []
 var _chat: ChatPanel = null
 
@@ -159,10 +160,12 @@ func _settle(run: Dictionary) -> void:
 
 
 func _draw_strip(run: Dictionary) -> void:
+	var template: Dictionary = {"long": _setup_long} if run.is_empty() else run
+	var names: Array = Expedition.map_nodes(template)
 	var stage: int = int(run.get("stage", -1)) if not run.is_empty() else -1
 	var done: bool = not run.is_empty() and str(run.get("phase", "")) == "done"
 	var won: bool = done and str(run.get("result", "")) == "win"
-	for i in NODE_NAMES.size():
+	for i in names.size():
 		var p := PanelContainer.new()
 		p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var sb := StyleBoxFlat.new()
@@ -172,10 +175,10 @@ func _draw_strip(run: Dictionary) -> void:
 		sb.border_color = BattleTheme.GOLD if cur else (BattleTheme.CY_DARK if past else Color(0.2, 0.25, 0.28))
 		sb.set_border_width_all(2)
 		p.add_theme_stylebox_override("panel", sb)
-		var text: String = "%d  %s" % [i + 1, NODE_NAMES[i]]
-		if i == 4 and not run.is_empty() and int(run.get("stage", 0)) == 4 and Expedition.kind(run) == "fight":
-			text = "%d  ELITE" % (i + 1)
-		var l := BattleTheme.make_label(text, 15, BattleTheme.GOLD if cur else (BattleTheme.CY if past else BattleTheme.CY_DIM))
+		var label: String = str(names[i])
+		if cur and not run.is_empty() and bool(run.get("elite_fight", false)):
+			label = "ELITE"
+		var l := BattleTheme.make_label("%d %s" % [i + 1, label], 15 if names.size() <= 6 else 11, BattleTheme.GOLD if cur else (BattleTheme.CY if past else BattleTheme.CY_DIM))
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		p.add_child(l)
 		_strip.add_child(p)
@@ -183,8 +186,8 @@ func _draw_strip(run: Dictionary) -> void:
 
 func _draw_setup() -> void:
 	_title.text = "SPEDIZIONE"
-	_sub.text = "// 6 TAPPE · SCELTE CHE RESTANO · DA SOLI O IN COOPERATIVA" if net == null else "// SPEDIZIONE COOPERATIVA · L'HOST AVVIA, TUTTI VOTANO"
-	_body.add_child(_line("Percorso, due scontri, un evento, un bivio e il boss finale. I PV si portano da una tappa all'altra, ogni vittoria dà un potenziamento.", 17))
+	_sub.text = "// 6 O 10 TAPPE · SCELTE CHE RESTANO · DA SOLI O IN COOPERATIVA" if net == null else "// SPEDIZIONE COOPERATIVA · L'HOST AVVIA, TUTTI VOTANO"
+	_body.add_child(_line("Percorso, scontri, eventi, un bivio e il boss finale (BREVE 6 tappe, LUNGA 10). I PV si portano da una tappa all'altra, ogni vittoria dà un potenziamento.", 17))
 	_body.add_child(_line("Se la squadra cade, chi è caduto resta FERITO (PV massimi -10% finché non passano 6 ore o paghi la cura). Se arrivi in fondo, o almeno al checkpoint, i tuoi operatori diventano VETERANI: bonus permanenti.", 15, BattleTheme.CY_DIM))
 	if not Expedition.available(roster) and net == null:
 		_body.add_child(_line("Per aprirla servono %d bersagli battuti almeno a NORMALE (ne hai %d)." % [Expedition.UNLOCK_BOSSES, Expedition.cleared_count(roster)], 18, BattleTheme.POP))
@@ -203,6 +206,39 @@ func _draw_setup() -> void:
 		tier_row.add_child(_btn("<", "normal", 22, _cycle_tier.bind(-1), 56.0))
 		tier_row.add_child(BattleTheme.make_label(str(BattleContent.tier_of(_setup_tier)["name"]), 24, BattleTheme.WH, true))
 		tier_row.add_child(_btn(">", "normal", 22, _cycle_tier.bind(1), 56.0))
+		var len_row := HBoxContainer.new()
+		len_row.add_theme_constant_override("separation", 10)
+		_body.add_child(len_row)
+		len_row.add_child(BattleTheme.make_label("LUNGHEZZA", 18, BattleTheme.CY_DIM))
+		len_row.add_child(_btn("BREVE · 6 TAPPE", "primary" if not _setup_long else "normal", 16, func() -> void:
+			_setup_long = false
+			_render(), 210.0))
+		len_row.add_child(_btn("LUNGA · 10 TAPPE", "primary" if _setup_long else "normal", 16, func() -> void:
+			_setup_long = true
+			_render(), 210.0))
+		if _setup_long:
+			_body.add_child(_line("LUNGA: aggiunge un rifugio a meta' strada, un GUARDIANO, una reliquia maledetta e un terzo scontro. Premi maggiori e piu' esperienza da veterano.", 14, BattleTheme.CY_DIM))
+		_body.add_child(BattleTheme.make_label("MODIFICATORI VOLONTARI (piu' difficolta', piu' premi)", 15, BattleTheme.GOLD))
+		for m in Expedition.MODIFIERS:
+			var mid: String = str(m["id"])
+			var on: bool = _setup_mods.has(mid)
+			var mb := Button.new()
+			mb.text = "%s %s  +%d%% premi  —  %s" % ["[X]" if on else "[ ]", str(m["name"]), int(round(float(m["reward"]) * 100.0)), str(m["desc"])]
+			mb.custom_minimum_size = Vector2(0, 34)
+			mb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			mb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			BattleTheme.style_button(mb, "primary" if on else "normal", 13)
+			mb.pressed.connect(func() -> void:
+				if _setup_mods.has(mid):
+					_setup_mods.erase(mid)
+				else:
+					_setup_mods.append(mid)
+				_render())
+			_body.add_child(mb)
+		var combos: Array = Tactics.possible_combos(RosterState.team_entries(roster))
+		if not combos.is_empty():
+			var names2: Array = combos.map(func(c: Variant) -> String: return "%s (%s+%s)" % [str(c["name"]), str(c["a"]), str(c["b"])])
+			_body.add_child(_line("SINERGIE POSSIBILI CON LA TUA SQUADRA: " + ", ".join(PackedStringArray(names2)), 13, BattleTheme.CY))
 		_bottom.add_child(_btn("INIZIA LA SPEDIZIONE", "primary", 22, _start_run, 330.0))
 	else:
 		_body.add_child(_line("In attesa che l'host avvii la spedizione...", 20, BattleTheme.POP))
@@ -235,7 +271,7 @@ func _draw_run(run: Dictionary) -> void:
 
 
 func _draw_choices(run: Dictionary, k: String) -> void:
-	var intro: String = {"path": "Tre strade verso il boss. Scegliete quale rischio affrontare.", "event": "Un'entità offre qualcosa in cambio di qualcosa.", "cross": "Prima del boss: un'ultima decisione.", "boon": "Il gruppo sceglie un potenziamento che dura fino a fine spedizione."}[k]
+	var intro: String = {"path": "Tre strade verso il boss. Scegliete quale rischio affrontare.", "event": "Un'entità offre qualcosa in cambio di qualcosa.", "event2": "Una reliquia pulsa nel buio: ha un prezzo per tutti.", "shelter": "Un riparo a meta' strada: recuperare o rinforzarsi?", "cross": "Prima del boss: un'ultima decisione.", "boon": "Il gruppo sceglie un potenziamento che dura fino a fine spedizione."}[k]
 	_body.add_child(_line(intro, 17, BattleTheme.CY_DIM))
 	var votes: Dictionary = run.get("votes", {})
 	var mine: String = str(votes.get(_me(), ""))
@@ -383,12 +419,12 @@ func _cycle_tier(dir: int) -> void:
 
 func _start_run() -> void:
 	if net != null:
-		if not net.host_exp_new(_setup_boss, _setup_tier):
+		if not net.host_exp_new(_setup_boss, _setup_tier, _setup_long, _setup_mods):
 			Notify.warning("Non si può iniziare adesso.")
 		return
 	if not Expedition.available(roster):
 		return
-	MissionConfig.expedition = Expedition.new_run(int(randi()) | 1, _setup_boss, _setup_tier, false)
+	MissionConfig.expedition = Expedition.new_run(int(randi()) | 1, _setup_boss, _setup_tier, false, _setup_long, _setup_mods)
 	_save_solo()
 	_render()
 

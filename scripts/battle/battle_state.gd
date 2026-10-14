@@ -80,6 +80,7 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	u["base"] = {"atk": int(stats["atk"]), "def": int(stats["def"]), "spd": int(stats["spd"]), "crit": 0}
 	u["aura"] = {}
 	u["mods"] = []
+	u["mastery"] = (entry.get("mastery", {}) as Dictionary).duplicate()
 	Archetypes.setup(u)
 	Atypical.setup(u)
 	if bool(u.get("awake", false)):
@@ -188,6 +189,7 @@ static func create(specs: Array, boss_id: String, seed_value: int, tier: int = 0
 	var rng: RNGState = RNGState.new()
 	rng.setup(seed_value)
 	state["rng_state"] = str(rng.state_value)
+	Tactics.setup(state)
 	BattleResolver.begin_round(state)
 	return state
 

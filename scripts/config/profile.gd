@@ -105,6 +105,12 @@ static func ensure_loaded() -> void:
 		icon = "c_sword"
 
 
+# Icone non comuni sbloccate (per i bonus dei titoli).
+static func owned_icons() -> Array:
+	ensure_loaded()
+	return unlocked.duplicate()
+
+
 static func has_badge(id: String) -> bool:
 	ensure_loaded()
 	return badges.has(id)

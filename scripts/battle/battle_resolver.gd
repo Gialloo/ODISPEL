@@ -39,6 +39,7 @@ static func begin_round(state: Dictionary) -> void:
 			target = str(alive[rng.random_index(alive.size())]["id"])
 			_save_rng(state, rng)
 	state["telegraph"] = {"move": move_id, "target": target}
+	Tactics.roll_chain(state, cycle)
 	Arena.roll(state)
 	# L'IA decide subito, cosi' le sue intenzioni si vedono durante la pianificazione (non dipendono dalla scelta degli umani).
 	for p in state["players"]:
@@ -142,6 +143,8 @@ static func reaction_error(state: Dictionary, p: Dictionary, move_id: String) ->
 	var move: Dictionary = BattleContent.MOVES[move_id]
 	if int(state.get("reserve", 0)) < reaction_cost(state, move_id):
 		return "Riserva insufficiente"
+	if Tactics.reaction_locked(state, p):
+		return "esausto per il prezzo pagato"
 	if str(move["kind"]) == "rescue":
 		return "" if fallen_of(state, p) != "" else "nessun caduto da soccorrere"
 	var tele: Dictionary = state.get("telegraph", {})
@@ -180,6 +183,8 @@ static func submit_choice(state: Dictionary, pid: String, choice: Dictionary) ->
 		"swap": str(choice.get("swap", "")),
 		"move": str(choice.get("move", "")),
 		"target": str(choice.get("target", "")),
+		"order": Tactics.clean_order(choice.get("order", "")),
+		"push": Tactics.clean_push(choice.get("push", "")),
 	}
 	return true
 
@@ -240,6 +245,8 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 			claimed[swap] = true
 			_do_swap(state, p, swap, events)
 
+	Tactics.begin_resolution(state, events)
+
 	# 3. azioni ordinate per priorita', velocita', id
 	var actions: Array = []
 	for p in state["players"]:
@@ -281,6 +288,8 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 		_end_of_round(state, events)
 	_check_winner(state, events)
 
+	Tactics.track(state, events)
+	Tactics.end_round(state, events)
 	_tally(state, events)
 	for p in state["players"]:
 		p["choice"] = null
@@ -303,6 +312,28 @@ static func _tally(state: Dictionary, events: Array) -> void:
 		match str(e.get("t", "")):
 			"break":
 				st["breaks"] = int(st["breaks"]) + 1
+				if not st.has("break_round"):
+					st["break_round"] = int(state["round"])
+			"plate":
+				if bool(e.get("broke", false)):
+					st["plates"] = int(st.get("plates", 0)) + 1
+			"push":
+				st["pushes"] = int(st.get("pushes", 0)) + 1
+				if str(e["id"]) == "proibita":
+					st["forbidden"] = int(st.get("forbidden", 0)) + 1
+			"order":
+				st["orders"] = int(st.get("orders", 0)) + 1
+			"chain":
+				if not bool(e["ok"]):
+					st["chains_broken"] = int(st.get("chains_broken", 0)) + 1
+			"act":
+				var au: Dictionary = BattleState.unit(state, str(e.get("unit", "")))
+				if not au.is_empty() and str(au["side"]) == "player":
+					var uses: Dictionary = st.get("uses", {})
+					var per: Dictionary = uses.get(str(au["char"]), {})
+					per[str(e["move"])] = int(per.get(str(e["move"]), 0)) + 1
+					uses[str(au["char"])] = per
+					st["uses"] = uses
 			"synergy":
 				st["synergies"] = int(st["synergies"]) + 1
 				_note_seen(st, "seen_combos", str(e.get("id", "")))
@@ -542,6 +573,7 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float,
 	dmg *= Marks.bonus_mult(defender, ammo_hit)
 	dmg *= Archetypes.damage_mult(attacker, defender)
 	dmg *= Signatures.damage_mult(attacker, defender)
+	dmg *= Tactics.damage_mult(attacker)
 	if str(attacker["side"]) == "boss" and float(attacker["hp"]) < float(attacker["max_hp"]) * BattleTypes.ENRAGE_BELOW:
 		dmg *= BattleTypes.ENRAGE_BONUS
 	if str(defender["side"]) == "boss" and bool(defender.get("exposed", false)):
@@ -598,6 +630,8 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 	if crit:
 		var cd: float = float(attacker.get("crit_dmg", Factions.CRIT_DMG_PM)) * (1.0 + float(crit_dmg_boost) / 1000.0)
 		dmg = maxi(1, int(round(float(dmg) * cd / 1000.0)))
+	if str(defender["side"]) == "boss" and str(attacker["side"]) == "player":
+		dmg = Tactics.plate_hit(state, defender, dmg, pierce, events)
 	var absorbed: int = mini(int(defender["shield"]), dmg)
 	defender["shield"] = int(defender["shield"]) - absorbed
 	var lost: int = dmg - absorbed
@@ -615,6 +649,7 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 	events.append(hit_event)
 	if tenacious:
 		events.append({"t": "tenacity", "unit": defender["id"]})
+	Tactics.on_damaged(defender, events)
 	if str(defender["side"]) == "boss" and str(attacker["side"]) == "player" and int(defender["hp"]) > 0:
 		_chip_balance(defender, attacker, mult, events)
 	if crit and Atypical.fx(attacker, "crit_ammo") > 0:
@@ -790,7 +825,7 @@ static func _react(state: Dictionary, actor: Dictionary, move_id: String, events
 	var boss: Dictionary = BattleState.boss(state)
 	events.append({"t": "react", "unit": actor["id"], "kind": str(move["react"]), "move": str(state["telegraph"]["move"])})
 	if str(move["react"]) == "interrupt":
-		_drain_balance(boss, BattleTypes.INTERRUPT_PTS, actor, events)
+		_drain_balance(boss, BattleTypes.INTERRUPT_PTS + (1 if str(state.get("order", "")) == "interrompi" else 0), actor, events)
 		actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + 10)
 	return true
 
@@ -832,7 +867,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	Combos.record(state, actor, move)
 	var link_n: int = _chain_link(state, actor, events)
 	var link_gain: float = BattleTypes.LINK_BONUS + Signatures.value(actor, "link_boost")
-	var awake_mult: float = Signatures.upgrade_mult(actor, move_id, kind)
+	var awake_mult: float = Signatures.upgrade_mult(actor, move_id, kind) * Tactics.mastery_mult(actor, move_id)
 	# RITMO: cambiare mossa rispetto al round prima da' un po' di danno in piu' (chi ripete sempre lo stesso colpo non ne gode)
 	var last_move: String = str(actor.get("last_move", ""))
 	if move.has("mult") and last_move != "" and last_move != move_id and str(move["target"]) == "enemy":
@@ -1044,7 +1079,7 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		boss["shield"] = int(boss["shield"]) + shield
 		events.append({"t": "shield", "src": boss["id"], "dst": boss["id"], "amount": shield})
 
-	var beh_mult: float = Arena.boss_behavior(state, boss, events)
+	var beh_mult: float = Arena.boss_behavior(state, boss, events) * Tactics.boss_boost(state) * (Tactics.CHAIN_MULT if bool(state.get("in_chain", false)) else 1.0)
 	var reacted: bool = not state.get("reactions", []).is_empty()
 	var heavy: bool = is_heavy_boss_move(move)
 	var reserve_then: int = int(state.get("reserve", 0))
@@ -1084,6 +1119,8 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 	if heavy:
 		# resoconto: una carica e' "gestita" se qualcuno ha reagito o non ha fatto danno
 		events.append({"t": "threat", "move": move_id, "handled": reacted or lost_total <= 0, "could": reserve_then >= 1, "lost": lost_total})
+	if not bool(state.get("in_chain", false)):
+		Tactics.chain_followup(state, boss, reacted, rng, events)
 
 
 # ---------- Fine round ----------

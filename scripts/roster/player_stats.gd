@@ -29,6 +29,8 @@ static func rows(roster: Dictionary) -> Array:
 		["SERIE SFIDA", "%d GIORNI" % int(roster.get("daily", {}).get("best", 0))],
 		["OBIETTIVI", "%d / %d" % [Feats.done_count(roster), feats_all]],
 		["ARCHIVIO SCOPERTE", "%d / %d" % [Discoveries.count(roster), Discoveries.total()]],
+		["TITOLI", "%d / %d" % [Titles.earned(roster, Profile.owned_icons()).size(), Titles.all().size()]],
+		["POTERE TOTALE", str(Power.account(roster, Profile.owned_icons()))],
 	]
 
 

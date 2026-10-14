@@ -551,14 +551,14 @@ func exp_run() -> Dictionary:
 
 
 # Solo l'host: inizia una nuova spedizione per tutta la stanza.
-func host_exp_new(boss_id: String, tier: int) -> bool:
+func host_exp_new(boss_id: String, tier: int, long: bool = false, mods: Array = []) -> bool:
 	if not is_host or not BattleContent.BOSSES.has(boss_id) or _battle_in_progress():
 		return false
 
 	if not expedition.is_empty() and str(expedition.get("phase", "")) != "done":
 		return false
 
-	expedition = Expedition.new_run(int(randi()) | 1, boss_id, tier, true)
+	expedition = Expedition.new_run(int(randi()) | 1, boss_id, tier, true, long, mods)
 	_broadcast_lobby()
 	return true
 

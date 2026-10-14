@@ -141,10 +141,23 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 		"arena":
 			if str(e["id"]) == "contaminazione":
 				return {"text": ("%s ESCE DALLA NUBE" % unit_name(state, str(e["unit"]))) if bool(e["ok"]) else ("ZONA CONTAMINATA: %s -%d PV" % [unit_name(state, str(e["unit"])), int(e["amount"])]), "kind": "info" if bool(e["ok"]) else "boss"}
+			if str(e["id"]) == "eco":
+				return {"text": ("ECO: IL COLPO SI RIPETE (-%s)" % num(int(e["amount"]))) if bool(e["ok"]) else "ECO: NESSUN COLPO DA RIPETERE", "kind": "link" if bool(e["ok"]) else "info"}
 			return {"text": "SIGILLO ROTTO: BOSS DESTABILIZZATO" if bool(e["ok"]) else "SIGILLO INTATTO: IL BOSS SI COPRE", "kind": "info" if bool(e["ok"]) else "boss"}
 		"behavior":
 			var bdef: Dictionary = Arena.BEHAVIORS.get(str(e["id"]), {})
 			return {"text": "%s (x%d)" % [str(bdef.get("name", "COMPORTAMENTO")), int(e.get("n", 0))], "kind": "boss"}
+		"order":
+			var od: Dictionary = Tactics.ORDERS.get(str(e["id"]), {})
+			return {"text": "ORDINE DI SQUADRA: %s (x%d)" % [str(od.get("name", "")), int(e["n"])], "kind": "link"}
+		"push":
+			return {"text": "%s PAGA IL PREZZO: %s%s" % [unit_name(state, str(e["unit"])), str(Tactics.PUSH[str(e["id"])]["name"]), (" (-%d PV)" % int(e["cost"])) if int(e["cost"]) > 0 else ""], "kind": "boss" if str(e["id"]) == "proibita" else "info"}
+		"plate":
+			return {"text": ("PLACCA D'ARMATURA ROTTA! RESTANO %d" % int(e["left"])) if bool(e["broke"]) else ("PLACCA COLPITA (-%s)" % num(int(e["hit"]))), "kind": "link" if bool(e["broke"]) else "info"}
+		"chain":
+			return {"text": ("CATENA: IL BOSS COLPISCE ANCORA (%s)" % move_name(str(e["move"]))) if bool(e["ok"]) else "CATENA SPEZZATA: IL BOSS RESTA ESPOSTO", "kind": "boss" if bool(e["ok"]) else "link"}
+		"resolve":
+			return {"text": "%s: DETERMINAZIONE (+%d%% DANNO)" % [unit_name(state, str(e["unit"])), int(round((Tactics.RESOLVE_MULT - 1.0) * 100.0))], "kind": "heal"}
 		"rescue":
 			return {"text": "%s SOCCORRE %s (%d PV)" % [unit_name(state, str(e["unit"])), unit_name(state, str(e["who"])), int(e["hp"])], "kind": "heal"}
 		"react":
@@ -183,8 +196,14 @@ static func apply_to_display(state: Dictionary, e: Dictionary) -> void:
 	match str(e.get("t", "")):
 		"reserve":
 			state["reserve"] = int(e["value"])
+		"plate":
+			var pb: Dictionary = BattleState.boss(state)
+			pb["plates"] = int(e["left"])
 		"arena":
-			if int(e.get("amount", 0)) > 0:
+			if int(e.get("amount", 0)) > 0 and str(e["id"]) == "eco":
+				var eb: Dictionary = BattleState.boss(state)
+				eb["hp"] = maxi(0, int(eb["hp"]) - int(e["amount"]))
+			elif int(e.get("amount", 0)) > 0:
 				var au: Dictionary = BattleState.unit(state, str(e["unit"]))
 				if not au.is_empty():
 					au["hp"] = maxi(1, int(au["hp"]) - int(e["amount"]))

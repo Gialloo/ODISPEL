@@ -62,4 +62,6 @@ static func clean_choice(message: Dictionary) -> Dictionary:
 		"move": str(message.get("move", "")),
 		"target": str(message.get("target", "")),
 		"skill": str(message.get("skill", "")),
+		"order": Tactics.clean_order(message.get("order", "")),
+		"push": Tactics.clean_push(message.get("push", "")),
 	}

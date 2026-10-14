@@ -19,9 +19,10 @@ const MARK_SHIELD: float = 0.04
 
 const EVENTS: Dictionary = {
 	"contaminazione": {"name": "ZONA CONTAMINATA", "desc": "Chi e' sotto la nube perde il %d%% dei PV a fine round, a meno che si metta in GUARDIA o venga scambiato."},
+	"eco": {"name": "ECO", "desc": "Il colpo piu' forte che hai dato al boss si ripete al %d%%. Prepara un colpo grosso nel round prima."},
 	"sigillo": {"name": "SIGILLO", "desc": "Se almeno %d operatori attaccano il boss nello stesso round il sigillo si rompe: -%d equilibrio e +1 Riserva. Altrimenti il boss si copre di scudo."},
 }
-const EVENT_ORDER: Array = ["contaminazione", "sigillo"]
+const EVENT_ORDER: Array = ["contaminazione", "sigillo", "eco"]
 
 const BEHAVIORS: Dictionary = {
 	"punisce_cure": {"name": "PUNISCE LE CURE", "desc": "Ogni cura nel round rende la sua mossa +10% (fino a +30%). Cura quando serve, non per abitudine."},
@@ -67,6 +68,8 @@ static func hint_lines(state: Dictionary) -> Array:
 		if str(ev["id"]) == "contaminazione":
 			var u: Dictionary = BattleState.unit(state, str(ev.get("unit", "")))
 			out.append("ARENA · %s su %s: GUARDIA o cambio per evitarla" % [str(def["name"]), str(u.get("name", "")).to_upper()])
+		elif str(ev["id"]) == "eco":
+			out.append("ARENA · ECO: il colpo piu' forte del round scorso (%d) si ripete al %d%%" % [int(state.get("echo", 0)), int(round(Tactics.ECHO_PCT * 100.0))])
 		else:
 			out.append("ARENA · %s: attaccate in %d o piu' per romperlo" % [str(def["name"]), seal_need(state)])
 	var boss_id: String = str(BattleState.boss(state).get("char", ""))
@@ -101,6 +104,15 @@ static func resolve(state: Dictionary, events: Array) -> void:
 			amount = mini(int(u["hp"]) - 1, maxi(1, int(round(float(u["max_hp"]) * CONTAMINATION_PCT))))
 			u["hp"] = int(u["hp"]) - amount
 		events.append({"t": "arena", "id": "contaminazione", "ok": safe, "unit": u["id"], "amount": amount})
+	elif str(ev["id"]) == "eco":
+		var echo_dmg: int = int(round(float(state.get("echo", 0)) * Tactics.ECHO_PCT))
+		if echo_dmg > 0 and BattleState.is_alive(boss):
+			var shield_part: int = mini(int(boss["shield"]), echo_dmg)
+			boss["shield"] = int(boss["shield"]) - shield_part
+			boss["hp"] = maxi(0, int(boss["hp"]) - (echo_dmg - shield_part))
+			if int(boss["hp"]) <= 0:
+				BattleResolver._on_down(boss, events)
+		events.append({"t": "arena", "id": "eco", "ok": echo_dmg > 0, "unit": "", "amount": echo_dmg})
 	elif str(ev["id"]) == "sigillo":
 		var attackers: Dictionary = {}
 		for entry in state.get("tags", []):
