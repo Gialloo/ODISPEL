@@ -158,6 +158,9 @@ static func skills_of(u: Dictionary) -> Array:
 		var m: Dictionary = BattleContent.MOVES.get(str(sid), {})
 		if str(m.get("kind", "")) == "skill" and not out.has(str(sid)):
 			out.append(str(sid))
+	for sid in Signatures.skills_for(str(u.get("char", "")), int(u.get("rank", 0))):
+		if not out.has(str(sid)):
+			out.append(str(sid))        # nel PvP le abilita' uniche ci sono sempre
 	if out.is_empty():
 		var base: String = str(BattleContent.CHARACTERS.get(str(u.get("char", "")), {}).get("skill", ""))
 		if BattleContent.MOVES.has(base):

@@ -234,7 +234,7 @@ func _test_kit_slots() -> void:
 	legacy["skills"] = ["colpo_caricato"]
 	var ls: Dictionary = BattleState.create([{"id": "a", "name": "a", "team": [legacy]}], "distributore", 3)
 	var lk: Array = BattleState.unit(ls, "a:kira")["skills"]
-	_check("vecchio kit: ricevono Attacco e Guardia", lk.has("attack") and lk.has("guard") and lk.has("colpo_caricato"))
+	_check("vecchio kit: ricevono Attacco e Guardia", lk.has("attack") and lk.has("colpo_caricato") and lk.size() == BattleTypes.SKILL_SLOTS)
 	var many: Array = BattleState.kit_of(["attack", "guard", "a", "b", "c", "d"], [])
 	_check("non piu' di 4 mosse scelte", many.size() == BattleTypes.SKILL_SLOTS and k["skills"].size() >= 4)
 

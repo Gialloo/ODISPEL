@@ -5,6 +5,13 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.21", "items": [
+		"BATTAGLIA RIFATTA: personaggi e boss in prospettiva, HUD piu' pulita, barre vita sotto i personaggi quando serve, log a tendina, icone per AUTO e velocita'.",
+		"ABILITA': quando un operatore lancia un'abilita' compare il suo ritratto con il nome della mossa.",
+		"KIT A 4 MOSSE + ULTIMATE: Attacco, Guardia, skill e abilita' uniche stanno tutte negli stessi 4 slot e si possono togliere e mettere.",
+		"BONUS KIT COMPLETO: con 4 mosse equipaggiate e l'ultimate l'operatore ha +3% PV, attacco e difesa.",
+		"Sistemato il tasto di fine partita che usciva dallo schermo: riepilogo e premi ora scorrono e i pulsanti restano sempre visibili.",
+	]},
 	{"v": "0.24.20", "items": [
 		"MAESTRIA CHE SI SALVA: ogni mossa che usi tanto sale di livello (25 usi per livello, fino a 3) e fa +4% per livello. Te lo dice a fine battaglia.",
 		"SFIDA FACOLTATIVA: ogni battaglia ne propone una (nessun caduto, rottura veloce...). Se la superi vinci 120 crediti in piu'. La vedi all'inizio e nel resoconto.",

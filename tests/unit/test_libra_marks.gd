@@ -35,7 +35,7 @@ func _init() -> void:
 	var boss: Dictionary = BattleState.boss(s)
 	_check("capacita' munizioni per personaggio", int(angela["ammo_max"]) == 12 and int(dafne["ammo_max"]) == 6 and int(BattleState.unit(s, "a:dax")["ammo_max"]) == BattleTypes.AMMO_MAX)
 	_check("Angela e' un glass cannon", int(angela["max_hp"]) < int(BattleState.unit(s, "a:dax")["max_hp"]) * 0.7)
-	_check("Dafne: 3 skill + ricarica", (dafne["skills"] as Array).has("u_dafne_a") and (dafne["skills"] as Array).has("u_dafne_b") and (dafne["skills"] as Array).has("u_dafne_c"))
+	_check("Dafne: 3 skill + ricarica", (dafne["skills"] as Array).has("u_dafne_a") and (dafne["skills"] as Array).has("ricarica") and Signatures.skills_for("dafne", 0).has("u_dafne_b"))
 	# marchi
 	var ev: Array = []
 	dafne["energy"] = 6

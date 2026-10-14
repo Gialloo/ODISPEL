@@ -62,7 +62,10 @@ func _init() -> void:
 			print("  anomalia: ", id, " n=", n, " rar=", rar)
 	_check("passiva unica per tutti; 1 skill (comune/rara) o 2 (epica/leggendaria)", ok_skills)
 	_check("tutte le skill uniche sono subito disponibili (il rank le potenzia)", Signatures.skills_for("sera", 0).size() == 2)
-	_check("l'unita' porta le skill uniche", (_unit("sera", 0)["skills"] as Array).has("u_sera_b"))
+	var se: Dictionary = BattleContent.default_entry("sera", 1, 0)
+	se["skills"] = ["attack", "guard", "u_sera_a", "u_sera_b"]
+	_check("l'unita' porta le skill uniche equipaggiate", (BattleState.make_unit("a", se)["skills"] as Array).has("u_sera_b"))
+	_check("kit completo: bonus a PV/ATK/DEF", BattleContent.full_kit(se) and int(BattleContent.compute_stats(se)["atk"]) > int(BattleContent.compute_stats(BattleContent.default_entry("sera", 1, 0).merged({"skills": ["attack"]}, true))["atk"]))
 	_check("le skill uniche non cadono come premio", _drops_have_no_unique())
 	# rank
 	var e0: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("nova", 1, 0))

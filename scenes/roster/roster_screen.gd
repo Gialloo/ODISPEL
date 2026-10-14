@@ -917,8 +917,6 @@ func _refresh_detail() -> void:
 	var skills: Array = []
 	for s in e["skills"]:
 		skills.append(BattleText.move_name(str(s)))
-	for s in Signatures.skills_for(selected, int(e["rank"])):
-		skills.append("★" + BattleText.move_name(str(s)))
 	var passives: Array = []
 	for p in e["passives"]:
 		passives.append(str(BattleContent.PASSIVES[str(p)]["name"]))
@@ -1166,6 +1164,9 @@ func _refresh_equip_moves(key: String) -> void:
 	if key != "ult":
 		_equip_list.add_child(_item_button("-- SVUOTA LO SLOT --", "normal", current != "", ""))
 		if key.begins_with("skill"):
+			for uid in Signatures.skills_for(selected, int(e["rank"])):
+				var usel: bool = str(uid) == current
+				_equip_list.add_child(_item_button("%s%s   [unica]   %s" % ["> " if usel else "", BattleText.move_name(str(uid)), BattleText.move_hint(str(uid))], "primary" if usel else "normal", true, str(uid), GameIcon.move_key(str(uid)), GameIcon.move_color(str(uid))))
 			for bid in BattleTypes.BASIC_MOVES:
 				var bsel: bool = str(bid) == current
 				_equip_list.add_child(_item_button("%s%s   [mossa base]   %s" % ["> " if bsel else "", BattleText.move_name(str(bid)), BattleText.move_hint(str(bid))], "primary" if bsel else "normal", true, str(bid), GameIcon.move_key(str(bid)), GameIcon.move_color(str(bid))))

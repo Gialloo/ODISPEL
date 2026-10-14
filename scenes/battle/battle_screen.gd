@@ -2622,6 +2622,16 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	var title := BattleTheme.make_label("OPERAZIONE RIUSCITA" if victory else "OPERAZIONE FALLITA", 40, BattleTheme.CY if victory else BattleTheme.RD, true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
+	# titolo e tasti restano sempre visibili: riepilogo e premi scorrono se non ci stanno
+	var info_scroll := ScrollContainer.new()
+	info_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	info_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	info_scroll.custom_minimum_size = Vector2(0, 70)
+	box.add_child(info_scroll)
+	var info := VBoxContainer.new()
+	info.add_theme_constant_override("separation", 6)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_scroll.add_child(info)
 	var mission_text: String = "%s · %s" % [MissionConfig.boss_title(str(BattleState.boss(shown)["char"])), str(BattleContent.tier_of(int(shown.get("tier", 0)))["name"])]
 	if MissionConfig.daily_mod != "":
 		var wk: bool = MissionConfig.weekly
@@ -2636,16 +2646,16 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 		mission_text = "CICLO INFINITO · PIANO %d · RECORD %d" % [MissionConfig.endless_floor, best_floor]
 	var mission := BattleTheme.make_label(mission_text, 16, BattleTheme.WH)
 	mission.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(mission)
+	info.add_child(mission)
 	var mvp: String = _mvp_line()
 	if mvp != "":
 		var ml := BattleTheme.make_label(mvp, 15, BattleTheme.POP)
 		ml.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		box.add_child(ml)
+		info.add_child(ml)
 	var recap_label := BattleTheme.make_label(_recap_text(victory), 13, BattleTheme.CY_DIM)
 	recap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	recap_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(recap_label)
+	info.add_child(recap_label)
 	var replay_btn := Button.new()
 	replay_btn.text = "REPLAY TATTICO"
 	replay_btn.custom_minimum_size = Vector2(0, 40)

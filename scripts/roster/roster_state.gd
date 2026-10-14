@@ -100,7 +100,7 @@ static func add_character(roster: Dictionary, char_id: String) -> String:
 	roster["characters"][char_id] = fresh
 	# la mossa, l'ultimate e la passiva innate sono sempre possedute
 	for sk in fresh["skills"]:
-		if not BattleTypes.BASIC_MOVES.has(str(sk)):
+		if not BattleTypes.BASIC_MOVES.has(str(sk)) and not Signatures.skills_for(char_id, 0).has(str(sk)):
 			_inventory_add(roster["moves"], str(sk))
 	_inventory_add(roster["moves"], str(fresh["ult"]))
 	_inventory_add(roster["passives"], str(fresh["passives"][0]))
@@ -234,7 +234,10 @@ static func equip_skill(roster: Dictionary, char_id: String, slot: int, move_id:
 		var kind: String = str(BattleContent.MOVES[move_id]["kind"]) if BattleContent.MOVES.has(move_id) else ""
 		if kind != "skill" and not basic:
 			return false
-		if not basic and int(roster["moves"].get(move_id, 0)) <= _used(roster, "skills", move_id, char_id, slot):
+		var mine: bool = str(BattleContent.MOVES[move_id].get("unique", "")) == char_id
+		if BattleContent.MOVES[move_id].has("unique") and not mine:
+			return false      # l'abilita' unica e' solo del suo personaggio
+		if not basic and not mine and int(roster["moves"].get(move_id, 0)) <= _used(roster, "skills", move_id, char_id, slot):
 			return false
 		for i in skills.size():
 			if i != slot and str(skills[i]) == move_id:
@@ -330,6 +333,8 @@ static func validate_entry(entry: Dictionary) -> String:
 	for m in skills:
 		if not BattleContent.MOVES.has(str(m)) or (str(BattleContent.MOVES[str(m)]["kind"]) != "skill" and not BattleTypes.BASIC_MOVES.has(str(m))):
 			return "skill non valida"
+		if BattleContent.MOVES[str(m)].has("unique") and str(BattleContent.MOVES[str(m)]["unique"]) != str(entry.get("char", "")):
+			return "abilita' unica di un altro personaggio"
 		if seen.has(str(m)):
 			return "skill duplicata"
 		seen[str(m)] = true
@@ -667,11 +672,10 @@ static func migrate_kits(roster: Dictionary) -> void:
 	if not (chars is Dictionary):
 		return
 	for id in chars:
-		var skills: Variant = (chars[id] as Dictionary).get("skills", null)
+		var entry: Dictionary = chars[id]
+		var skills: Variant = entry.get("skills", null)
 		if skills is Array and _basic_count(skills) == 0:
-			var fixed: Array = ["attack", "guard"]
-			fixed.append_array(skills)
-			(chars[id] as Dictionary)["skills"] = fixed.slice(0, BattleTypes.SKILL_SLOTS)
+			entry["skills"] = BattleState.kit_of(skills, Signatures.skills_for(str(entry.get("char", id)), int(entry.get("rank", 0))))
 
 
 static func sync_faction_moves(roster: Dictionary) -> void:
@@ -711,8 +715,8 @@ static func from_json(text: String) -> Dictionary:
 		roster["pity"] = 0
 	if not roster.has("cleared"):
 		roster["cleared"] = {}
-	migrate_kits(roster)
 	sync_faction_moves(roster)
+	migrate_kits(roster)
 	grant_story_allies(roster)
 	if int(roster.get("version", 0)) != VERSION or validate(roster) != "":
 		return {}

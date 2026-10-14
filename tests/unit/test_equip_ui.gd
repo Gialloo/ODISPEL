@@ -61,7 +61,7 @@ func _run() -> void:
 	s.select_equip_slot("skill3")
 	_check("elenco skill con voci", s._equip_list.get_child_count() >= 3)
 	_check("equipaggio marchio nel quarto slot", s.equip_item("marchio"))
-	_check("kira ha 4 mosse", s.roster["characters"]["kira"]["skills"] == ["attack", "colpo_caricato", "guard", "marchio"])
+	_check("kira ha 4 mosse", s.roster["characters"]["kira"]["skills"] == ["attack", "guard", "colpo_caricato", "marchio"])
 	_check("lo slot mostra la skill", s._equip_slots_box.get_child(3).text.contains("MARCHIO"))
 	_check("la stessa skill due volte e' rifiutata", not s.equip_item("colpo_caricato"))
 	_check("il messaggio spiega perche'", s.status_text.contains("Gia'"))

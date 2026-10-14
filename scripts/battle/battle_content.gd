@@ -502,6 +502,14 @@ static func rarity_of(kind: String, id: String) -> int:
 
 # Statistiche calcolate di un personaggio del roster.
 # entry: {char, level, rank, skills, ult, passives, gear:[{slot, rarity, level}]}
+# Kit completo: 4 mosse equipaggiate + ultimate (non nel PvP bilanciato).
+static func full_kit(entry: Dictionary) -> bool:
+	if bool(entry.get("flat_rarity", false)) or str(entry.get("ult", "")) == "":
+		return false
+	var cid: String = str(entry.get("char", ""))
+	return BattleState.kit_of(entry.get("skills", []), Signatures.skills_for(cid, int(entry.get("rank", 0)))).size() >= BattleTypes.SKILL_SLOTS
+
+
 static func compute_stats(entry: Dictionary) -> Dictionary:
 	var def: Dictionary = CHARACTERS[str(entry.get("char", "kira"))]
 	var base: Dictionary = CLASS_STATS[str(def["cls"])]
@@ -524,6 +532,12 @@ static func compute_stats(entry: Dictionary) -> Dictionary:
 	hp *= float(tm["hp"])
 	atk *= float(tm["atk"])
 	dfn *= float(tm["def"])
+
+	if full_kit(entry):
+		var kb: float = 1.0 + float(BattleTypes.KIT_BONUS_PCT) / 100.0
+		hp *= kb
+		atk *= kb
+		dfn *= kb
 
 	var gear: Array = entry.get("gear", [])
 	for piece in gear:
@@ -550,9 +564,12 @@ static func compute_stats(entry: Dictionary) -> Dictionary:
 # Equipaggiamento di base di un personaggio (innata + ultimate + passiva innata).
 # Le skill di partenza: quella innata e, per la LibraCorp, Ricarica (senza munizioni il loro stile non funziona).
 static func _default_skills(char_id: String) -> Array:
+	# come prima (Attacco, Guardia, la skill del personaggio, Ricarica per i LibraCorp); gli slot che avanzano vanno alle abilita' uniche
+	var list: Array = ["attack", "guard", str(CHARACTERS[char_id]["skill"])]
 	if faction_of(char_id) == "libracorp":
-		return ["attack", str(CHARACTERS[char_id]["skill"]), "ricarica", "guard"]
-	return ["attack", str(CHARACTERS[char_id]["skill"]), "guard"]
+		list.append("ricarica")
+	list.append_array(Signatures.skills_for(char_id, 0))
+	return list.slice(0, BattleTypes.SKILL_SLOTS)
 
 
 static func default_entry(char_id: String, level: int = 1, rank: int = 0) -> Dictionary:

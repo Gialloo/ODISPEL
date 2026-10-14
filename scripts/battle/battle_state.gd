@@ -49,20 +49,28 @@ static func _blank_unit(id: String, char_id: String, side: String, owner: String
 	}
 
 
-# Le mosse scelte dal giocatore (max SKILL_SLOTS): Attacco e Guardia contano come le altre; le abilita' uniche del personaggio si aggiungono.
-# Un kit senza nessuna delle due e' un vecchio salvataggio: riceve entrambe. Ne resta sempre almeno una.
+# Le mosse del menu: max SKILL_SLOTS (Attacco, Guardia, skill e abilita' uniche contano tutte allo stesso modo).
+# Un kit senza Attacco ne' Guardia e' un vecchio salvataggio: riceve Attacco, le abilita' uniche e Guardia.
+# Nel kit resta sempre almeno una mossa base (e' quella che si puo' sempre usare).
 static func kit_of(equipped: Array, sigs: Array) -> Array:
 	var list: Array = []
 	for m in equipped:
-		if not list.has(str(m)) and not sigs.has(str(m)):
+		if not list.has(str(m)):
 			list.append(str(m))
 	var has_basic: bool = false
 	for m in list:
 		has_basic = has_basic or BattleTypes.BASIC_MOVES.has(str(m))
 	if not has_basic:
-		list = ["attack", "guard"] + list
-	var cap: int = BattleTypes.SKILL_SLOTS
-	while list.size() > cap:
+		var legacy: Array = ["attack"]
+		for m in list:
+			if not legacy.has(m):
+				legacy.append(m)
+		for m in sigs:
+			if not legacy.has(str(m)):
+				legacy.append(str(m))
+		legacy.append("guard")
+		list = legacy
+	while list.size() > BattleTypes.SKILL_SLOTS:
 		list.pop_back()
 	has_basic = false
 	for m in list:
@@ -93,9 +101,6 @@ static func make_unit(player_id: String, entry: Dictionary) -> Dictionary:
 	# abilita' e passiva uniche del personaggio; il rank le potenzia
 	var rank: int = int(entry.get("rank", 0))
 	u["rank"] = rank
-	for sid in sigs:
-		if not u["skills"].has(sid):
-			u["skills"].append(sid)
 	u["uniq"] = Signatures.effects_for(char_id, rank)
 	u["awake"] = rank >= Signatures.AWAKEN_RANK
 	u["rarity"] = int(entry.get("rarity", def.get("rarity", 0)))
