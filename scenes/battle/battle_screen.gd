@@ -16,6 +16,7 @@ var _picks: Dictionary = {}          # slot -> ordine gia' scelto in questo roun
 var _cur_slot: String = ""           # slot di front row di cui si scelgono gli ordini
 var autoplay: bool = false           # AUTOPLAY: l'IA combatte da sola
 var _auto_button: Button
+var _auto_icon: GameIcon
 var speed_button: Button
 var _veil: ColorRect
 var _perf_time: float = 0.0
@@ -324,8 +325,10 @@ func _maybe_autoplay() -> void:
 func set_autoplay(on: bool) -> void:
 	autoplay = on
 	if _auto_button != null:
-		_auto_button.text = "AUTO ON" if on else "AUTO"
 		BattleTheme.style_button(_auto_button, "primary" if on else "normal", 16)
+		if _auto_icon != null:
+			_auto_icon.color = BattleTheme.BK if on else BattleTheme.CY
+			_auto_icon.queue_redraw()
 	if on:
 		_maybe_autoplay()
 	elif locked and not animating:
@@ -403,7 +406,15 @@ func _update_select_arrow(picking: bool) -> void:
 
 func _build_autoplay() -> void:
 	_auto_button = Button.new()
-	_auto_button.text = "AUTO"
+	_auto_button.text = ""
+	_auto_button.tooltip_text = "Gioco automatico (A)"
+	_auto_icon = GameIcon.new().setup("bolt", BattleTheme.CY, 20.0)
+	_auto_icon.set_anchors_preset(Control.PRESET_CENTER)
+	_auto_icon.offset_left = -10.0
+	_auto_icon.offset_right = 10.0
+	_auto_icon.offset_top = -10.0
+	_auto_icon.offset_bottom = 10.0
+	_auto_button.add_child(_auto_icon)
 	_auto_button.focus_mode = Control.FOCUS_NONE
 	_auto_button.visible = false
 	BattleTheme.style_button(_auto_button, "normal", 14)
@@ -2287,6 +2298,58 @@ func banter(uid: String, kind: String, force: bool = false) -> void:
 	tw.tween_callback(plate.queue_free)
 
 
+# Abilita' (non ultimate, non attacco/guardia): ritratto di chi la usa con il nome della mossa, a destra, in un attimo.
+func _skill_plate(u: Dictionary, move_id: String) -> void:
+	if _skill_node != null and is_instance_valid(_skill_node):
+		_skill_node.queue_free()
+	var col: Color = BattleTheme.unit_color(str(u["color"]))
+	var plate := Control.new()
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.anchor_left = 1.0
+	plate.anchor_right = 1.0
+	plate.anchor_top = 0.5
+	plate.anchor_bottom = 0.5
+	plate.offset_left = -430.0
+	plate.offset_right = -10.0
+	plate.offset_top = -170.0
+	plate.offset_bottom = -30.0
+	var bg := PanelContainer.new()
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.anchor_top = 0.5
+	bg.anchor_bottom = 0.5
+	bg.anchor_right = 1.0
+	bg.offset_top = -4.0
+	bg.offset_bottom = 46.0
+	bg.offset_left = 20.0
+	bg.add_theme_stylebox_override("panel", SlantBox.make(Color(BattleTheme.BK, 0.88), col, 12.0, col, 3.0))
+	var lab := BattleTheme.make_label(BattleText.move_name(move_id).to_upper(), 28, BattleTheme.WH, true)
+	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	lab.add_theme_color_override("font_outline_color", BattleTheme.BK)
+	bg.add_child(lab)
+	plate.add_child(bg)
+	var face := PortraitView.new().setup(str(u["char"]), "bust")
+	face.show_expression_text = false
+	face.size = Vector2(150.0, 150.0)
+	face.position = Vector2(-10.0, -8.0)
+	plate.add_child(face)
+	_fx.add_child(plate)
+	_skill_node = plate
+	plate.modulate.a = 0.0
+	plate.offset_left += 60.0
+	plate.offset_right += 60.0
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(plate, "modulate:a", 1.0, 0.12)
+	tw.tween_property(plate, "offset_left", plate.offset_left - 60.0, 0.18)
+	tw.tween_property(plate, "offset_right", plate.offset_right - 60.0, 0.18)
+	tw.chain().tween_interval(0.7)
+	tw.chain().tween_property(plate, "modulate:a", 0.0, 0.25)
+	tw.chain().tween_callback(plate.queue_free)
+
+
+var _skill_node: Control = null
+
+
 func _local_active_id() -> String:
 	var me: Dictionary = _local_player()
 	return str(me.get("active", "")) if not me.is_empty() else ""
@@ -2308,6 +2371,8 @@ func _fx_act(e: Dictionary) -> float:
 	if kind == "ult":
 		banter(str(unit["id"]), "ult", true)
 		_announce(str(unit["name"]), BattleText.move_name(move_id), false)
+	elif kind == "skill" or kind == "reaction":
+		_skill_plate(unit, move_id)
 	else:
 		_float_text(BattleText.move_name(move_id), str(unit["id"]), BattleTheme.unit_color(str(unit["color"])), 18)
 	if int(move.get("ammo", 0)) > 0:
