@@ -39,3 +39,11 @@ Con lo stesso comando, a ogni nuova versione, il vecchio file viene sostituito.
 - Mandagli il link della pagina e la password.
 - Windows: scaricare lo zip, tasto destro > Estrai tutto, avviare `ODISPEL.exe` (il file `.dll` resta nella stessa cartella).
 - Android: scaricare l'APK, aprirlo e consentire l'installazione da questa fonte. Se c'e' gia' una versione con firma diversa, prima disinstallarla.
+
+## 4. Caricamento automatico (GitHub -> itch.io)
+Il file `.github/workflows/itch.yml` carica da solo su itch.io l'APK e lo zip piu' recenti di `releases/` ogni volta che vengono pubblicati sul ramo `claude/battaglia-chiara`.
+Una volta sola, tu devi:
+1. Su itch.io: **Impostazioni > API keys > Generate new API key** e copia la chiave (non scriverla in chat ne' nel repository).
+2. Su GitHub, nel repository: **Settings > Secrets and variables > Actions > New repository secret**. Nome: `ITCH_API_KEY`, valore: la chiave.
+3. Per provare subito: scheda **Actions > Pubblica su itch.io > Run workflow**.
+Se cambi il nome della pagina itch.io, modifica `ITCH_TARGET` nel file.

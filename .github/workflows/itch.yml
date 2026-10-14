@@ -1,0 +1,34 @@
+# Carica su itch.io l'APK e lo zip di Windows quando cambiano in releases/ (ramo claude/battaglia-chiara).
+# Serve il segreto ITCH_API_KEY (chiave di butler) salvato in GitHub: Settings > Secrets and variables > Actions.
+name: Pubblica su itch.io
+
+on:
+  push:
+    branches: [claude/battaglia-chiara]
+    paths:
+      - 'releases/*.apk'
+      - 'releases/*-windows.zip'
+  workflow_dispatch:
+
+jobs:
+  itch:
+    runs-on: ubuntu-latest
+    env:
+      BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
+      ITCH_TARGET: boomeranza/odispel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Controlla che la chiave ci sia
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then echo "Manca il segreto ITCH_API_KEY: niente da caricare."; exit 1; fi
+      - name: Installa butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d butler && chmod +x butler/butler
+      - name: Carica gli ultimi file
+        run: |
+          apk=$(ls releases/ODISPEL-*.apk | sort -V | tail -1)
+          zip=$(ls releases/ODISPEL-*-windows.zip | sort -V | tail -1)
+          ver=$(basename "$apk" .apk | sed 's/ODISPEL-//')
+          ./butler/butler push "$zip" "$ITCH_TARGET:windows" --userversion "$ver"
+          ./butler/butler push "$apk" "$ITCH_TARGET:android" --userversion "$ver"
