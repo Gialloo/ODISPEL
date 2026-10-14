@@ -11,6 +11,8 @@ var selected_tier: int = 0
 var boss_buttons: Dictionary = {}
 var tier_buttons: Array = []
 var go_button: Button
+var training_button: Button
+var practice: bool = false          # SALA DI ADDESTRAMENTO: prova senza premi e senza conseguenze
 var daily_button: Button
 var info_label: Label
 var _desc_label: Label
@@ -132,12 +134,25 @@ func _build() -> void:
 	wk_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	wk_info.custom_minimum_size = Vector2(740, 0)
 	dbox.add_child(wk_info)
+	var go_row := HBoxContainer.new()
+	go_row.add_theme_constant_override("separation", 8)
+	dbox.add_child(go_row)
+	training_button = Button.new()
+	training_button.custom_minimum_size = Vector2(250, 56)
+	training_button.clip_text = true
+	training_button.tooltip_text = "Prova il boss senza consumare nulla: niente premi, niente progressi, niente conseguenze."
+	training_button.pressed.connect(func() -> void:
+		practice = not practice
+		_refresh_training())
+	go_row.add_child(training_button)
 	go_button = Button.new()
 	go_button.text = "AVVIA MISSIONE"
 	go_button.custom_minimum_size = Vector2(0, 56)
+	go_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	BattleTheme.style_button(go_button, "primary", 28)
 	go_button.pressed.connect(_on_go)
-	dbox.add_child(go_button)
+	go_row.add_child(go_button)
+	_refresh_training()
 
 	UiMotion.slide_in([list_panel], Vector2(-140, 0), 0.0, 0.3)
 	UiMotion.slide_in([det], Vector2(140, 0), 0.0, 0.34)
@@ -203,8 +218,16 @@ func _refresh() -> void:
 		info_label.text += "\nBatti questo livello per sbloccare il successivo."
 
 
+func _refresh_training() -> void:
+	if training_button == null:
+		return
+	training_button.text = "ADDESTRAMENTO: SI" if practice else "ADDESTRAMENTO: NO"
+	BattleTheme.style_button(training_button, "primary" if practice else "normal", 16)
+	go_button.text = "PROVA (SENZA PREMI)" if practice else "AVVIA MISSIONE"
+
+
 func _on_go() -> void:
-	Story.start_mission(self, selected_boss, selected_tier)
+	Story.start_mission(self, selected_boss, selected_tier, practice)
 
 
 func _on_daily() -> void:

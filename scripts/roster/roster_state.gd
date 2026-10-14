@@ -168,6 +168,7 @@ static func team_entries(roster: Dictionary) -> Array:
 		e.erase("copies")          # le copie non spese sono affari del salvataggio, non della battaglia
 		Expedition.decorate_entry(roster, e)
 		Titles.decorate_entry(roster, e, Profile.owned_icons())
+		Extras.decorate_entry(roster, e)
 		out.append(e)
 	return out
 
@@ -182,6 +183,7 @@ static func spare_entries(roster: Dictionary) -> Array:
 			var e: Dictionary = roster["characters"][id].duplicate(true)
 			e.erase("copies")
 			Titles.decorate_entry(roster, e, Profile.owned_icons())
+			Extras.decorate_entry(roster, e)
 			out.append(e)
 	return out
 
@@ -301,6 +303,8 @@ static func validate_entry(entry: Dictionary) -> String:
 		for k in (entry["acc"] as Dictionary):
 			if not Titles.STATS.has(str(k)) or int(entry["acc"][k]) < 0 or int(entry["acc"][k]) > Titles.MAX_BP:
 				return "bonus titoli non valido"
+	if not Extras.mastery_valid(entry):
+		return "maestria non valida"
 	var skills: Array = entry.get("skills", [])
 	if skills.size() > BattleTypes.SKILL_SLOTS:
 		return "troppe skill"

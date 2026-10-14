@@ -913,6 +913,9 @@ func finish() -> Dictionary:
 	Feats.record_battle(roster, str(battle["winner"]) == "players")
 	for line in Discoveries.record(roster, str(BattleState.boss(battle)["char"]), str(battle["winner"]) == "players", battle.get("stats", {})):
 		Notify.success(line)
+	for line in Extras.record_mastery(roster, battle.get("stats", {})):
+		Notify.success(line)
+	Extras.record_result(roster, str(battle["winner"]) == "players")
 	for line in Objectives.record_battle(roster, str(BattleState.boss(battle)["char"]), int(battle.get("tier", 0)), str(battle["winner"]) == "players", "", battle.get("stats", {})):
 		Notify.success(line)
 

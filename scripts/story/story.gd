@@ -19,8 +19,8 @@ static func is_new(id: String) -> bool:
 
 
 # Avvia una missione in solitaria: prima la scena iniziale (se e' nuova), poi la battaglia.
-static func start_mission(host: Node, boss_id: String, tier: int) -> void:
-	MissionConfig.set_mission(boss_id, tier)
+static func start_mission(host: Node, boss_id: String, tier: int, practice: bool = false) -> void:
+	MissionConfig.set_mission(boss_id, tier, practice)
 	var id: String = scene_id(boss_id, "pre")
 	if enabled() and is_new(id):
 		var view: DialogueView = play(host, id)

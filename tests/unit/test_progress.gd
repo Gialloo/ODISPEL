@@ -97,7 +97,7 @@ func _run() -> void:
 	_play_solo(src, true)
 	_check("battaglia vinta", str(src.battle["winner"]) == "players")
 	var rw: Dictionary = src.finish()
-	_check("premi maggiorati a DIFFICILE", int(rw["coins"]) == int(round(float(BattleContent.BOSSES["distributore"]["reward"]["coins"]) * float(BattleContent.tier_of(1)["reward"]))))
+	_check("premi maggiorati a DIFFICILE", int(rw["coins"]) - int(rw.get("challenge", 0)) == int(round(float(BattleContent.BOSSES["distributore"]["reward"]["coins"]) * float(BattleContent.tier_of(1)["reward"]))))
 	var saved: Dictionary = RosterStore.load_or_new(TMP)
 	_check("la vittoria a DIFFICILE sblocca INCUBO", RosterState.cleared_tiers(saved, "distributore") == 2 and RosterState.is_tier_unlocked(saved, "distributore", 2))
 	src.finish()
@@ -143,7 +143,7 @@ func _run() -> void:
 	host.finish()
 	var net_saved: Dictionary = RosterStore.load_or_new(TMP)
 	_check("la vittoria in rete registra boss e livello", RosterState.cleared_tiers(net_saved, "semaforo") == 3)
-	_check("e i premi sono maggiorati", int(host.battle_rewards["coins"]) == int(round(float(BattleContent.BOSSES["semaforo"]["reward"]["coins"]) * float(BattleContent.tier_of(2)["reward"]))))
+	_check("e i premi sono maggiorati", int(host.battle_rewards["coins"]) - int(host.battle_rewards.get("challenge", 0)) == int(round(float(BattleContent.BOSSES["semaforo"]["reward"]["coins"]) * float(BattleContent.tier_of(2)["reward"]))))
 	host.free()
 
 	_clean()

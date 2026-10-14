@@ -5,6 +5,14 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.20", "items": [
+		"MAESTRIA CHE SI SALVA: ogni mossa che usi tanto sale di livello (25 usi per livello, fino a 3) e fa +4% per livello. Te lo dice a fine battaglia.",
+		"SFIDA FACOLTATIVA: ogni battaglia ne propone una (nessun caduto, rottura veloce...). Se la superi vinci 120 crediti in piu'. La vedi all'inizio e nel resoconto.",
+		"RIENTRO: dopo 3 sconfitte di fila la battaglia dopo parte con Riserva +2 e un po' di scudo. Non regala la vittoria.",
+		"IL BOSS IMPARA: se hai gia' battuto un boss, la volta dopo ha imparato dal tuo stile (pazienza, sinergie o guardie) e te lo dice chiaramente.",
+		"SALA DI ADDESTRAMENTO: nelle Missioni attiva ADDESTRAMENTO per provare un boss senza premi, progressi o conseguenze.",
+		"Nella Spedizione puoi incollare il CODICE SQUADRA di un amico e confrontarlo con la tua. Il resoconto ora racconta i momenti (Ultimo istante, Vittoria disperata...) e le cause.",
+	]},
 	{"v": "0.24.19", "items": [
 		"TITOLI EPICI E LEGGENDARI con bonus PERMANENTI per tutti i personaggi: le icone epiche e leggendarie del profilo (es. Leggenda: Baluardo = +0,5% difesa a tutti) e nuove maestrie.",
 		"Nuove maestrie: dei COLORI (2 operatori = epico +0,5% danni, 4 = leggendario +1%), delle FAZIONI, delle CLASSI, Collezionista, Veterano, Esploratore, Conquistatore. Vale solo il titolo piu' alto di ogni linea.",

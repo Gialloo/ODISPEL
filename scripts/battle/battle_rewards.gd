@@ -51,6 +51,10 @@ static func for_battle(state: Dictionary, boss_id: String, seed_value: int) -> D
 	var victory: bool = str(state["winner"]) == "players"
 	var index: int = 0
 	for p in state["players"]:
-		result[str(p["id"])] = for_player(boss_id, seed_value, index, victory, int(state.get("tier", 0)))
+		var r: Dictionary = for_player(boss_id, seed_value, index, victory, int(state.get("tier", 0)))
+		if victory and Tactics.challenge_done(state):          # sfida facoltativa riuscita: premio extra
+			r["coins"] = int(r["coins"]) + Tactics.CHALLENGE_COINS
+			r["challenge"] = Tactics.CHALLENGE_COINS
+		result[str(p["id"])] = r
 		index += 1
 	return result

@@ -160,9 +160,21 @@ func _start_solo() -> void:
 	s.endless_floor = MissionConfig.endless_floor
 	s.daily_mod = MissionConfig.daily_mod
 	s.weekly = MissionConfig.weekly
+	s.training = MissionConfig.training
 	if not MissionConfig.expedition.is_empty() and Expedition.kind(MissionConfig.expedition) == "fight":
 		s.expedition = MissionConfig.expedition
 	s.start(RosterStore.load_or_new(), MissionConfig.boss_id, int(randi()) | 1, MissionConfig.tier)
+	var intro_notes: Array = []
+	if s.training:
+		intro_notes.append("SALA DI ADDESTRAMENTO: niente premi, niente conseguenze")
+	if s.learned_text != "":
+		intro_notes.append(s.learned_text)
+	if s.comeback:
+		intro_notes.append("RIENTRO: Riserva +%d e uno scudo, dopo %d sconfitte di fila" % [Extras.COMEBACK_RESERVE, Extras.COMEBACK_AFTER])
+	if Tactics.challenge_id(s.battle) != "" and not s.training:
+		intro_notes.append("SFIDA FACOLTATIVA: %s (+%d crediti)" % [Tactics.challenge_text(s.battle), Tactics.CHALLENGE_COINS])
+	for note in intro_notes:
+		Notify.toast(str(note))
 	if DisplayServer.get_name() != "headless":
 		get_tree().create_timer(1.4).timeout.connect(func() -> void:
 			if is_inside_tree() and str(shown.get("winner", "")) == "":
@@ -1947,6 +1959,33 @@ func _recap_text(victory: bool) -> String:
 		parts.append("Titoli: %s" % "  ·  ".join(PackedStringArray(tt)))
 	if Discoveries.style_of(stats) != "":
 		parts.append("Stile della squadra: %s" % Discoveries.style_of(stats))
+	# momenti e cause: perche' e' andata cosi'
+	var moments: Array = []
+	if victory and _recap.has("will_unit"):
+		moments.append("ULTIMO ISTANTE")
+	if victory and int(stats.get("downs", 0)) == 0:
+		moments.append("VITTORIA PULITA")
+	if victory and int(stats.get("downs", 0)) >= 2:
+		moments.append("VITTORIA DISPERATA")
+	if int(stats.get("chains_broken", 0)) > 0:
+		moments.append("CATENA SPEZZATA x%d" % int(stats["chains_broken"]))
+	if not moments.is_empty():
+		parts.append("Momenti: %s" % "  ·  ".join(PackedStringArray(moments)))
+	var why: Array = []
+	if int(stats.get("plates", 0)) > 0:
+		why.append("%d placche rotte" % int(stats["plates"]))
+	if int(stats.get("pushes", 0)) > 0:
+		why.append("%d prezzi pagati (%d proibiti)" % [int(stats["pushes"]), int(stats.get("forbidden", 0))])
+	if int(stats.get("orders", 0)) > 0:
+		why.append("%d ordini di squadra" % int(stats["orders"]))
+	if not why.is_empty():
+		parts.append("Cause: %s" % ", ".join(PackedStringArray(why)))
+	if Tactics.challenge_id(shown) != "":
+		parts.append("Sfida: %s  %s" % [Tactics.challenge_text(shown), ("RIUSCITA +%d CREDITI" % Tactics.CHALLENGE_COINS) if Tactics.challenge_done(shown) else ("non riuscita" if victory else "")])
+	if shown.has("learned"):
+		parts.append("Il boss aveva imparato: %s" % str(shown["learned"]["name"]).to_lower())
+	if shown.has("comeback"):
+		parts.append("Rientro: avevi un aiuto dopo %d sconfitte di fila" % Extras.COMEBACK_AFTER)
 	var tip: String = ""
 	var untried: Array = []
 	for r in Combos.RULES:

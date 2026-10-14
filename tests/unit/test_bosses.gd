@@ -171,7 +171,7 @@ func _run() -> void:
 	var fin: Dictionary = _state("tombino", 2, 2)
 	fin["winner"] = "players"
 	var all: Dictionary = BattleRewards.for_battle(fin, "tombino", 77)
-	_check("for_battle usa il tier dello stato", int(all["p1"]["coins"]) == int(round(float(BattleContent.BOSSES["tombino"]["reward"]["coins"]) * float(BattleContent.tier_of(2)["reward"]))))
+	_check("for_battle usa il tier dello stato", int(all["p1"]["coins"]) - int(all["p1"].get("challenge", 0)) == int(round(float(BattleContent.BOSSES["tombino"]["reward"]["coins"]) * float(BattleContent.tier_of(2)["reward"]))))
 	_check("tutti i drop sono validi", _drops_valid(r2["drops"]) and _drops_valid(all["p1"]["drops"]))
 
 	print("---")

@@ -17,6 +17,9 @@ var daily_mod: String = ""       # non vuoto: SFIDA DEL GIORNO con questo modifi
 var weekly: bool = false         # con daily_mod: EVENTO DELLA SETTIMANA
 var daily_first: bool = false    # vera se questa vittoria ha pagato il bonus del giorno
 var seed_value: int = 1
+var training: bool = false          # SALA DI ADDESTRAMENTO
+var learned_text: String = ""      # contromisura del boss (se ha imparato dalla volta scorsa)
+var comeback: bool = false         # rientro dopo 3 sconfitte
 var expedition: Dictionary = {}    # SPEDIZIONE in corso (la run viene aggiornata a fine battaglia)
 var roster: Dictionary = {}
 var rewards: Dictionary = {}
@@ -45,6 +48,11 @@ func start(new_roster: Dictionary, new_boss_id: String, new_seed: int, new_tier:
 		if endless_floor > 1:
 			Endless.apply_boons(battle, MissionConfig.endless_boons)
 			Endless.apply_carry(battle, MissionConfig.endless_carry)
+	if not training:
+		learned_text = Extras.apply_learned(battle, Extras.style_vs(roster, boss_id)) if expedition.is_empty() and endless_floor == 0 and daily_mod == "" else ""
+		if Extras.comeback_ready(roster):
+			comeback = true
+			Extras.apply_comeback(battle)
 	battle_updated.emit()
 
 
@@ -120,6 +128,9 @@ func finish() -> Dictionary:
 	var all: Dictionary = BattleRewards.for_battle(battle, boss_id, seed_value)
 	rewards = all.get(local_player_id, {})
 	var won: bool = str(battle["winner"]) == "players"
+	if training:                 # addestramento: nessun premio, nessun salvataggio
+		rewards = {}
+		return rewards
 	if not expedition.is_empty():
 		return _finish_expedition(won)
 	if endless_floor > 0:
@@ -151,6 +162,10 @@ func finish() -> Dictionary:
 	Feats.record_battle(roster, str(battle["winner"]) == "players")
 	for line in Discoveries.record(roster, str(BattleState.boss(battle)["char"]), str(battle["winner"]) == "players", battle.get("stats", {})):
 		Notify.success(line)
+	for line in Extras.record_mastery(roster, battle.get("stats", {})):
+		Notify.success(line)
+	Extras.record_result(roster, won)
+	Extras.remember(roster, boss_id, won, battle.get("stats", {}))
 	for line in Objectives.record_battle(roster, boss_id, tier, str(battle["winner"]) == "players", "", battle.get("stats", {})):
 		Notify.success(line)
 	RosterStore.save(roster, save_path)
@@ -171,6 +186,8 @@ func _finish_expedition(won: bool) -> Dictionary:
 		rewards = {}
 	Feats.record_battle(roster, won)
 	Discoveries.record(roster, boss_id, won, battle.get("stats", {}))
+	for line in Extras.record_mastery(roster, battle.get("stats", {})):
+		Notify.success(line)
 	Expedition.data(roster)["run"] = expedition
 	for line in Expedition.finish(roster, expedition):
 		Notify.success(line)

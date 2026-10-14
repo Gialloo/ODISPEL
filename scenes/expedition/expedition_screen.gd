@@ -19,6 +19,8 @@ var _sub: Label = null
 var _setup_boss: String = "distributore"
 var _setup_tier: int = 0
 var _setup_long: bool = false
+var _import_text: String = ""
+var _import_result: String = ""
 var _setup_mods: Array = []
 var _finish_lines: Array = []
 var _chat: ChatPanel = null
@@ -239,6 +241,22 @@ func _draw_setup() -> void:
 		if not combos.is_empty():
 			var names2: Array = combos.map(func(c: Variant) -> String: return "%s (%s+%s)" % [str(c["name"]), str(c["a"]), str(c["b"])])
 			_body.add_child(_line("SINERGIE POSSIBILI CON LA TUA SQUADRA: " + ", ".join(PackedStringArray(names2)), 13, BattleTheme.CY))
+		_body.add_child(BattleTheme.make_label("CODICE SQUADRA DI UN AMICO (per confrontare)", 15, BattleTheme.GOLD))
+		var code_row := HBoxContainer.new()
+		code_row.add_theme_constant_override("separation", 8)
+		_body.add_child(code_row)
+		var edit := LineEdit.new()
+		edit.placeholder_text = "Incolla qui un codice che inizia con ODS1"
+		edit.text = _import_text
+		edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		edit.custom_minimum_size = Vector2(0, 34)
+		edit.text_changed.connect(func(t: String) -> void: _import_text = t)
+		code_row.add_child(edit)
+		code_row.add_child(_btn("CONFRONTA", "normal", 16, func() -> void:
+			_import_result = import_code(_import_text)
+			_render(), 150.0))
+		if _import_result != "":
+			_body.add_child(_line(_import_result, 13, BattleTheme.CY))
 		_bottom.add_child(_btn("INIZIA LA SPEDIZIONE", "primary", 22, _start_run, 330.0))
 	else:
 		_body.add_child(_line("In attesa che l'host avvii la spedizione...", 20, BattleTheme.POP))
@@ -247,6 +265,19 @@ func _draw_setup() -> void:
 		_body.add_child(_line("FERITI: " + ", ".join(PackedStringArray(hurt.map(func(c: Variant) -> String: return str(BattleContent.CHARACTERS.get(str(c), {}).get("name", c)).to_upper()))), 16, BattleTheme.RD))
 	_bottom.add_child(_btn("COPIA CODICE SQUADRA", "normal", 18, _copy_code, 290.0))
 	_bottom.add_child(_btn("TORNA ALLA LOBBY" if net != null else "TORNA ALL'HUB", "normal", 20, _leave))
+
+
+# Legge un codice squadra e lo confronta con la squadra del giocatore. Ritorna il testo da mostrare.
+func import_code(code: String) -> String:
+	var r: Dictionary = BuildCode.decode(code)
+	if not bool(r["ok"]):
+		return "Codice non valido: %s" % str(r["error"])
+	var lines: Array = BuildCode.compare(RosterState.team_entries(roster), r["team"])
+	var names: Array = (r["team"] as Array).map(func(e: Variant) -> String: return str(BattleContent.CHARACTERS[str(e["char"])]["name"]))
+	var out: String = "SQUADRA: %s" % ", ".join(PackedStringArray(names))
+	for l in lines:
+		out += "\n" + str(l)
+	return out
 
 
 func _copy_code() -> void:

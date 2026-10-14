@@ -11,6 +11,7 @@ static var daily_mod: String = ""       # non vuoto = SFIDA DEL GIORNO (con ques
 static var weekly: bool = false           # con daily_mod: e' l'EVENTO DELLA SETTIMANA invece della sfida del giorno
 static var endless_boons: Array = []        # potenziamenti scelti nella serie in corso
 static var endless_carry: Dictionary = {}   # PV della squadra a fine piano (vuoto al primo piano)
+static var training: bool = false             # SALA DI ADDESTRAMENTO: niente premi, niente conseguenze
 static var expedition: Dictionary = {}       # SPEDIZIONE in solitaria in corso (vuoto = nessuna)
 
 
@@ -32,7 +33,8 @@ static func set_endless(floor_n: int) -> void:
 	tier = Endless.tier_for(endless_floor)
 
 
-static func set_mission(new_boss: String, new_tier: int) -> void:
+static func set_mission(new_boss: String, new_tier: int, practice: bool = false) -> void:
+	training = practice
 	expedition = {}
 	endless_floor = 0
 	daily_mod = ""
