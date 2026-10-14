@@ -16,17 +16,17 @@ static func of_entry(entry: Dictionary) -> int:
 
 
 # Scheda di un personaggio posseduto, con i bonus dei titoli.
-static func entry_of(roster: Dictionary, char_id: String, icons: Array = []) -> Dictionary:
+static func entry_of(roster: Dictionary, char_id: String, icons: Array = [], act: Variant = null) -> Dictionary:
 	var e: Dictionary = (roster["characters"][char_id] as Dictionary).duplicate(true)
 	e["char"] = char_id
-	Titles.decorate_entry(roster, e, icons)
+	Titles.decorate_entry(roster, e, icons, act)
 	return e
 
 
-static func of_character(roster: Dictionary, char_id: String, icons: Array = []) -> int:
+static func of_character(roster: Dictionary, char_id: String, icons: Array = [], act: Variant = null) -> int:
 	if not RosterState.owns(roster, char_id):
 		return 0
-	return of_entry(entry_of(roster, char_id, icons))
+	return of_entry(entry_of(roster, char_id, icons, act))
 
 
 # {total, base, level, rank, gear, titles}: quanto aggiunge ogni fonte (sommano al totale).
@@ -48,15 +48,17 @@ static func breakdown(roster: Dictionary, char_id: String, icons: Array = []) ->
 
 static func team(roster: Dictionary, icons: Array = []) -> int:
 	var n: int = 0
+	var act: Array = Titles.active(roster, icons)
 	for id in roster.get("team", []):
-		n += of_character(roster, str(id), icons)
+		n += of_character(roster, str(id), icons, act)
 	return n
 
 
 static func account(roster: Dictionary, icons: Array = []) -> int:
 	var n: int = 0
+	var act: Array = Titles.active(roster, icons)
 	for id in roster.get("characters", {}):
-		n += of_character(roster, str(id), icons)
+		n += of_character(roster, str(id), icons, act)
 	return n
 
 

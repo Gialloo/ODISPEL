@@ -261,10 +261,6 @@ func party_pose(index: int, _count: int) -> Vector3:
 	return Vector3(215.0 + t * 150.0, 494.0 - party_lift, 0.82)
 
 
-func fighter_x(index: int, count: int) -> float:
-	return party_pose(index, count).x
-
-
 func _layout() -> void:
 	_positions.clear()
 	_positions[BattleState.BOSS_ID] = _map(Vector2(BOSS_X, 360.0), BOSS_X, BOSS_SCALE, BOSS_FLOOR - party_lift)
@@ -1350,8 +1346,6 @@ func _draw_fighter_body(cx: float, foot_y: float, top: float, body_col: Color, c
 	if not HeadCache.draw(self, head, 27.0, char_id, col, expression, tint):
 		AnimeFace.hair_back(self, head, 27.0, char_id, col, tint)
 		AnimeFace.face(self, head, 27.0, char_id, col, tint, expression)
-
-
 
 
 func _draw_fighter_frame(u: Dictionary, cx: float, top: float, col: Color, index: int, is_lead: bool, _foot_y: float) -> void:

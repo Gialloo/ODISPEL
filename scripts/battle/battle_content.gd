@@ -492,10 +492,6 @@ static func tier_of(tier: int) -> Dictionary:
 	return TIERS[clampi(tier, 0, TIERS.size() - 1)]
 
 
-static func has_move(id: String) -> bool:
-	return MOVES.has(id)
-
-
 static func rarity_of(kind: String, id: String) -> int:
 	var table: Dictionary = MOVES if kind != "passive" else PASSIVES
 	if not table.has(id):

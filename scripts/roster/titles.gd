@@ -89,51 +89,57 @@ static func rarity_name(t: Dictionary) -> String:
 	return "LEGGENDARIO" if int(t["rarity"]) >= LEGENDARY else "EPICO"
 
 
-static func _owned_matching(roster: Dictionary, field: String, value: String) -> int:
-	var n: int = 0
+# Conteggi della collezione calcolati una volta sola (servono a tutti i titoli).
+static func _context(roster: Dictionary) -> Dictionary:
+	var ctx: Dictionary = {"color": {}, "faction": {}, "cls": {}, "owned": 0, "max_level": 0}
 	for id in roster.get("characters", {}):
 		var def: Dictionary = BattleContent.CHARACTERS.get(str(id), {})
-		if str(def.get(field, "")) == value:
-			n += 1
-	return n
+		for field in ["color", "faction", "cls"]:
+			var k: String = str(def.get(field, ""))
+			ctx[field][k] = int(ctx[field].get(k, 0)) + 1
+		ctx["owned"] = int(ctx["owned"]) + 1
+		ctx["max_level"] = maxi(int(ctx["max_level"]), int(roster["characters"][id].get("level", 1)))
+	ctx["exp_wins"] = int(Expedition.data(roster).get("wins", 0))
+	var low: int = 99
+	for b in BattleContent.BOSS_ORDER:
+		low = mini(low, RosterState.cleared_tiers(roster, str(b)))
+	ctx["cleared_all"] = 0 if low == 99 else low
+	return ctx
 
 
-# Valore attuale della condizione. icons: icone sbloccate (di norma Profile.unlocked).
-static func value(roster: Dictionary, t: Dictionary, icons: Array) -> int:
+# Valore attuale della condizione. icons: icone sbloccate (di norma Profile.unlocked). ctx: _context gia' calcolato (facoltativo).
+static func value(roster: Dictionary, t: Dictionary, icons: Array, ctx: Variant = null) -> int:
+	if ctx == null:
+		ctx = _context(roster)
 	match str(t["metric"]):
 		"icon":
 			return 1 if icons.has(str(t["arg"])) else 0
 		"owned_color":
-			return _owned_matching(roster, "color", str(t["arg"]))
+			return int(ctx["color"].get(str(t["arg"]), 0))
 		"owned_faction":
-			return _owned_matching(roster, "faction", str(t["arg"]))
+			return int(ctx["faction"].get(str(t["arg"]), 0))
 		"owned_class":
-			return _owned_matching(roster, "cls", str(t["arg"]))
+			return int(ctx["cls"].get(str(t["arg"]), 0))
 		"owned":
-			return (roster.get("characters", {}) as Dictionary).size()
+			return int(ctx["owned"])
 		"max_level":
-			var top: int = 0
-			for id in roster.get("characters", {}):
-				top = maxi(top, int(roster["characters"][id].get("level", 1)))
-			return top
+			return int(ctx["max_level"])
 		"exp_wins":
-			return int(Expedition.data(roster).get("wins", 0))
+			return int(ctx["exp_wins"])
 		"cleared_all":
-			var low: int = 99
-			for b in BattleContent.BOSS_ORDER:
-				low = mini(low, RosterState.cleared_tiers(roster, str(b)))
-			return 0 if low == 99 else low
+			return int(ctx["cleared_all"])
 	return 0
 
 
-static func is_earned(roster: Dictionary, t: Dictionary, icons: Array = []) -> bool:
-	return value(roster, t, icons) >= int(t["goal"])
+static func is_earned(roster: Dictionary, t: Dictionary, icons: Array = [], ctx: Variant = null) -> bool:
+	return value(roster, t, icons, ctx) >= int(t["goal"])
 
 
 static func earned(roster: Dictionary, icons: Array = []) -> Array:
 	var out: Array = []
+	var ctx: Dictionary = _context(roster)
 	for t in all():
-		if is_earned(roster, t, icons):
+		if is_earned(roster, t, icons, ctx):
 			out.append(t)
 	return out
 
@@ -166,9 +172,12 @@ static func active(roster: Dictionary, icons: Array = []) -> Array:
 
 
 # Bonus totale (punti base) per un personaggio: {hp, atk, def}.
-static func bonus_for(roster: Dictionary, char_id: String, icons: Array = []) -> Dictionary:
+# act: i titoli attivi gia' calcolati (active); chi deve calcolare piu' personaggi li passa per non rifare il conto ogni volta.
+static func bonus_for(roster: Dictionary, char_id: String, icons: Array = [], act: Variant = null) -> Dictionary:
 	var out: Dictionary = {"hp": 0, "atk": 0, "def": 0}
-	for t in active(roster, icons):
+	if act == null:
+		act = active(roster, icons)
+	for t in act:
 		if scope_matches(str(t["scope"]), char_id):
 			out[str(t["stat"])] = int(out[str(t["stat"])]) + int(t["bp"])
 	for s in STATS:
@@ -181,8 +190,8 @@ static func has_bonus(b: Dictionary) -> bool:
 
 
 # Consegna il bonus alla scheda (come fa la SPEDIZIONE con i veterani).
-static func decorate_entry(roster: Dictionary, entry: Dictionary, icons: Array = []) -> void:
-	var b: Dictionary = bonus_for(roster, str(entry.get("char", "")), icons)
+static func decorate_entry(roster: Dictionary, entry: Dictionary, icons: Array = [], act: Variant = null) -> void:
+	var b: Dictionary = bonus_for(roster, str(entry.get("char", "")), icons, act)
 	if has_bonus(b):
 		entry["acc"] = b
 
@@ -225,6 +234,5 @@ static func bonus_text(t: Dictionary) -> String:
 
 
 static func summary(roster: Dictionary, icons: Array = []) -> Dictionary:
-	var total: Dictionary = {"hp": 0, "atk": 0, "def": 0}
 	var act: Array = active(roster, icons)
 	return {"earned": earned(roster, icons).size(), "total": all().size(), "active": act.size()}

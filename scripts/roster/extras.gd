@@ -33,10 +33,6 @@ static func level_of_uses(uses: int) -> int:
 	return clampi(uses / MASTERY_STEP, 0, MASTERY_MAX)
 
 
-static func uses_of(roster: Dictionary, char_id: String, move_id: String) -> int:
-	return int((_mastery(roster).get(char_id, {}) as Dictionary).get(move_id, 0))
-
-
 static func levels_for(roster: Dictionary, char_id: String) -> Dictionary:
 	var out: Dictionary = {}
 	for m in (_mastery(roster).get(char_id, {}) as Dictionary):

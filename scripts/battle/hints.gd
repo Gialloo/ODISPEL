@@ -19,10 +19,6 @@ static func faction_color(faction: String) -> Color:
 	return FACTION_COLORS.get(faction, BattleTheme.CY)
 
 
-static func faction_code(faction: String) -> String:
-	return str(FACTION_CODES.get(faction, "--"))
-
-
 static func _card(title: String, body: Array, color: Color) -> Dictionary:
 	return {"title": title, "body": "\n".join(PackedStringArray(body)), "color": color}
 

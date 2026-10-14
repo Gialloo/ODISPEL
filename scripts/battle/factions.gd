@@ -90,13 +90,6 @@ static func add_mod(u: Dictionary, id: String, stat: String, pm: int, turns: int
 	mods.append({"id": id, "stat": stat, "pm": pm, "turns": turns})
 
 
-static func remove_mod(u: Dictionary, id: String) -> void:
-	var mods: Array = u["mods"]
-	for i in range(mods.size() - 1, -1, -1):
-		if str(mods[i]["id"]) == id:
-			mods.remove_at(i)
-
-
 # Fine round: scadono mods e spegnimenti.
 static func tick(state: Dictionary) -> void:
 	for uid in state["units"]:

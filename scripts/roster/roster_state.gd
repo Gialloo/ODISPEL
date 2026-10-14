@@ -163,11 +163,13 @@ static func best_team(roster: Dictionary) -> Array:
 
 static func team_entries(roster: Dictionary) -> Array:
 	var out: Array = []
+	var icons: Array = Profile.owned_icons()
+	var act: Array = Titles.active(roster, icons)       # una volta sola per tutta la squadra
 	for id in roster["team"]:
 		var e: Dictionary = roster["characters"][id].duplicate(true)
 		e.erase("copies")          # le copie non spese sono affari del salvataggio, non della battaglia
 		Expedition.decorate_entry(roster, e)
-		Titles.decorate_entry(roster, e, Profile.owned_icons())
+		Titles.decorate_entry(roster, e, icons, act)
 		Extras.decorate_entry(roster, e)
 		out.append(e)
 	return out
@@ -178,11 +180,13 @@ static func spare_entries(roster: Dictionary) -> Array:
 	var out: Array = []
 	var ids: Array = roster["characters"].keys()
 	ids.sort()
+	var icons: Array = Profile.owned_icons()
+	var act: Array = Titles.active(roster, icons)
 	for id in ids:
 		if not roster["team"].has(id):
 			var e: Dictionary = roster["characters"][id].duplicate(true)
 			e.erase("copies")
-			Titles.decorate_entry(roster, e, Profile.owned_icons())
+			Titles.decorate_entry(roster, e, icons, act)
 			Extras.decorate_entry(roster, e)
 			out.append(e)
 	return out

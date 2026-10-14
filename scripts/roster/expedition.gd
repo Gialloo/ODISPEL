@@ -114,10 +114,6 @@ static func role(run: Dictionary) -> String:
 	return str(st[clampi(int(run.get("stage", 0)), 0, st.size() - 1)].get("role", "boss"))
 
 
-static func is_last(run: Dictionary) -> bool:
-	return int(run.get("stage", 0)) >= stages(run).size() - 1
-
-
 static func stage_title(run: Dictionary) -> String:
 	var k: String = kind(run)
 	match k:

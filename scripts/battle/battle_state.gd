@@ -217,18 +217,6 @@ static func party_of(state: Dictionary, p: Dictionary) -> Array:
 	return p["team"]
 
 
-# Gli slot (giocatori) che condividono il party dello slot dato, nell'ordine.
-static func slots_of(state: Dictionary, p: Dictionary) -> Array:
-	var lead: String = str(p.get("leader", p["id"]))
-	if lead == "":
-		lead = str(p["id"])
-	var out: Array = []
-	for q in state["players"]:
-		if str(q["id"]) == lead or str(q.get("leader", "")) == lead:
-			out.append(q)
-	return out
-
-
 static func is_front(state: Dictionary, uid: String) -> bool:
 	for q in state["players"]:
 		if str(q["active"]) == uid:
