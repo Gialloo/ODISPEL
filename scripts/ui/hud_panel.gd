@@ -64,7 +64,7 @@ func _draw_quiet() -> void:
 
 func _draw() -> void:
 	if bare:
-		draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.38))
+		draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, minf(0.92, 0.38 * backdrop)))
 		_draw_surface(0.45)
 		return
 	if quiet:

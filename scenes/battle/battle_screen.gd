@@ -29,6 +29,9 @@ var pending_swap: String:
 	set(value):
 		_swaps[_cur_slot_id()] = value
 var log_lines: Array = []
+const LOG_MAX: int = 60
+var _log_scroll: ScrollContainer
+var _log_round: int = -1
 var _last_won: bool = false
 var _dmg_by: Dictionary = {}      # danni al boss per operatore (per l'MVP a fine battaglia)
 var _best_hit: int = 0
@@ -578,24 +581,30 @@ func _build_telegraph() -> void:
 	_plan_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_plan_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_plan_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# al massimo 3 righe, il resto si accorcia con "...": prima il testo scivolava sotto Riserva e tasti
+	_plan_label.max_lines_visible = 3
+	_plan_label.add_theme_font_size_override("font_size", 11)
+	_plan_label.add_theme_constant_override("line_spacing", -3)
+	_plan_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_plan_label.clip_contents = true
 	add_child(_plan_label)
-	_anchor(_plan_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 118, 68, 152))
+	_anchor(_plan_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 117, 68, 164))
 	_reserve_label = BattleTheme.make_label("", 12, BattleTheme.CY)
 	_reserve_label.add_theme_font_override("font", BattleTheme.hud())
 	_reserve_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_reserve_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_reserve_label)
-	_anchor(_reserve_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 154, 68, 170))
+	_anchor(_reserve_label, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 165, 68, 180))
 	_react_row = HBoxContainer.new()
 	_react_row.add_theme_constant_override("separation", 6)
 	_react_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(_react_row)
-	_anchor(_react_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 204, 68, 232))
+	_anchor(_react_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 211, 68, 236))
 	_tact_row = HBoxContainer.new()
 	_tact_row.add_theme_constant_override("separation", 6)
 	_tact_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(_tact_row)
-	_anchor(_tact_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 172, 68, 200))
+	_anchor(_tact_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 182, 68, 209))
 	_order_btn = Button.new()
 	_order_btn.custom_minimum_size = Vector2(154, 26)
 	_order_btn.clip_text = true
@@ -760,19 +769,26 @@ func _fan_origin() -> Vector2:
 func _build_log() -> void:
 	var panel := HudPanel.new().setup("", BattleTheme.CY_DIM)
 	panel.bare = true
+	panel.backdrop = 2.2          # velo piu' scuro: le righe si leggono anche sopra il boss
 	panel.margins = Vector4(12, 8, 12, 6)
 	add_child(panel)
-	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-370, -170, -10, -38))
+	_anchor(panel, Vector4(1.0, 1.0, 1.0, 1.0), Vector4(-335, -262, -10, -38))   # non copre la striscia operatori
 	panel.visible = false
 	_log_panel = panel
+	# il registro scorre (rotella o trascinamento col dito) e resta agganciato all'ultima riga
+	_log_scroll = ScrollContainer.new()
+	_log_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.set_content(_log_scroll)
 	_log_label = RichTextLabel.new()
 	_log_label.bbcode_enabled = true
 	_log_label.scroll_active = false
-	_log_label.fit_content = false
-	_log_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_log_label.fit_content = true
+	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_log_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_log_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	_log_label.add_theme_font_override("normal_font", BattleTheme.hud())
-	_log_label.add_theme_font_size_override("normal_font_size", 16 if TouchUi.active() else 15)
-	panel.set_content(_log_label)
+	_log_label.add_theme_font_size_override("normal_font_size", 17 if TouchUi.active() else 15)
+	_log_scroll.add_child(_log_label)
 	# maniglia: tira su / giu' il registro degli eventi (chiuso occupa solo questo tasto)
 	_log_handle = Button.new()
 	_log_handle.focus_mode = Control.FOCUS_NONE
@@ -2112,15 +2128,23 @@ func _recap_text(victory: bool) -> String:
 
 
 # Finestra con i momenti chiave dello scontro, uno per riga.
+var _replay_node: Control
+
 func _open_replay() -> void:
+	# un solo replay alla volta, SOPRA il riquadro dell'esito (che sta in _overlay): prima
+	# finiva nel livello degli effetti, cioe' dietro ai risultati, e non si vedeva ne' si chiudeva
+	if _replay_node != null and is_instance_valid(_replay_node):
+		return
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.82)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_fx.add_child(dim)
+	ScreenFrame.overshoot(dim)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_overlay.add_child(dim)
+	_replay_node = dim
 	var panel := HudPanel.new().setup("REPLAY TATTICO", BattleTheme.CY)
-	panel.position = Vector2(250, 70)
-	panel.size = Vector2(780, 580)
-	dim.add_child(panel)
+	_overlay.add_child(panel)
+	_anchor(panel, Vector4(0.5, 0.0, 0.5, 1.0), Vector4(-390, 60, 390, -60))
+	dim.tree_exiting.connect(panel.queue_free)
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)
 	panel.set_content(col)
@@ -2143,6 +2167,7 @@ func _open_replay() -> void:
 	close.custom_minimum_size = Vector2(0, 48)
 	BattleTheme.style_button(close, "primary", 20)
 	close.pressed.connect(dim.queue_free)
+	close.pressed.connect(func() -> void: _replay_node = null)
 	col.add_child(close)
 
 
@@ -2541,18 +2566,30 @@ func _push_log(text: String, kind: String) -> void:
 			color = "#6bffb0"
 		"down", "end":
 			color = "#ff4630"
+	# una riga di separazione a ogni nuovo turno: si capisce cosa e' successo in quale round
+	var rnd: int = int(shown.get("round", 0)) if not shown.is_empty() else 0
+	if rnd != _log_round and rnd > 0:
+		_log_round = rnd
+		log_lines.append("[color=#4fa3b5]— TURNO %02d —[/color]" % rnd)
 	log_lines.append("[color=%s]> %s[/color]" % [color, text])
-	while log_lines.size() > 8:
+	while log_lines.size() > LOG_MAX:
 		log_lines.pop_front()
 	_refresh_log()
 
 
 func _refresh_log() -> void:
 	if _log_label != null:
-		_log_label.text = "\n".join(log_lines.slice(maxi(0, log_lines.size() - 4)))
+		_log_label.text = "\n".join(log_lines)
 		if _log_open:
-			_log_seen = _log_label.text
+			_log_seen = "\n".join(log_lines.slice(maxi(0, log_lines.size() - 4)))
 		_refresh_log_handle()
+		if _log_scroll != null:
+			_scroll_log_down.call_deferred()
+
+
+func _scroll_log_down() -> void:
+	if _log_scroll != null and is_instance_valid(_log_scroll):
+		_log_scroll.scroll_vertical = 100000
 
 
 # ---------- Fine battaglia ----------

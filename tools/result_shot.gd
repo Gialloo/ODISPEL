@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Foto della schermata di fine battaglia (vittoria).
-#   xvfb-run -a godot --path . --resolution 1280x720 -s res://tools/result_shot.gd -- <cartella> [touch 0/1] [spedizione 0/1]
+#   xvfb-run -a godot --path . --resolution 1280x720 -s res://tools/result_shot.gd -- <cartella> [touch 0/1] [spedizione 0/1] [replay 0/1]
 
 func _init() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
@@ -26,5 +26,9 @@ func _run(dir: String) -> void:
 		{"kind": "gear", "slot": "petto", "rarity": 1}, {"kind": "passive", "id": "p_hunter", "rarity": 1}]}
 	s._show_result(true, rew)
 	await create_timer(3.5).timeout
+	if OS.get_cmdline_user_args().size() > 3 and OS.get_cmdline_user_args()[3] == "1":
+		s._timeline = ["T1 · KIRA: COMBO TRACCIA + DETONAZIONE (-420)", "T2 · SCHIVATA: DAX SI SALVA DALLA CARICA", "T3 · ROTTURA! IL BOSS E' STORDITO"]
+		s._open_replay()
+		await create_timer(0.6).timeout
 	root.get_viewport().get_texture().get_image().save_png(dir.path_join("res.png"))
 	quit()

@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Foto dello schermo di battaglia (per rivedere la disposizione).
-#   xvfb-run -a godot --path . --resolution 1600x720 -s res://tools/battle_shot.gd -- <cartella> [turni_da_giocare]
+#   xvfb-run -a godot --path . --resolution 1600x720 -s res://tools/battle_shot.gd -- <cartella> [turni_da_giocare] [log 0/1]
 
 func _init() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
@@ -27,5 +27,13 @@ func _run(dir: String, rounds: int) -> void:
 	while s.animating:
 		await create_timer(0.1).timeout
 	await create_timer(0.6).timeout
+	if args_log():
+		s.toggle_log()
+		await create_timer(0.6).timeout
 	root.get_viewport().get_texture().get_image().save_png(dir.path_join("bs.png"))
 	quit()
+
+
+func args_log() -> bool:
+	var a: PackedStringArray = OS.get_cmdline_user_args()
+	return a.size() > 2 and a[2] == "1"

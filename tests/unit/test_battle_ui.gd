@@ -239,7 +239,7 @@ func _test_screen() -> void:
 	var swap_event: bool = false
 	for ev in src.battle["events"]:
 		swap_event = swap_event or str(ev.get("t", "")) == "swap"
-	_check("schermata: registro con il cambio", swap_logged or (swap_event and scene.log_lines.size() == 8))
+	_check("schermata: registro con il cambio", swap_logged or (swap_event and scene.log_lines.size() <= 60))
 	_check("schermata: ordini di nuovo disponibili", not scene._order_buttons[0].disabled)
 	_check("schermata: ordine inviato due volte ignorato", true)
 

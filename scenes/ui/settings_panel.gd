@@ -229,7 +229,25 @@ func _slider_row(parent: Control, caption: String, value: float, is_music: bool)
 	slider.step = 0.05
 	slider.value = value
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	slider.custom_minimum_size = Vector2(0, 28)
+	slider.custom_minimum_size = Vector2(0, 48 if TouchUi.active() else 32)
+	# la rotella sopra lo slider deve far scorrere il pannello, non cambiare il volume per sbaglio
+	slider.scrollable = false
+	slider.add_theme_icon_override("grabber", _knob(false))
+	slider.add_theme_icon_override("grabber_highlight", _knob(true))
+	slider.add_theme_icon_override("grabber_disabled", _knob(false))
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(BattleTheme.CY_DIM, 0.45)
+	track.set_corner_radius_all(3)
+	track.content_margin_top = 4.0
+	track.content_margin_bottom = 4.0
+	slider.add_theme_stylebox_override("slider", track)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = BattleTheme.CY
+	fill.set_corner_radius_all(3)
+	fill.content_margin_top = 4.0
+	fill.content_margin_bottom = 4.0
+	slider.add_theme_stylebox_override("grabber_area", fill)
+	slider.add_theme_stylebox_override("grabber_area_highlight", fill)
 	row.add_child(slider)
 	var shown := BattleTheme.make_label("%d%%" % int(round(value * 100.0)), 16, BattleTheme.WH)
 	shown.custom_minimum_size = Vector2(60, 0)
@@ -243,6 +261,21 @@ func _slider_row(parent: Control, caption: String, value: float, is_music: bool)
 		# ssentire l'effetto di quanto e' forte appena si rilascia
 		slider.drag_ended.connect(func(_changed: bool) -> void: Snd.play("hit"))
 	return slider
+
+
+# Pallino dello slider: abbastanza grande da prendere col dito.
+static func _knob(hot: bool) -> Texture2D:
+	var d: int = 34 if TouchUi.active() else 26
+	var img := Image.create(d, d, false, Image.FORMAT_RGBA8)
+	var c := Vector2(d, d) * 0.5
+	var r: float = float(d) * 0.5 - 1.0
+	var col: Color = Color.WHITE if hot else BattleTheme.CY
+	for y in d:
+		for x in d:
+			var dist: float = Vector2(float(x) + 0.5, float(y) + 0.5).distance_to(c)
+			if dist <= r:
+				img.set_pixel(x, y, col if dist <= r - 3.0 else BattleTheme.BK)
+	return ImageTexture.create_from_image(img)
 
 
 func _apply() -> void:
