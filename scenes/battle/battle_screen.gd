@@ -419,7 +419,7 @@ func _build_autoplay() -> void:
 	_auto_button.visible = false
 	BattleTheme.style_button(_auto_button, "normal", 14)
 	add_child(_auto_button)
-	_anchor(_auto_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 6, 84, 42 if not TouchUi.active() else 50))
+	_anchor(_auto_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(4, 4, 42, 32 if not TouchUi.active() else 44))
 	_auto_button.pressed.connect(func() -> void: set_autoplay(not autoplay))
 	# velocita' dell'animazione sempre a portata di dito: NORMALE -> VELOCE -> TURBO
 	speed_button = Button.new()
@@ -428,7 +428,7 @@ func _build_autoplay() -> void:
 	speed_button.text = _speed_label()
 	speed_button.tooltip_text = "Velocita' della battaglia: normale, veloce, turbo"
 	add_child(speed_button)
-	_anchor(speed_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(90, 6, 160, 42 if not TouchUi.active() else 50))
+	_anchor(speed_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(46, 4, 100, 32 if not TouchUi.active() else 44))
 	speed_button.pressed.connect(func() -> void:
 		Settings.next_speed()
 		Settings.save()
@@ -446,7 +446,7 @@ func _build_camera_info() -> void:
 	_round_label.add_theme_font_override("font", BattleTheme.hud())
 	_round_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_round_label)
-	_anchor(_round_label, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(12, 48, 200, 72))
+	_anchor(_round_label, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 36, 150, 56))
 	_clock_label = BattleTheme.make_label("", 15, BattleTheme.CY)
 	_clock_label.visible = false
 	add_child(_clock_label)
@@ -476,21 +476,20 @@ func _build_boss_banner() -> void:
 	_boss_panel = panel
 	add_child(panel)
 	panel.margins = Vector4(0.0, 0.0, 0.0, 0.0)
-	_anchor(panel, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-470, 14, -74, 52))
+	_anchor(panel, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-470, 14, -74, 58))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 2)
 	panel.set_content(box)
 	_boss_bar = LineBar.new().setup(BattleTheme.RD, Vector2(0, 14))
 	_boss_bar.color_bg = Color(BattleTheme.RD_DARK, 0.9)
 	box.add_child(_boss_bar)
+	_boss_bal = LineBar.new().setup(BattleTheme.CY, Vector2(0, 6))        # equilibrio: sotto la vita, larga quanto lei
+	_boss_bal.color_bg = Color(BattleTheme.CY_DARK, 0.9)
+	box.add_child(_boss_bal)
 	_boss_hp = BattleTheme.make_label("INTEGRITA'", 14, BattleTheme.WH)
 	_boss_hp.add_theme_font_override("font", BattleTheme.hud())
 	_boss_hp.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	box.add_child(_boss_hp)
-	_boss_bal = LineBar.new().setup(BattleTheme.CY, Vector2(0, 4))        # non si vede qui: la barra blu e' disegnata sul boss
-	_boss_bal.color_bg = Color(BattleTheme.CY_DARK, 0.9)
-	_boss_bal.visible = false
-	box.add_child(_boss_bal)
 	var badge := PanelContainer.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bsb := StyleBoxFlat.new()
@@ -555,12 +554,12 @@ func _build_telegraph() -> void:
 	_react_row.add_theme_constant_override("separation", 6)
 	_react_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(_react_row)
-	_anchor(_react_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 172, 68, 200))
+	_anchor(_react_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 204, 68, 232))
 	_tact_row = HBoxContainer.new()
 	_tact_row.add_theme_constant_override("separation", 6)
 	_tact_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(_tact_row)
-	_anchor(_tact_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 204, 68, 230))
+	_anchor(_tact_row, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 172, 68, 200))
 	_order_btn = Button.new()
 	_order_btn.custom_minimum_size = Vector2(154, 26)
 	_order_btn.clip_text = true
@@ -583,7 +582,7 @@ func _build_turn_panel() -> void:
 	panel.margins = Vector4(10, 24, 10, 4)
 	panel.backdrop = 0.4
 	add_child(panel)
-	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(8, 80, 300, 206))
+	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(4, 58, 285, 172))
 	_turn_box = VBoxContainer.new()
 	_turn_box.add_theme_constant_override("separation", 1)
 	_turn_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2267,8 +2266,8 @@ func banter(uid: String, kind: String, force: bool = false) -> void:
 	plate.anchor_right = 1.0
 	plate.anchor_top = 1.0
 	plate.anchor_bottom = 1.0
-	plate.offset_left = -350.0
-	plate.offset_right = -12.0
+	plate.offset_left = -346.0
+	plate.offset_right = -2.0
 	plate.offset_top = -136.0
 	plate.offset_bottom = -40.0
 	var bg := PanelContainer.new()
@@ -2310,7 +2309,7 @@ func _skill_plate(u: Dictionary, move_id: String) -> void:
 	plate.anchor_top = 0.5
 	plate.anchor_bottom = 0.5
 	plate.offset_left = -430.0
-	plate.offset_right = -10.0
+	plate.offset_right = -2.0
 	plate.offset_top = -170.0
 	plate.offset_bottom = -30.0
 	var bg := PanelContainer.new()
@@ -2320,17 +2319,17 @@ func _skill_plate(u: Dictionary, move_id: String) -> void:
 	bg.anchor_right = 1.0
 	bg.offset_top = -4.0
 	bg.offset_bottom = 46.0
-	bg.offset_left = 20.0
+	bg.offset_right = -120.0
 	bg.add_theme_stylebox_override("panel", SlantBox.make(Color(BattleTheme.BK, 0.88), col, 12.0, col, 3.0))
 	var lab := BattleTheme.make_label(BattleText.move_name(move_id).to_upper(), 28, BattleTheme.WH, true)
-	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	lab.add_theme_color_override("font_outline_color", BattleTheme.BK)
 	bg.add_child(lab)
 	plate.add_child(bg)
 	var face := PortraitView.new().setup(str(u["char"]), "bust")
 	face.show_expression_text = false
 	face.size = Vector2(150.0, 150.0)
-	face.position = Vector2(-10.0, -8.0)
+	face.position = Vector2(plate.offset_right - plate.offset_left - 150.0, -8.0)
 	plate.add_child(face)
 	_fx.add_child(plate)
 	_skill_node = plate

@@ -8,7 +8,7 @@ extends Control
 const DW: float = 1280.0
 const DH: float = 720.0
 const HORIZON: float = 250.0
-const BOSS_X: float = 930.0
+const BOSS_X: float = 1000.0
 const BOSS_FLOOR: float = 505.0     # il boss sta sulla stessa linea dei piedi della squadra...
 const BOSS_SCALE: float = 0.98      # ...con una figura un po' piu' grande della squadra
 const FLOOR_Y: float = 470.0        # dove i piedi toccano il suolo sullo schermo
@@ -524,7 +524,6 @@ func _draw_boss() -> void:
 	_brackets(br, BattleTheme.RD if alive else BattleTheme.CY_DARK, 5.0, 40.0)
 	if alive:
 		draw_line(Vector2(br.position.x + br.size.x * 0.5, br.position.y), Vector2(br.position.x + br.size.x * 0.5, br.position.y - 22.0), BattleTheme.RD, 3.0)
-		_draw_boss_balance(boss, br)
 		_draw_boss_marks(boss, br)
 
 
@@ -1111,7 +1110,7 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 			draw_colored_polygon(beam, Color(col, 0.10 + 0.05 * pulse))
 
 	if alive and (hp_visible or float(_hp_recent.get(u["id"], 0.0)) > 0.0):
-		_draw_hp_under(u, cx, foot_y + 34.0)
+		_draw_hp_under(u, cx - 24.0, foot_y + 34.0)
 
 	if alive and int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
 		# ultimate pronta: aura a raggi e scritta che pulsa
