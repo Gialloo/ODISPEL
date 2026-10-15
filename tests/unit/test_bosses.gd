@@ -39,14 +39,14 @@ func _run() -> void:
 	# --- dati
 	_check("contenuti coerenti (con i boss nuovi)", BattleContent.validate().is_empty())
 	_check("diciotto boss in ordine di sblocco (stagione 1 + stagione 2)", BattleContent.BOSS_ORDER.size() == 18 and BattleContent.BOSS_ORDER.slice(0, 8) == ["distributore", "semaforo", "tombino", "cabina", "ascensore", "manichino", "orologio", "specchio"] and BattleContent.BOSS_ORDER[8] == "sirena" and BattleContent.BOSS_ORDER[17] == "eclissi")
-	_check("tre livelli di difficolta'", BattleContent.TIERS.size() == 3)
+	_check("quattro livelli di difficolta'", BattleContent.TIERS.size() == 4)
 	for id in BattleContent.BOSS_ORDER:
 		var b: Dictionary = BattleContent.BOSSES[id]
 		_check("%s: ha descrizione e titolo" % id, str(b["desc"]) != "" and str(b["title"]) != "")
 		_check("%s: ciclo di 4 mosse" % id, b["cycle"].size() == 4)
 	_check("i tre boss hanno colori diversi", BattleContent.BOSSES["distributore"]["color"] != BattleContent.BOSSES["semaforo"]["color"] and BattleContent.BOSSES["semaforo"]["color"] != BattleContent.BOSSES["tombino"]["color"])
 	_check("i premi crescono col boss", int(BattleContent.BOSSES["semaforo"]["reward"]["coins"]) > int(BattleContent.BOSSES["distributore"]["reward"]["coins"]) and int(BattleContent.BOSSES["tombino"]["reward"]["coins"]) > int(BattleContent.BOSSES["semaforo"]["reward"]["coins"]))
-	_check("tier fuori scala ricondotto", BattleContent.tier_of(-3)["id"] == "normale" and BattleContent.tier_of(99)["id"] == "incubo")
+	_check("tier fuori scala ricondotto", BattleContent.tier_of(-3)["id"] == "normale" and BattleContent.tier_of(99)["id"] == "abisso")
 
 	# --- difficolta'
 	var hp: Array = []
@@ -62,7 +62,7 @@ func _run() -> void:
 	_check("l'ATK sale con la difficolta'", atk[0] < atk[1] and atk[1] < atk[2])
 	_check("la DEF sale con la difficolta'", dfn[0] < dfn[1] and dfn[1] < dfn[2])
 	_check("normale = valori di base", hp[0] == 1800 and dfn[0] == 25)
-	_check("tier fuori scala nello stato", int(_state("distributore", 9)["tier"]) == 2 and int(_state("distributore", -1)["tier"]) == 0)
+	_check("tier fuori scala nello stato", int(_state("distributore", 9)["tier"]) == 3 and int(_state("distributore", -1)["tier"]) == 0)
 	var js: Dictionary = BattleState.from_json(BattleState.to_json(_state("tombino", 2)))
 	_check("il tier sopravvive al JSON", js["tier"] == 2 and js["tier"] is int)
 	_check("create senza tier = normale", int(BattleState.create([{"id": "p1", "name": "P", "ai": false, "team": _team(["kira"])}], "semaforo", 1)["tier"]) == 0)

@@ -24,9 +24,13 @@ func _run() -> void:
 	var r: Dictionary = RosterState.new_roster()
 	for id in ["distributore", "semaforo", "tombino"]:
 		RosterState.mark_cleared(r, id, 0)
+		RosterState.mark_cleared(r, id, 1)
+		RosterState.mark_cleared(r, id, 2)
 	var m: Control = load("res://scenes/missions/mission_screen.tscn").instantiate()
 	m.roster = r
 	root.add_child(m)
+	m.select_boss("distributore")
+	m.select_tier(3)
 	await _shot("missione")
 	m.queue_free()
 	for id in BattleContent.BOSS_ORDER:

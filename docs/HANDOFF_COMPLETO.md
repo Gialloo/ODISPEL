@@ -125,7 +125,7 @@ File principali: `battle_types.gd` (costanti), `battle_content.gd` (dati: mosse,
 ### 4.3 Boss
 - 18 boss in ordine di sblocco (`BOSS_ORDER`): distributore, semaforo, tombino, cabina, ascensore, manichino, orologio, specchio, sirena, lampione, bancomat, scala, radio, metro, cassaforte, faro, registro, eclissi.
   (Dal 10 in poi = **Stagione 2**, con Dafne.)
-- Tre **difficolta'** (`TIERS`): NORMALE, DIFFICILE (hp x1.5, atk x1.25, def 8, premi x2), INCUBO (hp x2.1, atk x1.55, def 15, premi x3.2).
+- Quattro **difficolta'** (`TIERS`): NORMALE, DIFFICILE (hp x1.5, atk x1.25, def 8, premi x2), INCUBO (hp x2.1, atk x1.55, def 15, premi x3.2), **ABISSO** (0.24.23: hp x36, atk x23, def +70, premi x5, `flatten` 1.0 = tutti i boss partono dagli stessi PV/attacco medi `FLAT_BOSS_HP/ATK`; pensato per squadre liv. 50 + rank 5 + pezzi leggendari; si apre battendo INCUBO; Ciclo Infinito e Spedizione si fermano a INCUBO). Simulatore: `tools/maxed_sim.gd`; test: `test_abisso`.
 - **Fasi**: a meta' e a un quarto dei PV (nuove mosse, scudo, +25 ultimate alla squadra).
 - **Equilibrio** (barra blu): a zero il boss e' **stordito** e salta la mossa; colpi con vantaggio di colore e marchi rompono di piu'.
 - **Cariche annunciate**: le mosse pesanti sono annunciate (telegrafo); se letali per qualcuno lo si vede.

@@ -149,11 +149,15 @@ static func _interpolate(values: Array, position: float) -> float:
 static func make_boss(boss_id: String, effective: float, tier: int = 0) -> Dictionary:
 	var def: Dictionary = BattleContent.BOSSES[boss_id]
 	var t: Dictionary = BattleContent.tier_of(tier)
-	var hp: int = int(round(float(def["hp_per_player"]) * maxf(1.0, effective) * float(t["hp"])))
+	# i livelli "appiattiti" (ABISSO) avvicinano PV e attacco base di ogni boss alla media: tutti ugualmente duri
+	var flat: float = float(t.get("flatten", 0.0))
+	var base_hp: float = lerpf(float(def["hp_per_player"]), BattleTypes.FLAT_BOSS_HP, flat)
+	var base_atk: float = lerpf(float(def["atk"]), BattleTypes.FLAT_BOSS_ATK, flat)
+	var hp: int = int(round(base_hp * maxf(1.0, effective) * float(t["hp"])))
 	var atk_scale: float = _interpolate(def.get("atk_scale", [1.0]), effective)
 	var stats: Dictionary = {
 		"hp": hp,
-		"atk": int(round(float(def["atk"]) * atk_scale * float(t["atk"]))),
+		"atk": int(round(base_atk * atk_scale * float(t["atk"]))),
 		"def": int(def["def"]) + int(t["def"]),
 		"spd": int(def["spd"]),
 	}

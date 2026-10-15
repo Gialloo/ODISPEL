@@ -58,6 +58,7 @@ static func suggest(roster: Dictionary) -> Dictionary:
 	for id in BattleContent.BOSS_ORDER:
 		var boss: String = str(id)
 		var cleared: int = RosterState.cleared_tiers(roster, boss)
-		if RosterState.is_boss_unlocked(roster, boss) and cleared < BattleContent.TIERS.size():
+		# il consiglio arriva fino a INCUBO: ABISSO e' una prova facoltativa per squadre al massimo
+		if RosterState.is_boss_unlocked(roster, boss) and cleared < mini(3, BattleContent.TIERS.size()):
 			return {"boss": boss, "tier": cleared}
 	return {"boss": boss_id, "tier": tier}

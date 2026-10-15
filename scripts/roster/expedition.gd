@@ -86,7 +86,7 @@ static func new_run(seed_value: int, boss_id: String, tier: int, coop: bool = fa
 			clean_mods.append(str(m))
 	return {
 		"v": 2, "long": long, "mods": clean_mods, "elite_fight": false, "curse": 0.0, "id": absi(seed_value) + 1, "seed": absi(seed_value) + 1, "boss": boss_id,
-		"tier": clampi(tier, 0, BattleContent.TIERS.size() - 1), "coop": coop,
+		"tier": clampi(tier, 0, mini(2, BattleContent.TIERS.size() - 1)), "coop": coop,   # la Spedizione non arriva ad ABISSO
 		"stage": 0, "phase": "choose", "next": 0, "boon_left": 0,
 		"boons": [], "carry": {}, "supplies": 0 if clean_mods.has("poche_risorse") else 1, "clue": 0, "elite": false, "heal": 0.0,
 		"pact_unit": "", "fell": {}, "log": [], "votes": {}, "result": "", "wins": 0, "fights": 0,

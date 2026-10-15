@@ -24,6 +24,9 @@ const FRONT_SIZE: int = 3         # personaggi in front row in solitaria
 const NET_TEAM_SIZE: int = 3      # in rete ogni giocatore porta al massimo 3 personaggi (1 in campo)
 const SKILL_SLOTS: int = 4       # mosse del menu (max 4 + ultimate); Attacco e Guardia occupano uno slot come le altre
 const BASIC_MOVES: Array = ["attack", "guard"]
+# Valori medi dei boss, usati dai livelli di difficolta' "appiattiti".
+const FLAT_BOSS_HP: float = 1400.0
+const FLAT_BOSS_ATK: float = 440.0
 const KIT_BONUS_PCT: int = 3      # kit completo (4 mosse + ultimate): +3% PV, attacco e difesa (per ora uguale per tutti)
 const PASSIVE_SLOTS: int = 2
 

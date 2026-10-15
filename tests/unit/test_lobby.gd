@@ -107,13 +107,13 @@ func _run() -> void:
 	_check("missione nella lobby", m.lobby["boss"] == "semaforo" and m.lobby["tier"] == 1)
 	_check("cambiare missione toglie i pronto", not m.all_ready())
 	_check("boss sconosciuto rifiutato", not m.host_set_mission("drago", 0))
-	_check("difficolta' limitata", m.host_set_mission("tombino", 9) and m.lobby["tier"] == 2)
+	_check("difficolta' limitata", m.host_set_mission("tombino", 9) and m.lobby["tier"] == 3)
 
 	# partenza
 	m.set_ready(true)
 	m._host_handle_message({"type": "ready", "ready": true}, "peerA")
 	_check("partenza con tutti pronti", m.host_launch())
-	_check("la battaglia usa la missione della lobby", str(BattleState.boss(m.battle)["char"]) == "tombino" and int(m.battle["tier"]) == 2)
+	_check("la battaglia usa la missione della lobby", str(BattleState.boss(m.battle)["char"]) == "tombino" and int(m.battle["tier"]) == 3)
 	_check("dopo la partenza nessuno e' pronto", not _row(m, "player_1")["ready"] and not _row(m, "player_2")["ready"])
 
 	# uscita
@@ -144,7 +144,7 @@ func _run() -> void:
 	_hello(m4, "pB", "tok-b", _entries(["nova"]))
 	_check("sblocco: senza progressi comunicati non si segnala nessuno (il primo boss e' aperto)", m4.players_lacking_unlock("distributore", 0).is_empty())
 	_check("sblocco: l'host stesso si controlla", m4.players_lacking_unlock("tombino", 0) == ["P1"])
-	_check("sblocco: dati strani vengono ripuliti", NetworkManager._clean_cleared({"distributore": 99, "x": 5, "semaforo": -3}) == {"distributore": 3, "semaforo": 0, "tombino": 0, "cabina": 0, "ascensore": 0, "manichino": 0, "orologio": 0, "specchio": 0, "sirena": 0, "lampione": 0, "bancomat": 0, "scala": 0, "radio": 0, "metro": 0, "cassaforte": 0, "faro": 0, "registro": 0, "eclissi": 0})
+	_check("sblocco: dati strani vengono ripuliti", NetworkManager._clean_cleared({"distributore": 99, "x": 5, "semaforo": -3}) == {"distributore": 4, "semaforo": 0, "tombino": 0, "cabina": 0, "ascensore": 0, "manichino": 0, "orologio": 0, "specchio": 0, "sirena": 0, "lampione": 0, "bancomat": 0, "scala": 0, "radio": 0, "metro": 0, "cassaforte": 0, "faro": 0, "registro": 0, "eclissi": 0})
 
 	# finestra di conferma
 	var yes_count: Array = [0]

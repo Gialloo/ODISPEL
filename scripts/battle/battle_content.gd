@@ -303,6 +303,8 @@ const TIERS: Array = [
 	{"id": "normale", "name": "NORMALE", "hp": 1.0, "atk": 1.0, "def": 0, "reward": 1.0},
 	{"id": "difficile", "name": "DIFFICILE", "hp": 1.5, "atk": 1.25, "def": 8, "reward": 2.0},
 	{"id": "incubo", "name": "INCUBO", "hp": 2.1, "atk": 1.55, "def": 15, "reward": 3.2},
+	# ABISSO: pensato per squadre al massimo (livello 50, rank 5, pezzi leggendari al massimo).
+	{"id": "abisso", "name": "ABISSO", "hp": 36.0, "atk": 23.0, "def": 70, "reward": 5.0, "rec_level": 50, "flatten": 1.0},
 ]
 
 # Ordine di sblocco: si apre il boss successivo battendo il precedente (almeno a NORMALE).

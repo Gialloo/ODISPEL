@@ -51,7 +51,8 @@ static func boss_for(floor_n: int) -> String:
 
 
 static func tier_for(floor_n: int) -> int:
-	return clampi((maxi(1, floor_n) - 1) / TIER_EVERY, 0, BattleContent.TIERS.size() - 1)
+	# il Ciclo Infinito si ferma a INCUBO: ABISSO e' una prova a parte (solo Missioni)
+	return clampi((maxi(1, floor_n) - 1) / TIER_EVERY, 0, mini(2, BattleContent.TIERS.size() - 1))
 
 
 static func mod_for(floor_n: int) -> Dictionary:

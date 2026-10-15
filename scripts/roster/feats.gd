@@ -9,7 +9,7 @@ extends RefCounted
 # Una impresa: {id, group, name, desc, goal, metric, arg, reward}. Il progresso si calcola dal salvataggio, quindi anche
 # chi ha gia' battuto dei boss prima di questa versione trova le imprese pronte da riscuotere.
 
-const TIER_NAMES: Array = ["NORMALE", "DIFFICILE", "INCUBO"]
+const TIER_NAMES: Array = ["NORMALE", "DIFFICILE", "INCUBO", "ABISSO"]
 const GROUPS: Array = ["MISSIONI", "BATTAGLIE", "OPERATORI", "POTENZIAMENTI", "INFINITO", "PVP", "TUTORIAL"]
 
 

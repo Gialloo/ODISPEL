@@ -30,7 +30,7 @@ func _run() -> void:
 	_check("parte dal primo boss", s.selected_boss == "distributore")
 	_check("livello normale", s.selected_tier == 0)
 	_check("un pulsante per ogni boss (18)", s.boss_buttons.size() == BattleContent.BOSS_ORDER.size() and s.boss_buttons.size() == 18)
-	_check("3 pulsanti livello", s.tier_buttons.size() == 3)
+	_check("4 pulsanti livello", s.tier_buttons.size() == 4)
 	_check("semaforo bloccato", s.boss_buttons["semaforo"].disabled)
 	_check("il bloccato non si sceglie", not s.select_boss("semaforo"))
 	_check("difficile bloccato", s.tier_buttons[1].disabled)
@@ -56,7 +56,7 @@ func _run() -> void:
 	_check("config livello", MissionConfig.tier == 2)
 	MissionConfig.set_mission("inesistente", 9)
 	_check("boss sconosciuto ignorato", MissionConfig.boss_id == "tombino")
-	_check("livello limitato", MissionConfig.tier == 2)
+	_check("livello limitato", MissionConfig.tier == 3)
 
 	# battaglia solitaria con la missione scelta
 	MissionConfig.set_mission("semaforo", 1)

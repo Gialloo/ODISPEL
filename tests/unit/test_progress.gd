@@ -119,7 +119,7 @@ func _run() -> void:
 	var src3 := SoloBattleSource.new()
 	src3.save_path = TMP
 	src3.start(RosterState.new_roster(), "distributore", 3, 99)
-	_check("tier fuori scala ricondotto", src3.tier == 2 and int(src3.battle["tier"]) == 2)
+	_check("tier fuori scala ricondotto", src3.tier == 3 and int(src3.battle["tier"]) == 3)
 
 	# rete: l'host avvia con boss e tier
 	var game := GameState.new()

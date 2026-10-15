@@ -434,10 +434,11 @@ func _cycle_boss(dir: int) -> void:
 
 
 func _max_tier() -> int:
+	var cap: int = mini(2, BattleContent.TIERS.size() - 1)       # la Spedizione non arriva ad ABISSO
 	if net != null:
-		return BattleContent.TIERS.size() - 1
+		return cap
 	var t: int = 0
-	for i in BattleContent.TIERS.size():
+	for i in cap + 1:
 		if RosterState.is_tier_unlocked(roster, _setup_boss, i):
 			t = i
 	return t

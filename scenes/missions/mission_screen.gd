@@ -214,6 +214,8 @@ func _refresh() -> void:
 	go_button.text = "ESCI DALLA STANZA PER GIOCARE DA SOLO" if in_room else "AVVIA MISSIONE"
 	var tier: Dictionary = BattleContent.TIERS[selected_tier]
 	info_label.text = "PV x%.1f   ATTACCO x%.2f   DIFESA +%d   PREMI x%.1f" % [float(tier["hp"]), float(tier["atk"]), int(tier["def"]), float(tier["reward"])]
+	if int(tier.get("rec_level", 0)) > 0:
+		info_label.text += "\nPENSATO PER SQUADRE AL MASSIMO: LIV %d, RANK 5, PEZZI LEGGENDARI." % int(tier["rec_level"])
 	if selected_tier + 1 < BattleContent.TIERS.size() and not RosterState.is_tier_unlocked(roster, selected_boss, selected_tier + 1):
 		info_label.text += "\nBatti questo livello per sbloccare il successivo."
 

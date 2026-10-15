@@ -5,6 +5,11 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.23", "items": [
+		"NUOVA DIFFICOLTA' ABISSO: pensata per squadre al massimo (livello 50, rank 5, pezzi leggendari). Si apre battendo un boss a INCUBO.",
+		"Boss con tanti PV e colpi pesantissimi: anche una squadra al massimo deve giocare bene (reazioni, ordini, combo) per vincere. Premi x5.",
+		"Il Ciclo Infinito e la Spedizione restano fino a INCUBO.",
+	]},
 	{"v": "0.24.22", "items": [
 		"REPLAY TATTICO: ora si apre sopra la schermata dei risultati (prima restava nascosto dietro) e si chiude col tasto CHIUDI.",
 		"REGISTRO EVENTI: ora scorre, tiene piu' righe, separa i turni e si legge meglio sopra il boss.",
