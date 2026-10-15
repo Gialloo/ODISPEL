@@ -5,6 +5,12 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.24", "items": [
+		"LIGHT PAINTING: i colpi, gli scudi e le cure sono tracciati di luce, come una foto a lunga esposizione.",
+		"La FAZIONE decide il gesto: LibraCorp a circuito con mirino, Rondini ad arco morbido, Magabondi a scarabocchio con gocce, Kairos con copie sfasate e rune.",
+		"Il COLORE decide le particelle: rosso scintille, giallo pulviscolo, viola fumo d'inchiostro, verde puntini, blu filamenti.",
+		"Scudi e protezioni disegnano un anello, le cure una spirale che sale. Si spegne con la qualita' grafica BASSA.",
+	]},
 	{"v": "0.24.23", "items": [
 		"NUOVA DIFFICOLTA' ABISSO: pensata per squadre al massimo (livello 50, rank 5, pezzi leggendari). Si apre battendo un boss a INCUBO.",
 		"Boss con tanti PV e colpi pesantissimi: anche una squadra al massimo deve giocare bene (reazioni, ordini, combo) per vincere. Premi x5.",

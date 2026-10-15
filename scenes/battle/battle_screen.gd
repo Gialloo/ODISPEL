@@ -1788,11 +1788,13 @@ func _event_fx(e: Dictionary) -> float:
 			Snd.play("heal")
 			_pop("+" + BattleText.num(int(e["amount"])) + ("!" if bool(e.get("crit", false)) else ""), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
 			if AnimFx.enabled():
-				AnimFx.rise(_fx, _stage.anchor_of(str(e["dst"])))
+				if not _light_paint(e, "spiral"):
+					AnimFx.rise(_fx, _stage.anchor_of(str(e["dst"])))
 		"shield":
 			_float_text("+" + BattleText.num(int(e["amount"])), str(e["dst"]), BattleTheme.CY, 26)
 			if AnimFx.enabled():
-				AnimFx.shield(_fx, _stage.anchor_of(str(e["dst"])), false)
+				if not _light_paint(e, "ring"):
+					AnimFx.shield(_fx, _stage.anchor_of(str(e["dst"])), false)
 		"marks":
 			return _fx_marks(e)
 		"arena":
@@ -2249,6 +2251,16 @@ func _link_clear() -> void:
 	_link_node = null
 
 
+# Tratto di luce per cure e scudi (anello o spirale sul bersaglio). Vero se l'ha disegnato.
+func _light_paint(e: Dictionary, shape: String) -> bool:
+	var src: Dictionary = BattleState.unit(shown, str(e.get("src", e.get("dst", ""))))
+	var hand: String = LightPaint.hand_for(src)
+	if hand == "" or src.is_empty():
+		return false
+	var at: Vector2 = _stage.anchor_of(str(e["dst"]))
+	return LightPaint.play(_fx, hand, str(src.get("color", "")), shape, at, at, 1.0) != null
+
+
 # Effetto grafico del colpo, scelto per tipo: taglio, onda d'urto, scintille o proiettile (LibraCorp).
 func _hit_anim(e: Dictionary, dst: String, to_boss: bool, is_crit: bool, heavy: bool) -> void:
 	if not AnimFx.enabled():
@@ -2258,7 +2270,13 @@ func _hit_anim(e: Dictionary, dst: String, to_boss: bool, is_crit: bool, heavy: 
 	var fac: String = str(src.get("faction", ""))
 	var col: Color = Hints.faction_color(fac) if fac != "" else Color.WHITE
 	var power: float = 1.6 if is_crit else (1.25 if heavy else 1.0)
-	if fac == "libracorp" and not src.is_empty() and str(src.get("id", "")) != dst:
+	var hand: String = LightPaint.hand_for(src)
+	if hand != "" and str(src.get("id", "")) != dst:
+		# LIGHT PAINTING: fazione = gesto, colore = particelle
+		LightPaint.play(_fx, hand, str(src.get("color", "")), "line", _stage.anchor_of(str(src["id"])) + Vector2(50.0, -30.0), at, power)
+		if heavy or is_crit:
+			AnimFx.shockwave(_fx, at, col, 150.0 if to_boss else 110.0)
+	elif fac == "libracorp" and not src.is_empty() and str(src.get("id", "")) != dst:
 		AnimFx.projectile(_fx, _stage.anchor_of(str(src["id"])) + Vector2(60.0, 0.0), at, col, func() -> void: AnimFx.sparks(_fx, at, col, 8, 200.0))
 	elif heavy or is_crit:
 		AnimFx.shockwave(_fx, at, col, 150.0 if to_boss else 110.0)

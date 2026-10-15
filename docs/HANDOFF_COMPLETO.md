@@ -402,3 +402,9 @@ Ottimizzazioni recenti (commit `6801f65`): `Titles`/`Power` calcolati una volta,
 4. Chiedi all'utente cosa vuole fare per prima cosa (vedi sezione 13): bonus per rarita', osservatore, asimmetriche, trasferimento risorse, ruoli temporanei, boss che impara in rete, barra con ritratti.
 5. Lavora a piccoli passi, mostra uno screenshot per ogni cambiamento grafico, **aspetta la conferma** prima del push, e a fine lavoro: test, audit, changelog, versione, build (se richiesta) e push.
 6. Rispondi **sempre in italiano semplice**.
+
+## Light painting (0.24.24)
+- `scripts/ui/light_paint.gd` (`LightPaint`): tratti di luce a lunga esposizione, solo grafica (nessun effetto sulla logica). Gerarchia: **fazione = mano** (libracorp circuito+mirino, rondini arco, magabondi scarabocchio+gocce, kairos copie sfasate+rune), **colore = particelle** (rosso scintille, giallo pulviscolo, viola fumo, verde puntini, blu filamenti), **mossa = solo la forma** (`line` colpo, `ring` scudo, `spiral` cura).
+- Collegato in `battle_screen.gd`: `_hit_anim` (colpi), eventi `heal` e `shield` via `_light_paint`. Senza fazione (boss, evocazioni) resta il vecchio effetto. Spento con qualita' grafica BASSA (`AnimFx.enabled`); `LightPaint.max_live` (14) e particelle limitate.
+- Test: `test_light_paint`; foto: `tools/lightpaint_shot.gd`, `tools/battle_lp_shot.gd`, `tools/battle_fx_shot.gd`.
+- Da fare (fase 2): segno personale per gli ultimate, famiglie debuff (marchio, frattura, intimidisci), velatura dello sfondo durante il tratto, texture di pennello disegnate in Procreate.
