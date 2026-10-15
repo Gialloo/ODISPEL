@@ -20,6 +20,18 @@ func _run(dir: String) -> void:
 		ids.append(str(BattleState.active_unit(s.shown, str(p["id"]))["id"]))
 	Settings.light_fx = false
 	LightPaint.max_live = 60
+	if OS.get_cmdline_user_args().size() > 1:
+		var mode: String = OS.get_cmdline_user_args()[1]
+		var moves: Array = ["marchio_r", "frattura_r", "intimidisci_r"] if mode == "debuff" else []
+		for i in moves.size():
+			s._skill_light(BattleContent.MOVES[str(moves[i])], BattleState.unit(s.shown, ids[i]))
+		if mode == "ult":
+			var u: Dictionary = BattleState.unit(s.shown, ids[0])
+			s._ult_signature(u, "strike", s._stage.anchor_of(ids[0]))
+		await create_timer(0.55).timeout
+		root.get_viewport().get_texture().get_image().save_png(dir.path_join("blp_%s.png" % mode))
+		quit()
+		return
 	for id in ids:
 		s._hit_anim({"src": id, "dst": BattleState.BOSS_ID}, BattleState.BOSS_ID, true, false, false)
 	s._light_paint({"src": ids[0], "dst": ids[1]}, "ring")

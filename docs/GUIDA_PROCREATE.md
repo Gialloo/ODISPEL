@@ -18,6 +18,7 @@ disegnarla e come esportarla. Si basa sulle regole del gioco (versione 0.24.23).
 | Sfondi di battaglia (4 strati) | **SI** |
 | Sfondo del menu principale (hub) e logo | **SI** |
 | Sfondi delle scene di storia | **SI** (facoltativi) |
+| **Pennellate di luce** (i tratti delle abilita', vedi sezione 11) | **SI**, 4 file facoltativi |
 | **HUD, pulsanti, pannelli, barre vita, icone dei comandi** | **NO, non ancora.** Oggi li disegna il codice (stile CCTV/fumetto ciano-rosso). Posso aggiungere il supporto alle tue immagini: vedi la sezione 6. **Non disegnarli finche' non te lo dico.** |
 
 ---
@@ -292,3 +293,29 @@ Consiglio: **un personaggio alla volta, finito e provato**, meglio che 24 mezzi 
 - **Posso usare un altro stile?** Per i personaggi il riferimento e' lo stile anime del paragrafo 3.7: tienilo coerente tra tutti, e' piu' importante della perfezione del singolo file.
 - **E se un file e' sbagliato?** Non succede nulla di grave: il gioco usa il segnaposto o mostra l'immagine adattata. Mandamelo e controllo io.
 - **Le tue immagini sovrascrivono sempre i segnaposto?** Si': dove il file esiste vince il tuo.
+
+
+---
+
+## 11. PENNELLATE DI LUCE (LIGHT PAINTING) - 4 FILE FACOLTATIVI
+
+Le abilita' sono tracciate di luce. Oggi il tratto lo genera il codice. Se disegni una pennellata tua, il gioco la stende
+lungo ogni tratto della fazione corrispondente, tingendola col colore del personaggio. **Senza il file resta il tratto del codice.**
+
+| File | Per chi | Carattere della pennellata |
+|---|---|---|
+| `fx/stroke_libracorp.png` | LibraCorp | netta, pulita, bordi dritti, quasi un righello luminoso |
+| `fx/stroke_rondini.png` | Rondini | morbida, una sola passata, si assottiglia alle due punte |
+| `fx/stroke_magabondi.png` | Magabondi | ruvida, con sbavature, schizzi e puntini staccati (bomboletta, gesso) |
+| `fx/stroke_kairos.png` | Kairos | spezzata, con tratti mancanti e piccole "rune" che interrompono la linea |
+
+**Come disegnarle in Procreate**
+- Tela **1024 x 128 px**, 72 DPI, sRGB, **sfondo trasparente** (stessa procedura della sezione 1).
+- Disegna **in BIANCO** (anche tutto bianco morbido): il gioco la colora col colore del personaggio. Se la dipingi colorata, il colore si mescola e sbiadisce.
+- La pennellata va **da sinistra (inizio) a destra (fine)**, orizzontale, **centrata in altezza** e alta circa **60-80 px** al massimo (lascia margine sopra e sotto: il bagliore lo aggiunge il gioco).
+- La **trasparenza** e' la forma: dove e' piu' opaco il tratto e' piu' forte, ai bordi sfuma. Pennelli consigliati: Aerografia > Morbido (Rondini), Inchiostrazione > Pennino (LibraCorp), Pennelli artistici > Gesso o Carboncino (Magabondi).
+- **Niente colori, ombre portate o sfondo.** Esporta come **PNG** con nome minuscolo, in `art/fx/`.
+
+**Dove metterle**: `art/fx/` accanto alle altre (PC: cartella `art` accanto a `ODISPEL.exe`; telefono: me le mandi e le inserisco io). Dopo averle copiate: Impostazioni > RICARICA GRAFICHE. Non contano nei "GRAFICHE TROVATE x / 300": sono extra.
+
+**Cosa NON serve disegnare**: le firme degli ultimate. Sono generate dal codice (una stella diversa per ognuno dei 24 personaggi). Se vuoi una firma disegnata a mano per un personaggio, dimmelo: si puo' aggiungere come `characters/<id>/sigil.png` (1024 x 1024, bianco su trasparente).

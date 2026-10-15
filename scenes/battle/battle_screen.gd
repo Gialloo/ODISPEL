@@ -2251,6 +2251,41 @@ func _link_clear() -> void:
 	_link_node = null
 
 
+# Abilita' contro il boss: tratto di luce dal personaggio e, per Marchio / Frattura / Intimidisci,
+# il segno che resta sul bersaglio. Vero se l'ha disegnato (altrimenti resta la scarica elettrica).
+func _skill_light(move: Dictionary, unit: Dictionary) -> bool:
+	if not AnimFx.enabled():
+		return false
+	var hand: String = LightPaint.hand_for(unit)
+	if hand == "":
+		return false
+	var hue: String = str(unit.get("color", ""))
+	var boss: Vector2 = _stage.anchor_of(BattleState.BOSS_ID)
+	var start: Vector2 = _stage.anchor_of(str(unit["id"])) + Vector2(50.0, -30.0)
+	var painted: bool = LightPaint.play(_fx, hand, hue, "line", start, boss, 1.15) != null
+	var sign_shape: String = ""
+	if (move.get("status", {}) as Dictionary).has("mark"):
+		sign_shape = "mark"
+	elif (move.get("debuff", {}) as Dictionary).has("def"):
+		sign_shape = "crack"
+	elif (move.get("debuff", {}) as Dictionary).has("atk"):
+		sign_shape = "swirl"
+	if sign_shape != "":
+		LightPaint.play(_fx, hand, hue, sign_shape, boss, boss, 1.0, 0.16)
+	return painted
+
+
+# Firma luminosa di ogni personaggio durante l'ultimate: sul boss se e' un attacco, sul personaggio altrimenti.
+func _ult_signature(unit: Dictionary, style: String, at: Vector2) -> void:
+	if not AnimFx.enabled():
+		return
+	var hand: String = LightPaint.hand_for(unit)
+	if hand == "":
+		hand = "rondini"
+	var where: Vector2 = _stage.anchor_of(BattleState.BOSS_ID) if style == "strike" else at + Vector2(0.0, -40.0)
+	LightPaint.sigil(_fx, hand, str(unit.get("color", "")), str(unit.get("char", "")), where, 1.0)
+
+
 # Tratto di luce per cure e scudi (anello o spirale sul bersaglio). Vero se l'ha disegnato.
 func _light_paint(e: Dictionary, shape: String) -> bool:
 	var src: Dictionary = BattleState.unit(shown, str(e.get("src", e.get("dst", ""))))
@@ -2472,7 +2507,8 @@ func _fx_act(e: Dictionary) -> float:
 	if kind == "skill" and str(move.get("target", "")) == "enemy" and move.has("mult"):
 		# abilita': scia nel colore dell'operatore verso il boss
 		var scol: Color = BattleTheme.unit_color(str(unit["color"]))
-		_zap(_stage.anchor_of(str(unit["id"])), _stage.anchor_of(BattleState.BOSS_ID), scol)
+		if not _skill_light(move, unit):
+			_zap(_stage.anchor_of(str(unit["id"])), _stage.anchor_of(BattleState.BOSS_ID), scol)
 	if kind == "ult":
 		var at: Vector2 = _stage.anchor_of(str(unit["id"]))
 		var ucol: Color = BattleTheme.unit_color(str(unit["color"]))
@@ -2482,6 +2518,7 @@ func _fx_act(e: Dictionary) -> float:
 		get_tree().create_timer(seconds * 0.9).timeout.connect(func() -> void:
 			if is_inside_tree():
 				UltFx.play(_fx, at, ucol, ust, _stage.anchor_of(BattleState.BOSS_ID) if ust == "strike" else Vector2.ZERO)
+				_ult_signature(unit, ust, at)
 				Snd.play("crit", 0.8))
 		return seconds
 	return 0.0

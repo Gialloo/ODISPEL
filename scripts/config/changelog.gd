@@ -5,6 +5,12 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.25", "items": [
+		"LIGHT PAINTING, FASE 2: Marchio, Frattura e Intimidisci lasciano un segno sul bersaglio.",
+		"ULTIMATE: ogni personaggio ha la sua firma luminosa (24 stelle diverse) che si disegna e poi si disperde.",
+		"Quando corre la luce, il mondo si scurisce un attimo: i tratti si leggono meglio.",
+		"Pronto per le tue pennellate: art/fx/stroke_<fazione>.png sostituisce il tratto generato.",
+	]},
 	{"v": "0.24.24", "items": [
 		"LIGHT PAINTING: i colpi, gli scudi e le cure sono tracciati di luce, come una foto a lunga esposizione.",
 		"La FAZIONE decide il gesto: LibraCorp a circuito con mirino, Rondini ad arco morbido, Magabondi a scarabocchio con gocce, Kairos con copie sfasate e rune.",
