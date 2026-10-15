@@ -9,6 +9,9 @@ const ENTRIES: Array = [
 		"NUOVA DIFFICOLTA' ABISSO: pensata per squadre al massimo (livello 50, rank 5, pezzi leggendari). Si apre battendo un boss a INCUBO.",
 		"Boss con tanti PV e colpi pesantissimi: anche una squadra al massimo deve giocare bene (reazioni, ordini, combo) per vincere. Premi x5.",
 		"Il Ciclo Infinito e la Spedizione restano fino a INCUBO.",
+		"LISTE E MENU: frecce SU e GIU' per scorrere equipaggiamento, mosse, potenziamenti e tutti i menu lunghi (tieni premuto per scorrere veloce).",
+		"HOME su telefono: pulsanti in due colonne, senza sovrapposizioni.",
+		"Tasto AUTO piu' grande e con messaggio di conferma quando si accende o si spegne.",
 	]},
 	{"v": "0.24.22", "items": [
 		"REPLAY TATTICO: ora si apre sopra la schermata dei risultati (prima restava nascosto dietro) e si chiude col tasto CHIUDI.",

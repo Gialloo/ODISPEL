@@ -52,7 +52,7 @@ func _ready() -> void:
 	preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	outer.add_child(preview)
 
-	var scroll := ScrollContainer.new()
+	var scroll := ArrowScroll.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	outer.add_child(scroll)

@@ -158,7 +158,13 @@ func _start_coach() -> void:
 	await get_tree().process_frame
 	_coach = BattleCoach.new().setup(self)
 	add_child(_coach)
-	_coach.finished.connect(func() -> void: _coach = null)
+	# durante la guida il tasto LOG sparisce: il suo posto serve al tasto AVANTI della guida (su telefono si sovrapponevano)
+	if _log_handle != null:
+		_log_handle.visible = false
+	_coach.finished.connect(func() -> void:
+		_coach = null
+		if _log_handle != null and is_instance_valid(_log_handle):
+			_log_handle.visible = true)
 
 
 func _coach_note(event: String, data: String = "") -> void:
@@ -456,8 +462,13 @@ func _build_autoplay() -> void:
 	_auto_button.visible = false
 	BattleTheme.style_button(_auto_button, "normal", 14)
 	add_child(_auto_button)
-	_anchor(_auto_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0, 0, 46, 34 if not TouchUi.active() else 44))
-	_auto_button.pressed.connect(func() -> void: set_autoplay(not autoplay))
+	_anchor(_auto_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0, 0, 50 if not TouchUi.active() else 58, 36 if not TouchUi.active() else 50))
+	_auto_button.z_index = 20       # sempre sopra palco ed effetti: deve poter essere premuto in ogni momento
+	_auto_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	_auto_button.pressed.connect(func() -> void:
+		set_autoplay(not autoplay)
+		# conferma chiara di cosa e' successo (prima si capiva solo dal colore del tasto)
+		Notify.toast("AUTO ATTIVO: l'IA gioca da sola. Tocca di nuovo per fermarla." if autoplay else "AUTO SPENTO: scegli tu le mosse.", Notify.Kind.INFO))
 	# velocita' dell'animazione sempre a portata di dito: NORMALE -> VELOCE -> TURBO
 	speed_button = Button.new()
 	speed_button.focus_mode = Control.FOCUS_NONE
@@ -465,7 +476,8 @@ func _build_autoplay() -> void:
 	speed_button.text = _speed_label()
 	speed_button.tooltip_text = "Velocita' della battaglia: normale, veloce, turbo"
 	add_child(speed_button)
-	_anchor(speed_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(48, 0, 94, 34 if not TouchUi.active() else 44))
+	_anchor(speed_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(54 if not TouchUi.active() else 62, 0, 104 if not TouchUi.active() else 120, 36 if not TouchUi.active() else 50))
+	speed_button.z_index = 20
 	speed_button.pressed.connect(func() -> void:
 		Settings.next_speed()
 		Settings.save()
@@ -2148,7 +2160,7 @@ func _open_replay() -> void:
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 8)
 	panel.set_content(col)
-	var scroll := ScrollContainer.new()
+	var scroll := ArrowScroll.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	col.add_child(scroll)
@@ -2702,7 +2714,7 @@ func _show_result(victory: bool, rewards: Dictionary) -> void:
 	box.add_child(BattleTheme.make_label("PREMI", 16, BattleTheme.WH))
 	_reward_rows.clear()
 	# i premi stanno in un'area che scorre se sono tanti: i tasti restano sempre visibili sotto
-	var rscroll := ScrollContainer.new()
+	var rscroll := ArrowScroll.new()
 	rscroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rscroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	rscroll.custom_minimum_size = Vector2(0, 60)

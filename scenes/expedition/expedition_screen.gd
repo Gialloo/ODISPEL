@@ -73,7 +73,7 @@ func _build() -> void:
 	left.position = Vector2(20, 134)
 	left.size = Vector2(800, 480 if not TouchUi.active() else 456)
 	add_child(left)
-	var lscroll := ScrollContainer.new()
+	var lscroll := ArrowScroll.new()
 	lscroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_body = VBoxContainer.new()
 	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -84,7 +84,7 @@ func _build() -> void:
 	right.position = Vector2(836, 134)
 	right.size = Vector2(424, 300 if net != null else (480 if not TouchUi.active() else 456))
 	add_child(right)
-	var sc := ScrollContainer.new()
+	var sc := ArrowScroll.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_side = VBoxContainer.new()
 	_side.size_flags_horizontal = Control.SIZE_EXPAND_FILL

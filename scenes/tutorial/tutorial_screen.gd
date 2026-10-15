@@ -40,7 +40,7 @@ func _build() -> void:
 	panel.position = Vector2(20, 100)
 	panel.size = Vector2(1240, 500 if not TouchUi.active() else 470)
 	add_child(panel)
-	var scroll := ScrollContainer.new()
+	var scroll := ArrowScroll.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_list = VBoxContainer.new()
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL

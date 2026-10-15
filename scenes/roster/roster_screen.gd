@@ -156,7 +156,7 @@ func _header_icon(key: String, pos: Vector2, px: float) -> void:
 
 # Sul telefono le liste lunghe si scorrono con il dito; sul PC restano com'erano.
 func _set_scrolled(panel: HudPanel, box: Container) -> void:
-	var scroll := ScrollContainer.new()
+	var scroll := ArrowScroll.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(box)
@@ -192,7 +192,7 @@ func _set_filtered(panel: HudPanel, box: Container) -> void:
 		ob.fit_to_longest_item = false
 		ob.item_selected.connect(_on_filter.bind(str(spec[0])))
 		row.add_child(ob)
-	var scroll := ScrollContainer.new()
+	var scroll := ArrowScroll.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -315,7 +315,7 @@ func _build_team_page() -> void:
 	# il testo scorre se non ci sta (su telefono i pulsanti sono piu' alti): cosi' i comandi restano sempre visibili
 	_detail_label.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_detail_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var dscroll := ScrollContainer.new()
+	var dscroll := ArrowScroll.new()
 	dscroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dscroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	dscroll.custom_minimum_size = Vector2(0, 60)
@@ -401,7 +401,7 @@ func _build_equip_page() -> void:
 	var icol := VBoxContainer.new()
 	icol.add_theme_constant_override("separation", 6)
 	_equip_title.set_content(icol)
-	var scroll := ScrollContainer.new()
+	var scroll := ArrowScroll.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	icol.add_child(scroll)

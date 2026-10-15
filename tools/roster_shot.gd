@@ -16,11 +16,12 @@ func _init() -> void:
 func _shot(name: String) -> void:
 	await create_timer(0.25).timeout
 	var img: Image = root.get_viewport().get_texture().get_image()
-	img.save_png(_out.path_join(name + ".png"))
+	img.save_png(_out.path_join(name + ("_t" if TouchUi.force else "") + ".png"))
 	print("salvata ", name)
 
 
 func _run() -> void:
+	TouchUi.force = OS.get_cmdline_user_args().size() > 1 and OS.get_cmdline_user_args()[1] == "1"
 	await process_frame      # lascia partire gli autoload (font, maiuscole)
 	var r: Dictionary = RosterState.new_roster()
 	r["coins"] = 3500

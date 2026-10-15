@@ -48,7 +48,7 @@ func _build() -> void:
 	var list := VBoxContainer.new()
 	list.add_theme_constant_override("separation", 4 if TouchUi.active() else 6)
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var list_scroll := ScrollContainer.new()      # con 18 bersagli su un telefono l'elenco scorre: nessuno resta nascosto
+	var list_scroll := ArrowScroll.new()      # con 18 bersagli su un telefono l'elenco scorre: nessuno resta nascosto
 	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	list_scroll.add_child(list)
 	list_panel.set_content(list_scroll)
