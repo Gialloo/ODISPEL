@@ -5,6 +5,10 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.27", "items": [
+		"CORREZIONE: i tratti di luce (fendenti, scudi, cure, firme degli ultimate) ora si vedono sempre, anche con gli EFFETTI RIDOTTI (che sui telefoni sono accesi di default).",
+		"Con gli effetti ridotti restano tratto e alone leggero; per avere anche particelle, copie sfasate e velo scuro: Impostazioni > EFFETTI RIDOTTI: NO.",
+	]},
 	{"v": "0.24.26", "items": [
 		"ART BIBLE: palette ufficiale (magenta, arancio, viola cosmico, avorio) e nuovo FENDENTE pesante con coda di filamenti e frammenti arancio.",
 		"I colpi pesanti, i critici, Colpo caricato e Spezzatutto usano il fendente. Doppio colpo disegna due tratti, Colpo mirato uno sottile.",

@@ -11,6 +11,8 @@ extends Control
 # Facoltativo: se esiste art/fx/stroke_<fazione>.png (pennellata bianca su trasparente, disegnata in
 # Procreate) il tratto usa quella pennellata al posto della linea generata dal codice.
 # Solo grafica: non tocca mai la logica di battaglia. Si disegna da solo e sparisce.
+# NON dipende da "effetti ridotti": e' la firma visiva del gioco, quindi si vede sempre. Con gli effetti ridotti
+# (default sui telefoni) restano tratto e alone leggero, senza particelle, copie sfasate e velo scuro.
 
 const HANDS: Array = ["libracorp", "rondini", "magabondi", "kairos"]
 const MAX_PARTS: int = 70
@@ -54,6 +56,7 @@ var _rng := RandomNumberGenerator.new()
 var _impact_done: bool = false
 var _last_emit: int = -1
 var _scale: float = 1.0
+var _lite: bool = false       # effetti ridotti: solo il tratto, niente particelle, alone, copie ne' velo
 var _support: Color = PAL_COSMIC
 var _burst_dir: Vector2 = Vector2.RIGHT
 var _filaments: Array = []    # code filamentose del fendente
@@ -80,7 +83,7 @@ static func play(parent: Node, new_hand: String, new_hue: String, new_shape: Str
 	_live += 1
 	p.tree_exited.connect(func() -> void: _live = maxi(0, _live - 1))
 	parent.add_child(p)
-	if parent is Control:
+	if parent is Control and not p._lite:
 		dim(parent, 0.26 if new_shape == "sigil" else 0.12, p.draw_time + new_delay)
 	return p
 
@@ -139,6 +142,7 @@ func _setup() -> void:
 			_scale = 0.6
 		_:
 			_scale = 0.35
+	_lite = Settings.light_fx
 	_support = SUPPORT.get(hand, PAL_COSMIC)
 	_burst_dir = (to_pt - from_pt).normalized() if from_pt.distance_to(to_pt) > 1.0 else Vector2.RIGHT
 	# Tempi dell'art bible: tracciamento 50-180 ms, impatto 30-80 ms, dissolvenza 100-250 ms.
@@ -415,7 +419,7 @@ func _process(delta: float) -> void:
 		if shape == "slash":
 			# pochi frammenti arancio, tutti nella direzione del colpo
 			for i in maxi(2, int(round(5.0 * _scale))):
-				if _parts.size() < MAX_PARTS:
+				if _parts.size() < MAX_PARTS and not _lite:
 					_parts.append({"pos": to_pt, "t": 0.0, "kind": "frag", "life": 0.3, "size": _rng.randf_range(4.0, 7.0),
 						"vel": Vector2.from_angle(_burst_dir.angle() + _rng.randf_range(-0.9, 0.9)) * _rng.randf_range(160.0, 320.0)})
 	elif shape == "sigil" and not _impact_done and _t >= draw_time:
@@ -439,7 +443,7 @@ func _head_index() -> int:
 
 # Particelle: il COLORE decide come si muove la luce.
 func _emit_at(at: Vector2, idx: int) -> void:
-	if _parts.size() >= MAX_PARTS:
+	if _lite or _parts.size() >= MAX_PARTS:
 		return
 	var burst: bool = idx < 0
 	var dirv: Vector2 = Vector2.RIGHT
@@ -486,9 +490,9 @@ func _draw() -> void:
 		fade = 1.0 - clampf((_t - hold) / maxf(0.01, life - hold), 0.0, 1.0)
 	fade = pow(fade, 1.2)
 	var head_f: float = clampf(_t / draw_time, 0.0, 1.0) * float(_path.size() - 1)
-	var w: float = 5.0 * power * (0.8 if hand == "libracorp" else 1.0) * (1.8 if shape == "slash" else 1.0)
+	var w: float = 8.0 * power * (0.8 if hand == "libracorp" else 1.0) * (1.6 if shape == "slash" else 1.0)
 	_draw_trail(_path, Vector2.ZERO, head_f, fade, w, 1.0)
-	for g in _ghosts:
+	for g in ([] if _lite else _ghosts):
 		# Kairos: copie sfasate che saltano (effetto glitch)
 		var on: bool = fposmod(_t * 17.0 + float(g["ph"]) * 5.0, 1.0) > 0.35
 		if on:
@@ -529,9 +533,11 @@ func _draw_trail(pts: PackedVector2Array, off: Vector2, head_f: float, fade: flo
 		# alone: cerchi sfumati invece di rettangoli, cosi' non restano quadretti dove il tratto e' largo
 		var mid: Vector2 = (a + b) * 0.5
 		if halo_enabled:
-			for c in [a, mid]:
-				draw_circle(c, ww * 2.3, Color(halo, 0.05 * k))
-				draw_circle(c, ww * 1.3, Color(halo, 0.10 * k))
+			# con gli effetti ridotti un solo cerchio per punto (alone leggero, meno disegni)
+			for c in ([a] if _lite else [a, mid]):
+				draw_circle(c, ww * 2.3, Color(halo, 0.12 * k if _lite else 0.06 * k))
+				if not _lite:
+					draw_circle(c, ww * 1.3, Color(halo, 0.10 * k))
 		draw_line(a, b, Color(_color, 0.85 * k), ww, true)
 		draw_line(a, b, Color(PAL_IVORY, k), maxf(1.2, ww * 0.38), true)
 		# giunto tondo: niente spigoli quadrati dove il tratto cambia direzione

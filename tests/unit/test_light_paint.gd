@@ -97,6 +97,24 @@ func _run() -> void:
 		if c is ColorRect:
 			veils += 1
 	_check("il velo scuro e' uno solo anche con tratti ripetuti", veils == 1)
+	# con gli effetti ridotti (default sui telefoni) il tratto si disegna lo stesso, ma senza particelle ne' velo
+	var saved_light: bool = Settings.light_fx
+	Settings.light_fx = true
+	var lite_host := Control.new()
+	root.add_child(lite_host)
+	LightPaint.max_live = 14
+	var lp: LightPaint = LightPaint.play(lite_host, "magabondi", "rosso", "slash", Vector2(100, 300), Vector2(500, 300), 1.0)
+	_check("effetti ridotti: il tratto viene creato lo stesso", lp != null and lp._path.size() > 3)
+	if lp != null:
+		for i in 12:
+			lp._process(0.02)
+		_check("effetti ridotti: nessuna particella", lp._parts.is_empty() and lp._lite)
+	var lite_veils: int = 0
+	for c in lite_host.get_children():
+		if c is ColorRect:
+			lite_veils += 1
+	_check("effetti ridotti: nessun velo scuro", lite_veils == 0)
+	Settings.light_fx = saved_light
 	print("RISULTATO: %d ok, %d falliti" % [passed, failed])
 	print("FAIL: %d" % failed)
 	quit(1 if failed > 0 else 0)

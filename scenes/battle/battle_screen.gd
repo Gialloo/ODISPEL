@@ -1787,14 +1787,12 @@ func _event_fx(e: Dictionary) -> float:
 		"heal":
 			Snd.play("heal")
 			_pop("+" + BattleText.num(int(e["amount"])) + ("!" if bool(e.get("crit", false)) else ""), str(e["dst"]), BattleTheme.OK, BattleTheme.BK, 32, 52.0)
-			if AnimFx.enabled():
-				if not _light_paint(e, "spiral"):
-					AnimFx.rise(_fx, _stage.anchor_of(str(e["dst"])))
+			if not _light_paint(e, "spiral") and AnimFx.enabled():
+				AnimFx.rise(_fx, _stage.anchor_of(str(e["dst"])))
 		"shield":
 			_float_text("+" + BattleText.num(int(e["amount"])), str(e["dst"]), BattleTheme.CY, 26)
-			if AnimFx.enabled():
-				if not _light_paint(e, "ring"):
-					AnimFx.shield(_fx, _stage.anchor_of(str(e["dst"])), false)
+			if not _light_paint(e, "ring") and AnimFx.enabled():
+				AnimFx.shield(_fx, _stage.anchor_of(str(e["dst"])), false)
 		"marks":
 			return _fx_marks(e)
 		"arena":
@@ -2254,8 +2252,6 @@ func _link_clear() -> void:
 # Abilita' contro il boss: tratto di luce dal personaggio e, per Marchio / Frattura / Intimidisci,
 # il segno che resta sul bersaglio. Vero se l'ha disegnato (altrimenti resta la scarica elettrica).
 func _skill_light(move: Dictionary, unit: Dictionary) -> bool:
-	if not AnimFx.enabled():
-		return false
 	var hand: String = LightPaint.hand_for(unit)
 	if hand == "":
 		return false
@@ -2290,8 +2286,6 @@ func _skill_light(move: Dictionary, unit: Dictionary) -> bool:
 
 # Firma luminosa di ogni personaggio durante l'ultimate: sul boss se e' un attacco, sul personaggio altrimenti.
 func _ult_signature(unit: Dictionary, style: String, at: Vector2) -> void:
-	if not AnimFx.enabled():
-		return
 	var hand: String = LightPaint.hand_for(unit)
 	if hand == "":
 		hand = "rondini"
@@ -2311,8 +2305,6 @@ func _light_paint(e: Dictionary, shape: String) -> bool:
 
 # Effetto grafico del colpo, scelto per tipo: taglio, onda d'urto, scintille o proiettile (LibraCorp).
 func _hit_anim(e: Dictionary, dst: String, to_boss: bool, is_crit: bool, heavy: bool) -> void:
-	if not AnimFx.enabled():
-		return
 	var at: Vector2 = _stage.anchor_of(dst)
 	var src: Dictionary = BattleState.unit(shown, str(e.get("src", "")))
 	var fac: String = str(src.get("faction", ""))
@@ -2329,6 +2321,8 @@ func _hit_anim(e: Dictionary, dst: String, to_boss: bool, is_crit: bool, heavy: 
 			LightPaint.play(_fx, hand, hue_name, "slash", from_at, at, power, 0.1)
 		else:
 			LightPaint.play(_fx, hand, hue_name, "line", from_at, at, power)
+	elif not AnimFx.enabled():
+		return
 	elif fac == "libracorp" and not src.is_empty() and str(src.get("id", "")) != dst:
 		AnimFx.projectile(_fx, _stage.anchor_of(str(src["id"])) + Vector2(60.0, 0.0), at, col, func() -> void: AnimFx.sparks(_fx, at, col, 8, 200.0))
 	elif heavy or is_crit:

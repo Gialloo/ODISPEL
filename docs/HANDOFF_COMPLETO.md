@@ -411,3 +411,5 @@ Ottimizzazioni recenti (commit `6801f65`): `Titles`/`Power` calcolati una volta,
 - Da fare: firme disegnate a mano per personaggio (`characters/<id>/sigil.png`), tratti per i boss, eventuale texture per i debuff.
 
 - **Art bible (0.24.26):** `docs/ART_BIBLE.md` contiene la direzione artistica ufficiale e lo stato di implementazione (palette `PAL_*`, forma `slash` = VFX-001, grammatica dei poteri -> mosse, criteri di accettazione con cio' che e' verificato e cio' che no, Android compreso).
+
+- **Importante (0.24.27):** `LightPaint` NON dipende da `AnimFx.enabled()` / "effetti ridotti". Sui telefoni `Settings.light_fx` e' true di default (e si accende da solo sotto i 40 fps) e fino alla 0.24.26 faceva sparire i tratti di luce. Ora con `light_fx` restano tratto + alone leggero (`_lite`: niente particelle, copie, velo). Per provare in xvfb senza forzare impostazioni, `light_fx` e' gia' true: la prova "reale" con `tools/battle_fx_shot.gd` mostra la versione ridotta.
