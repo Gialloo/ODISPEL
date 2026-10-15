@@ -409,3 +409,5 @@ Ottimizzazioni recenti (commit `6801f65`): `Titles`/`Power` calcolati una volta,
 - Test: `test_light_paint`; foto: `tools/lightpaint_shot.gd`, `tools/battle_lp_shot.gd`, `tools/battle_fx_shot.gd`.
 - Fase 2 (fatta): forme `mark` (Marchio), `crack` (Frattura), `swirl` (Intimidisci) agganciate in `_skill_light`; `sigil` = firma di ogni personaggio negli ultimate (`_ult_signature`, `LightPaint.sigil_spec`: 10 stelle x 4 varianti = 24 firme uniche, deciso dalla posizione in `CHARACTERS`); velo scuro `LightPaint.dim` (un solo ColorRect nel layer `_fx`, 0.12 / 0.26); pennellate disegnate a mano facoltative `art/fx/stroke_<fazione>.png` (1024x128, bianco su trasparente, vedi `docs/GUIDA_PROCREATE.md` sez. 11; non entrano nei 300 slot di `ArtLibrary`).
 - Da fare: firme disegnate a mano per personaggio (`characters/<id>/sigil.png`), tratti per i boss, eventuale texture per i debuff.
+
+- **Art bible (0.24.26):** `docs/ART_BIBLE.md` contiene la direzione artistica ufficiale e lo stato di implementazione (palette `PAL_*`, forma `slash` = VFX-001, grammatica dei poteri -> mosse, criteri di accettazione con cio' che e' verificato e cio' che no, Android compreso).

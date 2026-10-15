@@ -6,7 +6,7 @@ extends Control
 #   COLORE   = la tinta e il comportamento delle particelle
 #   FORMA    = che cosa fa la mossa: "line" (colpo), "ring" (scudo/protezione), "spiral" (cura),
 #              "mark" (runa del Marchio), "crack" (crepe della Frattura), "swirl" (spirale di Intimidisci),
-#              "sigil" (firma personale di ogni personaggio, solo per gli ultimate)
+#              "slash" (fendente pesante, VFX-001 dell'art bible), "sigil" (firma personale di ogni personaggio, solo per gli ultimate)
 # Durante il tratto il mondo si scurisce un attimo (dim): la luce e' l'evento, il resto e' il foglio.
 # Facoltativo: se esiste art/fx/stroke_<fazione>.png (pennellata bianca su trasparente, disegnata in
 # Procreate) il tratto usa quella pennellata al posto della linea generata dal codice.
@@ -14,11 +14,20 @@ extends Control
 
 const HANDS: Array = ["libracorp", "rondini", "magabondi", "kairos"]
 const MAX_PARTS: int = 70
-const SHAPES: Array = ["line", "ring", "spiral", "mark", "crack", "swirl", "sigil"]
+# Palette ufficiale (Mini Art Bible v1.0, docs/ART_BIBLE.md). Il colore del personaggio resta il DOMINANTE;
+# ogni mano ha un colore di SUPPORTO preso da qui e il nucleo e' sempre AVORIO (accento molto luminoso).
+const PAL_CARBON: Color = Color("#171923")
+const PAL_MAGENTA: Color = Color("#E83DCE")
+const PAL_ORANGE: Color = Color("#FF7438")
+const PAL_COSMIC: Color = Color("#7770F7")
+const PAL_IVORY: Color = Color("#F5E9C9")
+const SUPPORT: Dictionary = {"libracorp": PAL_COSMIC, "rondini": PAL_IVORY, "magabondi": PAL_ORANGE, "kairos": PAL_MAGENTA}
+const SHAPES: Array = ["line", "slash", "ring", "spiral", "mark", "crack", "swirl", "sigil"]
 # (punte, salto) di ogni firma: 10 stelle diverse; con le 4 varianti ogni personaggio ha la sua.
 const SIGIL_STARS: Array = [[5, 2], [6, 2], [7, 2], [7, 3], [8, 3], [9, 2], [9, 4], [10, 3], [11, 3], [12, 5]]
 
 static var max_live: int = 14
+static var halo_enabled: bool = true      # per le prove: senza alone il tratto deve restare leggibile
 static var _live: int = 0
 static var _additive: CanvasItemMaterial = null
 static var _dim_node: ColorRect = null
@@ -45,6 +54,9 @@ var _rng := RandomNumberGenerator.new()
 var _impact_done: bool = false
 var _last_emit: int = -1
 var _scale: float = 1.0
+var _support: Color = PAL_COSMIC
+var _burst_dir: Vector2 = Vector2.RIGHT
+var _filaments: Array = []    # code filamentose del fendente
 var _skip: Dictionary = {}    # segmenti "a penna sollevata": indice -> true
 var _brush: Texture2D = null
 
@@ -127,28 +139,42 @@ func _setup() -> void:
 			_scale = 0.6
 		_:
 			_scale = 0.35
-	life = 0.95 if hand == "rondini" else 0.75
+	_support = SUPPORT.get(hand, PAL_COSMIC)
+	_burst_dir = (to_pt - from_pt).normalized() if from_pt.distance_to(to_pt) > 1.0 else Vector2.RIGHT
+	# Tempi dell'art bible: tracciamento 50-180 ms, impatto 30-80 ms, dissolvenza 100-250 ms.
 	match shape:
 		"ring":
-			draw_time = 0.42
-		"spiral", "swirl":
-			draw_time = 0.5
-		"mark":
-			draw_time = 0.35
-			life = 1.7
-		"crack":
 			draw_time = 0.3
-			life = 0.95
+			life = 0.75
+		"spiral":
+			draw_time = 0.36
+			life = 0.85
+		"swirl":
+			draw_time = 0.34
+			life = 0.8
+		"mark":
+			draw_time = 0.3
+			life = 1.3          # il segno rituale resta un po' piu' a lungo
+		"crack":
+			draw_time = 0.2
+			life = 0.6
 		"sigil":
 			draw_time = 0.8
 			life = 1.8
+		"slash":
+			draw_time = 0.16
+			life = 0.5
 		_:
-			draw_time = 0.26 if hand == "rondini" else 0.2
+			draw_time = 0.18 if hand == "rondini" else 0.14
+			life = draw_time + 0.3
 	_brush = ArtLibrary.texture("fx/stroke_%s.png" % hand)
 	_path = _build_path()
 	_widths = PackedFloat32Array()
 	for i in _path.size():
 		var f: float = float(i) / float(maxi(1, _path.size() - 1))
+		if shape == "slash":
+			_widths.append(0.3 + 1.5 * (f / 0.35) if f < 0.35 else 1.8 * (1.0 - (f - 0.35) / 0.65) + 0.1)
+			continue
 		match hand:
 			"rondini":
 				_widths.append(0.35 + 0.9 * sin(f * PI))
@@ -224,6 +250,8 @@ func _build_path() -> PackedVector2Array:
 					pts.append(to_pt + dirc * float(j) * 20.0 * power + dirc.orthogonal() * side * 7.0)
 		"sigil":
 			pts = _sigil_path()
+		"slash":
+			pts = _slash_path()
 		_:
 			pts = _line_path()
 	if hand == "magabondi":
@@ -240,6 +268,33 @@ func _build_path() -> PackedVector2Array:
 func _pen_up(pts: PackedVector2Array) -> void:
 	if pts.size() > 0:
 		_skip[pts.size() - 1] = true
+
+
+# VFX-001: fendente diagonale. Pennellata che si comprime e poi si assottiglia, con una coda di filamenti.
+func _slash_path() -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	var dir: Vector2 = Vector2.from_angle(deg_to_rad(38.0))
+	if _burst_dir.x < 0.0:
+		dir.x = -dir.x                # il fendente "arriva" dal lato di chi attacca
+	var half: float = 120.0 * (0.9 + 0.25 * power)
+	var start: Vector2 = to_pt - dir * half
+	var finish: Vector2 = to_pt + dir * half
+	var bulge: Vector2 = dir.orthogonal() * 14.0
+	var n: int = 18
+	for i in n + 1:
+		var f: float = float(i) / float(n)
+		pts.append(start.lerp(finish, f) + bulge * sin(f * PI))
+	# coda filamentosa: tre fili sottili dietro l'inizio del fendente
+	_filaments.clear()
+	for k in 3:
+		var fil := PackedVector2Array()
+		var spread: float = (float(k) - 1.0) * 9.0
+		var len_f: float = 70.0 + 28.0 * float(k)
+		for j in 7:
+			var g: float = float(j) / 6.0
+			fil.append(start - dir * len_f * g + dir.orthogonal() * (spread * (1.0 - g * 0.4) + sin(g * 5.0 + float(k)) * 6.0))
+		_filaments.append(fil)
+	return pts
 
 
 func _sigil_path() -> PackedVector2Array:
@@ -353,10 +408,16 @@ func _process(delta: float) -> void:
 	if _t < draw_time + 0.02 and head != _last_emit and head < _path.size():
 		_last_emit = head
 		_emit_at(_path[head], head)
-	if shape == "line" and not _impact_done and _t >= draw_time:
+	if (shape == "line" or shape == "slash") and not _impact_done and _t >= draw_time:
 		_impact_done = true
-		for i in int(round(9.0 * _scale * power)):
+		for i in int(round(4.0 * _scale * power)):
 			_emit_at(to_pt, -1)
+		if shape == "slash":
+			# pochi frammenti arancio, tutti nella direzione del colpo
+			for i in maxi(2, int(round(5.0 * _scale))):
+				if _parts.size() < MAX_PARTS:
+					_parts.append({"pos": to_pt, "t": 0.0, "kind": "frag", "life": 0.3, "size": _rng.randf_range(4.0, 7.0),
+						"vel": Vector2.from_angle(_burst_dir.angle() + _rng.randf_range(-0.9, 0.9)) * _rng.randf_range(160.0, 320.0)})
 	elif shape == "sigil" and not _impact_done and _t >= draw_time:
 		# la firma si chiude e si disperde come inchiostro
 		_impact_done = true
@@ -389,7 +450,7 @@ func _emit_at(at: Vector2, idx: int) -> void:
 		var p: Dictionary = {"pos": at, "t": 0.0, "kind": hue_name, "vel": Vector2.ZERO, "life": 0.5, "size": 3.0}
 		match hue_name:
 			"rosso":  # scintille che schizzano
-				var a: float = _rng.randf() * TAU
+				var a: float = _rng.randf() * TAU if not (burst and shape != "sigil") else _burst_dir.angle() + _rng.randf_range(-1.0, 1.0)
 				p["vel"] = Vector2(cos(a), sin(a)) * _rng.randf_range(140.0, 320.0)
 				p["life"] = 0.32
 			"giallo":  # pulviscolo caldo che sale
@@ -405,7 +466,7 @@ func _emit_at(at: Vector2, idx: int) -> void:
 				p["life"] = 0.7
 				p["size"] = 2.6
 			_:  # blu: filamenti veloci lungo il tratto
-				p["vel"] = dirv * -220.0 if not burst else Vector2.from_angle(_rng.randf() * TAU) * 200.0
+				p["vel"] = dirv * -220.0 if not burst else Vector2.from_angle((_rng.randf() * TAU) if shape == "sigil" else _burst_dir.angle() + _rng.randf_range(-0.8, 0.8)) * 200.0
 				p["life"] = 0.34
 				p["dir"] = dirv
 		_parts.append(p)
@@ -420,27 +481,30 @@ func _draw() -> void:
 	if _path.size() < 2 or _t < 0.0:
 		return
 	var fade: float = 1.0
-	var hold: float = draw_time + 0.12
+	var hold: float = draw_time + (0.06 if shape == "line" or shape == "slash" else 0.12)
 	if _t > hold:
 		fade = 1.0 - clampf((_t - hold) / maxf(0.01, life - hold), 0.0, 1.0)
 	fade = pow(fade, 1.2)
 	var head_f: float = clampf(_t / draw_time, 0.0, 1.0) * float(_path.size() - 1)
-	var w: float = 5.0 * power * (0.8 if hand == "libracorp" else 1.0)
+	var w: float = 5.0 * power * (0.8 if hand == "libracorp" else 1.0) * (1.8 if shape == "slash" else 1.0)
 	_draw_trail(_path, Vector2.ZERO, head_f, fade, w, 1.0)
 	for g in _ghosts:
 		# Kairos: copie sfasate che saltano (effetto glitch)
 		var on: bool = fposmod(_t * 17.0 + float(g["ph"]) * 5.0, 1.0) > 0.35
 		if on:
 			_draw_trail(_path, g["off"], head_f, fade * 0.55, w * 0.7, 1.0)
+	if not _filaments.is_empty():
+		_draw_filaments(fade)
 	if hand == "kairos":
 		_draw_runes(head_f, fade)
 	if shape == "line" and hand == "libracorp":
 		_draw_reticle(fade)
-	if shape == "line" and _t >= draw_time:
-		var k: float = clampf((_t - draw_time) / 0.2, 0.0, 1.0)
+	if (shape == "line" or shape == "slash") and _t >= draw_time:
+		# accento d'impatto: lampo breve (30-80 ms), distinto dal resto
+		var k: float = clampf((_t - draw_time) / 0.07, 0.0, 1.0)
 		var flash: float = (1.0 - k) * power
-		draw_circle(to_pt, 24.0 * flash, Color(_color, 0.30 * fade))
-		draw_circle(to_pt, 9.0 * flash, Color(1, 1, 1, 0.8 * fade))
+		draw_circle(to_pt, 24.0 * flash, Color(_color, 0.30 * (1.0 - k)))
+		draw_circle(to_pt, 9.0 * flash, Color(PAL_IVORY, 0.9 * (1.0 - k)))
 	_draw_parts(fade)
 
 
@@ -461,10 +525,15 @@ func _draw_trail(pts: PackedVector2Array, off: Vector2, head_f: float, fade: flo
 		var trail: float = clampf(1.0 - age * 0.9, 0.12, 1.0)
 		var k: float = fade * trail
 		var ww: float = w * _widths[i]
-		draw_line(a, b, Color(_color, 0.10 * k), ww * 4.4, true)
-		draw_line(a, b, Color(_color, 0.24 * k), ww * 2.2, true)
+		var halo: Color = _color.lerp(_support, 0.35)
+		# alone: cerchi sfumati invece di rettangoli, cosi' non restano quadretti dove il tratto e' largo
+		var mid: Vector2 = (a + b) * 0.5
+		if halo_enabled:
+			for c in [a, mid]:
+				draw_circle(c, ww * 2.3, Color(halo, 0.05 * k))
+				draw_circle(c, ww * 1.3, Color(halo, 0.10 * k))
 		draw_line(a, b, Color(_color, 0.85 * k), ww, true)
-		draw_line(a, b, Color(1, 1, 1, k), maxf(1.2, ww * 0.38), true)
+		draw_line(a, b, Color(PAL_IVORY, k), maxf(1.2, ww * 0.38), true)
 		# giunto tondo: niente spigoli quadrati dove il tratto cambia direzione
 		draw_circle(a, ww * 0.5, Color(_color, 0.85 * k))
 
@@ -502,7 +571,18 @@ func _draw_brush_trail(pts: PackedVector2Array, off: Vector2, head_f: float, las
 			var hb: Vector2 = nb * w * _widths[mini(i + 1, _widths.size() - 1)] * float(layer[0])
 			var c := Color(_color, float(layer[1]) * k)
 			draw_polygon(PackedVector2Array([a - ha, a + ha, b + hb, b - hb]), PackedColorArray([c, c, c, c]), uvs, _brush)
-		draw_line(a, b, Color(1, 1, 1, 0.5 * k), maxf(1.0, w * _widths[i] * 0.25), true)
+		draw_line(a, b, Color(PAL_IVORY, 0.5 * k), maxf(1.0, w * _widths[i] * 0.25), true)
+
+
+# Coda filamentosa del fendente: fili sottili che si rivelano mentre il tratto passa.
+func _draw_filaments(fade: float) -> void:
+	var reveal: float = clampf(_t / (draw_time * 0.8), 0.0, 1.0)
+	for fil in _filaments:
+		var upto: int = int(reveal * float(fil.size() - 1))
+		for i in upto:
+			var tfade: float = 1.0 - float(i) / float(fil.size())
+			draw_line(fil[i], fil[i + 1], Color(_support, 0.45 * fade * tfade), 3.0, true)
+			draw_line(fil[i], fil[i + 1], Color(PAL_IVORY, 0.75 * fade * tfade), 1.2, true)
 
 
 func _draw_reticle(fade: float) -> void:
@@ -547,6 +627,10 @@ func _draw_parts(fade: float) -> void:
 			"verde":
 				draw_circle(pos, sz, Color(_color, k))
 				draw_circle(pos, sz * 0.4, Color(1, 1, 1, k))
+			"frag":
+				var fv: Vector2 = Vector2(p["vel"]).normalized()
+				draw_line(pos, pos - fv * 14.0 * k, Color(PAL_ORANGE, k), sz * 0.6)
+				draw_circle(pos, sz * 0.5, Color(PAL_IVORY, k))
 			"drip":
 				draw_line(pos, pos - Vector2(0.0, 8.0), Color(_color, 0.9 * k), sz)
 			_:

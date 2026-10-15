@@ -2262,7 +2262,20 @@ func _skill_light(move: Dictionary, unit: Dictionary) -> bool:
 	var hue: String = str(unit.get("color", ""))
 	var boss: Vector2 = _stage.anchor_of(BattleState.BOSS_ID)
 	var start: Vector2 = _stage.anchor_of(str(unit["id"])) + Vector2(50.0, -30.0)
-	var painted: bool = LightPaint.play(_fx, hand, hue, "line", start, boss, 1.15) != null
+	# Grammatica dei poteri (art bible): Pesante = fendente spesso, Rapido = tratto sottile (doppio: due volte),
+	# Controllo / Anomalia = segno sul bersaglio.
+	var fam: String = str(move.get("family", ""))
+	var painted: bool = false
+	if fam == "colpo_caricato" or fam == "spezzatutto" or fam == "colpo_alla_testa" or str(move.get("kind", "")) == "ult":
+		painted = LightPaint.play(_fx, hand, hue, "line", start, boss, 0.8) != null
+		LightPaint.play(_fx, hand, hue, "slash", start, boss, 1.2, 0.12)
+	elif fam == "doppio_colpo":
+		painted = LightPaint.play(_fx, hand, hue, "line", start, boss, 0.8) != null
+		LightPaint.play(_fx, hand, hue, "line", start + Vector2(0.0, 18.0), boss + Vector2(0.0, 14.0), 0.8, 0.12)
+	elif fam == "colpo_mirato":
+		painted = LightPaint.play(_fx, hand, hue, "line", start, boss, 0.7) != null
+	else:
+		painted = LightPaint.play(_fx, hand, hue, "line", start, boss, 1.0) != null
 	var sign_shape: String = ""
 	if (move.get("status", {}) as Dictionary).has("mark"):
 		sign_shape = "mark"
@@ -2271,7 +2284,7 @@ func _skill_light(move: Dictionary, unit: Dictionary) -> bool:
 	elif (move.get("debuff", {}) as Dictionary).has("atk"):
 		sign_shape = "swirl"
 	if sign_shape != "":
-		LightPaint.play(_fx, hand, hue, sign_shape, boss, boss, 1.0, 0.16)
+		LightPaint.play(_fx, hand, hue, sign_shape, boss, boss, 1.0, 0.14)
 	return painted
 
 
@@ -2308,9 +2321,14 @@ func _hit_anim(e: Dictionary, dst: String, to_boss: bool, is_crit: bool, heavy: 
 	var hand: String = LightPaint.hand_for(src)
 	if hand != "" and str(src.get("id", "")) != dst:
 		# LIGHT PAINTING: fazione = gesto, colore = particelle
-		LightPaint.play(_fx, hand, str(src.get("color", "")), "line", _stage.anchor_of(str(src["id"])) + Vector2(50.0, -30.0), at, power)
+		var from_at: Vector2 = _stage.anchor_of(str(src["id"])) + Vector2(50.0, -30.0)
+		var hue_name: String = str(src.get("color", ""))
 		if heavy or is_crit:
-			AnimFx.shockwave(_fx, at, col, 150.0 if to_boss else 110.0)
+			# colpo pesante: tratto veloce e fendente spesso sul bersaglio (niente onda d'urto sopra)
+			LightPaint.play(_fx, hand, hue_name, "line", from_at, at, 0.8)
+			LightPaint.play(_fx, hand, hue_name, "slash", from_at, at, power, 0.1)
+		else:
+			LightPaint.play(_fx, hand, hue_name, "line", from_at, at, power)
 	elif fac == "libracorp" and not src.is_empty() and str(src.get("id", "")) != dst:
 		AnimFx.projectile(_fx, _stage.anchor_of(str(src["id"])) + Vector2(60.0, 0.0), at, col, func() -> void: AnimFx.sparks(_fx, at, col, 8, 200.0))
 	elif heavy or is_crit:

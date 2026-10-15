@@ -20,7 +20,7 @@ func _run(dir: String) -> void:
 		ids.append(str(BattleState.active_unit(s.shown, str(p["id"]))["id"]))
 	Settings.light_fx = false
 	LightPaint.max_live = 60
-	if OS.get_cmdline_user_args().size() > 1:
+	if OS.get_cmdline_user_args().size() > 1 and OS.get_cmdline_user_args()[1] != "heavy":
 		var mode: String = OS.get_cmdline_user_args()[1]
 		var moves: Array = ["marchio_r", "frattura_r", "intimidisci_r"] if mode == "debuff" else []
 		for i in moves.size():
@@ -32,8 +32,9 @@ func _run(dir: String) -> void:
 		root.get_viewport().get_texture().get_image().save_png(dir.path_join("blp_%s.png" % mode))
 		quit()
 		return
+	var heavy: bool = OS.get_cmdline_user_args().size() > 1 and OS.get_cmdline_user_args()[1] == "heavy"
 	for id in ids:
-		s._hit_anim({"src": id, "dst": BattleState.BOSS_ID}, BattleState.BOSS_ID, true, false, false)
+		s._hit_anim({"src": id, "dst": BattleState.BOSS_ID}, BattleState.BOSS_ID, true, false, heavy)
 	s._light_paint({"src": ids[0], "dst": ids[1]}, "ring")
 	s._light_paint({"src": ids[2], "dst": ids[0]}, "spiral")
 	var n: int = 0
@@ -42,7 +43,7 @@ func _run(dir: String) -> void:
 			n += 1
 	print("TRATTI VIVI: ", n, " boss anchor ", s._stage.anchor_of(BattleState.BOSS_ID), " kira ", s._stage.anchor_of(ids[0]))
 	await create_timer(0.3).timeout
-	root.get_viewport().get_texture().get_image().save_png(dir.path_join("blp_a.png"))
+	root.get_viewport().get_texture().get_image().save_png(dir.path_join("blp_heavy.png" if heavy else "blp_a.png"))
 	await create_timer(0.2).timeout
 	root.get_viewport().get_texture().get_image().save_png(dir.path_join("blp_b.png"))
 	quit()

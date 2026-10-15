@@ -5,6 +5,11 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.26", "items": [
+		"ART BIBLE: palette ufficiale (magenta, arancio, viola cosmico, avorio) e nuovo FENDENTE pesante con coda di filamenti e frammenti arancio.",
+		"I colpi pesanti, i critici, Colpo caricato e Spezzatutto usano il fendente. Doppio colpo disegna due tratti, Colpo mirato uno sottile.",
+		"Effetti piu' rapidi: un colpo normale dura circa mezzo secondo e non fa aspettare il turno.",
+	]},
 	{"v": "0.24.25", "items": [
 		"LIGHT PAINTING, FASE 2: Marchio, Frattura e Intimidisci lasciano un segno sul bersaglio.",
 		"ULTIMATE: ogni personaggio ha la sua firma luminosa (24 stelle diverse) che si disegna e poi si disperde.",
