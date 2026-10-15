@@ -417,6 +417,8 @@ func _build() -> void:
 	_build_autoplay()
 	add_child(_fx)
 	_fx.move_to_front()
+	if DisplayServer.get_name() != "headless":
+		LightPaint.prewarm(_fx)         # niente scatto al primo tratto di luce
 
 	_overlay = Control.new()
 	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)

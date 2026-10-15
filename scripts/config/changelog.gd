@@ -5,6 +5,12 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.28", "items": [
+		"PRESTAZIONI: i tratti di luce sono disegnati con 3 sole forme sfumate invece di decine di cerchi e linee trasparenti: stesso aspetto (anzi, alone piu' morbido) con molto meno lavoro per la scheda video.",
+		"A tratto finito non si ridisegna piu' niente: la dissolvenza e' solo trasparenza.",
+		"Niente piu' scatto al primo colpo: la grafica degli effetti viene preparata all'ingresso in battaglia.",
+		"Le frecce delle liste non lavorano piu' quando il menu e' chiuso.",
+	]},
 	{"v": "0.24.27", "items": [
 		"CORREZIONE: i tratti di luce (fendenti, scudi, cure, firme degli ultimate) ora si vedono sempre, anche con gli EFFETTI RIDOTTI (che sui telefoni sono accesi di default).",
 		"Con gli effetti ridotti restano tratto e alone leggero; per avere anche particelle, copie sfasate e velo scuro: Impostazioni > EFFETTI RIDOTTI: NO.",

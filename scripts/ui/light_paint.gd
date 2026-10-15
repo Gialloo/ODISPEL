@@ -29,6 +29,9 @@ const SHAPES: Array = ["line", "slash", "ring", "spiral", "mark", "crack", "swir
 const SIGIL_STARS: Array = [[5, 2], [6, 2], [7, 2], [7, 3], [8, 3], [9, 2], [9, 4], [10, 3], [11, 3], [12, 5]]
 
 static var max_live: int = 14
+static var profile: bool = false          # prove: misura quanto costano _process e _draw
+static var profile_usec: int = 0
+static var profile_calls: int = 0
 static var halo_enabled: bool = true      # per le prove: senza alone il tratto deve restare leggibile
 static var _live: int = 0
 static var _additive: CanvasItemMaterial = null
@@ -56,20 +59,28 @@ var _rng := RandomNumberGenerator.new()
 var _impact_done: bool = false
 var _last_emit: int = -1
 var _scale: float = 1.0
+var _warm: bool = false       # tratto di riscaldamento: quasi invisibile, serve solo a preparare la grafica
 var _lite: bool = false       # effetti ridotti: solo il tratto, niente particelle, alone, copie ne' velo
 var _support: Color = PAL_COSMIC
 var _burst_dir: Vector2 = Vector2.RIGHT
 var _filaments: Array = []    # code filamentose del fendente
 var _skip: Dictionary = {}    # segmenti "a penna sollevata": indice -> true
 var _brush: Texture2D = null
+var _overlay: Control = null
+var _mesh_halo := ArrayMesh.new()
+var _mesh_color := ArrayMesh.new()
+var _mesh_core := ArrayMesh.new()
+var _built_head: float = -1.0
+var _ghost_sig: String = ""
 
 
 # Crea il tratto. Restituisce null se la mano non esiste o ci sono gia' troppi tratti vivi.
-static func play(parent: Node, new_hand: String, new_hue: String, new_shape: String, a: Vector2, b: Vector2, new_power: float = 1.0, new_delay: float = 0.0, new_key: String = "") -> LightPaint:
+static func play(parent: Node, new_hand: String, new_hue: String, new_shape: String, a: Vector2, b: Vector2, new_power: float = 1.0, new_delay: float = 0.0, new_key: String = "", warm: bool = false) -> LightPaint:
 	if not HANDS.has(new_hand) or _live >= max_live:
 		return null
 	var p := LightPaint.new()
 	p.key = new_key
+	p._warm = warm
 	p.delay = new_delay
 	p._t = -new_delay
 	p.hand = new_hand
@@ -83,9 +94,22 @@ static func play(parent: Node, new_hand: String, new_hue: String, new_shape: Str
 	_live += 1
 	p.tree_exited.connect(func() -> void: _live = maxi(0, _live - 1))
 	parent.add_child(p)
-	if parent is Control and not p._lite:
+	if parent is Control and not p._lite and not warm:
 		dim(parent, 0.26 if new_shape == "sigil" else 0.12, p.draw_time + new_delay)
 	return p
+
+
+# Prepara in anticipo la grafica dei tratti (mesh additive, particelle): al primo tratto vero la scheda video
+# non deve compilare niente all'ultimo momento (e' la causa classica del piccolo scatto al primo colpo).
+# Si chiama una volta quando si entra in battaglia: disegna due tratti quasi invisibili per un istante.
+static func prewarm(host: Node) -> void:
+	if not (host is Control):
+		return
+	for hand_name in ["rondini", "kairos"]:
+		var p: LightPaint = play(host, hand_name, "rosso", "slash", Vector2(620.0, 360.0), Vector2(660.0, 380.0), 0.3, 0.0, "", true)
+		if p != null:
+			p.life = 0.2
+			p.draw_time = 0.08
 
 
 # Firma di un personaggio (ultimate): disegno grande, unico per ogni personaggio.
@@ -198,6 +222,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	material = additive()
+	_make_overlay()
 
 
 # ---------- Forme di base e "mano" ----------
@@ -402,6 +427,13 @@ func _densify(src: PackedVector2Array, per_seg: int) -> PackedVector2Array:
 # ---------- Animazione ----------
 
 func _process(delta: float) -> void:
+	var t0: int = Time.get_ticks_usec() if profile else 0
+	_process_inner(delta)
+	if profile:
+		profile_usec += Time.get_ticks_usec() - t0
+
+
+func _process_inner(delta: float) -> void:
 	_t += delta
 	if _t >= life:
 		queue_free()
@@ -433,7 +465,20 @@ func _process(delta: float) -> void:
 		if bool(p.get("grav", false)):
 			p["vel"] = Vector2(p["vel"]) + Vector2(0.0, 520.0) * delta
 	_parts = _parts.filter(func(p: Dictionary) -> bool: return float(p["t"]) < float(p["life"]))
-	queue_redraw()
+	# dissolvenza: solo trasparenza, niente ridisegno; si ridisegna solo quando qualcosa si muove davvero
+	var fd: float = _fade_now()
+	self_modulate.a = fd
+	if _overlay != null:
+		_overlay.self_modulate.a = fd
+	if _t < draw_time + 0.001:
+		queue_redraw()
+	else:
+		var sig: String = str(_ghost_offsets())
+		if _built_head != _head_f() or sig != _ghost_sig:
+			_ghost_sig = sig
+			queue_redraw()
+	if _overlay != null and (_t < draw_time + 0.1 or not _parts.is_empty() or shape == "sigil"):
+		_overlay.queue_redraw()
 
 
 func _head_index() -> int:
@@ -480,142 +525,249 @@ func _emit_at(at: Vector2, idx: int) -> void:
 
 
 # ---------- Disegno ----------
+# Il tratto e' fatto di MESH (strisce di triangoli con colore per vertice): 3 forme per tratto invece di
+# decine di cerchi e segmenti trasparenti sovrapposti. Mentre il tratto si traccia la mesh si ricostruisce;
+# a tracciamento finito la geometria resta ferma e la dissolvenza e' solo un valore di trasparenza
+# (self_modulate): nessun lavoro per fotogramma. Lampo, filamenti, rune e particelle stanno in un secondo
+# livello (_overlay) che si ridisegna solo finche' qualcosa si muove.
+
+class _Fx extends Control:
+	var lp: LightPaint
+
+	func _draw() -> void:
+		if lp != null:
+			lp._draw_overlay(self)
+
+
+func _make_overlay() -> void:
+	_overlay = _Fx.new()
+	_overlay.lp = self
+	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_overlay.use_parent_material = true
+	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_overlay)
+
+
+func _fade_now() -> float:
+	if _warm:
+		return 0.004
+	var hold: float = draw_time + (0.06 if shape == "line" or shape == "slash" else 0.12)
+	if _t <= hold:
+		return 1.0
+	return pow(1.0 - clampf((_t - hold) / maxf(0.01, life - hold), 0.0, 1.0), 1.2)
+
+
+func _base_width() -> float:
+	return 8.0 * power * (0.8 if hand == "libracorp" else 1.0) * (1.6 if shape == "slash" else 1.0)
+
+
+func _head_f() -> float:
+	return clampf(_t / draw_time, 0.0, 1.0) * float(_path.size() - 1)
+
 
 func _draw() -> void:
+	var t0: int = Time.get_ticks_usec() if profile else 0
+	_draw_inner()
+	if profile:
+		profile_usec += Time.get_ticks_usec() - t0
+		profile_calls += 1
+
+
+func _draw_inner() -> void:
 	if _path.size() < 2 or _t < 0.0:
 		return
-	var fade: float = 1.0
-	var hold: float = draw_time + (0.06 if shape == "line" or shape == "slash" else 0.12)
-	if _t > hold:
-		fade = 1.0 - clampf((_t - hold) / maxf(0.01, life - hold), 0.0, 1.0)
-	fade = pow(fade, 1.2)
-	var head_f: float = clampf(_t / draw_time, 0.0, 1.0) * float(_path.size() - 1)
-	var w: float = 8.0 * power * (0.8 if hand == "libracorp" else 1.0) * (1.6 if shape == "slash" else 1.0)
-	_draw_trail(_path, Vector2.ZERO, head_f, fade, w, 1.0)
-	for g in ([] if _lite else _ghosts):
-		# Kairos: copie sfasate che saltano (effetto glitch)
-		var on: bool = fposmod(_t * 17.0 + float(g["ph"]) * 5.0, 1.0) > 0.35
-		if on:
-			_draw_trail(_path, g["off"], head_f, fade * 0.55, w * 0.7, 1.0)
+	var hf: float = _head_f()
+	if hf != _built_head:
+		_built_head = hf
+		_rebuild_meshes(hf)
+	var ghosts_on: Array = _ghost_offsets()
+	_draw_layers(Transform2D.IDENTITY, Color.WHITE)
+	for g in ghosts_on:
+		_draw_layers(Transform2D(0.0, g), Color(1, 1, 1, 0.55))
+
+
+func _draw_layers(xf: Transform2D, tint: Color) -> void:
+	if _brush != null:
+		draw_mesh(_mesh_halo, _brush, xf, tint)
+		draw_mesh(_mesh_color, _brush, xf, tint)
+	else:
+		if halo_enabled:
+			draw_mesh(_mesh_halo, null, xf, tint)
+		draw_mesh(_mesh_color, null, xf, tint)
+	draw_mesh(_mesh_core, null, xf, tint)
+
+
+# Kairos: copie sfasate che saltano (effetto glitch). Vuote con gli effetti ridotti.
+func _ghost_offsets() -> Array:
+	var out: Array = []
+	if _lite:
+		return out
+	for g in _ghosts:
+		if fposmod(_t * 17.0 + float(g["ph"]) * 5.0, 1.0) > 0.35:
+			out.append(g["off"])
+	return out
+
+
+func _rebuild_meshes(hf: float) -> void:
+	var w: float = _base_width()
+	var halo_col: Color = _color.lerp(_support, 0.35)
+	if _brush != null:
+		# pennellata disegnata a mano: strato largo morbido + strato pieno, entrambi con la texture
+		_strip(_mesh_halo, hf, w * 3.4, 0.0, halo_col, 0.30, 0, true)
+		_strip(_mesh_color, hf, w * 1.8, 0.0, _color, 0.95, 0, true)
+	else:
+		_strip(_mesh_halo, hf, w * 2.3, 0.0, halo_col, 0.22, 1, false)
+		_strip(_mesh_color, hf, w * 0.5, 0.0, _color, 0.9, 2, false)
+	_strip(_mesh_core, hf, w * 0.19, 0.6, PAL_IVORY, 1.0, 0, false)
+
+
+# Striscia di triangoli lungo il tratto. profile: 0 = bordo netto (2 vertici per sezione),
+# 1 = a picco (bordi trasparenti, centro pieno), 2 = pieno con bordo sfumato (4 vertici).
+func _strip(mesh: ArrayMesh, hf: float, half_mult: float, half_min: float, tint: Color, alpha: float, profile: int, with_uv: bool) -> void:
+	mesh.clear_surfaces()
+	var n: int = _path.size()
+	var last: int = mini(int(hf), n - 2)
+	var frac: float = clampf(hf - float(last), 0.0, 1.0)
+	var total: float = float(maxi(1, n - 1))
+	var per: int = 2 if profile == 0 else (3 if profile == 1 else 4)
+	var verts := PackedVector2Array()
+	var cols := PackedColorArray()
+	var uvs := PackedVector2Array()
+	var sections: int = last + 2
+	for i in sections:
+		var pos: Vector2 = _path[i]
+		if i == last + 1:
+			pos = _path[last].lerp(_path[last + 1], frac)
+		var nrm: Vector2 = _vertex_normal(_path, mini(i, n - 1))
+		var half: float = maxf(half_min, half_mult * _widths[mini(i, n - 1)])
+		var age: float = maxf(0.0, (hf - float(i)) / total)
+		var a: float = alpha * clampf(1.0 - age * 0.9, 0.12, 1.0)
+		var c_full := Color(tint, a)
+		var c_zero := Color(tint, 0.0)
+		var u: float = (float(i) if i <= last else float(last) + frac) / total
+		match profile:
+			0:
+				verts.append(pos - nrm * half)
+				verts.append(pos + nrm * half)
+				cols.append(c_full)
+				cols.append(c_full)
+			1:
+				verts.append(pos - nrm * half)
+				verts.append(pos)
+				verts.append(pos + nrm * half)
+				cols.append(c_zero)
+				cols.append(c_full)
+				cols.append(c_zero)
+			_:
+				verts.append(pos - nrm * half * 1.35)
+				verts.append(pos - nrm * half)
+				verts.append(pos + nrm * half)
+				verts.append(pos + nrm * half * 1.35)
+				cols.append(c_zero)
+				cols.append(c_full)
+				cols.append(c_full)
+				cols.append(c_zero)
+		if with_uv:
+			for k in per:
+				uvs.append(Vector2(u, float(k) / float(per - 1)))
+	var idx := PackedInt32Array()
+	for i in sections - 1:
+		if _skip.has(i):
+			continue
+		for k in per - 1:
+			var a0: int = i * per + k
+			var b0: int = a0 + 1
+			var c0: int = a0 + per
+			var d0: int = c0 + 1
+			idx.append_array(PackedInt32Array([a0, b0, c0, b0, d0, c0]))
+	if idx.is_empty():
+		return
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_COLOR] = cols
+	if with_uv:
+		arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = idx
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
+
+# Normale condivisa tra segmenti vicini (nessuna giuntura), allungata agli angoli vivi (spigolo pieno).
+func _vertex_normal(pts: PackedVector2Array, i: int) -> Vector2:
+	var n1 := Vector2.ZERO
+	var n2 := Vector2.ZERO
+	if i > 0 and not _skip.has(i - 1):
+		n1 = (pts[i] - pts[i - 1]).orthogonal().normalized()
+	if i < pts.size() - 1 and not _skip.has(i):
+		n2 = (pts[i + 1] - pts[i]).orthogonal().normalized()
+	if n1 == Vector2.ZERO and n2 == Vector2.ZERO:
+		return Vector2.UP
+	if n1 == Vector2.ZERO:
+		return n2
+	if n2 == Vector2.ZERO:
+		return n1
+	var m: Vector2 = (n1 + n2)
+	if m.length() < 0.001:
+		return n1
+	m = m.normalized()
+	return m / maxf(0.55, m.dot(n1))
+
+
+# Livello sopra al tratto: lampo d'impatto, filamenti, rune, mirino e particelle.
+func _draw_overlay(c: Control) -> void:
+	if _path.size() < 2 or _t < 0.0:
+		return
 	if not _filaments.is_empty():
-		_draw_filaments(fade)
+		_draw_filaments(c)
 	if hand == "kairos":
-		_draw_runes(head_f, fade)
+		_draw_runes(c, _head_f())
 	if shape == "line" and hand == "libracorp":
-		_draw_reticle(fade)
+		_draw_reticle(c)
 	if (shape == "line" or shape == "slash") and _t >= draw_time:
 		# accento d'impatto: lampo breve (30-80 ms), distinto dal resto
 		var k: float = clampf((_t - draw_time) / 0.07, 0.0, 1.0)
 		var flash: float = (1.0 - k) * power
-		draw_circle(to_pt, 24.0 * flash, Color(_color, 0.30 * (1.0 - k)))
-		draw_circle(to_pt, 9.0 * flash, Color(PAL_IVORY, 0.9 * (1.0 - k)))
-	_draw_parts(fade)
-
-
-func _draw_trail(pts: PackedVector2Array, off: Vector2, head_f: float, fade: float, w: float, _unused: float) -> void:
-	var last: int = mini(int(head_f), pts.size() - 2)
-	if _brush != null:
-		_draw_brush_trail(pts, off, head_f, last, fade, w)
-		return
-	for i in last + 1:
-		if _skip.has(i):
-			continue
-		var a: Vector2 = pts[i] + off
-		var b: Vector2 = pts[i + 1] + off
-		if i == last:
-			b = a.lerp(b, clampf(head_f - float(i), 0.0, 1.0))
-		# piu' vecchio = piu' sbiadito: la "coda" della lunga esposizione
-		var age: float = (head_f - float(i)) / float(maxi(1, pts.size() - 1))
-		var trail: float = clampf(1.0 - age * 0.9, 0.12, 1.0)
-		var k: float = fade * trail
-		var ww: float = w * _widths[i]
-		var halo: Color = _color.lerp(_support, 0.35)
-		# alone: cerchi sfumati invece di rettangoli, cosi' non restano quadretti dove il tratto e' largo
-		var mid: Vector2 = (a + b) * 0.5
-		if halo_enabled:
-			# con gli effetti ridotti un solo cerchio per punto (alone leggero, meno disegni)
-			for c in ([a] if _lite else [a, mid]):
-				draw_circle(c, ww * 2.3, Color(halo, 0.12 * k if _lite else 0.06 * k))
-				if not _lite:
-					draw_circle(c, ww * 1.3, Color(halo, 0.10 * k))
-		draw_line(a, b, Color(_color, 0.85 * k), ww, true)
-		draw_line(a, b, Color(PAL_IVORY, k), maxf(1.2, ww * 0.38), true)
-		# giunto tondo: niente spigoli quadrati dove il tratto cambia direzione
-		draw_circle(a, ww * 0.5, Color(_color, 0.85 * k))
-
-
-# Pennellata disegnata a mano (art/fx/stroke_<fazione>.png): si stende lungo il tratto, tinta col colore.
-# Le normali sono condivise tra segmenti vicini, cosi' non restano giunture visibili.
-func _vertex_normal(pts: PackedVector2Array, i: int) -> Vector2:
-	var acc := Vector2.ZERO
-	if i > 0 and not _skip.has(i - 1):
-		acc += (pts[i] - pts[i - 1]).orthogonal().normalized()
-	if i < pts.size() - 1 and not _skip.has(i):
-		acc += (pts[i + 1] - pts[i]).orthogonal().normalized()
-	return acc.normalized() if acc.length() > 0.001 else Vector2.UP
-
-
-func _draw_brush_trail(pts: PackedVector2Array, off: Vector2, head_f: float, last: int, fade: float, w: float) -> void:
-	var total: float = float(maxi(1, pts.size() - 1))
-	for i in last + 1:
-		if _skip.has(i):
-			continue
-		var frac: float = 1.0 if i < last else clampf(head_f - float(i), 0.0, 1.0)
-		var a: Vector2 = pts[i] + off
-		var b: Vector2 = (pts[i] + off).lerp(pts[i + 1] + off, frac)
-		if a.distance_to(b) < 0.01:
-			continue
-		var na: Vector2 = _vertex_normal(pts, i)
-		var nb: Vector2 = _vertex_normal(pts, i + 1)
-		var age: float = (head_f - float(i)) / total
-		var k: float = fade * clampf(1.0 - age * 0.9, 0.12, 1.0)
-		var u0: float = float(i) / total
-		var u1: float = u0 + (float(i + 1) / total - u0) * frac
-		var uvs := PackedVector2Array([Vector2(u0, 0.0), Vector2(u0, 1.0), Vector2(u1, 1.0), Vector2(u1, 0.0)])
-		for layer in [[3.4, 0.30], [1.8, 0.95]]:
-			var ha: Vector2 = na * w * _widths[i] * float(layer[0])
-			var hb: Vector2 = nb * w * _widths[mini(i + 1, _widths.size() - 1)] * float(layer[0])
-			var c := Color(_color, float(layer[1]) * k)
-			draw_polygon(PackedVector2Array([a - ha, a + ha, b + hb, b - hb]), PackedColorArray([c, c, c, c]), uvs, _brush)
-		draw_line(a, b, Color(PAL_IVORY, 0.5 * k), maxf(1.0, w * _widths[i] * 0.25), true)
+		c.draw_circle(to_pt, 24.0 * flash, Color(_color, 0.30 * (1.0 - k)))
+		c.draw_circle(to_pt, 9.0 * flash, Color(PAL_IVORY, 0.9 * (1.0 - k)))
+	_draw_parts(c)
 
 
 # Coda filamentosa del fendente: fili sottili che si rivelano mentre il tratto passa.
-func _draw_filaments(fade: float) -> void:
+func _draw_filaments(c: Control) -> void:
 	var reveal: float = clampf(_t / (draw_time * 0.8), 0.0, 1.0)
 	for fil in _filaments:
 		var upto: int = int(reveal * float(fil.size() - 1))
 		for i in upto:
 			var tfade: float = 1.0 - float(i) / float(fil.size())
-			draw_line(fil[i], fil[i + 1], Color(_support, 0.45 * fade * tfade), 3.0, true)
-			draw_line(fil[i], fil[i + 1], Color(PAL_IVORY, 0.75 * fade * tfade), 1.2, true)
+			c.draw_line(fil[i], fil[i + 1], Color(_support, 0.45 * tfade), 3.0, true)
+			c.draw_line(fil[i], fil[i + 1], Color(PAL_IVORY, 0.75 * tfade), 1.2, true)
 
 
-func _draw_reticle(fade: float) -> void:
+func _draw_reticle(c: Control) -> void:
 	var s: float = 30.0 * power
-	var c: Color = Color(1, 1, 1, 0.9 * fade)
+	var col: Color = Color(PAL_IVORY, 0.9)
 	var grow: float = 1.0 + (1.0 - clampf(_t / (draw_time + 0.2), 0.0, 1.0)) * 0.6
 	s *= grow
 	var l: float = s * 0.45
 	for sx in [-1.0, 1.0]:
 		for sy in [-1.0, 1.0]:
 			var corner: Vector2 = to_pt + Vector2(s * sx, s * sy)
-			draw_line(corner, corner - Vector2(l * sx, 0.0), c, 2.5)
-			draw_line(corner, corner - Vector2(0.0, l * sy), c, 2.5)
+			c.draw_line(corner, corner - Vector2(l * sx, 0.0), col, 2.5)
+			c.draw_line(corner, corner - Vector2(0.0, l * sy), col, 2.5)
 
 
-func _draw_runes(head_f: float, fade: float) -> void:
+func _draw_runes(c: Control, head_f: float) -> void:
 	# segni a "pettine" lungo il tratto: rune incomplete
 	var last: int = mini(int(head_f), _path.size() - 2)
 	var i: int = 3
 	while i <= last:
 		var d: Vector2 = (_path[i + 1] - _path[i]).normalized().orthogonal()
 		var len: float = 9.0 if i % 6 == 3 else 5.0
-		draw_line(_path[i] - d * len, _path[i] + d * len, Color(_color, 0.8 * fade), 2.0)
+		c.draw_line(_path[i] - d * len, _path[i] + d * len, Color(_color, 0.8), 2.0)
 		i += 4
 
 
-func _draw_parts(fade: float) -> void:
+func _draw_parts(c: Control) -> void:
 	for p in _parts:
 		var k: float = 1.0 - float(p["t"]) / float(p["life"])
 		var pos: Vector2 = p["pos"]
@@ -623,22 +775,23 @@ func _draw_parts(fade: float) -> void:
 		match str(p["kind"]):
 			"rosso":
 				var v: Vector2 = Vector2(p["vel"]).normalized()
-				draw_line(pos, pos - v * 12.0 * k, Color(1.0, 0.9, 0.85, k), 2.0)
-				draw_circle(pos, sz * 0.8, Color(_color, k))
+				c.draw_line(pos, pos - v * 12.0 * k, Color(1.0, 0.9, 0.85, k), 2.0)
+				c.draw_circle(pos, sz * 0.8, Color(_color, k))
 			"giallo":
-				draw_circle(pos, sz, Color(_color, 0.8 * k))
+				c.draw_circle(pos, sz, Color(_color, 0.8 * k))
 			"viola":
 				var r: float = sz * (1.0 + 2.2 * (1.0 - k))
-				draw_circle(pos, r, Color(_color, 0.26 * k))
+				c.draw_circle(pos, r, Color(_color, 0.26 * k))
 			"verde":
-				draw_circle(pos, sz, Color(_color, k))
-				draw_circle(pos, sz * 0.4, Color(1, 1, 1, k))
+				c.draw_circle(pos, sz, Color(_color, k))
+				c.draw_circle(pos, sz * 0.4, Color(1, 1, 1, k))
 			"frag":
 				var fv: Vector2 = Vector2(p["vel"]).normalized()
-				draw_line(pos, pos - fv * 14.0 * k, Color(PAL_ORANGE, k), sz * 0.6)
-				draw_circle(pos, sz * 0.5, Color(PAL_IVORY, k))
+				c.draw_line(pos, pos - fv * 14.0 * k, Color(PAL_ORANGE, k), sz * 0.6)
+				c.draw_circle(pos, sz * 0.5, Color(PAL_IVORY, k))
 			"drip":
-				draw_line(pos, pos - Vector2(0.0, 8.0), Color(_color, 0.9 * k), sz)
+				c.draw_line(pos, pos - Vector2(0.0, 8.0), Color(_color, 0.9 * k), sz)
 			_:
 				var dv: Vector2 = p.get("dir", Vector2.RIGHT)
-				draw_line(pos, pos + dv * 20.0 * k, Color(_color, 0.9 * k), 1.6)
+				c.draw_line(pos, pos + dv * 20.0 * k, Color(_color, 0.9 * k), 1.6)
+

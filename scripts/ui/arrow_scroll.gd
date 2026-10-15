@@ -128,7 +128,8 @@ func _place() -> void:
 
 
 func _process(_delta: float) -> void:
-	_place()
+	if is_visible_in_tree():
+		_place()
 
 
 func _press(dir: int) -> void:
