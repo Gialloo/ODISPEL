@@ -191,3 +191,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v41: sfondo identico alla v34 (campo largo e vuoto con nebbia teal, niente strada) con l'HUD aggiornato (equilibrio boss sistemato, party come v36); anelli a terra eliminati.
 - v42: ombre di boss e personaggio morbide (18 strati sfumati, bordo sfocato) e di colore teal scuro in tinta con lo sfondo, invece del nero pieno.
 - v43: eliminati i due semicerchi bianchi esterni della ruota (quello che partiva dalla A); resta solo il cerchio sottile attorno al personaggio.
+- v44: barre del party spostate di 2 px (2,2 unita') piu' in basso.
