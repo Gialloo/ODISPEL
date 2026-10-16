@@ -5,6 +5,10 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.31", "items": [
+		"SALVATAGGI: una partita rovinata o incompleta viene rifiutata con un messaggio chiaro, invece di dare un errore strano. Vale anche online se l'host manda uno stato sbagliato.",
+		"BOSS: l'attacco annunciato mostra il DANNO MINIMO previsto. Il colpo reale puo' essere piu' forte se si attivano rabbia, placche o catene.",
+	]},
 	{"v": "0.24.30", "items": [
 		"ART BIBLE: tutta l'interfaccia usa la palette ufficiale: carbone per i pannelli, avorio per i testi, arancio per i bottoni principali, l'ultimate pronta e gli scudi, magenta per il tondo della fase. Ciano e rosso restano solo per alleato e nemico, piu' morbidi.",
 		"La velatura della battaglia diventa viola cosmico.",
