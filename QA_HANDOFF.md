@@ -1,57 +1,78 @@
-# QA_HANDOFF — ODISPEL 0.24.32
+# QA_HANDOFF — ODISPEL 0.24.33
 
 ## Identificazione
-- Versione: 0.24.32 (Android versionCode 57)
+- Versione: 0.24.33 (Android versionCode 58)
 - Data build: 16 ottobre 2026
-- Branch: `claude/battaglia-chiara` (commit: vedi `git log -1`; il commit di questa iterazione contiene questo file)
-- Obiettivo: Fase 2, leggibilita' della minaccia del boss (anteprima vs colpo reale), partendo dai dati.
-- Iterazione precedente (0.24.31): validazione dei salvataggi + etichetta 'danno minimo' dopo l'audit di ChatGPT.
+- Branch: `claude/battaglia-chiara` (commit: vedi `git log -1`)
+- Obiettivi di questa consegna (due richieste unite in una sola build):
+  1. Chiudere la verifica dell'anteprima del colpo del boss (coerenza con il danno reale).
+  2. HUD polish, iterazione 1: stili dei pannelli, HUD PvP nella palette, comandi condivisi, leggibilita' su telefono.
+- Versione precedente recuperabile: 0.24.32 (in `releases/`) e, nella storia git, la 0.24.31.
 
-## Misura (0.24.32)
-- Nuovo `tools/preview_check.gd`: confronta l'anteprima con il colpo reale (3 boss x 3 squadre x 20 semi, 488 confronti, scelte dell'IA).
-- Risultato: 326 uguali; 162 con colpo reale piu' forte (sempre x1.24-1.26, causa: il boss scende sotto meta' PV durante il round e si infuria, +25%); 0 con colpo reale piu' debole. Non coperti dal campione: Guardia, critico, rabbia contro le cure, placche, catene.
-- Correzione: `threat_preview()` ora restituisce anche `enrage_lethal` (chi morirebbe solo se il boss si infuria). La schermata mostra "SE SI INFURIA: LETALE PER ..." quando il boss e' tra 50% e 75% PV. 3 nuovi controlli in `test_battle.gd` (105 passati).
+## 1. Anteprima del boss (threat_preview)
+Misura: `tools/preview_check.gd` (8 boss x 3 squadre x 8 semi, scelte dell'IA con Guardia a caso, 1511 round, circa 2600 colpi del boss). Ogni colpo reale viene confrontato con un modello "anteprima x modificatori noti".
 
-## Modifiche (0.24.31, gia' consegnate)
-- Salvataggi/stato di battaglia: nuovo controllo `BattleState.validate()` (+ `check_json()`); `from_json()` rifiuta stati incompleti o rovinati e dice perche'. Il client multiplayer ignora uno snapshot non valido con un avviso. Il PvP (senza boss) e' gestito.
-- HUD: l'attacco annunciato del boss mostra "DANNO MIN. ~N" (l'anteprima non include rabbia, placche, catene, che nascono durante il round).
-- Documentato in codice che lo scudo da cura in eccesso (`heal_shield`) e' VOLUTO (decisione del proprietario).
-- File principali: `scripts/battle/battle_state.gd`, `scripts/network/network_manager.gd`, `scenes/battle/battle_screen.gd`, `scripts/battle/battle_resolver.gd` (solo commento), `tests/unit/test_battle.gd`.
-- Nessun cambio ai dati persistenti ne' al protocollo multiplayer (solo rifiuto di dati non validi).
+- Bug CONFERMATO e corretto: l'anteprima ignorava il bonus +8% lasciato da una placca rotta nel round precedente (`boss_boost`, gia' noto a inizio round). Ora lo include. Test: `test_threat_preview.gd`.
+- Risultato dopo la correzione: i colpi della PRIMA mossa sono tutti spiegati. Differenze residue, sempre da cause che nascono durante il round (non prevedibili a inizio round):
+  Guardia scelta nel round (x0,5), furia a meta' round (x1,25: anche a meta' di una mossa su piu' bersagli, dopo i contrattacchi), placca rotta nel round (+8%), comportamento dell'arena (+10..+30% / +15%), provocazione/intercetta (cambia il bersaglio), schivata, tenacia.
+- Catena (seconda mossa): il suo danno dipende dal primo colpo (stati applicati, scudi) e NON e' stimato. 75 colpi di catena su circa 2600 non rientrano nel modello esatto. L'anteprima la segnala solo come "+CATENA" nel nome della mossa.
+- Critici: il boss non ne fa (0 su 1511 round e 66 colpi in test; non ha la statistica critico).
+- Comunicazione del limite: l'etichetta ora dice "STIMA ~N" (non piu' "danno minimo": la Guardia lo abbassa). L'avviso "SE SI INFURIA: LETALE PER ..." compare solo se: il boss non e' ancora infuriato, ha tra 50% e 75% dei PV, il colpo non e' gia' letale e lo diventerebbe con +25%. Identifica solo i bersagli per cui `danno <= PV+scudo < danno x 1,25`.
+- Il codice documenta cosa include e cosa no l'anteprima (commento sopra `threat_preview`).
 
-## Esito dell'audit ChatGPT (verificato sul codice)
-- FALSO: "test 1644 vs 1645" (`test_battle` passa 101/101).
-- FALSO: "gauge int/2 produce float" (in GDScript int/int e' int).
-- PARZIALE: "test su motore sbagliato": `CombatResolver` (vecchio) e' ancora usato da `network_manager.gd` e dalla scena demo; `BattleResolver` e' il motore nuovo, coperto da `test_battle*`.
-- CONFERMATO e gestito: anteprima boss = danno minimo; stato malformato accettato.
-- CONFERMATO ma voluto: scudo da cura teorica.
-- NON verificati (rischi ipotetici, nessuna prova): scudo/cura su bersaglio a 0 PV nella stessa mossa, etichetta sinergia decisiva, munizioni condivise tra torretta e drone, velocita' boss in anteprima vs reale, bilanciamento roster.
+## 2. HUD polish, iterazione 1
+### Audit: i tre stili di pannello (tutti `scripts/ui/hud_panel.gd`)
+- Principale (predefinito): ombra, linguetta col titolo, filo 2 px. Usato da GUIDA (`battle_coach.gd`), ESITO, REPLAY (`battle_screen.gd`, `pvp_screen.gd`).
+- Secondario (`quiet`): velo e filo 1,5 px. Usato da ALLARME, ORDINE DEL TURNO, timer.
+- Sovrapposto (`bare`): solo velo scuro. Usato da blocco boss, carte operatore, LOG.
+- Fuori da HudPanel c'erano due riquadri con colori vecchi (verde-azzurro) scritti a mano: carta giocatore PvP e medaglia della fase.
+
+### Modifiche
+- I tre ruoli sono ora documentati in cima a `hud_panel.gd`; il titolo del ruolo secondario passa da 12 a 14.
+- `BattleTheme` (`scripts/ui/battle_theme.gd`): nuove costanti dei comandi (`BTN_*`, `ICON_OFF`) e due funzioni condivise: `style_move_button()` (era duplicata in `battle_screen.gd` e `pvp_screen.gd`) e `plate_box()`.
+- PvP (`pvp_screen.gd`): carte giocatore e comandi nella palette; barra PV bianco-ciano (rossa sotto il 30%) invece del verde; barra ultimate rossa come in battaglia.
+- Medaglia della fase (PvE) nella palette.
+- Telefono: il ventaglio dei comandi si sposta di 44 px a sinistra (prima l'ultimo comando finiva sotto la scheda GUIDA e il costo "0%" restava coperto).
+- Annunci (`comic_fx.gd`): descrizioni lunghe (es. "PUNISCE LE CURE") uscivano dallo schermo (difetto confermato con screenshot touch); ora si rimpiccioliscono e vanno a capo.
+- Segno "AGISCE" (`battle_stage.gd`): non scompare piu' dietro ORDINE DEL TURNO.
+- Testo dei suggerimenti del boss da 12 a 13.
+
+### Decisioni di design / compromessi
+- Il verde "OK" resta solo per scritte di effetto e per la scheda GUIDA e il suo bordo di evidenziazione del tutorial (scelta voluta: e' la voce "guida").
+- I tre stili restano tre (hanno ruoli diversi); sono stati uniformati nella palette, nei titoli e nei comandi, non fusi in uno.
 
 ## Test
-- Eseguiti (0.24.32): tutti i 74 file in `tests/unit/` in headless (parallelo). Due (`test_hud_layout` 23/23, `test_input_ui`) richiedono uno schermo e sono passati con `xvfb-run`.
-- Nuovi: 9 controlli di validazione in `test_battle.gd` (ora 101 passati, 0 falliti).
-- Esito: nessun test fallito.
-- NON eseguiti: multiplayer con giocatori reali, rete pubblica, Android su dispositivo, bilanciamento con simulazioni (`tools/battle_sim.gd` non lanciato).
-- Limite: la validazione Godot e' quella dei test; non ho un controllo di performance su telefono.
+- Eseguiti: tutti i 75 file in `tests/unit/` in headless (parallelo): nessun errore. `test_hud_layout` (31 controlli) e `test_input_ui` richiedono uno schermo e sono passati con `xvfb-run`.
+- Nuovi: `tests/unit/test_threat_preview.gd` (26 controlli: identita' senza modificatori, Guardia, bonus placca, avviso furia, catena, nessun critico del boss); 5 controlli in `test_hud_layout.gd` (ventaglio a sinistra della GUIDA e dentro lo schermo in PC e touch, annuncio lungo dentro lo schermo, stile condiviso dei comandi); 9 sulla validazione dei salvataggi (0.24.31).
+- `tools/ui_audit.gd` in modalita' PC e touch: nessun problema (tasti e testi, anche PvP).
+- Screenshot controllati a mano da me (xvfb, 1280x720): battaglia PC, battaglia touch (due stati), PvP 1v1 PC. NON controllati: PvP in modalita' touch, PvP 2v2 / ffa, altre risoluzioni.
+- Simulazione di bilanciamento (`tools/battle_sim.gd`): riproducibile (due esecuzioni identiche con lo stesso comando). Risultati sui boss provati (distributore, tombino, cabina; IA vs boss, livelli 1-20): vittoria quasi sempre al 100%; il distributore cade in 1-2 round a tutti i livelli, tombino e cabina tra 2 e 8 round, con un 80% a livello 1 in solitaria contro la cabina (Incubo). Nessun valore e' stato modificato. Limite: l'IA gioca con kit predefiniti; il risultato dice poco sul divertimento.
+- NON eseguiti: multiplayer con giocatori reali, rete pubblica, Android su dispositivo, avvio dell'exe su Windows.
 
 ## Build e pubblicazione
-- `releases/ODISPEL-0.24.32-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.24.32.apk` (firma di debug, 1 firmatario verificato con apksigner). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
-- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.31 come ultima versione precedente recuperabile.
+- `releases/ODISPEL-0.24.33-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.24.33.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
+- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.32 come versione precedente.
 - itch.io: il workflow `.github/workflows/itch.yml` carica da solo gli ultimi file di `releases/` dopo il push. Dal mio ambiente NON vedo l'esito: controllare la scheda Actions su GitHub o la pagina itch.io.
-- Non verificato: avvio dell'exe su Windows e installazione dell'APK su telefono.
 
 ## Problemi aperti
-- Anteprima boss ancora senza bonus di round (ora dichiarata "minimo").
-- Tre stili di pannello nella HUD; HUD PvP non allineata alla palette.
+- Avviso "SE SI INFURIA" e "STIMA": utilita' e chiarezza da valutare in gioco.
+- La catena non ha una stima di danno.
+- HUD PvP: verificata solo in modalita' 1v1 PC; il layout delle carte per 2v2 / ffa non e' stato rivisto.
 - Leggibilita' e prestazioni su telefono reale non verificate.
 - Simbolo AUTO: sintomo esatto non ricevuto.
 - Multiplayer a 4 giocatori reali e Internet pubblico: non verificati.
+- Rischi dell'audit di ChatGPT non riprodotti e quindi NON toccati: scudo/cura su bersaglio a 0 PV nella stessa mossa, etichetta della sinergia decisiva, munizioni condivise torretta/drone, bilanciamento del roster.
 
 ## Playtest (per il proprietario)
-1. Avvia il gioco: deve comparire la finestra NOVITA' 0.24.31 con tasto OK visibile.
-2. Battaglia contro un boss: l'attacco annunciato mostra "DANNO MIN. ~numero"; se e' mortale, "LETALE PER ..."; se il boss e' tra 50% e 75% di vita e potrebbe uccidere solo infuriandosi, "SE SI INFURIA: LETALE PER ..." (arancio). Dimmi se l'avviso ti aiuta o ti confonde.
-3. Gioca un round completo e una partita online (se possibile): nessun messaggio di "stato non valido" in condizioni normali.
-4. Se compare "Stato della sfida non valido" o un crash: segna schermata, modalita' (solo/online), boss e dispositivo.
+Su PC e su telefono:
+1. All'avvio: finestra NOVITA' 0.24.33 con OK visibile.
+2. Battaglia contro un boss: sotto il nome della mossa annunciata deve esserci "BERSAGLIO: ... · STIMA ~numero". Se il boss ha una catena: "+CATENA" accanto al nome.
+3. Porta il boss tra 75% e 50% di vita con un compagno ferito: puo' comparire in arancio "SE SI INFURIA: LETALE PER ...". Dopo il colpo, il compagno e' davvero a rischio? L'avviso ti e' utile o ti confonde?
+4. Telefono: apri il ventaglio dei comandi con la scheda GUIDA visibile (prime battaglie): "SPEZZATUTO 0%" deve leggersi tutto.
+5. All'inizio di un boss con comportamento (es. PUNISCE LE CURE): l'annuncio al centro deve stare dentro lo schermo, anche su telefono.
+6. PvP (1v1): barre PV bianco-ciano, ultimate rossa, comandi uguali a quelli del PvE. Prova anche 2v2 e dimmi se le carte si sovrappongono.
+7. In caso di errore: schermata, dispositivo (PC o modello del telefono), modalita' e boss.
 
 ## Prossimo passo
-- Misurare anche Guardia, critici e catene con lo stesso strumento e decidere, dopo il tuo playtest, se mostrare un intervallo di danno. Il campione attuale copre solo l'IA. Dipende dal tuo feedback sul "danno minimo"; rischio: toccare il motore deterministico, da coprire con test esatti.
+- In base al playtest: (a) rivedere le carte PvP per 2v2/ffa e il PvP in touch, (b) decidere se mostrare un intervallo di danno (con Guardia) o la stima della catena, (c) iniziare l'audit dei test sul resto delle sinergie (scudi/cure sullo stesso bersaglio) con test che riproducono prima il problema.
+- Rischio: toccare il motore deterministico; ogni modifica va coperta da test esatti.

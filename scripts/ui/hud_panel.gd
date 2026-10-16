@@ -2,6 +2,10 @@ class_name HudPanel
 extends Control
 
 # Pannello dell'HUD: angoli tagliati, ombra sfalsata e linguetta col titolo.
+# TRE RUOLI (stessa forma e stessi colori, cambia solo il peso):
+#   principale  (predefinito)  schede che chiedono attenzione: guida, esito, replay -> ombra, linguetta col titolo, filo 2 px
+#   secondario  (quiet = true) informazioni di contorno: ordine del turno, allarme, timer -> velo + filo 1,5 px, titolo piccolo
+#   sovrapposto (bare = true)  blocchi sopra la scena: boss, carte operatore -> solo velo scuro (backdrop = quanto scuro)
 
 var title: String = ""
 var accent: Color = BattleTheme.CY
@@ -56,7 +60,7 @@ func _draw_quiet() -> void:
 	outline.append(outline[0])
 	draw_polyline(outline, Color(accent, 0.55), 1.5)
 	if title != "":
-		draw_string(BattleTheme.display(), Vector2(cut + 2.0, 19.0), title.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(accent, 0.9))
+		draw_string(BattleTheme.display(), Vector2(cut + 2.0, 20.0), title.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(accent, 0.95))
 
 
 func _draw() -> void:

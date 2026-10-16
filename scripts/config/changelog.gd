@@ -5,6 +5,12 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.33", "items": [
+		"PVP: stesso aspetto della battaglia contro il boss: barre PV bianco-ciano (rosse sotto il 30%), barra ultimate rossa, carte e medaglie nei colori ufficiali.",
+		"COMANDI: PvE e PvP usano lo stesso stile (usabile, spento, ultimate pronta). Su telefono il ventaglio delle mosse non finisce piu' sotto la scheda GUIDA.",
+		"ANNUNCI: le descrizioni lunghe dei comportamenti del boss vanno a capo e non escono piu' dallo schermo. Il segno AGISCE non sparisce dietro l'ordine del turno.",
+		"BOSS: il colpo annunciato mostra una STIMA e include il bonus della placca rotta nel round prima; se segue una CATENA lo dice (+CATENA).",
+	]},
 	{"v": "0.24.32", "items": [
 		"BOSS: se un colpo annunciato non ti uccide ora ma ti ucciderebbe quando il boss si infuria (sotto meta' vita, +25% di danno), la schermata avvisa: SE SI INFURIA: LETALE PER ...",
 	]},

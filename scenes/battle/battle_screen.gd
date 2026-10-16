@@ -564,12 +564,7 @@ func _build_boss_banner() -> void:
 	box.add_child(_boss_hp)
 	var badge := PanelContainer.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bsb := StyleBoxFlat.new()
-	bsb.bg_color = Color(0.02, 0.1, 0.12, 0.92)
-	bsb.border_color = BattleTheme.MAGENTA
-	bsb.set_border_width_all(3)
-	bsb.set_corner_radius_all(26)
-	badge.add_theme_stylebox_override("panel", bsb)
+	badge.add_theme_stylebox_override("panel", BattleTheme.plate_box(BattleTheme.MAGENTA, 3, 26, 0.92))
 	add_child(badge)
 	_anchor(badge, Vector4(1.0, 0.0, 1.0, 0.0), Vector4(-66, 8, -12, 62))
 	_phase_label = BattleTheme.make_label("1", 26, BattleTheme.WH, true)
@@ -609,7 +604,7 @@ func _build_telegraph() -> void:
 	_tele_target.add_theme_font_override("font", BattleTheme.hud())
 	_tele_target.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_tele_target)
-	_plan_label = BattleTheme.make_label("", 12, BattleTheme.POP)
+	_plan_label = BattleTheme.make_label("", 13, BattleTheme.POP)
 	_plan_label.add_theme_font_override("font", BattleTheme.hud())
 	_plan_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_plan_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -821,7 +816,8 @@ func _fan_origin() -> Vector2:
 	var pose: Vector3 = _stage.party_pose(idx, players.size())
 	# il ventaglio si apre a destra di tutta la squadra, cosi' non copre nessun operatore
 	var last: Vector3 = _stage.party_pose(maxi(0, players.size() - 1), players.size())
-	return Vector2(last.x - 145.0, pose.y - 95.0 * pose.z)
+	# in touch i pulsanti sono piu' larghi: si sposta il ventaglio a sinistra per non finire sotto la scheda GUIDA / il tasto LOG
+	return Vector2(last.x - 145.0 - (44.0 if TouchUi.active() else 0.0), pose.y - 95.0 * pose.z)
 
 
 func _build_log() -> void:
@@ -1655,37 +1651,7 @@ func _order_note(move: Dictionary, err: String, gauge: int, ready_ult: bool) -> 
 # Mossa usabile = bianca con testo nero; non usabile = nera con testo grigio e motivo in rosso; l'ultimate pronta e' gialla
 # (il giallo e' solo per cio' che richiede attenzione). Mentre si carica si riempie di bianco.
 func _style_order(b: Button, usable: bool, gauge_progress: float, ready_ult: bool = false) -> void:
-	var box: SlantBox
-	var txt_col: Color
-	var outline: int = 0
-	if usable:
-		box = SlantBox.make(BattleTheme.WH, BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
-		txt_col = BattleTheme.BK
-	else:
-		box = SlantBox.make(BattleTheme.BK, Color("#2d3140"), 14.0, Color(0, 0, 0, 0.0), 2.0)
-		txt_col = Color("#9096a6")
-		if gauge_progress > 0.0:
-			box.progress = gauge_progress
-			box.progress_color = Color("#d9d2bd")
-			txt_col = BattleTheme.WH
-			outline = 4
-	var hov: SlantBox = box
-	if usable:
-		hov = SlantBox.make(Color("#FFF4D6"), BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
-	if ready_ult:
-		box = SlantBox.make(BattleTheme.IMPACT, BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
-		hov = SlantBox.make(Color("#ff9a6a"), BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
-	for bx in [box, hov]:
-		bx.content_margin_left = 62.0
-		bx.content_margin_right = 80.0
-	b.add_theme_stylebox_override("normal", box)
-	b.add_theme_stylebox_override("disabled", box)
-	b.add_theme_stylebox_override("hover", hov)
-	b.add_theme_stylebox_override("pressed", hov)
-	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_disabled_color"]:
-		b.add_theme_color_override(k, txt_col)
-	b.add_theme_color_override("font_outline_color", BattleTheme.BK)
-	b.add_theme_constant_override("outline_size", outline)
+	BattleTheme.style_move_button(b, usable, gauge_progress, ready_ult, Vector2(62.0, 80.0))
 
 
 # Un pulsante tenuto premuto ha aperto la sua scheda: quel rilascio non e' un comando.

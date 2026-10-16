@@ -1290,6 +1290,8 @@ func _draw_markers() -> void:
 	if acting != "" and _positions.has(acting):
 		var p: Vector2 = _positions[acting]
 		var y: float = p.y - (190.0 if acting != BattleState.BOSS_ID else 230.0) - pulse * 6.0
+		if acting != BattleState.BOSS_ID:
+			y = maxf(y, 252.0)      # l'indicatore non finisce dietro il pannello ORDINE DEL TURNO (in alto a sinistra)
 		draw_colored_polygon(PackedVector2Array([Vector2(p.x - 20.0, y - 22.0), Vector2(p.x + 20.0, y - 22.0), Vector2(p.x, y + 6.0)]), BattleTheme.RD)
 		draw_polyline(PackedVector2Array([Vector2(p.x - 20.0, y - 22.0), Vector2(p.x + 20.0, y - 22.0), Vector2(p.x, y + 6.0), Vector2(p.x - 20.0, y - 22.0)]), BattleTheme.WH, 2.0)
 		_text(BattleTheme.display(), Vector2(p.x - 36.0, y - 30.0), "AGISCE", 18, BattleTheme.WH)

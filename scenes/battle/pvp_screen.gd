@@ -88,7 +88,7 @@ class PvpCard extends Control:
 		_unit.size = Vector2(iw, 18)
 		_unit.clip_text = true
 		add_child(_unit)
-		_hp = LineBar.new().setup(BattleTheme.OK, Vector2(iw, 12))
+		_hp = LineBar.new().setup(BattleTheme.HP, Vector2(iw, 12))        # come in battaglia: bianco-ciano, mai verde
 		_hp.position = Vector2(10, 48)
 		_hp.size = Vector2(iw, 12)
 		add_child(_hp)
@@ -105,7 +105,7 @@ class PvpCard extends Control:
 		_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		_info.clip_text = true
 		add_child(_info)
-		_gauge = LineBar.new().setup(BattleTheme.WH, Vector2(iw, 6))
+		_gauge = LineBar.new().setup(BattleTheme.RD, Vector2(iw, 6))      # come in battaglia: la barra ultimate e' rossa
 		_gauge.position = Vector2(10, 81)
 		_gauge.size = Vector2(iw, 6)
 		add_child(_gauge)
@@ -145,18 +145,14 @@ class PvpCard extends Control:
 		var u: Dictionary = PvpEngine.active_unit(state, p)
 		var alive_p: bool = PvpEngine.player_alive(state, p)
 		var edge: Color = BattleTheme.CY if (mine or ally) else BattleTheme.RD
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.02, 0.06, 0.08, 0.78)
-		sb.border_color = BattleTheme.POP if selectable else edge
-		sb.set_border_width_all(4 if selectable else 2)
-		sb.set_corner_radius_all(4)
-		_panel.add_theme_stylebox_override("panel", sb)
+		_panel.add_theme_stylebox_override("panel", BattleTheme.plate_box(BattleTheme.POP if selectable else edge, 4 if selectable else 2))
 		var tag: String = "" if mine else (" (ALLEATO)" if ally else "")
 		_name.text = ("%s%s" % [str(p["name"]).to_upper(), tag]) + (" · IA" if bool(p["ai"]) else "")
 		_name.add_theme_color_override("font_color", edge if alive_p else BattleTheme.CY_DARK)
 		if u.is_empty():
 			return
 		_unit.text = "%s · %s" % [str(u["name"]).to_upper(), str(u["cls"]).to_upper()]
+		_hp.color_on = BattleTheme.RD if float(u["hp"]) < float(u["max_hp"]) * 0.3 else BattleTheme.HP
 		_hp.set_values(float(u["hp"]) / maxf(1.0, float(u["max_hp"])), float(u["shield"]) / maxf(1.0, float(u["max_hp"])))
 		_hp_text.text = "PV %s/%s%s" % [BattleText.num(int(u["hp"])), BattleText.num(int(u["max_hp"])), ("  +%s" % BattleText.num(int(u["shield"])) if int(u["shield"]) > 0 else "")]
 		_gauge.set_values(float(u["gauge"]) / float(BattleTypes.GAUGE_MAX))
@@ -401,31 +397,7 @@ func _icon_key(m: String) -> String:
 
 # Stile dei comandi come in battaglia: usabile = bianco con testo nero, non usabile = nero con testo grigio.
 func _style_order(b: Button, usable: bool, gauge_progress: float) -> void:
-	var box: SlantBox
-	var txt_col: Color
-	var outline: int = 0
-	if usable:
-		box = SlantBox.make(BattleTheme.WH, BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
-		txt_col = BattleTheme.BK
-	else:
-		box = SlantBox.make(BattleTheme.BK, Color("#2d3140"), 14.0, Color(0, 0, 0, 0.0), 2.0)
-		txt_col = Color("#9096a6")
-		if gauge_progress > 0.0:
-			box.progress = gauge_progress
-			box.progress_color = Color("#d9d2bd")
-			txt_col = BattleTheme.WH
-			outline = 4
-	var hov: SlantBox = box
-	if usable:
-		hov = SlantBox.make(Color("#FFF4D6"), BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
-	b.add_theme_stylebox_override("normal", box)
-	b.add_theme_stylebox_override("disabled", box)
-	b.add_theme_stylebox_override("hover", hov)
-	b.add_theme_stylebox_override("pressed", hov)
-	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_disabled_color"]:
-		b.add_theme_color_override(k, txt_col)
-	b.add_theme_color_override("font_outline_color", BattleTheme.BK)
-	b.add_theme_constant_override("outline_size", outline)
+	BattleTheme.style_move_button(b, usable, gauge_progress)
 
 
 func bind_source(src: Variant) -> void:
@@ -543,7 +515,7 @@ func _refresh() -> void:
 		_style_order(bt, not bt.disabled, gp)
 		if _icons.has(m):
 			(_icons[m] as GameIcon).queue_free()
-			var ic := GameIcon.new().setup(_icon_key(m), BattleTheme.WH if not bt.disabled else Color("#6b777c"), 32.0)
+			var ic := GameIcon.new().setup(_icon_key(m), BattleTheme.WH if not bt.disabled else BattleTheme.ICON_OFF, 32.0)
 			ic.position = (_icons[m] as GameIcon).position
 			ic.size = Vector2(32, 32)
 			ic.mouse_filter = Control.MOUSE_FILTER_IGNORE

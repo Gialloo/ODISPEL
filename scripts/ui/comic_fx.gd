@@ -151,6 +151,15 @@ class Caption extends Control:
 		panel.size = size
 		add_child(panel)
 		var label := BattleTheme.make_label(text, 30, BattleTheme.WH, true)
+		# il testo deve stare nello schermo (1280 px): se una riga e' troppo lunga si rimpicciolisce e va a capo
+		var max_w: float = 1280.0 - position.x - 24.0 - 56.0
+		var longest: float = 0.0
+		for line in text.split("\n"):
+			longest = maxf(longest, label.get_theme_font("font").get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 30).x)
+		if longest > max_w:
+			label.add_theme_font_size_override("font_size", 24)
+			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			label.custom_minimum_size = Vector2(max_w, 0.0)
 		panel.add_child(label)
 		modulate.a = 0.0
 		var start_x: float = position.x - 260.0

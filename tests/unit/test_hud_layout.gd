@@ -60,6 +60,10 @@ func _run() -> void:
 		var arrow: Control = s._select_arrow
 		if arrow != null and arrow.visible:
 			_check("%s: freccia fuori dal pannello turno" % tag, not arrow.get_global_rect().grow(-8.0).intersects(tp.get_global_rect()))
+		# il ventaglio dei comandi non finisce sotto la scheda GUIDA (x >= 944) ne' fuori dallo schermo
+		var fan_r: Rect2 = s._fan_anchor.get_global_rect()
+		_check("%s: ventaglio comandi a sinistra della scheda GUIDA (fine a x=%d)" % [tag, int(fan_r.end.x)], fan_r.end.x - 28.0 <= 944.0 or not touch)
+		_check("%s: ventaglio comandi dentro lo schermo" % tag, fan_r.position.x >= 0.0 and fan_r.end.x <= 1280.0)
 		s.queue_free()
 		await process_frame
 		await process_frame
@@ -76,6 +80,27 @@ func _run() -> void:
 	_check("nota: ultimate pronta", bs._order_note({"kind": "ult", "cost": 0}, "", 100, true) == "PRONTA")
 	_check("nota: attacco senza costo", bs._order_note({"kind": "attack", "cost": 0}, "", 0, false) == "")
 	bs.free()
+	# Caption (annunci in alto): anche con le descrizioni piu' lunghe devono stare nello schermo
+	TouchUi.force = true
+	var longest_desc: String = ""
+	for bid in Arena.BEHAVIORS:
+		var d: String = "COMPORTAMENTO  //  %s\n%s" % [str(Arena.BEHAVIORS[bid]["name"]), str(Arena.BEHAVIORS[bid]["desc"])]
+		if d.length() > longest_desc.length():
+			longest_desc = d
+	var cap: Node = ComicFx.caption(root, longest_desc, Vector2(220.0, 330.0), BattleTheme.CY, 3.0)
+	await create_timer(0.5).timeout
+	var cap_rect: Rect2 = (cap.get_child(0) as Control).get_global_rect()
+	_check("caption lunga: dentro lo schermo (fine a x=%d)" % int(cap_rect.end.x), cap_rect.end.x <= 1280.0 and cap_rect.position.x >= 0.0)
+	cap.queue_free()
+	# stile dei comandi condiviso fra PvE e PvP
+	var tb := Button.new()
+	BattleTheme.style_move_button(tb, true, 0.0)
+	_check("comando usabile: testo scuro", tb.get_theme_color("font_color") == BattleTheme.BK)
+	BattleTheme.style_move_button(tb, false, 0.0)
+	_check("comando spento: testo grigio", tb.get_theme_color("font_color") == BattleTheme.BTN_OFF_TEXT)
+	BattleTheme.style_move_button(tb, true, 0.0, true, Vector2(62.0, 80.0))
+	_check("ultimate pronta: sfondo arancio", (tb.get_theme_stylebox("normal") as SlantBox).fill == BattleTheme.IMPACT)
+	tb.free()
 	print("---")
 	print("PASS: %d  FAIL: %d" % [passed, failed])
 	quit(1 if failed > 0 else 0)

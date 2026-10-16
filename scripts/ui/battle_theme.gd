@@ -22,6 +22,13 @@ const MAGENTA: Color = Color("#E83DCE")   # magenta rituale: segni importanti
 const COSMIC: Color = Color("#7770F7")    # viola cosmico: profondita'
 const GOLD: Color = Color("#ffd25f")      # evidenza / rarita' alta
 const POP: Color = Color("#fff36b")       # giallo dei fumetti
+# Stati dei comandi (battaglia PvE e PvP): un solo posto per questi valori.
+const BTN_OFF_BG: Color = Color("#2d3140")      # comando non usabile: bordo
+const BTN_OFF_TEXT: Color = Color("#9096a6")    # comando non usabile: testo
+const BTN_PROGRESS: Color = Color("#d9d2bd")    # riempimento mentre l'ultimate si carica
+const BTN_HOVER: Color = Color("#FFF4D6")       # comando usabile: sotto il dito/mouse
+const BTN_HOVER_ULT: Color = Color("#ff9a6a")   # ultimate pronta: sotto il dito/mouse
+const ICON_OFF: Color = Color("#6b777c")        # icona di un comando non usabile
 
 # Colori di gioco dei personaggi (vantaggi di colore).
 const UNIT_COLORS: Dictionary = {
@@ -205,3 +212,50 @@ static func style_button(b: Button, kind: String = "normal", size: int = 22) -> 
 static func rarity_color(rarity: int) -> Color:
 	var colors: Array = [Color("#c9dde2"), CY, UNIT_COLORS["viola"], GOLD]
 	return colors[clampi(rarity, 0, colors.size() - 1)]
+
+
+# Comando di battaglia (PvE e PvP): usabile = avorio con testo nero; non usabile = nero con testo grigio; l'ultimate pronta
+# e' arancio. Mentre si carica si riempie di avorio. side_margins = spazio interno sinistro/destro (icona e costo).
+static func style_move_button(b: Button, usable: bool, gauge_progress: float, ready_ult: bool = false, side_margins: Vector2 = Vector2.ZERO) -> void:
+	var box: SlantBox
+	var txt_col: Color
+	var outline: int = 0
+	if usable:
+		box = SlantBox.make(WH, BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
+		txt_col = BK
+	else:
+		box = SlantBox.make(BK, BTN_OFF_BG, 14.0, Color(0, 0, 0, 0.0), 2.0)
+		txt_col = BTN_OFF_TEXT
+		if gauge_progress > 0.0:
+			box.progress = gauge_progress
+			box.progress_color = BTN_PROGRESS
+			txt_col = WH
+			outline = 4
+	var hov: SlantBox = box
+	if usable:
+		hov = SlantBox.make(BTN_HOVER, BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
+	if ready_ult:
+		box = SlantBox.make(IMPACT, BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
+		hov = SlantBox.make(BTN_HOVER_ULT, BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
+	if side_margins != Vector2.ZERO:
+		for bx in [box, hov]:
+			bx.content_margin_left = side_margins.x
+			bx.content_margin_right = side_margins.y
+	b.add_theme_stylebox_override("normal", box)
+	b.add_theme_stylebox_override("disabled", box)
+	b.add_theme_stylebox_override("hover", hov)
+	b.add_theme_stylebox_override("pressed", hov)
+	for k in ["font_color", "font_hover_color", "font_pressed_color", "font_disabled_color"]:
+		b.add_theme_color_override(k, txt_col)
+	b.add_theme_color_override("font_outline_color", BK)
+	b.add_theme_constant_override("outline_size", outline)
+
+
+# Riquadro piatto nella palette (carta di un giocatore, medaglia della fase): velo carbone + bordo di accento.
+static func plate_box(edge: Color, border: int = 2, radius: int = 4, veil: float = 0.78) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(PANEL, veil)
+	sb.border_color = edge
+	sb.set_border_width_all(border)
+	sb.set_corner_radius_all(radius)
+	return sb
