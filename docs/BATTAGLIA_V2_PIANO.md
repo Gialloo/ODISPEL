@@ -187,3 +187,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v36: nebbia teal al 70% (era 50%); eliminati gli anelli a terra (resta la pozza di luce).
 - v37: nebbia teal all'85%; barra party abbassata di 24 unita' (righe a y=569/619/669) cosi' la riga attiva F1 e' centrata sulla stessa linea di RISERVA e dei comandi rapidi (y=692).
 - v38: barra party tornata alla posizione v36; EQUILIBRIO sotto la barra ciano senza sovrapposizioni, piu' a sinistra, con la barra bianca che finisce dove inizia la E; nebbia teal al 100% e piu' densa (parte a 4 m).
+- v40: nebbia teal al 98%, piu' densa (parte a 3 m) e piu' chiara (teal ~ #13333a), applicata anche a lampioni e luna con la nebbia d'ambiente; pozza di luce teal sul pavimento. Strada e palazzi restano appena percepibili: resa vicina alla v34. Confronto v34 | v40 in cmp40.png.
