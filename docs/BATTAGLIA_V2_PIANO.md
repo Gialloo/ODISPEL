@@ -177,3 +177,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v24: il personaggio attivo (F1) ha una linea ciano sotto la riga.
 - v25: tag F1 appoggiato sulla linea ciano (la linea prosegue sotto F1); cerchi fazione ridotti (r=22) così non si sovrappongono tra righe, bagliore contenuto.
 - v26: comandi rapidi + RISERVA abbassati (centro y 692); ordine turni ridotto (~75%: ritratti 68x40, linea e freccia più corte); banner boss ridotto (altezza 36, nome 22 px, barre vita/equilibrio più sottili).
+- v27: inquadratura rifatta sui riferimenti Metaphor: eroe attivo molto grande (~72% dell'altezza schermo, piedi a ~93%, centro a ~28% da sinistra), boss più lontano e più piccolo (~58%, piedi a ~79%, centro a ~65%), camera più bassa con orizzonte a metà schermo; ruota e bersaglio riposizionati di conseguenza.
