@@ -25,7 +25,7 @@ func _run() -> void:
 	var ok_reg: bool = true
 	for k in GameIcon.SYMBOLS.keys():
 		var d: Dictionary = GameIcon.SYMBOLS[k]
-		ok_reg = ok_reg and GameIcon.KEYS.has(k) and str(d.get("family", "")) != "" and str(d.get("name", "")) != "" and str(d.get("desc", "")) != ""
+		ok_reg = ok_reg and IconCatalog.SVG.has(k) and str(d.get("family", "")) != "" and str(d.get("name", "")) != "" and str(d.get("desc", "")) != ""
 	_check("registro icone coerente", ok_reg)
 	for k in ["hp", "balance", "danger", "ko", "shield"]:
 		_check("icona %s nel registro" % k, GameIcon.SYMBOLS.has(k) and GameIcon.describe(k) != "")

@@ -25,7 +25,7 @@ func _run() -> void:
 	# ogni mossa ha un'icona conosciuta
 	var all_known: bool = true
 	for id in BattleContent.MOVES:
-		all_known = all_known and GameIcon.KEYS.has(GameIcon.move_key(str(id)))
+		all_known = all_known and (GameIcon.KEYS.has(GameIcon.move_key(str(id))) or GameIcon.resolve(GameIcon.move_key(str(id))) != "")
 	_check("ogni mossa ha un'icona", all_known)
 	_check("barriera = scudo", GameIcon.move_key("barriera") == "shield")
 	_check("cura = croce", GameIcon.move_key("cura") == "heal")

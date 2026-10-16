@@ -624,7 +624,7 @@ func _build_telegraph() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	_tele_panel.set_content(box)
-	_tele_icon = GameIcon.new().setup("danger", BattleTheme.RD_TEXT, 26.0)
+	_tele_icon = GameIcon.new().setup("danger", BattleTheme.RD_TEXT, 30.0)
 	_tele_icon.visible = false
 	_tele_icon.tooltip_text = GameIcon.describe("danger")
 	add_child(_tele_icon)
@@ -1068,6 +1068,11 @@ func _refresh_telegraph() -> void:
 	var threat: Dictionary = BattleResolver.threat_preview(shown)
 	var lethal: Array = threat["lethal"]
 	_danger_now = not lethal.is_empty() or not (threat["enrage_lethal"] as Array).is_empty()
+	if _tele_icon != null:
+		# un solo simbolo coerente: lama = letale adesso; punto esclamativo = lo diventa se il boss si infuria
+		_tele_icon.key = "danger_lethal" if not lethal.is_empty() else "danger"
+		_tele_icon.tooltip_text = GameIcon.describe(_tele_icon.key)
+		_tele_icon.queue_redraw()
 	if lethal.is_empty():
 		_tele_target.add_theme_color_override("font_color", BattleTheme.WH)
 		# L'anteprima non conosce i bonus che nascono durante il round (rabbia, placche, catene): e' un MINIMO.

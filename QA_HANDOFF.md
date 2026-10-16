@@ -1,7 +1,7 @@
-# QA_HANDOFF — ODISPEL 0.24.36
+# QA_HANDOFF — ODISPEL 0.25.0
 
 ## Identificazione
-- Versione: 0.24.36 (Android versionCode 61). 0.24.36 = 0.24.35 + correzione dopo la prova su telefono (SM-A075F, 1446x664): icone fazione e icona equilibrio troppo piccole/poco chiare. Ora: fazione 30 px touch (20 PC), a x=221 sulla carta con le munizioni sotto; equilibrio con icona 20 px + scritta EQUILIBRIO; cuore PV 18 px. Verificato solo con screenshot xvfb touch 1280x720, NON sul telefono.
+- Versione: 0.25.0 (Android versionCode 62) = 0.24.36 + COMMISSIONE ICONE (sezione 5). (0.24.36:) 0.24.36 = 0.24.35 + correzione dopo la prova su telefono (SM-A075F, 1446x664): icone fazione e icona equilibrio troppo piccole/poco chiare. Ora: fazione 30 px touch (20 PC), a x=221 sulla carta con le munizioni sotto; equilibrio con icona 20 px + scritta EQUILIBRIO; cuore PV 18 px. Verificato solo con screenshot xvfb touch 1280x720, NON sul telefono.
 - (0.24.35) NB: il brief 'MASTER BRIEF HUD & UI/UX' cita la 0.24.33 / commit e5f6f86; lo stato reale del repo era 0.24.34 / c127afc (0.24.33 e' la sua base).
 - Data build: 16 ottobre 2026
 - Branch: `claude/battaglia-chiara` (commit: vedi `git log -1`)
@@ -94,6 +94,24 @@ Screenshot: `/tmp/shots/b35` (prima) e `/tmp/shots/a35` (dopo) nel mio ambiente,
 ### Domande di design (default scelti)
 - Menu mosse PvE resta piatto. Ordine del turno resta visibile ma compatto. "Toughness" = EQUILIBRIO (e placche). Nessuna stima del proprio danno (sarebbe una stima non affidabile).
 
+## 5. Commissione completa del sistema di icone (0.25.0)
+Fonte unica: `tools/icons/` (`lib.py` primitive, `defs_a..m.py` disegni, `build.py` generatore). Dettagli, tabella completa e come rigenerare: `docs/icone/README.md`. Atlante: `docs/icone/atlante.html` / `atlante.png`.
+- Consegnate TUTTE le voci: A01-A45, B01-B32, C01-C16, D01-D15, E01-E16, F01-F20, G01-G24, H01-H32, I01-I36, L01-L12 (248 icone) + M01-M04 stemmi (252 voci; 276 SVG con le varianti). Stemmi con 5 versioni ciascuno (chiara, scura, colori, compatta HUD, grande menu) in `assets/ui/icons/factions/`.
+- Stile: griglia 24, tratto 2, angoli vivi, bianco su trasparente; il gioco tinge (`GameIcon.color`). Formato SVG, scelto perche' scala senza perdita su PC e telefono. Rasterizzazione a runtime dagli SVG incorporati in `scripts/ui/icon_catalog.gd` (cosi' l'esportazione non dipende dall'importazione degli asset); file singoli in `assets/ui/icons/<famiglia>/`.
+- Registro: `IconCatalog.ENTRIES` e' lo stesso dizionario di `GameIcon.SYMBOLS` (nessun registro concorrente). Campi: code, name, desc, family, folder, asset, variants, use, status, fallback, same_as. Vecchi nomi (sword, bolt, burst, target, cleanse, coin, nucleo, lega, book, fazioni) -> `GameIcon.ALIASES`.
+- Stesso concetto = stessa immagine: 12 coppie dichiarate `same_as` (es. SCUDO e DIFESA statistica, PERICOLO e AVVISO).
+- Stato meccaniche: assegnato da me confrontando con i dati del gioco; nel dubbio "da verificare"/"non implementata". Controlla la colonna Stato in `docs/icone/README.md`: e' una valutazione mia, NON una verifica completa.
+- Integrate nel gioco (provvisori sostituiti): icone delle mosse (battaglia e PvP: attacco, guardia=DIFESA, speciale, ultimate, cura, provoca, bersaglio, purifica), PV, equilibrio, pericolo (letale = lama; "si infuria" = punto esclamativo), stemmi delle fazioni (carte operatore, roster, hub), valute (crediti, nuclei, leghe), libro/archivio, comando CAMBIA del PvP. NON mostrate: tutte le icone predisposte (status, combo, multiplayer, mondo, ecc.) perche' le schermate/meccaniche non le usano ancora.
+- Restano disegnate in codice (fuori commissione): classi (striker/vanguard/warden), munizioni, passiva, slot equipaggiamento.
+- Icone di fazione piu' grandi su telefono (30 px) e ingrandite dopo la prova su SM-A075F (0.24.36).
+### Test (0.25.0)
+- Nuovo `tests/unit/test_icon_catalog.gd` (35 controlli): 252 voci e conteggi per famiglia, codici unici, campi del registro, ogni SVG si rasterizza, nessun angolo opaco (trasparenza), leggibilita' a 20 px (pixel visibili tra 20 e 330), file singoli presenti, doppioni solo se dichiarati, alias, fallback per ID inesistente.
+- Tutta la suite `tests/unit/` (headless) senza errori; `test_hud_layout` 31/31, `test_hud_states` 28/28, `test_input_ui` con xvfb; `tools/ui_audit.gd` PC e touch: 0 problemi.
+- Screenshot reali (xvfb 1280x720) in `docs/icone/screens/`: battaglia (scelta, pericolo, risoluzione; PC e touch), roster, hub, PvP, obiettivi, lobby multiplayer. Avviati davvero: battaglia, roster, hub, PvP, obiettivi, lobby. NON testate su schermo: menu fazioni dedicato (non esiste), progressione oltre gli obiettivi, multiplayer con persone reali, telefono reale.
+- IMPORTANTE da verificare su telefono/PC: le icone vengono rasterizzate a runtime con `Image.load_svg_from_string` (modulo SVG del motore). Funziona nell'editor/headless (test); NON ho potuto eseguire le build esportate. Se il modulo mancasse nel template di esportazione, il gioco ripiega sui vecchi disegni in codice (nessun crash) ma le icone nuove non si vedrebbero: nel playtest controlla che le mosse mostrino lama/scudo/fulmine nuovi e le fazioni i nuovi stemmi.
+- Esportazione: `docs/icone/*` e `assets/ui/icons/*` sono esclusi dal pacchetto (gli SVG sono gia' incorporati nel registro): APK 0.25.0 = 0.24.36 + circa 50 KB.
+- Limiti: leggibilita' reale di 248 icone a 20-24 px su telefono NON verificata (il test misura solo i pixel visibili). Alcune icone sono simili a piccole dimensioni (anelli: C04/D04/C16/G07; sagome multiple A19/D09/F17): guardare l'atlante e dirmi quali non si capiscono. Non ho confrontato "prima/dopo" per roster/progressione/multiplayer (prima avevano gli stessi segnaposto in codice).
+
 ## Test
 - Eseguiti (0.24.34): tutti i 76 file in `tests/unit/` in headless (parallelo): nessun errore. `test_hud_layout` (31 controlli) e `test_input_ui` richiedono uno schermo e sono passati con `xvfb-run`.
 - Nuovi: `tests/unit/test_threat_preview.gd` (26 controlli: identita' senza modificatori, Guardia, bonus placca, avviso furia, catena, nessun critico del boss); 5 controlli in `test_hud_layout.gd` (ventaglio a sinistra della GUIDA e dentro lo schermo in PC e touch, annuncio lungo dentro lo schermo, stile condiviso dei comandi); 9 sulla validazione dei salvataggi (0.24.31).
@@ -103,8 +121,8 @@ Screenshot: `/tmp/shots/b35` (prima) e `/tmp/shots/a35` (dopo) nel mio ambiente,
 - NON eseguiti: multiplayer con giocatori reali, rete pubblica, Android su dispositivo, avvio dell'exe su Windows.
 
 ## Build e pubblicazione
-- `releases/ODISPEL-0.24.36-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.24.36.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
-- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.35 come versione precedente.
+- `releases/ODISPEL-0.25.0-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.25.0.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
+- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.36 come versione precedente.
 - itch.io: il workflow `.github/workflows/itch.yml` carica da solo gli ultimi file di `releases/` dopo il push. Dal mio ambiente NON vedo l'esito: controllare la scheda Actions su GitHub o la pagina itch.io.
 
 ## Problemi aperti
@@ -118,7 +136,7 @@ Screenshot: `/tmp/shots/b35` (prima) e `/tmp/shots/a35` (dopo) nel mio ambiente,
 
 ## Playtest (per il proprietario)
 Su PC e su telefono:
-1. All'avvio: finestra NOVITA' 0.24.36 con OK visibile.
+1. All'avvio: finestra NOVITA' 0.25.0 con OK visibile.
 2. Battaglia contro un boss: sotto il nome della mossa annunciata deve esserci "BERSAGLIO: ... · STIMA ~numero". Se il boss ha una catena: "+CATENA" accanto al nome.
 3. Porta il boss tra 75% e 50% di vita con un compagno ferito: puo' comparire in arancio "SE SI INFURIA: LETALE PER ...". Dopo il colpo, il compagno e' davvero a rischio? L'avviso ti e' utile o ti confonde?
 4. Telefono: apri il ventaglio dei comandi con la scheda GUIDA visibile (prime battaglie): "SPEZZATUTO 0%" deve leggersi tutto.

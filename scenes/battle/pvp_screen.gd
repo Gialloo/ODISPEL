@@ -392,7 +392,7 @@ func _icon_key(m: String) -> String:
 			return GameIcon.move_key(str(sk[0])) if not sk.is_empty() else "bolt"
 		"ult":
 			return GameIcon.move_key(PvpEngine.ult_of(u)) if not u.is_empty() else "burst"
-	return "swap"
+	return "row_swap"        # cambio dell'operatore attivo con una riserva (A44, registro icone)
 
 
 # Stile dei comandi come in battaglia: usabile = bianco con testo nero, non usabile = nero con testo grigio.

@@ -5,6 +5,11 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.25.0", "items": [
+		"ICONE: nuovo linguaggio visivo ODISPEL con 248 icone (combattimento, status, turni, combo, boss, multiplayer, esplorazione, progressione, interfaccia, identita' Odica) e 4 stemmi di fazione (la Bilancia-L di LibraCorp, Rondini, Magabondi, Kairos).",
+		"Le icone gia' nel gioco (mosse, PV, equilibrio, pericolo, fazioni, valute) ora usano i nuovi disegni; le altre sono pronte per le prossime schermate ma non vengono mostrate finche' la funzione non esiste.",
+		"Atlante completo in docs/icone/atlante.html.",
+	]},
 	{"v": "0.24.36", "items": [
 		"TELEFONO: le icone delle fazioni sulle carte degli operatori sono piu' grandi (30 px) e l'equilibrio del boss ha la sua icona piu' grande con la scritta EQUILIBRIO.",
 	]},

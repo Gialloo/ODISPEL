@@ -131,6 +131,12 @@ func _bullet(at: Vector2, height: float, loaded: bool) -> void:
 func _draw_faction(h: float) -> void:
 	draw_rect(Rect2(0, 0, h, h), Color(color, 0.18))
 	draw_rect(Rect2(0, 0, h, h), Color(color, 0.8), false, 1.0)
+	var tex: Texture2D = GameIcon.texture_for("faction_" + text, "", h)
+	if tex != null:
+		# stemma del registro (IconCatalog): bianco, tinto col colore della fazione
+		var pad: float = maxf(2.0, h * 0.1)
+		draw_texture_rect(tex, Rect2(pad, pad, h - pad * 2.0, h - pad * 2.0), false, color)
+		return
 	var m: float = h * 0.5
 	var u: float = h / 17.0
 	var w: float = maxf(1.5, 1.6 * u)

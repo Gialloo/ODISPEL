@@ -12,38 +12,61 @@ const KEYS: Array = [
 	"striker", "vanguard", "warden", "libracorp", "rondini", "magabondi", "kairos",
 	"sword", "bolt", "shield", "heal", "target", "taunt", "bullet", "cleanse", "burst", "passive",
 	"arma", "petto", "stivali", "coin", "nucleo", "lega", "book",
-	"hp", "balance", "danger", "ko",
 ]
 
-# Grammatica visiva di ODISPEL (0.24.35): significato stabile -> icona. Un solo posto da consultare.
-# famiglia: stato | difesa | pericolo | azione | risorsa | equip. La forma dice COSA e', colore e riempimento dicono lo STATO.
-# Il testo esplicito resta per i pericoli critici (rischio di KO): l'icona non lo sostituisce.
-const SYMBOLS: Dictionary = {
-	"hp": {"family": "stato", "name": "PV", "desc": "Punti vita attuali."},
-	"shield": {"family": "difesa", "name": "SCUDO", "desc": "Protezione che assorbe il danno prima dei PV."},
-	"balance": {"family": "difesa", "name": "EQUILIBRIO", "desc": "Tenuta del boss: se si svuota il boss si rompe e resta scoperto."},
-	"danger": {"family": "pericolo", "name": "PERICOLO", "desc": "Un attacco annunciato rischia di mettere KO qualcuno."},
-	"ko": {"family": "pericolo", "name": "K.O.", "desc": "Operatore a terra."},
-	"sword": {"family": "azione", "name": "ATTACCO", "desc": "Mossa che infligge danno."},
-	"heal": {"family": "azione", "name": "CURA", "desc": "Mossa che ripristina PV."},
-	"taunt": {"family": "azione", "name": "PROVOCA", "desc": "Attira su di te il prossimo colpo."},
-	"bullet": {"family": "risorsa", "name": "MUNIZIONI", "desc": "Colpi disponibili."},
-	"burst": {"family": "risorsa", "name": "ULTIMATE", "desc": "Mossa speciale, pronta a carica piena."},
-	"target": {"family": "azione", "name": "BERSAGLIO", "desc": "Mossa che applica uno stato al bersaglio."},
-	"cleanse": {"family": "azione", "name": "PURIFICA", "desc": "Toglie gli stati negativi."},
-}
+# Grammatica visiva di ODISPEL: il registro centrale e' IconCatalog.ENTRIES (generato da tools/icons/build.py,
+# vedi docs/icone/README.md). SYMBOLS e' lo stesso dizionario: un solo registro, nessun doppione.
+# Ogni voce: code, name, desc (descrizione visiva), family, folder, asset, variants, use, status, fallback.
+# status: implementata | implementata parzialmente | da verificare | non implementata (asset predisposti, da NON mostrare).
+const SYMBOLS: Dictionary = IconCatalog.ENTRIES
 
+# Vecchi nomi (usati in tutto il gioco) -> ID del registro.
+const ALIASES: Dictionary = {"sword": "attack", "bolt": "special", "burst": "ultimate", "target": "target_single", "cleanse": "purify",
+	"coin": "p_currency_common", "nucleo": "p_currency_rare", "lega": "p_materials", "book": "w_codex",
+	"libracorp": "faction_libracorp", "rondini": "faction_rondini", "magabondi": "faction_magabondi", "kairos": "faction_kairos"}
 
-static func describe(k: String) -> String:
-	var d: Dictionary = SYMBOLS.get(k, {})
-	return "" if d.is_empty() else "%s: %s" % [d["name"], d["desc"]]
+static var _tex_cache: Dictionary = {}
 
 var key: String = ""
 var color: Color = BattleTheme.CY
+var variant: String = ""
 
 
-func setup(new_key: String, new_color: Color = BattleTheme.CY, px: float = 24.0) -> GameIcon:
+static func resolve(k: String) -> String:
+	var id: String = str(ALIASES.get(k, k))
+	return id if IconCatalog.ENTRIES.has(id) else ""
+
+
+# Texture rasterizzata dall'SVG incorporato alla dimensione richiesta (cache per ID/variante/dimensione); null se non disponibile.
+static func texture_for(id: String, variant: String, px: float) -> Texture2D:
+	var svg_key: String = id
+	if id.begins_with("faction_") and variant == "":
+		variant = "compact" if px <= 34.0 else "large"
+	if variant != "" and IconCatalog.SVG.has("%s@%s" % [id, variant]):
+		svg_key = "%s@%s" % [id, variant]
+	if not IconCatalog.SVG.has(svg_key):
+		return null
+	var target: int = clampi(int(ceil(px)) * 2, 32, 256)
+	var ck: String = "%s|%d" % [svg_key, target]
+	if _tex_cache.has(ck):
+		return _tex_cache[ck]
+	var img := Image.new()
+	if img.load_svg_from_string(str(IconCatalog.SVG[svg_key]), float(target) / 24.0) != OK or img.is_empty():
+		_tex_cache[ck] = null
+		return null
+	var tex: Texture2D = ImageTexture.create_from_image(img)
+	_tex_cache[ck] = tex
+	return tex
+
+
+static func describe(k: String) -> String:
+	var d: Dictionary = SYMBOLS.get(resolve(k), {})
+	return "" if d.is_empty() else "%s: %s" % [d["name"], d["desc"]]
+
+
+func setup(new_key: String, new_color: Color = BattleTheme.CY, px: float = 24.0, new_variant: String = "") -> GameIcon:
 	key = new_key
+	variant = new_variant
 	color = new_color
 	custom_minimum_size = Vector2(px, px)
 	size = Vector2(px, px)
@@ -64,6 +87,8 @@ static func move_key(move_id: String) -> String:
 		return "heal"
 	if m.has("self_status") and m["self_status"].has("taunt"):
 		return "taunt"
+	if m.has("self_status") and m["self_status"].has("guard"):
+		return "defense"
 	if m.has("shield") or m.has("self_status"):
 		return "shield"
 	if m.has("ammo") or m.has("ammo_gain"):
@@ -190,6 +215,14 @@ func _circle(c: Array, r: float, fill: bool = false) -> void:
 
 
 func _draw() -> void:
+	# 1) icona del registro (SVG incorporato, tinta = color); 2) disegno di riserva in codice; 3) cerchio
+	var id: String = resolve(key)
+	if id != "":
+		var side: float = minf(size.x, size.y)
+		var tex: Texture2D = texture_for(id, variant, side)
+		if tex != null:
+			draw_texture_rect(tex, Rect2((size - Vector2(side, side)) * 0.5, Vector2(side, side)), false, color)
+			return
 	match key:
 		"sword", "striker":
 			_line([0.28, 0.72], [0.86, 0.14], 0.12)
