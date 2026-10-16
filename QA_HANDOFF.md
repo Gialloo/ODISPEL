@@ -86,7 +86,15 @@ Famiglie: stato (hp), difesa (shield, balance), pericolo (danger, ko), azione (s
 Onesto: in SCELTA il numero non scende (tutto serve a decidere) e sale di 2 per le icone. La riduzione e' in risoluzione (-16). Lo strumento NON conta cio' che il palco disegna (numeri PV sotto gli sprite): quelli scendono da 3 a 1 in scelta. NB: la prima misura "risoluzione" prima era in realta' una scelta (ventaglio ancora aperto): il nuovo strumento sceglie fino a far partire il round.
 Screenshot: `/tmp/shots/b35` (prima) e `/tmp/shots/a35` (dopo) nel mio ambiente, non nel repo.
 
-#### Test
+#### 10. TEST V2 (prototipo battaglia v2, 0.26.3-v2test)
+- Hub: nuovo pulsante "TEST V2" (`SceneRouter` chiave `battle_v2`) -> `scenes/battle_v2/battle_v2.tscn`. Solo battaglia solista in addestramento (nessun premio, nessun salvataggio) contro il Distributore, con la logica reale (`SoloBattleSource`, `BattleResolver`). Nessun PvP, rete o Ciclo Infinito. La scena vecchia non e' toccata.
+- HUD: porting del mock v88 (ruota ATTACK/SKILL/ULTIMATE/GUARD, banner boss con PV ed EQUILIBRIO, party, RISERVA, comandi rapidi AUTO/VELOCITA'). Sfondo pre-renderizzato `art/backgrounds/battle_v2.png`, alone corallo del boss con texture unica. La scena si scala per entrare nello schermo (canvas_items/expand).
+- Stub / limiti: FORMAZIONE e BERSAGLIO mostrano solo un avviso; DEBOLE assente (il motore non ha dati di debolezze); il boss e' il segnaposto disegnato; arte vera solo per Kira e Dafne, gli altri hanno la testa segnaposto.
+- Verificato: `tools/battle_v2_shot.gd` (xvfb, 1280x720) gioca una battaglia intera (vittoria al round 3, 0 errori) e salva 5 foto; test unitari esistenti ok (test_feedback aggiornato a 10 pulsanti hub).
+- NON verificato: telefono reale (dimensione testi, bersagli di tocco da 44 px, tagli su schermi 20:9, prestazioni), boss con nome molto lungo, squadre con meno di 3 unita'.
+- APK: `releases/ODISPEL-0.26.3-v2test.apk` (versionCode 66), `docs/battaglia_v2_mock/*` escluso dall'export.
+
+## Test
 `tests/unit/test_impact_frames.gd` (26 controlli: normale, critico pesante, eccezionale, ult non critica/critica/devastante, KO, multi-bersaglio, due mosse, contrattacco/spine, sequenze, guardia, progressione). Foto: `tools/impact_shot.gd`.
 
 ### NON verificato
