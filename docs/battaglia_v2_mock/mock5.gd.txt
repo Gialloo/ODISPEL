@@ -597,9 +597,9 @@ class _Hud extends Control:
 		draw_colored_polygon(PackedVector2Array([Vector2(1220, 24), Vector2(1232, 24), Vector2(1214, 68), Vector2(1202, 68)]), Color("#ff5a4a"))
 		_U.skew_text(self, Vector2(872, 58), "DISTRIBUTORE", 28, Color("#15121c"), Color(0, 0, 0, 0), BattleTheme.display(), 0)
 		_U.icon(self, "danger", Vector2(1142, 46), 22.0, Color("#c8281c"))
-		_bar(Rect2(858, 76, 420, 13), 0.78, Color("#e8f4f2"), 5)
-		_bar(Rect2(858, 94, 300, 7), 0.45, Color("#7fdcec"))
-		_U.skew_text(self, Vector2(1166, 102), "EQUILIBRIO", 12, Color("#7fdcec"), Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+		_bar(Rect2(858, 76, 420, 11), 0.78, Color("#7fdcec"), 5)
+		_bar(Rect2(858, 93, 300, 8), 0.45, Color("#fffaf0"))
+		_U.skew_text(self, Vector2(1166, 102), "EQUILIBRIO", 12, Color("#fffaf0"), Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
 		if not selected:
 			var tg := Rect2(842, 112, 250, 28)
 			draw_colored_polygon(_U.slant(Rect2(tg.position, tg.size), 10.0), Color("#aab0bd", 0.97))
