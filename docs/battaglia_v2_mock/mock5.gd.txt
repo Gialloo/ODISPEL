@@ -573,25 +573,25 @@ class _Hud extends Control:
 		# --- nome del boss (alto a destra): banner rosa con taglio rosso, PV a segmenti ed equilibrio ---
 		var bn := Rect2(838, 24, 460, 44)
 		draw_colored_polygon(_U.slant(Rect2(bn.position + Vector2(5, 5), bn.size), 18.0), Color(0, 0, 0, 0.5))
-		draw_colored_polygon(_U.slant(bn, 18.0), Color("#14101c"))
-		for k in 5:
-			var sx: float = 1118.0 + float(k) * 22.0
-			draw_colored_polygon(PackedVector2Array([Vector2(sx, 24), Vector2(sx + 11, 24), Vector2(sx - 7, 68), Vector2(sx - 18, 68)]), Color(1, 1, 1, 0.9))
+		draw_colored_polygon(_U.slant(bn, 18.0), Color("#aab0bd"))
+		for k in 4:
+			var sx: float = 1172.0 + float(k) * 22.0
+			draw_colored_polygon(PackedVector2Array([Vector2(sx, 24), Vector2(sx + 11, 24), Vector2(sx - 7, 68), Vector2(sx - 18, 68)]), Color("#2a2733"))
 		draw_line(Vector2(bn.position.x + 18, bn.position.y), Vector2(bn.end.x, bn.position.y), Color("#ff5a4a"), 3.0)
 		draw_line(Vector2(bn.position.x, bn.end.y), Vector2(bn.end.x - 18, bn.end.y), Color("#ff5a4a"), 3.0)
 		draw_colored_polygon(_U.slant(Rect2(bn.position, Vector2(bn.size.x, 14.0)), 18.0), Color(1, 1, 1, 0.06))
 		draw_colored_polygon(PackedVector2Array([Vector2(1220, 24), Vector2(1232, 24), Vector2(1214, 68), Vector2(1202, 68)]), Color("#ff5a4a"))
-		_U.skew_text(self, Vector2(880, 58), "DISTRIBUTORE", 30, Color("#fffaf0"), Color(0, 0, 0, 0.95), BattleTheme.display(), 6)
-		_U.icon(self, "danger", Vector2(1176, 46), 22.0, Color("#fff36b"))
+		_U.skew_text(self, Vector2(872, 58), "DISTRIBUTORE", 28, Color("#15121c"), Color(0, 0, 0, 0), BattleTheme.display(), 0)
+		_U.icon(self, "danger", Vector2(1142, 46), 22.0, Color("#c8281c"))
 		_bar(Rect2(858, 76, 420, 13), 0.78, Color("#e8f4f2"), 5)
 		_bar(Rect2(858, 94, 300, 7), 0.45, Color("#7fdcec"))
 		_U.skew_text(self, Vector2(1166, 102), "EQUILIBRIO", 12, Color("#7fdcec"), Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
 		if not selected:
 			var tg := Rect2(842, 112, 250, 28)
-			draw_colored_polygon(_U.slant(Rect2(tg.position, tg.size), 10.0), Color("#14101c", 0.95))
+			draw_colored_polygon(_U.slant(Rect2(tg.position, tg.size), 10.0), Color("#aab0bd", 0.97))
 			draw_rect(Rect2(tg.position.x + 4, tg.position.y, 5, tg.size.y), Color("#ff5a4a"))
-			_U.icon(self, "danger", Vector2(tg.position.x + 22, tg.position.y + 14), 20.0, Color("#fff36b"))
-			_U.skew_text(self, Vector2(tg.position.x + 40, tg.position.y + 22), "CARICA · COLPO TRA 1 TURNO", 13, Color("#fffaf0"), Color("#4a0a08", 0.9), BattleTheme.mono(), 4)
+			_U.icon(self, "danger", Vector2(tg.position.x + 22, tg.position.y + 14), 20.0, Color("#c8281c"))
+			_U.skew_text(self, Vector2(tg.position.x + 40, tg.position.y + 22), "CARICA · COLPO TRA 1 TURNO", 13, Color("#15121c"), Color(0, 0, 0, 0), BattleTheme.mono(), 0)
 		# --- bersaglio sul boss: cerchio sottile + barra diagonale verde come nello schizzo, con debolezze ---
 		var tc := Vector2(948, 400)
 		draw_arc(tc, 40.0, 0.0, TAU, 56, Color(0, 0, 0, 0.7), 5.0, true)
