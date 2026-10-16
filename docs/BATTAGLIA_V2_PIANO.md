@@ -190,3 +190,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v40: nebbia teal al 98%, piu' densa (parte a 3 m) e piu' chiara (teal ~ #13333a), applicata anche a lampioni e luna con la nebbia d'ambiente; pozza di luce teal sul pavimento. Strada e palazzi restano appena percepibili: resa vicina alla v34. Confronto v34 | v40 in cmp40.png.
 - v41: sfondo identico alla v34 (campo largo e vuoto con nebbia teal, niente strada) con l'HUD aggiornato (equilibrio boss sistemato, party come v36); anelli a terra eliminati.
 - v42: ombre di boss e personaggio morbide (18 strati sfumati, bordo sfocato) e di colore teal scuro in tinta con lo sfondo, invece del nero pieno.
+- v43: eliminati i due semicerchi bianchi esterni della ruota (quello che partiva dalla A); resta solo il cerchio sottile attorno al personaggio.
