@@ -185,3 +185,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v34: tolti strada, palazzi, lampioni e luna; campo largo e vuoto con pavimento liscio teal e nebbia lontana (nebbia che parte a 6 m e satura oltre ~40 m), pozza di luce e anelli attorno ai combattenti, come nei riferimenti.
 - v35: ripristinato il campo con strada, palazzi, lampioni e luna (v33) e aggiunta la nebbia teal della v34 al 50% di opacita' sopra la nebbia esistente (su pavimento e palazzi); sfondo leggermente piu' teal.
 - v36: nebbia teal al 70% (era 50%); eliminati gli anelli a terra (resta la pozza di luce).
+- v37: nebbia teal all'85%; barra party abbassata di 24 unita' (righe a y=569/619/669) cosi' la riga attiva F1 e' centrata sulla stessa linea di RISERVA e dei comandi rapidi (y=692).
