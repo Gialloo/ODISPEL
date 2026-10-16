@@ -175,3 +175,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v22: barra colorata tra cut-in e barre resa verticale e sottile (3 px); cut-in più largo e visibile.
 - v23: cerchio fazione con bagliore (colore del personaggio, anello bianco) quando il personaggio ha la carica; nel mock Mira e Kira sono cariche, Dax no.
 - v24: il personaggio attivo (F1) ha una linea ciano sotto la riga.
+- v25: tag F1 appoggiato sulla linea ciano (la linea prosegue sotto F1); cerchi fazione ridotti (r=22) così non si sovrappongono tra righe, bagliore contenuto.
