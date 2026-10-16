@@ -152,3 +152,6 @@ nero/antracite = profondita'; bianco caldo = leggibilita' (testi, PV); **corallo
 
 ### 7.4 Domande ancora aperte
 Cosa fanno esattamente Situazionale / Formazione / Bersaglio; quanto 3D reale sui telefoni; quali dati sempre visibili; partire dal solo PvE solitario?; gestione di piu' operatori attivi.
+
+### 7.5 Palette HUD v5 (proposta, in confronto)
+Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera per le risorse, quindi: barre e risorse **neutre** (vita = avorio a segmenti; energia = bianco-ghiaccio; scudo = argento con tratteggio; riserva = rombi avorio), l'unico colore saturo di una riga e' quello del personaggio; ciano solo per selezione/bersaglio/attivo; pericolo = banner nero con righe bianche, icona gialla, corallo solo sul lato boss. Bozze: `docs/battaglia_v2_mock/hud5_<colore>_libera.png` (+ `mock5.gd.txt`).
