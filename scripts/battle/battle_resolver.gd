@@ -952,6 +952,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 			if heal_crit > 1.0:
 				heal_event["crit"] = true
 			events.append(heal_event)
+			# VOLUTO: lo scudo si calcola sulla cura TEORICA (amount), non su quella reale: la cura in eccesso diventa scudo.
 			var hs: float = Signatures.value(actor, "heal_shield")
 			if hs > 0.0:
 				var extra: int = int(round(float(amount) * hs))
