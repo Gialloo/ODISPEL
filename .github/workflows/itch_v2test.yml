@@ -1,0 +1,30 @@
+# Carica su itch.io SOLO l'APK di prova V2 in un canale a parte (android-v2test), senza toccare i canali stabili.
+name: Pubblica TEST V2 su itch.io
+
+on:
+  push:
+    branches: [claude/battaglia-v2]
+    paths:
+      - 'releases/*-v2test.apk'
+      - '.github/workflows/itch_v2test.yml'
+
+jobs:
+  itch:
+    runs-on: ubuntu-latest
+    env:
+      BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
+      ITCH_TARGET: boomeranza/odispel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Controlla che la chiave ci sia
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then echo "Manca il segreto ITCH_API_KEY: niente da caricare."; exit 1; fi
+      - name: Installa butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d butler && chmod +x butler/butler
+      - name: Carica l'APK di prova
+        run: |
+          apk=$(ls releases/ODISPEL-*-v2test.apk | sort -V | tail -1)
+          ver=$(basename "$apk" .apk | sed 's/ODISPEL-//')
+          ./butler/butler push "$apk" "$ITCH_TARGET:android-v2test" --userversion "$ver"
