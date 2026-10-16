@@ -346,8 +346,65 @@ static func normalize(value: Variant) -> Variant:
 	return value
 
 
+# Legge una partita salvata. Se il testo e' rovinato o incompleto ritorna {} (usa check_json per sapere perche').
 static func from_json(text: String) -> Dictionary:
 	var parsed: Variant = JSON.parse_string(text)
 	if not (parsed is Dictionary):
 		return {}
-	return normalize(parsed)
+	var state: Dictionary = normalize(parsed)
+	return state if validate(state) == "" else {}
+
+
+# Come from_json, ma ritorna il motivo in italiano: {"ok": bool, "state": Dictionary, "error": String}.
+static func check_json(text: String) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(text)
+	if not (parsed is Dictionary):
+		return {"ok": false, "state": {}, "error": "Il salvataggio e' rovinato: non si legge."}
+	var state: Dictionary = normalize(parsed)
+	var err: String = validate(state)
+	return {"ok": err == "", "state": state if err == "" else {}, "error": err}
+
+
+# Controlla che uno stato di battaglia (gia' normalizzato) sia completo e coerente. Ritorna "" se va bene,
+# altrimenti il motivo in italiano. NON ripara nulla: uno stato rovinato si rifiuta.
+const _STATE_KEYS: Dictionary = {"round": TYPE_INT, "winner": TYPE_STRING, "players": TYPE_ARRAY, "units": TYPE_DICTIONARY,
+	"events": TYPE_ARRAY, "rng_seed": TYPE_STRING, "rng_state": TYPE_STRING}
+const _UNIT_INTS: Array = ["hp", "max_hp", "atk", "def", "spd", "energy", "gauge", "shield"]
+
+
+static func validate(state: Dictionary) -> String:
+	for k in _STATE_KEYS:
+		if not state.has(k):
+			return "Salvataggio incompleto: manca '%s'." % k
+		if typeof(state[k]) != int(_STATE_KEYS[k]):
+			return "Salvataggio rovinato: '%s' ha un tipo sbagliato." % k
+	var units: Dictionary = state["units"]
+	if not bool(state.get("pvp", false)):       # la sfida PvP non ha ne' boss ne' annuncio
+		if not units.has(BOSS_ID):
+			return "Salvataggio incompleto: manca il boss."
+		if not (state.get("telegraph", null) is Dictionary):
+			return "Salvataggio incompleto: manca l'annuncio del boss."
+	if (state["players"] as Array).is_empty():
+		return "Salvataggio incompleto: nessun giocatore."
+	for uid in units:
+		var u: Variant = units[uid]
+		if not (u is Dictionary):
+			return "Salvataggio rovinato: l'unita' '%s' non e' valida." % uid
+		for k in _UNIT_INTS:
+			if not (u as Dictionary).has(k) or typeof(u[k]) != TYPE_INT:
+				return "Salvataggio rovinato: '%s' ha '%s' mancante o sbagliato." % [uid, k]
+		if int(u["hp"]) < 0 or int(u["hp"]) > int(u["max_hp"]) or int(u["max_hp"]) <= 0:
+			return "Salvataggio rovinato: i PV di '%s' non sono validi." % uid
+		if not (u.get("statuses", {}) is Dictionary) or not (u.get("skills", []) is Array):
+			return "Salvataggio rovinato: '%s' ha stati o mosse non validi." % uid
+	for p in state["players"]:
+		var members_key: String = "units" if bool(state.get("pvp", false)) else "team"    # nel PvP "team" e' la fazione
+		if not (p is Dictionary) or not (p as Dictionary).has("id") or not (p.get(members_key, null) is Array):
+			return "Salvataggio rovinato: un giocatore non e' valido."
+		for tid in p[members_key]:
+			if not units.has(tid):
+				return "Salvataggio rovinato: il personaggio '%s' non esiste." % tid
+		var active: String = str(p.get("active", ""))
+		if active != "" and not units.has(active):
+			return "Salvataggio rovinato: il personaggio in campo '%s' non esiste." % active
+	return ""

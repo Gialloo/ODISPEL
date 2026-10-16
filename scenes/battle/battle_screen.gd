@@ -1010,6 +1010,10 @@ func _refresh_telegraph() -> void:
 	var lethal: Array = threat["lethal"]
 	if lethal.is_empty():
 		_tele_target.add_theme_color_override("font_color", BattleTheme.WH)
+		# L'anteprima non conosce i bonus che nascono durante il round (rabbia, placche, catene): e' un MINIMO.
+		var dmg_map: Dictionary = threat["dmg"]
+		if dmg_map.size() == 1:
+			_tele_target.text += " · DANNO MIN. ~%d" % int(dmg_map.values()[0])
 	else:
 		var names: Array = []
 		for uid in lethal:

@@ -1606,6 +1606,10 @@ func _client_handle_message(message: Dictionary) -> void:
 				return
 
 			if bstate is Dictionary and not bstate.is_empty():
+				var checked: String = BattleState.validate(BattleState.normalize(bstate))
+				if checked != "":
+					Notify.warning("Stato della sfida non valido (%s) Ignorato." % checked)
+					return
 				_client_bid = bid
 				battle = BattleState.normalize(bstate)
 				battle_time_left = float(message.get("time_left", 0.0))

@@ -27,6 +27,7 @@ func _two_players() -> Dictionary:
 func _init() -> void:
 	_test_content()
 	_test_colors_and_stats()
+	_test_state_validation()
 	_test_setup()
 	_test_choices()
 	_test_order_and_damage()
@@ -65,6 +66,27 @@ func _test_colors_and_stats() -> void:
 	_check("l'equipaggiamento aumenta ATK, HP, DEF e SPD", geared["atk"] > base["atk"] and geared["hp"] > base["hp"] and geared["def"] > base["def"] and geared["spd"] > base["spd"])
 	var passive: Dictionary = BattleContent.compute_stats({"char": "dax", "level": 1, "rank": 0, "passives": ["p_hp"], "gear": []})
 	_check("la passiva Tempra aumenta gli HP", passive["hp"] == 1644)
+
+
+func _test_state_validation() -> void:
+	var st: Dictionary = BattleState.create_solo("T", [{"char": "dax", "level": 1, "rank": 0, "passives": [], "gear": []}], [], "distributore", 7)
+	_check("validate: uno stato nuovo e' valido", BattleState.validate(st) == "")
+	_check("validate: sopravvive al giro JSON", BattleState.from_json(BattleState.to_json(st)) == BattleState.normalize(JSON.parse_string(BattleState.to_json(st))))
+	_check("from_json rifiuta testo rovinato", BattleState.from_json("{non json").is_empty())
+	_check("check_json spiega il motivo", String(BattleState.check_json("[1,2]")["error"]) != "")
+	var bad: Dictionary = BattleState.normalize(JSON.parse_string(BattleState.to_json(st)))
+	bad.erase("units")
+	_check("manca 'units': rifiutato", BattleState.validate(bad) != "")
+	bad = BattleState.normalize(JSON.parse_string(BattleState.to_json(st)))
+	bad["units"].erase("boss")
+	_check("manca il boss: rifiutato", BattleState.validate(bad) != "")
+	bad = BattleState.normalize(JSON.parse_string(BattleState.to_json(st)))
+	bad["players"][0]["active"] = "fantasma"
+	_check("personaggio in campo inesistente: rifiutato", BattleState.validate(bad) != "")
+	bad = BattleState.normalize(JSON.parse_string(BattleState.to_json(st)))
+	bad["units"]["boss"]["hp"] = -5
+	_check("PV negativi: rifiutato", BattleState.validate(bad) != "")
+	_check("from_json di uno stato rovinato ritorna vuoto", BattleState.from_json(JSON.stringify(bad)).is_empty())
 
 
 func _test_setup() -> void:
