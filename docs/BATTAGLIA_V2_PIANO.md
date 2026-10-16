@@ -194,3 +194,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v44: barre del party spostate di 2 px (2,2 unita') piu' in basso.
 - v45: cerchio bianco sottile attorno ad A S U G spostato nello strato posteriore (dietro schizzi, personaggio e lettere) cosi' silhouette e lettere restano pulite; barre del party un altro pixel piu' in basso (y base 548,3).
 - v46: freccia dell'ordine turni luminosa, stilizzata e sfocata: linea che sfuma in entrata con alone morbido (6 strati), punta a freccia con tacca e alone, opacita' 98%.
+- v47: contorni dei riquadri portrait dell'ordine turni luminosi, stilizzati e sfocati: alone a 7 strati nel colore del bordo schiarito, bordo sottile pieno e angoli bianchi (in alto a sinistra e in basso a destra); primo riquadro con alone piu' forte.
