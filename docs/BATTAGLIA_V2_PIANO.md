@@ -193,3 +193,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v43: eliminati i due semicerchi bianchi esterni della ruota (quello che partiva dalla A); resta solo il cerchio sottile attorno al personaggio.
 - v44: barre del party spostate di 2 px (2,2 unita') piu' in basso.
 - v45: cerchio bianco sottile attorno ad A S U G spostato nello strato posteriore (dietro schizzi, personaggio e lettere) cosi' silhouette e lettere restano pulite; barre del party un altro pixel piu' in basso (y base 548,3).
+- v46: freccia dell'ordine turni luminosa, stilizzata e sfocata: linea che sfuma in entrata con alone morbido (6 strati), punta a freccia con tacca e alone, opacita' 98%.
