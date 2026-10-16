@@ -44,12 +44,9 @@ func _draw_surface(strength: float) -> void:
 	var tint := Color(1, 1, 1, 0.075 * strength).lerp(Color(accent, 0.12 * strength), 0.5)
 	draw_polygon(shape, PackedColorArray([tint, tint, tint, tint, tint, tint]), UiTex.uvs_for(shape), UiTex.hatch())
 	var gh: float = minf(44.0, size.y * 0.35)
-	var hi := Color(accent, 0.20 * strength)
+	var hi := Color(accent, 0.10 * strength)         # velo di luce discreto: la luce serve alla gerarchia, non all'ornamento
 	var lo := Color(accent, 0.0)
 	draw_polygon(PackedVector2Array([Vector2(cut, 0.0), Vector2(size.x, 0.0), Vector2(size.x, gh), Vector2(0.0, gh)]), PackedColorArray([hi, hi, lo, lo]))
-	var tick := Color(1, 1, 1, 0.55 * strength)
-	draw_polyline(PackedVector2Array([Vector2(size.x - 22.0, 3.0), Vector2(size.x - 4.0, 3.0), Vector2(size.x - 4.0, 21.0)]), tick, 2.0)
-	draw_polyline(PackedVector2Array([Vector2(4.0, size.y - 21.0), Vector2(4.0, size.y - 4.0), Vector2(22.0, size.y - 4.0)]), tick, 2.0)
 
 
 func _draw_quiet() -> void:
@@ -84,8 +81,4 @@ func _draw() -> void:
 			Vector2(12.0, -12.0), Vector2(12.0 + tw + 34.0, -12.0), Vector2(12.0 + tw + 20.0, 12.0), Vector2(12.0, 12.0)])
 		draw_colored_polygon(tab, accent)
 		draw_string(font, Vector2(24.0, 7.0), shown, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, BattleTheme.BK)
-		# tre chevron dopo la linguetta e un filo luminoso lungo il bordo alto
-		for i in 3:
-			var cx: float = 12.0 + tw + 44.0 + float(i) * 11.0
-			draw_polyline(PackedVector2Array([Vector2(cx, -8.0), Vector2(cx + 7.0, 0.0), Vector2(cx, 8.0)]), Color(accent, 0.75 - 0.2 * float(i)), 3.0)
-		draw_line(Vector2(cut + 4.0, 3.0), Vector2(size.x - 6.0, 3.0), Color(1, 1, 1, 0.10), 1.0)
+		# (niente chevron ne' fili luminosi: la linguetta col titolo basta)

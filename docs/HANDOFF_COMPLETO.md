@@ -59,7 +59,7 @@ Queste regole vengono dall'utente e dalle sessioni precedenti. Rispettale.
 | `scripts/audio/` | `Sfx` (autoload) e `Snd` (porta d'ingresso). |
 | `scripts/combat`, `party`, `run`, `session`, `main`, `data`, `save` | Primo prototipo del combattimento + stato campagna/salvataggio storico. Mantenuto com'e'. |
 | `scenes/` | Le schermate: `hub`, `missions`, `roster`, `lobby`, `battle` (battaglia PvE e PvP), `expedition`, `feats`, `titles`, `tutorial`, `story`, `results`, `ui` (pannelli profilo/impostazioni), `combat` (prototipo). |
-| `tests/unit/` | **70 file di test**, uno per area. |
+| `tests/unit/` | **71 file di test**, uno per area. |
 | `tools/` | Strumenti: simulatori, foto delle schermate, benchmark, `ui_audit.gd`, `shrink_apk.py`, `esporta.ps1`, ecc. |
 | `docs/` | Documentazione (vedi sezione 14). |
 | `config/` | `turn.cfg.example` (il vero `turn.cfg` e' ignorato da git). |
@@ -279,7 +279,16 @@ godot --headless --path . -s res://tests/unit/<file>.gd
 xvfb-run -a godot --path . --resolution 1280x720 -s res://tools/ui_audit.gd -- 0 ""              # PC
 xvfb-run -a godot --path . --resolution 1280x720 -s res://tools/ui_audit.gd -- 1 "40,20,40,20"   # touch + notch
 ```
-Deve finire con `TOTALE PROBLEMI: 0` (controlla: pulsanti fuori dall'area sicura, testo piu' largo del tasto, tasti piccoli su touch, tasti sovrapposti >25%).
+Deve finire con `TOTALE PROBLEMI: 0` (controlla: pulsanti fuori dall'area sicura, testo piu' largo del tasto, tasti piccoli su touch, tasti sovrapposti >25%; dalla 0.24.29 anche **etichette sovrapposte o tagliate e avvisi** in battaglia: `_audit_text`).
+Disposizione della HUD di battaglia (0.24.29): `tests/unit/test_hud_layout.gd` (PC e touch, serve `xvfb-run` non headless).
+
+**Regole della HUD di battaglia** (verificate con foto PC e touch):
+- I tasti AUTO/velocita' in touch sono alti 64 (TouchUi.MIN_HEIGHT), non quanto dicono gli ancoraggi: `_top_row()` da' la riga sotto cui parte il resto.
+- Avvisi (`Feedback.set_toast_corner`): in battaglia in alto a destra sotto il blocco boss; tornano al centro all'uscita.
+- Il blocco boss (nome, classe, barra vita, equilibrio, PV) e' un solo `HudPanel` a destra; l'allarme sta in alto al centro.
+- Colori barre: alleati `BattleTheme.HP` (bianco-ciano), sotto il 30% rosso, scudo `GOLD`; `OK` (verde) solo per scritte d'effetto.
+- Pulsanti abilita': icona dentro, costo/motivo a destra (`_order_note`), ultimate pronta gialla.
+- Il pannello turno si adatta a righe e testo (`_fit_turn_panel`, max 384 di larghezza); la freccia di chi sceglie scende sulla testa se finirebbe nel pannello.
 Ultima verifica: 0 problemi in entrambe le modalita'.
 
 ### Foto delle schermate (per rivedere la grafica)

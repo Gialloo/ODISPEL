@@ -14,7 +14,8 @@ const RD_DARK: Color = Color("#5a1a12")
 const WH: Color = Color("#f2fdff")
 const BK: Color = Color("#04080a")
 const PANEL: Color = Color("#061418")
-const OK: Color = Color("#6bffb0")        # esito positivo (verde)
+const OK: Color = Color("#6bffb0")        # esito positivo (verde): solo per scritte di effetto (cure, schivate), mai per le barre
+const HP: Color = Color("#d4faff")        # PV degli alleati: bianco-ciano (rosso sotto il 30%, giallo lo scudo)
 const GOLD: Color = Color("#ffd25f")      # evidenza / rarita' alta
 const POP: Color = Color("#fff36b")       # giallo dei fumetti
 

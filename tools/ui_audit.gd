@@ -102,6 +102,72 @@ func _audit(name: String, scope: Node) -> void:
 			print("PROBLEMA [%s]: %s" % [name, s])
 
 
+# Controlli di testo (etichette, frecce, avvisi): non devono coprirsi tra loro ne' restare tagliati.
+# Vale solo dove gli elementi sono sovrapposti per posizione (non per genitore/figlio ne' dentro lo stesso contenitore).
+func _all_labels(node: Node, out: Array) -> void:
+	if node is Label and (node as Control).is_visible_in_tree() and (node as Label).text.strip_edges() != "" and (node as Control).modulate.a > 0.2:
+		out.append(node)
+	for c in node.get_children():
+		_all_labels(c, out)
+
+
+func _audit_text(name: String, scope: Node) -> void:
+	var labels: Array = []
+	_all_labels(scope, labels)
+	var fb: Node = root.get_node_or_null("Feedback")
+	if fb != null:
+		_all_labels(fb, labels)
+	var issues: Array = []
+	for l in labels:
+		var lab: Label = l
+		var r: Rect2 = _visible_rect(lab)
+		if r.size.x < 2.0 or r.size.y < 2.0:
+			continue
+		# testo piu' largo del suo spazio (tagliato)
+		if lab.clip_text and lab.autowrap_mode == TextServer.AUTOWRAP_OFF and lab.size.x > 4.0:
+			var f: Font = lab.get_theme_font("font")
+			var fs: int = lab.get_theme_font_size("font_size")
+			if f != null and f.get_string_size(lab.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > lab.size.x + 3.0:
+				issues.append("testo tagliato: '%s'" % lab.text.left(30))
+	for i in labels.size():
+		for j in range(i + 1, labels.size()):
+			var a: Label = labels[i]
+			var b: Label = labels[j]
+			if _is_descendant(a, b) or a.get_parent() == b.get_parent():
+				continue
+			if a.get_parent() is Container and a.get_parent() == b.get_parent():
+				continue
+			# righe dello stesso contenitore (HBox di una riga): stesso nonno => gia' disposte dal layout
+			if a.get_parent() != null and b.get_parent() != null and a.get_parent().get_parent() == b.get_parent().get_parent() and a.get_parent() is Container:
+				continue
+			var ra: Rect2 = _visible_rect(a)
+			var rb: Rect2 = _visible_rect(b)
+			# conta solo il testo vero: stringa piu' stretta del box
+			var fa: Font = a.get_theme_font("font")
+			var fb2: Font = b.get_theme_font("font")
+			var wa: float = minf(ra.size.x, fa.get_string_size(a.text, HORIZONTAL_ALIGNMENT_LEFT, -1, a.get_theme_font_size("font_size")).x)
+			var wb: float = minf(rb.size.x, fb2.get_string_size(b.text, HORIZONTAL_ALIGNMENT_LEFT, -1, b.get_theme_font_size("font_size")).x)
+			var ta := Rect2(ra.position, Vector2(wa, minf(ra.size.y, float(a.get_theme_font_size("font_size")) * 1.2)))
+			var tb := Rect2(rb.position, Vector2(wb, minf(rb.size.y, float(b.get_theme_font_size("font_size")) * 1.2)))
+			if a.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT:
+				ta.position.x = ra.end.x - wa
+			if b.horizontal_alignment == HORIZONTAL_ALIGNMENT_RIGHT:
+				tb.position.x = rb.end.x - wb
+			if a.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER:
+				ta.position.x = ra.position.x + (ra.size.x - wa) * 0.5
+			if b.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER:
+				tb.position.x = rb.position.x + (rb.size.x - wb) * 0.5
+			var inter: Rect2 = ta.intersection(tb)
+			if inter.size.x > 2.0 and inter.size.y > 3.0:
+				issues.append("testi sovrapposti: '%s' e '%s'" % [a.text.left(24), b.text.left(24)])
+	if issues.is_empty():
+		print("OK testi %s (%d etichette)" % [name, labels.size()])
+	else:
+		for t in issues:
+			problems += 1
+			print("PROBLEMA TESTO [%s]: %s" % [name, t])
+
+
 func _name(c: Control) -> String:
 	if c is Button and (c as Button).text != "":
 		return (c as Button).text
@@ -284,6 +350,9 @@ func _run() -> void:
 			c.queue_free()
 	await create_timer(0.5).timeout
 	_audit("battaglia", s)
+	Notify.toast("Sfida facoltativa: Rottura lampo: Rompi l'equilibrio del boss entro il round 4 (+120 crediti)")
+	await create_timer(0.5).timeout
+	_audit_text("battaglia", s)
 	_shot("battaglia")
 	s._open_pause()
 	await create_timer(0.5).timeout

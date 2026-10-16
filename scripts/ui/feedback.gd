@@ -162,6 +162,26 @@ func refresh_fps() -> void:
 		_fps_label.visible = Settings.show_fps
 
 
+# Dove compaiono gli avvisi. Di solito in alto al centro; in battaglia il centro e' occupato da boss e allarme,
+# quindi vanno in alto a destra, sotto la barra del boss.
+var _corner_right: bool = false
+var _corner_top: float = 10.0
+
+
+func set_toast_corner(right: bool, top: float = 10.0) -> void:
+	_corner_right = right
+	_corner_top = top
+	if _toasts == null:
+		return       # si applica appena gli avvisi esistono
+	var a: float = 1.0 if right else 0.5
+	_toasts.anchor_left = a
+	_toasts.anchor_right = a
+	_toasts.offset_left = -382.0 if right else -185.0
+	_toasts.offset_right = -12.0 if right else 185.0
+	_toasts.offset_top = top
+	_toasts.offset_bottom = top + 290.0
+
+
 func _build_toasts() -> void:
 	_toasts = VBoxContainer.new()
 	_toasts.add_theme_constant_override("separation", 6)
@@ -173,6 +193,8 @@ func _build_toasts() -> void:
 	_toasts.offset_top = 10.0
 	_toasts.offset_bottom = 300.0
 	_safe.add_child(_toasts)
+	if _corner_right:
+		set_toast_corner(_corner_right, _corner_top)
 
 
 func _build_spinner() -> void:

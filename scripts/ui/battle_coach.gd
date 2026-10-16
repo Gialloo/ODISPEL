@@ -57,8 +57,10 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel = HudPanel.new().setup("GUIDA", BattleTheme.OK)
 	panel.margins = Vector4(14.0, 28.0, 14.0, 10.0)
-	panel.position = Vector2(944.0, 516.0)
-	panel.size = Vector2(320.0, 180.0)
+	# la scheda sta sopra il tasto LOG (in basso a destra): prima lo copriva
+	var touch: bool = TouchUi.active()
+	panel.size = Vector2(320.0, 200.0 if touch else 176.0)
+	panel.position = Vector2(944.0, (640.0 if touch else 676.0) - panel.size.y)
 	add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)

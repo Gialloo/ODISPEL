@@ -1159,7 +1159,7 @@ func _draw_hp_under(u: Dictionary, cx: float, y: float) -> void:
 	var ghost: float = float(_hp_ghost.get(u["id"], ratio))
 	if ghost > ratio:
 		draw_rect(Rect2(r.position, Vector2(w * ghost, h)), Color(BattleTheme.RD, 0.9))
-	var col: Color = BattleTheme.RD if ratio < 0.3 else (BattleTheme.POP if ratio < 0.6 else BattleTheme.OK)
+	var col: Color = BattleTheme.RD if ratio < 0.3 else (BattleTheme.POP if ratio < 0.6 else BattleTheme.HP)
 	draw_rect(Rect2(r.position, Vector2(w * ratio, h)), col)
 	if int(u.get("shield", 0)) > 0:
 		draw_rect(Rect2(r.position, Vector2(minf(w, w * float(u["shield"]) / maxf(1.0, float(u["max_hp"]))), 3.0)), Color(BattleTheme.WH, 0.85))
