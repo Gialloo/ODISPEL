@@ -393,7 +393,9 @@ static func _note_seen(st: Dictionary, key: String, id: String) -> void:
 
 # MINACCIA: quanto fara' la mossa annunciata del boss e se sarebbe letale (senza critico). {lethal: [unit id], dmg: {unit id: n}}
 static func threat_preview(state: Dictionary) -> Dictionary:
-	var out: Dictionary = {"lethal": [], "dmg": {}}
+	# "enrage_lethal": chi morirebbe SOLO se il boss si infuria durante il round (i colpi dei giocatori lo portano sotto meta' PV: +25%).
+	# Misurato con tools/preview_check.gd: e' l'unica causa per cui il colpo reale supera l'anteprima senza Guardia.
+	var out: Dictionary = {"lethal": [], "dmg": {}, "enrage_lethal": []}
 	var tele: Dictionary = state.get("telegraph", {})
 	if tele.is_empty() or str(state["winner"]) != "":
 		return out
@@ -418,7 +420,19 @@ static func threat_preview(state: Dictionary) -> Dictionary:
 		out["dmg"][str(t["id"])] = d
 		if d >= int(t["hp"]) + int(t["shield"]):
 			out["lethal"].append(str(t["id"]))
+		elif _enrage_possible(boss):
+			var d2: int = calc_damage(boss, t, float(move["mult"]) * BattleTypes.ENRAGE_BONUS)
+			if d2 >= int(t["hp"]) + int(t["shield"]):
+				out["enrage_lethal"].append(str(t["id"]))
 	return out
+
+
+# Il boss non e' ancora infuriato ma e' abbastanza vicino alla soglia da poterci arrivare in questo round.
+const ENRAGE_WARN_MARGIN: float = 0.25
+
+static func _enrage_possible(boss: Dictionary) -> bool:
+	var frac: float = float(boss["hp"]) / float(maxi(1, int(boss["max_hp"])))
+	return frac >= BattleTypes.ENRAGE_BELOW and frac < BattleTypes.ENRAGE_BELOW + ENRAGE_WARN_MARGIN
 
 
 # Una mossa del boss e' una CARICA se colpisce forte uno solo o tutti con molta potenza: si puo' interrompere con la rottura.

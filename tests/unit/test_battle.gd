@@ -28,6 +28,7 @@ func _init() -> void:
 	_test_content()
 	_test_colors_and_stats()
 	_test_state_validation()
+	_test_threat_enrage()
 	_test_setup()
 	_test_choices()
 	_test_order_and_damage()
@@ -87,6 +88,28 @@ func _test_state_validation() -> void:
 	bad["units"]["boss"]["hp"] = -5
 	_check("PV negativi: rifiutato", BattleState.validate(bad) != "")
 	_check("from_json di uno stato rovinato ritorna vuoto", BattleState.from_json(JSON.stringify(bad)).is_empty())
+
+
+func _test_threat_enrage() -> void:
+	var st: Dictionary = BattleState.create_solo("T", [{"char": "dax", "level": 1, "rank": 0, "passives": [], "gear": []}], [], "distributore", 7)
+	var boss: Dictionary = BattleState.boss(st)
+	boss["hp"] = int(float(boss["max_hp"]) * 0.6)         # sopra la soglia di furia, ma vicino
+	var tid: String = str(BattleState.active_unit(st, "p1")["id"])
+	var base: Dictionary = BattleResolver.threat_preview(st)
+	_check("anteprima: c'e' un danno per il bersaglio", base["dmg"].has(tid))
+	var d: int = int(base["dmg"][tid])
+	var tgt: Dictionary = BattleState.unit(st, tid)
+	tgt["shield"] = 0
+	tgt["hp"] = d + 1
+	var move: Dictionary = BattleContent.BOSS_MOVES[str(st["telegraph"]["move"])]
+	var d2: int = BattleResolver.calc_damage(boss, tgt, float(move["mult"]) * BattleTypes.ENRAGE_BONUS)
+	if d2 > d + 1:
+		var pv: Dictionary = BattleResolver.threat_preview(st)
+		_check("non letale ora, ma letale se il boss si infuria", pv["lethal"].is_empty() and pv["enrage_lethal"].has(tid))
+	boss["hp"] = int(float(boss["max_hp"]) * 0.95)       # lontano dalla soglia: nessun avviso
+	_check("lontano dalla furia: nessun avviso", BattleResolver.threat_preview(st)["enrage_lethal"].is_empty())
+	boss["hp"] = int(float(boss["max_hp"]) * 0.3)        # gia' infuriato: il danno lo include gia'
+	_check("gia' infuriato: nessun avviso", BattleResolver.threat_preview(st)["enrage_lethal"].is_empty())
 
 
 func _test_setup() -> void:

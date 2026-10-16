@@ -5,6 +5,9 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.32", "items": [
+		"BOSS: se un colpo annunciato non ti uccide ora ma ti ucciderebbe quando il boss si infuria (sotto meta' vita, +25% di danno), la schermata avvisa: SE SI INFURIA: LETALE PER ...",
+	]},
 	{"v": "0.24.31", "items": [
 		"SALVATAGGI: una partita rovinata o incompleta viene rifiutata con un messaggio chiaro, invece di dare un errore strano. Vale anche online se l'host manda uno stato sbagliato.",
 		"BOSS: l'attacco annunciato mostra il DANNO MINIMO previsto. Il colpo reale puo' essere piu' forte se si attivano rabbia, placche o catene.",

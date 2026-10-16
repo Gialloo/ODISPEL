@@ -1014,6 +1014,13 @@ func _refresh_telegraph() -> void:
 		var dmg_map: Dictionary = threat["dmg"]
 		if dmg_map.size() == 1:
 			_tele_target.text += " · DANNO MIN. ~%d" % int(dmg_map.values()[0])
+		var risky: Array = threat["enrage_lethal"]
+		if not risky.is_empty():
+			var rn: Array = []
+			for uid in risky:
+				rn.append(str(BattleState.unit(shown, str(uid)).get("name", "?")).to_upper())
+			_tele_target.text = "SE SI INFURIA: LETALE PER %s" % ", ".join(rn)
+			_tele_target.add_theme_color_override("font_color", BattleTheme.IMPACT)
 	else:
 		var names: Array = []
 		for uid in lethal:
