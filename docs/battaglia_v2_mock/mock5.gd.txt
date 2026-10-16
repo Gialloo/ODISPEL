@@ -558,14 +558,14 @@ class _Hud extends Control:
 		var cream := Color("#fffaf0")
 		# --- ordine dei turni: linea bianca sottile, ritratti in quadrati di dimensione decrescente ---
 		var ly: float = 52.0
-		draw_line(Vector2(116, ly + 2.0), Vector2(680, ly + 2.0), Color(0, 0, 0, 0.5), 5.0)
-		draw_line(Vector2(116, ly), Vector2(680, ly), cream, 2.0)
-		draw_colored_polygon(PackedVector2Array([Vector2(676, ly - 10.0), Vector2(700, ly), Vector2(676, ly + 10.0)]), cream)
+		draw_line(Vector2(142, ly + 2.0), Vector2(780, ly + 2.0), Color(0, 0, 0, 0.5), 5.0)
+		draw_line(Vector2(142, ly), Vector2(780, ly), cream, 2.0)
+		draw_colored_polygon(PackedVector2Array([Vector2(776, ly - 10.0), Vector2(800, ly), Vector2(776, ly + 10.0)]), cream)
 		_U.skew_text(self, Vector2(14, 30), "TURNI", 15, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
 		_U.skew_text(self, Vector2(14, 78), _G.turn_txt, 38, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 7)
 		var hair: Array = [_G.col, Color("#2a2634"), _G.others[0], _G.others[1], _G.others[2]]
 		var sizes: Array = [88.0, 68.0, 56.0, 46.0, 40.0]
-		var tx: float = 132.0
+		var tx: float = 162.0
 		for i in 5:
 			var sz: float = sizes[i]
 			var enemy: bool = i == 1
@@ -582,7 +582,7 @@ class _Hud extends Control:
 				var bp: Vector2 = rc.position + Vector2(0, sz)
 				draw_rect(Rect2(bp.x, bp.y - 20.0, 22, 20), cream)
 				_U.skew_text(self, bp + Vector2(6, -4), str(i + 1), 17, Color("#15121c"), Color(0, 0, 0, 0), BattleTheme.display(), 0, 0.0)
-			tx += sz + 14.0
+			tx += sz + 28.0
 		# --- nome del boss (alto a destra): banner rosa con taglio rosso, PV a segmenti ed equilibrio ---
 		var bn := Rect2(838, 24, 460, 44)
 		draw_colored_polygon(_U.slant(Rect2(bn.position + Vector2(5, 5), bn.size), 18.0), Color(0, 0, 0, 0.5))
