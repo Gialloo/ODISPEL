@@ -192,3 +192,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v42: ombre di boss e personaggio morbide (18 strati sfumati, bordo sfocato) e di colore teal scuro in tinta con lo sfondo, invece del nero pieno.
 - v43: eliminati i due semicerchi bianchi esterni della ruota (quello che partiva dalla A); resta solo il cerchio sottile attorno al personaggio.
 - v44: barre del party spostate di 2 px (2,2 unita') piu' in basso.
+- v45: cerchio bianco sottile attorno ad A S U G spostato nello strato posteriore (dietro schizzi, personaggio e lettere) cosi' silhouette e lettere restano pulite; barre del party un altro pixel piu' in basso (y base 548,3).
