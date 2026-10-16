@@ -182,6 +182,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _freeze > 0.0:                    # hit-stop locale: solo il palco si ferma, il resto del gioco no
+		_freeze -= delta
+		queue_redraw()
+		return
 	_t += delta
 	boss_hit = maxf(0.0, boss_hit - delta * 3.0)
 	if acting != _lunge_who:
@@ -222,6 +226,14 @@ func _process(delta: float) -> void:
 		scale = Vector2.ONE
 		_zoomed = false
 	queue_redraw()
+
+
+var _freeze: float = 0.0
+
+
+# Congela l'animazione del palco per qualche istante (impact frames). Solo presentazione.
+func freeze(seconds: float) -> void:
+	_freeze = maxf(_freeze, clampf(seconds, 0.0, 0.3))
 
 
 # Scuote l'inquadratura e la ingrandisce un attimo (colpi forti).

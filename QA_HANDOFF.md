@@ -86,7 +86,14 @@ Famiglie: stato (hp), difesa (shield, balance), pericolo (danger, ko), azione (s
 Onesto: in SCELTA il numero non scende (tutto serve a decidere) e sale di 2 per le icone. La riduzione e' in risoluzione (-16). Lo strumento NON conta cio' che il palco disegna (numeri PV sotto gli sprite): quelli scendono da 3 a 1 in scelta. NB: la prima misura "risoluzione" prima era in realta' una scelta (ventaglio ancora aperto): il nuovo strumento sceglie fino a far partire il round.
 Screenshot: `/tmp/shots/b35` (prima) e `/tmp/shots/a35` (dopo) nel mio ambiente, non nel repo.
 
-### Test
+#### Test
+`tests/unit/test_impact_frames.gd` (26 controlli: normale, critico pesante, eccezionale, ult non critica/critica/devastante, KO, multi-bersaglio, due mosse, contrattacco/spine, sequenze, guardia, progressione). Foto: `tools/impact_shot.gd`.
+
+### NON verificato
+Telefono (durate hit-stop, leggibilita', prestazioni su Mali-G57 in qualita' BASSA), build esportate installate, multiplayer reale, itch.io (esito non visibile dalla sandbox).
+Da provare: critico normale; grosso colpo al boss; ult critica; ult che manda KO il boss (un solo lampo, poi FINISH!).
+
+## Test
 - Nuovo `tests/unit/test_hud_states.gd` (28 controlli, xvfb): registro icone, riconoscimento pericolo, visibilita' per stato in PC e touch.
 - Tutta la suite in `tests/unit/` (parallelo headless) senza errori; `test_hud_layout` 31/31 e `test_input_ui` con xvfb; `tools/ui_audit.gd` PC e touch: 0 problemi.
 - NON eseguiti: PvP 2v2 e touch, PvP con i nuovi stati (non toccato), telefono reale, altre risoluzioni, multiplayer. Nello screenshot touch "scelta" si vede un riquadro scuro a sinistra (probabilmente la scheda GUIDA in animazione): non verificato se e' un difetto.
@@ -112,6 +119,26 @@ Fonte unica: `tools/icons/` (`lib.py` primitive, `defs_a..m.py` disegni, `build.
 - Esportazione: `docs/icone/*` e `assets/ui/icons/*` sono esclusi dal pacchetto (gli SVG sono gia' incorporati nel registro): APK 0.25.0 = 0.24.36 + circa 50 KB.
 - Limiti: leggibilita' reale di 248 icone a 20-24 px su telefono NON verificata (il test misura solo i pixel visibili). Alcune icone sono simili a piccole dimensioni (anelli: C04/D04/C16/G07; sagome multiple A19/D09/F17): guardare l'atlante e dirmi quali non si capiscono. Non ho confrontato "prima/dopo" per roster/progressione/multiplayer (prima avevano gli stessi segnaposto in codice).
 
+## 6. Impact frames anime (0.26.0)
+
+Solo presentazione: nessuna modifica a motore, regole, bilanciamento, salvataggi o protocollo multiplayer.
+
+### Come si lega un colpo alla sua mossa (verificato nel codice)
+- Gli eventi `damage` NON portano l'id della mossa. Il legame e' il gruppo (indice dell'ultimo `act`/`boss_move`, sorgente del danno): `ImpactFrames.plan()`.
+- Contrattacchi (sorgente diversa), spine (`thorns`) e costi (`cost`) non ereditano mai l'ultimate. Ult multi-bersaglio: un solo colpo "decisivo" per gruppo (il piu' grande in rapporto ai PV massimi, a parita' il primo). Colpi simultanei di mosse diverse = gruppi indipendenti.
+- PvP: l'evento `act` porta gia' `kind`; stesso piano, soglie "giocatore".
+
+### Livelli e soglie (`ImpactFrames.CFG`, tutte relative ai PV massimi/attuali del bersaglio)
+Priorita': ult devastante > ult critica > danno eccezionale > critico pesante > normale.
+1 critico (>=3% PV max) · 2 eccezionale (>=18% PV max boss / 35% giocatore, oppure >=60% dei PV attuali con almeno 8% dei max) · 3 ult critica · 4 ult devastante (>=28% / 50%, oppure >=75% dei PV attuali con almeno 12%).
+Hit-stop iniziale (ms): 65 / 100 / 125 / 185 (`ImpactFrames.HIT_STOP`); overlay 0,22 / 0,34 / 0,5 / 0,75 s. Sono valori di partenza da regolare provando su telefono.
+
+### Implementazione
+- `scripts/ui/impact_overlay.gd` (disegno procedurale, tempo reale, niente shader), `scripts/battle/impact_director.gd` (guardia anti-sovrapposizione: un effetto uguale/piu' debole durante uno attivo viene ignorato, uno piu' forte lo sostituisce; 350 ms minimi tra due lampi), `BattleStage.freeze()` (pausa solo del palco, max 0,3 s). NIENTE `Engine.time_scale`.
+- Rispetta `Settings.shake` (via `stage.impact`), `Settings.flash` (lampi a 0 = nessuna luce improvvisa), `Settings.skip_cutin` (livelli 3-4 in versione ridotta), `AnimFx.enabled()` (qualita' BASSA: versione ridotta, hit-stop x0,6).
+- KO: se il colpo letale ha mostrato un impact frame, `down` (boss e giocatore) non ripete lampo, scossa, linee e slow-motion; restano FINISH!/K.O.!.
+- Debug: IMPOSTAZIONI > PROVA GLI EFFETTI D'IMPATTO (`ImpactLab`), 4 bottoni.
+
 ## Test
 - Eseguiti (0.24.34): tutti i 76 file in `tests/unit/` in headless (parallelo): nessun errore. `test_hud_layout` (31 controlli) e `test_input_ui` richiedono uno schermo e sono passati con `xvfb-run`.
 - Nuovi: `tests/unit/test_threat_preview.gd` (26 controlli: identita' senza modificatori, Guardia, bonus placca, avviso furia, catena, nessun critico del boss); 5 controlli in `test_hud_layout.gd` (ventaglio a sinistra della GUIDA e dentro lo schermo in PC e touch, annuncio lungo dentro lo schermo, stile condiviso dei comandi); 9 sulla validazione dei salvataggi (0.24.31).
@@ -121,8 +148,8 @@ Fonte unica: `tools/icons/` (`lib.py` primitive, `defs_a..m.py` disegni, `build.
 - NON eseguiti: multiplayer con giocatori reali, rete pubblica, Android su dispositivo, avvio dell'exe su Windows.
 
 ## Build e pubblicazione
-- `releases/ODISPEL-0.25.0-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.25.0.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
-- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.36 come versione precedente.
+- `releases/ODISPEL-0.26.0-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.26.0.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
+- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.25.0 come versione precedente.
 - itch.io: il workflow `.github/workflows/itch.yml` carica da solo gli ultimi file di `releases/` dopo il push. Dal mio ambiente NON vedo l'esito: controllare la scheda Actions su GitHub o la pagina itch.io.
 
 ## Problemi aperti

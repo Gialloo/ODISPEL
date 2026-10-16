@@ -689,17 +689,30 @@ func _apply(e: Dictionary) -> void:
 	_refresh()
 
 
+var _impact: ImpactDirector = ImpactDirector.new()
+var _cur_impact: int = 0
+var _impact_stop: float = 0.0
+
+
 func _play(events: Array) -> void:
 	if shown.is_empty():
 		return
 	animating = true
 	var step: float = clampf(4.0 / float(maxi(1, events.size())), 0.08, minf(0.45, Settings.event_delay()))
+	var iplan: Array = ImpactFrames.plan(events, func(uid: String) -> Dictionary: return PvpEngine.unit(shown, uid), "")
+	var ev_i: int = -1
 	for e in events:
+		ev_i += 1
+		_cur_impact = 0
+		_impact_stop = 0.0
+		if str(e.get("t", "")) == "damage":
+			var tg: Dictionary = PvpEngine.unit(shown, str(e.get("dst", "")))
+			_cur_impact = ImpactFrames.level_of_event(e, iplan[ev_i], int(tg.get("max_hp", 1)), int(tg.get("hp", 0)), false)
 		_event(e)
 		_apply(e)
 		if not is_inside_tree():
 			return
-		await get_tree().create_timer(step).timeout
+		await get_tree().create_timer(step + _impact_stop).timeout
 	_stage.acting = ""
 	animating = false
 	_sync()
@@ -733,6 +746,8 @@ func _event(e: Dictionary) -> void:
 					AnimFx.slash(_fx, at, Color.WHITE, 1.5 if bool(e.get("crit", false)) else 1.0)
 					AnimFx.sparks(_fx, at, BattleTheme.RD, 8, 200.0)
 			Snd.play("crit" if bool(e.get("crit", false)) else "player_hit", randf_range(0.95, 1.05))
+			if _cur_impact > 0:
+				_impact_stop = _impact.play(_cur_impact, _fx, _stage, _stage.anchor_of(str(e["dst"])))
 		"heal":
 			var hc: PvpCard = _card_of_unit(str(e["dst"]))
 			_log_line("   %s recupera %s" % [_name_of(str(e["dst"])), BattleText.num(int(e["amount"]))])

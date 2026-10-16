@@ -1859,9 +1859,18 @@ func _play_events(events: Array) -> void:
 	_refresh_orders()
 	# un round con tantissimi eventi (6 giocatori) non deve durare minuti: al massimo ~14 s a velocita' normale
 	var step: float = minf(event_delay, maxf(0.06, ROUND_BUDGET / float(maxi(1, events.size()))))
+	# impact frames: a quale mossa appartiene ogni colpo (calcolato dagli eventi, nessun dato di rete in piu')
+	var iplan: Array = ImpactFrames.plan(events, func(uid: String) -> Dictionary: return BattleState.unit(shown, uid), BattleState.BOSS_ID)
+	_ko_impact_for = ""
+	var ev_i: int = -1
 	for e in events:
+		ev_i += 1
 		if not is_inside_tree():
 			return
+		_cur_impact = 0
+		if str(e.get("t", "")) == "damage":
+			var tg: Dictionary = BattleState.unit(shown, str(e.get("dst", "")))
+			_cur_impact = ImpactFrames.level_of_event(e, iplan[ev_i], int(tg.get("max_hp", 1)), int(tg.get("hp", 0)), str(e.get("dst", "")) == BattleState.BOSS_ID)
 		var line: Dictionary = BattleText.describe(shown, e)
 		if str(line["text"]) != "":
 			_push_log(str(line["text"]), str(line["kind"]))
@@ -1902,6 +1911,10 @@ func _mark_event(e: Dictionary) -> void:
 	_turn_acting = _stage.acting
 	_refresh_turn_panel()
 
+
+var _impact: ImpactDirector = ImpactDirector.new()
+var _cur_impact: int = 0               # livello impact frame dell'evento in riproduzione
+var _ko_impact_for: String = ""        # bersaglio il cui colpo finale ha gia' mostrato un impact frame (il "down" non lo duplica)
 
 const ROUND_BUDGET: float = 14.0       # secondi massimi di animazione per round (a velocita' normale)
 const HIT_WORDS: Array = ["BAM!", "POW!", "CRACK!", "WHAM!", "BOOM!"]
@@ -2086,21 +2099,26 @@ func _event_fx(e: Dictionary) -> float:
 			_link_clear()
 		"down":
 			Snd.play("down")
+			var had_impact: bool = _ko_impact_for == str(e["unit"])
+			_ko_impact_for = ""
 			if str(e["unit"]) == BattleState.BOSS_ID:
-				# colpo di grazia: lampo, linee e scritta gigante
+				# colpo di grazia: lampo, linee e scritta gigante (se il colpo ha gia' fatto un impact frame non si ripete)
 				_buzz(220)
-				_stage.impact(26.0, 0.08)
-				ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color.WHITE, 0.5)
-				ComicFx.flash(_fx, Color(1, 1, 1, 0.85), 0.35)
+				if not had_impact:
+					_stage.impact(26.0, 0.08)
+					ComicFx.speed_lines(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color.WHITE, 0.5)
+					ComicFx.flash(_fx, Color(1, 1, 1, 0.85), 0.35)
 				_pop("FINISH!", BattleState.BOSS_ID, BattleTheme.POP, BattleTheme.RD, 84, 120.0, Vector2(0.0, -20.0))
-				_slow_motion(0.25, 0.5)
+				if not had_impact:
+					_slow_motion(0.25, 0.5)
 				if AnimFx.enabled():
 					AnimFx.shards(_fx, _stage.anchor_of(BattleState.BOSS_ID), Color("#ffd166"))
 					ComicFx.flash(_fx, Color(1.0, 0.85, 0.3, 0.5), 0.5)
 				return 0.35
 			_buzz(110)
-			_stage.impact(14.0, 0.04)
-			ComicFx.flash(_fx, Color(1, 1, 1, 0.5), 0.15)
+			if not had_impact:
+				_stage.impact(14.0, 0.04)
+				ComicFx.flash(_fx, Color(1, 1, 1, 0.5), 0.15)
 			_pop("K.O.!", str(e["unit"]), BattleTheme.RD, BattleTheme.WH, 56, 95.0)
 			banter(_local_active_id(), "ko")
 			return 0.12
@@ -2510,14 +2528,26 @@ func _fx_damage(e: Dictionary) -> float:
 	var fill: Color = BattleTheme.POP if to_boss else BattleTheme.RD
 	_hit_anim(e, dst, to_boss, is_crit, heavy)
 	# un solo fumetto per colpo: il critico e' semplicemente piu' grande, col punto esclamativo
-	_pop("-%s%s" % [BattleText.num(amount), "!" if is_crit else ""], dst, fill, BattleTheme.BK, 52 if is_crit else (44 if heavy else 32), 84.0 if is_crit else (74.0 if heavy else 56.0))
+	var lvl: int = _cur_impact
+	var fs: int = 52 if is_crit else (44 if heavy else 32)
+	if lvl >= 3:
+		fs = 66
+	_pop("-%s%s" % [BattleText.num(amount), "!" if is_crit else ""], dst, fill, BattleTheme.BK, fs, 84.0 if is_crit else (74.0 if heavy else 56.0))
+	var extra: float = 0.0
 	if heavy or is_crit:
 		var at: Vector2 = _stage.anchor_of(dst)
 		ComicFx.speed_lines(_fx, at, Color(1, 1, 1, 0.9) if to_boss else BattleTheme.RD, 0.22)
 		_stage.impact(11.0 if to_boss else 8.0, 0.025)
-		return 0.06
-	_stage.impact(4.0, 0.0)
-	return 0.0
+		extra = 0.06
+	else:
+		_stage.impact(4.0, 0.0)
+	if lvl > 0:
+		var hs: float = _impact.play(lvl, _fx, _stage, _stage.anchor_of(dst))
+		if hs > 0.0 or _impact.last_played > 0:
+			if int(target.get("hp", 0)) - amount <= 0:
+				_ko_impact_for = dst
+			extra = maxf(extra, hs)
+	return extra
 
 
 # ---------- Battute ----------

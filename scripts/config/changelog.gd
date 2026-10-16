@@ -5,6 +5,11 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.26.0", "items": [
+		"IMPACT FRAMES: i colpi eccezionali ora hanno un effetto da anime, in quattro livelli: critico pesante (secco), danno eccezionale (raggi e crepe), ultimate critica (anello rituale) e ultimate devastante (il momento clou).",
+		"Piccola pausa solo sull'immagine al momento del colpo (hit-stop), mai sul gioco. Rispetta SCOSSE, LAMPI DI LUCE e SALTA CUT-IN; con la qualita' BASSA la versione e' ridotta.",
+		"Un K.O. dato da un colpo con impact frame non ripete il lampo finale. In IMPOSTAZIONI c'e' il pulsante PROVA GLI EFFETTI D'IMPATTO per vedere i quattro livelli.",
+	]},
 	{"v": "0.25.0", "items": [
 		"ICONE: nuovo linguaggio visivo ODISPEL con 248 icone (combattimento, status, turni, combo, boss, multiplayer, esplorazione, progressione, interfaccia, identita' Odica) e 4 stemmi di fazione (la Bilancia-L di LibraCorp, Rondini, Magabondi, Kairos).",
 		"Le icone gia' nel gioco (mosse, PV, equilibrio, pericolo, fazioni, valute) ora usano i nuovi disegni; le altre sono pronte per le prossime schermate ma non vengono mostrate finche' la funzione non esiste.",

@@ -114,6 +114,7 @@ func _ready() -> void:
 
 	_section(box, "DIAGNOSTICA")
 	diag_button = _plain(box, "COPIA RAPPORTO TECNICO (da mandare se qualcosa non va)", "normal", _on_diag)
+	_plain(box, "PROVA GLI EFFETTI D'IMPATTO (impact frames)", "normal", func() -> void: ImpactLab.open(get_tree().root))
 
 	_section(box, "GRAFICHE")
 	art_label = BattleTheme.make_label("", 15, BattleTheme.CY_DIM)
