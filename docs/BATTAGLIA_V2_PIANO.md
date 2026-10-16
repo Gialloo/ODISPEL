@@ -174,3 +174,4 @@ Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera pe
 - v21: comandi rapidi (FORMAZIONE/BERSAGLIO/AUTO/VELOCITA') rimpiccioliti (cerchi r=12, testo 15) e RISERVA subito dopo, sulla stessa linea.
 - v22: barra colorata tra cut-in e barre resa verticale e sottile (3 px); cut-in più largo e visibile.
 - v23: cerchio fazione con bagliore (colore del personaggio, anello bianco) quando il personaggio ha la carica; nel mock Mira e Kira sono cariche, Dax no.
+- v24: il personaggio attivo (F1) ha una linea ciano sotto la riga.
