@@ -11,6 +11,7 @@ class _G:
 	static var col: Color = Color("#ff2f3a")
 	static var name_: String = "rosso"
 	static var pick: String = "SKILL"
+	static var turn_txt: String = "3"
 	static var others: Array = []
 
 const AURA: Color = Color("#ff2f3a")
@@ -24,6 +25,7 @@ func _init() -> void:
 	selected = a.size() > 1 and a[1] == "1"
 	var nm: String = a[2] if a.size() > 2 else "rosso"
 	_G.name_ = nm
+	_G.turn_txt = "3/20" if selected else "3"
 	_G.pick = "ULTIMATE" if (a.size() > 3 and a[3] == "ult") else "SKILL"
 	_G.col = _G.PAL[nm]
 	_G.others = []
@@ -554,23 +556,33 @@ class _Hud extends Control:
 
 	func _draw() -> void:
 		var cream := Color("#fffaf0")
-		# --- ordine dei turni: pennellata nera con stelle (HSR/Metaphor), attore corrente grande ---
-		draw_line(Vector2(8, 46), Vector2(650, 46), Color(0, 0, 0, 0.5), 5.0)
-		draw_line(Vector2(8, 44), Vector2(650, 44), Color("#fffaf0"), 2.0)
-		draw_colored_polygon(PackedVector2Array([Vector2(646, 34), Vector2(672, 44), Vector2(646, 54)]), Color("#fffaf0"))
-		_U.skew_text(self, Vector2(14, 74), "TURNI", 14, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+		# --- ordine dei turni: linea bianca sottile, ritratti in quadrati di dimensione decrescente ---
+		var ly: float = 52.0
+		draw_line(Vector2(116, ly + 2.0), Vector2(680, ly + 2.0), Color(0, 0, 0, 0.5), 5.0)
+		draw_line(Vector2(116, ly), Vector2(680, ly), cream, 2.0)
+		draw_colored_polygon(PackedVector2Array([Vector2(676, ly - 10.0), Vector2(700, ly), Vector2(676, ly + 10.0)]), cream)
+		_U.skew_text(self, Vector2(14, 30), "TURNI", 15, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+		_U.skew_text(self, Vector2(14, 78), _G.turn_txt, 38, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 7)
 		var hair: Array = [_G.col, Color("#2a2634"), _G.others[0], _G.others[1], _G.others[2]]
-		var xs: Array = [92.0, 196.0, 290.0, 384.0, 478.0]
+		var sizes: Array = [88.0, 68.0, 56.0, 46.0, 40.0]
+		var tx: float = 132.0
 		for i in 5:
-			var big: bool = i == 0
-			var r: float = 46.0 if big else 32.0
+			var sz: float = sizes[i]
 			var enemy: bool = i == 1
-			var c := Vector2(xs[i], 44.0)
-			_U.star(self, c, r, Color("#3a3446") if enemy else hair[i])
-			_U.head(self, c, r * 0.58, Color("#ff5a4a") if enemy else hair[i])
+			var rc := Rect2(tx, ly - sz * 0.5, sz, sz)
+			var edge: Color = Color("#ff5a4a") if enemy else hair[i]
+			if i == 0:
+				draw_rect(Rect2(rc.position - Vector2(6, 6), rc.size + Vector2(12, 12)), Color(edge, 0.3))
+			draw_rect(rc, Color(0.04, 0.05, 0.1, 0.95))
+			_U.head(self, rc.get_center() + Vector2(0, 2), sz * 0.36, Color("#ff5a4a") if enemy else hair[i])
+			draw_rect(rc, edge, false, 4.0 if i == 0 else 3.0)
 			if enemy:
-				_U.icon(self, "danger", c + Vector2(r * 0.62, -r * 0.62), 17.0, Color("#fff36b"))
-			_U.skew_text(self, c + Vector2(r * 0.55, r * 0.95), str(i + 1), 18, cream, Color(0, 0, 0, 0.95), BattleTheme.display(), 6)
+				_U.icon(self, "danger", rc.position + Vector2(sz - 10.0, 10.0), 18.0, Color("#fff36b"))
+			if i < 3:
+				var bp: Vector2 = rc.position + Vector2(0, sz)
+				draw_rect(Rect2(bp.x, bp.y - 20.0, 22, 20), cream)
+				_U.skew_text(self, bp + Vector2(6, -4), str(i + 1), 17, Color("#15121c"), Color(0, 0, 0, 0), BattleTheme.display(), 0, 0.0)
+			tx += sz + 14.0
 		# --- nome del boss (alto a destra): banner rosa con taglio rosso, PV a segmenti ed equilibrio ---
 		var bn := Rect2(838, 24, 460, 44)
 		draw_colored_polygon(_U.slant(Rect2(bn.position + Vector2(5, 5), bn.size), 18.0), Color(0, 0, 0, 0.5))
