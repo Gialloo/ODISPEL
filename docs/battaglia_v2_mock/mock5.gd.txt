@@ -555,8 +555,9 @@ class _Hud extends Control:
 	func _draw() -> void:
 		var cream := Color("#fffaf0")
 		# --- ordine dei turni: pennellata nera con stelle (HSR/Metaphor), attore corrente grande ---
-		_U.brush(self, Vector2(8, 44), Vector2(660, 40), 30.0, 12.0, Color(0.02, 0.02, 0.05, 0.95), 7, 0.0, 0.16, 22)
-		draw_colored_polygon(PackedVector2Array([Vector2(660, 22), Vector2(704, 41), Vector2(660, 60)]), Color(0.02, 0.02, 0.05, 0.95))
+		draw_line(Vector2(8, 46), Vector2(650, 46), Color(0, 0, 0, 0.5), 5.0)
+		draw_line(Vector2(8, 44), Vector2(650, 44), Color("#fffaf0"), 2.0)
+		draw_colored_polygon(PackedVector2Array([Vector2(646, 34), Vector2(672, 44), Vector2(646, 54)]), Color("#fffaf0"))
 		_U.skew_text(self, Vector2(14, 74), "TURNI", 14, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
 		var hair: Array = [_G.col, Color("#2a2634"), _G.others[0], _G.others[1], _G.others[2]]
 		var xs: Array = [92.0, 196.0, 290.0, 384.0, 478.0]
