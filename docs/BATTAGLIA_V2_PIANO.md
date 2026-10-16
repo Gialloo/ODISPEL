@@ -155,3 +155,9 @@ Cosa fanno esattamente Situazionale / Formazione / Bersaglio; quanto 3D reale su
 
 ### 7.5 Palette HUD v5 (proposta, in confronto)
 Colori dei personaggi: blu, verde, rosso, giallo, viola. Nessuna tinta libera per le risorse, quindi: barre e risorse **neutre** (vita = avorio a segmenti; energia = bianco-ghiaccio; scudo = argento con tratteggio; riserva = rombi avorio), l'unico colore saturo di una riga e' quello del personaggio; ciano solo per selezione/bersaglio/attivo; pericolo = banner nero con righe bianche, icona gialla, corallo solo sul lato boss. Bozze: `docs/battaglia_v2_mock/hud5_<colore>_libera.png` (+ `mock5.gd.txt`).
+
+### 7.6 Decisioni successive (sessione di bozze)
+- **Base scelta: v6 con Kira** (`hud6_kira_*`): ruota attorno al personaggio con lettere giganti dietro lo sprite. Le varianti v6b (lettere piu' piccole), v6c/v6d (ruota ruotata, lettere davanti), v7, v8 e v9 sono scartate o in sospeso, restano nel repo come riferimento.
+- **Barre sottili ed eleganti** (`hud10_kira_*`): vita boss ciano 5 px a segmenti fini con punta luminosa; equilibrio boss bianco 3 px; righe squadra con vita 4 px avorio, energia 2 px bianco-ghiaccio, scudo come filo argento tratteggiato; numeri piccoli allineati a destra. Niente piu' barre spesse con riflesso.
+- **Ordine turni**: quadrati decrescenti sulla linea bianca, 1-3 numerati; contatore turno sotto "TURNI" ("3" oppure "3/20" nelle battaglie a tempo).
+- **Asset di prova**: Kira usa `battle.png` (sprite), `neutral.png` (ritratto nell'ordine turni) e `cutin.png` (ritaglio nella riga squadra). Boss, altri personaggi e tutti i numeri sono segnaposto.
