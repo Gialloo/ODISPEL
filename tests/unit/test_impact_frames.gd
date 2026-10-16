@@ -111,4 +111,25 @@ func _run() -> void:
 	_check("frame piu' forte sovrapposto: sostituisce", d.last_played == F.ULT_EXCEPTIONAL)
 	_check("progressione hit-stop", F.HIT_STOP[1] < F.HIT_STOP[2] and F.HIT_STOP[2] < F.HIT_STOP[3] and F.HIT_STOP[3] < F.HIT_STOP[4])
 	_check("hit-stop <= 0.22s", float(F.HIT_STOP[4]) <= 0.22)
+	# tuning dopo il test Android: pause nominali 40/60/80/120 ms, overlay piu' brevi, pausa sempre piu' corta dell'overlay
+	_check("hit-stop nominale 40/60/80/120 ms", F.HIT_STOP == [0.0, 0.040, 0.060, 0.080, 0.120])
+	_check("overlay 0,22/0,30/0,42/0,62 s", F.OVERLAY_LEN == [0.0, 0.22, 0.30, 0.42, 0.62])
+	for lv in [1, 2, 3, 4]:
+		_check("pausa < overlay (livello %d)" % lv, float(F.HIT_STOP[lv]) < float(F.OVERLAY_LEN[lv]) * 0.5)
+	var d2 := ImpactDirector.new()
+	d2.play(F.ULT_EXCEPTIONAL, null, null, Vector2.ZERO)
+	_check("livello 4: pausa effettiva <= 120 ms", d2.last_hit_stop <= 0.12 + 0.0001 and d2.last_hit_stop > 0.0)
+	# i quattro profili sono distinti anche nella geometria (fratture, spicchi) e non solo nel colore
+	var sig: Array = []
+	for lv in [1, 2, 3, 4]:
+		var ov := ImpactOverlay.new().setup(lv, Vector2(640, 300), 7, false)
+		sig.append("%d|%d" % [ov._cracks.size(), ov._wedges.size()])
+		ov.free()
+	_check("profili distinti per geometria", sig.size() == 4 and sig[0] != sig[1] and sig[1] != sig[2] and sig[2] != sig[3] and sig[1] != sig[3])
+	var crk: Array = []
+	for lv in [1, 2, 3, 4]:
+		var ov2 := ImpactOverlay.new().setup(lv, Vector2(640, 300), 7, false)
+		crk.append(ov2._cracks.size())
+		ov2.free()
+	_check("fratture: L1 nessuna, L4 le piu' estese", crk[0] == 0 and crk[3] > crk[1] and crk[3] > crk[2])
 	_check("progressione durata overlay", F.OVERLAY_LEN[1] < F.OVERLAY_LEN[2] and F.OVERLAY_LEN[3] < F.OVERLAY_LEN[4])

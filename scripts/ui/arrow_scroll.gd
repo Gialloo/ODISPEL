@@ -113,16 +113,23 @@ func _layout() -> void:
 		return
 	_up.size = Vector2(w, w)
 	_down.size = Vector2(w, w)
+	_last_rect = Rect2()
 	_place()
 	_up.disabled = scroll_vertical <= 0
 	_down.disabled = float(scroll_vertical) >= bar.max_value - bar.page - 1.0
 
 
 # Le frecce sono "top level": si posizionano in coordinate assolute, sempre sull'angolo della lista.
+var _last_rect: Rect2 = Rect2()
+
+
 func _place() -> void:
 	if _up == null or not _up.visible:
 		return
 	var r: Rect2 = get_global_rect()
+	if r == _last_rect:
+		return                      # lista ferma: niente da spostare (evita di toccare ogni frame i due pulsanti)
+	_last_rect = r
 	_up.global_position = Vector2(r.end.x - _up.size.x, r.position.y)
 	_down.global_position = Vector2(r.end.x - _down.size.x, r.end.y - _down.size.y)
 

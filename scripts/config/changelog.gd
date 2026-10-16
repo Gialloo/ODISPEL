@@ -5,6 +5,12 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.26.2", "items": [
+		"IMPACT FRAMES (dopo il test su Android): pausa sul colpo piu' corta (40, 60, 80 e 120 ms), lampo bianco piu' forte e visibile, e i quattro livelli ora si distinguono anche per forma: spilli e anello (1), raggi larghi e crepe (2), velo magenta con tagli e barre (3), schermo nero con fratture a tutto campo (4).",
+		"PRESTAZIONI: l'elenco degli operatori non si ricostruisce piu' ad ogni tocco (da circa 21 ms a meno di 1 ms su PC): scegliere un operatore o cambiare squadra e' immediato anche sul telefono.",
+		"Ritratti fuori schermo e frecce di scorrimento ferme non vengono piu' ridisegnati; testo dei ritratti in cache; meno passi di fisica inutili.",
+		"ANDROID: l'APK ora e' compilato in modalita' release (piu' leggero e piu' veloce della modalita' debug).",
+	]},
 	{"v": "0.26.1", "items": [
 		"AUTO: il tasto non si accende e spegne piu' da solo; un tocco cambia lo stato una volta sola (anche col tasto A).",
 		"FLUIDITA' SUL TELEFONO: con gli effetti ridotti il palco fermo, le frecce e i ritratti si ridisegnano a 30 al secondo invece di 60 (meno calore e batteria, stessi movimenti).",

@@ -864,8 +864,12 @@ func _stars(rank: int) -> String:
 	return "*".repeat(rank) + ".".repeat(RosterState.MAX_RANK - rank)
 
 
+var _tile_cache: Dictionary = {}      # id operatore -> {"sig": String, "btn": Button}
+
+
+# Le schede dell'elenco si riusano se non sono cambiate (selezione, livello, rank, posto in squadra): ricostruire ogni volta
+# decine di nodi a ogni tocco e' il rallentamento che si sente su telefono.
 func _refresh_list() -> void:
-	_clear(_list_box)
 	var ids: Array = BattleContent.CHARACTERS.keys()
 	ids.sort_custom(func(a, b):
 		var ra: int = int(BattleContent.CHARACTERS[a]["rarity"])
@@ -874,19 +878,70 @@ func _refresh_list() -> void:
 			return ra > rb
 		return str(a) < str(b))
 	var team: Array = roster["team"]
+	var want: Dictionary = {}
+	var order: Array = []
 	for id in ids:
 		if not _passes_filters(str(id)):
 			continue
+		want[str(id)] = true
+		order.append(str(id))
+	# via le schede che non servono piu' (filtri cambiati)
+	for old in _tile_cache.keys():
+		if not want.has(old):
+			var ob: Button = _tile_cache[old]["btn"]
+			if is_instance_valid(ob):
+				if ob.get_parent() == _list_box:
+					_list_box.remove_child(ob)
+				ob.queue_free()
+			_tile_cache.erase(old)
+	for c in _list_box.get_children():
+		if not _tile_cache.values().any(func(v: Dictionary) -> bool: return v["btn"] == c):
+			_list_box.remove_child(c)
+			c.queue_free()
+	var pos: int = 0
+	for id in order:
 		var owned: bool = RosterState.owns(roster, id)
-		var b: Button = OperatorCards.tile(str(id), owned, roster["characters"][id] if owned else {}, team.find(id) + 1, id == selected)
-		if owned:
-			b.pressed.connect(select.bind(id))
-		_list_box.add_child(b)
+		var entry: Dictionary = roster["characters"][id] if owned else {}
+		var slot: int = team.find(id) + 1
+		var sig: String = "%s|%d|%d|%d|%s|%s" % [owned, int(entry.get("level", 0)), int(entry.get("rank", 0)), slot, id == selected, TouchUi.active()]
+		var hit: Dictionary = _tile_cache.get(id, {})
+		var b: Button = hit.get("btn")
+		if b == null or not is_instance_valid(b) or str(hit.get("sig", "")) != sig:
+			if b != null and is_instance_valid(b):
+				if b.get_parent() == _list_box:
+					_list_box.remove_child(b)
+				b.queue_free()
+			b = OperatorCards.tile(id, owned, entry, slot, id == selected)
+			if owned:
+				b.pressed.connect(select.bind(id))
+			_tile_cache[id] = {"sig": sig, "btn": b}
+		if b.get_parent() != _list_box:
+			_list_box.add_child(b)
+		_list_box.move_child(b, pos)
+		pos += 1
+
+
+var _slot_cache: Array = []          # per posto: {"sig": String, "btn": Button}
 
 
 func _refresh_slots() -> void:
-	_clear(_slots_box)
 	var team: Array = roster["team"]
+	var rebuilt: bool = false
+	var sigs: Array = []
+	for i in BattleTypes.TEAM_SIZE:
+		var id: String = str(team[i]) if i < team.size() else ""
+		var e: Dictionary = roster["characters"][id] if id != "" else {}
+		sigs.append("%s|%d|%d|%s|%s" % [id, int(e.get("level", 0)), int(e.get("rank", 0)), i == slot_target, TouchUi.active()])
+	if _slot_cache.size() != BattleTypes.TEAM_SIZE:
+		_slot_cache.clear()
+		for i in BattleTypes.TEAM_SIZE:
+			_slot_cache.append({"sig": "", "btn": null})
+	for i in BattleTypes.TEAM_SIZE:
+		if str(_slot_cache[i]["sig"]) != str(sigs[i]) or _slot_cache[i]["btn"] == null or not is_instance_valid(_slot_cache[i]["btn"]):
+			rebuilt = true
+	if not rebuilt and _slots_box.get_child_count() > 0:
+		return                                  # nulla e' cambiato: le carte restano com'erano
+	_clear(_slots_box)
 	for i in BattleTypes.TEAM_SIZE:
 		var id: String = str(team[i]) if i < team.size() else ""
 		var b: Button = OperatorCards.slot_card(i, id, roster["characters"][id] if id != "" else {}, i == slot_target)
@@ -896,6 +951,7 @@ func _refresh_slots() -> void:
 			gap.custom_minimum_size = Vector2(18, 0)
 			_slots_box.add_child(gap)
 		_slots_box.add_child(b)
+		_slot_cache[i] = {"sig": sigs[i], "btn": b}
 
 
 func _refresh_detail() -> void:

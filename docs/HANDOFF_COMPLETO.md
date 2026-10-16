@@ -307,7 +307,8 @@ Export Godot (modelli 4.7.2 installati). Dalla radice del progetto:
 
 **APK Android** (firma di debug, chiave in `/root/debug.keystore`; la modalita' release non ha keystore):
 ```
-godot --headless --path . --export-debug "Android" build/raw.apk
+export GODOT_ANDROID_KEYSTORE_RELEASE_PATH=/root/debug.keystore GODOT_ANDROID_KEYSTORE_RELEASE_USER=androiddebugkey GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android   # chiave di debug standard (non e' un segreto)
+godot --headless --path . --export-release "Android" build/raw.apk     # dalla 0.26.2: template RELEASE (piu' veloce del debug); shrink_apk ri-firma comunque
 python3 tools/shrink_apk.py build/raw.apk build/ODISPEL-<versione>.apk      # ricomprime e ri-firma (richiede apksigner nel PATH: /root/android-sdk/build-tools/*)
 ```
 **Windows**:

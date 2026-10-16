@@ -144,6 +144,26 @@ Hit-stop iniziale (ms): 65 / 100 / 125 / 185 (`ImpactFrames.HIT_STOP`); overlay 
 - Tasto AUTO: non sono riuscito a riprodurre l'accensione+spegnimento in test (un click, un tocco emulato e il tasto A restano accesi per piu' round). Ipotesi piu' probabile: due eventi di pressione ravvicinati sul dispositivo (tasto a scatto alla pressione). Correzione difensiva: `toggle_autoplay()` ignora un secondo cambio entro 350 ms (`AUTO_DEBOUNCE_MS`); stessa funzione per il tasto A. Test: `tests/unit/test_autoplay_toggle.gd`. DA VERIFICARE SUL TELEFONO e su PC: premere AUTO una volta deve lasciarlo acceso (il toast dice AUTO ATTIVO).
 - Prestazioni (solo con effetti ridotti = telefoni): palco a riposo, `SelectArrow` e `PortraitView` a 30 disegni/s (`Settings.light_fx`). Il resto (testi in cache, tratti di luce a mesh, limite 60 fps, passaggio automatico a effetti ridotti sotto 40 fps) c'era gia'. Misure headless invariate (nessuna regressione); il guadagno reale sul Mali-G57 NON e' misurato.
 
+## 8. Ottimizzazione generale (0.26.2)
+
+Misure fatte con `tools/perf_scenes.gd` (tutte le schermate: caricamento, nodi, nodi che girano ogni frame) e prove mirate. Il costo a schermata ferma era gia' basso quasi ovunque (sfondo menu = scorrimento di un nodo, testi del palco in cache, tratti di luce a mesh). Trovato e corretto:
+- Operatori: `_refresh_list` ricostruiva ~30 schede a ogni tocco (21 ms su PC, headless) e `_refresh_slots` le 6 carte (8,5 ms). Ora le schede si riusano se la firma (selezione, livello, rank, posto, touch) non cambia: 0,4 ms e 0,03 ms. Test: `tests/unit/test_roster_cache.gd`.
+- `PortraitView`: niente ridisegno se fuori schermo o scorso via in una lista; testo con `TextLine` in cache. `ArrowScroll`: non sposta i pulsanti se la lista e' ferma.
+- Progetto: fisica a 30 tick (nessun oggetto fisico nel gioco).
+- Android: export in modalita' RELEASE (stesso keystore di debug, risigna `shrink_apk.py`): APK ~1,8 MB piu' piccolo, senza il sovraccarico del template debug. NON provato su telefono.
+- Non toccato (gia' ottimo o rischioso senza dispositivo): palco di battaglia, schermata Equipaggiamento (18 ms per refresh su PC) e Reclutamento (10 ms): candidati per una prossima passata.
+- NON misurato: guadagno reale su telefono (la sandbox ha solo rendering software).
+
+## 9. Tuning impact frames dopo test Android (0.26.2)
+
+Feedback: pausa troppo lunga, lampo debole, quattro livelli troppo simili. Nessuna modifica a danno, motore, PvP, rete.
+- Audit: nella 0.26.0 la pausa nominale era 65/100/125/185 ms, ma con effetti ridotti (qualita' BASSA, come sul telefono) `ImpactDirector` la moltiplica per 0,6 (e per 0,5 se due lampi sono vicini): sul telefono erano ~39/60/75/111 ms. Lampo: alpha bianco 0,34-0,5 per 2-3 fotogrammi (a 30 fps poco piu' di uno), decadimento rapido.
+- Ora (`ImpactFrames.HIT_STOP`) nominale 40/60/80/120 ms; con effetti ridotti restano x0,6 = 24/36/48/72 ms. Overlay (`OVERLAY_LEN`) 0,22/0,30/0,42/0,62 s (prima 0,22/0,34/0,5/0,75). Nessun `Engine.time_scale`.
+- Lampo: alpha 0,62 (L1, bianco-corallo, ~70 ms), 0,8 (L2, ~55 ms poi velo corallo), 0,85 (L3, ~60 ms), 1,0 + nero pieno (L4, ~50 ms); tutto moltiplicato per `Settings.flash` (a 0 niente lampi bianchi, restano velo e geometrie). Nessun lampo ripetuto: guardia 350 ms.
+- Profili: L1 anello compatto + 10 spilli, senza fratture; L2 raggi larghi (8-22 gradi), 4 crepe lunghe + taglio diagonale; L3 velo magenta, raggi alterni rosa, anello spezzato grande, due tagli incrociati, barre magenta alte e 3 crepe; L4 nero pieno 34% del tempo, raggi bianchi sottili invertiti, 9 fratture lunghe x1,5 (corallo + magenta), tre anelli e bordi ciano.
+- Test: `test_impact_frames.gd` (35 controlli: valori nominali, progressione, pausa < meta' overlay, geometria distinta). Foto `tools/impact_shot.gd`.
+- NON verificato: resa su Android con la nuova build (installare e provare i 4 casi: critico, grosso colpo al boss, ult critica, ult che abbatte il boss). Se la pausa e' ancora lunga o il lampo ancora debole, i valori sono tutti in `impact_frames.gd` / `impact_overlay.gd`.
+
 ## Test
 - Eseguiti (0.24.34): tutti i 76 file in `tests/unit/` in headless (parallelo): nessun errore. `test_hud_layout` (31 controlli) e `test_input_ui` richiedono uno schermo e sono passati con `xvfb-run`.
 - Nuovi: `tests/unit/test_threat_preview.gd` (26 controlli: identita' senza modificatori, Guardia, bonus placca, avviso furia, catena, nessun critico del boss); 5 controlli in `test_hud_layout.gd` (ventaglio a sinistra della GUIDA e dentro lo schermo in PC e touch, annuncio lungo dentro lo schermo, stile condiviso dei comandi); 9 sulla validazione dei salvataggi (0.24.31).
@@ -153,8 +173,8 @@ Hit-stop iniziale (ms): 65 / 100 / 125 / 185 (`ImpactFrames.HIT_STOP`); overlay 
 - NON eseguiti: multiplayer con giocatori reali, rete pubblica, Android su dispositivo, avvio dell'exe su Windows.
 
 ## Build e pubblicazione
-- `releases/ODISPEL-0.26.1-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.26.1.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
-- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.26.0 come versione precedente.
+- `releases/ODISPEL-0.26.2-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.26.2.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
+- SHA256 in `releases/SHA256SUMS.txt`. Restano la 0.26.0 (quella provata su Android) e la 0.26.1 come versioni precedenti.
 - itch.io: il workflow `.github/workflows/itch.yml` carica da solo gli ultimi file di `releases/` dopo il push. Dal mio ambiente NON vedo l'esito: controllare la scheda Actions su GitHub o la pagina itch.io.
 
 ## Problemi aperti

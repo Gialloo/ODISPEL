@@ -56,8 +56,21 @@ func _refresh_texture() -> void:
 	queue_redraw()
 
 
+# Fuori schermo (o scorso via dentro una lista) non serve ridisegnare la respirazione.
+func _on_screen() -> bool:
+	var r: Rect2 = get_global_rect()
+	if not get_viewport_rect().intersects(r):
+		return false
+	var n: Node = get_parent()
+	while n != null:
+		if n is ScrollContainer:
+			return (n as ScrollContainer).get_global_rect().intersects(r)
+		n = n.get_parent()
+	return true
+
+
 func _process(delta: float) -> void:
-	if not is_visible_in_tree():
+	if not is_visible_in_tree() or not _on_screen():
 		return
 	_t += delta
 	if Settings.light_fx:                 # telefoni: la respirazione del ritratto a 30 disegni al secondo basta
@@ -165,9 +178,27 @@ func _draw_placeholder(tint: Color) -> void:
 	var f2: Font = BattleTheme.display()
 	var name: String = _display_name()
 	var fs2: int = clampi(int(w * 0.11), 14, 36)
-	draw_string(f2, Vector2(10.0, 26.0), name, HORIZONTAL_ALIGNMENT_LEFT, w - 20.0, fs2, line)
+	_text(f2, Vector2(10.0, 26.0), name, fs2, line, w - 20.0)
 	if show_expression_text and kind == "bust":
-		draw_string(BattleTheme.mono(), Vector2(10.0, 26.0 + fs2), "[%s]" % expression.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, w - 20.0, 14, line.darkened(0.2))
+		_text(BattleTheme.mono(), Vector2(10.0, 26.0 + fs2), "[%s]" % expression.to_upper(), 14, line.darkened(0.2), w - 20.0)
+
+
+# Testo con la forma gia' calcolata (come nel palco): ridisegnare una stringa a ogni frame costa molto di piu'.
+var _text_lines: Dictionary = {}
+
+
+func _text(font: Font, pos: Vector2, text: String, font_size: int, color: Color, max_w: float) -> void:
+	var key: String = "%d|%d|%d|%s" % [font.get_instance_id(), font_size, int(max_w), text]
+	var tl: TextLine = _text_lines.get(key)
+	if tl == null:
+		if _text_lines.size() > 12:
+			_text_lines.clear()
+		tl = TextLine.new()
+		tl.add_string(text, font, font_size)
+		tl.width = maxf(1.0, max_w)
+		tl.text_overrun_behavior = TextServer.OVERRUN_TRIM_CHAR
+		_text_lines[key] = tl
+	tl.draw(get_canvas_item(), pos - Vector2(0.0, tl.get_line_ascent()), color)
 
 
 # Un bersaglio non e' una persona: sagoma squadrata con due occhi accesi.

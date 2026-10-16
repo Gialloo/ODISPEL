@@ -30,9 +30,9 @@ const CFG: Dictionary = {
 	"ult_cur_frac": 0.75, "ult_cur_min_frac": 0.12,
 }
 # Durata iniziale dell'hit-stop in secondi per livello (valori da provare su dispositivo, non regole).
-const HIT_STOP: Array = [0.0, 0.065, 0.10, 0.125, 0.185]
+const HIT_STOP: Array = [0.0, 0.040, 0.060, 0.080, 0.120]
 # Durata visiva totale dell'overlay per livello.
-const OVERLAY_LEN: Array = [0.0, 0.22, 0.34, 0.5, 0.75]
+const OVERLAY_LEN: Array = [0.0, 0.22, 0.30, 0.42, 0.62]
 
 
 # Livello di un singolo colpo (kind: "basic" | "skill" | "ult"). max_hp/hp_before = valori del bersaglio PRIMA del colpo.
