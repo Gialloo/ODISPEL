@@ -5,6 +5,9 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.36", "items": [
+		"TELEFONO: le icone delle fazioni sulle carte degli operatori sono piu' grandi (30 px) e l'equilibrio del boss ha la sua icona piu' grande con la scritta EQUILIBRIO.",
+	]},
 	{"v": "0.24.35", "items": [
 		"HUD PIU' PULITA: mentre il round si gioca spariscono riserva, ORD/COSTO e suggerimenti; con un colpo letale resta un solo avviso (con l'icona di pericolo) e niente suggerimenti.",
 		"MENO RIPETIZIONI: il numero dei PV sotto i personaggi appare solo per chi sceglie o e' appena stato colpito; l'ordine del turno non ripete piu' il nome della mossa del boss.",

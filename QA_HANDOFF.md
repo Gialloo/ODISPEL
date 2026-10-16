@@ -1,7 +1,8 @@
-# QA_HANDOFF — ODISPEL 0.24.35
+# QA_HANDOFF — ODISPEL 0.24.36
 
 ## Identificazione
-- Versione: 0.24.35 (Android versionCode 60). NB: il brief 'MASTER BRIEF HUD & UI/UX' cita la 0.24.33 / commit e5f6f86; lo stato reale del repo era 0.24.34 / c127afc (0.24.33 e' la sua base).
+- Versione: 0.24.36 (Android versionCode 61). 0.24.36 = 0.24.35 + correzione dopo la prova su telefono (SM-A075F, 1446x664): icone fazione e icona equilibrio troppo piccole/poco chiare. Ora: fazione 30 px touch (20 PC), a x=221 sulla carta con le munizioni sotto; equilibrio con icona 20 px + scritta EQUILIBRIO; cuore PV 18 px. Verificato solo con screenshot xvfb touch 1280x720, NON sul telefono.
+- (0.24.35) NB: il brief 'MASTER BRIEF HUD & UI/UX' cita la 0.24.33 / commit e5f6f86; lo stato reale del repo era 0.24.34 / c127afc (0.24.33 e' la sua base).
 - Data build: 16 ottobre 2026
 - Branch: `claude/battaglia-chiara` (commit: vedi `git log -1`)
 - Obiettivi di questa consegna (due richieste unite in una sola build):
@@ -102,8 +103,8 @@ Screenshot: `/tmp/shots/b35` (prima) e `/tmp/shots/a35` (dopo) nel mio ambiente,
 - NON eseguiti: multiplayer con giocatori reali, rete pubblica, Android su dispositivo, avvio dell'exe su Windows.
 
 ## Build e pubblicazione
-- `releases/ODISPEL-0.24.35-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.24.35.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
-- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.34 come versione precedente.
+- `releases/ODISPEL-0.24.36-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.24.36.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
+- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.35 come versione precedente.
 - itch.io: il workflow `.github/workflows/itch.yml` carica da solo gli ultimi file di `releases/` dopo il push. Dal mio ambiente NON vedo l'esito: controllare la scheda Actions su GitHub o la pagina itch.io.
 
 ## Problemi aperti
@@ -117,7 +118,7 @@ Screenshot: `/tmp/shots/b35` (prima) e `/tmp/shots/a35` (dopo) nel mio ambiente,
 
 ## Playtest (per il proprietario)
 Su PC e su telefono:
-1. All'avvio: finestra NOVITA' 0.24.35 con OK visibile.
+1. All'avvio: finestra NOVITA' 0.24.36 con OK visibile.
 2. Battaglia contro un boss: sotto il nome della mossa annunciata deve esserci "BERSAGLIO: ... · STIMA ~numero". Se il boss ha una catena: "+CATENA" accanto al nome.
 3. Porta il boss tra 75% e 50% di vita con un compagno ferito: puo' comparire in arancio "SE SI INFURIA: LETALE PER ...". Dopo il colpo, il compagno e' davvero a rischio? L'avviso ti e' utile o ti confonde?
 4. Telefono: apri il ventaglio dei comandi con la scheda GUIDA visibile (prime battaglie): "SPEZZATUTO 0%" deve leggersi tutto.

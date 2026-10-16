@@ -562,10 +562,15 @@ func _build_boss_banner() -> void:
 	bal_row.add_theme_constant_override("separation", 6)
 	bal_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(bal_row)
-	var bal_icon: GameIcon = GameIcon.new().setup("balance", BattleTheme.CY, 14.0)
+	var big: bool = TouchUi.active()
+	var bal_icon: GameIcon = GameIcon.new().setup("balance", BattleTheme.CY, 20.0 if big else 16.0)
 	bal_icon.tooltip_text = GameIcon.describe("balance")
 	bal_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bal_row.add_child(bal_icon)
+	var bal_name: Label = BattleTheme.make_label("EQUILIBRIO", 13 if big else 12, BattleTheme.CY)
+	bal_name.add_theme_font_override("font", BattleTheme.hud())
+	bal_name.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bal_row.add_child(bal_name)
 	_boss_bal = LineBar.new().setup(BattleTheme.CY, Vector2(0, 8))
 	_boss_bal.color_bg = Color(BattleTheme.CY_DARK, 0.9)
 	_boss_bal.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -575,7 +580,7 @@ func _build_boss_banner() -> void:
 	hp_row.add_theme_constant_override("separation", 6)
 	hp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(hp_row)
-	var hp_icon: GameIcon = GameIcon.new().setup("hp", BattleTheme.RD_TEXT, 16.0)
+	var hp_icon: GameIcon = GameIcon.new().setup("hp", BattleTheme.RD_TEXT, 18.0 if big else 16.0)
 	hp_icon.tooltip_text = GameIcon.describe("hp")
 	hp_row.add_child(hp_icon)
 	_boss_hp = BattleTheme.make_label("INTEGRITA'", 14, BattleTheme.WH)
@@ -1381,9 +1386,9 @@ func _add_chips(inner: Control, u: Dictionary, selected: bool) -> void:
 		tint = BattleTheme.BK
 	var fac: InfoChip = InfoChip.faction_icon(f, tint)
 	HintCard.bind(fac, func() -> Dictionary: return Hints.faction_card(BattleState.unit(shown, str(u["id"]))), self)
-	fac.position = Vector2(196.0, 2.0 if not TouchUi.active() else 0.0)
+	fac.position = Vector2(198.0, 1.0) if not TouchUi.active() else Vector2(221.0, 0.0)
 	inner.add_child(fac)
-	row.position = Vector2(206.0, 25.0 if not TouchUi.active() else 22.0)
+	row.position = Vector2(206.0, 25.0) if not TouchUi.active() else Vector2(221.0, 31.0)
 	if int(u.get("ammo_max", 0)) > 0:
 		var am: InfoChip = InfoChip.ammo(int(u["ammo"]), int(u["ammo_max"]), tint if selected else Hints.faction_color("libracorp"))
 		HintCard.bind(am, func() -> Dictionary: return Hints.ammo_card(BattleState.unit(shown, str(u["id"]))), self)

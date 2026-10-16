@@ -29,7 +29,9 @@ static func faction_icon(faction: String, tint: Color) -> InfoChip:
 	c.kind = "faction"
 	c.text = faction
 	c.color = tint
-	c.custom_minimum_size = Vector2(c.chip_height(), c.chip_height())
+	# l'icona della fazione e' piu' grande degli altri chip: sul telefono (prova 0.24.35) 24 px non si capivano
+	var fs: float = 30.0 if TouchUi.active() else 20.0
+	c.custom_minimum_size = Vector2(fs, fs)
 	c.size = c.custom_minimum_size
 	return c
 
