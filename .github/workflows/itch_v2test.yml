@@ -6,6 +6,7 @@ on:
     branches: [claude/battaglia-v2]
     paths:
       - 'releases/*-v2test.apk'
+      - 'releases/*-v2test-windows.zip'
       - '.github/workflows/itch_v2test.yml'
 
 jobs:
@@ -23,8 +24,10 @@ jobs:
         run: |
           curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
           unzip -q butler.zip -d butler && chmod +x butler/butler
-      - name: Carica l'APK di prova
+      - name: Carica APK e zip di prova
         run: |
           apk=$(ls releases/ODISPEL-*-v2test.apk | sort -V | tail -1)
           ver=$(basename "$apk" .apk | sed 's/ODISPEL-//')
           ./butler/butler push "$apk" "$ITCH_TARGET:android-v2test" --userversion "$ver"
+          zip=$(ls releases/ODISPEL-*-v2test-windows.zip | sort -V | tail -1)
+          ./butler/butler push "$zip" "$ITCH_TARGET:windows-v2test" --userversion "$ver"
