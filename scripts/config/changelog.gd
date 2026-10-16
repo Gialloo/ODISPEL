@@ -5,6 +5,11 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.35", "items": [
+		"HUD PIU' PULITA: mentre il round si gioca spariscono riserva, ORD/COSTO e suggerimenti; con un colpo letale resta un solo avviso (con l'icona di pericolo) e niente suggerimenti.",
+		"MENO RIPETIZIONI: il numero dei PV sotto i personaggi appare solo per chi sceglie o e' appena stato colpito; l'ordine del turno non ripete piu' il nome della mossa del boss.",
+		"ICONE: nuove icone PV, equilibrio, pericolo e K.O. nel linguaggio visivo di ODISPEL (blocco boss e pannello ALLARME). Il testo esplicito del pericolo resta.",
+	]},
 	{"v": "0.24.34", "items": [
 		"LEGGIBILITA': il testo di pericolo (LETALE, ordine del turno del boss) usa un rosso piu' chiaro e il pannello ALLARME ha lo sfondo piu' scuro: contrasto misurato sopra 4,5. I suggerimenti del boss passano da 11 a 13.",
 	]},

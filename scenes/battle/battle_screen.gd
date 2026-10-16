@@ -54,6 +54,8 @@ var _boss_bar: LineBar
 var _boss_hp: Label
 var _boss_bal: LineBar
 var _plan_label: Label
+var _tele_icon: GameIcon
+var _danger_now: bool = false
 var _reserve_label: Label
 var _tact_row: HBoxContainer
 var _order_btn: Button
@@ -555,13 +557,32 @@ func _build_boss_banner() -> void:
 	_boss_bar = LineBar.new().setup(BattleTheme.RD, Vector2(0, 18))
 	_boss_bar.color_bg = Color(BattleTheme.RD_DARK, 0.9)
 	box.add_child(_boss_bar)
-	_boss_bal = LineBar.new().setup(BattleTheme.CY, Vector2(0, 8))        # equilibrio: sotto la vita, larga quanto lei
+	# equilibrio: sotto la vita, con la sua icona (grammatica visiva: forma = significato)
+	var bal_row := HBoxContainer.new()
+	bal_row.add_theme_constant_override("separation", 6)
+	bal_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(bal_row)
+	var bal_icon: GameIcon = GameIcon.new().setup("balance", BattleTheme.CY, 14.0)
+	bal_icon.tooltip_text = GameIcon.describe("balance")
+	bal_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bal_row.add_child(bal_icon)
+	_boss_bal = LineBar.new().setup(BattleTheme.CY, Vector2(0, 8))
 	_boss_bal.color_bg = Color(BattleTheme.CY_DARK, 0.9)
-	box.add_child(_boss_bal)
+	_boss_bal.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_boss_bal.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bal_row.add_child(_boss_bal)
+	var hp_row := HBoxContainer.new()
+	hp_row.add_theme_constant_override("separation", 6)
+	hp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(hp_row)
+	var hp_icon: GameIcon = GameIcon.new().setup("hp", BattleTheme.RD_TEXT, 16.0)
+	hp_icon.tooltip_text = GameIcon.describe("hp")
+	hp_row.add_child(hp_icon)
 	_boss_hp = BattleTheme.make_label("INTEGRITA'", 14, BattleTheme.WH)
 	_boss_hp.add_theme_font_override("font", BattleTheme.hud())
 	_boss_hp.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	box.add_child(_boss_hp)
+	_boss_hp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hp_row.add_child(_boss_hp)
 	var badge := PanelContainer.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.add_theme_stylebox_override("panel", BattleTheme.plate_box(BattleTheme.MAGENTA, 3, 26, 0.92))
@@ -598,6 +619,11 @@ func _build_telegraph() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	_tele_panel.set_content(box)
+	_tele_icon = GameIcon.new().setup("danger", BattleTheme.RD_TEXT, 26.0)
+	_tele_icon.visible = false
+	_tele_icon.tooltip_text = GameIcon.describe("danger")
+	add_child(_tele_icon)
+	_anchor(_tele_icon, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-244, 26, -218, 52))
 	_tele_label = BattleTheme.make_label("PROSSIMA MOSSA", 22, BattleTheme.WH, true)
 	_tele_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_tele_label)
@@ -680,7 +706,7 @@ func turn_rows() -> Array:
 		if bool(entry["boss"]):
 			row["who"] = "BOSS"
 			row["name"] = str(BattleState.boss(shown)["name"]).to_upper()
-			row["action"] = BattleText.move_name(str(entry["move"]))
+			row["action"] = "ATTACCA"        # il nome della mossa sta gia' nel pannello ALLARME: qui conta solo QUANDO agisce
 			row["color"] = BattleTheme.RD_TEXT
 		else:
 			var p: Dictionary = BattleState.player(shown, str(entry["player"]))
@@ -926,6 +952,34 @@ func _watch_performance(delta: float) -> void:
 		Notify.toast("EFFETTI RIDOTTI AUTOMATICAMENTE (piu' fluido)", Notify.Kind.INFO)
 
 
+# Stato dell'interfaccia (0.24.35): decide quali pannelli secondari restano visibili.
+#   "risoluzione": il round si sta giocando -> solo scena, ALLARME e barre; niente suggerimenti, ordini, riserva
+#   "pericolo": il colpo annunciato e' (o potrebbe diventare) letale -> un solo avviso, niente suggerimenti
+#   "scelta": turno del giocatore -> tutto cio' che serve a decidere
+func hud_mode() -> String:
+	if shown.is_empty():
+		return "scelta"
+	if locked or animating or autoplay or str(shown.get("winner", "")) != "":
+		return "risoluzione"
+	if _danger_now:
+		return "pericolo"
+	return "scelta"
+
+
+func _apply_hud_mode() -> void:
+	var mode: String = hud_mode()
+	if _reserve_label != null:
+		_reserve_label.visible = mode != "risoluzione"
+	if _plan_label != null:
+		_plan_label.visible = mode == "scelta"
+	if _tact_row != null and mode == "risoluzione":
+		_tact_row.visible = false
+	if _tele_icon != null:
+		_tele_icon.visible = _danger_now and mode != "risoluzione"
+	if _tele_panel != null:
+		_tele_panel.modulate.a = 0.55 if mode == "risoluzione" else 1.0
+
+
 func _refresh_all() -> void:
 	if shown.is_empty():
 		return
@@ -939,6 +993,7 @@ func _refresh_all() -> void:
 	_refresh_turn_panel()
 	_refresh_log()
 	_round_label.text = "TURNO %02d" % int(shown["round"])
+	_apply_hud_mode()
 
 
 func _refresh_boss() -> void:
@@ -966,7 +1021,7 @@ func _refresh_boss() -> void:
 	for m in boss.get("mods", []):
 		if int(m["pm"]) < 0:
 			tags += " ▼%s" % str(BattleContent.STAT_NAMES.get(str(m["stat"]), str(m["stat"]).to_upper()))
-	_boss_hp.text = "PV  %d/%d%s" % [int(boss["hp"]), int(boss["max_hp"]), tags]
+	_boss_hp.text = "%d/%d%s" % [int(boss["hp"]), int(boss["max_hp"]), tags]
 	if _phase_label != null:
 		_phase_label.text = str(int(shown.get("phase", 1)))
 
@@ -977,6 +1032,7 @@ func _local_player() -> Dictionary:
 
 func _refresh_telegraph() -> void:
 	var tele: Dictionary = shown.get("telegraph", {})
+	_danger_now = false
 	if tele.is_empty() or str(shown["winner"]) != "":
 		_tele_label.text = "—"
 		_tele_target.text = ""
@@ -1006,6 +1062,7 @@ func _refresh_telegraph() -> void:
 	# MINACCIA: se la mossa annunciata e' letale per qualcuno lo si dice chiaramente
 	var threat: Dictionary = BattleResolver.threat_preview(shown)
 	var lethal: Array = threat["lethal"]
+	_danger_now = not lethal.is_empty() or not (threat["enrage_lethal"] as Array).is_empty()
 	if lethal.is_empty():
 		_tele_target.add_theme_color_override("font_color", BattleTheme.WH)
 		# L'anteprima non conosce i bonus che nascono durante il round (rabbia, placche, catene): e' un MINIMO.
@@ -1474,6 +1531,7 @@ func _on_unit_pressed(uid: String) -> void:
 
 # Ordini: attacco, guardia, skill e ultimate dell'unita' che agira'.
 func _refresh_orders() -> void:
+	_apply_hud_mode()
 	var me: Dictionary = _local_player()
 	if me.is_empty() or str(shown["winner"]) != "":
 		_orders_sig = ""
@@ -1787,6 +1845,7 @@ func _on_events(events: Array) -> void:
 
 func _play_events(events: Array) -> void:
 	animating = true
+	_apply_hud_mode()
 	_refresh_orders()
 	# un round con tantissimi eventi (6 giocatori) non deve durare minuti: al massimo ~14 s a velocita' normale
 	var step: float = minf(event_delay, maxf(0.06, ROUND_BUDGET / float(maxi(1, events.size()))))
@@ -1808,6 +1867,7 @@ func _play_events(events: Array) -> void:
 		_refresh_operators()
 		await get_tree().create_timer(step + extra).timeout
 	animating = false
+	_apply_hud_mode()
 	_link_clear()
 	_stage.clear_markers()
 	_turn_acting = ""

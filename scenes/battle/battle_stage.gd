@@ -1110,7 +1110,7 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 			draw_colored_polygon(beam, Color(col, 0.10 + 0.05 * pulse))
 
 	if alive and (hp_visible or float(_hp_recent.get(u["id"], 0.0)) > 0.0):
-		_draw_hp_under(u, cx - 24.0, foot_y + 34.0)
+		_draw_hp_under(u, cx - 24.0, foot_y + 34.0, is_lead or float(_hp_recent.get(u["id"], 0.0)) > 0.0)
 
 	if alive and int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
 		# ultimate pronta: aura a raggi e scritta che pulsa
@@ -1150,7 +1150,8 @@ func _draw_fighter(u: Dictionary, chest: Vector2, index: int, is_lead: bool) -> 
 
 
 # Barra vita sotto i piedi: PV attuali, la parte appena persa in rosso e il numero. Appare solo quando serve.
-func _draw_hp_under(u: Dictionary, cx: float, y: float) -> void:
+# Il numero esatto sotto lo sprite solo per chi sta scegliendo o ha appena preso danno: gli altri hanno gia' il numero nella scheda in basso.
+func _draw_hp_under(u: Dictionary, cx: float, y: float, with_number: bool = true) -> void:
 	var w: float = 130.0
 	var h: float = 12.0
 	var ratio: float = clampf(float(u["hp"]) / maxf(1.0, float(u["max_hp"])), 0.0, 1.0)
@@ -1163,7 +1164,8 @@ func _draw_hp_under(u: Dictionary, cx: float, y: float) -> void:
 	draw_rect(Rect2(r.position, Vector2(w * ratio, h)), col)
 	if int(u.get("shield", 0)) > 0:
 		draw_rect(Rect2(r.position, Vector2(minf(w, w * float(u["shield"]) / maxf(1.0, float(u["max_hp"]))), 3.0)), Color(BattleTheme.WH, 0.85))
-	_text(BattleTheme.hud(), Vector2(cx - w * 0.5, y + h + 18.0), "%d / %d" % [int(u["hp"]), int(u["max_hp"])], 17, BattleTheme.WH)
+	if with_number:
+		_text(BattleTheme.hud(), Vector2(cx - w * 0.5, y + h + 18.0), "%d / %d" % [int(u["hp"]), int(u["max_hp"])], 17, BattleTheme.WH)
 
 
 # Equilibrio del boss: barra blu sottile sopra la testa (quando si svuota il boss si rompe).

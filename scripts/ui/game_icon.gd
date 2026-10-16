@@ -12,7 +12,31 @@ const KEYS: Array = [
 	"striker", "vanguard", "warden", "libracorp", "rondini", "magabondi", "kairos",
 	"sword", "bolt", "shield", "heal", "target", "taunt", "bullet", "cleanse", "burst", "passive",
 	"arma", "petto", "stivali", "coin", "nucleo", "lega", "book",
+	"hp", "balance", "danger", "ko",
 ]
+
+# Grammatica visiva di ODISPEL (0.24.35): significato stabile -> icona. Un solo posto da consultare.
+# famiglia: stato | difesa | pericolo | azione | risorsa | equip. La forma dice COSA e', colore e riempimento dicono lo STATO.
+# Il testo esplicito resta per i pericoli critici (rischio di KO): l'icona non lo sostituisce.
+const SYMBOLS: Dictionary = {
+	"hp": {"family": "stato", "name": "PV", "desc": "Punti vita attuali."},
+	"shield": {"family": "difesa", "name": "SCUDO", "desc": "Protezione che assorbe il danno prima dei PV."},
+	"balance": {"family": "difesa", "name": "EQUILIBRIO", "desc": "Tenuta del boss: se si svuota il boss si rompe e resta scoperto."},
+	"danger": {"family": "pericolo", "name": "PERICOLO", "desc": "Un attacco annunciato rischia di mettere KO qualcuno."},
+	"ko": {"family": "pericolo", "name": "K.O.", "desc": "Operatore a terra."},
+	"sword": {"family": "azione", "name": "ATTACCO", "desc": "Mossa che infligge danno."},
+	"heal": {"family": "azione", "name": "CURA", "desc": "Mossa che ripristina PV."},
+	"taunt": {"family": "azione", "name": "PROVOCA", "desc": "Attira su di te il prossimo colpo."},
+	"bullet": {"family": "risorsa", "name": "MUNIZIONI", "desc": "Colpi disponibili."},
+	"burst": {"family": "risorsa", "name": "ULTIMATE", "desc": "Mossa speciale, pronta a carica piena."},
+	"target": {"family": "azione", "name": "BERSAGLIO", "desc": "Mossa che applica uno stato al bersaglio."},
+	"cleanse": {"family": "azione", "name": "PURIFICA", "desc": "Toglie gli stati negativi."},
+}
+
+
+static func describe(k: String) -> String:
+	var d: Dictionary = SYMBOLS.get(k, {})
+	return "" if d.is_empty() else "%s: %s" % [d["name"], d["desc"]]
 
 var key: String = ""
 var color: Color = BattleTheme.CY
@@ -261,5 +285,22 @@ func _draw() -> void:
 			_poly([[0.1, 0.74], [0.28, 0.3], [0.72, 0.3], [0.9, 0.74]])
 			_line([0.28, 0.3], [0.38, 0.74], 0.05)
 			_line([0.72, 0.3], [0.62, 0.74], 0.05)
+		"hp":
+			# cuore stilizzato (poligono): PV
+			_poly([[0.5, 0.92], [0.1, 0.5], [0.1, 0.3], [0.26, 0.12], [0.5, 0.3], [0.74, 0.12], [0.9, 0.3], [0.9, 0.5]])
+		"balance":
+			# barra con tacca centrale e riempimento a meta': equilibrio
+			_poly([[0.06, 0.34], [0.94, 0.34], [0.94, 0.66], [0.06, 0.66]], false)
+			_poly([[0.06, 0.34], [0.5, 0.34], [0.5, 0.66], [0.06, 0.66]])
+			_line([0.5, 0.14], [0.5, 0.86], 0.07)
+		"danger":
+			# triangolo con punto esclamativo
+			_poly([[0.5, 0.06], [0.95, 0.9], [0.05, 0.9]], false)
+			_line([0.5, 0.36], [0.5, 0.62], 0.1)
+			_circle([0.5, 0.77], 0.06, true)
+		"ko":
+			_circle([0.5, 0.5], 0.42)
+			_line([0.3, 0.3], [0.7, 0.7], 0.1)
+			_line([0.7, 0.3], [0.3, 0.7], 0.1)
 		_:
 			_circle([0.5, 0.5], 0.4)

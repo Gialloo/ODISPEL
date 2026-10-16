@@ -1,13 +1,13 @@
-# QA_HANDOFF — ODISPEL 0.24.34
+# QA_HANDOFF — ODISPEL 0.24.35
 
 ## Identificazione
-- Versione: 0.24.34 (Android versionCode 59)
+- Versione: 0.24.35 (Android versionCode 60). NB: il brief 'MASTER BRIEF HUD & UI/UX' cita la 0.24.33 / commit e5f6f86; lo stato reale del repo era 0.24.34 / c127afc (0.24.33 e' la sua base).
 - Data build: 16 ottobre 2026
 - Branch: `claude/battaglia-chiara` (commit: vedi `git log -1`)
 - Obiettivi di questa consegna (due richieste unite in una sola build):
   1. Chiudere la verifica dell'anteprima del colpo del boss (coerenza con il danno reale).
   2. HUD polish, iterazione 1: stili dei pannelli, HUD PvP nella palette, comandi condivisi, leggibilita' su telefono.
-- Versione precedente recuperabile: 0.24.33 (in `releases/`); la 0.24.32 e la 0.24.31 sono nella storia git.
+- Versione precedente recuperabile: 0.24.34 (in `releases/`); 0.24.33 e precedenti nella storia git.
 - 0.24.34 = 0.24.33 + passaggio su accessibilita' (vedi sezione 3), richiesto dal brief 'HUD POLISH PROFESSIONALE'.
 
 ## 1. Anteprima del boss (threat_preview)
@@ -50,6 +50,49 @@ Misura: `tools/preview_check.gd` (8 boss x 3 squadre x 8 semi, scelte dell'IA co
 - Stati critici (`tools/states_shot.gd`, screenshot PC e touch con vita al 12%, un KO, 987654 PV con scudo 123456, boss al 58%): vita bassa = barra rossa e numero; KO = scheda scurita con la scritta "K.O." (non solo colore); numeri lunghi dentro la scheda; reazione "Soccorso" visibile. Il pericolo e' comunicato con testo ("LETALE PER ...", "STIMA ~N") oltre che col colore.
 - Non verificato: contrasto reale su schermo di telefono (luminosita', daltonismo), tastiera/gamepad nelle schermate toccate, risoluzioni diverse da 1280x720.
 
+## 4. MASTER BRIEF HUD — iterazione 1: struttura e riduzione del rumore (0.24.35)
+Solo struttura e pulizia (la personalita' grafica viene dopo). Nessun cambiamento a regole, bilanciamento, salvataggi, protocollo multiplayer.
+
+### Stati dell'interfaccia (`hud_mode()` in `battle_screen.gd`, applicato da `_apply_hud_mode()`)
+- scelta: turno del giocatore; tutto cio' che serve a decidere (ALLARME, suggerimenti, riserva, ORD/COSTO, ventaglio).
+- pericolo: il colpo annunciato e' letale o potrebbe diventarlo se il boss si infuria. UN solo avviso: ALLARME con icona di pericolo + testo esplicito "LETALE PER ..."; i suggerimenti di pianificazione spariscono.
+- risoluzione: il round si gioca (locked/animating/autoplay/fine). Spariscono riserva, ORD/COSTO, suggerimenti; ALLARME resta ma attenuato (alfa 0,55).
+- Non separati come stati propri: selezione bersaglio (il ventaglio e' unico, nessun pannello bersaglio dedicato in PvE), evento speciale (annunci al centro: gia' un livello temporaneo).
+
+### Livelli: sempre visibile / contestuale / temporaneo
+- Sempre: turno, ordine del turno (compatto), blocco boss (nome, PV, equilibrio), carte operatore, ALLARME.
+- Contestuale: riserva di squadra, ORD/COSTO, suggerimenti, ventaglio delle mosse, tasti reazione.
+- Temporaneo: annunci, numeri di danno, scheda GUIDA, notifiche.
+
+### Duplicazioni tolte
+- Numero dei PV sotto lo sprite: ora solo per l'operatore che sceglie o appena colpito (prima: tutti i front mentre si sceglie, in piu' alla carta in basso). File `battle_stage.gd` (`_draw_hp_under`).
+- Ordine del turno: la riga del boss non ripete il nome della mossa (e' in ALLARME): ora "ATTACCA".
+- Etichetta "PV" del boss: sostituita dall'icona cuore.
+
+### Grammatica visiva (registro `GameIcon.SYMBOLS`, `scripts/ui/game_icon.gd`)
+Famiglie: stato (hp), difesa (shield, balance), pericolo (danger, ko), azione (sword, heal, taunt, target, cleanse), risorsa (bullet, burst). Ogni voce: famiglia, nome, descrizione (tooltip). `GameIcon.describe(key)`.
+- Riutilizzate (gia' presenti): shield, sword, heal, taunt, bullet, burst, target, cleanse.
+- Create: hp (cuore), balance (barra con tacca), danger (triangolo con !), ko (cerchio con X). Disegnate in codice, stesso stile (contorno + riempimento al 35%).
+- Applicate: hp e balance nel blocco boss (tooltip), danger nel pannello ALLARME solo con rischio di KO. `ko` e' registrata ma NON ancora applicata (la carta KO usa gia' la scritta "K.O."); resta da fare.
+- Regola: icona + numero dove il significato e' noto; testo esplicito per il rischio di KO (accessibilita'); niente significato col solo colore (forma diversa + testo).
+- Non fatto in questa iterazione: icone per debolezze/resistenze, combo/reazioni/sinergie, buff/debuff; tutorial graduale dei simboli; PvP (stati e icone non applicati).
+
+### Conteggio elementi visibili contemporaneamente (`tools/hud_count.gd`: testi + pulsanti + pannelli + barre + icone; 1280x720; PC e touch identici)
+| stato | prima (0.24.34) | dopo (0.24.35) |
+| scelta | 87 | 89 (+2 icone PV/equilibrio al posto di testo) |
+| pericolo | 88 | 90 (+ icona; -suggerimenti) |
+| risoluzione | 92 | 76 |
+Onesto: in SCELTA il numero non scende (tutto serve a decidere) e sale di 2 per le icone. La riduzione e' in risoluzione (-16). Lo strumento NON conta cio' che il palco disegna (numeri PV sotto gli sprite): quelli scendono da 3 a 1 in scelta. NB: la prima misura "risoluzione" prima era in realta' una scelta (ventaglio ancora aperto): il nuovo strumento sceglie fino a far partire il round.
+Screenshot: `/tmp/shots/b35` (prima) e `/tmp/shots/a35` (dopo) nel mio ambiente, non nel repo.
+
+### Test
+- Nuovo `tests/unit/test_hud_states.gd` (28 controlli, xvfb): registro icone, riconoscimento pericolo, visibilita' per stato in PC e touch.
+- Tutta la suite in `tests/unit/` (parallelo headless) senza errori; `test_hud_layout` 31/31 e `test_input_ui` con xvfb; `tools/ui_audit.gd` PC e touch: 0 problemi.
+- NON eseguiti: PvP 2v2 e touch, PvP con i nuovi stati (non toccato), telefono reale, altre risoluzioni, multiplayer. Nello screenshot touch "scelta" si vede un riquadro scuro a sinistra (probabilmente la scheda GUIDA in animazione): non verificato se e' un difetto.
+
+### Domande di design (default scelti)
+- Menu mosse PvE resta piatto. Ordine del turno resta visibile ma compatto. "Toughness" = EQUILIBRIO (e placche). Nessuna stima del proprio danno (sarebbe una stima non affidabile).
+
 ## Test
 - Eseguiti (0.24.34): tutti i 76 file in `tests/unit/` in headless (parallelo): nessun errore. `test_hud_layout` (31 controlli) e `test_input_ui` richiedono uno schermo e sono passati con `xvfb-run`.
 - Nuovi: `tests/unit/test_threat_preview.gd` (26 controlli: identita' senza modificatori, Guardia, bonus placca, avviso furia, catena, nessun critico del boss); 5 controlli in `test_hud_layout.gd` (ventaglio a sinistra della GUIDA e dentro lo schermo in PC e touch, annuncio lungo dentro lo schermo, stile condiviso dei comandi); 9 sulla validazione dei salvataggi (0.24.31).
@@ -59,8 +102,8 @@ Misura: `tools/preview_check.gd` (8 boss x 3 squadre x 8 semi, scelte dell'IA co
 - NON eseguiti: multiplayer con giocatori reali, rete pubblica, Android su dispositivo, avvio dell'exe su Windows.
 
 ## Build e pubblicazione
-- `releases/ODISPEL-0.24.34-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.24.34.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
-- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.33 come versione precedente.
+- `releases/ODISPEL-0.24.35-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.24.35.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
+- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.34 come versione precedente.
 - itch.io: il workflow `.github/workflows/itch.yml` carica da solo gli ultimi file di `releases/` dopo il push. Dal mio ambiente NON vedo l'esito: controllare la scheda Actions su GitHub o la pagina itch.io.
 
 ## Problemi aperti
@@ -74,7 +117,7 @@ Misura: `tools/preview_check.gd` (8 boss x 3 squadre x 8 semi, scelte dell'IA co
 
 ## Playtest (per il proprietario)
 Su PC e su telefono:
-1. All'avvio: finestra NOVITA' 0.24.34 con OK visibile.
+1. All'avvio: finestra NOVITA' 0.24.35 con OK visibile.
 2. Battaglia contro un boss: sotto il nome della mossa annunciata deve esserci "BERSAGLIO: ... · STIMA ~numero". Se il boss ha una catena: "+CATENA" accanto al nome.
 3. Porta il boss tra 75% e 50% di vita con un compagno ferito: puo' comparire in arancio "SE SI INFURIA: LETALE PER ...". Dopo il colpo, il compagno e' davvero a rischio? L'avviso ti e' utile o ti confonde?
 4. Telefono: apri il ventaglio dei comandi con la scheda GUIDA visibile (prime battaglie): "SPEZZATUTO 0%" deve leggersi tutto.
@@ -82,6 +125,8 @@ Su PC e su telefono:
 6. PvP (1v1): barre PV bianco-ciano, ultimate rossa, comandi uguali a quelli del PvE. Prova anche 2v2 e dimmi se le carte si sovrappongono.
 7. Telefono, in piena luce: leggi il pannello ALLARME (in alto al centro) e l'ordine del turno. I testi rossi si leggono senza sforzo? Dimmi anche se ti accorgi di KO e vita bassa senza guardare i colori.
 8. In caso di errore: schermata, dispositivo (PC o modello del telefono), modalita' e boss.
+
+9. (0.24.35) Durante il round: riserva, ORD/COSTO e suggerimenti spariscono? Con un colpo letale compare l'icona di pericolo e un solo avviso? Il blocco boss mostra cuore e icona equilibrio? Ti manca qualcosa che prima vedevi?
 
 ## Prossimo passo
 - In base al playtest: (a) rivedere le carte PvP per 2v2/ffa e il PvP in touch, (b) decidere se mostrare un intervallo di danno (con Guardia) o la stima della catena, (c) iniziare l'audit dei test sul resto delle sinergie (scudi/cure sullo stesso bersaglio) con test che riproducono prima il problema.
