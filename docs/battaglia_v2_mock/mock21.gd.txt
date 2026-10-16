@@ -1,0 +1,858 @@
+extends SceneTree
+
+# Bozza visiva v3 (NON e' la scena del gioco): sfondo 3D notturno + sprite 2D + HUD a ruota rifinita sul modello Honkai Star Rail / Persona.
+#   xvfb-run -a godot --path /home/claude/odispel --resolution 1152x648 -s <file> -- <cartella> <0|1>
+
+var selected: bool = false
+
+
+class _G:
+	const PAL: Dictionary = {"blu": Color("#3b7cff"), "verde": Color("#2fd070"), "rosso": Color("#ff2f3a"), "giallo": Color("#ffd23a"), "viola": Color("#9a4dff")}
+	static var col: Color = Color("#ff2f3a")
+	static var name_: String = "rosso"
+	static var pick: String = "SKILL"
+	static var turn_txt: String = "3"
+	static var label: String = ""
+	static var boss_name: String = "DISTRIBUTORE"
+	static var kira: bool = false
+	static var spr: Texture2D
+	static var por: Texture2D
+	static var cut: Texture2D
+	static var others: Array = []
+
+const AURA: Color = Color("#ff2f3a")
+const CREAM: Color = Color("#F5E9C9")
+const CYAN: Color = Color("#7fdcec")
+const INK: Color = Color("#0a0b14")
+
+
+func _init() -> void:
+	var a: PackedStringArray = OS.get_cmdline_user_args()
+	selected = a.size() > 1 and a[1] == "1"
+	var nm: String = a[2] if a.size() > 2 else "rosso"
+	_G.kira = nm == "kira"
+	if _G.kira:
+		_G.spr = ArtLibrary.battle_sprite("kira")
+		_G.por = ArtLibrary.portrait("kira", "neutral")
+		_G.cut = ArtLibrary.cutin("kira")
+		print("KIRA ASSETS ", _G.spr != null, _G.por != null, _G.cut != null)
+	_G.name_ = nm
+	if a.size() > 4 and a[4] == "boss":
+		_G.boss_name = "DISTRIBUTORE AUTOMATICO"
+	if a.size() > 4 and a[4] == "boss2":
+		_G.boss_name = "DISTRIBUTORE AUTOMATICO NOTTURNO"
+	_G.label = "ULTIMATE · TEMPESTA DI LAME VIOLA" if (a.size() > 3 and a[3] == "ultlong") else ""
+	if nm == "kira":
+		nm = "viola"
+	_G.turn_txt = "3/20" if selected else "3"
+	_G.pick = "ULTIMATE" if (a.size() > 3 and (a[3] == "ult" or a[3] == "ultlong")) else "SKILL"
+	_G.col = _G.PAL[nm]
+	_G.others = []
+	for k in ["rosso", "blu", "verde", "giallo", "viola"]:
+		if k != nm:
+			_G.others.append(_G.PAL[k])
+	_run(a[0] if a.size() > 0 else "/tmp")
+
+
+# ---------- Mondo 3D ----------
+const FACADE: String = """shader_type spatial;
+render_mode unshaded;
+uniform vec3 wall = vec3(0.07, 0.09, 0.17);
+uniform vec3 fogc = vec3(0.06, 0.13, 0.20);
+uniform float seed = 1.0;
+varying float d;
+varying vec3 wp;
+float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233)) + seed) * 43758.5453); }
+void vertex() { d = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z; wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+void fragment() {
+	vec2 g = vec2(wp.x + wp.z, wp.y) * vec2(0.9, 0.7);
+	vec2 c = floor(g);
+	vec2 f = fract(g);
+	float win = step(0.18, f.x) * step(f.x, 0.72) * step(0.22, f.y) * step(f.y, 0.78);
+	float on = step(0.62, h(c));
+	vec3 col = wall * (0.8 + 0.4 * h(c + 3.0));
+	col = mix(col, vec3(1.0, 0.78, 0.45) * (0.7 + 0.5 * h(c + 7.0)), win * on);
+	col = mix(col, vec3(0.03, 0.05, 0.10), win * (1.0 - on) * 0.7);
+	float fog = 1.0 - exp(-d * 0.035);
+	ALBEDO = mix(col, fogc, fog);
+}"""
+const COBBLE: String = """shader_type spatial;
+render_mode unshaded;
+uniform vec3 fogc = vec3(0.06, 0.13, 0.20);
+varying float d;
+varying vec3 wp;
+float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+void vertex() { d = -(MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).z; wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz; }
+void fragment() {
+	vec2 g = wp.xz * vec2(1.6, 2.4);
+	g.x += floor(g.y) * 0.5;
+	vec2 c = floor(g);
+	vec2 f = fract(g);
+	float gap = step(f.x, 0.07) + step(f.y, 0.09);
+	vec3 stone = vec3(0.20, 0.21, 0.27) * (0.65 + 0.7 * h(c));
+	// luci calde dei lampioni sul selciato
+	float l1 = exp(-length(wp.xz - vec2(-3.4, -4.0)) * 0.26);
+	float l2 = exp(-length(wp.xz - vec2(4.6, -9.0)) * 0.22);
+	float l3 = exp(-length(wp.xz - vec2(-4.8, -15.0)) * 0.2);
+	stone += vec3(1.0, 0.62, 0.3) * (l1 + l2 * 0.8 + l3 * 0.6) * 0.34;
+	stone = mix(stone, vec3(0.03, 0.04, 0.07), clamp(gap, 0.0, 1.0) * 0.8);
+	float fog = 1.0 - exp(-d * 0.045);
+	ALBEDO = mix(stone, fogc, fog);
+}"""
+
+
+func _world() -> Control:
+	var holder := Control.new()
+	holder.size = Vector2(1280, 720)
+	var svc := SubViewportContainer.new()
+	svc.stretch = true
+	svc.size = Vector2(1280, 720)
+	holder.add_child(svc)
+	var vp := SubViewport.new()
+	vp.size = Vector2i(1280, 720)
+	vp.own_world_3d = true
+	svc.add_child(vp)
+	var env := Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("#01040a")
+	env.glow_enabled = true
+	env.glow_intensity = 0.3
+	env.glow_bloom = 0.0
+	var we := WorldEnvironment.new()
+	we.environment = env
+	vp.add_child(we)
+	var cam := Camera3D.new()
+	cam.fov = 46.0
+	vp.add_child(cam)
+	cam.look_at_from_position(Vector3(-0.6, 1.15, 7.5), Vector3(1.4, 1.55, 0.0))
+	var floor_m := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(60, 90)
+	floor_m.mesh = pm
+	floor_m.position = Vector3(0, 0, -25)
+	var cm := ShaderMaterial.new()
+	cm.shader = Shader.new()
+	cm.shader.code = COBBLE
+	floor_m.material_override = cm
+	vp.add_child(floor_m)
+	# facciate laterali (case) con finestre accese
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for i in 9:
+		for side in [-1.0, 1.0]:
+			var b := MeshInstance3D.new()
+			var bm := BoxMesh.new()
+			bm.size = Vector3(rng.randf_range(4.0, 6.0), rng.randf_range(7.0, 14.0), rng.randf_range(5.0, 8.0))
+			b.mesh = bm
+			b.position = Vector3(side * (9.0 + bm.size.x * 0.5 + rng.randf_range(0.0, 1.5)), bm.size.y * 0.5, 6.0 - float(i) * 6.5)
+			var fm := ShaderMaterial.new()
+			fm.shader = Shader.new()
+			fm.shader.code = FACADE
+			fm.set_shader_parameter("seed", float(i) * 3.7 + (1.0 if side > 0.0 else 0.0))
+			b.material_override = fm
+			vp.add_child(b)
+	# fondale: edifici lontani + torre
+	for i in 6:
+		var b2 := MeshInstance3D.new()
+		var bm2 := BoxMesh.new()
+		bm2.size = Vector3(rng.randf_range(5.0, 9.0), rng.randf_range(8.0, 22.0), 4.0)
+		b2.mesh = bm2
+		b2.position = Vector3(-18.0 + float(i) * 7.0, bm2.size.y * 0.5, -48.0)
+		var fm2 := ShaderMaterial.new()
+		fm2.shader = Shader.new()
+		fm2.shader.code = FACADE
+		fm2.set_shader_parameter("seed", float(i) * 5.1)
+		b2.material_override = fm2
+		vp.add_child(b2)
+	# lampioni: asta + lampada emissiva (con bagliore dal glow)
+	for pos in [Vector3(-3.4, 0, -4.0), Vector3(4.6, 0, -9.0), Vector3(-4.8, 0, -15.0), Vector3(5.2, 0, -21.0)]:
+		var pole := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.07
+		cyl.bottom_radius = 0.09
+		cyl.height = 4.6
+		pole.mesh = cyl
+		pole.position = pos + Vector3(0, 2.3, 0)
+		var pmat := StandardMaterial3D.new()
+		pmat.albedo_color = Color("#3a4468")
+		pmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		pole.material_override = pmat
+		vp.add_child(pole)
+		var lamp := MeshInstance3D.new()
+		var sph := SphereMesh.new()
+		sph.radius = 0.28
+		sph.height = 0.56
+		lamp.mesh = sph
+		lamp.position = pos + Vector3(0, 4.7, 0)
+		var lm := StandardMaterial3D.new()
+		lm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		lm.albedo_color = Color("#ffd9a0")
+		lm.emission_enabled = true
+		lm.emission = Color("#ffb060")
+		lm.emission_energy_multiplier = 3.0
+		lamp.material_override = lm
+		vp.add_child(lamp)
+	# luna
+	var moon := MeshInstance3D.new()
+	var ms := SphereMesh.new()
+	ms.radius = 2.2
+	ms.height = 4.4
+	moon.mesh = ms
+	moon.position = Vector3(8.0, 20.0, -60.0)
+	var mm := StandardMaterial3D.new()
+	mm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mm.albedo_color = Color("#dfe9ff")
+	mm.emission_enabled = true
+	mm.emission = Color("#9fb8ff")
+	mm.emission_energy_multiplier = 0.8
+	moon.material_override = mm
+	vp.add_child(moon)
+	# sprite 2D
+	if selected:
+		var dim0 := ColorRect.new()
+		dim0.color = Color(0.01, 0.0, 0.05, 0.6)
+		dim0.size = Vector2(1280, 720)
+		holder.add_child(dim0)
+	var sprites := Control.new()
+	sprites.size = Vector2(1280, 720)
+	holder.add_child(sprites)
+	var sh := _Shadow.new()
+	sh.size = Vector2(1280, 720)
+	sprites.add_child(sh)
+	if true:
+		var back := _Wheel.new()
+		back.size = Vector2(1280, 720)
+		back.part = "back"
+		back.glow = selected
+		back.picked = _G.pick if selected else ""
+		sprites.add_child(back)
+	var boss := _Boss.new()
+	boss.position = Vector2(690, 100)
+	boss.size = Vector2(560, 500)
+	if selected:
+		boss.modulate = Color(0.42, 0.42, 0.55)
+	sprites.add_child(boss)
+	var hero := _Hero.new()
+	hero.position = Vector2(176, 190)
+	hero.size = Vector2(420, 450)
+	if selected:
+		hero.modulate = Color(0.5, 0.5, 0.62)
+	sprites.add_child(hero)
+	var vig := _Vignette.new()
+	vig.size = Vector2(1280, 720)
+	holder.add_child(vig)
+	return holder
+
+
+class _Shadow extends Control:
+	func _draw() -> void:
+		draw_set_transform(Vector2(366, 632), 0.0, Vector2(1.0, 0.16))
+		draw_circle(Vector2.ZERO, 130.0, Color(0, 0, 0, 0.6))
+		draw_set_transform(Vector2(965, 592), 0.0, Vector2(1.0, 0.14))
+		draw_circle(Vector2.ZERO, 250.0, Color(0, 0, 0, 0.6))
+
+
+# ---------- Figure segnaposto (silhouette, non gli sprite finali) ----------
+class _Hero extends Control:
+	var hair: Color = _G.col.darkened(0.1)
+
+	func _limb(a: Vector2, b: Vector2, w0: float, w1: float, col: Color) -> void:
+		var d: Vector2 = (b - a).normalized()
+		var n: Vector2 = Vector2(-d.y, d.x)
+		draw_colored_polygon(PackedVector2Array([a + n * w0 * 0.5, b + n * w1 * 0.5, b - n * w1 * 0.5, a - n * w0 * 0.5]), col)
+
+	func _draw() -> void:
+		if _G.kira and _G.spr != null:
+			draw_texture_rect(_G.spr, Rect2(25, 0, 330, 440), false)
+			return
+		var dark := Color("#150e16")
+		var lava := Color("#ff7a2a")
+		var cream := Color("#ece4d4")
+		var shade := Color("#b8aea0")
+		# gambe in affondo con venature incandescenti
+		_limb(Vector2(150, 262), Vector2(104, 424), 40, 28, dark)
+		_limb(Vector2(176, 262), Vector2(238, 410), 40, 28, dark)
+		for k in 5:
+			var t: float = 0.15 + float(k) * 0.17
+			draw_line(Vector2(150, 262).lerp(Vector2(104, 424), t) + Vector2(-5, 0), Vector2(150, 262).lerp(Vector2(104, 424), t + 0.07) + Vector2(6, 0), lava, 2.5)
+			draw_line(Vector2(176, 262).lerp(Vector2(238, 410), t) + Vector2(-4, 0), Vector2(176, 262).lerp(Vector2(238, 410), t + 0.08) + Vector2(5, 0), lava, 2.5)
+		draw_colored_polygon(PackedVector2Array([Vector2(78, 424), Vector2(124, 418), Vector2(130, 438), Vector2(70, 440)]), shade)
+		draw_colored_polygon(PackedVector2Array([Vector2(214, 408), Vector2(262, 404), Vector2(272, 426), Vector2(208, 428)]), shade)
+		# giacca
+		draw_colored_polygon(PackedVector2Array([Vector2(112, 160), Vector2(206, 150), Vector2(214, 262), Vector2(196, 300), Vector2(120, 296), Vector2(100, 240)]), cream)
+		draw_colored_polygon(PackedVector2Array([Vector2(166, 156), Vector2(206, 150), Vector2(214, 262), Vector2(196, 300), Vector2(168, 298)]), shade)
+		draw_colored_polygon(PackedVector2Array([Vector2(120, 296), Vector2(196, 300), Vector2(206, 336), Vector2(130, 340)]), cream.darkened(0.12))
+		draw_line(Vector2(114, 190), Vector2(124, 292), Color(0, 0, 0, 0.35), 2.0)
+		# braccio che regge la spada
+		_limb(Vector2(200, 168), Vector2(262, 262), 26, 20, cream)
+		_limb(Vector2(262, 262), Vector2(280, 276), 22, 18, dark)
+		# spada puntata in avanti-basso
+		var hand: Vector2 = Vector2(276, 272)
+		var tip: Vector2 = Vector2(410, 372)
+		var dd: Vector2 = (tip - hand).normalized()
+		var nn: Vector2 = Vector2(-dd.y, dd.x)
+		draw_colored_polygon(PackedVector2Array([hand + nn * 7.0, tip, hand - nn * 7.0]), Color("#cfd8e6"))
+		draw_line(hand, tip, Color(1, 1, 1, 0.8), 1.5)
+		draw_line(hand - nn * 14.0, hand + nn * 14.0, Color("#222233"), 5.0)
+		# testa di tre quarti dal retro: capelli, profilo, ciuffo
+		var hc := Vector2(150, 112)
+		draw_circle(hc, 38.0, hair.darkened(0.15))
+		draw_colored_polygon(PackedVector2Array([hc + Vector2(14, -6), hc + Vector2(36, 8), hc + Vector2(30, 34), hc + Vector2(10, 38)]), Color("#f2c8b2"))
+		draw_circle(hc + Vector2(26, 8), 2.6, dark)
+		draw_colored_polygon(PackedVector2Array([hc + Vector2(-40, -6), hc + Vector2(-8, -46), hc + Vector2(36, -24), hc + Vector2(8, -10), hc + Vector2(-6, 12), hc + Vector2(-36, 40)]), hair)
+		draw_colored_polygon(PackedVector2Array([hc + Vector2(6, -44), hc + Vector2(20, -76), hc + Vector2(24, -42)]), hair)
+		draw_colored_polygon(PackedVector2Array([hc + Vector2(-30, 26), hc + Vector2(-50, 70), hc + Vector2(-14, 48)]), hair.darkened(0.2))
+		draw_colored_polygon(PackedVector2Array([Vector2(138, 148), Vector2(172, 148), Vector2(170, 166), Vector2(140, 166)]), Color("#e0b49e"))
+		# luce di taglio fredda sul lato verso il boss
+		var rim := Color("#9fe8f4", 0.9)
+		draw_polyline(PackedVector2Array([Vector2(206, 152), Vector2(214, 262), Vector2(198, 300)]), rim, 2.5)
+		draw_polyline(PackedVector2Array([hc + Vector2(36, 8), hc + Vector2(30, 34)]), rim, 2.5)
+		draw_polyline(PackedVector2Array([Vector2(240, 400), Vector2(238, 410)]), rim, 2.0)
+
+
+class _Boss extends Control:
+	func _limb(pts: PackedVector2Array, w: float, col: Color) -> void:
+		draw_polyline(pts, col, w, true)
+
+	func _draw() -> void:
+		var body := Color("#5c2331")
+		var edge := Color("#241019")
+		var warm := Color("#ffb060")
+		# braccia meccaniche
+		var arm_c := Color("#3b1a26")
+		_limb(PackedVector2Array([Vector2(112, 200), Vector2(46, 270), Vector2(40, 340), Vector2(84, 420)]), 28, arm_c)
+		_limb(PackedVector2Array([Vector2(438, 200), Vector2(520, 262), Vector2(526, 340), Vector2(476, 410)]), 28, arm_c)
+		_limb(PackedVector2Array([Vector2(112, 200), Vector2(46, 270), Vector2(40, 340), Vector2(84, 420)]), 4, Color(warm, 0.7))
+		for c in [Vector2(84, 420), Vector2(476, 410)]:
+			for k in 3:
+				draw_line(c, c + Vector2(-16.0 + float(k) * 16.0, 30), Color("#2a1220"), 7.0)
+		# corpo-distributore: fronte, fianco e tetto
+		draw_colored_polygon(PackedVector2Array([Vector2(98, 72), Vector2(140, 48), Vector2(130, 470), Vector2(90, 458)]), body.darkened(0.5))
+		draw_colored_polygon(PackedVector2Array([Vector2(140, 48), Vector2(430, 38), Vector2(442, 462), Vector2(130, 472)]), body)
+		draw_polyline(PackedVector2Array([Vector2(140, 48), Vector2(430, 38), Vector2(442, 462), Vector2(130, 472), Vector2(140, 48)]), edge, 4.0)
+		draw_line(Vector2(140, 48), Vector2(130, 472), warm, 3.0)
+		# insegna con occhi feroci
+		draw_colored_polygon(PackedVector2Array([Vector2(160, 66), Vector2(414, 58), Vector2(416, 116), Vector2(160, 122)]), Color("#1a0b14"))
+		for s in [-1.0, 1.0]:
+			var ex: float = 287.0 + s * 62.0
+			draw_colored_polygon(PackedVector2Array([Vector2(ex - 34.0 * s, 78), Vector2(ex + 34.0 * s, 96), Vector2(ex + 30.0 * s, 104), Vector2(ex - 30.0 * s, 98)]), Color("#ffe14a"))
+			draw_circle(Vector2(ex, 96), 6.0, Color("#0a0b14"))
+		# vetrina illuminata con "denti"
+		var win := PackedVector2Array([Vector2(170, 140), Vector2(398, 134), Vector2(402, 330), Vector2(168, 336)])
+		draw_colored_polygon(win, Color("#14394a"))
+		var cols: Array = [Color("#e8503c"), Color("#f2c14a"), Color("#4ab4d8"), Color("#e83dce")]
+		for r in 3:
+			for q in 4:
+				var p := Vector2(190.0 + float(q) * 52.0, 160.0 + float(r) * 56.0)
+				draw_rect(Rect2(p, Vector2(34, 42)), Color(cols[(r + q) % 4], 0.88))
+				draw_rect(Rect2(p, Vector2(34, 8)), Color(1, 1, 1, 0.28))
+		for k in 12:
+			var x: float = 172.0 + float(k) * 19.0
+			draw_colored_polygon(PackedVector2Array([Vector2(x, 138.0 - float(k) * 0.5), Vector2(x + 18.0, 137.0 - float(k) * 0.5), Vector2(x + 9.0, 160.0)]), Color("#f4efe6"))
+			draw_colored_polygon(PackedVector2Array([Vector2(x, 334.0 - float(k) * 0.5), Vector2(x + 18.0, 333.0 - float(k) * 0.5), Vector2(x + 9.0, 312.0)]), Color("#f4efe6"))
+		draw_polyline(PackedVector2Array(win) + PackedVector2Array([win[0]]), Color("#7fdcec"), 3.0)
+		# pulsantiera e bocca-erogatore
+		draw_rect(Rect2(172, 350, 226, 56), Color("#2a1018"))
+		for k in 8:
+			draw_rect(Rect2(184.0 + float(k) * 26.0, 362, 18, 14), Color("#ff6a60") if k % 3 == 0 else Color("#d8d2c4"))
+		draw_rect(Rect2(184, 384, 198, 12), Color("#0a0b14"))
+		draw_colored_polygon(PackedVector2Array([Vector2(200, 420), Vector2(372, 418), Vector2(380, 460), Vector2(194, 462)]), Color("#0a0508"))
+		draw_colored_polygon(PackedVector2Array([Vector2(214, 432), Vector2(358, 430), Vector2(364, 452), Vector2(208, 454)]), Color("#ff7438", 0.55))
+		# cavi penzolanti
+		for k in 4:
+			var x2: float = 160.0 + float(k) * 80.0
+			draw_polyline(PackedVector2Array([Vector2(x2, 30), Vector2(x2 + 10, 8), Vector2(x2 + 30, -4)]), Color("#1a0b14"), 6.0)
+		draw_line(Vector2(430, 38), Vector2(442, 462), Color("#9fb8ff", 0.65), 2.5)
+
+
+# ---------- Utilita' di disegno ----------
+class _U:
+	# Scala unica (px alla risoluzione di progetto 1152x648; la UI scala in proporzione):
+	const T_TITLE: int = 28      # titoli grandi (banner, boss)
+	const T_CMD: int = 18        # comandi e nomi
+	const T_QUICK: int = 15      # comandi rapidi (compatti)
+	const T_SUB: int = 14        # sottotitoli / etichette piccole (minimo assoluto)
+	const ICON_K: float = 0.6    # icona = 60% del diametro del suo cerchio, ovunque
+
+	static func skew_text(c: CanvasItem, p: Vector2, t: String, sz: int, col: Color, outline: Color = Color(0, 0, 0, 0.9), f: Font = null, ow: int = 8, sk: float = -0.22) -> void:
+		var ff: Font = f if f != null else BattleTheme.display()
+		c.draw_set_transform_matrix(Transform2D(Vector2(1, 0), Vector2(sk, 1), p))
+		if ow > 0:
+			c.draw_string_outline(ff, Vector2.ZERO, t, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, ow, outline)
+		c.draw_string(ff, Vector2.ZERO, t, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, col)
+		c.draw_set_transform_matrix(Transform2D.IDENTITY)
+
+	static func text_w(t: String, sz: int, f: Font = null) -> float:
+		var ff: Font = f if f != null else BattleTheme.display()
+		return ff.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
+
+	static func icon(c: CanvasItem, key: String, center: Vector2, px: float, col: Color) -> void:
+		var tex: Texture2D = GameIcon.texture_for(GameIcon.resolve(key), "", px)
+		if tex != null:
+			c.draw_texture_rect(tex, Rect2(center - Vector2(px, px) * 0.5, Vector2(px, px)), false, col)
+
+	static func slant(r: Rect2, sl: float) -> PackedVector2Array:
+		return PackedVector2Array([Vector2(r.position.x + sl, r.position.y), Vector2(r.end.x, r.position.y), Vector2(r.end.x - sl, r.end.y), Vector2(r.position.x, r.end.y)])
+
+	# Pennellata: striscia a larghezza variabile con bordi irregolari
+	static func brush(c: CanvasItem, a: Vector2, b: Vector2, w0: float, w1: float, col: Color, sd: int, bend: float = 0.0, jag: float = 0.22, n: int = 16) -> void:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = sd
+		var d: Vector2 = b - a
+		var nrm: Vector2 = Vector2(-d.y, d.x).normalized()
+		var L := PackedVector2Array()
+		var Rr := PackedVector2Array()
+		for i in n + 1:
+			var t: float = float(i) / float(n)
+			var p: Vector2 = a + d * t + nrm * sin(t * PI) * bend
+			var w: float = maxf(1.5, lerpf(w0, w1, t) * 0.5)
+			L.append(p + nrm * w * (1.0 + rng.randf_range(-jag, jag)))
+			Rr.append(p - nrm * w * (1.0 + rng.randf_range(-jag, jag)))
+		for i in n:
+			c.draw_colored_polygon(PackedVector2Array([L[i], L[i + 1], Rr[i + 1], Rr[i]]), col)
+		# setole a secco oltre la fine
+		for k in 4:
+			var o: Vector2 = nrm * (float(k) - 1.5) * w1 * 0.3
+			c.draw_line(b + o, b + o + d.normalized() * rng.randf_range(14.0, 44.0), col, 2.0)
+
+	static func star(c: CanvasItem, p: Vector2, r: float, col: Color) -> void:
+		var pts := PackedVector2Array()
+		for k in 16:
+			var a: float = -PI / 2.0 + TAU * float(k) / 16.0
+			pts.append(p + Vector2(cos(a), sin(a)) * (r if k % 2 == 0 else r * 0.58))
+		c.draw_colored_polygon(pts, col)
+		pts.append(pts[0])
+		c.draw_polyline(pts, Color(0.02, 0.03, 0.06, 0.9), 2.0)
+
+	static func head(c: CanvasItem, p: Vector2, rad: float, hair: Color) -> void:
+		c.draw_circle(p, rad, Color("#0a0b14"))
+		c.draw_circle(p + Vector2(0, rad * 0.12), rad * 0.5, Color("#f4cdb8"))
+		c.draw_colored_polygon(PackedVector2Array([p + Vector2(-rad * 0.62, rad * 0.05), p + Vector2(-rad * 0.3, -rad * 0.66), p + Vector2(rad * 0.34, -rad * 0.62), p + Vector2(rad * 0.64, rad * 0.02), p + Vector2(rad * 0.3, -rad * 0.18), p + Vector2(-rad * 0.3, -rad * 0.16)]), hair)
+
+
+# ---------- Ruota di comando ----------
+class _Wheel extends Control:
+	var center: Vector2 = Vector2(350, 380)
+	var aura: Color = _G.col
+	var picked: String = ""
+	var light_mode: bool = false
+	var glow: bool = false
+	var part: String = "all"        # back (dietro i personaggi) | front | all
+	const NAMES: Array = ["ATTACK", "SKILL", "ULTIMATE", "GUARD"]
+	const SUBS: Array = ["ATTACCO BASE", "ABILITA'", "COLPO FINALE", "DIFESA"]
+	const LET: Array = ["A", "S", "U", "G"]
+	const KEYS: Array = ["sword", "bolt", "burst", "defense"]
+	const ANG: Array = [-98.0, -8.0, 82.0, 172.0]
+	const R: float = 150.0
+
+	func dir_of(i: int) -> Vector2:
+		var a: float = deg_to_rad(float(ANG[i]))
+		return Vector2(cos(a), sin(a))
+
+	func pos_of(i: int) -> Vector2:
+		return center + dir_of(i) * R
+
+	func _draw() -> void:
+		if part != "front":
+			_back()
+		if part != "back":
+			_front()
+
+	func _back() -> void:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 21
+		for i in 4:
+			var d: Vector2 = dir_of(i)
+			var perp: Vector2 = Vector2(-d.y, d.x)
+			var on: bool = picked == NAMES[i]
+			var rs: float = 0.8 if d.y < -0.5 else 1.0
+			if true:
+				# pennellate larghe: rosso pieno + rosa chiaro + tocco ciano, come negli schizzi di Persona/Metaphor
+				var bend: float = 38.0 * (1.0 if i % 2 == 0 else -1.0)
+				var c0: Color = aura.lightened(0.15) if glow else aura
+				if glow:
+					for g in (7 if on else 4):
+						var gw: float = 118.0 + float((7 if on else 4) - g) * 34.0
+						_U.brush(self, center + d * 30.0, center + d * (R + 190.0 * rs), gw, 30.0 + float(4 - g) * 10.0, Color(aura, 0.10 + float(g) * 0.05), 40 + i, bend, 0.1)
+				_U.brush(self, center + d * 40.0, center + d * (R + 170.0 * rs), 118.0, 20.0, Color(c0, 1.0), 40 + i, bend)
+				if glow:
+					_U.brush(self, center + d * 70.0, center + d * (R + 140.0 * rs), 56.0, 10.0, Color(aura.lightened(0.45), 0.9), 90 + i, bend * 0.8)
+				_U.brush(self, center + d * 80.0 + perp * 18.0, center + d * (R + 110.0 * rs) + perp * 30.0, 40.0, 8.0, Color(aura.lightened(0.8), 1.0) if glow else Color(aura.lightened(0.55), 0.92), 60 + i, -20.0)
+				_U.brush(self, center + d * (R + 10.0) - perp * 26.0, center + d * (R + 100.0 * rs) - perp * 44.0, 14.0, 3.0, Color(aura.lightened(0.85), 1.0) if glow else Color("#d8f4ff", 0.95), 80 + i, 8.0, 0.2, 8)
+				# lettera gigante
+				var lp: Vector2 = center + d * (R + 78.0) + Vector2(-44, 62)
+				_U.skew_text(self, lp + Vector2(5, 5), LET[i], 168, Color(aura.darkened(0.35), 0.9), Color(0, 0, 0, 0), BattleTheme.display(), 0)
+				if glow:
+					_U.skew_text(self, lp, LET[i], 168, Color(aura, 0.35), Color(aura, 0.3), BattleTheme.display(), 34)
+					_U.skew_text(self, lp, LET[i], 168, Color(1, 1, 1, 0.9), Color(aura.lightened(0.2), 0.8), BattleTheme.display(), 20)
+				_U.skew_text(self, lp, LET[i], 168, Color("#ffffff") if glow else Color("#fffaf0"), Color(0.05, 0.02, 0.06, 0.95), BattleTheme.display(), 10)
+				# schizzi
+				for k in 14:
+					var q: Vector2 = center + d * rng.randf_range(80.0, R + 190.0) + perp * rng.randf_range(-70.0, 70.0)
+					draw_circle(q, rng.randf_range(1.8, 6.5), (aura.lightened(0.15) if glow else aura) if k % 4 else aura.lightened(0.6))
+			else:
+				# light painting: scie bianche con alone colorato
+				var k: int = 4 if on else 2
+				for s in k:
+					var off: float = (float(s) - float(k - 1) * 0.5) * 22.0
+					var a0: Vector2 = center + d * 70.0 + perp * off
+					var a1: Vector2 = center + d * (R + 190.0 * rs) + perp * (off * 2.6)
+					var pts := PackedVector2Array()
+					for j in 24:
+						var t: float = float(j) / 23.0
+						pts.append(a0.lerp(a1, t) + perp * sin(t * PI * 1.3 + float(s)) * 26.0)
+					draw_polyline(pts, Color(aura, 0.12 if on else 0.08), 34.0, true)
+					draw_polyline(pts, Color(aura, 0.38 if on else 0.22), 15.0, true)
+					draw_polyline(pts, Color(1, 0.96, 0.94, 0.98 if on else 0.6), 4.0 if on else 2.4, true)
+				if on:
+					for k2 in 22:
+						var ang: float = deg_to_rad(float(ANG[i])) + rng.randf_range(-0.7, 0.7)
+						var r0: float = rng.randf_range(R * 0.5, R * 0.9)
+						draw_line(center + Vector2(cos(ang), sin(ang)) * r0, center + Vector2(cos(ang), sin(ang)) * (r0 + rng.randf_range(40.0, 130.0)), Color(1, 0.96, 0.92, 0.85), rng.randf_range(1.5, 3.2), true)
+					# lettera luminosa
+					_U.skew_text(self, center + d * (R + 78.0) + Vector2(-44, 62), LET[i], 168, Color(1, 1, 1, 0.9), Color(aura, 0.8), BattleTheme.display(), 9)
+
+	func _front() -> void:
+		var cream := Color("#fffaf0")
+		# archi sottili e linea di mira (come i cerchi sottili e la linea rossa di Metaphor)
+		draw_arc(center + Vector2(-60, 60), 330.0, deg_to_rad(95.0), deg_to_rad(265.0), 90, Color(cream, 0.5), 1.6, true)
+		draw_arc(center + Vector2(-40, 40), 372.0, deg_to_rad(110.0), deg_to_rad(250.0), 70, Color(cream, 0.28), 1.2, true)
+		draw_arc(center, R + 52.0, 0.0, TAU, 80, Color(cream, 0.2), 1.2, true)
+		var hand: Vector2 = Vector2(372, 352) if _G.kira else Vector2(452, 452)
+		draw_line(hand, Vector2(948, 400), Color(aura, 0.9), 2.0, true)
+		draw_circle(hand, 5.0, Color(aura, 0.95))
+		for i in 4:
+			var p: Vector2 = pos_of(i)
+			var on: bool = picked == NAMES[i]
+			var ult: bool = NAMES[i] == "ULTIMATE"
+			var rad: float = 27.0 if not on else 35.0
+			var ring: Color = cream if not ult else aura.lightened(0.3)
+			if on:
+				ring = Color("#fff36b")
+				draw_circle(p, rad + 20.0, Color(aura, 0.2))
+				draw_circle(p, rad + 10.0, Color(aura, 0.34))
+			elif ult:
+				draw_circle(p, rad + 9.0, Color(aura, 0.4))
+			draw_circle(p + Vector2(3, 4), rad, Color(0, 0, 0, 0.55))
+			draw_circle(p, rad, Color(cream) if on else Color("#0a0b14"))
+			draw_arc(p, rad, 0.0, TAU, 44, ring, 4.0, true)
+			_U.icon(self, KEYS[i], p, rad * 2.0 * _U.ICON_K, Color("#0a0b14") if on else ring)
+			# tasto numerato
+			var kp: Vector2 = p + Vector2(rad * 0.72, -rad * 0.72)
+			draw_circle(kp, 9.0, aura)
+			draw_arc(kp, 9.0, 0.0, TAU, 20, Color("#0a0b14"), 2.0, true)
+			_U.skew_text(self, kp + Vector2(-3.5, 5), str(i + 1), 13, Color("#0a0b14") if aura.get_luminance() > 0.55 else cream, Color(0, 0, 0, 0), BattleTheme.mono(), 0, 0.0)
+			# etichetta: titolo inclinato + striscia bianca con sottotitolo
+			var sz: int = 30 if on else 26
+			var tw: float = _U.text_w(NAMES[i], sz)
+			var left: bool = i == 3
+			var x0: float = p.x - rad - 12.0 - tw if left else p.x + rad + 12.0
+			var y0: float = p.y + 8.0
+			var sw: float = _U.text_w(SUBS[i], _U.T_SUB, BattleTheme.mono()) + 20.0
+			var sx: float = x0 + (tw - sw if left else 0.0)
+			draw_colored_polygon(_U.slant(Rect2(sx, y0 + 5.0, sw, 20.0), 6.0), Color(cream, 0.95))
+			_U.skew_text(self, Vector2(sx + 10.0, y0 + 5.0 + 10.0 + 0.35 * float(_U.T_SUB)), SUBS[i], _U.T_SUB, Color("#14101c"), Color(0, 0, 0, 0), BattleTheme.mono(), 0)
+			_U.skew_text(self, Vector2(x0, y0), NAMES[i], sz, Color("#fff36b") if on else cream)
+		if picked != "":
+			return
+		# situazionale: cerchio piccolo
+		var sp: Vector2 = center + Vector2(-142, -98)
+		draw_circle(sp, 15.0, Color("#0a0b14"))
+		draw_arc(sp, 15.0, 0.0, TAU, 28, cream, 2.0, true)
+		_U.icon(self, "target", sp, 15.0 * 2.0 * _U.ICON_K, cream)
+		var stw: float = _U.text_w("SITUAZIONALE", _U.T_SUB, BattleTheme.mono())
+		_U.skew_text(self, Vector2(sp.x - 15.0 - 10.0 - stw, sp.y + 0.35 * float(_U.T_SUB)), "SITUAZIONALE", _U.T_SUB, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+
+
+# ---------- HUD fissa ----------
+class _Hud extends Control:
+	var selected: bool = false
+	const PINK: Color = Color("#ff5a4a")
+	const TEAL: Color = Color("#7fdcec")
+	const BLUE: Color = Color("#d8ecff")
+
+	func _poly_line(pts: PackedVector2Array, col: Color, w: float) -> void:
+		var p2 := PackedVector2Array(pts)
+		p2.append(pts[0])
+		draw_polyline(p2, col, w)
+
+	# Barra sottile: binario scuro con filo chiaro, riempimento con luce in alto, punta luminosa e segmenti a taglio fine.
+	func _thin(p: Vector2, w: float, frac: float, col: Color, h: float, segs: int = 0, tip: bool = true) -> void:
+		draw_rect(Rect2(p + Vector2(-1, -1), Vector2(w + 2, h + 2)), Color(0, 0, 0, 0.62))
+		draw_rect(Rect2(p, Vector2(w, h)), Color(col, 0.16))
+		var fw: float = w * clampf(frac, 0.0, 1.0)
+		draw_rect(Rect2(p, Vector2(fw, h)), col)
+		draw_rect(Rect2(p, Vector2(fw, maxf(1.0, h * 0.4))), Color(1, 1, 1, 0.35))
+		for t in segs:
+			var x: float = p.x + w * float(t + 1) / float(segs + 1)
+			draw_line(Vector2(x, p.y - 1), Vector2(x, p.y + h + 1), Color(0.02, 0.03, 0.07, 0.9), 1.5)
+		if tip and fw > 2.0:
+			draw_rect(Rect2(Vector2(p.x + fw - 1.5, p.y - 2.0), Vector2(2.0, h + 4.0)), Color(1, 1, 1, 0.95))
+		draw_line(p + Vector2(0, h + 1.5), p + Vector2(w, h + 1.5), Color(1, 1, 1, 0.22), 1.0)
+
+	func _bar(r: Rect2, frac: float, col: Color, ticks: int = 0) -> void:
+		draw_colored_polygon(_U.slant(r, 4.0), Color(0, 0, 0, 0.78))
+		var fr := Rect2(r.position, Vector2(r.size.x * frac, r.size.y))
+		draw_colored_polygon(_U.slant(fr, 4.0), col)
+		draw_rect(Rect2(r.position + Vector2(2, 1), Vector2(maxf(0.0, r.size.x * frac - 4.0), r.size.y * 0.32)), Color(1, 1, 1, 0.3))
+		for t in ticks:
+			var x: float = r.position.x + r.size.x * float(t + 1) / float(ticks + 1)
+			draw_line(Vector2(x, r.position.y), Vector2(x, r.end.y), Color(0, 0, 0, 0.75), 2.0)
+
+	# Curva di opacita': 100% all'inizio, 50% a x1, poi discesa dolce (ease-out) fino a 0% in x2.
+	func _fade_a(x: float, x0: float, x1: float, x2: float) -> float:
+		if x <= x0:
+			return 1.0
+		if x <= x1:
+			return lerpf(1.0, 0.5, (x - x0) / maxf(1.0, x1 - x0))
+		if x >= x2:
+			return 0.0
+		return 0.5 * pow(1.0 - (x - x1) / maxf(1.0, x2 - x1), 1.7)
+
+	# Banner a bande continue con colore per vertice (nessuna cucitura): bordi esterni sfumati sopra, sotto e a sinistra,
+	# alone e filetti colorati che sfumano lungo la lunghezza con la stessa curva di opacita'.
+	func _band(xs: PackedFloat32Array, y0: float, y1: float, sl: float, col: Color, base_a: float) -> void:
+		var pts := PackedVector2Array()
+		var cols := PackedColorArray()
+		for i in xs.size():
+			pts.append(Vector2(xs[i] + sl, y0))
+			cols.append(Color(col, base_a * _bw[i]))
+		for i in range(xs.size() - 1, -1, -1):
+			pts.append(Vector2(xs[i], y1))
+			cols.append(Color(col, base_a * _bw[i]))
+		draw_polygon(pts, cols)
+
+	var _bw := PackedFloat32Array()
+
+	func _fade_banner(x0: float, x1: float, x2: float, y: float, h: float, sl: float) -> void:
+		var xs := PackedFloat32Array()
+		_bw = PackedFloat32Array()
+		var xl: float = x0 - 12.0
+		var x: float = xl
+		while x < x2 + 8.0:
+			xs.append(x)
+			_bw.append(_fade_a(maxf(x, x0), x0, x1, x2) * clampf((x - xl) / 12.0, 0.0, 1.0))
+			x += 8.0
+		var dark := Color(0.04, 0.05, 0.1)
+		_band(xs, y - 12.0, y + h + 12.0, sl, _G.col, 0.14)
+		for k in range(6, -1, -1):
+			var e: float = float(k) * 1.8
+			_band(xs, y - e, y + h + e, sl, dark, 0.20 if k > 0 else 0.55)
+		var top_p := PackedVector2Array()
+		var bot_p := PackedVector2Array()
+		var tc := PackedColorArray()
+		var tg := PackedColorArray()
+		for i in xs.size():
+			top_p.append(Vector2(xs[i] + sl, y))
+			bot_p.append(Vector2(xs[i], y + h))
+			tc.append(Color(1, 1, 1, _bw[i]))
+			tg.append(Color(1, 1, 1, 0.22 * _bw[i]))
+		draw_polyline_colors(top_p, tg, 6.0)
+		draw_polyline_colors(bot_p, tg, 6.0)
+		draw_polyline_colors(top_p, tc, 2.0)
+		draw_polyline_colors(bot_p, tc, 2.0)
+
+	func _draw() -> void:
+		var cream := Color("#fffaf0")
+		# --- ordine dei turni: linea bianca sottile che finisce presto, ritratti in rettangoli alti di dimensione decrescente ---
+		var ly: float = 50.0
+		draw_line(Vector2(142, ly + 2.0), Vector2(634, ly + 2.0), Color(0, 0, 0, 0.5), 5.0)
+		draw_line(Vector2(142, ly), Vector2(634, ly), cream, 2.0)
+		draw_colored_polygon(PackedVector2Array([Vector2(630, ly - 10.0), Vector2(654, ly), Vector2(630, ly + 10.0)]), cream)
+		_U.skew_text(self, Vector2(14, 30), "TURNI", 15, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+		_U.skew_text(self, Vector2(14, 78), _G.turn_txt, 38, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 7)
+		var hair: Array = [_G.col, Color("#2a2634"), _G.others[0], _G.others[1], _G.others[2]]
+		var heights: Array = [54.0, 54.0, 54.0, 54.0]   # tutti come il primo; al massimo 4 visibili sulla freccia
+		var tx: float = 166.0
+		for i in 4:
+			var rh: float = heights[i]
+			var rw: float = rh * 1.7
+			var enemy: bool = i == 1
+			var rc := Rect2(tx, ly - rh * 0.5, rw, rh)
+			var edge: Color = Color("#ff5a4a") if enemy else hair[i]
+			if i == 0:
+				draw_rect(Rect2(rc.position - Vector2(6, 6), rc.size + Vector2(12, 12)), Color(edge, 0.3))
+			draw_rect(rc, Color(0.04, 0.05, 0.1, 0.95))
+			if i == 0 and _G.kira and _G.por != null:
+				draw_texture_rect_region(_G.por, rc, Rect2(110, 215, 780, 459))
+			else:
+				_U.head(self, rc.get_center() + Vector2(0, 2), rh * 0.42, Color("#ff5a4a") if enemy else hair[i])
+			draw_rect(rc, edge, false, 4.0 if i == 0 else 3.0)
+			if enemy:
+				_U.icon(self, "danger", rc.position + Vector2(rw - 10.0, 10.0), 16.0, Color("#fff36b"))
+			if i < 3:
+				var bp: Vector2 = rc.position + Vector2(0, rh)
+				draw_rect(Rect2(bp.x, bp.y - 18.0, 20, 18), cream)
+				_U.skew_text(self, bp + Vector2(5, -3.5), str(i + 1), 15, Color("#15121c"), Color(0, 0, 0, 0), BattleTheme.display(), 0, 0.0)
+			tx += rw + 26.0
+		# --- nome del boss (alto a destra): banner rosa con taglio rosso, PV a segmenti ed equilibrio ---
+		# Nome boss: il banner cresce verso sinistra fino a un limite (resta spazio dopo la freccia dell'ordine turni);
+		# oltre il limite si riduce il carattere (min 22) e, se serve, si tronca con "…".
+		var max_tw: float = 618.0 - 212.0
+		var shown: String = _G.boss_name
+		var shown_sz: int = 28
+		while _U.text_w(shown, shown_sz) > max_tw and shown_sz > 22:
+			shown_sz -= 1
+		if _U.text_w(shown, shown_sz) > max_tw:
+			var cut: String = shown
+			while cut.length() > 3 and _U.text_w(cut + "…", shown_sz) > max_tw:
+				cut = cut.left(cut.length() - 1)
+			shown = cut.strip_edges() + "…"
+		var btw: float = _U.text_w(shown, shown_sz)
+		var bw: float = maxf(460.0, 34.0 + btw + 30.0 + 22.0 + 126.0)
+		var bn := Rect2(1298.0 - bw, 24, bw, 44)
+		draw_colored_polygon(_U.slant(Rect2(bn.position + Vector2(5, 5), bn.size), 18.0), Color(0, 0, 0, 0.5))
+		draw_colored_polygon(_U.slant(bn, 18.0), Color("#aab0bd"))
+		for k in 4:
+			var sx: float = 1172.0 + float(k) * 22.0
+			draw_colored_polygon(PackedVector2Array([Vector2(sx, 24), Vector2(sx + 11, 24), Vector2(sx - 7, 68), Vector2(sx - 18, 68)]), Color("#2a2733"))
+		draw_line(Vector2(bn.position.x + 18, bn.position.y), Vector2(bn.end.x, bn.position.y), Color("#ff5a4a"), 3.0)
+		draw_line(Vector2(bn.position.x, bn.end.y), Vector2(bn.end.x - 18, bn.end.y), Color("#ff5a4a"), 3.0)
+		draw_colored_polygon(_U.slant(Rect2(bn.position, Vector2(bn.size.x, 14.0)), 18.0), Color(1, 1, 1, 0.06))
+		draw_colored_polygon(PackedVector2Array([Vector2(1220, 24), Vector2(1232, 24), Vector2(1214, 68), Vector2(1202, 68)]), Color("#ff5a4a"))
+		_U.skew_text(self, Vector2(bn.position.x + 34.0, 58), shown, shown_sz, Color("#15121c"), Color(0, 0, 0, 0), BattleTheme.display(), 0)
+		_U.icon(self, "danger", Vector2(bn.position.x + 34.0 + btw + 30.0, 46), 22.0, Color("#c8281c"))
+		var bar_x: float = bn.position.x + 20.0
+		var bar_w: float = 1278.0 - bar_x
+		_thin(Vector2(bar_x, 79), bar_w, 0.78, Color("#7fdcec"), 5.0, 9)
+		_thin(Vector2(bar_x, 90), bar_w * 0.714, 0.45, Color("#fffaf0"), 3.0, 0, false)
+		_U.skew_text(self, Vector2(bar_x + bar_w * 0.714 + 8.0, 98), "EQUILIBRIO", 13, Color("#fffaf0"), Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+		if not selected:
+			var tg := Rect2(bn.position.x + 4.0, 112, 250, 28)
+			draw_colored_polygon(_U.slant(Rect2(tg.position, tg.size), 10.0), Color("#aab0bd", 0.97))
+			draw_rect(Rect2(tg.position.x + 4, tg.position.y, 5, tg.size.y), Color("#ff5a4a"))
+			_U.icon(self, "danger", Vector2(tg.position.x + 22, tg.position.y + 14), 20.0, Color("#c8281c"))
+			_U.skew_text(self, Vector2(tg.position.x + 40, tg.position.y + 22), "CARICA · COLPO TRA 1 TURNO", _U.T_SUB, Color("#15121c"), Color(0, 0, 0, 0), BattleTheme.mono(), 0)
+		# --- bersaglio sul boss: cerchio sottile + barra diagonale verde come nello schizzo, con debolezze ---
+		var tc := Vector2(948, 400)
+		draw_arc(tc, 40.0, 0.0, TAU, 56, Color(0, 0, 0, 0.7), 5.0, true)
+		draw_arc(tc, 40.0, 0.0, TAU, 56, cream, 2.0, true)
+		draw_colored_polygon(PackedVector2Array([tc + Vector2(-8, 34), tc + Vector2(14, -34), tc + Vector2(26, -34), tc + Vector2(4, 34)]), Color("#7fdcec"))
+		draw_polyline(PackedVector2Array([tc + Vector2(-8, 34), tc + Vector2(14, -34), tc + Vector2(26, -34), tc + Vector2(4, 34), tc + Vector2(-8, 34)]), Color(0, 0, 0, 0.8), 2.0)
+		for k in 2:
+			var cp := Vector2(tc.x + 50.0 + float(k) * 44.0, tc.y - 4.0)
+			draw_colored_polygon(_U.slant(Rect2(cp.x, cp.y - 14.0, 38, 26), 6.0), Color(0.04, 0.05, 0.1, 0.9))
+			_U.icon(self, "bolt" if k == 0 else "sword", cp + Vector2(20, -1), 18.0, Color("#fff36b") if k == 0 else cream)
+		# --- banner abilita' scelta: opacita' 100% sulla prima lettera, 50% a fine prima parola, poi sfuma fino a 0% oltre la fine del testo ---
+		if selected:
+			var title: String = _G.label if _G.label != "" else ("COLPO CARICATO" if _G.pick == "SKILL" else "ULTIMATE · COLPO FINALE")
+			var sub: String = "Danno x2 al bersaglio · costo 2 RISERVA" if _G.pick == "SKILL" else "Danno massiccio al bersaglio · barra Ultimate piena"
+			var bx: float = 450.0
+			var by: float = 100.0
+			var bh: float = 46.0
+			var sl: float = 14.0
+			var tx0: float = bx + 66.0
+			var first_w: float = _U.text_w(title.split(" ")[0], 28)
+			var x1: float = tx0 + first_w * 0.55
+			var x2: float = tx0 + _U.text_w(title, 28) + 40.0
+			_fade_banner(bx, x1, x2, by, bh, sl)
+			_U.icon(self, "bolt" if _G.pick == "SKILL" else "burst", Vector2(bx + 36, by + 23), 28.0, _G.col)
+			_U.skew_text(self, Vector2(tx0, by + 33), title, 28, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 6)
+			_U.skew_text(self, Vector2(tx0, by + bh + 22), sub, 14, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+		# --- squadra (basso a destra): 3, 2, 1 con emblema numerato, PV + energia, ritaglio ritratto ---
+		var names: Array = ["MIRA", "DAX", "KIRA" if _G.kira else "DAX"]
+		var cols: Array = [_G.others[0], _G.others[1], _G.col]
+		var hp: Array = [200, 200, 253]
+		var en: Array = [100, 100, 175]
+		for i in 3:
+			var num: int = 3 - i
+			var y: float = 548.0 + float(i) * 56.0
+			var active: bool = num == 1
+			var r := Rect2(930, y, 360, 48)
+			for st in 20:
+				var a: float = 0.88 * (1.0 - float(st) / 24.0)
+				draw_rect(Rect2(r.position.x + float(st) * 18.0, y, 18.5, 48), Color(0.02, 0.03, 0.07, a))
+			draw_line(Vector2(930, y), Vector2(1290, y), Color(cream, 0.9 if active else 0.45), 2.0)
+			draw_line(Vector2(930, y + 48), Vector2(1290, y + 48), Color(cream, 0.9 if active else 0.45), 2.0)
+			# ritaglio ritratto a destra con taglio obliquo
+			var pc: Color = cols[i]
+			draw_colored_polygon(PackedVector2Array([Vector2(1166, y + 1), Vector2(1290, y + 1), Vector2(1290, y + 47), Vector2(1148, y + 47)]), Color(pc.darkened(0.55), 0.95))
+			if active and _G.kira and _G.cut != null:
+				draw_texture_rect_region(_G.cut, Rect2(1156, y + 1, 134, 46), Rect2(520, 330, 800, 275))
+			else:
+				_U.head(self, Vector2(1226, y + 28), 22.0, pc)
+			draw_colored_polygon(PackedVector2Array([Vector2(1166, y + 1), Vector2(1178, y + 1), Vector2(1160, y + 47), Vector2(1148, y + 47)]), Color(pc, 0.9))
+			if active:
+				draw_colored_polygon(_U.slant(Rect2(880, y + 9, 70, 30), 10.0), Color("#7fdcec"))
+				_U.skew_text(self, Vector2(890, y + 24 + 0.36 * 22.0), "F1", 22, Color("#0a1a22"), Color(1, 1, 1, 0.5), BattleTheme.display(), 4)
+			var ec := Vector2(960, y + 24)
+			draw_circle(ec, 29.0, Color("#0a0b14"))
+			draw_arc(ec, 29.0, 0.0, TAU, 40, cream, 3.0, true)
+			draw_arc(ec, 23.0, 0.0, TAU, 40, Color(cream, 0.35), 1.2, true)
+			_U.icon(self, ["libracorp", "libracorp", "rondini"][i], ec, 29.0 * 2.0 * _U.ICON_K, cream)
+			_U.skew_text(self, Vector2(1002, y + 17), names[i], 17, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 5)
+			_thin(Vector2(1002, y + 25), 142.0, float(hp[i]) / 260.0, Color("#f3ece0"), 4.0, 0)
+			_thin(Vector2(1002, y + 34), 142.0, float(en[i]) / 200.0, Color("#d8ecff"), 2.0, 0, false)
+			if num != 3:
+				var shw: float = 74.0 if num == 1 else 44.0
+				draw_rect(Rect2(1002, y + 21, shw, 2), Color("#a9b3c4"))
+				for hk in int(shw / 5.0):
+					draw_line(Vector2(1002.0 + float(hk) * 5.0, y + 23), Vector2(1005.0 + float(hk) * 5.0, y + 21), Color(0.1, 0.12, 0.18, 0.9), 1.0)
+			var hpt: String = "%d" % hp[i]
+			var ent: String = "%d" % en[i]
+			var mw: float = _U.text_w(ent, _U.T_SUB, BattleTheme.mono())
+			_U.skew_text(self, Vector2(1144.0 - mw, y + 17), ent, _U.T_SUB, Color("#d8ecff"), Color(0, 0, 0, 0.9), BattleTheme.mono(), 4)
+			_U.skew_text(self, Vector2(1144.0 - mw - 10.0 - _U.text_w(hpt, _U.T_SUB, BattleTheme.mono()), y + 17), hpt, _U.T_SUB, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 4)
+		# --- comandi rapidi compatti + riserva sulla stessa linea (centro y = 676) ---
+		var items: Array = [["FORMAZIONE", "taunt"], ["BERSAGLIO", "target"], ["AUTO", "bolt"], ["VELOCITA'", "bolt"]]
+		var qr: float = 12.0
+		var qgap: float = 8.0
+		var qsp: float = 20.0
+		var cmd_end: float = 22.0
+		for it0 in items:
+			cmd_end += qr * 2.0 + qgap + _U.text_w(it0[0], _U.T_QUICK) + qsp
+		var rcy: float = 676.0
+		var rx: float = cmd_end + 14.0
+		_U.skew_text(self, Vector2(rx, rcy + 0.35 * float(_U.T_SUB)), "RISERVA", _U.T_SUB, Color("#7fdcec"), Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+		_U.skew_text(self, Vector2(rx + 74.0, rcy + 0.36 * 26.0), "3", 26, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 6)
+		for k in 5:
+			var d := Vector2(rx + 112.0 + float(k) * 16.0, rcy)
+			draw_colored_polygon(PackedVector2Array([d + Vector2(0, -8), d + Vector2(7, 0), d + Vector2(0, 8), d + Vector2(-7, 0)]), cream if k < 3 else Color(0.2, 0.22, 0.3, 0.9))
+		var cx: float = 22.0
+		var cyc: float = 676.0
+		for it in items:
+			draw_circle(Vector2(cx + qr, cyc), qr, Color("#0a0b14"))
+			draw_arc(Vector2(cx + qr, cyc), qr, 0.0, TAU, 24, cream, 2.0, true)
+			_U.icon(self, it[1], Vector2(cx + qr, cyc), qr * 2.0 * _U.ICON_K, cream)
+			_U.skew_text(self, Vector2(cx + qr * 2.0 + qgap, cyc + 0.35 * float(_U.T_QUICK)), it[0], _U.T_QUICK, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 4)
+			cx += qr * 2.0 + qgap + _U.text_w(it[0], _U.T_QUICK) + qsp
+
+
+
+
+func _run(dir: String) -> void:
+	var rootc := Control.new()
+	rootc.size = Vector2(1280, 720)
+	rootc.scale = Vector2(0.9, 0.9)
+	root.add_child(rootc)
+	rootc.add_child(_world())
+	var wheel := _Wheel.new()
+	wheel.size = Vector2(1280, 720)
+	wheel.light_mode = selected
+	wheel.part = "front"
+	wheel.picked = _G.pick if selected else ""
+	rootc.add_child(wheel)
+	var hud := _Hud.new()
+	hud.size = Vector2(1280, 720)
+	hud.selected = selected
+	rootc.add_child(hud)
+	await create_timer(1.3).timeout
+	root.get_viewport().get_texture().get_image().save_png(dir.path_join("hud21_%s_%s.png" % [_G.name_, ("scelta_" + _G.pick.to_lower()) if selected else "libera"]))
+	quit()
+
+class _Vignette extends Control:
+	func _draw() -> void:
+		var steps: int = 14
+		for i in steps:
+			var t: float = float(i) / float(steps)
+			var inset: float = 260.0 * t
+			draw_rect(Rect2(Vector2.ZERO, size), Color(0, 0, 0, 0.0))
+		# bande scure morbide agli angoli (approssimate con rettangoli sfumati)
+		for i in 18:
+			var a: float = 0.05 * (1.0 - float(i) / 18.0)
+			var w: float = 14.0 * float(i)
+			draw_rect(Rect2(0, 0, size.x, w), Color(0, 0, 0.04, a))
+			draw_rect(Rect2(0, size.y - w, size.x, w), Color(0, 0, 0.04, a))
+			draw_rect(Rect2(0, 0, w * 1.4, size.y), Color(0, 0, 0.04, a * 0.8))
+			draw_rect(Rect2(size.x - w * 1.4, 0, w * 1.4, size.y), Color(0, 0, 0.04, a * 0.8))
+
