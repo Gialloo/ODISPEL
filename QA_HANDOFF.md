@@ -139,6 +139,11 @@ Hit-stop iniziale (ms): 65 / 100 / 125 / 185 (`ImpactFrames.HIT_STOP`); overlay 
 - KO: se il colpo letale ha mostrato un impact frame, `down` (boss e giocatore) non ripete lampo, scossa, linee e slow-motion; restano FINISH!/K.O.!.
 - Debug: IMPOSTAZIONI > PROVA GLI EFFETTI D'IMPATTO (`ImpactLab`), 4 bottoni.
 
+## 7. AUTO e prestazioni (0.26.1)
+
+- Tasto AUTO: non sono riuscito a riprodurre l'accensione+spegnimento in test (un click, un tocco emulato e il tasto A restano accesi per piu' round). Ipotesi piu' probabile: due eventi di pressione ravvicinati sul dispositivo (tasto a scatto alla pressione). Correzione difensiva: `toggle_autoplay()` ignora un secondo cambio entro 350 ms (`AUTO_DEBOUNCE_MS`); stessa funzione per il tasto A. Test: `tests/unit/test_autoplay_toggle.gd`. DA VERIFICARE SUL TELEFONO e su PC: premere AUTO una volta deve lasciarlo acceso (il toast dice AUTO ATTIVO).
+- Prestazioni (solo con effetti ridotti = telefoni): palco a riposo, `SelectArrow` e `PortraitView` a 30 disegni/s (`Settings.light_fx`). Il resto (testi in cache, tratti di luce a mesh, limite 60 fps, passaggio automatico a effetti ridotti sotto 40 fps) c'era gia'. Misure headless invariate (nessuna regressione); il guadagno reale sul Mali-G57 NON e' misurato.
+
 ## Test
 - Eseguiti (0.24.34): tutti i 76 file in `tests/unit/` in headless (parallelo): nessun errore. `test_hud_layout` (31 controlli) e `test_input_ui` richiedono uno schermo e sono passati con `xvfb-run`.
 - Nuovi: `tests/unit/test_threat_preview.gd` (26 controlli: identita' senza modificatori, Guardia, bonus placca, avviso furia, catena, nessun critico del boss); 5 controlli in `test_hud_layout.gd` (ventaglio a sinistra della GUIDA e dentro lo schermo in PC e touch, annuncio lungo dentro lo schermo, stile condiviso dei comandi); 9 sulla validazione dei salvataggi (0.24.31).
@@ -148,8 +153,8 @@ Hit-stop iniziale (ms): 65 / 100 / 125 / 185 (`ImpactFrames.HIT_STOP`); overlay 
 - NON eseguiti: multiplayer con giocatori reali, rete pubblica, Android su dispositivo, avvio dell'exe su Windows.
 
 ## Build e pubblicazione
-- `releases/ODISPEL-0.26.0-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.26.0.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
-- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.25.0 come versione precedente.
+- `releases/ODISPEL-0.26.1-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.26.1.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
+- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.26.0 come versione precedente.
 - itch.io: il workflow `.github/workflows/itch.yml` carica da solo gli ultimi file di `releases/` dopo il push. Dal mio ambiente NON vedo l'esito: controllare la scheda Actions su GitHub o la pagina itch.io.
 
 ## Problemi aperti

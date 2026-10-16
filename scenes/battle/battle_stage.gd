@@ -225,10 +225,23 @@ func _process(delta: float) -> void:
 	elif _zoomed:
 		scale = Vector2.ONE
 		_zoomed = false
+	# a riposo (nessuna azione, scossa o lampo) sui telefoni il palco si ridisegna a 30 fps: il moto lento non lo nota nessuno
+	if Settings.light_fx and acting == "" and _shake <= 0.0 and _punch <= 0.0 and _flash_idle() and _hp_recent.is_empty():
+		_idle_odd = not _idle_odd
+		if _idle_odd:
+			return
 	queue_redraw()
 
 
 var _freeze: float = 0.0
+var _idle_odd: bool = false
+
+
+func _flash_idle() -> bool:
+	for v in hit_flash.values():
+		if float(v) > 0.0:
+			return false
+	return true
 
 
 # Congela l'animazione del palco per qualche istante (impact frames). Solo presentazione.

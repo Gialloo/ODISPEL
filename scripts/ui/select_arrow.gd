@@ -25,8 +25,15 @@ func point_at(p: Vector2) -> void:
 	position = p - Vector2(size.x * 0.5, size.y)
 
 
+var _odd: bool = false
+
+
 func _process(delta: float) -> void:
 	_t += delta
+	if Settings.light_fx:
+		_odd = not _odd
+		if _odd:
+			return
 	queue_redraw()
 
 

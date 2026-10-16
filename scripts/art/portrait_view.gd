@@ -17,6 +17,7 @@ var flip: bool = false             # specchia (personaggio a destra che guarda a
 var show_expression_text: bool = true
 var _texture: Texture2D = null
 var _t: float = 0.0
+var _odd: bool = false
 
 
 func setup(new_char: String, new_kind: String = "bust", boss: bool = false) -> PortraitView:
@@ -59,6 +60,10 @@ func _process(delta: float) -> void:
 	if not is_visible_in_tree():
 		return
 	_t += delta
+	if Settings.light_fx:                 # telefoni: la respirazione del ritratto a 30 disegni al secondo basta
+		_odd = not _odd
+		if _odd:
+			return
 	queue_redraw()
 
 

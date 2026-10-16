@@ -348,6 +348,21 @@ func _maybe_autoplay() -> void:
 			_refresh_orders())
 
 
+# Un tocco = un solo cambio: due eventi quasi insieme (tocco + mouse emulato, doppio clic involontario) valgono uno.
+func toggle_autoplay() -> void:
+	var now: int = Time.get_ticks_msec()
+	if now - _auto_toggle_ms < AUTO_DEBOUNCE_MS:
+		return
+	_auto_toggle_ms = now
+	set_autoplay(not autoplay)
+	# conferma chiara di cosa e' successo (prima si capiva solo dal colore del tasto)
+	Notify.toast("AUTO ATTIVO: l'IA gioca da sola. Tocca di nuovo per fermarla." if autoplay else "AUTO SPENTO: scegli tu le mosse.", Notify.Kind.INFO)
+
+
+var _auto_toggle_ms: int = -100000
+const AUTO_DEBOUNCE_MS: int = 350
+
+
 func set_autoplay(on: bool) -> void:
 	autoplay = on
 	if _auto_button != null:
@@ -489,10 +504,7 @@ func _build_autoplay() -> void:
 	_anchor(_auto_button, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0, 0, 50 if not TouchUi.active() else 58, 36 if not TouchUi.active() else 50))
 	_auto_button.z_index = 20       # sempre sopra palco ed effetti: deve poter essere premuto in ogni momento
 	_auto_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	_auto_button.pressed.connect(func() -> void:
-		set_autoplay(not autoplay)
-		# conferma chiara di cosa e' successo (prima si capiva solo dal colore del tasto)
-		Notify.toast("AUTO ATTIVO: l'IA gioca da sola. Tocca di nuovo per fermarla." if autoplay else "AUTO SPENTO: scegli tu le mosse.", Notify.Kind.INFO))
+	_auto_button.pressed.connect(toggle_autoplay)
 	# velocita' dell'animazione sempre a portata di dito: NORMALE -> VELOCE -> TURBO
 	speed_button = Button.new()
 	speed_button.focus_mode = Control.FOCUS_NONE
@@ -1830,7 +1842,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			SceneRouter.go("hub" if not (source is NetworkManager) else "lobby")
 		return
 	if event.keycode == KEY_A and _auto_button != null and _auto_button.visible:
-		set_autoplay(not autoplay)
+		toggle_autoplay()
 		return
 	if event.keycode == KEY_TAB and _tutorial == null and not locked and not animating and not autoplay:
 		var ss: Array = _my_slots()
