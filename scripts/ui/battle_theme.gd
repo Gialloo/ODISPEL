@@ -11,6 +11,7 @@ const CY_DIM: Color = Color("#a3cfd9")      # testi secondari: chiari, si leggon
 const CY_DARK: Color = Color("#203a46")
 const RD: Color = Color("#f0453c")        # rosso nemico/pericolo (distinto dall'arancio d'impatto)
 const RD_DARK: Color = Color("#4d1c24")
+const RD_TEXT: Color = Color("#ff6a60")     # rosso per TESTO sui pannelli: piu' chiaro del rosso nemico (il rosso pieno non arriva a contrasto 4,5)
 const WH: Color = Color("#F5E9C9")        # avorio luminoso (Art Bible): testi e bordi chiari
 const BK: Color = Color("#0b0c12")
 const PANEL: Color = Color("#171923")      # carbone urbano (Art Bible)

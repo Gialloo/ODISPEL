@@ -13,6 +13,7 @@ var cut: float = 14.0
 var bare: bool = false       # senza cornice: solo una velatura scura, il contenuto sta sulla scena
 var backdrop: float = 1.0    # opacita' dello sfondo (il testo non cambia)
 var quiet: bool = false      # pannello secondario: solo velo e filo sottile, niente ombra ne' linguetta
+var veil: float = 0.5        # opacita' del velo del pannello secondario (piu' alta dove ci sono testi di pericolo)
 var margins: Vector4 = Vector4(18.0, 30.0, 18.0, 12.0)   # sinistra, alto, destra, basso
 
 
@@ -54,13 +55,13 @@ func _draw_surface(strength: float) -> void:
 
 
 func _draw_quiet() -> void:
-	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, 0.5))
+	draw_colored_polygon(_shape(), Color(BattleTheme.PANEL, veil))
 	_draw_surface(0.5)
 	var outline: PackedVector2Array = _shape()
 	outline.append(outline[0])
 	draw_polyline(outline, Color(accent, 0.55), 1.5)
 	if title != "":
-		draw_string(BattleTheme.display(), Vector2(cut + 2.0, 20.0), title.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(accent, 0.95))
+		draw_string(BattleTheme.display(), Vector2(cut + 2.0, 20.0), title.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(accent.lerp(BattleTheme.WH, 0.3), 0.95))
 
 
 func _draw() -> void:

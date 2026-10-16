@@ -5,6 +5,9 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.34", "items": [
+		"LEGGIBILITA': il testo di pericolo (LETALE, ordine del turno del boss) usa un rosso piu' chiaro e il pannello ALLARME ha lo sfondo piu' scuro: contrasto misurato sopra 4,5. I suggerimenti del boss passano da 11 a 13.",
+	]},
 	{"v": "0.24.33", "items": [
 		"PVP: stesso aspetto della battaglia contro il boss: barre PV bianco-ciano (rosse sotto il 30%), barra ultimate rossa, carte e medaglie nei colori ufficiali.",
 		"COMANDI: PvE e PvP usano lo stesso stile (usabile, spento, ultimate pronta). Su telefono il ventaglio delle mosse non finisce piu' sotto la scheda GUIDA.",

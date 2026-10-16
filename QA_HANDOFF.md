@@ -1,13 +1,14 @@
-# QA_HANDOFF — ODISPEL 0.24.33
+# QA_HANDOFF — ODISPEL 0.24.34
 
 ## Identificazione
-- Versione: 0.24.33 (Android versionCode 58)
+- Versione: 0.24.34 (Android versionCode 59)
 - Data build: 16 ottobre 2026
 - Branch: `claude/battaglia-chiara` (commit: vedi `git log -1`)
 - Obiettivi di questa consegna (due richieste unite in una sola build):
   1. Chiudere la verifica dell'anteprima del colpo del boss (coerenza con il danno reale).
   2. HUD polish, iterazione 1: stili dei pannelli, HUD PvP nella palette, comandi condivisi, leggibilita' su telefono.
-- Versione precedente recuperabile: 0.24.32 (in `releases/`) e, nella storia git, la 0.24.31.
+- Versione precedente recuperabile: 0.24.33 (in `releases/`); la 0.24.32 e la 0.24.31 sono nella storia git.
+- 0.24.34 = 0.24.33 + passaggio su accessibilita' (vedi sezione 3), richiesto dal brief 'HUD POLISH PROFESSIONALE'.
 
 ## 1. Anteprima del boss (threat_preview)
 Misura: `tools/preview_check.gd` (8 boss x 3 squadre x 8 semi, scelte dell'IA con Guardia a caso, 1511 round, circa 2600 colpi del boss). Ogni colpo reale viene confrontato con un modello "anteprima x modificatori noti".
@@ -41,8 +42,16 @@ Misura: `tools/preview_check.gd` (8 boss x 3 squadre x 8 semi, scelte dell'IA co
 - Il verde "OK" resta solo per scritte di effetto e per la scheda GUIDA e il suo bordo di evidenziazione del tutorial (scelta voluta: e' la voce "guida").
 - I tre stili restano tre (hanno ruoli diversi); sono stati uniformati nella palette, nei titoli e nei comandi, non fusi in uno.
 
+## 3. Accessibilita': contrasti, vita bassa, KO, numeri lunghi (0.24.34)
+- Misura: `tools/contrast_check.gd` (rapporto WCAG 2.x, sfondo peggiore = cielo viola chiaro sotto i pannelli semitrasparenti). Test di regressione: `tests/unit/test_contrast.gd` (22 coppie: testi >= 4,5, barre >= 3).
+- Difetto CONFERMATO e corretto: il rosso nemico (#f0453c) come TESTO sul pannello ALLARME/ORDINE DEL TURNO aveva contrasto 3,6 e 2,2. Ora: nuovo `BattleTheme.RD_TEXT` (#ff6a60) per i testi di pericolo, velo piu' scuro sul pannello ALLARME (0,88) e sull'ordine del turno (0,80). Contrasti ora 5,4 e 4,8.
+- Difetto CONFERMATO: i suggerimenti del boss (pannello ALLARME) erano a 11 px per un override rimasto dopo la modifica a 13 della 0.24.33. Ora 13.
+- I fili (bordi) dei pannelli hanno contrasto basso sul cielo (ciano 2,35; rosso 1,01): sono decorativi, l'informazione e' nel testo, e non sono stati modificati. Non e' una verifica di accessibilita' completa.
+- Stati critici (`tools/states_shot.gd`, screenshot PC e touch con vita al 12%, un KO, 987654 PV con scudo 123456, boss al 58%): vita bassa = barra rossa e numero; KO = scheda scurita con la scritta "K.O." (non solo colore); numeri lunghi dentro la scheda; reazione "Soccorso" visibile. Il pericolo e' comunicato con testo ("LETALE PER ...", "STIMA ~N") oltre che col colore.
+- Non verificato: contrasto reale su schermo di telefono (luminosita', daltonismo), tastiera/gamepad nelle schermate toccate, risoluzioni diverse da 1280x720.
+
 ## Test
-- Eseguiti: tutti i 75 file in `tests/unit/` in headless (parallelo): nessun errore. `test_hud_layout` (31 controlli) e `test_input_ui` richiedono uno schermo e sono passati con `xvfb-run`.
+- Eseguiti (0.24.34): tutti i 76 file in `tests/unit/` in headless (parallelo): nessun errore. `test_hud_layout` (31 controlli) e `test_input_ui` richiedono uno schermo e sono passati con `xvfb-run`.
 - Nuovi: `tests/unit/test_threat_preview.gd` (26 controlli: identita' senza modificatori, Guardia, bonus placca, avviso furia, catena, nessun critico del boss); 5 controlli in `test_hud_layout.gd` (ventaglio a sinistra della GUIDA e dentro lo schermo in PC e touch, annuncio lungo dentro lo schermo, stile condiviso dei comandi); 9 sulla validazione dei salvataggi (0.24.31).
 - `tools/ui_audit.gd` in modalita' PC e touch: nessun problema (tasti e testi, anche PvP).
 - Screenshot controllati a mano da me (xvfb, 1280x720): battaglia PC, battaglia touch (due stati), PvP 1v1 PC. NON controllati: PvP in modalita' touch, PvP 2v2 / ffa, altre risoluzioni.
@@ -50,8 +59,8 @@ Misura: `tools/preview_check.gd` (8 boss x 3 squadre x 8 semi, scelte dell'IA co
 - NON eseguiti: multiplayer con giocatori reali, rete pubblica, Android su dispositivo, avvio dell'exe su Windows.
 
 ## Build e pubblicazione
-- `releases/ODISPEL-0.24.33-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.24.33.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
-- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.32 come versione precedente.
+- `releases/ODISPEL-0.24.34-windows.zip` (exe + dll WebRTC) e `releases/ODISPEL-0.24.34.apk` (firma di debug, 1 firmatario verificato). Percorso nel repo privato: `https://github.com/Gialloo/odispel/tree/claude/battaglia-chiara/releases`
+- SHA256 in `releases/SHA256SUMS.txt`. Resta la 0.24.33 come versione precedente.
 - itch.io: il workflow `.github/workflows/itch.yml` carica da solo gli ultimi file di `releases/` dopo il push. Dal mio ambiente NON vedo l'esito: controllare la scheda Actions su GitHub o la pagina itch.io.
 
 ## Problemi aperti
@@ -65,13 +74,14 @@ Misura: `tools/preview_check.gd` (8 boss x 3 squadre x 8 semi, scelte dell'IA co
 
 ## Playtest (per il proprietario)
 Su PC e su telefono:
-1. All'avvio: finestra NOVITA' 0.24.33 con OK visibile.
+1. All'avvio: finestra NOVITA' 0.24.34 con OK visibile.
 2. Battaglia contro un boss: sotto il nome della mossa annunciata deve esserci "BERSAGLIO: ... · STIMA ~numero". Se il boss ha una catena: "+CATENA" accanto al nome.
 3. Porta il boss tra 75% e 50% di vita con un compagno ferito: puo' comparire in arancio "SE SI INFURIA: LETALE PER ...". Dopo il colpo, il compagno e' davvero a rischio? L'avviso ti e' utile o ti confonde?
 4. Telefono: apri il ventaglio dei comandi con la scheda GUIDA visibile (prime battaglie): "SPEZZATUTO 0%" deve leggersi tutto.
 5. All'inizio di un boss con comportamento (es. PUNISCE LE CURE): l'annuncio al centro deve stare dentro lo schermo, anche su telefono.
 6. PvP (1v1): barre PV bianco-ciano, ultimate rossa, comandi uguali a quelli del PvE. Prova anche 2v2 e dimmi se le carte si sovrappongono.
-7. In caso di errore: schermata, dispositivo (PC o modello del telefono), modalita' e boss.
+7. Telefono, in piena luce: leggi il pannello ALLARME (in alto al centro) e l'ordine del turno. I testi rossi si leggono senza sforzo? Dimmi anche se ti accorgi di KO e vita bassa senza guardare i colori.
+8. In caso di errore: schermata, dispositivo (PC o modello del telefono), modalita' e boss.
 
 ## Prossimo passo
 - In base al playtest: (a) rivedere le carte PvP per 2v2/ffa e il PvP in touch, (b) decidere se mostrare un intervallo di danno (con Guardia) o la stima della catena, (c) iniziare l'audit dei test sul resto delle sinergie (scudi/cure sullo stesso bersaglio) con test che riproducono prima il problema.

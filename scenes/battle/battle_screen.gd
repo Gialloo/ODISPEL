@@ -591,6 +591,7 @@ func _build_boss_banner() -> void:
 func _build_telegraph() -> void:
 	_tele_panel = HudPanel.new().setup("ALLARME", BattleTheme.RD)
 	_tele_panel.quiet = true
+	_tele_panel.veil = 0.88        # testi di pericolo (LETALE, STIMA): sfondo piu' scuro per il contrasto
 	add_child(_tele_panel)
 	_tele_panel.margins = Vector4(12.0, 18.0, 12.0, 2.0)
 	_anchor(_tele_panel, Vector4(0.5, 0.0, 0.5, 0.0), Vector4(-248, 6, 68, 68))
@@ -611,7 +612,7 @@ func _build_telegraph() -> void:
 	_plan_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# al massimo 3 righe, il resto si accorcia con "...": prima il testo scivolava sotto Riserva e tasti
 	_plan_label.max_lines_visible = 3
-	_plan_label.add_theme_font_size_override("font_size", 11)
+	_plan_label.add_theme_font_size_override("font_size", 13)
 	_plan_label.add_theme_constant_override("line_spacing", -3)
 	_plan_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_plan_label.clip_contents = true
@@ -655,6 +656,7 @@ func _build_turn_panel() -> void:
 	panel.quiet = true
 	panel.margins = Vector4(10, 24, 10, 4)
 	panel.backdrop = 0.4
+	panel.veil = 0.8
 	add_child(panel)
 	_anchor(panel, Vector4(0.0, 0.0, 0.0, 0.0), Vector4(0, _top_row() + 26.0, 281, _top_row() + 26.0 + 114.0))
 	_turn_box = VBoxContainer.new()
@@ -679,7 +681,7 @@ func turn_rows() -> Array:
 			row["who"] = "BOSS"
 			row["name"] = str(BattleState.boss(shown)["name"]).to_upper()
 			row["action"] = BattleText.move_name(str(entry["move"]))
-			row["color"] = BattleTheme.RD
+			row["color"] = BattleTheme.RD_TEXT
 		else:
 			var p: Dictionary = BattleState.player(shown, str(entry["player"]))
 			var u: Dictionary = BattleState.unit(shown, str(entry["unit"]))
@@ -1022,7 +1024,7 @@ func _refresh_telegraph() -> void:
 		for uid in lethal:
 			names.append(str(BattleState.unit(shown, str(uid)).get("name", "?")).to_upper())
 		_tele_target.text = "LETALE PER %s!" % ", ".join(names)
-		_tele_target.add_theme_color_override("font_color", BattleTheme.RD)
+		_tele_target.add_theme_color_override("font_color", BattleTheme.RD_TEXT)
 		if _threat_round != int(shown.get("round", 0)) and not animating:
 			_threat_round = int(shown.get("round", 0))
 			Snd.play("boss_charge", 1.3)
