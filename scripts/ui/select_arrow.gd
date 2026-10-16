@@ -5,7 +5,7 @@ extends Control
 # quindi si vede sempre sopra pannelli e targhette. `tip` e' la punta, nelle coordinate del genitore.
 
 var tip: Vector2 = Vector2.ZERO
-var color: Color = BattleTheme.POP
+var color: Color = BattleTheme.WH
 var _t: float = 0.0
 
 

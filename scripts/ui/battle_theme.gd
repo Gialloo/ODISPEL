@@ -6,16 +6,20 @@ extends RefCounted
 
 # PALETTE A COLORI COMPLEMENTARI: ciano (tinta ~188) contro rosso-arancio (tinta ~8), opposti sul cerchio cromatico.
 # Ciano = azione/amico/interfaccia, rosso-arancio = pericolo/nemico/attacco. Giallo = solo evidenza (punti focali), verde = esito positivo.
-const CY: Color = Color("#7cf0ff")        # ciano principale
-const CY_DIM: Color = Color("#8fd6e4")      # testi secondari: chiari, si leggono bene
-const CY_DARK: Color = Color("#0f3a44")
-const RD: Color = Color("#ff4630")        # rosso-arancio, complementare del ciano
-const RD_DARK: Color = Color("#5a1a12")
-const WH: Color = Color("#f2fdff")
-const BK: Color = Color("#04080a")
-const PANEL: Color = Color("#061418")
+const CY: Color = Color("#7fdcec")        # ciano principale (alleato/interfaccia), un po' meno saturo: Art Bible
+const CY_DIM: Color = Color("#a3cfd9")      # testi secondari: chiari, si leggono bene
+const CY_DARK: Color = Color("#203a46")
+const RD: Color = Color("#f0453c")        # rosso nemico/pericolo (distinto dall'arancio d'impatto)
+const RD_DARK: Color = Color("#4d1c24")
+const WH: Color = Color("#F5E9C9")        # avorio luminoso (Art Bible): testi e bordi chiari
+const BK: Color = Color("#0b0c12")
+const PANEL: Color = Color("#171923")      # carbone urbano (Art Bible)
 const OK: Color = Color("#6bffb0")        # esito positivo (verde): solo per scritte di effetto (cure, schivate), mai per le barre
-const HP: Color = Color("#d4faff")        # PV degli alleati: bianco-ciano (rosso sotto il 30%, giallo lo scudo)
+const HP: Color = Color("#d6eef0")        # PV degli alleati: bianco-ciano (rosso sotto il 30%, giallo lo scudo)
+# Colori della Art Bible ufficiale (docs/ART_BIBLE.md)
+const IMPACT: Color = Color("#FF7438")    # arancio impatto: ultimate pronta, scudi, picchi
+const MAGENTA: Color = Color("#E83DCE")   # magenta rituale: segni importanti
+const COSMIC: Color = Color("#7770F7")    # viola cosmico: profondita'
 const GOLD: Color = Color("#ffd25f")      # evidenza / rarita' alta
 const POP: Color = Color("#fff36b")       # giallo dei fumetti
 
@@ -138,9 +142,9 @@ static func _styles_for(kind: String) -> Dictionary:
 	var colors: Dictionary
 	match kind:
 		"primary":
-			normal = SlantBox.make(RD, WH, 16.0, BK, 3.0)
-			hover = SlantBox.make(WH, RD, 16.0, RD, 3.0)
-			colors = {"text": WH, "hover": RD}
+			normal = SlantBox.make(IMPACT, WH, 16.0, BK, 3.0)
+			hover = SlantBox.make(WH, IMPACT, 16.0, IMPACT, 3.0)
+			colors = {"text": BK, "hover": BK}
 		"ultimate":
 			normal = SlantBox.make(BK, WH, 16.0, RD, 3.0)
 			hover = SlantBox.make(WH, RD, 16.0, BK, 3.0)
@@ -187,7 +191,7 @@ static func style_button(b: Button, kind: String = "normal", size: int = 22) -> 
 	b.add_theme_color_override("font_color", st["text"])
 	b.add_theme_color_override("font_hover_color", st["hover_text"])
 	b.add_theme_color_override("font_pressed_color", st["hover_text"])
-	b.add_theme_color_override("font_disabled_color", Color("#6aa3af"))
+	b.add_theme_color_override("font_disabled_color", Color("#8196a0"))
 	b.add_theme_color_override("font_outline_color", BK if kind != "normal" else Color(0, 0, 0, 0.9))
 	b.add_theme_constant_override("outline_size", 4 if kind != "normal" else 3)
 	b.add_theme_font_override("font", menu())

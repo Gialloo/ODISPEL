@@ -48,7 +48,7 @@ file_logging/max_log_files=5
 
 [rendering]
 
-environment/defaults/default_clear_color=Color(0.0156863, 0.0313726, 0.0392157, 1)
+environment/defaults/default_clear_color=Color(0.0431373, 0.0470588, 0.0705882, 1)
 
 rendering_device/driver.windows="d3d12"
 textures/vram_compression/import_etc2_astc=true

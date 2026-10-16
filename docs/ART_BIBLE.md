@@ -323,3 +323,7 @@ Criteri di accettazione:
 4. Trasparenza senza aloni: **non applicabile** al tratto generato dal codice (non ha PNG); vale per le pennellate che disegnerai tu.
 5. Si riproduce senza errori: **verificato** (`test_light_paint`, suite completa, audit UI).
 6. Leggibile alla risoluzione di gioco e su Android: **PC verificato; Android NON verificato** (nessun test sul telefono).
+
+## Palette dell'interfaccia (0.24.30)
+La HUD e tutte le schermate usano le costanti di `BattleTheme`, allineate alla Bible: `PANEL` = carbone `#171923`, `WH` = avorio `#F5E9C9` (testi e bordi chiari), `IMPACT` = arancio `#FF7438` (bottoni principali, ultimate pronta, scudi, riga di chi agisce), `MAGENTA` = `#E83DCE` (tondo della fase del boss), `COSMIC` = `#7770F7` (velatura della battaglia). **Ciano** (`CY`, alleato/interfaccia) e **rosso** (`RD`, nemico/pericolo) restano come colori funzionali del gioco, resi meno saturi; i colori dei personaggi (`UNIT_COLORS`) e il verde delle scritte di cura non cambiano.
+- Non verificato: contrasto di testi piccoli e barre sul display di un telefono vero.

@@ -405,19 +405,19 @@ func _style_order(b: Button, usable: bool, gauge_progress: float) -> void:
 	var txt_col: Color
 	var outline: int = 0
 	if usable:
-		box = SlantBox.make(Color("#f4fbff"), Color("#10181c"), 14.0, Color(0, 0, 0, 0.55), 2.0)
+		box = SlantBox.make(BattleTheme.WH, BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
 		txt_col = BattleTheme.BK
 	else:
-		box = SlantBox.make(Color("#06090b"), Color("#2c373c"), 14.0, Color(0, 0, 0, 0.0), 2.0)
-		txt_col = Color("#8b969b")
+		box = SlantBox.make(BattleTheme.BK, Color("#2d3140"), 14.0, Color(0, 0, 0, 0.0), 2.0)
+		txt_col = Color("#9096a6")
 		if gauge_progress > 0.0:
 			box.progress = gauge_progress
-			box.progress_color = Color("#dfe9ec")
+			box.progress_color = Color("#d9d2bd")
 			txt_col = BattleTheme.WH
 			outline = 4
 	var hov: SlantBox = box
 	if usable:
-		hov = SlantBox.make(Color("#c4f4ff"), Color("#10181c"), 14.0, Color(0, 0, 0, 0.55), 2.0)
+		hov = SlantBox.make(Color("#FFF4D6"), BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
 	b.add_theme_stylebox_override("normal", box)
 	b.add_theme_stylebox_override("disabled", box)
 	b.add_theme_stylebox_override("hover", hov)

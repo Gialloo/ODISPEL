@@ -6,7 +6,7 @@ extends Control
 var ratio: float = 1.0
 var shield_ratio: float = 0.0
 var color_on: Color = BattleTheme.HP
-var color_shield: Color = BattleTheme.GOLD
+var color_shield: Color = BattleTheme.IMPACT
 var color_bg: Color = Color(0, 0, 0, 0.45)
 
 

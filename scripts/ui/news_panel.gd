@@ -24,21 +24,28 @@ func _ready() -> void:
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(dim)
 	var panel := HudPanel.new().setup("NOVITA' · v" + str(entry.get("v", "")), BattleTheme.CY)
-	panel.position = Vector2(256, 150)
-	panel.size = Vector2(700, 400)
+	panel.position = Vector2(256, 90)
+	panel.size = Vector2(700, 540)
 	add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
 	panel.set_content(box)
+	# le novita' scorrono: con tante voci il tasto OK resta sempre visibile in fondo
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(scroll)
+	var items := VBoxContainer.new()
+	items.add_theme_constant_override("separation", 10)
+	items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(items)
 	for item in entry.get("items", []):
-		var label := BattleTheme.make_label("•  " + str(item), 20, BattleTheme.WH)
+		var label := BattleTheme.make_label("•  " + str(item), 19, BattleTheme.WH)
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.custom_minimum_size = Vector2(640, 0)
+		label.custom_minimum_size = Vector2(620, 0)
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		label.set_meta("keep_case", true)      # CREDITI e TEAM restano scritti come nel testo
-		box.add_child(label)
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	box.add_child(spacer)
+		items.add_child(label)
 	var ok := Button.new()
 	ok.text = "OK, GIOCHIAMO"
 	ok.custom_minimum_size = Vector2(0, 58)

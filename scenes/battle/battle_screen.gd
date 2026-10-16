@@ -566,7 +566,7 @@ func _build_boss_banner() -> void:
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bsb := StyleBoxFlat.new()
 	bsb.bg_color = Color(0.02, 0.1, 0.12, 0.92)
-	bsb.border_color = BattleTheme.CY
+	bsb.border_color = BattleTheme.MAGENTA
 	bsb.set_border_width_all(3)
 	bsb.set_corner_radius_all(26)
 	badge.add_theme_stylebox_override("panel", bsb)
@@ -743,7 +743,7 @@ func _refresh_turn_panel() -> void:
 	# una riga = una HBox con colonne a larghezza fissa e lo stesso font (Roboto Bold, MAIUSCOLO): stessa baseline per tutti
 	for r in rows:
 		var acting_now: bool = str(r["unit"]) == _turn_acting
-		var col: Color = BattleTheme.GOLD if acting_now else (r["color"] as Color)
+		var col: Color = BattleTheme.IMPACT if acting_now else (r["color"] as Color)
 		var line := HBoxContainer.new()
 		line.add_theme_constant_override("separation", 6)
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1386,7 +1386,7 @@ func _unit_row(u: Dictionary, selected: bool, is_active: bool, slot: String = ""
 	var hp := LineBar.new().setup(BattleTheme.BK if selected else (BattleTheme.RD if hp_ratio < 0.3 else BattleTheme.HP), Vector2(144, 8))
 	if selected:
 		hp.color_bg = Color(0, 0, 0, 0.35)
-		hp.color_shield = Color("#a8741a")
+		hp.color_shield = Color("#b4501f")
 	hp.set_values(hp_ratio, float(u.get("shield", 0)) / float(u["max_hp"]))
 	hp.position = Vector2(54, 22)
 	inner.add_child(hp)
@@ -1527,12 +1527,12 @@ func _refresh_orders() -> void:
 		entries.append({"id": str(u["ult"]), "kind": "ultimate"})
 	var bh: float = 56.0 if touch else 42.0
 	# una sola misura di carattere per TUTTI i personaggi: la larghezza si adatta alla mossa piu' lunga del gioco, non il carattere
-	var common_fs: int = 17 if touch else 15
+	var common_fs: int = 16 if touch else 15
 	var longest: float = 0.0
 	for mid in BattleContent.MOVES:
 		longest = maxf(longest, BattleTheme.hud().get_string_size(BattleText.move_name(str(mid)), HORIZONTAL_ALIGNMENT_LEFT, -1, common_fs).x)
 	# dentro il pulsante: icona a sinistra, nome, costo o motivo a destra
-	var bw: float = clampf(longest + 44.0 + 78.0 + 8.0, 236.0, 284.0)
+	var bw: float = clampf(longest + 62.0 + 108.0, 236.0, 322.0)
 	var pts: Array = _orders_box.layout(entries.size(), bh, 4.0, fan_big, 0.0, 214.0 if touch else 236.0, 578.0)
 	title.position = Vector2(float(pts[0].x) - 2.0, float(pts[0].y) - bh * 0.5 - 26.0)
 	var lo := Vector2(1e9, 1e9)
@@ -1571,7 +1571,7 @@ func _refresh_orders() -> void:
 		var ready_ult: bool = is_ult and err == ""
 		_style_order(b, err == "", gprog, ready_ult)
 		# icona dentro il pulsante, a sinistra; a destra il costo (o il motivo per cui e' spento)
-		var oic: GameIcon = GameIcon.new().setup(GameIcon.move_key(move_id), BattleTheme.BK if err == "" else Color("#8b969b"), 28.0)
+		var oic: GameIcon = GameIcon.new().setup(GameIcon.move_key(move_id), BattleTheme.BK if err == "" else Color("#9096a6"), 28.0)
 		oic.anchor_top = 0.5
 		oic.anchor_bottom = 0.5
 		oic.offset_left = 26.0
@@ -1648,22 +1648,22 @@ func _style_order(b: Button, usable: bool, gauge_progress: float, ready_ult: boo
 	var txt_col: Color
 	var outline: int = 0
 	if usable:
-		box = SlantBox.make(Color("#f4fbff"), Color("#10181c"), 14.0, Color(0, 0, 0, 0.55), 2.0)
+		box = SlantBox.make(BattleTheme.WH, BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
 		txt_col = BattleTheme.BK
 	else:
-		box = SlantBox.make(Color("#06090b"), Color("#2c373c"), 14.0, Color(0, 0, 0, 0.0), 2.0)
-		txt_col = Color("#8b969b")
+		box = SlantBox.make(BattleTheme.BK, Color("#2d3140"), 14.0, Color(0, 0, 0, 0.0), 2.0)
+		txt_col = Color("#9096a6")
 		if gauge_progress > 0.0:
 			box.progress = gauge_progress
-			box.progress_color = Color("#dfe9ec")
+			box.progress_color = Color("#d9d2bd")
 			txt_col = BattleTheme.WH
 			outline = 4
 	var hov: SlantBox = box
 	if usable:
-		hov = SlantBox.make(Color("#c4f4ff"), Color("#10181c"), 14.0, Color(0, 0, 0, 0.55), 2.0)
+		hov = SlantBox.make(Color("#FFF4D6"), BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
 	if ready_ult:
-		box = SlantBox.make(BattleTheme.GOLD, Color("#10181c"), 14.0, Color(0, 0, 0, 0.55), 2.0)
-		hov = SlantBox.make(Color("#ffe59a"), Color("#10181c"), 14.0, Color(0, 0, 0, 0.55), 2.0)
+		box = SlantBox.make(BattleTheme.IMPACT, BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
+		hov = SlantBox.make(Color("#ff9a6a"), BattleTheme.BK, 14.0, Color(0, 0, 0, 0.55), 2.0)
 	for bx in [box, hov]:
 		bx.content_margin_left = 62.0
 		bx.content_margin_right = 80.0

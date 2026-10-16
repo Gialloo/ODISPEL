@@ -5,13 +5,16 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.24.30", "items": [
+		"ART BIBLE: tutta l'interfaccia usa la palette ufficiale: carbone per i pannelli, avorio per i testi, arancio per i bottoni principali, l'ultimate pronta e gli scudi, magenta per il tondo della fase. Ciano e rosso restano solo per alleato e nemico, piu' morbidi.",
+		"La velatura della battaglia diventa viola cosmico.",
+		"La finestra delle NOVITA' scorre: con molte voci il tasto OK resta sempre visibile.",
+	]},
 	{"v": "0.24.29", "items": [
-		"BATTAGLIA, NIENTE PIU' SOVRAPPOSIZIONI: gli avvisi (obiettivi, sfide) vanno in alto a destra e non coprono piu' boss e allarme; la scheda guida non copre il tasto LOG; TURNO e ORDINE DEL TURNO stanno sotto i tasti AUTO e velocita'; la freccia gialla non entra nel pannello.",
-		"I nomi nel pannello dell'ordine del turno non sono piu' tagliati (BOSS DISTRIBUTORE per intero).",
-		"BOSS: nome, vita ed equilibrio in un solo blocco in alto a destra, barra piu' grande. L'allarme sale in alto al centro.",
-		"PV degli alleati in bianco-ciano (rosso sotto il 30%), scudo giallo: il verde resta solo per le scritte di cura.",
-		"PULSANTI DELLE ABILITA': icona dentro il pulsante, costo a destra; se la mossa e' spenta dice perche' (SERVE 2E, SENZA COLPI, 40%); l'ultimate pronta diventa gialla (PRONTA).",
-		"Pannelli piu' puliti: tolte le decorazioni senza funzione. Operatori: PV in colonna, anche per chi e' in panchina. Menu a ventaglio piu' rapido.",
+		"BATTAGLIA, NIENTE PIU' SOVRAPPOSIZIONI: avvisi in alto a destra, scheda guida sopra il LOG, TURNO e ORDINE DEL TURNO sotto AUTO e velocita', freccia fuori dal pannello, nomi interi.",
+		"BOSS: nome, vita ed equilibrio in un solo blocco. PV degli alleati bianco-ciano, scudi evidenziati.",
+		"ABILITA': icona dentro il pulsante, costo a destra e motivo se la mossa e' spenta (SERVE 2E, SENZA COLPI); l'ultimate pronta si evidenzia (PRONTA).",
+		"Pannelli piu' puliti, PV in colonna, menu a ventaglio piu' rapido.",
 	]},
 	{"v": "0.24.28", "items": [
 		"PRESTAZIONI: i tratti di luce sono disegnati con 3 sole forme sfumate invece di decine di cerchi e linee trasparenti: stesso aspetto (anzi, alone piu' morbido) con molto meno lavoro per la scheda video.",
