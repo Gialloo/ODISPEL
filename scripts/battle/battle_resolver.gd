@@ -392,19 +392,26 @@ static func _note_seen(st: Dictionary, key: String, id: String) -> void:
 
 
 # MINACCIA: quanto fara' la mossa annunciata del boss e se sarebbe letale (senza critico). {lethal: [unit id], dmg: {unit id: n}}
+# ANTEPRIMA del colpo annunciato. E' una STIMA, non il colpo reale. Include: statistiche attuali, difese, scudi, Guardia gia' attiva,
+# bonus placca del round precedente. NON include (nascono durante il round): Guardia/cure/scelte degli altri, furia a meta' round
+# (vedi enrage_lethal), placca rotta nel round, comportamento dell'arena, seconda mossa della catena (vedi "chain"),
+# provocazione, intercetta, schivata e tenacia. Il boss non fa critici. Misurato con tools/preview_check.gd.
 static func threat_preview(state: Dictionary) -> Dictionary:
 	# "enrage_lethal": chi morirebbe SOLO se il boss si infuria durante il round (i colpi dei giocatori lo portano sotto meta' PV: +25%).
 	# Misurato con tools/preview_check.gd: e' l'unica causa per cui il colpo reale supera l'anteprima senza Guardia.
-	var out: Dictionary = {"lethal": [], "dmg": {}, "enrage_lethal": []}
+	var out: Dictionary = {"lethal": [], "dmg": {}, "enrage_lethal": [], "chain": ""}
 	var tele: Dictionary = state.get("telegraph", {})
 	if tele.is_empty() or str(state["winner"]) != "":
 		return out
 	var boss: Dictionary = BattleState.boss(state)
 	if int(boss.get("stun", 0)) > 0:
 		return out
+	out["chain"] = str(tele.get("chain", ""))      # mossa che segue se nessuno reagisce: il suo danno NON e' nell'anteprima (dipende dal primo colpo)
 	var move: Dictionary = BattleContent.BOSS_MOVES.get(str(tele["move"]), {})
 	if move.is_empty():
 		return out
+	# bonus gia' noto: una placca rotta nel round precedente rende piu' forte questa mossa (+8%, vedi Tactics.boss_boost)
+	var known_boost: float = 1.0 + float(int(state.get("boss_boost", 0))) / 100.0
 	var targets: Array = []
 	if str(move["target"]) == "all":
 		for p in BattleState.alive_players(state):
@@ -416,12 +423,12 @@ static func threat_preview(state: Dictionary) -> Dictionary:
 	for t in targets:
 		if not BattleState.is_alive(t):
 			continue
-		var d: int = calc_damage(boss, t, float(move["mult"]))
+		var d: int = calc_damage(boss, t, float(move["mult"]) * known_boost)
 		out["dmg"][str(t["id"])] = d
 		if d >= int(t["hp"]) + int(t["shield"]):
 			out["lethal"].append(str(t["id"]))
 		elif _enrage_possible(boss):
-			var d2: int = calc_damage(boss, t, float(move["mult"]) * BattleTypes.ENRAGE_BONUS)
+			var d2: int = calc_damage(boss, t, float(move["mult"]) * known_boost * BattleTypes.ENRAGE_BONUS)
 			if d2 >= int(t["hp"]) + int(t["shield"]):
 				out["enrage_lethal"].append(str(t["id"]))
 	return out

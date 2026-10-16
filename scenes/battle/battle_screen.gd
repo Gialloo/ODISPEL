@@ -989,7 +989,7 @@ func _refresh_telegraph() -> void:
 		_tele_label.text = "STORDITO"
 		_tele_target.text = "SALTERA' LA MOSSA: %s" % BattleText.move_name(move_id).to_upper()
 		return
-	_tele_label.text = BattleText.move_name(move_id)
+	_tele_label.text = BattleText.move_name(move_id) + (" +CATENA" if tele.has("chain") else "")
 	var tlen: int = _tele_label.text.length()
 	_tele_label.add_theme_font_size_override("font_size", 24 if tlen <= 17 else maxi(16, int(24.0 * 17.0 / float(tlen))))
 	if str(def["target"]) == "all":
@@ -1013,7 +1013,7 @@ func _refresh_telegraph() -> void:
 		# L'anteprima non conosce i bonus che nascono durante il round (rabbia, placche, catene): e' un MINIMO.
 		var dmg_map: Dictionary = threat["dmg"]
 		if dmg_map.size() == 1:
-			_tele_target.text += " · DANNO MIN. ~%d" % int(dmg_map.values()[0])
+			_tele_target.text += " · STIMA ~%d" % int(dmg_map.values()[0])
 		var risky: Array = threat["enrage_lethal"]
 		if not risky.is_empty():
 			var rn: Array = []
