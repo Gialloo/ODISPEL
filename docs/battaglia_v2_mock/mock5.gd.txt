@@ -10,6 +10,7 @@ class _G:
 	const PAL: Dictionary = {"blu": Color("#3b7cff"), "verde": Color("#2fd070"), "rosso": Color("#ff2f3a"), "giallo": Color("#ffd23a"), "viola": Color("#9a4dff")}
 	static var col: Color = Color("#ff2f3a")
 	static var name_: String = "rosso"
+	static var pick: String = "SKILL"
 	static var others: Array = []
 
 const AURA: Color = Color("#ff2f3a")
@@ -23,6 +24,7 @@ func _init() -> void:
 	selected = a.size() > 1 and a[1] == "1"
 	var nm: String = a[2] if a.size() > 2 else "rosso"
 	_G.name_ = nm
+	_G.pick = "ULTIMATE" if (a.size() > 3 and a[3] == "ult") else "SKILL"
 	_G.col = _G.PAL[nm]
 	_G.others = []
 	for k in ["rosso", "blu", "verde", "giallo", "viola"]:
@@ -201,7 +203,7 @@ func _world() -> Control:
 		back.size = Vector2(1280, 720)
 		back.part = "back"
 		back.glow = selected
-		back.picked = "SKILL" if selected else ""
+		back.picked = _G.pick if selected else ""
 		sprites.add_child(back)
 	var boss := _Boss.new()
 	boss.position = Vector2(690, 100)
@@ -437,8 +439,8 @@ class _Wheel extends Control:
 				var bend: float = 38.0 * (1.0 if i % 2 == 0 else -1.0)
 				var c0: Color = aura.lightened(0.15) if glow else aura
 				if glow:
-					for g in 4:
-						var gw: float = 118.0 + float(4 - g) * 34.0
+					for g in (7 if on else 4):
+						var gw: float = 118.0 + float((7 if on else 4) - g) * 34.0
 						_U.brush(self, center + d * 30.0, center + d * (R + 190.0), gw, 30.0 + float(4 - g) * 10.0, Color(aura, 0.10 + float(g) * 0.05), 40 + i, bend, 0.1)
 				_U.brush(self, center + d * 40.0, center + d * (R + 170.0), 118.0, 20.0, Color(c0, 1.0), 40 + i, bend)
 				if glow:
@@ -607,9 +609,9 @@ class _Hud extends Control:
 			draw_colored_polygon(_U.slant(br, 14.0), Color(0.04, 0.05, 0.1, 0.94))
 			draw_line(Vector2(br.position.x + 14, br.position.y), Vector2(br.end.x, br.position.y), _G.col, 3.0)
 			draw_line(Vector2(br.position.x, br.end.y), Vector2(br.end.x - 14, br.end.y), _G.col, 3.0)
-			_U.icon(self, "bolt", Vector2(br.position.x + 36, br.position.y + 23), 28.0, _G.col)
-			_U.skew_text(self, Vector2(br.position.x + 66, br.position.y + 33), "COLPO CARICATO", 28, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 6)
-			_U.skew_text(self, Vector2(br.position.x + 66, br.end.y + 22), "Danno x2 al bersaglio · costo 2 RISERVA", 14, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+			_U.icon(self, "bolt" if _G.pick == "SKILL" else "burst", Vector2(br.position.x + 36, br.position.y + 23), 28.0, _G.col)
+			_U.skew_text(self, Vector2(br.position.x + 66, br.position.y + 33), "COLPO CARICATO" if _G.pick == "SKILL" else "ULTIMATE · COLPO FINALE", 28, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 6)
+			_U.skew_text(self, Vector2(br.position.x + 66, br.end.y + 22), "Danno x2 al bersaglio · costo 2 RISERVA" if _G.pick == "SKILL" else "Danno massiccio al bersaglio · barra Ultimate piena", 14, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
 		# --- squadra (basso a destra): 3, 2, 1 con emblema numerato, PV + energia, ritaglio ritratto ---
 		var names: Array = ["MIRA", "KIRA", "DAX"]
 		var cols: Array = [_G.others[0], _G.others[1], _G.col]
@@ -678,14 +680,14 @@ func _run(dir: String) -> void:
 	wheel.size = Vector2(1280, 720)
 	wheel.light_mode = selected
 	wheel.part = "front"
-	wheel.picked = "SKILL" if selected else ""
+	wheel.picked = _G.pick if selected else ""
 	rootc.add_child(wheel)
 	var hud := _Hud.new()
 	hud.size = Vector2(1280, 720)
 	hud.selected = selected
 	rootc.add_child(hud)
 	await create_timer(1.3).timeout
-	root.get_viewport().get_texture().get_image().save_png(dir.path_join("hud5_%s_%s.png" % [_G.name_, "scelta" if selected else "libera"]))
+	root.get_viewport().get_texture().get_image().save_png(dir.path_join("hud5_%s_%s.png" % [_G.name_, ("scelta_" + _G.pick.to_lower()) if selected else "libera"]))
 	quit()
 
 class _Vignette extends Control:
