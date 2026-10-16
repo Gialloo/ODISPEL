@@ -122,3 +122,33 @@ MissionConfig ──► BattleLauncher (nuovo, logica di avvio)
 
 ## 6. Prossimi passi (dopo la tua approvazione)
 Fase 3: scheletro scena + contenitore UI + chiave `battle_v2` + pulsante di prova → Fase 4: prototipo visivo con dati isolati → 5: stato reale → 6: input → 7: feedback/impact frames → 8: regressione → 9: prova PC/Android → 10: decisione tua sulla sostituzione.
+
+---
+
+## 7. Addendum — direzione artistica (decisioni dell'utente + brief "Metaphor: ReFantazio")
+
+**Stato**: solo documentazione e bozze visive; nessuna implementazione. La V2 resta in attesa di approvazione.
+
+### 7.1 Decisioni gia' prese (bozze `docs/battaglia_v2_mock/`)
+- Campo di battaglia 3D (sfondo), personaggi e boss come sprite 2D.
+- Ruota di comando attorno al personaggio, in senso orario: **Attack, Skill, Ultimate, Guard** (+ piccolo "Situazionale", visibile solo se disponibile).
+- Ogni comando = pennellata di vernice nel colore del personaggio + lettera gigante (A/S/U/G) + cerchio con numero + titolo inclinato con striscia sottotitolo.
+- Skill/Ultimate selezionata: **stessa vernice**, con glow e colori accesi (NON light painting); sfondo 3D e figure si oscurano leggermente, vernice e HUD restano luminosi; comparsa del banner dell'abilita'.
+- Ordine turni in alto a sinistra (pennellata nera con stelle), nome boss in alto a destra, bersaglio sul boss (cerchio + barra diagonale), squadra 3-2-1 in basso a destra (emblema numerato, PV, seconda barra), barra comandi in basso a sinistra (Formazione, Bersaglio, Auto, Velocita').
+- `hud3_*` = versione approvata (palette libera); `hud4_*` = stessa composizione con la palette funzionale del brief. Da confrontare; si usa la migliore, l'altra resta come riferimento.
+
+### 7.2 Palette funzionale ODISPEL (dal brief)
+nero/antracite = profondita'; bianco caldo = leggibilita' (testi, PV); **corallo/rosso = pericolo e impatto** (banner boss, nemici, telegrafo attacco); **magenta = energia Odica e ultimate**; **ciano = selezione e info tattiche** (bersaglio, attore attivo, ordine turni alleati); **giallo = opportunita' e conferme** (selezione confermata, debolezza sfruttabile). Il colore di vernice resta quello del personaggio. Un colore = una funzione; mai tutti insieme.
+
+### 7.3 Requisiti aggiunti dal brief (da rispettare nella V2)
+1. **Informazioni per priorita'**: mostrare solo cio' che serve nella situazione (es. Situazionale solo se utilizzabile, debolezze solo se pertinenti, telegrafo solo se il boss sta caricando).
+2. **Boss dominante**: PV/stato senza pannelli ingombranti; fasi e vulnerabilita' quando pertinenti; attacchi imminenti e finestre di contrattacco/rottura guardia evidenziati.
+3. **Grammatica di movimento** (breve, con ease intenzionali, interrompibile, mai bloccante per input e turni): ingresso schermata, introduzione nemici, comparsa comandi, selezione/conferma, cambio bersaglio, esecuzione, danno, cambio turno, vittoria/sconfitta.
+4. **Feedback coordinati con gli eventi reali** (impact frames, cut-in ultimate, critici, numeri danno, KO/FINISH, vulnerabilita'/rottura guardia), senza duplicati.
+5. **Responsive separato**: PC (1280x720 e oltre) cinematografico e preciso; Android touch con bersagli piu' grandi, densita' ridotta, controlli che non coprono personaggi/boss/indicatori di pericolo; non un semplice ridimensionamento. Aspect ratio diversi.
+6. **Vincoli tecnici**: nessun dato fittizio nella versione integrata; registro icone esistente; compatibilita' impact frames; shader compatibili col renderer Compatibility; attenzione a prestazioni/memoria mobile; opzione riduzione effetti e leggibilita'.
+7. **Asset**: nelle bozze gli sprite sono **segnaposto disegnati a codice** e il 3D e' fatto di forme semplici; nessun segnaposto deve restare nella versione integrata senza segnalarlo. La vernice reale richiedera' texture/pennelli dipinti o un generatore piu' ricco.
+8. **Metodo**: fasi 1-2 (audit, concept) gia' consegnate; fase 3 (prototipo isolato) solo dopo approvazione; non passare alla fase successiva con problemi aperti.
+
+### 7.4 Domande ancora aperte
+Cosa fanno esattamente Situazionale / Formazione / Bersaglio; quanto 3D reale sui telefoni; quali dati sempre visibili; partire dal solo PvE solitario?; gestione di piu' operatori attivi.
