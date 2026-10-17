@@ -50,6 +50,8 @@ var streaks: Array = []        # CPUParticles2D: scie di luce che escono dalla v
 var glow_rect: TextureRect
 var glow_svp: SubViewport
 var ring_fx: _Ring
+var halo: TextureRect
+var _fx_e: float = -1.0
 var sel_banner: _Hud
 var sel_confirm: _Hud
 var _baked_col: Color = Color(0, 0, 0, 0)
@@ -137,6 +139,18 @@ func _ready() -> void:
 	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world.add_child(fx)
 	world.move_child(fx, 0)
+	halo = TextureRect.new()
+	halo.texture = fx.halo_tex
+	halo.size = Vector2(560, 560)
+	halo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	halo.position = WHEEL_C + Vector2(10, -15) - Vector2(280, 280)
+	halo.pivot_offset = Vector2(280, 280)
+	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	halo.visible = false
+	var hm := CanvasItemMaterial.new()
+	hm.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	halo.material = hm
+	world.add_child(halo)
 	_bake_boss()
 	hero = _Hero.new()
 	hero.position = Vector2(179, 180)
@@ -305,7 +319,7 @@ func _build_paint() -> void:
 			pts.append(WHEEL_C + d * lerpf(40.0, WHEEL_R + 150.0 * rs, float(k) / 17.0))
 		var ps := CPUParticles2D.new()
 		ps.texture = streak_tex
-		ps.amount = 16
+		ps.amount = 10
 		ps.lifetime = 1.15
 		ps.preprocess = 1.15
 		ps.emission_shape = CPUParticles2D.EMISSION_SHAPE_POINTS
@@ -545,17 +559,26 @@ func _process(delta: float) -> void:
 		fl.modulate = Color(1.0 - 0.3 * e * (0.0 if on else 1.0), 1.0 - 0.3 * e * (0.0 if on else 1.0), 1.0 - 0.3 * e * (0.0 if on else 1.0), pr)
 		lg.scale = Vector2(sc, sc)
 		lg.rotation = rot
-		var kk: float = e * (1.0 + (0.9 if on else 0.0)) * pr
+		var kk: float = e * (1.0 + ((1.5 if ult else 0.9) if on else 0.0)) * pr
+		if ult and not on:
+			kk = 0.0
 		lg.visible = kk > 0.01
 		(lg.material as ShaderMaterial).set_shader_parameter("k", kk)
 		var ps: CPUParticles2D = streaks[i]
 		ps.modulate.a = pr * (0.7 + 0.3 * e + 0.3 * si)
+		ps.emitting = (not ult) or on or e < 0.5
 		ps.speed_scale = 1.0 + 1.3 * si + 0.4 * e
 	fx.t = fx_t
 	fx.sel = e
 	fx.flash = flash
-	if e > 0.01 or flash > 0.01 or fx.sel > 0.0:
+	if absf(e - _fx_e) > 0.0005 or flash > 0.01:
+		_fx_e = e
 		fx.queue_redraw()
+	halo.visible = e > 0.01
+	if halo.visible:
+		var hp: float = 0.5 + 0.5 * sin(fx_t * (8.0 if ult else 5.0))
+		halo.modulate = Color(_G.col, (0.8 + 0.2 * hp) * e * (1.0 if ult else 0.7))
+		halo.scale = Vector2(1.0, 1.0) * (0.85 + 0.05 * hp)
 	# comandi: ingresso a rimbalzo a catena quando cambia il personaggio, impulso al tocco
 	var moving: bool = false
 	var pressing: bool = false
@@ -1662,11 +1685,11 @@ class _Ring extends Control:
 					draw_line(p + dv * (42.0 + grow * 40.0), p + dv * (56.0 + grow * 110.0 * (0.6 + 0.4 * float(k % 3))), Color(1, 0.98, 0.8, pr_), 2.5 * pr_ + 1.0, true)
 			if picked == BattleV2.NAMES[i]:
 				var pulse: float = 0.5 + 0.5 * sin(t * 7.0)
-				draw_arc(p, 47.0 + 5.0 * pulse, 0.0, TAU, 56, Color(aura.lightened(0.5), 0.35 + 0.4 * pulse), 3.0, true)
+				draw_arc(p, 47.0 + 5.0 * pulse, 0.0, TAU, 40, Color(aura.lightened(0.5), 0.35 + 0.4 * pulse), 3.0, true)
 				# onde di energia che si allargano dal comando
 				for k in 3:
 					var u: float = fposmod(t * 0.8 + float(k) / 3.0, 1.0)
-					draw_arc(p, 38.0 + u * 70.0, 0.0, TAU, 56, Color("#fff36b", (1.0 - u) * 0.65), 3.0 * (1.0 - u) + 1.0, true)
+					draw_arc(p, 38.0 + u * 70.0, 0.0, TAU, 36, Color("#fff36b", (1.0 - u) * 0.65), 3.0 * (1.0 - u) + 1.0, true)
 			elif i == 2 and ult_ok and picked == "":
 				var up: float = 0.5 + 0.5 * sin(t * 4.0)
 				draw_arc(p, 38.0 + 3.0 * up, 0.0, TAU, 56, Color(aura.lightened(0.45), 0.25 + 0.45 * up), 3.0, true)
@@ -1681,7 +1704,7 @@ class _Fx extends Control:
 		var gt := GradientTexture2D.new()
 		var g := Gradient.new()
 		g.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
-		g.colors = PackedColorArray([Color(1, 1, 1, 0.55), Color(1, 1, 1, 0.16), Color(1, 1, 1, 0.0)])
+		g.colors = PackedColorArray([Color(1, 1, 1, 0.9), Color(1, 1, 1, 0.3), Color(1, 1, 1, 0.0)])
 		gt.gradient = g
 		gt.fill = GradientTexture2D.FILL_RADIAL
 		gt.fill_from = Vector2(0.5, 0.5)
@@ -1703,12 +1726,6 @@ class _Fx extends Control:
 			return
 		var e: float = smoothstep(0.0, 1.0, sel)
 		var hi: Color = col.lightened(0.7)
-		# alone pulsante dietro l'eroe
-		var hc: Vector2 = center + Vector2(10, -15)
-		var pul: float = 0.5 + 0.5 * sin(t * (8.0 if ult else 5.0))
-		if halo_tex != null:
-			var hr: float = 300.0 * (1.0 + 0.05 * pul)
-			draw_texture_rect(halo_tex, Rect2(hc - Vector2(hr, hr), Vector2(hr, hr) * 2.0), false, Color(col, (0.55 + 0.2 * pul) * e * (1.0 if ult else 0.75)))
 		# ultimate: barre scure oblique che entrano dall'alto e dal basso, con filo luminoso
 		if ult:
 			var bt: float = size.y * 0.17 * e
