@@ -74,7 +74,11 @@ func _run() -> void:
 		seen_phase = maxi(seen_phase, int(scn._battle().get("phase", 1)))
 		await _pick_and_confirm(scn)
 		_check("round %d: nessun annuncio durante la risoluzione" % rounds, not bool(BattleV2._G.boss["show"]))
-		await create_timer(1.3).timeout
+		var wt: int = 0
+		while scn.locked and not scn.ended and wt < 120:   # il round si sblocca a fine scritte
+			await create_timer(0.05).timeout
+			wt += 1
+		await create_timer(0.1).timeout
 		rounds += 1
 	_check("visto almeno un round con mossa normale", seen_normal)
 	print("round naturali con mossa pesante: ", seen_heavy)

@@ -864,6 +864,7 @@ func _toggle_ult() -> void:
 
 func _after_round() -> void:
 	await get_tree().create_timer(0.9 / float(_G.speed)).timeout
+	await _fb_drain()
 	if not is_inside_tree():
 		return
 	var w: String = str(_battle().get("winner", ""))
@@ -883,11 +884,25 @@ func _after_round() -> void:
 		_auto_round()
 
 
+# Il round resta "in corso" finche' le scritte non sono finite (con un tetto), cosi' non si legge sopra il turno dopo.
+# Se c'e' ancora una scritta importante a schermo si lascia il tempo di leggerla.
+func _fb_drain() -> void:
+	var cap: float = FB_WAIT_MAX / float(maxi(1, _G.speed))
+	var t0: int = Time.get_ticks_msec()
+	while (_fb_busy or not _fb_queue.is_empty()) and float(Time.get_ticks_msec() - t0) / 1000.0 < cap and is_inside_tree():
+		await get_tree().create_timer(0.05).timeout
+	if is_inside_tree() and not get_tree().get_nodes_in_group("v2_fb").is_empty():
+		await get_tree().create_timer(minf(0.5, cap * 0.25)).timeout
+
+
 # ---------- Feedback degli eventi del motore ----------
 # Ogni evento importante diventa una scritta breve vicino a chi lo subisce (parole, non solo colori), in sequenza leggibile.
 # Il motore decide tutto: qui si legge soltanto l'evento e lo si mostra.
 
 const FB_MAX: int = 14                 # al massimo tante scritte per round: le meno importanti cadono per prime
+const FB_HOLD: float = 0.9                # secondi a schermo (x1) delle scritte normali
+const FB_HOLD_BIG: float = 1.6            # K.O., rottura, fase, critico
+const FB_WAIT_MAX: float = 2.5            # tetto di attesa a fine round (x1)
 var _fb_queue: Array = []
 var _fb_busy: bool = false
 
@@ -1054,7 +1069,8 @@ func _fb_show(it: Dictionary) -> void:
 		if n is Control and absf((n as Control).position.x - at.x) < 260.0 and absf((n as Control).position.y - at.y) < 120.0:
 			near += 1
 	at.y -= float(mini(near, 3)) * 46.0
-	_float_text(str(it["text"]), at, Color(it["col"]), int(it["size"]))
+	# eventi importanti (K.O., rottura, fase, critico) restano in vista piu' a lungo
+	_float_text(str(it["text"]), at, Color(it["col"]), int(it["size"]), FB_HOLD_BIG if int(it["w"]) >= 8 else FB_HOLD)
 	var kick: float = float(it["kick"]) * _shk()
 	if kick > 0.0:
 		cam_v += Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * kick
@@ -1068,7 +1084,7 @@ func _fb_show(it: Dictionary) -> void:
 		tw.tween_property(glow_rect, "position:x", glow_rect.position.x, 0.08)
 
 
-func _float_text(t: String, at: Vector2, col: Color, size: int = 34) -> void:
+func _float_text(t: String, at: Vector2, col: Color, size: int = 34, hold: float = 0.9) -> void:
 	var l := BattleTheme.make_label(t, size, col, true)
 	var w: float = l.get_minimum_size().x
 	l.position = Vector2(clampf(at.x - w * 0.5 + randf_range(-20.0, 20.0), 20.0, 1260.0 - w), clampf(at.y, 60.0, 660.0))
@@ -1077,8 +1093,9 @@ func _float_text(t: String, at: Vector2, col: Color, size: int = 34) -> void:
 	stage.add_child(l)
 	var tw := create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(l, "position:y", l.position.y - 60.0, 0.9)
-	tw.tween_property(l, "modulate:a", 0.0, 0.9).set_delay(0.3)
+	var d: float = hold / float(maxi(1, _G.speed))
+	tw.tween_property(l, "position:y", l.position.y - 60.0, d)
+	tw.tween_property(l, "modulate:a", 0.0, d * 0.65).set_delay(d * 0.35)
 	tw.chain().tween_callback(l.queue_free)
 
 

@@ -97,6 +97,21 @@ func _run() -> void:
 	_check("round vero: compaiono scritte di feedback", seen > 0)
 	await create_timer(3.0).timeout
 	_check("le scritte spariscono da sole", get_nodes_in_group("v2_fb").size() == 0)
+	# ritmo: i comandi restano bloccati finche' le scritte non sono finite (con tetto)
+	var big: Array = []
+	for i in 12:
+		big.append({"t": "damage", "src": hero, "dst": boss, "amount": 50 + i, "absorbed": 0})
+	big.append({"t": "break", "src": hero})
+	big.append({"t": "down", "unit": hero})
+	scn.locked = true
+	scn._on_events(big)
+	var t0: int = Time.get_ticks_msec()
+	await scn._fb_drain()
+	var el: float = float(Time.get_ticks_msec() - t0) / 1000.0
+	_check("fine round: attende la coda (%.2fs)" % el, scn._fb_queue.is_empty() and not scn._fb_busy)
+	_check("attesa entro il tetto (+0.5s di lettura)", el <= BattleV2.FB_WAIT_MAX + 0.7)
+	_check("scritte importanti durano piu' delle normali", BattleV2.FB_HOLD_BIG > BattleV2.FB_HOLD)
+	scn.locked = false
 	print("RISULTATO: ", passed, " ok, ", failed, " falliti")
 	print("FAIL: ", failed)
 	quit(1 if failed > 0 else 0)
