@@ -53,16 +53,40 @@ func _run() -> void:
 	_check("scosse 0: camera ferma", scn.cam == Vector2.ZERO and scn.cam_v == Vector2.ZERO)
 	_check("scosse 0: nessuno scorrimento", is_zero_approx(scn.hero_off))
 	_check("scosse 0: resta la dissolvenza", scn.hero_in < 0.1)
+	Settings.shake = 1.0
+	# disposizione spaziale: F1->F3 sposta il doppio di F1->F2
+	scn.cam = Vector2.ZERO
+	scn.cam_v = Vector2.ZERO
+	scn._last_slot = 0
+	scn.cur = 1
+	scn._switch_feedback(0)
+	var one: float = absf(scn.cam.x)
+	scn.cam = Vector2.ZERO
+	scn.cur = 2
+	scn._switch_feedback(0)
+	var two: float = absf(scn.cam.x)
+	_check("F1->F3 sposta il doppio di F1->F2 (%.0f vs %.0f)" % [two, one], two > one * 1.8 and two < one * 2.2)
+	scn.cam = Vector2.ZERO
+	scn.cur = 0
+	scn._switch_feedback(2)
+	_check("F3->F1: camera verso sinistra, il doppio", scn.cam.x > one * 1.8)
+	scn.cam = Vector2.ZERO
+	scn.cur = 1
+	scn._switch_feedback(1)
+	_check("stesso personaggio: la camera non si muove", is_zero_approx(scn.cam.x))
 	# nuovo round: si torna al primo, camera verso sinistra
 	Settings.shake = 1.0
 	scn.cam = Vector2.ZERO
 	scn.cam_v = Vector2.ZERO
 	scn.hero_off = 0.0
 	scn.choices.clear()
+	scn.cur = 2
+	scn._last_cur = 2
+	scn._last_slot = 2
 	scn._next_slot(-1)
 	scn._refresh()
 	_check("nuovo round: torna al primo", scn.cur == 0)
-	_check("nuovo round: camera verso sinistra", scn.cam.x > 10.0)
+	_check("nuovo round: camera verso sinistra (da F3 a F1)", scn.cam.x > 60.0)
 	print("RISULTATO: ", passed, " ok, ", failed, " falliti")
 	print("FAIL: ", failed)
 	quit(1 if failed > 0 else 0)

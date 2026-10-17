@@ -501,17 +501,25 @@ func _tele_target(b: Dictionary, mdef: Dictionary, target_id: String) -> String:
 	return str(BattleState.unit(b, str(p["active"])).get("name", "")).to_upper()
 
 
-# Cambio di personaggio attivo: la camera scivola verso il nuovo (avanti = destra, indietro/nuovo round = sinistra)
-# e l'operatore entra dallo stesso lato. Con le scosse a 0 resta solo la dissolvenza (niente movimento di camera).
+# Disposizione spaziale virtuale (come in Metaphor): i personaggi stanno uno accanto all'altro, F1 a sinistra, F3 a destra.
+# Cambiare personaggio sposta la camera di quanti posti separano i due (F1->F3 e' il doppio di F1->F2, F3->F1 va a ritroso),
+# poi il nuovo operatore entra dal lato giusto e si ferma sempre nella stessa posizione di scena.
+const SLOT_STEP_CAM: float = 64.0      # pixel di camera per ogni posto di distanza
+const SLOT_STEP_HERO: float = 55.0
+const SLOT_PAN_MAX: float = 140.0
 var hero_off: float = 0.0
 var hero_in: float = 1.0
+var _last_slot: int = -1
 
 
-func _switch_feedback(prev: int) -> void:
-	var dir: float = 1.0 if (prev >= 0 and cur > prev) else -1.0
-	cam.x += -dir * 64.0 * _shk()
-	cam_v.x += -dir * 120.0 * _shk()
-	hero_off = dir * 70.0 * minf(1.0, _shk() * 2.0)
+func _switch_feedback(from_slot: int) -> void:
+	var delta: int = cur - from_slot if from_slot >= 0 else -1      # senza precedente (inizio) un cenno da sinistra
+	var d: float = float(delta)
+	var k: float = _shk()
+	var pan: float = clampf(d * SLOT_STEP_CAM, -SLOT_PAN_MAX, SLOT_PAN_MAX)
+	cam.x += -pan * k
+	cam_v.x += -signf(d) * 120.0 * k
+	hero_off = clampf(d * SLOT_STEP_HERO, -SLOT_PAN_MAX, SLOT_PAN_MAX) * minf(1.0, k * 2.0)
 	hero_in = 0.0
 	Settings.buzz(12)
 
@@ -521,7 +529,9 @@ func _refresh() -> void:
 		var prev_cur: int = _last_cur
 		_last_cur = cur
 		if prev_cur != -99 and cur >= 0 and not ended:
-			_switch_feedback(prev_cur)
+			_switch_feedback(_last_slot)
+		if cur >= 0:
+			_last_slot = cur
 		appear = 0.0
 		intro_t = 0.0
 		if wheel_front != null:
