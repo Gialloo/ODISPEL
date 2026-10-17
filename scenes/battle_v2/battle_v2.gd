@@ -15,11 +15,14 @@ const BOSS_POS: Vector2 = Vector2(663, 172)
 const BOSS_ORIGIN: Vector2 = Vector2(40, 30)       # origine del disegno del boss dentro la sua texture
 const CONFIRM_RECT: Rect2 = Rect2(650, 586, 156, 40)
 const CANCEL_RECT: Rect2 = Rect2(650, 632, 156, 30)
-var ult_hide: Array = []
 var ult_cut: int = 0          # fotogrammi restanti dell'esplosione nera dell'ultimate
 var ult_hold: bool = false    # solo per gli screenshot di prova
-var ult_dots: Control
-var exit_btn: Button
+var cut_root: Control         # velo nero + esplosione, sopra a tutto (visibile solo i 2 fotogrammi dell'ultimate)
+var cut_stage: Control
+var cut_fx: TextureRect
+var cut_glow: TextureRect
+var cut_core: TextureRect
+var ult_col: Color = Color.WHITE   # colore di chi ha lanciato l'ultimate (dopo la conferma l'HUD passa gia' al personaggio successivo)
 const ICON_OF: Dictionary = {"ATTACK": "sword", "SKILL": "bolt", "ULTIMATE": "burst", "GUARD": "defense"}
 
 
@@ -131,7 +134,6 @@ func _ready() -> void:
 	sh.size = Vector2(W, H)
 	sh.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world.add_child(sh)
-	ult_hide.append(sh)
 	_build_paint()
 	wheel_letters = _Wheel.new()
 	wheel_letters.size = Vector2(W, H)
@@ -164,12 +166,10 @@ func _ready() -> void:
 	hero.size = Vector2(420, 450)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world.add_child(hero)
-	ult_hide.append(hero)
 	var vig := _Vignette.new()
 	vig.size = Vector2(W, H)
 	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(vig)
-	ult_hide.append(vig)
 	wheel_front = _Wheel.new()
 	wheel_front.size = Vector2(W, H)
 	wheel_front.part = "front"
@@ -184,7 +184,6 @@ func _ready() -> void:
 	hud.size = Vector2(W, H)
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(hud)
-	ult_hide.append(hud)
 	sel_banner = _Hud.new()
 	sel_banner.mode = "banner"
 	sel_confirm = _Hud.new()
@@ -195,11 +194,7 @@ func _ready() -> void:
 		sh_.visible = false
 		stage.add_child(sh_)
 	_add_exit()
-	ult_dots = _UltDots.new()
-	ult_dots.size = Vector2(W, H)
-	ult_dots.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ult_dots.visible = false
-	stage.add_child(ult_dots)
+	_build_cut()
 	_U.boost = 1.14 if TouchUi.active() else 1.0
 	src = SoloBattleSource.new()
 	src.training = true
@@ -215,6 +210,9 @@ func _center() -> void:
 		var k: float = minf(size.x / float(W), size.y / float(H))
 		stage.scale = Vector2(k, k)
 		stage.position = ((size - Vector2(W, H) * k) * 0.5).floor()
+		if cut_stage != null:
+			cut_stage.scale = stage.scale
+			cut_stage.position = stage.position
 
 
 # Il boss (segnaposto disegnato) viene fotografato una volta in una texture: l'alone corallo del bersaglio
@@ -640,45 +638,7 @@ func _process(delta: float) -> void:
 	hud.position = ui_off * 0.7
 	fx.position = -cp * 0.6
 	wheel_letters.position = cp * 0.5 + Vector2(0.0, (1.0 - wheel_letters.modulate.a) * 36.0)
-	# PROVA: ULTIMATE lanciata -> per 2 fotogrammi tutto nero, restano solo gli sprazzi di luce del colore
-	# del personaggio che esplodono; comandi e HUD diventano punti bianchi
-	var cut: bool = ult_cut > 0
-	if cut:
-		dim.visible = true
-		dim.color = Color(0, 0, 0, 1)
-		for i in 4:
-			var lg2: TextureRect = paint_light[i]
-			lg2.visible = true
-			lg2.modulate = Color.WHITE
-			lg2.scale = Vector2(1.2, 1.2) if i == 2 else Vector2(1.08, 1.08)
-			(lg2.material as ShaderMaterial).set_shader_parameter("k", 2.6 if i == 2 else 1.8)
-			(streaks[i] as CPUParticles2D).modulate.a = 1.0
-			(streaks[i] as CPUParticles2D).emitting = true
-	for n_ in ult_hide:
-		(n_ as CanvasItem).visible = not cut
-	for n_ in [wheel_front, ring_fx, fx, wheel_letters]:
-		(n_ as CanvasItem).visible = not cut
-	if cut:
-		halo.visible = false
-		sel_banner.visible = false
-		sel_confirm.visible = false
-		boss_rect.visible = false
-		glow_rect.visible = false
-		for i in 4:
-			(paint_flat[i] as CanvasItem).visible = false
-	else:
-		boss_rect.visible = true
-		glow_rect.visible = true
-		for i in 4:
-			(paint_flat[i] as CanvasItem).visible = true
-	if cut and ult_dots.aura != _G.col:
-		ult_dots.aura = _G.col
-		ult_dots.queue_redraw()
-	ult_dots.visible = cut
-	ult_dots.position = ui_off
-	exit_btn.visible = not cut
-	if ult_cut > 0 and not ult_hold:
-		ult_cut -= 1
+	_cut_step()
 	if bg_node != null:
 		bg_node.pivot_offset = bg_node.size * 0.5
 		bg_node.scale = Vector2(1.05, 1.05)
@@ -790,6 +750,7 @@ func _confirm() -> void:
 	flash = 1.0
 	if picked == "ULTIMATE":
 		ult_cut = 2
+		ult_col = _G.col
 	Settings.buzz(70 if picked == "ULTIMATE" else 30)
 	picked = ""
 	skill_idx = 0
@@ -929,7 +890,6 @@ func _add_exit() -> void:
 	eb.size = Vector2(96, 40)
 	BattleTheme.style_button(eb, "normal", 16)
 	eb.pressed.connect(_exit)
-	exit_btn = eb
 	stage.add_child(eb)
 
 
@@ -1834,15 +1794,136 @@ class _Vignette extends Control:
 			draw_texture_rect(tex, Rect2(Vector2.ZERO, size), false)
 
 
-class _UltDots extends Control:
-	# i comandi durante l'esplosione dell'ultimate: solo punti bianchi nella loro posizione
-	var aura: Color = Color.WHITE
-
+class _CutBake extends Control:
+	# Esplosione dell'ultimate disegnata UNA volta (mezza risoluzione): scie curve con bordi sfumati a strati.
+	# Il colore del personaggio si applica poi con lo shader, quindi non serve ridisegnarla.
 	func _draw() -> void:
-		# nucleo dell'esplosione: riempie il centro dove si incontrano le quattro scie
-		for k in 7:
-			var f: float = float(k) / 6.0
-			draw_circle(BattleV2.WHEEL_C, 78.0 * (1.0 - 0.85 * f), Color(aura.lerp(Color.WHITE, f), 0.22 + 0.2 * f))
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 77
+		var c: Vector2 = BattleV2.WHEEL_C * 0.5
+		for i in 4:
+			var base: float = deg_to_rad(float(BattleV2.ANG[i]))
+			for k in 15:
+				var a0: float = base + rng.randf_range(-0.34, 0.34)
+				var len_: float = rng.randf_range(110.0, 235.0) * (1.0 if k % 5 else 1.2)
+				var bend: float = rng.randf_range(-0.5, 0.5)
+				var w: float = rng.randf_range(1.2, 4.2)
+				var r0: float = rng.randf_range(6.0, 26.0)
+				var pts := PackedVector2Array()
+				for j in 16:
+					var t: float = float(j) / 15.0
+					var ang: float = a0 + bend * t * t
+					pts.append(c + Vector2(cos(ang), sin(ang)) * (r0 + (len_ - r0) * t))
+				var al: float = rng.randf_range(0.5, 1.0)
+				# strati dal piu' largo e tenue al sottile e vivo (bordo morbido); la coda sfuma con i colori per punto
+				var cols := PackedColorArray()
+				for j in 16:
+					var f: float = 1.0 - float(j) / 15.0
+					cols.append(Color(1, 1, 1, f * f))
+				for L in 4:
+					var ww: float = w * [5.0, 2.8, 1.5, 0.7][L]
+					var aa: float = al * [0.07, 0.13, 0.3, 0.85][L]
+					var cl := PackedColorArray()
+					for q in cols:
+						cl.append(Color(1, 1, 1, q.a * aa))
+					draw_polyline_colors(pts, cl, ww, true)
+
+func _build_cut() -> void:
+	cut_root = Control.new()
+	cut_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cut_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cut_root.visible = false
+	var black := ColorRect.new()
+	black.color = Color.BLACK
+	black.set_anchors_preset(Control.PRESET_FULL_RECT)
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cut_root.add_child(black)
+	cut_stage = Control.new()
+	cut_stage.size = Vector2(W, H)
+	cut_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cut_root.add_child(cut_stage)
+	add_child(cut_root)
+	_center()
+	var add_m := CanvasItemMaterial.new()
+	add_m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	# scie: bake a mezza risoluzione, colorate dallo shader
+	var svp := SubViewport.new()
+	svp.size = Vector2i(W / 2, H / 2)
+	svp.transparent_bg = true
+	svp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	add_child(svp)
+	var bk := _CutBake.new()
+	bk.size = Vector2(W / 2, H / 2)
+	svp.add_child(bk)
+	cut_fx = TextureRect.new()
+	cut_fx.texture = svp.get_texture()
+	cut_fx.size = Vector2(W, H)
+	cut_fx.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	cut_fx.pivot_offset = WHEEL_C
+	cut_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sh := Shader.new()
+	sh.code = "shader_type canvas_item;\nrender_mode blend_add;\nuniform vec4 tint : source_color = vec4(1.0);\nuniform float gain = 1.6;\nvoid fragment(){ float a = texture(TEXTURE, UV).a; vec3 c = mix(tint.rgb, vec3(1.0), a * a * 0.45); COLOR = vec4(c * a * gain, 1.0); }"
+	var sm := ShaderMaterial.new()
+	sm.shader = sh
+	cut_fx.material = sm
+	# alone e nucleo: un solo gradiente radiale morbido, due dimensioni (sfocato e luminoso)
+	var g := Gradient.new()
+	g.offsets = PackedFloat32Array([0.0, 0.18, 0.45, 0.75, 1.0])
+	g.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0.7), Color(1, 1, 1, 0.22), Color(1, 1, 1, 0.05), Color(1, 1, 1, 0)])
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill = GradientTexture2D.FILL_RADIAL
+	gt.fill_from = Vector2(0.5, 0.5)
+	gt.fill_to = Vector2(1.0, 0.5)
+	gt.width = 128
+	gt.height = 128
+	cut_glow = _cut_blob(gt, 640.0, add_m)
+	cut_core = _cut_blob(gt, 230.0, add_m)
+	cut_stage.add_child(cut_glow)
+	cut_stage.add_child(cut_fx)
+	cut_stage.add_child(cut_core)
+	# comandi: punti bianchi dove stavano i tasti
+	var dots := _UltDots.new()
+	dots.size = Vector2(W, H)
+	dots.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cut_stage.add_child(dots)
+
+
+func _cut_blob(tex: Texture2D, d: float, mat: Material) -> TextureRect:
+	var t := TextureRect.new()
+	t.texture = tex
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.size = Vector2(d, d)
+	t.pivot_offset = Vector2(d, d) * 0.5
+	t.position = WHEEL_C - Vector2(d, d) * 0.5
+	t.material = mat
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return t
+
+
+# 2 fotogrammi: tutto nero, scie e nucleo nel colore del personaggio che esplodono; poi si torna al combattimento
+func _cut_step() -> void:
+	if ult_cut <= 0:
+		if cut_root.visible:
+			cut_root.visible = false
+		return
+	var k: float = 1.0 - float(ult_cut) * 0.5          # 0 al primo fotogramma, 0.5 al secondo
+	if not cut_root.visible:
+		(cut_fx.material as ShaderMaterial).set_shader_parameter("tint", ult_col.lightened(0.12))
+		cut_glow.modulate = Color(ult_col.lightened(0.05), 0.85)
+		cut_core.modulate = Color(ult_col.lerp(Color.WHITE, 0.55), 1.0)
+		cut_root.visible = true
+	var sc: float = 0.9 + 0.35 * (k + 0.5) if not ult_hold else 1.15
+	cut_fx.scale = Vector2(sc, sc)
+	cut_glow.scale = Vector2(0.9 + 0.5 * (k + 0.5), 0.9 + 0.5 * (k + 0.5))
+	cut_core.scale = Vector2(1.0, 1.0) * (0.85 + 0.3 * (k + 0.5))
+	if not ult_hold:
+		ult_cut -= 1
+
+
+class _UltDots extends Control:
+	# i comandi durante l'esplosione dell'ultimate: punti bianchi nella loro posizione (disegnati una volta)
+	func _draw() -> void:
 		for i in 4:
 			var a: float = deg_to_rad(float(BattleV2.ANG[i]))
 			var p: Vector2 = BattleV2.WHEEL_C + Vector2(cos(a), sin(a)) * BattleV2.WHEEL_R
