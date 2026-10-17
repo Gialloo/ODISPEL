@@ -45,6 +45,13 @@ var boss_rect: TextureRect
 var wheel_back: _Wheel
 var wheel_letters: _Wheel
 var fx: _Fx
+var world: Control
+var bg_node: TextureRect
+var cam: Vector2 = Vector2.ZERO
+var cam_v: Vector2 = Vector2.ZERO
+var zoom: float = 0.0
+var zoom_v: float = 0.0
+var ui_off: Vector2 = Vector2.ZERO
 var fx_t: float = 0.0
 var appear: float = 0.0
 var sel: float = 0.0
@@ -53,7 +60,6 @@ var _redraw_acc: float = 0.0
 var _last_cur: int = -99
 var intro_t: float = 0.0
 var _last_e: float = 0.0
-var shake: float = 0.0
 var wheel_front: _Wheel
 var hud: _Hud
 var dim: ColorRect
@@ -80,6 +86,7 @@ func _ready() -> void:
 		bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bg_node = bg
 		add_child(bg)
 	else:
 		var flat := ColorRect.new()
@@ -97,38 +104,43 @@ func _ready() -> void:
 	stage.size = Vector2(W, H)
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(stage)
+	world = Control.new()
+	world.size = Vector2(W, H)
+	world.pivot_offset = Vector2(520, 330)
+	world.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(world)
 	resized.connect(_center)
 	_center()
 	var sh := _Shadow.new()
 	sh.size = Vector2(W, H)
 	sh.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.add_child(sh)
+	world.add_child(sh)
 	wheel_back = _Wheel.new()
 	wheel_back.size = Vector2(W, H)
 	wheel_back.part = "back"
 	wheel_back.layer = "paint"
 	wheel_back.appear = 0.0
 	wheel_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.add_child(wheel_back)
+	world.add_child(wheel_back)
 	wheel_letters = _Wheel.new()
 	wheel_letters.size = Vector2(W, H)
 	wheel_letters.part = "back"
 	wheel_letters.layer = "letters"
 	wheel_letters.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.add_child(wheel_letters)
+	world.add_child(wheel_letters)
 	fx = _Fx.new()
 	fx.size = Vector2(W, H)
 	fx.center = WHEEL_C
 	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.add_child(fx)
-	stage.move_child(fx, 0)
+	world.add_child(fx)
+	world.move_child(fx, 0)
 	_bake_boss()
 	hero = _Hero.new()
 	hero.position = Vector2(179, 180)
 	hero.scale = Vector2(1.08, 1.08)
 	hero.size = Vector2(420, 450)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.add_child(hero)
+	world.add_child(hero)
 	var vig := _Vignette.new()
 	vig.size = Vector2(W, H)
 	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -156,8 +168,7 @@ func _center() -> void:
 	if stage != null:
 		var k: float = minf(size.x / float(W), size.y / float(H))
 		stage.scale = Vector2(k, k)
-		var sh: Vector2 = Vector2(sin(fx_t * 83.0), cos(fx_t * 71.0)) * 9.0 * shake * shake * k
-		stage.position = ((size - Vector2(W, H) * k) * 0.5).floor() + sh
+		stage.position = ((size - Vector2(W, H) * k) * 0.5).floor()
 
 
 # Il boss (segnaposto disegnato) viene fotografato una volta in una texture: l'alone corallo del bersaglio
@@ -191,14 +202,14 @@ func _bake_boss() -> void:
 			gm.set_shader_parameter("tint", Color("#ff5a47", float(rg[1]) * 0.45))
 			gr.material = gm
 			glow_mats.append(gm)
-			stage.add_child(gr)
+			world.add_child(gr)
 	boss_rect = TextureRect.new()
 	boss_rect.texture = tex
 	boss_rect.size = Vector2(640, 560)
 	boss_rect.scale = Vector2(0.73, 0.73)
 	boss_rect.position = BOSS_POS - BOSS_ORIGIN * 0.73
 	boss_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.add_child(boss_rect)
+	world.add_child(boss_rect)
 
 
 # ---------- Dati dal motore ----------
@@ -370,7 +381,6 @@ func _process(delta: float) -> void:
 	for gm in glow_mats:
 		gm.set_shader_parameter("tint", Color("#ff5a47", minf(float(gm.get_meta("base")) * (1.0 + 0.5 * e), 1.0)))
 	wheel_letters.modulate.a = _ease3(appear * 1.4 - 0.15)
-	wheel_letters.position.y = (1.0 - wheel_letters.modulate.a) * 36.0
 	wheel_back.t = fx_t
 	wheel_front.t = fx_t
 	wheel_back.appear = appear
@@ -399,8 +409,27 @@ func _process(delta: float) -> void:
 	if moving or picked != "" or e > 0.01:
 		wheel_front.queue_redraw()
 	# scossa dello schermo che si smorza
-	shake = maxf(0.0, shake - delta * 4.0)
-	_center()
+	# camera: molla smorzata (urti, ondeggio) + spinta in avanti; l'HUD segue in ritardo e di meno
+	var dt: float = minf(delta, 0.05)
+	cam_v += (-170.0 * cam - 14.0 * cam_v) * dt
+	cam += cam_v * dt
+	zoom_v += (-210.0 * zoom - 12.0 * zoom_v) * dt
+	zoom += zoom_v * dt
+	var sway: Vector2 = Vector2(sin(fx_t * 0.6) * 3.2, cos(fx_t * 0.83) * 2.2)
+	var cp: Vector2 = cam + sway
+	world.position = cp
+	var push: float = (0.05 if ult else 0.022) * e
+	var zs: float = 1.0 + zoom + push
+	world.scale = Vector2(zs, zs)
+	ui_off = ui_off.lerp(cp * 0.55, 1.0 - exp(-dt * 7.0))
+	wheel_front.position = ui_off
+	hud.position = ui_off * 0.7
+	fx.position = -cp * 0.6
+	wheel_letters.position = cp * 0.5 + Vector2(0.0, (1.0 - wheel_letters.modulate.a) * 36.0)
+	if bg_node != null:
+		bg_node.pivot_offset = bg_node.size * 0.5
+		bg_node.scale = Vector2(1.05, 1.05)
+		bg_node.position = -cp * 0.45
 	_redraw_acc += delta
 	if _redraw_acc >= 1.0 / 30.0:
 		_redraw_acc = 0.0
@@ -481,11 +510,13 @@ func _select(i: int) -> void:
 	if not bool(c["ok"]):
 		Notify.toast("%s non disponibile ora" % NAMES[i])
 		wheel_front.press[i] = 0.6
-		shake = 0.25
+		cam_v += Vector2(-30, 10)
 		Settings.buzz(12)
 		return
 	wheel_front.press[i] = 1.0
-	shake = 0.85 if NAMES[i] == "ULTIMATE" else 0.4
+	var ult_sel: bool = NAMES[i] == "ULTIMATE"
+	cam_v += Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * (210.0 if ult_sel else 85.0)
+	zoom_v += 0.95 if ult_sel else 0.4
 	Settings.buzz(45 if NAMES[i] == "ULTIMATE" else 18)
 	if NAMES[i] == "SKILL" and picked == "SKILL" and skill_opts.size() > 1:
 		skill_idx += 1
@@ -505,7 +536,8 @@ func _confirm() -> void:
 	var i: int = NAMES.find(picked)
 	var move_id: String = str(_G.cmds[i]["move"])
 	choices[str(slots[cur])] = _choice_for(move_id)
-	shake = 0.6
+	cam_v += Vector2(150, -25)
+	zoom_v += 0.65
 	flash = 1.0
 	Settings.buzz(70 if picked == "ULTIMATE" else 30)
 	picked = ""
@@ -958,7 +990,8 @@ class _Wheel extends Control:
 			var back: float = 1.0 + 2.2 * pow(pe - 1.0, 3.0) + 1.2 * pow(pe - 1.0, 2.0)    # easeOutBack: sorpassa e rimbalza
 			var pr_: float = float(press[i])
 			var bounce: float = 1.0 + 0.32 * pr_ * cos((1.0 - pr_) * 9.0)
-			var p: Vector2 = center.lerp(p_rest, clampf(back, 0.0, 1.25)) if pe < 1.0 else p_rest
+			var bob: Vector2 = Vector2(0.0, sin(t * 1.5 + float(i) * 1.9) * 2.2) * clampf(pe, 0.0, 1.0)
+			var p: Vector2 = (center.lerp(p_rest, clampf(back, 0.0, 1.25)) if pe < 1.0 else p_rest) + bob
 			var rad: float = (27.0 if not on else 35.0) * clampf(0.35 + 0.65 * back, 0.0, 1.2) * bounce
 			var fa: float = clampf(pe * 1.6, 0.0, 1.0)      # dissolvenza in ingresso
 			var ring: Color = cream if not ult else aura.lightened(0.3)
@@ -984,13 +1017,16 @@ class _Wheel extends Control:
 					var dv: Vector2 = Vector2(cos(ang), sin(ang))
 					draw_line(p + dv * (rad + 8.0 + grow * 40.0), p + dv * (rad + 22.0 + grow * 110.0 * (0.6 + 0.4 * float(k % 3))), Color(1, 0.98, 0.8, pr_), 2.5 * pr_ + 1.0, true)
 				draw_circle(p, rad * (1.0 + 0.4 * pr_), Color(1, 1, 0.9, pr_ * 0.55))
+			# ULTIMATE pronta: alone che pulsa e un riflesso che gira sul bordo
+			if ult and ok and not on:
+				var up: float = 0.5 + 0.5 * sin(t * 4.0)
+				draw_arc(p, rad + 11.0 + 3.0 * up, 0.0, TAU, 56, Color(aura.lightened(0.45), 0.25 + 0.45 * up), 3.0, true)
+				var sh0: float = t * 3.0
+				draw_arc(p, rad + 3.0, sh0, sh0 + 0.9, 14, Color(1, 1, 1, 0.95), 5.0, true)
 			# comando scelto: l'energia scorre (anelli che pulsano, tratteggio che gira, scintille che salgono)
 			if on:
 				var pulse: float = 0.5 + 0.5 * sin(t * 7.0)
 				draw_arc(p, rad + 12.0 + 5.0 * pulse, 0.0, TAU, 56, Color(aura.lightened(0.5), 0.35 + 0.4 * pulse), 3.0, true)
-				for k in 8:
-					var a0: float = t * 2.4 + TAU * float(k) / 8.0
-					draw_arc(p, rad + 22.0, a0, a0 + 0.42, 8, Color("#fff36b", 0.95), 4.0, true)
 				for k in 7:
 					var u: float = fposmod(t * 0.9 + float(k) * 0.143, 1.0)
 					var aa: float = float(k) * 2.4 + t * 1.2
@@ -1008,7 +1044,7 @@ class _Wheel extends Control:
 			var rad_r: float = 27.0 if not on else 35.0
 			var slide: float = (1.0 - clampf(pe * 1.4, 0.0, 1.0)) * (46.0 if left else -46.0)
 			var x0: float = (p_rest.x - rad_r - 12.0 - tw if left else p_rest.x + rad_r + 12.0) + slide
-			var y0: float = p_rest.y + 8.0
+			var y0: float = p_rest.y + 8.0 + bob.y
 			var subt: String = str(_G.cmds[i]["sub"]) if _G.cmds.size() > i else SUBS[i]
 			var sw: float = _U.text_w(subt, _U.T_SUB, BattleTheme.mono()) + 20.0
 			var sx: float = x0 + (tw - sw if left else 0.0)
