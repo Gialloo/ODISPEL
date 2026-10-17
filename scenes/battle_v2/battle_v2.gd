@@ -23,6 +23,7 @@ var cut_stage: Control
 var cut_fx: TextureRect
 var cut_glow: TextureRect
 var cut_core: TextureRect
+var cut_black: ColorRect
 var ult_col: Color = Color.WHITE   # colore di chi ha lanciato l'ultimate (dopo la conferma l'HUD passa gia' al personaggio successivo)
 const ICON_OF: Dictionary = {"ATTACK": "sword", "SKILL": "bolt", "ULTIMATE": "burst", "GUARD": "defense"}
 
@@ -570,7 +571,7 @@ func _apply_pick() -> void:
 	fx.col = _G.col
 	fx.ult = picked == "ULTIMATE"
 	if picked != "":
-		flash = 1.0
+		flash = _flash_k()
 	hero.queue_redraw()
 	wheel_letters.queue_redraw()
 	wheel_front.queue_redraw()
@@ -620,7 +621,7 @@ func _process(delta: float) -> void:
 		(lg.material as ShaderMaterial).set_shader_parameter("k", kk)
 		var ps: CPUParticles2D = streaks[i]
 		ps.modulate.a = pr * (0.7 + 0.3 * e + 0.3 * si)
-		ps.emitting = (not ult) or on or e < 0.5
+		ps.emitting = ((not ult) or on or e < 0.5) and not Settings.light_fx    # effetti ridotti: niente scie di particelle
 		ps.speed_scale = 1.0 + 1.3 * si + 0.4 * e
 	fx.t = fx_t
 	fx.sel = e
@@ -667,10 +668,10 @@ func _process(delta: float) -> void:
 	cam += cam_v * dt
 	zoom_v += (-210.0 * zoom - 12.0 * zoom_v) * dt
 	zoom += zoom_v * dt
-	var sway: Vector2 = Vector2(sin(fx_t * 0.6) * 3.2, cos(fx_t * 0.83) * 2.2)
+	var sway: Vector2 = Vector2(sin(fx_t * 0.6) * 3.2, cos(fx_t * 0.83) * 2.2) * _shk()
 	var cp: Vector2 = cam + sway
 	world.position = cp
-	var push: float = (0.05 if ult else 0.022) * e
+	var push: float = (0.05 if ult else 0.022) * e * _shk()
 	var zs: float = 1.0 + zoom + push
 	world.scale = Vector2(zs, zs)
 	ui_off = ui_off.lerp(cp * 0.55, 1.0 - exp(-dt * 7.0))
@@ -754,6 +755,15 @@ func _quick(i: int) -> void:
 			hud.queue_redraw()
 
 
+# Accessibilita': le impostazioni scelte dal giocatore (scosse, lampi, effetti ridotti, salto ultimate) valgono anche nel V2.
+func _shk() -> float:
+	return clampf(Settings.shake, 0.0, 1.0)
+
+
+func _flash_k() -> float:
+	return clampf(Settings.flash, 0.0, 1.0)
+
+
 func _select(i: int) -> void:
 	if locked or ended or cur < 0:
 		return
@@ -761,13 +771,13 @@ func _select(i: int) -> void:
 	if not bool(c["ok"]):
 		Notify.toast("%s non disponibile ora" % NAMES[i])
 		ring_fx.press[i] = 0.6
-		cam_v += Vector2(-30, 10)
+		cam_v += Vector2(-30, 10) * _shk()
 		Settings.buzz(12)
 		return
 	ring_fx.press[i] = 1.0
 	var ult_sel: bool = NAMES[i] == "ULTIMATE"
-	cam_v += Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * (210.0 if ult_sel else 85.0)
-	zoom_v += 0.95 if ult_sel else 0.4
+	cam_v += Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * (210.0 if ult_sel else 85.0) * _shk()
+	zoom_v += (0.95 if ult_sel else 0.4) * _shk()
 	Settings.buzz(45 if NAMES[i] == "ULTIMATE" else 18)
 	if NAMES[i] == "SKILL" and picked == "SKILL" and skill_opts.size() > 1:
 		skill_idx += 1
@@ -787,10 +797,10 @@ func _confirm() -> void:
 	var i: int = NAMES.find(picked)
 	var move_id: String = str(_G.cmds[i]["move"])
 	choices[str(slots[cur])] = _choice_for(move_id)
-	cam_v += Vector2(150, -25)
-	zoom_v += 0.65
-	flash = 1.0
-	if picked == "ULTIMATE":
+	cam_v += Vector2(150, -25) * _shk()
+	zoom_v += 0.65 * _shk()
+	flash = _flash_k()
+	if picked == "ULTIMATE" and not Settings.skip_cutin and _flash_k() >= 0.05:
 		ult_cut = CUT_FRAMES
 		ult_col = _G.col
 	Settings.buzz(70 if picked == "ULTIMATE" else 30)
@@ -892,7 +902,7 @@ func _on_events(events: Array) -> void:
 			col = Color("#ff7a6a")
 			at = Vector2(940, 560.0 + float(slots.size() - 1 - idx + (3 - slots.size())) * 50.0)
 		_float_text("-%d" % int(e["amount"]), at, col)
-	if boss_rect != null:
+	if boss_rect != null and _shk() > 0.05:
 		var tw := create_tween()
 		tw.set_parallel(true)
 		tw.tween_property(boss_rect, "position:x", boss_rect.position.x + 8.0, 0.05)
@@ -1957,6 +1967,7 @@ func _build_cut() -> void:
 	cut_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cut_root.visible = false
 	var black := ColorRect.new()
+	cut_black = black
 	black.color = Color.BLACK
 	black.set_anchors_preset(Control.PRESET_FULL_RECT)
 	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2033,8 +2044,11 @@ func _cut_step() -> void:
 	var u: float = 0.5 + 0.5 * float(CUT_FRAMES - ult_cut) / float(CUT_FRAMES - 1)   # 0.5 al primo fotogramma, 1 all'ultimo
 	if not cut_root.visible:
 		(cut_fx.material as ShaderMaterial).set_shader_parameter("tint", ult_col.lightened(0.12))
-		cut_glow.modulate = Color(ult_col.lightened(0.05), 0.85)
-		cut_core.modulate = Color(ult_col.lerp(Color.WHITE, 0.55), 1.0)
+		var fk: float = _flash_k()          # intensita' dei lampi scelta dal giocatore: velo nero e luci in proporzione
+		cut_black.color = Color(0, 0, 0, fk)
+		cut_fx.modulate = Color(1, 1, 1, fk)
+		cut_glow.modulate = Color(ult_col.lightened(0.05), 0.85 * fk)
+		cut_core.modulate = Color(ult_col.lerp(Color.WHITE, 0.55), fk)
 		cut_root.visible = true
 	var sc: float = 0.9 + 0.35 * u if not ult_hold else 1.15
 	cut_fx.scale = Vector2(sc, sc)
