@@ -5,6 +5,13 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.4", "items": [
+		"BATTAGLIA V2: ogni evento del combattimento ha una scritta chiara (critico, cura, scudo, schivata, K.O., rottura, fase, stati) e si legge chi agisce e con quale mossa.",
+		"BATTAGLIA V2: il round aspetta la fine delle scritte; quelle importanti restano piu' a lungo.",
+		"BATTAGLIA V2: squadra piu' leggibile (barre piu' grandi, PV bassi in rosso, K.O., ULT) e scritta PRONTA sull'ultimate.",
+		"BATTAGLIA V2: cambiando personaggio la camera scivola verso di lui secondo la sua posizione (F1 sinistra, F3 destra).",
+		"BATTAGLIA V2: HUD molto piu' leggera da disegnare (circa un quarto dei disegni a schermo).",
+	]},
 	{"v": "0.28.3", "items": [
 		"BATTAGLIA V2: l'esplosione nera dell'ultimate dura 4 fotogrammi invece di 2, cosi' si vede meglio.",
 	]},

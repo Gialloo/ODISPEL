@@ -188,7 +188,24 @@ func _ready() -> void:
 	hud = _Hud.new()
 	hud.size = Vector2(W, H)
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.add_child(hud)
+	# PRESTAZIONI: la HUD (centinaia di comandi di disegno: testi, barre, poligoni) cambia solo quando cambia lo stato.
+	# Si disegna una volta in una texture (SubViewport) ogni volta che serve e si mostra con UN solo disegno al fotogramma.
+	hud_vp = SubViewport.new()
+	hud_vp.transparent_bg = true
+	hud_vp.disable_3d = true
+	hud_vp.gui_disable_input = true
+	hud_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	hud_vp.add_child(hud)
+	hud_view = TextureRect.new()
+	hud_view.texture = hud_vp.get_texture()
+	hud_view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	hud_view.stretch_mode = TextureRect.STRETCH_SCALE
+	hud_view.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	hud_view.size = Vector2(W, H)
+	hud_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_view.add_child(hud_vp)
+	stage.add_child(hud_view)
+	_hud_resize()
 	sel_banner = _Hud.new()
 	sel_banner.mode = "banner"
 	sel_confirm = _Hud.new()
@@ -211,6 +228,28 @@ func _ready() -> void:
 	_refresh()
 
 
+var hud_vp: SubViewport
+var hud_view: TextureRect
+
+
+# La texture della HUD ha la risoluzione reale dello schermo (testi nitidi anche su telefono)
+func _hud_resize() -> void:
+	if hud_vp == null:
+		return
+	var k: float = clampf(stage.scale.x, 1.0, 2.5)
+	var sz := Vector2i(int(round(float(W) * k)), int(round(float(H) * k)))
+	if hud_vp.size != sz:
+		hud_vp.size = sz
+	hud_vp.canvas_transform = Transform2D().scaled(Vector2(k, k))
+	_hud_dirty()
+
+
+func _hud_dirty() -> void:
+	hud.queue_redraw()
+	if hud_vp != null:
+		hud_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
 func _center() -> void:
 	if stage != null:
 		var k: float = minf(size.x / float(W), size.y / float(H))
@@ -219,6 +258,7 @@ func _center() -> void:
 		if cut_stage != null:
 			cut_stage.scale = stage.scale
 			cut_stage.position = stage.position
+		_hud_resize()
 
 
 # Il boss (segnaposto disegnato) viene fotografato una volta in una texture: l'alone corallo del bersaglio
@@ -603,7 +643,7 @@ func _apply_pick() -> void:
 	hero.queue_redraw()
 	wheel_letters.queue_redraw()
 	wheel_front.queue_redraw()
-	hud.queue_redraw()
+	_hud_dirty()
 	sel_banner.queue_redraw()
 	sel_confirm.queue_redraw()
 
@@ -710,7 +750,7 @@ func _process(delta: float) -> void:
 	ui_off = ui_off.lerp(cp * 0.55, 1.0 - exp(-dt * 7.0))
 	wheel_front.position = ui_off
 	ring_fx.position = ui_off
-	hud.position = ui_off * 0.7
+	hud_view.position = ui_off * 0.7
 	fx.position = -cp * 0.6
 	wheel_letters.position = cp * 0.5 + Vector2(0.0, (1.0 - wheel_letters.modulate.a) * 36.0)
 	_cut_step()
@@ -779,13 +819,13 @@ func _quick(i: int) -> void:
 		2:
 			_G.auto_on = not _G.auto_on
 			Notify.toast("AUTO " + ("ATTIVO" if _G.auto_on else "SPENTO"))
-			hud.queue_redraw()
+			_hud_dirty()
 			if _G.auto_on and not locked:
 				_auto_round()
 		3:
 			_G.speed = 2 if _G.speed == 1 else 1
 			Notify.toast("VELOCITA' x%d" % _G.speed)
-			hud.queue_redraw()
+			_hud_dirty()
 
 
 # Accessibilita': le impostazioni scelte dal giocatore (scosse, lampi, effetti ridotti, salto ultimate) valgono anche nel V2.
