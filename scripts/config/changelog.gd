@@ -5,6 +5,10 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.8", "items": [
+		"TEST V2: nuova camera della mappa, ortografica e inclinata (stile TWEWY): niente piu' distorsione, personaggi piu' leggibili, la visuale guarda un po' avanti.",
+		"TEST V2: gli edifici davanti alla camera si abbassano, cosi' non coprono mai il percorso.",
+	]},
 	{"v": "0.28.7", "items": [
 		"TEST V2: la mappa ha un nuovo stile fumetto pop (alla Gorillaz / The World Ends With You): colori saturi, contorni neri spessi, ombre a retino, macchie di vernice e graffiti.",
 		"TEST V2: personaggi con contorno da adesivo, '!' a stella gialla, fumetti di dialogo e comandi touch ridisegnati.",

@@ -20,7 +20,8 @@ const FOLLOW_GAP: float = 1.15
 const CHAR_H: float = 2.0
 const BOSS_POS: Vector2 = Vector2(0.0, -35.5)
 const BOSS_AGGRO: float = 4.6
-const CAM_OFF: Vector3 = Vector3(0.0, 8.5, 12.5)
+const CAM_OFF: Vector3 = Vector3(0.0, 19.0, 24.0)    # camera ortografica a ~38 gradi: nessuna distorsione di prospettiva
+const CAM_SIZE: float = 11.5
 const GATE_RECT: Rect2 = Rect2(-3.0, -15.4, 6.0, 0.8)
 
 # Zone camminabili (x, z, larghezza, profondita'); z negativa = nord
@@ -308,7 +309,8 @@ func _build_env() -> void:
 	we.environment = env
 	add_child(we)
 	cam = Camera3D.new()
-	cam.fov = 34.0
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.size = CAM_SIZE
 	cam.near = 0.1
 	cam.far = 120.0
 	cam.current = true
@@ -330,9 +332,6 @@ func _window_tex(seed_v: int) -> Texture2D:
 			img.fill_rect(Rect2i(x0, y0, 24, 26), fills[rng.randi() % fills.size()])
 	img.fill_rect(Rect2i(0, 0, 128, 8), INK)
 	img.fill_rect(Rect2i(0, 248, 128, 8), INK)
-	for k in range(3):
-		var y: int = 8 + rng.randi() % 230
-		img.fill_rect(Rect2i(0, y, 128, 2), Color(0.0, 0.0, 0.0, 1.0).lerp(Color.WHITE, 0.7))
 	return ImageTexture.create_from_image(img)
 
 
@@ -522,12 +521,14 @@ func _build_walls() -> void:
 					var depth: float = 3.0 + rng.randf() * 2.0
 					var h: float = 4.5 + rng.randf() * 4.0
 					if side == 1:
-						h = 0.7 + rng.randf() * 0.35          # davanti alla camera: bassissimi (fioriere/recinti), per non coprire la vista
-						depth = 1.3
-					elif side >= 2 and mid_z_of(r, side, pos + w * 0.5) > 1.0:
-						h = 0.7 + rng.randf() * 0.35          # pareti laterali verso la camera: bassissime, non nascondono i passaggi
-						depth = 1.3
+						h = 0.55 + rng.randf() * 0.25         # davanti alla camera: fioriere/recinti sottili, non coprono la vista
+						depth = 0.6
 					var mid: Vector2 = _edge_point(r, side, pos + w * 0.5, depth * 0.5)
+					# camera ortografica: un edificio alto coprirebbe lo spazio camminabile a nord di lui -> lo si abbassa
+					if h > 1.2 and _occludes(mid, h):
+						h = 0.55 + rng.randf() * 0.25
+						depth = 0.6
+						mid = _edge_point(r, side, pos + w * 0.5, depth * 0.5)
 					var size3: Vector3 = Vector3(w, h, depth) if horizontal else Vector3(depth, h, w)
 					var bm: ShaderMaterial = _mat(POP[rng.randi() % POP.size()], 0.0, 0.14)
 					bm.set_shader_parameter("use_tex", true)
@@ -543,6 +544,14 @@ func _build_walls() -> void:
 						ni += 1
 					pos += w
 				cur = run_end
+
+
+func _occludes(c: Vector2, h: float) -> bool:
+	# vista dall'alto a ~38 gradi un edificio alto h copre circa 1.3*h metri di suolo a nord di lui
+	for k in range(2, int(h * 1.3) + 3):
+		if _in_walk(Vector2(c.x, c.y - float(k))):
+			return true
+	return false
 
 
 func mid_z_of(r: Rect2, side: int, along: float) -> float:
@@ -1623,15 +1632,14 @@ func _animate(_dt: float) -> void:
 
 
 func _camera(dt: float, snap: bool) -> void:
-	var tgt := Vector3(player.x, 0.9, player.y)
+	var tgt := Vector3(player.x, 0.9, player.y - 2.2)      # la camera guarda un po' avanti (a nord): si vede cosa arriva
 	var pos: Vector3 = tgt + CAM_OFF
 	if snap:
 		cam.global_position = pos
 	else:
 		cam.global_position = cam.global_position.lerp(pos, minf(1.0, 6.0 * dt))
 	cam.look_at(cam.global_position - CAM_OFF, Vector3.UP)
-	if Settings.shake > 0.0:
-		cam.rotate_object_local(Vector3.FORWARD, deg_to_rad(-2.5))
+
 
 
 func _hud(dt: float) -> void:
