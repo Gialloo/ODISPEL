@@ -883,26 +883,183 @@ func _after_round() -> void:
 		_auto_round()
 
 
+# ---------- Feedback degli eventi del motore ----------
+# Ogni evento importante diventa una scritta breve vicino a chi lo subisce (parole, non solo colori), in sequenza leggibile.
+# Il motore decide tutto: qui si legge soltanto l'evento e lo si mostra.
+
+const FB_MAX: int = 14                 # al massimo tante scritte per round: le meno importanti cadono per prime
+var _fb_queue: Array = []
+var _fb_busy: bool = false
+
+
+func _fb_anchor(uid: String) -> Variant:
+	if uid == BattleState.BOSS_ID:
+		return BOSS_POS + Vector2(150, 140)
+	for i in slots.size():
+		if str(_slot_unit(i).get("id", "")) == uid:
+			return Vector2(940, 560.0 + float(slots.size() - 1 - i + (3 - slots.size())) * 50.0)
+	return null
+
+
+func _fb_item(e: Dictionary) -> Dictionary:
+	var t: String = str(e.get("t", ""))
+	var uid: String = str(e.get("unit", e.get("dst", "")))
+	var item: Dictionary = {"text": "", "col": Color.WHITE, "size": 32, "w": 1, "kick": 0.0, "boss_hit": false, "at": null}
+	match t:
+		"damage":
+			var amount: int = int(e.get("amount", 0))
+			var absorbed: int = int(e.get("absorbed", 0))
+			uid = str(e.get("dst", ""))
+			if amount <= 0 and absorbed <= 0:
+				return {}
+			var boss_side: bool = uid == BattleState.BOSS_ID
+			item["col"] = Color("#fff36b") if boss_side else Color("#ff7a6a")
+			if amount <= 0:
+				item["text"] = "ASSORBITO"
+				item["col"] = Color("#7fdcec")
+				item["w"] = 2
+			elif bool(e.get("crit", false)):
+				item["text"] = "CRITICO -%d" % amount
+				item["col"] = Color("#ffd23a")
+				item["size"] = 44
+				item["w"] = 8
+				item["kick"] = 90.0
+			else:
+				item["text"] = "-%d" % amount
+				item["w"] = 1 if (bool(e.get("thorns", false)) or bool(e.get("cost", false))) else 4
+				if bool(e.get("thorns", false)) or bool(e.get("cost", false)):
+					item["size"] = 26
+			item["boss_hit"] = boss_side and amount > 0
+		"heal":
+			if int(e.get("amount", 0)) <= 0:
+				return {}
+			uid = str(e.get("dst", ""))
+			item["text"] = "+%d" % int(e["amount"])
+			item["col"] = Color("#7dffb0")
+			item["w"] = 4
+		"shield":
+			if int(e.get("amount", 0)) <= 0:
+				return {}
+			uid = str(e.get("dst", ""))
+			item["text"] = "SCUDO +%d" % int(e["amount"])
+			item["col"] = Color("#7fdcec")
+			item["w"] = 3
+		"dodge":
+			item["text"] = "SCHIVATA"
+			item["w"] = 6
+		"down":
+			item["text"] = "K.O."
+			item["col"] = Color("#ff4a4a")
+			item["size"] = 46
+			item["w"] = 10
+			item["kick"] = 120.0
+		"break":
+			uid = BattleState.BOSS_ID
+			item["text"] = "ROTTURA!"
+			item["col"] = Color("#7fdcec")
+			item["size"] = 50
+			item["w"] = 9
+			item["kick"] = 140.0
+		"boss_stunned":
+			uid = BattleState.BOSS_ID
+			item["text"] = "STORDITO"
+			item["col"] = Color("#c8f4ff")
+			item["w"] = 7
+		"phase":
+			item["text"] = "FASE %d" % int(e.get("phase", 2))
+			item["col"] = Color("#fff36b")
+			item["size"] = 54
+			item["w"] = 10
+			item["kick"] = 150.0
+			item["at"] = Vector2(560, 250)
+		"status":
+			item["text"] = BattleText.status_name(str(e.get("status", ""))).to_upper()
+			item["col"] = Color("#ff9a6a")
+			item["w"] = 3
+		"debuff":
+			item["text"] = "INDEBOLITO"
+			item["col"] = Color("#ff9a6a")
+			item["w"] = 3
+		"buff":
+			item["text"] = "POTENZIATO"
+			item["col"] = Color("#9dffb0")
+			item["w"] = 3
+		"counter":
+			item["text"] = "CONTRATTACCO"
+			item["w"] = 5
+		"react":
+			item["text"] = "REAZIONE: " + str(e.get("kind", "")).to_upper()
+			item["w"] = 5
+		"cleanse":
+			item["text"] = "PURIFICATO"
+			item["col"] = Color("#9dffb0")
+			item["w"] = 3
+		"rescue":
+			uid = str(e.get("who", uid))
+			item["text"] = "SOCCORSO"
+			item["col"] = Color("#7dffb0")
+			item["w"] = 6
+		"marks":
+			if int(e.get("added", 0)) <= 0:
+				return {}
+			item["text"] = "MARCHIO x%d" % int(e.get("n", 1))
+			item["col"] = Color("#ffd23a")
+			item["w"] = 3
+		_:
+			return {}
+	if item["at"] == null:
+		item["at"] = _fb_anchor(uid)
+	if item["at"] == null:
+		return {}
+	return item
+
+
 func _on_events(events: Array) -> void:
+	var items: Array = []
 	for e in events:
-		if str(e.get("t", "")) != "damage" or int(e.get("amount", 0)) <= 0:
-			continue
-		var dst: String = str(e["dst"])
-		var at: Vector2
-		var col: Color = Color("#fff36b")
-		if dst == BattleState.BOSS_ID:
-			at = BOSS_POS + Vector2(150, 140)
-		else:
-			var idx: int = -1
-			for i in slots.size():
-				if _slot_unit(i).get("id", "") == dst:
-					idx = i
-			if idx < 0:
-				continue
-			col = Color("#ff7a6a")
-			at = Vector2(940, 560.0 + float(slots.size() - 1 - idx + (3 - slots.size())) * 50.0)
-		_float_text("-%d" % int(e["amount"]), at, col)
-	if boss_rect != null and _shk() > 0.05:
+		var it: Dictionary = _fb_item(e)
+		if not it.is_empty():
+			items.append(it)
+	# troppi eventi: si tolgono prima i meno importanti (peso piu' basso), mantenendo l'ordine
+	while items.size() > FB_MAX:
+		var lowest: int = 0
+		for i in items.size():
+			if int(items[i]["w"]) <= int(items[lowest]["w"]):
+				lowest = i
+		items.remove_at(lowest)
+	_fb_queue.append_array(items)
+	_fb_run()
+
+
+func _fb_run() -> void:
+	if _fb_busy:
+		return
+	_fb_busy = true
+	while not _fb_queue.is_empty():
+		if not is_inside_tree():
+			break
+		var it: Dictionary = _fb_queue.pop_front()
+		_fb_show(it)
+		var w: int = int(it["w"])
+		var step: float = 0.32 if w >= 8 else (0.2 if w >= 5 else 0.12)
+		await get_tree().create_timer(step / float(maxi(1, _G.speed))).timeout
+	_fb_busy = false
+
+
+func _fb_show(it: Dictionary) -> void:
+	var at: Vector2 = it["at"]
+	# scritte vicine ancora in volo: impilale verso l'alto per non coprirsi
+	var near: int = 0
+	for n in get_tree().get_nodes_in_group("v2_fb"):
+		if n is Control and absf((n as Control).position.x - at.x) < 260.0 and absf((n as Control).position.y - at.y) < 120.0:
+			near += 1
+	at.y -= float(mini(near, 3)) * 46.0
+	_float_text(str(it["text"]), at, Color(it["col"]), int(it["size"]))
+	var kick: float = float(it["kick"]) * _shk()
+	if kick > 0.0:
+		cam_v += Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * kick
+		zoom_v += kick * 0.002
+	if bool(it["boss_hit"]) and boss_rect != null and _shk() > 0.05:
 		var tw := create_tween()
 		tw.set_parallel(true)
 		tw.tween_property(boss_rect, "position:x", boss_rect.position.x + 8.0, 0.05)
@@ -911,10 +1068,12 @@ func _on_events(events: Array) -> void:
 		tw.tween_property(glow_rect, "position:x", glow_rect.position.x, 0.08)
 
 
-func _float_text(t: String, at: Vector2, col: Color) -> void:
-	var l := BattleTheme.make_label(t, 34, col, true)
-	l.position = at + Vector2(randf_range(-30.0, 30.0), 0.0)
+func _float_text(t: String, at: Vector2, col: Color, size: int = 34) -> void:
+	var l := BattleTheme.make_label(t, size, col, true)
+	var w: float = l.get_minimum_size().x
+	l.position = Vector2(clampf(at.x - w * 0.5 + randf_range(-20.0, 20.0), 20.0, 1260.0 - w), clampf(at.y, 60.0, 660.0))
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.add_to_group("v2_fb")
 	stage.add_child(l)
 	var tw := create_tween()
 	tw.set_parallel(true)
