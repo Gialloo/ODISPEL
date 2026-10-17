@@ -863,7 +863,7 @@ func _show_result(won: bool) -> void:
 
 
 func _exit() -> void:
-	SceneRouter.go("hub")
+	SceneRouter.go("squad_v2")
 
 
 func _add_exit() -> void:

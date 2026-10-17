@@ -15,6 +15,7 @@ const SCENES: Dictionary = {
 	"expedition": "res://scenes/expedition/expedition_screen.tscn",
 	"battle": "res://scenes/battle/battle_screen.tscn",
 	"battle_v2": "res://scenes/battle_v2/battle_v2.tscn",
+	"squad_v2": "res://scenes/squad_v2/squad_v2.tscn",
 	"pvp": "res://scenes/battle/pvp_screen.tscn",
 }
 

@@ -104,7 +104,7 @@ func _build() -> void:
 	var sb: Button = _menu_button(last_row, "settings", "IMPOSTAZIONI", "normal", 32, 16)
 	sb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	# prova della nuova schermata di battaglia (HUD V2, addestramento senza premi)
-	var v2b: Button = _menu_button(last_row, "battle_v2", "TEST V2", "normal", 32, 16)
+	var v2b: Button = _menu_button(last_row, "squad_v2", "TEST V2", "normal", 32, 16)
 	v2b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	if not touch:
 		menu.add_child(BattleTheme.make_label("INVIO = CONTINUA   ·   1-9 = SCORCIATOIE   ·   M = MUTO", 13, BattleTheme.CY_DIM))
