@@ -916,7 +916,8 @@ func _fb_anchor(uid: String) -> Variant:
 		return BOSS_POS + Vector2(150, 140)
 	for i in slots.size():
 		if str(_slot_unit(i).get("id", "")) == uid:
-			return Vector2(940, 560.0 + float(slots.size() - 1 - i + (3 - slots.size())) * 50.0)
+			# a sinistra del pannello squadra (x 860): le scritte non coprono nomi e barre delle righe
+			return Vector2(760, 575.0 + float(slots.size() - 1 - i + (3 - slots.size())) * 50.0)
 	return null
 
 
@@ -1120,6 +1121,7 @@ func _fb_run() -> void:
 
 func _fb_show(it: Dictionary) -> void:
 	var at: Vector2 = it["at"]
+	var ally: bool = at.x < 800.0 and at.y > 540.0       # righe della squadra: scritte a sinistra del pannello
 	# scritte vicine ancora in volo: impilale verso l'alto per non coprirsi
 	var near: int = 0
 	for n in get_tree().get_nodes_in_group("v2_fb"):
@@ -1127,7 +1129,7 @@ func _fb_show(it: Dictionary) -> void:
 			near += 1
 	at.y -= float(mini(near, 2)) * 40.0
 	# eventi importanti (K.O., rottura, fase, critico) restano in vista piu' a lungo
-	_float_text(str(it["text"]), at, Color(it["col"]), int(it["size"]), FB_HOLD_BIG if int(it["w"]) >= 8 else FB_HOLD)
+	_float_text(str(it["text"]), at, Color(it["col"]), int(it["size"]), FB_HOLD_BIG if int(it["w"]) >= 8 else FB_HOLD, 850.0 if ally else 1260.0)
 	var kick: float = float(it["kick"]) * _shk()
 	if kick > 0.0:
 		cam_v += Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * kick
@@ -1141,13 +1143,19 @@ func _fb_show(it: Dictionary) -> void:
 		tw.tween_property(glow_rect, "position:x", glow_rect.position.x, 0.08)
 
 
-func _float_text(t: String, at: Vector2, col: Color, size: int = 34, hold: float = 0.9) -> void:
+func _float_text(t: String, at: Vector2, col: Color, size: int = 34, hold: float = 0.9, max_right: float = 1260.0) -> void:
 	var l := BattleTheme.make_label(t, size, col, true)
-	var w: float = l.get_minimum_size().x
-	l.position = Vector2(clampf(at.x - w * 0.5 + randf_range(-20.0, 20.0), 20.0, 1260.0 - w), clampf(at.y, 60.0, 660.0))
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	l.add_to_group("v2_fb")
+	l.modulate.a = 0.0
 	stage.add_child(l)
+	# la larghezza vera si conosce solo dopo un fotogramma: si posiziona allora (resta invisibile nel frattempo)
+	await get_tree().process_frame
+	if not is_instance_valid(l):
+		return
+	var w: float = maxf(l.size.x, l.get_minimum_size().x)
+	l.position = Vector2(clampf(at.x - w * 0.5 + randf_range(-12.0, 12.0), 20.0, maxf(20.0, max_right - w)), clampf(at.y, 60.0, 660.0))
+	l.modulate.a = 1.0
 	var tw := create_tween()
 	tw.set_parallel(true)
 	var d: float = hold / float(maxi(1, _G.speed))

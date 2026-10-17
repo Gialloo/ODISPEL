@@ -18,7 +18,7 @@ func _run() -> void:
 		await create_timer(0.3).timeout
 		var txt := []
 		for n in get_nodes_in_group("v2_fb"):
-			txt.append((n as Label).text if n is Label else n.name)
+			txt.append([(n as Label).text, (n as Control).position, (n as Control).size.x])
 		print("T", i, " ", txt)
 		root.get_viewport().get_texture().get_image().save_png("%s/es_%d.png" % [dir, i])
 	quit(0)
