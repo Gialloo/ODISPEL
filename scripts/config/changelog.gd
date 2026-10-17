@@ -5,6 +5,10 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.7", "items": [
+		"TEST V2: la mappa ha un nuovo stile fumetto pop (alla Gorillaz / The World Ends With You): colori saturi, contorni neri spessi, ombre a retino, macchie di vernice e graffiti.",
+		"TEST V2: personaggi con contorno da adesivo, '!' a stella gialla, fumetti di dialogo e comandi touch ridisegnati.",
+	]},
 	{"v": "0.28.6", "items": [
 		"TEST V2: dopo la squadra si entra in una mappa 2.5D (citta' di notte): cammini con il primo operatore, gli altri due della front row ti seguono.",
 		"TEST V2: oggetti da leggere, sorveglianti che ti notano con un '!' e ti sfidano, serranda che si apre con due nulla osta, Distributore in fondo al Largo.",

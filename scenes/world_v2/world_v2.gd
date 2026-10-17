@@ -37,6 +37,77 @@ const COLOR_RGB: Dictionary = {
 	"giallo": Color("#ffd23f"), "viola": Color("#a45cff"),
 }
 
+# STILE: fumetto pop (Gorillaz / The World Ends With You): colori saturi piatti, contorno nero spesso,
+# ombre a due toni con retino, scritte da graffiti. Niente luci dinamiche (shader senza luce: piu' leggero su telefono).
+const INK: Color = Color("#0b0814")
+const POP: Array = [Color("#ff3d8b"), Color("#2ee6e6"), Color("#ffe14a"), Color("#ff8a3d"), Color("#8a5bff"), Color("#5dffb0")]
+const CREAM: Color = Color("#fff3d6")
+
+const HALFTONE_CODE: String = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV;
+	float edge = max(abs(uv.x - 0.5), abs(uv.y - 0.5)) * 2.0;
+	float k = smoothstep(0.62, 1.0, edge);
+	vec2 q = FRAGCOORD.xy / 9.0;
+	float dots = length(fract(q + vec2(0.25 * floor(q.y), 0.0)) - 0.5);
+	float a = dots < 0.1 + 0.34 * k ? 0.42 * k : 0.0;
+	COLOR = vec4(0.54, 0.1, 0.45, a);
+}
+"""
+
+const TOON_CODE: String = """
+shader_type spatial;
+render_mode unshaded, cull_back;
+uniform vec4 albedo : source_color = vec4(1.0);
+uniform sampler2D tex : source_color, filter_linear_mipmap, repeat_enable;
+uniform bool use_tex = false;
+uniform bool flat_color = false;
+uniform vec2 uv_scale = vec2(1.0, 1.0);
+uniform vec3 light_dir = vec3(-0.5, 0.85, 0.45);
+varying vec3 wn;
+void vertex() { wn = normalize((MODEL_NORMAL_MATRIX * NORMAL)); }
+void fragment() {
+	vec3 c = albedo.rgb;
+	if (use_tex) { c *= texture(tex, UV * uv_scale).rgb; }
+	if (!flat_color) {
+		float d = dot(normalize(wn), normalize(light_dir));
+		if (d > 0.6) { c = c; }
+		else if (d > 0.05) { c = c * vec3(0.78, 0.72, 0.9); }
+		else {
+			vec2 q = FRAGCOORD.xy / 7.0;
+			float dots = length(fract(q) - 0.5);
+			vec3 sh = c * vec3(0.5, 0.4, 0.72);
+			c = dots < 0.3 ? sh * 0.78 : sh;
+		}
+	}
+	ALBEDO = c;
+}
+"""
+
+const OUTLINE_CODE: String = """
+shader_type spatial;
+render_mode unshaded, cull_front;
+uniform float w = 0.08;
+void vertex() { VERTEX += sign(VERTEX) * w; }
+void fragment() { ALBEDO = vec3(0.043, 0.031, 0.078); }
+"""
+
+const SKY_CODE: String = """
+shader_type sky;
+void sky() {
+	float h = clamp(EYEDIR.y * 1.6 + 0.15, 0.0, 1.0);
+	vec3 c = mix(vec3(1.0, 0.36, 0.62), vec3(0.2, 0.09, 0.46), smoothstep(0.0, 0.9, h));
+	vec2 q = EYEDIR.xy * 90.0;
+	float dots = length(fract(q) - 0.5);
+	if (h > 0.25 && h < 0.7 && dots < 0.22 * (1.0 - abs(h - 0.47) * 3.5)) { c = mix(c, vec3(1.0, 0.88, 0.29), 0.85); }
+	COLOR = c;
+}
+"""
+
+var _toon_sh: Shader
+var _line_sh: Shader
+var _sprite_cache: Dictionary = {}
 var test_move: Vector2 = Vector2.ZERO      # SOLO PER I TEST: movimento forzato
 var mode: String = "walk"                  # walk, dialog, exclaim, approach, fade, pause
 var player: Vector2 = SPAWN
@@ -94,9 +165,13 @@ class Pad extends Control:
 
 	func _draw() -> void:
 		var c: Vector2 = base if on else home
-		draw_circle(c, R, Color(0.05, 0.1, 0.18, 0.38))
-		draw_arc(c, R, 0.0, TAU, 48, Color(0.3, 0.9, 1.0, 0.55 if on else 0.3), 3.0, true)
-		draw_circle(c + (knob if on else Vector2.ZERO), 42.0, Color(0.3, 0.9, 1.0, 0.55 if on else 0.28))
+		var a: float = 0.9 if on else 0.55
+		draw_circle(c + Vector2(6, 6), R, Color(0.04, 0.03, 0.08, 0.35 * a))
+		draw_circle(c, R, Color(1.0, 0.95, 0.84, 0.28 * a + 0.1))
+		draw_arc(c, R, 0.0, TAU, 48, Color(0.04, 0.03, 0.08, a), 6.0, true)
+		var k: Vector2 = c + (knob if on else Vector2.ZERO)
+		draw_circle(k, 44.0, Color(0.04, 0.03, 0.08, a))
+		draw_circle(k, 36.0, Color(1.0, 0.24, 0.55, a))
 
 
 class ActBtn extends Control:
@@ -106,14 +181,15 @@ class ActBtn extends Control:
 
 	func _draw() -> void:
 		var c: Vector2 = size * 0.5
-		var a: float = 0.85 if live else 0.32
-		var k: float = 1.0 + (0.05 * sin(pulse * 6.0) if live else 0.0)
-		draw_circle(c, 72.0 * k, Color(0.04, 0.1, 0.16, 0.55 * a + 0.2))
-		draw_arc(c, 72.0 * k, 0.0, TAU, 48, Color(1.0, 0.85, 0.3, a), 4.0, true)
+		var a: float = 1.0 if live else 0.6
+		var k: float = 1.0 + (0.06 * sin(pulse * 6.0) if live else 0.0)
+		draw_circle(c + Vector2(7, 7), 72.0 * k, Color(1.0, 0.24, 0.55, a))
+		draw_circle(c, 72.0 * k, Color(0.04, 0.03, 0.08, a))
+		draw_circle(c, 65.0 * k, Color(1.0, 0.88, 0.29, a) if live else Color(0.8, 0.78, 0.7, a))
 		var f: Font = BattleTheme.display()
 		var fs: int = 26
 		var w: float = f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		draw_string(f, c + Vector2(-w * 0.5, 9.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 0.95, 0.7, a + 0.1))
+		draw_string(f, c + Vector2(-w * 0.5, 9.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.04, 0.03, 0.08, 1.0))
 
 
 # ---------------------------------------------------------------- avvio
@@ -154,14 +230,21 @@ func _ready() -> void:
 
 # ---------------------------------------------------------------- ambiente
 
-func _mat(c: Color, emit: float = 0.0) -> StandardMaterial3D:
-	var m := StandardMaterial3D.new()
-	m.albedo_color = c
-	m.roughness = 1.0
-	if emit > 0.0:
-		m.emission_enabled = true
-		m.emission = c
-		m.emission_energy_multiplier = emit
+func _mat(c: Color, emit: float = 0.0, outline: float = 0.05) -> ShaderMaterial:
+	if _toon_sh == null:
+		_toon_sh = Shader.new()
+		_toon_sh.code = TOON_CODE
+		_line_sh = Shader.new()
+		_line_sh.code = OUTLINE_CODE
+	var m := ShaderMaterial.new()
+	m.shader = _toon_sh
+	m.set_shader_parameter("albedo", c)
+	m.set_shader_parameter("flat_color", emit > 0.0)
+	if outline > 0.0:
+		var o := ShaderMaterial.new()
+		o.shader = _line_sh
+		o.set_shader_parameter("w", outline)
+		m.next_pass = o
 	return m
 
 
@@ -197,8 +280,8 @@ func _text3d(text: String, pos: Vector3, size: int, col: Color, parent: Node = n
 	l.font_size = size
 	l.pixel_size = 0.01
 	l.modulate = col
-	l.outline_size = 8
-	l.outline_modulate = Color(0, 0, 0, 0.85)
+	l.outline_size = 16
+	l.outline_modulate = INK
 	l.shaded = false
 	l.double_sided = false
 	if billboard:
@@ -210,55 +293,58 @@ func _text3d(text: String, pos: Vector3, size: int, col: Color, parent: Node = n
 
 func _build_env() -> void:
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("#070a16")
+	env.background_mode = Environment.BG_SKY
+	var sky := Sky.new()
+	var sm := ShaderMaterial.new()
+	var ssh := Shader.new()
+	ssh.code = SKY_CODE
+	sm.shader = ssh
+	sky.sky_material = sm
+	sky.radiance_size = Sky.RADIANCE_SIZE_32
+	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("#8d9bd6")
-	env.ambient_light_energy = 0.85
-	env.fog_enabled = true
-	env.fog_light_color = Color("#0a1030")
-	env.fog_density = 0.016
+	env.ambient_light_color = Color.WHITE
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
-	var sun := DirectionalLight3D.new()
-	sun.light_color = Color("#a9b8ff")
-	sun.light_energy = 0.55
-	sun.rotation_degrees = Vector3(-58.0, 28.0, 0.0)
-	add_child(sun)
 	cam = Camera3D.new()
 	cam.fov = 34.0
 	cam.near = 0.1
-	cam.far = 90.0
+	cam.far = 120.0
 	cam.current = true
 	add_child(cam)
 
 
+# Facciata da fumetto: finestre con contorno nero, colori pieni, qualche striscia di graffiti
 func _window_tex(seed_v: int) -> Texture2D:
 	var img := Image.create(128, 256, false, Image.FORMAT_RGBA8)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_v
-	var wall := Color.from_hsv(0.6 + rng.randf() * 0.1, 0.35, 0.16 + rng.randf() * 0.05)
-	img.fill(wall)
-	var lit: Array = [Color("#ffd98a"), Color("#8fe9ff"), Color("#ff8fd6"), Color("#ffe9b0")]
-	for row in range(8):
-		for col in range(4):
-			var x0: int = 10 + col * 30
-			var y0: int = 12 + row * 30
-			var on: bool = rng.randf() < 0.38
-			var c: Color = (lit[rng.randi() % lit.size()] as Color) if on else wall.darkened(0.45)
-			img.fill_rect(Rect2i(x0, y0, 18, 20), c)
+	img.fill(Color.WHITE)
+	var fills: Array = [Color("#ffe14a"), Color("#2ee6e6"), Color("#ff3d8b"), Color("#3a2478"), Color("#3a2478"), Color("#fff3d6")]
+	for row in range(6):
+		for col in range(3):
+			var x0: int = 10 + col * 38
+			var y0: int = 24 + row * 38
+			img.fill_rect(Rect2i(x0 - 3, y0 - 3, 30, 32), INK)
+			img.fill_rect(Rect2i(x0, y0, 24, 26), fills[rng.randi() % fills.size()])
+	img.fill_rect(Rect2i(0, 0, 128, 8), INK)
+	img.fill_rect(Rect2i(0, 248, 128, 8), INK)
+	for k in range(3):
+		var y: int = 8 + rng.randi() % 230
+		img.fill_rect(Rect2i(0, y, 128, 2), Color(0.0, 0.0, 0.0, 1.0).lerp(Color.WHITE, 0.7))
 	return ImageTexture.create_from_image(img)
 
 
 func _floor_tex() -> Texture2D:
 	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
-	img.fill(Color("#262c40"))
+	img.fill(Color.WHITE)
+	img.fill_rect(Rect2i(32, 0, 32, 32), Color(0.88, 0.88, 0.88))
+	img.fill_rect(Rect2i(0, 32, 32, 32), Color(0.88, 0.88, 0.88))
 	for i in range(64):
-		img.set_pixel(i, 0, Color("#171b2a"))
-		img.set_pixel(0, i, Color("#171b2a"))
-		img.set_pixel(i, 1, Color("#171b2a"))
-		img.set_pixel(1, i, Color("#171b2a"))
+		for t in range(3):
+			img.set_pixel(i, t, INK)
+			img.set_pixel(t, i, INK)
 	return ImageTexture.create_from_image(img)
 
 
@@ -266,8 +352,8 @@ func _blob_tex() -> Texture2D:
 	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	for y in range(64):
 		for x in range(64):
-			var d: float = Vector2(x - 31.5, y - 31.5).length() / 32.0
-			img.set_pixel(x, y, Color(0, 0, 0, clampf(1.0 - d, 0.0, 1.0) * 0.55))
+			var d: float = Vector2(x - 31.5, y - 31.5).length() / 31.0
+			img.set_pixel(x, y, Color(0.04, 0.02, 0.1, 0.6) if d < 1.0 else Color(0, 0, 0, 0))
 	return ImageTexture.create_from_image(img)
 
 
@@ -279,22 +365,26 @@ func _in_walk(p: Vector2) -> bool:
 
 
 func _build_map() -> void:
-	# asfalto
+	# strada: viola scuro pieno
 	var ground := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(200, 200)
+	pm.size = Vector2(240, 240)
 	ground.mesh = pm
-	ground.material_override = _mat(Color("#0d101c"))
+	ground.material_override = _mat(Color("#2a1458"), 1.0, 0.0)
 	ground.position = Vector3(0, -0.02, 0)
 	add_child(ground)
-	# marciapiedi / selciato
+	# selciato a scacchi, un colore per zona (si capisce dove si e')
 	var ftex: Texture2D = _floor_tex()
+	var tints: Array = [Color("#ff9bd0"), Color("#7ff2ee"), Color("#ffb86b"), Color("#b79cff"), Color("#ffe97a")]
+	var ai: int = 0
 	for a in AREAS:
 		var r: Rect2 = a["rect"]
-		var m := StandardMaterial3D.new()
-		m.albedo_texture = ftex
-		m.uv1_scale = Vector3(r.size.x / 2.0, r.size.y / 2.0, 1.0)
-		m.roughness = 1.0
+		var m: ShaderMaterial = _mat(tints[ai % tints.size()], 0.0, 0.0)
+		m.set_shader_parameter("light_dir", Vector3(0, 1, 0))
+		m.set_shader_parameter("use_tex", true)
+		m.set_shader_parameter("tex", ftex)
+		m.set_shader_parameter("uv_scale", Vector2(r.size.x / 2.0, r.size.y / 2.0))
+		ai += 1
 		var mi := MeshInstance3D.new()
 		var q := PlaneMesh.new()
 		q.size = r.size
@@ -302,24 +392,34 @@ func _build_map() -> void:
 		mi.material_override = m
 		mi.position = Vector3(r.position.x + r.size.x * 0.5, 0.0, r.position.y + r.size.y * 0.5)
 		add_child(mi)
-	# strisce tratteggiate nelle due vie
-	var line_m: StandardMaterial3D = _mat(Color("#cfd6ff"), 0.4)
+	# strisce spesse gialle e nere nelle due vie
+	var line_m: ShaderMaterial = _mat(Color("#ffe14a"), 1.0, 0.0)
 	var zz: float = -5.0
 	while zz > -25.0:
-		_box(Vector3(0, 0.02, zz), Vector3(0.18, 0.02, 1.0), line_m)
-		zz -= 2.2
+		_box(Vector3(0, 0.03, zz), Vector3(0.45, 0.03, 1.3), line_m)
+		zz -= 2.6
 	var xx: float = 11.0
 	while xx < 22.5:
-		_box(Vector3(xx, 0.02, 2.0), Vector3(1.0, 0.02, 0.18), line_m)
-		xx += 2.2
+		_box(Vector3(xx, 0.03, 2.0), Vector3(1.3, 0.03, 0.45), line_m)
+		xx += 2.6
+	_decals()
+	# sole enorme da fumetto, in fondo al cielo
+	var sun := MeshInstance3D.new()
+	var sq := QuadMesh.new()
+	sq.size = Vector2(46, 46)
+	sun.mesh = sq
+	var sunm: ShaderMaterial = _mat(Color("#ffe14a"), 1.0, 0.0)
+	sun.material_override = sunm
+	sun.position = Vector3(-18, 28, -85)
+	add_child(sun)
 	# edifici ai bordi
 	for i in range(3):
 		_wmats.append(_window_tex(11 + i * 7))
 	_build_walls()
 	# fontana al centro della piazza
-	_cyl(Vector3(0, 0.25, 3), 1.5, 0.5, _mat(Color("#3b4468")))
-	_cyl(Vector3(0, 0.52, 3), 1.25, 0.06, _mat(Color("#4fe3ff"), 1.6))
-	_cyl(Vector3(0, 0.9, 3), 0.18, 0.8, _mat(Color("#5b6590")))
+	_cyl(Vector3(0, 0.25, 3), 1.5, 0.5, _mat(Color("#ff3d8b"), 0.0, 0.08))
+	_cyl(Vector3(0, 0.52, 3), 1.25, 0.06, _mat(Color("#2ee6e6"), 1.0, 0.0))
+	_cyl(Vector3(0, 0.9, 3), 0.18, 0.8, _mat(Color("#ffe14a"), 0.0, 0.05))
 	obstacles.append(Rect2(-1.5, 1.5, 3.0, 3.0))
 	_lamp(Vector3(-5.5, 0, 6.5), Color("#ffd98a"), true)
 	_lamp(Vector3(5.5, 0, 6.5), Color("#ffd98a"), true)
@@ -333,26 +433,71 @@ func _build_map() -> void:
 	_trainers()
 
 
-func _lamp(p: Vector3, c: Color, with_light: bool) -> void:
-	_cyl(p + Vector3(0, 1.6, 0), 0.07, 3.2, _mat(Color("#20263a")))
-	var bulb: MeshInstance3D = _box(p + Vector3(0, 3.25, 0), Vector3(0.26, 0.14, 0.26), _mat(c, 1.6))
+# Macchie di vernice e stelle sul selciato (stesso linguaggio delle pennellate della HUD di battaglia)
+func _splat_tex(col: Color, seed_v: int) -> Texture2D:
+	var img := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_v
+	var blobs: Array = []
+	for i in range(7):
+		var a: float = rng.randf() * TAU
+		var d: float = rng.randf() * 26.0
+		blobs.append([Vector2(64, 64) + Vector2(cos(a), sin(a)) * d, 14.0 + rng.randf() * 18.0])
+	for y in range(128):
+		for x in range(128):
+			var best: float = 999.0
+			for b in blobs:
+				best = minf(best, Vector2(x, y).distance_to(b[0]) - float(b[1]))
+			if best < 0.0:
+				img.set_pixel(x, y, col)
+			elif best < 4.0:
+				img.set_pixel(x, y, INK)
+	return ImageTexture.create_from_image(img)
+
+
+func _decal(c2: Vector2, size: float, col: Color, seed_v: int, rot: float = 0.0) -> void:
+	var mi := MeshInstance3D.new()
+	var q := QuadMesh.new()
+	q.size = Vector2(size, size)
+	q.orientation = PlaneMesh.FACE_Y
+	mi.mesh = q
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = _splat_tex(col, seed_v)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mi.material_override = m
+	mi.position = Vector3(c2.x, 0.015, c2.y)
+	mi.rotation.y = rot
+	add_child(mi)
+
+
+func _decals() -> void:
+	_decal(Vector2(-4.5, 2.0), 4.2, Color("#ff3d8b"), 3)
+	_decal(Vector2(5.0, 7.5), 3.4, Color("#2ee6e6"), 8, 0.8)
+	_decal(Vector2(-1.0, 8.5), 2.6, Color("#ffe14a"), 5, 2.0)
+	_decal(Vector2(14.0, 1.0), 3.6, Color("#8a5bff"), 11)
+	_decal(Vector2(-15.0, 6.0), 3.8, Color("#ff8a3d"), 17, 1.1)
+	_decal(Vector2(1.5, -19.0), 3.0, Color("#ff3d8b"), 23, 0.4)
+	_decal(Vector2(-3.0, -31.0), 4.4, Color("#2ee6e6"), 29)
+	_decal(Vector2(4.0, -36.0), 3.6, Color("#ff3d8b"), 31, 2.2)
+	# strisce pedonali all'imbocco di Via della Serranda
+	for i in range(6):
+		_box(Vector3(-2.25 + i * 0.9, 0.03, -3.3), Vector3(0.55, 0.03, 1.6), _mat(CREAM, 1.0, 0.0))
+
+
+func _lamp(p: Vector3, c: Color, _with_light: bool) -> void:
+	_cyl(p + Vector3(0, 1.6, 0), 0.08, 3.2, _mat(INK, 0.0, 0.04))
+	var bulb: MeshInstance3D = _box(p + Vector3(0, 3.25, 0), Vector3(0.5, 0.26, 0.5), _mat(c, 1.0, 0.06))
 	bulb.name = "Bulb"
-	if with_light and not Settings.light_fx:
-		var o := OmniLight3D.new()
-		o.light_color = c
-		o.light_energy = 1.6
-		o.omni_range = 9.0
-		o.position = p + Vector3(0, 3.1, 0)
-		add_child(o)
 
 
 func _build_walls() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 424242
 	var names: Array = ["OSTERIA DA NINO", "TABACCHI 24H", "LIBRACORP", "FARMACIA", "RONDINI BAR", "MAGA·MARKET", "KAIROS?", "ELETTRO NODO", "NOODLE"]
-	var sign_cols: Array = [Color("#4fe3ff"), Color("#ff5fd0"), Color("#ffd23f"), Color("#7dff9b")]
+	var sign_cols: Array = [Color("#2ee6e6"), Color("#ff3d8b"), Color("#ffe14a"), Color("#5dffb0")]
 	var ni: int = 0
-	var roof_m: StandardMaterial3D = _mat(Color("#161a2b"))
+	var roof_m: ShaderMaterial = _mat(Color("#ff3d8b"), 0.0, 0.07)
 	for a in AREAS:
 		var r: Rect2 = a["rect"]
 		# lato: 0 nord, 1 sud, 2 ovest, 3 est
@@ -377,20 +522,19 @@ func _build_walls() -> void:
 					var depth: float = 3.0 + rng.randf() * 2.0
 					var h: float = 4.5 + rng.randf() * 4.0
 					if side == 1:
-						h = 1.3 + rng.randf() * 0.7           # davanti alla camera: bassi, per non coprire la vista
+						h = 0.7 + rng.randf() * 0.35          # davanti alla camera: bassissimi (fioriere/recinti), per non coprire la vista
+						depth = 1.3
 					elif side >= 2 and mid_z_of(r, side, pos + w * 0.5) > 1.0:
-						h = 2.2 + rng.randf() * 0.8           # pareti laterali verso la camera: basse, non nascondono i passaggi
+						h = 0.7 + rng.randf() * 0.35          # pareti laterali verso la camera: bassissime, non nascondono i passaggi
+						depth = 1.3
 					var mid: Vector2 = _edge_point(r, side, pos + w * 0.5, depth * 0.5)
 					var size3: Vector3 = Vector3(w, h, depth) if horizontal else Vector3(depth, h, w)
-					var bm: StandardMaterial3D = StandardMaterial3D.new()
-					bm.albedo_texture = _wmats[rng.randi() % _wmats.size()]
-					bm.emission_enabled = true
-					bm.emission_texture = bm.albedo_texture
-					bm.emission_energy_multiplier = 0.9
-					bm.uv1_scale = Vector3(maxf(1.0, w / 1.8), maxf(0.6, h / 3.6), 1.0)
-					bm.roughness = 1.0
+					var bm: ShaderMaterial = _mat(POP[rng.randi() % POP.size()], 0.0, 0.14)
+					bm.set_shader_parameter("use_tex", true)
+					bm.set_shader_parameter("tex", _wmats[rng.randi() % _wmats.size()])
+					bm.set_shader_parameter("uv_scale", Vector2(maxf(1.0, w / 3.4), maxf(0.6, h / 6.8)))
 					_box(Vector3(mid.x, h * 0.5, mid.y), size3, bm)
-					_box(Vector3(mid.x, h + 0.04, mid.y), Vector3(size3.x + 0.1, 0.08, size3.z + 0.1), roof_m)
+					_box(Vector3(mid.x, h + 0.1, mid.y), Vector3(size3.x + 0.2, 0.2, size3.z + 0.2), _mat(POP[(rng.randi() + 2) % POP.size()], 0.0, 0.07))
 					# insegna sulle facce rivolte a sud (le piu' visibili) e qualche volta sulle altre
 					if side == 0 and h > 5.5 and w > 2.8 and rng.randf() < 0.55:
 						var col: Color = sign_cols[ni % sign_cols.size()]
@@ -427,28 +571,28 @@ func _talk(id: String, c2: Vector2, title: String, lines: Array, radius: float =
 
 func _props() -> void:
 	# distributore guasto (la prima cosa che si vede: avvisa del tono)
-	_prop(Vector2(-6.4, -3.3), Vector3(0.95, 1.9, 0.8), Color("#7a3030"))
+	_prop(Vector2(-6.4, -3.3), Vector3(0.95, 1.9, 0.8), Color("#ff3d8b"))
 	_box(Vector3(-6.4, 1.15, -2.88), Vector3(0.7, 1.0, 0.05), _mat(Color("#ffcf5a"), 1.8))
 	_text3d("NON SPINGERE", Vector3(-6.4, 1.8, -2.87), 22, Color("#fff1c0"))
 	_talk("vend", Vector2(-6.4, -2.4), "Distributore guasto", [
 		["", "Un distributore spento. Sul display, a intermittenza: «NON SPINGERE»."],
 		["", "Dentro, dietro il vetro, qualcosa si muove piano. Meglio non insistere."]])
 	# bacheca dei Rondini
-	_prop(Vector2(4.6, -3.4), Vector3(2.0, 1.6, 0.18), Color("#3a2f22"))
+	_prop(Vector2(4.6, -3.4), Vector3(2.0, 1.6, 0.18), Color("#ffb86b"))
 	_text3d("RONDINI · TURNI", Vector3(4.6, 1.95, -3.3), 24, Color("#ffd23f"))
 	_talk("bacheca", Vector2(4.6, -2.5), "Bacheca dei Rondini", [
 		["", "Turni di ronda scritti a mano: «Notte di giovedì — Piazza del Nodo — in piccoli gruppi, senza dare nell'occhio»."],
 		["", "In un angolo, a pennarello: «LibraCorp ha ricominciato a controllare le licenze. Occhio a Via Elettra»."]])
 	# tombino fumante
-	var mh := _cyl(Vector3(3.2, 0.03, 7.0), 0.6, 0.05, _mat(Color("#3b4054")))
+	var mh := _cyl(Vector3(3.2, 0.03, 7.0), 0.6, 0.05, _mat(Color("#0b0814")))
 	mh.name = "Tombino"
 	_cyl(Vector3(3.2, 0.06, 7.0), 0.42, 0.03, _mat(Color("#ff8a3d"), 1.1))
 	_talk("tombino", Vector2(3.2, 7.0), "Tombino", [
 		["", "Il tombino è tiepido. Un filo di vapore arancione esce dalle fessure e profuma di ferro."],
 		["", "Le Anomalie urbane, di notte, preferiscono i posti dove la gente non guarda."]], 1.5)
 	# semaforo che lampeggia (via Elettra)
-	_prop(Vector2(9.9, -0.3), Vector3(0.18, 3.2, 0.18), Color("#20263a"))
-	_box(Vector3(9.9, 3.2, -0.3), Vector3(0.45, 1.1, 0.35), _mat(Color("#161a28")))
+	_prop(Vector2(9.9, -0.3), Vector3(0.18, 3.2, 0.18), Color("#0b0814"))
+	_box(Vector3(9.9, 3.2, -0.3), Vector3(0.45, 1.1, 0.35), _mat(Color("#0b0814")))
 	_box(Vector3(9.9, 3.55, -0.1), Vector3(0.2, 0.2, 0.05), _mat(Color("#ff5a4f"), 2.4))
 	_box(Vector3(9.9, 3.2, -0.1), Vector3(0.2, 0.2, 0.05), _mat(Color("#ffd23f"), 0.5))
 	_box(Vector3(9.9, 2.85, -0.1), Vector3(0.2, 0.2, 0.05), _mat(Color("#4fd17a"), 0.5))
@@ -456,23 +600,23 @@ func _props() -> void:
 		["", "Il semaforo lampeggia sul rosso da un'ora. Nessuno lo ha mai visto passare al verde."],
 		["", "Forse è solo guasto. Forse no."]], 1.7)
 	# cassonetti
-	_prop(Vector2(12.0, -0.2), Vector3(0.9, 1.0, 0.7), Color("#2c4a3a"))
-	_prop(Vector2(13.1, -0.2), Vector3(0.9, 1.0, 0.7), Color("#2c4a3a"))
+	_prop(Vector2(12.0, -0.2), Vector3(0.9, 1.0, 0.7), Color("#2ee6e6"))
+	_prop(Vector2(13.1, -0.2), Vector3(0.9, 1.0, 0.7), Color("#2ee6e6"))
 	# panchine nella piazza
-	_prop(Vector2(-6.0, 9.6), Vector3(2.0, 0.5, 0.6), Color("#5a4630"))
-	_prop(Vector2(6.0, 9.6), Vector3(2.0, 0.5, 0.6), Color("#5a4630"))
+	_prop(Vector2(-6.0, 9.6), Vector3(2.0, 0.5, 0.6), Color("#ff8a3d"))
+	_prop(Vector2(6.0, 9.6), Vector3(2.0, 0.5, 0.6), Color("#ff8a3d"))
 	# rifugio dei Rondini (insegna in fondo alla piazza, verso la camera: solo un'insegna bassa)
 	# cabina telefonica (fondo del vicolo)
-	_prop(Vector2(-21.8, 5.5), Vector3(1.1, 2.4, 1.1), Color("#8a2b2b"))
+	_prop(Vector2(-21.8, 5.5), Vector3(1.1, 2.4, 1.1), Color("#ff3d8b"))
 	_box(Vector3(-21.25, 1.4, 5.5), Vector3(0.05, 1.6, 0.8), _mat(Color("#bfe9ff"), 1.0))
 	_talk("cabina", Vector2(-20.4, 5.5), "Cabina telefonica", [
 		["", "La cornetta è sganciata. Dall'altra parte, qualcuno respira piano."],
 		["", "Riattacchi. Il filo, notate, non è collegato a niente."]], 1.9)
 	# casse e luci nel vicolo
-	_prop(Vector2(-12.0, 3.7), Vector3(1.0, 0.8, 0.8), Color("#4a3a28"))
-	_prop(Vector2(-18.5, 8.2), Vector3(1.0, 0.8, 0.8), Color("#4a3a28"))
+	_prop(Vector2(-12.0, 3.7), Vector3(1.0, 0.8, 0.8), Color("#ffe14a"))
+	_prop(Vector2(-18.5, 8.2), Vector3(1.0, 0.8, 0.8), Color("#ffe14a"))
 	# terminale LibraCorp: la scheda del Distributore (cosa fa e come si contrasta)
-	_prop(Vector2(2.35, -9.5), Vector3(0.8, 1.5, 0.6), Color("#1f2c4a"))
+	_prop(Vector2(2.35, -9.5), Vector3(0.8, 1.5, 0.6), Color("#8a5bff"))
 	_box(Vector3(2.35, 1.2, -9.18), Vector3(0.6, 0.5, 0.05), _mat(Color("#4fe3ff"), 2.0))
 	_text3d("LIBRACORP\nSCHEDA ANOMALIA", Vector3(2.35, 1.95, -9.15), 20, Color("#4fe3ff"))
 	_talk("terminale", Vector2(1.5, -9.5), "Terminale LibraCorp", _boss_card(), 2.0)
@@ -519,9 +663,9 @@ func _gate() -> void:
 	gate_node = Node3D.new()
 	gate_node.position = Vector3(0, 0, -15.0)
 	add_child(gate_node)
-	_box(Vector3(0, 2.0, 0), Vector3(6.0, 4.0, 0.25), _mat(Color("#586079")), gate_node)
+	_box(Vector3(0, 2.0, 0), Vector3(6.0, 4.0, 0.25), _mat(Color("#2ee6e6")), gate_node)
 	for i in range(8):
-		_box(Vector3(-2.6 + i * 0.75, 2.0, 0.14), Vector3(0.08, 4.0, 0.05), _mat(Color("#2f354a")), gate_node)
+		_box(Vector3(-2.6 + i * 0.75, 2.0, 0.14), Vector3(0.08, 4.0, 0.05), _mat(Color("#0b0814")), gate_node)
 	_text3d("ACCESSO CHIUSO\nNULLA OSTA × 2", Vector3(0, 2.4, 0.2), 34, Color("#ff7a6a"), gate_node)
 	obstacles.append(GATE_RECT)
 
@@ -530,20 +674,14 @@ func _boss_machine() -> void:
 	boss_node = Node3D.new()
 	boss_node.position = Vector3(BOSS_POS.x, 0, BOSS_POS.y)
 	add_child(boss_node)
-	_box(Vector3(0, 2.3, 0), Vector3(3.4, 4.6, 2.2), _mat(Color("#c9a227")), boss_node)
-	_box(Vector3(0, 2.6, 1.12), Vector3(2.6, 2.4, 0.06), _mat(Color("#1b1d2b")), boss_node)
+	_box(Vector3(0, 2.3, 0), Vector3(3.4, 4.6, 2.2), _mat(Color("#ffd23f")), boss_node)
+	_box(Vector3(0, 2.6, 1.12), Vector3(2.6, 2.4, 0.06), _mat(Color("#0b0814")), boss_node)
 	boss_screen = _box(Vector3(0, 2.6, 1.16), Vector3(2.3, 2.1, 0.04), _mat(Color("#ffe27a"), 1.7), boss_node)
 	for i in range(3):
 		_box(Vector3(-0.8 + i * 0.8, 3.0, 1.2), Vector3(0.5, 0.5, 0.02), _mat(Color("#ff5a4f") if i == 1 else Color("#f6f0cf"), 1.0), boss_node)
-	_box(Vector3(0, 0.8, 1.15), Vector3(1.6, 0.7, 0.1), _mat(Color("#0a0b12")), boss_node)
-	_box(Vector3(1.2, 1.5, 1.14), Vector3(0.7, 0.9, 0.06), _mat(Color("#303450")), boss_node)
+	_box(Vector3(0, 0.8, 1.15), Vector3(1.6, 0.7, 0.1), _mat(Color("#0b0814")), boss_node)
+	_box(Vector3(1.2, 1.5, 1.14), Vector3(0.7, 0.9, 0.06), _mat(Color("#ff3d8b")), boss_node)
 	_text3d("NON SPINGERE", Vector3(0, 4.15, 1.15), 40, Color("#2a1500"), boss_node)
-	boss_light = OmniLight3D.new()
-	boss_light.light_color = Color("#ffd23f")
-	boss_light.light_energy = 2.0 if not Settings.light_fx else 0.0
-	boss_light.omni_range = 11.0
-	boss_light.position = Vector3(0, 3.2, 3.5)
-	boss_node.add_child(boss_light)
 	obstacles.append(Rect2(BOSS_POS.x - 1.8, BOSS_POS.y - 1.2, 3.6, 2.5))
 	_talk("boss", Vector2(BOSS_POS.x, BOSS_POS.y + 3.0), "Il Distributore", [], 2.0)
 
@@ -576,7 +714,7 @@ func _figure_tex(body: Color, accent: Color, hood: bool) -> Texture2D:
 func _trainers() -> void:
 	var defs: Array = [
 		{"id": "libracorp", "name": "AGENTE BRANDI · LIBRACORP", "pos": Vector2(15, 2.0), "face": Vector2(-1, 0),
-		 "body": Color("#27345c"), "accent": Color("#4fe3ff"), "hood": false,
+		 "body": Color("#2e6bff"), "accent": Color("#ffe14a"), "hood": false,
 		 "pre": [
 			["AGENTE BRANDI", "Alt! Zona sotto sequestro LibraCorp. Licenza magica, prego."],
 			["AGENTE BRANDI", "…Non risulti all'albo, o l'hai lasciata a casa. E un distributore difettoso mi si è appena staccato dal muro."],
@@ -586,7 +724,7 @@ func _trainers() -> void:
 			["AGENTE BRANDI", "Ecco il mio nulla osta. Per la serranda ne serve un altro: quello dei ragazzi nel Vicolo delle Rondini."]],
 		 "after": "Brandi sta compilando il rapporto. Non alza lo sguardo."},
 		{"id": "magabondo", "name": "NESSO · MAGABONDO", "pos": Vector2(-16.5, 6.0), "face": Vector2(1, 0),
-		 "body": Color("#4a2a6a"), "accent": Color("#ff5fd0"), "hood": true,
+		 "body": Color("#8a5bff"), "accent": Color("#ff3d8b"), "hood": true,
 		 "pre": [
 			["NESSO", "Ehi, ehi! Chi va là? Niente licenza, niente albo: qui la magia si fa per strada."],
 			["NESSO", "Se volete il mio sigillo per la serranda dovete dimostrare che non siete spie di LibraCorp."],
@@ -601,8 +739,9 @@ func _trainers() -> void:
 		var node := Node3D.new()
 		add_child(node)
 		var sp := Sprite3D.new()
-		sp.texture = _figure_tex(t["body"], t["accent"], bool(t["hood"]))
-		sp.pixel_size = CHAR_H / 256.0
+		var ttex: Texture2D = _outlined(_figure_tex(t["body"], t["accent"], bool(t["hood"])), "t_" + str(t["id"]))
+		sp.texture = ttex
+		sp.pixel_size = CHAR_H / _content_h(ttex)
 		sp.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 		sp.shaded = false
 		sp.alpha_cut = SpriteBase3D.ALPHA_CUT_OPAQUE_PREPASS
@@ -611,10 +750,7 @@ func _trainers() -> void:
 		var sh := _shadow(node)
 		var tag: Label3D = _text3d(str(t["name"]), Vector3(0, CHAR_H + 0.35, 0), 20, Color("#fff1c0"), node, true)
 		tag.no_depth_test = true
-		var ex: Label3D = _text3d("!", Vector3(0, CHAR_H + 1.1, 0), 120, Color("#ffd23f"), node, true)
-		ex.outline_size = 22
-		ex.outline_modulate = Color("#7a1010")
-		ex.no_depth_test = true
+		var ex: Label3D = _make_excl(Vector3(0, CHAR_H + 1.3, 0), node, 120)
 		ex.visible = false
 		# cono visivo: il giocatore deve poterlo leggere
 		var cone := MeshInstance3D.new()
@@ -647,6 +783,44 @@ func _trainers() -> void:
 		obstacles.append(Rect2(pp.x - 0.4, pp.y - 0.4, 0.8, 0.8))
 		t["obst"] = obstacles.size() - 1
 		_talk(str(t["id"]), pp + Vector2(-(t["face"] as Vector2).x * 0.0, 0.0), str(t["name"]), [], 1.9)
+
+
+var _burst: Texture2D
+
+
+func _burst_tex() -> Texture2D:
+	if _burst == null:
+		var img := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+		for y in range(128):
+			for x in range(128):
+				var v := Vector2(x - 63.5, y - 63.5)
+				var ang: float = atan2(v.y, v.x)
+				var r: float = 44.0 + 17.0 * cos(ang * 9.0)
+				var d: float = v.length()
+				if d < r - 5.0:
+					img.set_pixel(x, y, Color("#ffe14a"))
+				elif d < r:
+					img.set_pixel(x, y, INK)
+		_burst = ImageTexture.create_from_image(img)
+	return _burst
+
+
+# "!" da fumetto: scritta nera su stella gialla
+func _make_excl(pos: Vector3, parent: Node, size: int) -> Label3D:
+	var ex: Label3D = _text3d("!", pos, size, INK, parent, true)
+	ex.outline_size = 0
+	ex.no_depth_test = true
+	ex.render_priority = 2
+	var b := Sprite3D.new()
+	b.texture = _burst_tex()
+	b.pixel_size = 0.02 * float(size) / 120.0
+	b.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	b.shaded = false
+	b.no_depth_test = true
+	b.render_priority = 1
+	b.position = Vector3(0, 0, -0.02)
+	ex.add_child(b)
+	return ex
 
 
 func _cone_tex() -> Texture2D:
@@ -682,6 +856,46 @@ func _shadow(parent: Node3D) -> MeshInstance3D:
 
 # ---------------------------------------------------------------- squadra
 
+# Contorno da fumetto: bordo nero spesso + filo crema esterno (effetto adesivo), generato una volta sola per immagine
+func _outlined(tex: Texture2D, key: String) -> Texture2D:
+	if _sprite_cache.has(key):
+		return _sprite_cache[key]
+	var src: Image = tex.get_image()
+	if src == null:
+		return tex
+	if src.is_compressed():
+		src.decompress()
+	src.convert(Image.FORMAT_RGBA8)
+	if src.get_height() > 480:
+		var k: float = 480.0 / float(src.get_height())
+		src.resize(int(float(src.get_width()) * k), 480, Image.INTERPOLATE_BILINEAR)
+	var w: int = src.get_width()
+	var h: int = src.get_height()
+	var r_in: int = maxi(3, int(round(h / 90.0)))
+	var r_out: int = r_in * 2
+	var m: int = r_out + 2
+	var rect := Rect2i(0, 0, w, h)
+	var canvas := Image.create(w + 2 * m, h + 2 * m, false, Image.FORMAT_RGBA8)
+	for ring in [[r_out, CREAM], [r_in, INK]]:
+		var fillc := Image.create(w, h, false, Image.FORMAT_RGBA8)
+		fillc.fill(ring[1])
+		var sil := Image.create(w, h, false, Image.FORMAT_RGBA8)
+		sil.blit_rect_mask(fillc, src, rect, Vector2i.ZERO)
+		for i in range(18):
+			var a: float = TAU * float(i) / 18.0
+			var off := Vector2i(int(round(cos(a) * float(ring[0]))), int(round(sin(a) * float(ring[0]))))
+			canvas.blend_rect(sil, rect, Vector2i(m + off.x, m + off.y))
+	canvas.blend_rect(src, rect, Vector2i(m, m))
+	var out: ImageTexture = ImageTexture.create_from_image(canvas)
+	out.set_meta("m", m)
+	_sprite_cache[key] = out
+	return out
+
+
+func _content_h(tex: Texture2D) -> float:
+	return float(tex.get_height() - 2 * int(tex.get_meta("m", 0)))
+
+
 func _char_tex(id: String) -> Texture2D:
 	var t: Texture2D = ArtLibrary.battle_sprite(id)
 	if t == null:
@@ -690,7 +904,7 @@ func _char_tex(id: String) -> Texture2D:
 		t = ArtLibrary.portrait(id)
 	if t == null:
 		var col: Color = COLOR_RGB.get(str(BattleContent.CHARACTERS[id]["color"]), Color("#8899cc"))
-		t = _figure_tex(col.darkened(0.3), col.lightened(0.3), false)
+		t = _figure_tex(col, CREAM, false)
 	return t
 
 
@@ -700,9 +914,9 @@ func _build_party() -> void:
 		var node := Node3D.new()
 		add_child(node)
 		var sp := Sprite3D.new()
-		var tex: Texture2D = _char_tex(id)
+		var tex: Texture2D = _outlined(_char_tex(id), "c_" + id)
 		sp.texture = tex
-		var th: float = float(tex.get_height())
+		var th: float = _content_h(tex)
 		var hh: float = CHAR_H if i == 0 else CHAR_H * 0.94
 		sp.pixel_size = hh / th
 		sp.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
@@ -778,8 +992,7 @@ func _apply_progress() -> void:
 
 func _boss_off() -> void:
 	if boss_screen != null:
-		(boss_screen.material_override as StandardMaterial3D).emission_energy_multiplier = 0.0
-		(boss_screen.material_override as StandardMaterial3D).albedo_color = Color("#2b2a22")
+		(boss_screen.material_override as ShaderMaterial).set_shader_parameter("albedo", Color("#3a3358"))
 	if boss_light != null:
 		boss_light.light_energy = 0.0
 
@@ -857,22 +1070,27 @@ func _build_ui() -> void:
 	var touch: bool = TouchUi.active()
 	var fs: int = 22 if touch else 18
 
-	zone_label = BattleTheme.make_label("", 34 if touch else 28, Color("#fff1c0"), true)
-	zone_label.position = Vector2(30, 22)
+	zone_label = BattleTheme.make_label("", 34 if touch else 28, INK, true)
+	zone_label.add_theme_stylebox_override("normal", _comic_box(Color("#ffe14a"), 4, Color("#ff3d8b"), Vector2(7, 7), 14))
+	zone_label.position = Vector2(34, 22)
+	zone_label.rotation = -0.035
 	ui.add_child(zone_label)
-	obj_label = BattleTheme.make_label("", 20 if touch else 16, Color("#bff6ff"))
-	obj_label.position = Vector2(30, 70 if touch else 62)
+	obj_label = BattleTheme.make_label("", 20 if touch else 16, Color.WHITE)
+	obj_label.add_theme_stylebox_override("normal", _comic_box(Color(0.04, 0.03, 0.08, 0.86), 0, Color(0, 0, 0, 0), Vector2.ZERO, 12))
+	obj_label.position = Vector2(34, 84 if touch else 76)
 	obj_label.size = Vector2(760, 60)
 	obj_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ui.add_child(obj_label)
 
-	prompt = BattleTheme.make_label("", fs, Color("#ffe27a"), true)
+	prompt = BattleTheme.make_label("", fs, Color("#ffe14a"), true)
+	prompt.add_theme_color_override("font_outline_color", INK)
+	prompt.add_theme_constant_override("outline_size", 10)
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.size = Vector2(700, 40)
 	ui.add_child(prompt)
 
 	dlg = PanelContainer.new()
-	dlg.add_theme_stylebox_override("panel", BattleTheme.plate_box(Color("#4fe3ff"), 3, 6, 0.92))
+	dlg.add_theme_stylebox_override("panel", _comic_box(CREAM, 5, Color("#ff3d8b"), Vector2(9, 9), 22))
 	dlg.visible = false
 	dlg.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	dlg.offset_left = 60.0
@@ -883,13 +1101,15 @@ func _build_ui() -> void:
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 6)
 	dlg.add_child(vb)
-	dlg_who = BattleTheme.make_label("", 22 if touch else 18, Color("#ffd23f"), true)
+	dlg_who = BattleTheme.make_label("", 22 if touch else 18, Color.WHITE, true)
+	dlg_who.add_theme_stylebox_override("normal", _comic_box(Color("#ff3d8b"), 3, Color(0, 0, 0, 0), Vector2.ZERO, 10))
+	dlg_who.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	vb.add_child(dlg_who)
-	dlg_text = BattleTheme.make_label("", 26 if touch else 21, Color("#f4f8ff"))
+	dlg_text = BattleTheme.make_label("", 26 if touch else 21, INK)
 	dlg_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dlg_text.custom_minimum_size = Vector2(900, 0)
 	vb.add_child(dlg_text)
-	dlg_hint = BattleTheme.make_label("TOCCA PER PROSEGUIRE" if touch else "INVIO / E / SPAZIO PER PROSEGUIRE", 15, BattleTheme.CY_DIM)
+	dlg_hint = BattleTheme.make_label("TOCCA PER PROSEGUIRE" if touch else "INVIO / E / SPAZIO PER PROSEGUIRE", 15, Color("#6b4a8a"))
 	dlg_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	vb.add_child(dlg_hint)
 	ui.add_child(dlg)
@@ -948,6 +1168,17 @@ func _build_ui() -> void:
 	pb.add_child(eb)
 	ui.add_child(pause_menu)
 
+	var halftone := ColorRect.new()
+	halftone.set_anchors_preset(Control.PRESET_FULL_RECT)
+	halftone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var hm := ShaderMaterial.new()
+	var hs := Shader.new()
+	hs.code = HALFTONE_CODE
+	hm.shader = hs
+	halftone.material = hm
+	halftone.visible = not Settings.light_fx
+	ui.add_child(halftone)
+	ui.move_child(halftone, 0)
 	flash = ColorRect.new()
 	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
 	flash.color = Color(1, 1, 1, 0)
@@ -962,6 +1193,23 @@ func _build_ui() -> void:
 	ui.resized.connect(_layout)
 	_layout()
 	_update_objective()
+
+
+func _comic_box(bg: Color, border: int, shadow: Color, off: Vector2, pad_px: int) -> StyleBoxFlat:
+	var b := StyleBoxFlat.new()
+	b.bg_color = bg
+	b.border_color = INK
+	b.set_border_width_all(border)
+	b.set_corner_radius_all(3)
+	b.content_margin_left = pad_px
+	b.content_margin_right = pad_px
+	b.content_margin_top = pad_px * 0.5
+	b.content_margin_bottom = pad_px * 0.5
+	if shadow.a > 0.0:
+		b.shadow_color = shadow
+		b.shadow_size = 1
+		b.shadow_offset = off
+	return b
 
 
 func _layout() -> void:
@@ -1215,10 +1463,7 @@ var _boss_ex: Label3D
 
 func _boss_excl() -> Label3D:
 	if _boss_ex == null:
-		_boss_ex = _text3d("!", Vector3(BOSS_POS.x, 6.2, BOSS_POS.y + 1.0), 160, Color("#ffd23f"), self, true)
-		_boss_ex.outline_size = 26
-		_boss_ex.outline_modulate = Color("#7a1010")
-		_boss_ex.no_depth_test = true
+		_boss_ex = _make_excl(Vector3(BOSS_POS.x, 6.6, BOSS_POS.y + 1.0), self, 170)
 	return _boss_ex
 
 
@@ -1373,8 +1618,8 @@ func _animate(_dt: float) -> void:
 			var m: StandardMaterial3D = mi.material_override
 			m.albedo_color.a = 0.9 if Settings.flash <= 0.0 else 0.65 + 0.3 * sin(_t * 3.0)
 	if boss_screen != null and not bool(WorldV2Ctx.defeated.get("distributore", false)):
-		var m2: StandardMaterial3D = boss_screen.material_override
-		m2.emission_energy_multiplier = 1.7 if Settings.flash <= 0.0 else 1.5 + 0.35 * sin(_t * 5.0)
+		var on: bool = Settings.flash <= 0.0 or int(_t * 3.0) % 2 == 0
+		(boss_screen.material_override as ShaderMaterial).set_shader_parameter("albedo", Color("#ffe14a") if on else Color("#fff3d6"))
 
 
 func _camera(dt: float, snap: bool) -> void:
@@ -1385,6 +1630,8 @@ func _camera(dt: float, snap: bool) -> void:
 	else:
 		cam.global_position = cam.global_position.lerp(pos, minf(1.0, 6.0 * dt))
 	cam.look_at(cam.global_position - CAM_OFF, Vector3.UP)
+	if Settings.shake > 0.0:
+		cam.rotate_object_local(Vector3.FORWARD, deg_to_rad(-2.5))
 
 
 func _hud(dt: float) -> void:
@@ -1399,7 +1646,7 @@ func _hud(dt: float) -> void:
 		_zone_t = 0.0
 	_zone_t += dt
 	# il nome della zona resta in alto ma si attenua dopo qualche secondo
-	zone_label.modulate.a = 1.0 if _zone_t < 3.0 else maxf(0.55, 1.0 - (_zone_t - 3.0) * 0.5)
+	zone_label.modulate.a = 1.0
 	# oggetto vicino
 	_near = _find_near() if mode == "walk" else {}
 	if _near.is_empty():
