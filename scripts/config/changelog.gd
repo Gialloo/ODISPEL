@@ -5,6 +5,9 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.10", "items": [
+		"TEST V2: corretto il blocco del gioco quando compare il '!' di un sorvegliante (la stella partiva da scala zero).",
+	]},
 	{"v": "0.28.9", "items": [
 		"TEST V2: mappa piu' leggera: gli edifici sono disegnati in blocco (circa 40% di disegni in meno a schermo).",
 		"TEST V2: prima di entrare in battaglia la mappa 3D viene liberata dalla memoria (contro i blocchi nel passaggio verso lo scontro col boss).",

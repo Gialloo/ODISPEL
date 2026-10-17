@@ -22,6 +22,7 @@ const BOSS_POS: Vector2 = Vector2(0.0, -35.5)
 const BOSS_AGGRO: float = 4.6
 const CAM_OFF: Vector3 = Vector3(0.0, 19.0, 24.0)    # camera ortografica a ~38 gradi: nessuna distorsione di prospettiva
 const CAM_SIZE: float = 11.5
+const EXCL_MIN_SCALE: float = 0.05
 const GATE_RECT: Rect2 = Rect2(-3.0, -15.4, 6.0, 0.8)
 
 # Zone camminabili (x, z, larghezza, profondita'); z negativa = nord
@@ -1559,7 +1560,7 @@ func _start_encounter(t: Dictionary) -> void:
 	else:
 		ex = _boss_excl()
 	ex.visible = true
-	ex.scale = Vector3.ZERO
+	ex.scale = Vector3.ONE * EXCL_MIN_SCALE      # mai zero: una matrice non invertibile puo' far cadere il driver grafico dei telefoni
 	Settings.buzz(35)
 	if Settings.flash > 0.0:
 		flash.color = Color(1, 1, 1, 0.38 * Settings.flash)
@@ -1582,7 +1583,7 @@ func _encounter_step(dt: float) -> void:
 	if mode == "exclaim":
 		var k: float = clampf(_enc_t / 0.28, 0.0, 1.0)
 		var s: float = 1.0 + 0.45 * sin(k * PI)         # piccolo rimbalzo
-		ex.scale = Vector3.ONE * (k * s)
+		ex.scale = Vector3.ONE * maxf(EXCL_MIN_SCALE, k * s)
 		var target: Vector2 = (_enc["pos"] as Vector2) if _enc.has("pos") else BOSS_POS
 		facing = -1.0 if target.x < player.x else 1.0
 		if _enc_t >= 0.95:

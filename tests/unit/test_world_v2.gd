@@ -66,6 +66,11 @@ func _run() -> void:
 		k += 1
 	ok(scn.mode == "exclaim", "il sorvegliante fa '!' (mode=%s)" % scn.mode)
 	ok((scn.trainers[0]["excl"] as Label3D).visible, "'!' visibile")
+	var minsc: float = 99.0
+	for i in range(14):
+		minsc = minf(minsc, (scn.trainers[0]["excl"] as Label3D).scale.x)
+		await create_timer(0.03).timeout
+	ok(minsc > 0.0, "scala del '!' mai zero (min=%.3f)" % minsc)
 	k = 0
 	while scn.mode != "dialog" and k < 120:
 		await create_timer(0.05).timeout
