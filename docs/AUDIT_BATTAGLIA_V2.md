@@ -3,7 +3,7 @@
 Data: 17/10/2026. Solo lettura: nessun codice di gameplay modificato. Questo file e' l'unica aggiunta del ramo.
 
 ## 0. Stato di partenza (verificato)
-- Ramo di lavoro: `claude/battaglia-v2-audit`, derivato da `claude/battaglia-v2` (commit `7dce870`, versione 0.28.1, cartella pulita). Riferimento congelato: tag `v2-baseline-0.28.1` su quel commit; le build 0.28.1 restano in `releases/` e le precedenti non sono toccate.
+- Ramo di lavoro: `claude/battaglia-v2-audit`, derivato da `claude/battaglia-v2` (commit `7dce870`, versione 0.28.1, cartella pulita). Riferimento congelato: ramo `claude/battaglia-v2-baseline-0.28.1` fermo su quel commit (il tag non si e' potuto pubblicare dal proxy); le build 0.28.1 restano in `releases/` e le precedenti non sono toccate.
 - Nota sul prompt originale: chiedeva di derivare da `claude/battaglia-chiara`. Quel ramo e' il combattimento classico (0.26.2) e non contiene la scena V2, quindi per il Test V2 si parte da `claude/battaglia-v2`. La scena classica `scenes/battle/` non e' stata toccata.
 - Scena: `scenes/battle_v2/battle_v2.gd`, 1778 righe, un solo file con classi interne (`_G`, `_Hero`, `_Boss`, `_Wheel`, `_Hud`, `_PaintBake`, `_Ring`, `_Fx`, `_Vignette`, `_U`). Motore: `SoloBattleSource` (allenamento, nessun premio) su `BattleResolver`, non modificato.
 
@@ -48,7 +48,7 @@ Data: 17/10/2026. Solo lettura: nessun codice di gameplay modificato. Questo fil
 - Stesso codice di disegno; la differenza di prestazioni reale (GPU del telefono) non e' misurata.
 
 ## 5. Piano di intervento nell'ordine piu' sicuro
-1. Congelare: tag `v2-baseline-0.28.1` (fatto) e non toccare `claude/battaglia-v2` finche' un gruppo non e' approvato.
+1. Congelare: ramo `claude/battaglia-v2-baseline-0.28.1` (fatto) e non toccare `claude/battaglia-v2` finche' un gruppo non e' approvato.
 2. Test prima delle modifiche (P1-8): file di test della scena V2, per avere una rete di sicurezza.
 3. Accessibilita' (P1-2): leggere `flash`, `shake`, `light_fx`, velocita'. Basso rischio.
 4. Annuncio del boss (P0-1) e debolezze (P1-3): lavoro di HUD, con varianti A/B/C confrontate (P1-7).
