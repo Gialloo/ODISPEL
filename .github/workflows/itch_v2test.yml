@@ -1,9 +1,9 @@
 # Pubblica su itch.io le versioni "mobile" e "pc" del ramo claude/battaglia-v2.
 #   - Nuove versioni: releases/ODISPEL mobile v.X.Y.Z.apk  e  releases/ODISPEL pc vX.Y.Z.zip
 #     canali android-mobile (APK) e windows-pc (zip).
-#   - Con "[itch-rename]" nel messaggio del commit si ricaricano anche le due serie precedenti con i nuovi nomi di file:
-#     ODISPEL-test-mobile / ODISPEL-test-pc (interfaccia di prova, canali android-v2test e windows-v2b)
-#     ODISPEL-old-mobile / ODISPEL-old-pc (versioni prima di tutti i cambiamenti, canali android e windows).
+#   - Con "[itch-rename]" nel messaggio del commit si ricaricano anche le serie precedenti, con i file rinominati:
+#     "(DEPRECATO) ODISPEL test mobile/pc v0.26.10" (canali android-v2test e windows-v2b)
+#     "(DEPRECATO) ODISPEL old mobile/pc v0.26.2" (canali android e windows).
 # I nomi dei canali su itch non si possono cambiare da butler: cambia il nome dei file caricati.
 name: Pubblica TEST V2 su itch.io
 
@@ -48,13 +48,14 @@ jobs:
           push "$apk" android-mobile "$ver"
           push "$zip" windows-pc "$ver"
           if echo "$MSG" | grep -q '\[itch-rename\]'; then
+            # versioni precedenti (altri canali): file rinominati "(DEPRECATO) nome vX" per non confondere chi scarica
             mkdir -p ren
-            cp releases/ODISPEL-0.26.10-v2test.apk ren/ODISPEL-test-mobile.apk
-            cp releases/ODISPEL-0.26.10-v2test-windows.zip ren/ODISPEL-test-pc.zip
-            cp releases/ODISPEL-0.26.2.apk ren/ODISPEL-old-mobile.apk
-            cp releases/ODISPEL-0.26.2-windows.zip ren/ODISPEL-old-pc.zip
-            push ren/ODISPEL-test-mobile.apk android-v2test 0.26.10-v2test
-            push ren/ODISPEL-test-pc.zip windows-v2b 0.26.10-v2test
-            push ren/ODISPEL-old-mobile.apk android 0.26.2
-            push ren/ODISPEL-old-pc.zip windows 0.26.2
+            cp releases/ODISPEL-0.26.10-v2test.apk "ren/(DEPRECATO) ODISPEL test mobile v0.26.10.apk"
+            cp releases/ODISPEL-0.26.10-v2test-windows.zip "ren/(DEPRECATO) ODISPEL test pc v0.26.10.zip"
+            cp releases/ODISPEL-0.26.2.apk "ren/(DEPRECATO) ODISPEL old mobile v0.26.2.apk"
+            cp releases/ODISPEL-0.26.2-windows.zip "ren/(DEPRECATO) ODISPEL old pc v0.26.2.zip"
+            push "ren/(DEPRECATO) ODISPEL test mobile v0.26.10.apk" android-v2test 0.26.10-DEPRECATO
+            push "ren/(DEPRECATO) ODISPEL test pc v0.26.10.zip" windows-v2b 0.26.10-DEPRECATO
+            push "ren/(DEPRECATO) ODISPEL old mobile v0.26.2.apk" android 0.26.2-DEPRECATO
+            push "ren/(DEPRECATO) ODISPEL old pc v0.26.2.zip" windows 0.26.2-DEPRECATO
           fi

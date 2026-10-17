@@ -5,6 +5,13 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.5", "items": [
+		"BATTAGLIA V2: ora si combatte a turni. Ogni operatore e il boss agiscono nel proprio turno, in ordine di velocita': scegli, l'azione si risolve subito, poi tocca al successivo.",
+		"BATTAGLIA V2: AUTO usa gli stessi turni: la camera passa da un personaggio all'altro e si vede chi agisce e con quale mossa.",
+		"BATTAGLIA V2: si vede la panchina (i 3 operatori di riserva) sopra la squadra.",
+		"BATTAGLIA V2: AUTO e velocita' non restano accesi quando inizi una nuova battaglia.",
+		"BATTAGLIA V2: scritte uguali unite (es. PURIFICATO x3) e feedback piu' ordinato.",
+	]},
 	{"v": "0.28.4", "items": [
 		"BATTAGLIA V2: ogni evento del combattimento ha una scritta chiara (critico, cura, scudo, schivata, K.O., rottura, fase, stati) e si legge chi agisce e con quale mossa.",
 		"BATTAGLIA V2: il round aspetta la fine delle scritte; quelle importanti restano piu' a lungo.",
