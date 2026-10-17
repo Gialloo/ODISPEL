@@ -41,6 +41,9 @@ class _G:
 	static var reserve_max: int = 6
 	static var cmds: Array = []
 	static var banner_title: String = ""
+	static var banner_tag: String = ""       # esito del colore per la mossa scelta (vuoto se la mossa non colpisce il boss)
+	static var banner_tag_mult: float = 1.0
+	static var matchup: Dictionary = {"show": false, "mult": 1.0, "att": "", "def": ""}
 	static var sel_p: float = 0.0
 	static var banner_sub: String = ""
 	static var auto_on: bool = false
@@ -469,6 +472,15 @@ func _desc(md: Dictionary, u: Dictionary) -> String:
 	return str(lines[0]).trim_suffix(".") if not lines.is_empty() else ""
 
 
+# Testo del vantaggio di colore (parole + numero del motore: non dipende solo dal colore)
+static func _match_text(m: float) -> String:
+	if m > 1.0:
+		return "EFFICACE x%s" % str(snappedf(m, 0.01))
+	if m < 1.0:
+		return "SFAVOREVOLE x%s" % str(snappedf(m, 0.01))
+	return "NEUTRO x1"
+
+
 # Annuncio della mossa del boss: solo dati che il motore ha gia' deciso (begin_round).
 # Visibile mentre il giocatore sceglie; nascosto a fine battaglia, durante la risoluzione del round e se il boss e' stordito (salta la mossa).
 func _tele_visible(b: Dictionary, mdef: Dictionary) -> bool:
@@ -502,7 +514,11 @@ func _refresh() -> void:
 	var tmove: String = str(tele.get("move", ""))
 	var mdef: Dictionary = BattleContent.BOSS_MOVES.get(tmove, {})
 	_G.boss = {"name": MissionConfig.boss_title(str(boss["char"])), "hp": int(boss["hp"]), "max": int(boss["max_hp"]), "bal": int(boss.get("balance", 0)), "bal_max": int(boss.get("balance_max", 1)), "heavy": not mdef.is_empty() and BattleResolver.is_heavy_boss_move(mdef), "move": str(mdef.get("name", tmove)), "target": _tele_target(b, mdef, str(tele.get("target", ""))), "show": _tele_visible(b, mdef)}
-	# squadra
+	# vantaggio di colore dell'operatore attivo contro il boss: lo calcola il motore (BattleTypes.color_multiplier), qui si mostra soltanto
+	var mu: Dictionary = _slot_unit(maxi(cur, 0))
+	var uc: String = str(mu.get("color", ""))
+	_G.matchup = {"show": cur >= 0 and not locked and not ended and str(b.get("winner", "")) == "" and uc != "" and BattleState.is_alive(boss), "mult": BattleTypes.color_multiplier(uc, str(boss["color"])), "att": uc, "def": str(boss["color"])}
+		# squadra
 	var party: Array = []
 	for i in slots.size():
 		var u: Dictionary = _slot_unit(i)
@@ -537,6 +553,10 @@ func _apply_pick() -> void:
 	if i >= 0:
 		_G.banner_title = str(_G.cmds[i]["title"])
 		_G.banner_sub = str(_G.cmds[i]["desc"])
+		var mv: Dictionary = BattleContent.MOVES.get(str(_G.cmds[i]["move"]), {})
+		var hits_boss: bool = str(mv.get("target", "")) == "enemy"
+		_G.banner_tag_mult = float(_G.matchup["mult"])
+		_G.banner_tag = _match_text(_G.banner_tag_mult) if hits_boss else ""
 	wheel_letters.glow = picked != ""
 	wheel_letters.picked = picked
 	wheel_letters.aura = _G.col
@@ -1371,6 +1391,15 @@ class _Hud extends Control:
 
 	var _bw := PackedFloat32Array()
 
+	# simbolo dell'esito: triangolo in su (efficace), in giu' (sfavorevole), barretta (neutro)
+	func _match_arrow(c: Vector2, m: float, col: Color) -> void:
+		if m > 1.0:
+			draw_colored_polygon(PackedVector2Array([c + Vector2(0, -8), c + Vector2(8, 6), c + Vector2(-8, 6)]), col)
+		elif m < 1.0:
+			draw_colored_polygon(PackedVector2Array([c + Vector2(0, 8), c + Vector2(8, -6), c + Vector2(-8, -6)]), col)
+		else:
+			draw_rect(Rect2(c + Vector2(-8, -2.5), Vector2(16, 5)), col)
+
 	func _draw_banner(cream: Color) -> void:
 		var title: String = _G.banner_title
 		var sub: String = _G.banner_sub
@@ -1386,6 +1415,12 @@ class _Hud extends Control:
 		_U.icon(self, BattleV2.ICON_OF.get(_G.picked, "bolt"), Vector2(bx + 36, by + 23), 28.0, _G.col)
 		_U.skew_text(self, Vector2(tx0, by + 33), title, 28, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 6)
 		_U.skew_text(self, Vector2(tx0, by + bh + 22), sub, 14, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+		if str(_G.banner_tag) != "":
+			var bm: float = float(_G.banner_tag_mult)
+			var bcol: Color = Color("#9dffb0") if bm > 1.0 else (Color("#ff8a78") if bm < 1.0 else cream)
+			var ty: float = by + bh + 22.0 + 24.0
+			_match_arrow(Vector2(tx0 + 8.0, ty - 5.0), bm, bcol)
+			_U.skew_text(self, Vector2(tx0 + 24.0, ty), str(_G.banner_tag) + " SUL BOSS", 15, cream, Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
 
 
 	func _draw_confirm(cream: Color) -> void:
@@ -1593,6 +1628,23 @@ class _Hud extends Control:
 			if lw > avail:
 				lsz = maxi(13, int(float(lsz) * avail / lw))
 			_U.skew_text(self, Vector2(tx_start, ty0 + 15.0 + 0.35 * float(lsz)), label, lsz, Color("#ffffff"), Color(0.25, 0.02, 0.0, 0.85) if heavy else Color(0.0, 0.05, 0.08, 0.9), BattleTheme.mono(), 6)
+		if bool(_G.matchup["show"]):
+			var mm: float = float(_G.matchup["mult"])
+			var my0: float = pl.end.y + 56.0
+			var mh: float = 26.0
+			var lt3: float = xl0 - kk * (my0 - ytop)
+			var rt3: float = xr0 - kk * (my0 - ytop)
+			var ccol: Color = Color("#9dffb0") if mm > 1.0 else (Color("#ff8a78") if mm < 1.0 else Color("#fffaf0"))
+			draw_colored_polygon(PackedVector2Array([Vector2(lt3, my0), Vector2(rt3, my0), Vector2(rt3 - kk * mh, my0 + mh), Vector2(lt3 - kk * mh, my0 + mh)]), Color(0.03, 0.08, 0.12, 0.82))
+			draw_polyline(PackedVector2Array([Vector2(lt3, my0), Vector2(rt3, my0), Vector2(rt3 - kk * mh, my0 + mh), Vector2(lt3 - kk * mh, my0 + mh), Vector2(lt3, my0)]), ccol, 1.6, true)
+			_match_arrow(Vector2(lt3 + 18.0, my0 + mh * 0.5), mm, ccol)
+			var mtxt: String = "%s SU %s · %s" % [str(_G.matchup["att"]).to_upper(), str(_G.matchup["def"]).to_upper(), BattleV2._match_text(mm)]
+			var msz: int = 15
+			var mavail: float = (rt3 - kk * mh) - (lt3 + 36.0) - 8.0
+			var mw: float = _U.text_w(mtxt, msz, BattleTheme.mono())
+			if mw > mavail:
+				msz = maxi(12, int(float(msz) * mavail / mw))
+			_U.skew_text(self, Vector2(lt3 + 34.0, my0 + mh * 0.5 + 0.35 * float(msz)), mtxt, msz, Color("#ffffff"), Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
 		# --- squadra: righe fisse (in basso F1), la riga attiva ha ritratto largo, etichetta F e linea ciano ---
 		var party: Array = _G.party
 		var n: int = party.size()
