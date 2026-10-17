@@ -30,9 +30,9 @@ jobs:
           zip=$(ls releases/ODISPEL-*-v2test-windows.zip | sort -V | tail -1)
           ver=$(basename "$apk" .apk | sed 's/ODISPEL-//')
           push() {
-            for n in 1 2 3; do
+            for n in 1 2 3 4 5 6 7 8; do
               if ./butler/butler push "$1" "$ITCH_TARGET:$2" --userversion "$ver" > out.txt 2>&1; then cat out.txt; return 0; fi
-              cat out.txt; sleep 20
+              cat out.txt; sleep 45
             done
             echo "::error::butler push $2 fallito: $(tail -c 400 out.txt | tr '\n' ' ')"
             return 1
