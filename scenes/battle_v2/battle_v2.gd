@@ -15,6 +15,11 @@ const BOSS_POS: Vector2 = Vector2(663, 172)
 const BOSS_ORIGIN: Vector2 = Vector2(40, 30)       # origine del disegno del boss dentro la sua texture
 const CONFIRM_RECT: Rect2 = Rect2(650, 586, 156, 40)
 const CANCEL_RECT: Rect2 = Rect2(650, 632, 156, 30)
+# PROVA (non ufficiale): energia rossa disegnata dal giocatore, mostrata quando si sceglie SKILL.
+#   "anim" = flusso continuo, "static" = immagine ferma, "off" = niente. Tasto E per cambiare durante la prova.
+const ENERGY_ORB := Vector2(325.0, 388.0)          # centro delle sfere nel ritaglio (px del disegno)
+const ENERGY_AT := Vector2(300.0, 412.0)           # dove cade quel centro sul palco
+const ENERGY_K: float = 0.93                       # scala del disegno sul palco
 const ICON_OF: Dictionary = {"ATTACK": "sword", "SKILL": "bolt", "ULTIMATE": "burst", "GUARD": "defense"}
 
 
@@ -68,6 +73,12 @@ var fx_t: float = 0.0
 var appear: float = 0.0
 var sel: float = 0.0
 var flash: float = 0.0
+var energy_mode: String = "anim"
+var energy: TextureRect
+var energy_embers: CPUParticles2D
+var energy_k: float = 0.0
+var _energy_t: float = 0.0
+var _energy_tween: Tween
 var _redraw_acc: float = 0.0
 var _last_cur: int = -99
 var intro_t: float = 0.0
@@ -158,6 +169,7 @@ func _ready() -> void:
 	hero.size = Vector2(420, 450)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world.add_child(hero)
+	_build_energy()
 	var vig := _Vignette.new()
 	vig.size = Vector2(W, H)
 	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -518,6 +530,8 @@ func _apply_pick() -> void:
 	fx.ult = picked == "ULTIMATE"
 	if picked != "":
 		flash = 1.0
+	if energy != null and (picked == "SKILL") != (energy_k > 0.5):
+		_energy_show(picked == "SKILL")
 	hero.queue_redraw()
 	wheel_letters.queue_redraw()
 	wheel_front.queue_redraw()
@@ -526,8 +540,109 @@ func _apply_pick() -> void:
 	sel_confirm.queue_redraw()
 
 
+# ---------- PROVA: energia rossa della SKILL ----------
+
+const ENERGY_SHADER := """
+shader_type canvas_item;
+render_mode blend_add;
+uniform float t = 0.0;
+uniform float amount = 1.0;   // 0 = immagine ferma, 1 = flusso
+uniform float fade = 1.0;
+void fragment() {
+	vec2 uv = UV;
+	float n = sin(uv.y * 34.0 + t * 5.0) * 0.5 + sin(uv.x * 27.0 - t * 4.0) * 0.5;
+	vec2 d = vec2(n * 0.006, cos(uv.x * 30.0 + t * 5.5) * 0.004) * amount;
+	vec4 c = texture(TEXTURE, uv + d);
+	float vein = smoothstep(0.45, 0.9, c.g) * (1.0 - smoothstep(0.55, 0.95, c.b));
+	float flow = 0.5 + 0.5 * sin((uv.x * 1.1 - uv.y * 0.8) * 24.0 - t * 8.0);
+	float pulse = 0.88 + 0.12 * sin(t * 7.0);
+	vec3 rgb = c.rgb * (1.0 + amount * vein * flow * 1.4) * mix(1.0, pulse, amount * 0.6);
+	COLOR = vec4(rgb * fade, 1.0);
+}
+"""
+
+
+func _build_energy() -> void:
+	var tex: Texture2D = ArtLibrary.texture("fx/energia_skill.png")
+	if tex == null:
+		return
+	energy = TextureRect.new()
+	energy.texture = tex
+	energy.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	energy.stretch_mode = TextureRect.STRETCH_SCALE
+	energy.size = tex.get_size() * ENERGY_K
+	energy.position = ENERGY_AT - ENERGY_ORB * ENERGY_K
+	energy.pivot_offset = ENERGY_ORB * ENERGY_K
+	energy.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sh := Shader.new()
+	sh.code = ENERGY_SHADER
+	var mat := ShaderMaterial.new()
+	mat.shader = sh
+	energy.material = mat
+	energy.visible = false
+	world.add_child(energy)
+	# faville che escono dalle punte delle fiamme (solo in modalita' animata)
+	energy_embers = CPUParticles2D.new()
+	energy_embers.position = energy.position
+	energy_embers.amount = 16
+	energy_embers.lifetime = 0.9
+	energy_embers.explosiveness = 0.0
+	energy_embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_POINTS
+	var tips := PackedVector2Array()
+	for tp in [Vector2(140, 15), Vector2(8, 320), Vector2(55, 595), Vector2(550, 485), Vector2(190, 215), Vector2(330, 300)]:
+		tips.append(tp * ENERGY_K)
+	energy_embers.emission_points = tips
+	energy_embers.direction = Vector2(-0.3, -1.0)
+	energy_embers.spread = 70.0
+	energy_embers.gravity = Vector2(0, -40)
+	energy_embers.initial_velocity_min = 40.0
+	energy_embers.initial_velocity_max = 110.0
+	energy_embers.scale_amount_min = 2.0
+	energy_embers.scale_amount_max = 4.5
+	energy_embers.color = Color("#ff8a3a")
+	var em := CanvasItemMaterial.new()
+	em.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	energy_embers.material = em
+	energy_embers.emitting = false
+	world.add_child(energy_embers)
+
+
+# Mostra o nasconde l'energia con un ingresso a rimbalzo (come le pennellate).
+func _energy_show(on: bool) -> void:
+	if energy == null:
+		return
+	if _energy_tween != null:
+		_energy_tween.kill()
+	var target: float = 1.0 if (on and energy_mode != "off") else 0.0
+	energy.visible = true
+	_energy_tween = create_tween()
+	if target > energy_k:
+		_energy_tween.tween_property(self, "energy_k", target, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	else:
+		_energy_tween.tween_property(self, "energy_k", target, 0.18)
+	energy_embers.emitting = target > 0.0 and energy_mode == "anim" and not Settings.light_fx
+
+
+func _energy_step(delta: float) -> void:
+	if energy == null:
+		return
+	_energy_t += delta
+	var k: float = clampf(energy_k, 0.0, 1.5)
+	if k <= 0.002:
+		energy.visible = false
+		return
+	energy.visible = true
+	var m: ShaderMaterial = energy.material
+	m.set_shader_parameter("t", _energy_t)
+	m.set_shader_parameter("amount", 1.0 if (energy_mode == "anim" and not Settings.light_fx) else 0.0)
+	m.set_shader_parameter("fade", clampf(k, 0.0, 1.0))
+	energy.scale = Vector2.ONE * (0.82 + 0.18 * k)
+	energy_embers.modulate.a = clampf(k, 0.0, 1.0)
+
+
 # Animazione continua: ingresso delle pennellate, flusso, oscuramento della scelta
 func _process(delta: float) -> void:
+	_energy_step(delta)
 	fx_t += delta
 	appear = move_toward(appear, 1.0, delta / 0.9)
 	var tgt: float = 1.0 if picked != "" else 0.0
@@ -651,6 +766,10 @@ func _unhandled_key_input(ev: InputEvent) -> void:
 		KEY_2: _select(1)
 		KEY_3: _select(2)
 		KEY_4: _select(3)
+		KEY_E:
+			energy_mode = {"anim": "static", "static": "off", "off": "anim"}[energy_mode]
+			Notify.toast("ENERGIA (prova): " + energy_mode)
+			_energy_show(picked == "SKILL")
 		KEY_ENTER, KEY_KP_ENTER, KEY_SPACE: _confirm()
 		KEY_ESCAPE:
 			if picked != "":
