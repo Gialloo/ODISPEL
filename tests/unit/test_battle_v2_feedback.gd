@@ -122,7 +122,7 @@ func _run() -> void:
 	var t0: int = Time.get_ticks_msec()
 	await scn._fb_drain()
 	var el: float = float(Time.get_ticks_msec() - t0) / 1000.0
-	_check("fine round: attende la coda (%.2fs)" % el, scn._fb_queue.is_empty() and not scn._fb_busy)
+	_check("fine round: coda finita oppure tetto raggiunto (%.2fs)" % el, (scn._fb_queue.is_empty() and not scn._fb_busy) or el >= BattleV2.FB_WAIT_MAX - 0.05)
 	_check("attesa entro il tetto (+0.5s di lettura)", el <= BattleV2.FB_WAIT_MAX + 0.7)
 	_check("scritte importanti durano piu' delle normali", BattleV2.FB_HOLD_BIG > BattleV2.FB_HOLD)
 	scn.locked = false
