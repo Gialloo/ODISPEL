@@ -201,6 +201,7 @@ func _ready() -> void:
 	src.battle_events_received.connect(_on_events)
 	src.start(RosterStore.load_or_new(), "distributore", int(randi()) | 1, 0)
 	slots = src.my_slots()
+	_charge_ult()
 	_next_slot(-1)
 	_refresh()
 
@@ -782,6 +783,19 @@ func _auto_round() -> void:
 	await _after_round()
 
 
+# SOLO PER I TEST: tutti i personaggi hanno sempre la ultimate carica (a inizio battaglia e a ogni round)
+const TEST_ULT_SEMPRE: bool = true
+
+
+func _charge_ult() -> void:
+	if not TEST_ULT_SEMPRE:
+		return
+	var units: Dictionary = _battle().get("units", {})
+	for uid in units:
+		if str(uid) != BattleState.BOSS_ID:
+			units[uid]["gauge"] = BattleTypes.GAUGE_MAX
+
+
 func _after_round() -> void:
 	await get_tree().create_timer(0.9 / float(_G.speed)).timeout
 	if not is_inside_tree():
@@ -795,6 +809,7 @@ func _after_round() -> void:
 		_refresh()
 		_show_result(w == "players")
 		return
+	_charge_ult()
 	_next_slot(-1)
 	locked = false
 	_refresh()
