@@ -15,6 +15,7 @@ const BOSS_POS: Vector2 = Vector2(663, 172)
 const BOSS_ORIGIN: Vector2 = Vector2(40, 30)       # origine del disegno del boss dentro la sua texture
 const CONFIRM_RECT: Rect2 = Rect2(650, 586, 156, 40)
 const CANCEL_RECT: Rect2 = Rect2(650, 632, 156, 30)
+const CUT_FRAMES: int = 4     # durata dell'esplosione nera dell'ultimate, in fotogrammi
 var ult_cut: int = 0          # fotogrammi restanti dell'esplosione nera dell'ultimate
 var ult_hold: bool = false    # solo per gli screenshot di prova
 var cut_root: Control         # velo nero + esplosione, sopra a tutto (visibile solo i 2 fotogrammi dell'ultimate)
@@ -751,7 +752,7 @@ func _confirm() -> void:
 	zoom_v += 0.65
 	flash = 1.0
 	if picked == "ULTIMATE":
-		ult_cut = 2
+		ult_cut = CUT_FRAMES
 		ult_col = _G.col
 	Settings.buzz(70 if picked == "ULTIMATE" else 30)
 	picked = ""
@@ -1939,22 +1940,22 @@ func _cut_blob(tex: Texture2D, d: float, mat: Material) -> TextureRect:
 	return t
 
 
-# 2 fotogrammi: tutto nero, scie e nucleo nel colore del personaggio che esplodono; poi si torna al combattimento
+# 4 fotogrammi: tutto nero, scie e nucleo nel colore del personaggio che esplodono; poi si torna al combattimento
 func _cut_step() -> void:
 	if ult_cut <= 0:
 		if cut_root.visible:
 			cut_root.visible = false
 		return
-	var k: float = 1.0 - float(ult_cut) * 0.5          # 0 al primo fotogramma, 0.5 al secondo
+	var u: float = 0.5 + 0.5 * float(CUT_FRAMES - ult_cut) / float(CUT_FRAMES - 1)   # 0.5 al primo fotogramma, 1 all'ultimo
 	if not cut_root.visible:
 		(cut_fx.material as ShaderMaterial).set_shader_parameter("tint", ult_col.lightened(0.12))
 		cut_glow.modulate = Color(ult_col.lightened(0.05), 0.85)
 		cut_core.modulate = Color(ult_col.lerp(Color.WHITE, 0.55), 1.0)
 		cut_root.visible = true
-	var sc: float = 0.9 + 0.35 * (k + 0.5) if not ult_hold else 1.15
+	var sc: float = 0.9 + 0.35 * u if not ult_hold else 1.15
 	cut_fx.scale = Vector2(sc, sc)
-	cut_glow.scale = Vector2(0.9 + 0.5 * (k + 0.5), 0.9 + 0.5 * (k + 0.5))
-	cut_core.scale = Vector2(1.0, 1.0) * (0.85 + 0.3 * (k + 0.5))
+	cut_glow.scale = Vector2(1.0, 1.0) * (0.9 + 0.5 * u)
+	cut_core.scale = Vector2(1.0, 1.0) * (0.85 + 0.3 * u)
 	if not ult_hold:
 		ult_cut -= 1
 

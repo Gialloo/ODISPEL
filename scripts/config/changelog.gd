@@ -5,6 +5,9 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.3", "items": [
+		"BATTAGLIA V2: l'esplosione nera dell'ultimate dura 4 fotogrammi invece di 2, cosi' si vede meglio.",
+	]},
 	{"v": "0.28.2", "items": [
 		"BATTAGLIA V2: quando lanci l'ultimate, per 2 fotogrammi lo schermo diventa nero con scie di luce del colore del personaggio, nucleo luminoso e comandi a punti bianchi.",
 		"TEST V2: interruttore ULTI (in alto, o tasto U) per avere sempre la ultimate carica a ogni round.",
