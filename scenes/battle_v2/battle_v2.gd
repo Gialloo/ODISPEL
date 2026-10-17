@@ -920,11 +920,60 @@ func _fb_anchor(uid: String) -> Variant:
 	return null
 
 
+# Nome e colore di un'unita' dal motore (solo lettura)
+func _fb_who(uid: String) -> Dictionary:
+	var u: Dictionary = BattleState.unit(_battle(), uid)
+	if u.is_empty() or uid == BattleState.BOSS_ID:
+		return {}
+	return {"name": str(u.get("name", "")).to_upper(), "col": BattleTheme.unit_color(str(u.get("color", "")))}
+
+
+# " · NOME" quando cura/scudo arrivano da un altro personaggio (aiuto dalla panchina)
+func _fb_from(e: Dictionary) -> String:
+	var src_id: String = str(e.get("src", ""))
+	if src_id == "" or src_id == str(e.get("dst", "")):
+		return ""
+	var w: Dictionary = _fb_who(src_id)
+	return "" if w.is_empty() else " · " + str(w["name"])
+
+
 func _fb_item(e: Dictionary) -> Dictionary:
 	var t: String = str(e.get("t", ""))
 	var uid: String = str(e.get("unit", e.get("dst", "")))
 	var item: Dictionary = {"text": "", "col": Color.WHITE, "size": 32, "w": 1, "kick": 0.0, "boss_hit": false, "at": null}
 	match t:
+		"act":
+			# chi agisce e con quale mossa (didascalia piccola, peso basso)
+			var who: Dictionary = _fb_who(str(e.get("unit", "")))
+			var mv: String = BattleText.move_name(str(e.get("move", "")))
+			if who.is_empty() or mv == "":
+				return {}
+			item["text"] = "%s · %s" % [who["name"], mv]
+			item["col"] = Color(who["col"]).lightened(0.35)
+			item["size"] = 22
+			item["w"] = 2
+			item["at"] = Vector2(400, 125)      # didascalia in alto, lontano dalla squadra e dai numeri
+		"boss_move":
+			var bm: String = BattleText.move_name(str(e.get("move", "")))
+			if bm == "":
+				return {}
+			uid = BattleState.BOSS_ID
+			item["text"] = bm
+			item["col"] = Color("#ff9a6a")
+			item["size"] = 28
+			item["w"] = 3
+			item["at"] = Vector2(930, 120)
+		"tenacity":
+			item["text"] = "TENACIA!"
+			item["col"] = Color("#ffd23a")
+			item["size"] = 40
+			item["w"] = 8
+			item["kick"] = 60.0
+		"link":
+			item["text"] = "COMBO"
+			item["col"] = Color("#fff36b")
+			item["size"] = 34
+			item["w"] = 5
 		"damage":
 			var amount: int = int(e.get("amount", 0))
 			var absorbed: int = int(e.get("absorbed", 0))
@@ -933,6 +982,10 @@ func _fb_item(e: Dictionary) -> Dictionary:
 				return {}
 			var boss_side: bool = uid == BattleState.BOSS_ID
 			item["col"] = Color("#fff36b") if boss_side else Color("#ff7a6a")
+			if boss_side:
+				var dw: Dictionary = _fb_who(str(e.get("src", "")))
+				if not dw.is_empty():
+					item["col"] = Color(dw["col"]).lightened(0.45)     # il colore dice chi ha colpito
 			if amount <= 0:
 				item["text"] = "ASSORBITO"
 				item["col"] = Color("#7fdcec")
@@ -953,14 +1006,14 @@ func _fb_item(e: Dictionary) -> Dictionary:
 			if int(e.get("amount", 0)) <= 0:
 				return {}
 			uid = str(e.get("dst", ""))
-			item["text"] = "+%d" % int(e["amount"])
+			item["text"] = "+%d" % int(e["amount"]) + _fb_from(e)
 			item["col"] = Color("#7dffb0")
 			item["w"] = 4
 		"shield":
 			if int(e.get("amount", 0)) <= 0:
 				return {}
 			uid = str(e.get("dst", ""))
-			item["text"] = "SCUDO +%d" % int(e["amount"])
+			item["text"] = "SCUDO +%d" % int(e["amount"]) + _fb_from(e)
 			item["col"] = Color("#7fdcec")
 			item["w"] = 3
 		"dodge":
@@ -1072,7 +1125,7 @@ func _fb_show(it: Dictionary) -> void:
 	for n in get_tree().get_nodes_in_group("v2_fb"):
 		if n is Control and absf((n as Control).position.x - at.x) < 260.0 and absf((n as Control).position.y - at.y) < 120.0:
 			near += 1
-	at.y -= float(mini(near, 3)) * 46.0
+	at.y -= float(mini(near, 2)) * 40.0
 	# eventi importanti (K.O., rottura, fase, critico) restano in vista piu' a lungo
 	_float_text(str(it["text"]), at, Color(it["col"]), int(it["size"]), FB_HOLD_BIG if int(it["w"]) >= 8 else FB_HOLD)
 	var kick: float = float(it["kick"]) * _shk()

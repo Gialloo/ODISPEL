@@ -49,6 +49,20 @@ func _run() -> void:
 	for c in cases:
 		var it: Dictionary = scn._fb_item(c[0])
 		_check("evento %s -> '%s'" % [c[0]["t"], c[1]], not it.is_empty() and str(it["text"]).contains(c[1]))
+	# esito delle azioni: chi agisce, mossa del boss, tenacia, combo, aiuto dalla panchina, colore per eroe
+	var hero2: String = str(scn._slot_unit(1)["id"])
+	var hn: String = str(scn._slot_unit(0)["name"]).to_upper()
+	var act: Dictionary = scn._fb_item({"t": "act", "unit": hero, "move": "attack"})
+	_check("act: 'NOME · MOSSA'", str(act.get("text", "")).begins_with(hn + " · ") and int(act.get("w", 9)) <= 2)
+	_check("act senza mossa nota: nessuna scritta", scn._fb_item({"t": "act", "unit": hero, "move": ""}).is_empty())
+	_check("boss_move: nome mossa sul boss", str(scn._fb_item({"t": "boss_move", "move": "scarica"}).get("text", "")) == BattleText.move_name("scarica"))
+	_check("tenacia", str(scn._fb_item({"t": "tenacity", "unit": hero}).get("text", "")) == "TENACIA!")
+	_check("combo", str(scn._fb_item({"t": "link", "unit": hero, "with": hero2, "kind": "cross"}).get("text", "")) == "COMBO")
+	_check("scudo da un altro: indica chi", str(scn._fb_item({"t": "shield", "src": hero2, "dst": hero, "amount": 50}).get("text", "")).contains(" · "))
+	_check("scudo a se stesso: senza nome", not str(scn._fb_item({"t": "shield", "src": hero, "dst": hero, "amount": 50}).get("text", "")).contains(" · "))
+	var d1: Dictionary = scn._fb_item({"t": "damage", "src": hero, "dst": boss, "amount": 100})
+	var d2: Dictionary = scn._fb_item({"t": "damage", "src": hero2, "dst": boss, "amount": 100})
+	_check("danno al boss: colore diverso per eroe", Color(d1["col"]) != Color(d2["col"]))
 	# niente scritte vuote o inventate
 	_check("danno zero senza assorbito: nessuna scritta", scn._fb_item({"t": "damage", "src": hero, "dst": boss, "amount": 0, "absorbed": 0}).is_empty())
 	_check("cura zero: nessuna scritta", scn._fb_item({"t": "heal", "src": hero, "dst": hero, "amount": 0}).is_empty())
