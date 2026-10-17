@@ -27,7 +27,15 @@ jobs:
       - name: Carica APK e zip di prova
         run: |
           apk=$(ls releases/ODISPEL-*-v2test.apk | sort -V | tail -1)
-          ver=$(basename "$apk" .apk | sed 's/ODISPEL-//')
-          ./butler/butler push "$apk" "$ITCH_TARGET:android-v2test" --userversion "$ver"
           zip=$(ls releases/ODISPEL-*-v2test-windows.zip | sort -V | tail -1)
-          ./butler/butler push "$zip" "$ITCH_TARGET:windows-v2test" --userversion "$ver"
+          ver=$(basename "$apk" .apk | sed 's/ODISPEL-//')
+          push() {
+            for n in 1 2 3; do
+              if ./butler/butler push "$1" "$ITCH_TARGET:$2" --userversion "$ver" > out.txt 2>&1; then cat out.txt; return 0; fi
+              cat out.txt; sleep 20
+            done
+            echo "::error::butler push $2 fallito: $(tail -c 400 out.txt | tr '\n' ' ')"
+            return 1
+          }
+          push "$apk" android-v2test
+          push "$zip" windows-v2test
