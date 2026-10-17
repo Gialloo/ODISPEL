@@ -501,9 +501,27 @@ func _tele_target(b: Dictionary, mdef: Dictionary, target_id: String) -> String:
 	return str(BattleState.unit(b, str(p["active"])).get("name", "")).to_upper()
 
 
+# Cambio di personaggio attivo: la camera scivola verso il nuovo (avanti = destra, indietro/nuovo round = sinistra)
+# e l'operatore entra dallo stesso lato. Con le scosse a 0 resta solo la dissolvenza (niente movimento di camera).
+var hero_off: float = 0.0
+var hero_in: float = 1.0
+
+
+func _switch_feedback(prev: int) -> void:
+	var dir: float = 1.0 if (prev >= 0 and cur > prev) else -1.0
+	cam.x += -dir * 64.0 * _shk()
+	cam_v.x += -dir * 120.0 * _shk()
+	hero_off = dir * 70.0 * minf(1.0, _shk() * 2.0)
+	hero_in = 0.0
+	Settings.buzz(12)
+
+
 func _refresh() -> void:
 	if cur != _last_cur:
+		var prev_cur: int = _last_cur
 		_last_cur = cur
+		if prev_cur != -99 and cur >= 0 and not ended:
+			_switch_feedback(prev_cur)
 		appear = 0.0
 		intro_t = 0.0
 		if wheel_front != null:
@@ -593,7 +611,11 @@ func _process(delta: float) -> void:
 	dim.color = Color(0.01, 0.0, 0.05, (0.84 if ult else 0.6) * e)
 	if boss_rect != null:
 		boss_rect.modulate = Color.WHITE.lerp(Color(0.42, 0.42, 0.55), e)
+	hero_off = lerpf(hero_off, 0.0, 1.0 - exp(-delta * 6.5))
+	hero_in = move_toward(hero_in, 1.0, delta / 0.28)
+	hero.position = Vector2(179.0 + hero_off, 180.0)
 	hero.modulate = Color.WHITE.lerp(Color(0.92, 0.92, 1.0) if ult else Color(0.5, 0.5, 0.62), e)
+	hero.modulate.a = 0.25 + 0.75 * hero_in
 	if glow_rect != null:
 		glow_rect.modulate = boss_rect.modulate
 		(glow_rect.material as ShaderMaterial).set_shader_parameter("k", 1.0 + 0.6 * e)
