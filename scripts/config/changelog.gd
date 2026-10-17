@@ -5,6 +5,10 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.9", "items": [
+		"TEST V2: mappa piu' leggera: gli edifici sono disegnati in blocco (circa 40% di disegni in meno a schermo).",
+		"TEST V2: prima di entrare in battaglia la mappa 3D viene liberata dalla memoria (contro i blocchi nel passaggio verso lo scontro col boss).",
+	]},
 	{"v": "0.28.8", "items": [
 		"TEST V2: nuova camera della mappa, ortografica e inclinata (stile TWEWY): niente piu' distorsione, personaggi piu' leggibili, la visuale guarda un po' avanti.",
 		"TEST V2: gli edifici davanti alla camera si abbassano, cosi' non coprono mai il percorso.",

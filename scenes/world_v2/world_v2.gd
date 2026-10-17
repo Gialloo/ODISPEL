@@ -64,12 +64,15 @@ uniform vec4 albedo : source_color = vec4(1.0);
 uniform sampler2D tex : source_color, filter_linear_mipmap, repeat_enable;
 uniform bool use_tex = false;
 uniform bool flat_color = false;
+uniform bool use_vcol = false;
 uniform vec2 uv_scale = vec2(1.0, 1.0);
 uniform vec3 light_dir = vec3(-0.5, 0.85, 0.45);
 varying vec3 wn;
-void vertex() { wn = normalize((MODEL_NORMAL_MATRIX * NORMAL)); }
+varying vec4 vcol;
+void vertex() { wn = normalize((MODEL_NORMAL_MATRIX * NORMAL)); vcol = COLOR; }
 void fragment() {
 	vec3 c = albedo.rgb;
+	if (use_vcol) { c *= vcol.rgb; }
 	if (use_tex) { c *= texture(tex, UV * uv_scale).rgb; }
 	if (!flat_color) {
 		float d = dot(normalize(wn), normalize(light_dir));
@@ -332,6 +335,7 @@ func _window_tex(seed_v: int) -> Texture2D:
 			img.fill_rect(Rect2i(x0, y0, 24, 26), fills[rng.randi() % fills.size()])
 	img.fill_rect(Rect2i(0, 0, 128, 8), INK)
 	img.fill_rect(Rect2i(0, 248, 128, 8), INK)
+	# (la striscia 9..22 resta bianca: i tetti campionano li')
 	return ImageTexture.create_from_image(img)
 
 
@@ -491,6 +495,7 @@ func _lamp(p: Vector3, c: Color, _with_light: bool) -> void:
 
 
 func _build_walls() -> void:
+	_batch_begin()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 424242
 	var names: Array = ["OSTERIA DA NINO", "TABACCHI 24H", "LIBRACORP", "FARMACIA", "RONDINI BAR", "MAGA·MARKET", "KAIROS?", "ELETTRO NODO", "NOODLE"]
@@ -530,12 +535,10 @@ func _build_walls() -> void:
 						depth = 0.6
 						mid = _edge_point(r, side, pos + w * 0.5, depth * 0.5)
 					var size3: Vector3 = Vector3(w, h, depth) if horizontal else Vector3(depth, h, w)
-					var bm: ShaderMaterial = _mat(POP[rng.randi() % POP.size()], 0.0, 0.14)
-					bm.set_shader_parameter("use_tex", true)
-					bm.set_shader_parameter("tex", _wmats[rng.randi() % _wmats.size()])
-					bm.set_shader_parameter("uv_scale", Vector2(maxf(1.0, w / 3.4), maxf(0.6, h / 6.8)))
-					_box(Vector3(mid.x, h * 0.5, mid.y), size3, bm)
-					_box(Vector3(mid.x, h + 0.1, mid.y), Vector3(size3.x + 0.2, 0.2, size3.z + 0.2), _mat(POP[(rng.randi() + 2) % POP.size()], 0.0, 0.07))
+					var uvk := Vector2(maxf(1.0, w / 3.4), maxf(0.6, h / 6.8))
+					var uvo := Vector2(rng.randf(), rng.randf() * 0.5)
+					_batch_box(Vector3(mid.x, h * 0.5, mid.y), size3, POP[rng.randi() % POP.size()], uvk, uvo, 0.14)
+					_batch_box(Vector3(mid.x, h + 0.1, mid.y), Vector3(size3.x + 0.2, 0.2, size3.z + 0.2), POP[(rng.randi() + 2) % POP.size()], Vector2.ZERO, Vector2.ZERO, 0.07)
 					# insegna sulle facce rivolte a sud (le piu' visibili) e qualche volta sulle altre
 					if side == 0 and h > 5.5 and w > 2.8 and rng.randf() < 0.55:
 						var col: Color = sign_cols[ni % sign_cols.size()]
@@ -544,6 +547,103 @@ func _build_walls() -> void:
 						ni += 1
 					pos += w
 				cur = run_end
+	_batch_flush()
+
+
+# ---- edifici in un solo mesh (tutti i corpi) e un solo mesh di contorni: poche decine di disegni invece di centinaia ----
+var _bst: SurfaceTool
+var _ost: SurfaceTool
+
+
+func _batch_begin() -> void:
+	_bst = SurfaceTool.new()
+	_bst.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_ost = SurfaceTool.new()
+	_ost.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+
+func _quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, col: Color, uv: Array) -> void:
+	# ordine dei vertici: oraria vista da fuori (convenzione di Godot)
+	var tri: Array = [[a, b, c, 0, 1, 2], [a, c, d, 0, 2, 3]]
+	for t in tri:
+		var va: Vector3 = t[0]
+		var vb: Vector3 = t[1]
+		var vc: Vector3 = t[2]
+		var ia: int = t[3]
+		var ib: int = t[4]
+		var ic: int = t[5]
+		if (vb - va).cross(vc - va).dot(n) > 0.0:
+			var tmp: Vector3 = vb
+			vb = vc
+			vc = tmp
+			var ti: int = ib
+			ib = ic
+			ic = ti
+		for pr in [[va, ia], [vb, ib], [vc, ic]]:
+			st.set_normal(n)
+			st.set_color(col)
+			st.set_uv(uv[pr[1]])
+			st.add_vertex(pr[0])
+
+
+func _batch_box(c: Vector3, sz: Vector3, col: Color, uvk: Vector2, uvo: Vector2, outline: float) -> void:
+	var hx: float = sz.x * 0.5
+	var hy: float = sz.y * 0.5
+	var hz: float = sz.z * 0.5
+	var roof: bool = uvk == Vector2.ZERO
+	var ru := Vector2(0.5, 0.075)
+	# facce laterali: u lungo l'orizzontale, v in altezza (finestre ripetute); sopra/sotto: striscia bianca
+	var faces: Array = [
+		[Vector3(0, 0, 1), Vector3(-hx, -hy, hz), Vector3(hx, -hy, hz), Vector3(hx, hy, hz), Vector3(-hx, hy, hz), sz.x],
+		[Vector3(0, 0, -1), Vector3(hx, -hy, -hz), Vector3(-hx, -hy, -hz), Vector3(-hx, hy, -hz), Vector3(hx, hy, -hz), sz.x],
+		[Vector3(1, 0, 0), Vector3(hx, -hy, hz), Vector3(hx, -hy, -hz), Vector3(hx, hy, -hz), Vector3(hx, hy, hz), sz.z],
+		[Vector3(-1, 0, 0), Vector3(-hx, -hy, -hz), Vector3(-hx, -hy, hz), Vector3(-hx, hy, hz), Vector3(-hx, hy, -hz), sz.z],
+		[Vector3(0, 1, 0), Vector3(-hx, hy, hz), Vector3(hx, hy, hz), Vector3(hx, hy, -hz), Vector3(-hx, hy, -hz), 0.0],
+		[Vector3(0, -1, 0), Vector3(-hx, -hy, -hz), Vector3(hx, -hy, -hz), Vector3(hx, -hy, hz), Vector3(-hx, -hy, hz), 0.0],
+	]
+	for f in faces:
+		var uv: Array
+		if f[5] == 0.0 or roof:
+			uv = [ru, ru, ru, ru]
+		else:
+			var u1: float = float(f[5]) / 3.4
+			var v1: float = sz.y / 6.8
+			uv = [Vector2(uvo.x, uvo.y + v1), Vector2(uvo.x + u1, uvo.y + v1), Vector2(uvo.x + u1, uvo.y), Vector2(uvo.x, uvo.y)]
+		_quad(_bst, c + (f[1] as Vector3), c + (f[2] as Vector3), c + (f[3] as Vector3), c + (f[4] as Vector3), f[0], col, uv)
+	# contorno: stesso box ingrandito (si vede solo il retro, dietro al corpo)
+	var e := Vector3(outline, outline, outline)
+	var ox: float = hx + e.x
+	var oy: float = hy + e.y
+	var oz: float = hz + e.z
+	var ofaces: Array = [
+		[Vector3(0, 0, 1), Vector3(-ox, -oy, oz), Vector3(ox, -oy, oz), Vector3(ox, oy, oz), Vector3(-ox, oy, oz)],
+		[Vector3(0, 0, -1), Vector3(ox, -oy, -oz), Vector3(-ox, -oy, -oz), Vector3(-ox, oy, -oz), Vector3(ox, oy, -oz)],
+		[Vector3(1, 0, 0), Vector3(ox, -oy, oz), Vector3(ox, -oy, -oz), Vector3(ox, oy, -oz), Vector3(ox, oy, oz)],
+		[Vector3(-1, 0, 0), Vector3(-ox, -oy, -oz), Vector3(-ox, -oy, oz), Vector3(-ox, oy, oz), Vector3(-ox, oy, -oz)],
+		[Vector3(0, 1, 0), Vector3(-ox, oy, oz), Vector3(ox, oy, oz), Vector3(ox, oy, -oz), Vector3(-ox, oy, -oz)],
+		[Vector3(0, -1, 0), Vector3(-ox, -oy, -oz), Vector3(ox, -oy, -oz), Vector3(ox, -oy, oz), Vector3(-ox, -oy, oz)],
+	]
+	var z4: Array = [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
+	for f in ofaces:
+		_quad(_ost, c + (f[1] as Vector3), c + (f[2] as Vector3), c + (f[3] as Vector3), c + (f[4] as Vector3), f[0], INK, z4)
+
+
+func _batch_flush() -> void:
+	var body := MeshInstance3D.new()
+	body.mesh = _bst.commit()
+	var m: ShaderMaterial = _mat(Color.WHITE, 0.0, 0.0)
+	m.set_shader_parameter("use_vcol", true)
+	m.set_shader_parameter("use_tex", true)
+	m.set_shader_parameter("tex", _wmats[0])
+	body.material_override = m
+	add_child(body)
+	var line := MeshInstance3D.new()
+	line.mesh = _ost.commit()
+	var lm := ShaderMaterial.new()
+	lm.shader = _line_sh
+	lm.set_shader_parameter("w", 0.0)
+	line.material_override = lm
+	add_child(line)
 
 
 func _occludes(c: Vector2, h: float) -> bool:
@@ -1528,7 +1628,24 @@ func _launch_battle(id: String) -> void:
 	WorldV2Ctx.facing = facing
 	var tw := create_tween()
 	tw.tween_property(fade, "color:a", 1.0, 0.3)
-	tw.tween_callback(func() -> void: SceneRouter.go("battle_v2", true))
+	tw.tween_callback(_handoff)
+
+
+# Prima di caricare la battaglia si libera la mappa 3D (mesh, texture, ambiente) con lo schermo gia' coperto dalla dissolvenza:
+# il picco di memoria video resta quello della sola battaglia (su telefono evita di tenere insieme le due scene).
+func _handoff() -> void:
+	set_process(false)
+	set_process_input(false)
+	_sprite_cache.clear()
+	_burst = null
+	for c in get_children():
+		if c is Node3D or c is WorldEnvironment:
+			c.queue_free()
+	cam = null
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if is_inside_tree():
+		SceneRouter.go("battle_v2", true)
 
 
 # ---------------------------------------------------------------- ciclo
