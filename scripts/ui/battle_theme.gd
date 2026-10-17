@@ -110,7 +110,10 @@ static func make_label(text: String, size: int = 16, color: Color = CY, use_disp
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_override("font", display() if use_display else mono())
-	l.add_theme_font_size_override("font_size", int(round(float(size) * (1.0 if use_display else TEXT_SCALE))))
+	var fsz: int = int(round(float(size) * (1.0 if use_display else TEXT_SCALE)))
+	if TouchUi.active():
+		fsz = maxi(int(round(float(fsz) * (1.0 if use_display or size >= 26 else 1.15))), 16)    # telefono: testo piccolo piu' grande, mai sotto 16
+	l.add_theme_font_size_override("font_size", fsz)
 	l.add_theme_color_override("font_color", color)
 	if not use_display:
 		# ombra netta: il testo piccolo resta leggibile su qualsiasi sfondo

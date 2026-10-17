@@ -5,6 +5,12 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.1", "items": [
+		"TEST V2: nuova schermata SQUADRA (stile Ashen Vow) prima del combattimento: scegli la squadra, potenzia, equipaggia mosse e pezzi, poi COMBATTI con la schermata di caricamento.",
+		"BATTAGLIA V2: HUD animata con pennellate, camera che segue, ultimate in light painting, molto piu' leggera.",
+		"TELEFONO: niente piu' limite a 60 fotogrammi (segue lo schermo, 90/120 Hz); scritte piccole piu' grandi e piu' leggibili senza spostare nulla.",
+		"APK: numero di versione interno alzato, cosi' l'aggiornamento sopra le versioni di prova funziona.",
+	]},
 	{"v": "0.26.2", "items": [
 		"IMPACT FRAMES (dopo il test su Android): pausa sul colpo piu' corta (40, 60, 80 e 120 ms), lampo bianco piu' forte e visibile, e i quattro livelli ora si distinguono anche per forma: spilli e anello (1), raggi larghi e crepe (2), velo magenta con tagli e barre (3), schermo nero con fratture a tutto campo (4).",
 		"PRESTAZIONI: l'elenco degli operatori non si ricostruisce piu' ad ogni tocco (da circa 21 ms a meno di 1 ms su PC): scegliere un operatore o cambiare squadra e' immediato anche sul telefono.",

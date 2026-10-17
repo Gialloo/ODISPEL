@@ -767,7 +767,7 @@ func _refresh_turn_panel() -> void:
 		c.queue_free()
 	if rows.is_empty():
 		return
-	var fs: int = 15 if not TouchUi.active() else 16
+	var fs: int = 15 if not TouchUi.active() else 17
 	var any_who: bool = false
 	for r in rows:
 		if str(r["who"]) != "":
@@ -817,6 +817,7 @@ func _fit_turn_panel(row_count: int, fs: int, content_w: float) -> void:
 func _turn_cell(text: String, size: int, color: Color, width: float, right: bool = false) -> Label:
 	var l := BattleTheme.make_label(text, size, color)
 	l.add_theme_font_override("font", BattleTheme.hud())
+	l.add_theme_font_size_override("font_size", size)      # esattamente la misura usata per calcolare le colonne
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if right else HORIZONTAL_ALIGNMENT_LEFT
 	l.clip_text = true

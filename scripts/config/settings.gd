@@ -9,7 +9,7 @@ static var music: float = 0.6        # 0..1
 static var sfx: float = 0.8          # 0..1
 static var muted: bool = false
 static var fullscreen: bool = false
-static var fps_limit: int = 60         # 0 = senza limite (60 di base: meno CPU/GPU e batteria; si puo' alzare nelle impostazioni)
+static var fps_limit: int = 0 if OS.has_feature("mobile") else 60   # 0 = senza limite: con il V-Sync segue lo schermo (90/120 Hz sui telefoni); sul PC 60 di base
 static var vsync: bool = true
 static var light_fx: bool = OS.has_feature("mobile")   # effetti ridotti: niente velo telecamera ne' pulviscolo (telefoni e PC lenti)
 const FPS_CHOICES: Array = [60, 90, 120, 144, 240, 0]
@@ -42,6 +42,10 @@ static func load_settings() -> void:
 	fps_limit = int(cfg.get_value("video", "fps_limit", fps_limit))
 	if not FPS_CHOICES.has(fps_limit):
 		fps_limit = 60
+	# 0.28: chi aveva ancora il vecchio limite di 60 sul telefono passa a "senza limite" (una volta sola)
+	if int(cfg.get_value("video", "fps_rev", 0)) < 1:
+		if OS.has_feature("mobile") and fps_limit == 60:
+			fps_limit = 0
 	vsync = bool(cfg.get_value("video", "vsync", vsync))
 	light_fx = bool(cfg.get_value("video", "light_fx", light_fx))
 	banter = bool(cfg.get_value("game", "banter", banter))
@@ -67,7 +71,7 @@ const MENU_FPS: int = 60
 
 
 static func effective_fps() -> int:
-	if in_battle or fps_limit == 0 or fps_limit <= MENU_FPS:
+	if in_battle or fps_limit == 0 or fps_limit <= MENU_FPS or OS.has_feature("mobile"):
 		return fps_limit
 	return MENU_FPS
 
@@ -99,6 +103,7 @@ static func save() -> bool:
 	cfg.set_value("audio", "muted", muted)
 	cfg.set_value("video", "fullscreen", fullscreen)
 	cfg.set_value("video", "fps_limit", fps_limit)
+	cfg.set_value("video", "fps_rev", 1)
 	cfg.set_value("video", "vsync", vsync)
 	cfg.set_value("video", "light_fx", light_fx)
 	cfg.set_value("game", "banter", banter)

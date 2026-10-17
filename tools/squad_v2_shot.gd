@@ -16,6 +16,8 @@ func _init() -> void:
 	var a: PackedStringArray = OS.get_cmdline_user_args()
 	if a.size() > 0:
 		out_dir = a[0]
+	if a.size() > 1 and a[1] == "touch":
+		TouchUi.force = true
 	var scn: SquadV2 = (load("res://scenes/squad_v2/squad_v2.tscn") as PackedScene).instantiate() as SquadV2
 	scn.save_path = "user://squad_test.json"
 	root.add_child(scn)

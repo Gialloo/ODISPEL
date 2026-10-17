@@ -17,6 +17,8 @@ func _init() -> void:
 	var a: PackedStringArray = OS.get_cmdline_user_args()
 	if a.size() > 0:
 		out_dir = a[0]
+	if a.size() > 1 and a[1] == "touch":
+		TouchUi.force = true
 	scn = (load("res://scenes/battle_v2/battle_v2.tscn") as PackedScene).instantiate() as BattleV2
 	root.add_child(scn)
 	await create_timer(1.2).timeout

@@ -186,6 +186,7 @@ func _ready() -> void:
 		sh_.visible = false
 		stage.add_child(sh_)
 	_add_exit()
+	_U.boost = 1.14 if TouchUi.active() else 1.0
 	src = SoloBattleSource.new()
 	src.training = true
 	src.battle_events_received.connect(_on_events)
@@ -1012,8 +1013,23 @@ class _U:
 	const T_SUB: int = 16        # sottotitoli / etichette piccole (minimo assoluto)
 	const ICON_K: float = 0.6    # icona = 60% del diametro del suo cerchio, ovunque
 
+	# Leggibilita' su schermi piccoli: le etichette piccole (carattere "mono", tondo con grazie) diventano Roboto
+	# Bold piu' grande di `boost` con contorno piu' spesso, dallo stesso punto di partenza, senza spostare nulla.
+	# I testi in Archivo Black (titoli, comandi) sono gia' grandi e restano com'erano, cosi' le posizioni calcolate
+	# dalla loro larghezza non cambiano. Su PC boost = 1.0.
+	static var boost: float = 1.0
+
+	static func _small(f: Font) -> bool:
+		return boost > 1.0 and f == BattleTheme.mono()
+
 	static func skew_text(c: CanvasItem, p: Vector2, t: String, sz: int, col: Color, outline: Color = Color(0, 0, 0, 0.9), f: Font = null, ow: int = 8, sk: float = -0.22) -> void:
 		var ff: Font = f if f != null else BattleTheme.display()
+		if _small(ff):
+			ff = BattleTheme.hud()
+			sz = int(round(float(sz) * boost))
+			if ow > 0:
+				ow = maxi(ow, 5)
+				outline = Color(outline.r, outline.g, outline.b, maxf(outline.a, 0.9))
 		c.draw_set_transform_matrix(Transform2D(Vector2(1, 0), Vector2(sk, 1), p))
 		if ow > 0:
 			c.draw_string_outline(ff, Vector2.ZERO, t, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, ow, outline)
@@ -1022,6 +1038,8 @@ class _U:
 
 	static func text_w(t: String, sz: int, f: Font = null) -> float:
 		var ff: Font = f if f != null else BattleTheme.display()
+		if _small(ff):
+			return BattleTheme.hud().get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, int(round(float(sz) * boost))).x
 		return ff.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
 
 	static func icon(c: CanvasItem, key: String, center: Vector2, px: float, col: Color) -> void:

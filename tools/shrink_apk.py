@@ -39,6 +39,7 @@ def main(src, dst):
     subprocess.check_call([
         "/root/android-sdk/build-tools/35.0.1/apksigner", "sign",
         "--ks", "/root/debug.keystore", "--ks-pass", "pass:android", "--key-pass", "pass:android",
+        "--v1-signing-enabled", "true", "--v2-signing-enabled", "true", "--v3-signing-enabled", "true", "--min-sdk-version", "24",
         "--out", dst, tmp])
     os.remove(tmp)
     # controlli: firma valida e resources.arsc allineato

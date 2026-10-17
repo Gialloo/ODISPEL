@@ -34,7 +34,7 @@ func _process(_delta: float) -> void:
 	var scene: Node = get_tree().current_scene
 	if scene != _last_scene:
 		_last_scene = scene
-		var fighting: bool = scene is PvpScreen or (scene != null and SceneRouter.is_current("battle"))
+		var fighting: bool = scene is PvpScreen or (scene != null and (SceneRouter.is_current("battle") or SceneRouter.is_current("battle_v2") or SceneRouter.is_current("squad_v2")))
 		if fighting != Settings.in_battle:
 			Settings.in_battle = fighting
 			Settings.apply_video()

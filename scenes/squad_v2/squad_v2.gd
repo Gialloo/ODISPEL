@@ -27,6 +27,12 @@ const KANJI: Dictionary = {
 const KANJI_CLASS: Dictionary = {"striker": "刃", "vanguard": "盾", "warden": "守"}
 
 static var _fonts: Dictionary = {}
+static var boost: float = 1.0      # testi piccoli piu' grandi su telefono (stessi punti di partenza, nessuno spostamento)
+
+
+static func fs(sz: int) -> int:
+	return sz if sz > 22 else int(round(float(sz) * boost))
+
 
 var roster: Dictionary = {}
 var save_path: String = RosterStore.DEFAULT_PATH
@@ -98,6 +104,7 @@ static func _font(key: String, base: Callable, spacing: int) -> Font:
 
 
 func _ready() -> void:
+	boost = 1.22 if TouchUi.active() else 1.0
 	roster = RosterStore.load_or_new()
 	var team: Array = roster["team"]
 	selected = str(team[0]) if not team.is_empty() else str(roster["characters"].keys()[0])
@@ -127,7 +134,7 @@ func _lbl(text: String, sz: int, col: Color, pos: Vector2, dim: Vector2, font: F
 	var l := Label.new()
 	l.text = text
 	l.add_theme_font_override("font", font)
-	l.add_theme_font_size_override("font_size", sz)
+	l.add_theme_font_size_override("font_size", fs(sz))
 	l.add_theme_color_override("font_color", col)
 	l.position = pos
 	l.size = dim
@@ -663,7 +670,7 @@ func _stat_label(t: String, sz: int, f: Font, col: Color, w: float, align: int) 
 	l.text = t
 	l.custom_minimum_size = Vector2(w, 24)
 	l.horizontal_alignment = align
-	l.add_theme_font_size_override("font_size", sz)
+	l.add_theme_font_size_override("font_size", fs(sz))
 	l.add_theme_font_override("font", f)
 	l.add_theme_color_override("font_color", col)
 	return l
@@ -677,7 +684,7 @@ func _btn(text: String, kind: String, enabled: bool, cb: Callable, h: float = 40
 	b.kind = "sel" if kind == "primary" else "row"
 	b.accent = accent_target()
 	b.font_size = 15
-	b.custom_minimum_size = Vector2(0, h)
+	b.custom_minimum_size = Vector2(0, maxf(h, 44.0) if TouchUi.active() else h)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.disabled = not enabled
 	b.pressed.connect(cb)
@@ -689,7 +696,7 @@ func _text(t: String, sz: int = 15, col: Color = CREAM) -> Label:
 	var l := Label.new()
 	l.text = t
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.add_theme_font_size_override("font_size", sz)
+	l.add_theme_font_size_override("font_size", fs(sz))
 	l.add_theme_font_override("font", font_hud())
 	l.add_theme_color_override("font_color", col)
 	l.custom_minimum_size = Vector2(340, 0)
@@ -921,12 +928,13 @@ class _AButton extends _Tappable:
 		var acc: Color = accent.lightened(0.15)
 		var f: Font = SquadV2.font_caps() if kind in ["tab", "ghost"] else SquadV2.font_hud()
 		var a: float = 0.35 if disabled else 1.0
-		var ty: float = h * 0.5 + font_size * 0.36
+		var fsz: int = mini(SquadV2.fs(font_size), 14) if kind == "tab" else SquadV2.fs(font_size)
+		var ty: float = h * 0.5 + fsz * 0.36
 		match kind:
 			"cta":
 				var bg: Color = cream.lerp(acc, 0.35 if _hover else 0.0).lerp(Color.WHITE, 0.0).darkened(0.12 if _held else 0.0)
 				draw_colored_polygon(PackedVector2Array([Vector2(w * 0.08, 0), Vector2(w, 0), Vector2(w, h), Vector2(0, h)]), bg)
-				draw_string(SquadV2.font_display(), Vector2(w * 0.12 + 6, ty), text, HORIZONTAL_ALIGNMENT_LEFT, w * 0.7, font_size, ink)
+				draw_string(SquadV2.font_display(), Vector2(w * 0.12 + 6, ty), text, HORIZONTAL_ALIGNMENT_LEFT, w * 0.7, fsz, ink)
 				var ax: float = w - 52.0
 				var ay: float = h * 0.5
 				draw_line(Vector2(ax, ay), Vector2(ax + 30, ay), ink, 2.5)
@@ -937,15 +945,15 @@ class _AButton extends _Tappable:
 				draw_colored_polygon(pts, fill)
 				pts.append(pts[0])
 				draw_polyline(pts, Color(acc if on else cream, 0.55 if on else 0.4), 1.0)
-				draw_string(f, Vector2(w * 0.1 + 6, ty), text, HORIZONTAL_ALIGNMENT_LEFT, w * 0.85, font_size, cream)
+				draw_string(f, Vector2(w * 0.1 + 6, ty), text, HORIZONTAL_ALIGNMENT_LEFT, w * 0.85, fsz, cream)
 			"ghost":
 				draw_rect(Rect2(0, h - 2, w, 2), Color(cream, 0.55 if _hover or _held else 0.3))
-				draw_string(f, Vector2(0, ty), text, HORIZONTAL_ALIGNMENT_CENTER, w, font_size, cream)
+				draw_string(f, Vector2(0, ty), text, HORIZONTAL_ALIGNMENT_CENTER, w, fsz, cream)
 			"tab":
 				draw_rect(Rect2(0, h - 1, w, 1), Color(cream, 0.16))
 				if on:
 					draw_rect(Rect2(0, h - 2, w, 2), acc)
-				draw_string(f, Vector2(0, ty), text, HORIZONTAL_ALIGNMENT_CENTER, w, font_size, cream if on else Color(cream, 0.6))
+				draw_string(f, Vector2(0, ty), text, HORIZONTAL_ALIGNMENT_CENTER, w, fsz, cream if on else Color(cream, 0.6))
 			_:
 				if kind == "sel":
 					draw_rect(Rect2(0, 0, w, h), Color(accent, 0.28))
@@ -953,7 +961,7 @@ class _AButton extends _Tappable:
 				elif _hover or _held:
 					draw_rect(Rect2(0, 0, w, h), Color(cream, 0.06 + (0.08 if _held else 0.0)))
 				draw_rect(Rect2(0, h - 1, w, 1), Color(cream, 0.1))
-				draw_string(f, Vector2(16, ty), text, HORIZONTAL_ALIGNMENT_LEFT, w - 24, font_size, Color(cream, a))
+				draw_string(f, Vector2(16, ty), text, HORIZONTAL_ALIGNMENT_LEFT, w - 24, fsz, Color(cream, a))
 
 
 class _Bar extends Control:
@@ -1001,8 +1009,8 @@ class _Card extends _Tappable:
 		else:
 			draw_string(SquadV2.font_display(), Vector2(24, h - 42), label.substr(0, 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 64, Color(1, 1, 1, 0.16))
 		draw_rect(Rect2(0, h - 50, w, 44), Color(0.06, 0.05, 0.063, 0.8))
-		draw_string(SquadV2.font_display(), Vector2(12, h - 20), label, HORIZONTAL_ALIGNMENT_LEFT, w - 16, 17, SquadV2.CREAM)
-		draw_string(SquadV2.font_hud(), Vector2(w * 0.4, lift + 20), "LV %d" % level, HORIZONTAL_ALIGNMENT_RIGHT, w * 0.5, 14, SquadV2.CREAM)
+		draw_string(SquadV2.font_display(), Vector2(12, h - 20), label, HORIZONTAL_ALIGNMENT_LEFT, w - 16, SquadV2.fs(17), SquadV2.CREAM)
+		draw_string(SquadV2.font_hud(), Vector2(w * 0.4, lift + 20), "LV %d" % level, HORIZONTAL_ALIGNMENT_RIGHT, w * 0.5, SquadV2.fs(14), SquadV2.CREAM)
 		if team_pos > 0:
 			draw_string(SquadV2.font_display(), Vector2(w * 0.2, lift + 22), str(team_pos), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, SquadV2.INK if on else Color("#F6B37A"))
 			draw_rect(Rect2(0, h - 6, w, 6), col)

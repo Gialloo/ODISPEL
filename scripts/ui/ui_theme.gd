@@ -24,7 +24,7 @@ static func build() -> Theme:
 	var mono: Font = BattleTheme.mono()
 	var display: Font = BattleTheme.display()
 	t.default_font = mono
-	t.default_font_size = 16
+	t.default_font_size = 18 if TouchUi.active() else 16
 
 	# Testi
 	t.set_color("font_color", "Label", BattleTheme.CY)

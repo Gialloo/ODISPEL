@@ -1,12 +1,18 @@
-# Carica su itch.io SOLO l'APK di prova V2 in un canale a parte (android-v2test), senza toccare i canali stabili.
+# Pubblica su itch.io le versioni "mobile" e "pc" del ramo claude/battaglia-v2.
+#   - Nuove versioni: releases/ODISPEL mobile v.X.Y.Z.apk  e  releases/ODISPEL pc vX.Y.Z.zip
+#     canali android-mobile (APK) e windows-pc (zip).
+#   - Con "[itch-rename]" nel messaggio del commit si ricaricano anche le due serie precedenti con i nuovi nomi di file:
+#     ODISPEL-test-mobile / ODISPEL-test-pc (interfaccia di prova, canali android-v2test e windows-v2b)
+#     ODISPEL-old-mobile / ODISPEL-old-pc (versioni prima di tutti i cambiamenti, canali android e windows).
+# I nomi dei canali su itch non si possono cambiare da butler: cambia il nome dei file caricati.
 name: Pubblica TEST V2 su itch.io
 
 on:
   push:
     branches: [claude/battaglia-v2]
     paths:
-      - 'releases/*-v2test.apk'
-      - 'releases/*-v2test-windows.zip'
+      - 'releases/ODISPEL mobile v.*.apk'
+      - 'releases/ODISPEL pc v*.zip'
       - '.github/workflows/itch_v2test.yml'
 
 jobs:
@@ -24,18 +30,31 @@ jobs:
         run: |
           curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
           unzip -q butler.zip -d butler && chmod +x butler/butler
-      - name: Carica APK e zip di prova
+      - name: Carica mobile e pc
+        env:
+          MSG: ${{ github.event.head_commit.message }}
         run: |
-          apk=$(ls releases/ODISPEL-*-v2test.apk | sort -V | tail -1)
-          zip=$(ls releases/ODISPEL-*-v2test-windows.zip | sort -V | tail -1)
-          ver=$(basename "$apk" .apk | sed 's/ODISPEL-//')
-          push() {
+          push() {   # file canale versione
             for n in 1 2 3 4 5 6 7 8; do
-              if ./butler/butler push "$1" "$ITCH_TARGET:$2" --userversion "$ver" > out.txt 2>&1; then cat out.txt; return 0; fi
+              if ./butler/butler push "$1" "$ITCH_TARGET:$2" --userversion "$3" > out.txt 2>&1; then cat out.txt; return 0; fi
               cat out.txt; sleep 45
             done
             echo "::error::butler push $2 fallito: $(tail -c 400 out.txt | tr '\n' ' ')"
             return 1
           }
-          push "$apk" android-v2test
-          push "$zip" windows-v2b
+          apk=$(ls releases/ODISPEL\ mobile\ v.*.apk | sort -V | tail -1)
+          zip=$(ls releases/ODISPEL\ pc\ v*.zip | sort -V | tail -1)
+          ver=$(basename "$apk" .apk | sed 's/ODISPEL mobile v\.//')
+          push "$apk" android-mobile "$ver"
+          push "$zip" windows-pc "$ver"
+          if echo "$MSG" | grep -q '\[itch-rename\]'; then
+            mkdir -p ren
+            cp releases/ODISPEL-0.26.10-v2test.apk ren/ODISPEL-test-mobile.apk
+            cp releases/ODISPEL-0.26.10-v2test-windows.zip ren/ODISPEL-test-pc.zip
+            cp releases/ODISPEL-0.26.2.apk ren/ODISPEL-old-mobile.apk
+            cp releases/ODISPEL-0.26.2-windows.zip ren/ODISPEL-old-pc.zip
+            push ren/ODISPEL-test-mobile.apk android-v2test 0.26.10-v2test
+            push ren/ODISPEL-test-pc.zip windows-v2b 0.26.10-v2test
+            push ren/ODISPEL-old-mobile.apk android 0.26.2
+            push ren/ODISPEL-old-pc.zip windows 0.26.2
+          fi
