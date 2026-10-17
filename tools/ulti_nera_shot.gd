@@ -1,5 +1,5 @@
 extends SceneTree
-# PROVA: schermo nero con ULTIMATE. xvfb-run -a godot --path . --resolution 1280x720 -s tools/ulti_nera_shot.gd -- <dir>
+# PROVA: esplosione nera dell'ultimate lanciata. xvfb-run -a godot --path . --resolution 1280x720 -s tools/ulti_nera_shot.gd -- <dir>
 func _init() -> void:
 	var out: String = "/tmp"
 	var a: PackedStringArray = OS.get_cmdline_user_args()
@@ -10,13 +10,15 @@ func _init() -> void:
 	await create_timer(1.4).timeout
 	BattleV2._G.cmds[2]["ok"] = true
 	scn._tap(scn.wheel_front.hits[2].get_center())
-	if a.size() > 1:
-		for n in scn.paint_flat: n.visible = false
-		for n in scn.paint_light: n.visible = false
-	for i in 14:
-		await create_timer(0.1).timeout
-		if i == 3 or i == 13:
-			await process_frame
-			root.get_viewport().get_texture().get_image().save_png(out.path_join("ulti_%d.png" % i))
-	print("picked=", scn.picked)
+	await create_timer(0.8).timeout
+	root.get_viewport().get_texture().get_image().save_png(out.path_join("ulti_a_selezionata.png"))
+	scn.ult_hold = true
+	scn._tap(BattleV2.CONFIRM_RECT.get_center())
+	for i in 3:
+		await create_timer(0.06).timeout
+		root.get_viewport().get_texture().get_image().save_png(out.path_join("ulti_b_esplosione_%d.png" % i))
+	scn.ult_hold = false
+	await create_timer(0.3).timeout
+	root.get_viewport().get_texture().get_image().save_png(out.path_join("ulti_c_dopo.png"))
+	print("cut=", scn.ult_cut)
 	quit(0)

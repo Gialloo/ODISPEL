@@ -16,6 +16,10 @@ const BOSS_ORIGIN: Vector2 = Vector2(40, 30)       # origine del disegno del bos
 const CONFIRM_RECT: Rect2 = Rect2(650, 586, 156, 40)
 const CANCEL_RECT: Rect2 = Rect2(650, 632, 156, 30)
 var ult_hide: Array = []
+var ult_cut: int = 0          # fotogrammi restanti dell'esplosione nera dell'ultimate
+var ult_hold: bool = false    # solo per gli screenshot di prova
+var ult_dots: Control
+var exit_btn: Button
 const ICON_OF: Dictionary = {"ATTACK": "sword", "SKILL": "bolt", "ULTIMATE": "burst", "GUARD": "defense"}
 
 
@@ -191,6 +195,11 @@ func _ready() -> void:
 		sh_.visible = false
 		stage.add_child(sh_)
 	_add_exit()
+	ult_dots = _UltDots.new()
+	ult_dots.size = Vector2(W, H)
+	ult_dots.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ult_dots.visible = false
+	stage.add_child(ult_dots)
 	_U.boost = 1.14 if TouchUi.active() else 1.0
 	src = SoloBattleSource.new()
 	src.training = true
@@ -541,7 +550,7 @@ func _process(delta: float) -> void:
 	var e: float = smoothstep(0.0, 1.0, sel)
 	var ult: bool = picked == "ULTIMATE"
 	dim.visible = e > 0.01
-	dim.color = Color(0.0, 0.0, 0.0, e) if ult else Color(0.01, 0.0, 0.05, 0.6 * e)
+	dim.color = Color(0.01, 0.0, 0.05, (0.84 if ult else 0.6) * e)
 	if boss_rect != null:
 		boss_rect.modulate = Color.WHITE.lerp(Color(0.42, 0.42, 0.55), e)
 	hero.modulate = Color.WHITE.lerp(Color(0.92, 0.92, 1.0) if ult else Color(0.5, 0.5, 0.62), e)
@@ -602,7 +611,7 @@ func _process(delta: float) -> void:
 	# banner e CONFERMA: scivolano dentro con sola posizione/opacita' (nessun ridisegno)
 	var epb: float = 1.0 - pow(1.0 - clampf(e * 1.5, 0.0, 1.0), 3.0)
 	var epc: float = 1.0 - pow(1.0 - clampf(e * 1.3 - 0.15, 0.0, 1.0), 3.0)
-	sel_banner.visible = e > 0.01 and not ult
+	sel_banner.visible = e > 0.01
 	sel_banner.modulate.a = clampf(e * 1.6, 0.0, 1.0)
 	sel_banner.position = ui_off * 0.7 + Vector2(-(1.0 - epb) * 170.0, 0.0)
 	sel_confirm.visible = e > 0.01
@@ -631,14 +640,45 @@ func _process(delta: float) -> void:
 	hud.position = ui_off * 0.7
 	fx.position = -cp * 0.6
 	wheel_letters.position = cp * 0.5 + Vector2(0.0, (1.0 - wheel_letters.modulate.a) * 36.0)
-	# PROVA: con ULTIMATE lo schermo diventa nero e restano solo comandi illuminati ed energia
-	var eb: float = e if ult else 0.0
+	# PROVA: ULTIMATE lanciata -> per 2 fotogrammi tutto nero, restano solo gli sprazzi di luce del colore
+	# del personaggio che esplodono; comandi e HUD diventano punti bianchi
+	var cut: bool = ult_cut > 0
+	if cut:
+		dim.visible = true
+		dim.color = Color(0, 0, 0, 1)
+		for i in 4:
+			var lg2: TextureRect = paint_light[i]
+			lg2.visible = true
+			lg2.modulate = Color.WHITE
+			lg2.scale = Vector2(1.2, 1.2) if i == 2 else Vector2(1.08, 1.08)
+			(lg2.material as ShaderMaterial).set_shader_parameter("k", 2.6 if i == 2 else 1.8)
+			(streaks[i] as CPUParticles2D).modulate.a = 1.0
+			(streaks[i] as CPUParticles2D).emitting = true
 	for n_ in ult_hide:
-		(n_ as CanvasItem).modulate.a = 1.0 - eb
-	if boss_rect != null:
-		boss_rect.modulate.a = 1.0 - eb
-		glow_rect.modulate.a = 1.0 - eb
-	wheel_letters.modulate.a *= 1.0 - eb
+		(n_ as CanvasItem).visible = not cut
+	for n_ in [wheel_front, ring_fx, fx, wheel_letters]:
+		(n_ as CanvasItem).visible = not cut
+	if cut:
+		halo.visible = false
+		sel_banner.visible = false
+		sel_confirm.visible = false
+		boss_rect.visible = false
+		glow_rect.visible = false
+		for i in 4:
+			(paint_flat[i] as CanvasItem).visible = false
+	else:
+		boss_rect.visible = true
+		glow_rect.visible = true
+		for i in 4:
+			(paint_flat[i] as CanvasItem).visible = true
+	if cut and ult_dots.aura != _G.col:
+		ult_dots.aura = _G.col
+		ult_dots.queue_redraw()
+	ult_dots.visible = cut
+	ult_dots.position = ui_off
+	exit_btn.visible = not cut
+	if ult_cut > 0 and not ult_hold:
+		ult_cut -= 1
 	if bg_node != null:
 		bg_node.pivot_offset = bg_node.size * 0.5
 		bg_node.scale = Vector2(1.05, 1.05)
@@ -748,6 +788,8 @@ func _confirm() -> void:
 	cam_v += Vector2(150, -25)
 	zoom_v += 0.65
 	flash = 1.0
+	if picked == "ULTIMATE":
+		ult_cut = 2
 	Settings.buzz(70 if picked == "ULTIMATE" else 30)
 	picked = ""
 	skill_idx = 0
@@ -887,6 +929,7 @@ func _add_exit() -> void:
 	eb.size = Vector2(96, 40)
 	BattleTheme.style_button(eb, "normal", 16)
 	eb.pressed.connect(_exit)
+	exit_btn = eb
 	stage.add_child(eb)
 
 
@@ -1789,3 +1832,19 @@ class _Vignette extends Control:
 	func _draw() -> void:
 		if tex != null:
 			draw_texture_rect(tex, Rect2(Vector2.ZERO, size), false)
+
+
+class _UltDots extends Control:
+	# i comandi durante l'esplosione dell'ultimate: solo punti bianchi nella loro posizione
+	var aura: Color = Color.WHITE
+
+	func _draw() -> void:
+		# nucleo dell'esplosione: riempie il centro dove si incontrano le quattro scie
+		for k in 7:
+			var f: float = float(k) / 6.0
+			draw_circle(BattleV2.WHEEL_C, 78.0 * (1.0 - 0.85 * f), Color(aura.lerp(Color.WHITE, f), 0.22 + 0.2 * f))
+		for i in 4:
+			var a: float = deg_to_rad(float(BattleV2.ANG[i]))
+			var p: Vector2 = BattleV2.WHEEL_C + Vector2(cos(a), sin(a)) * BattleV2.WHEEL_R
+			draw_circle(p, 17.0, Color(1, 1, 1, 0.18))
+			draw_circle(p, 8.0, Color.WHITE)
