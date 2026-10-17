@@ -459,7 +459,7 @@ func _build_cmds() -> void:
 	var gauge: int = int(u.get("gauge", 0))
 	var ult_ok: bool = ult != "" and cur >= 0 and _usable(ult) == ""
 	var ud: Dictionary = BattleContent.MOVES.get(ult, {})
-	cmds.append({"ok": ult_ok, "move": ult, "sub": "COLPO FINALE", "cost": "%d%%" % gauge, "title": ("ULTIMATE · " + BattleText.move_name(ult).to_upper()) if ult != "" else "", "desc": _desc(ud, u)})
+	cmds.append({"ok": ult_ok, "move": ult, "sub": "COLPO FINALE", "cost": ("PRONTA" if gauge >= BattleTypes.GAUGE_MAX else "%d%%" % gauge), "title": ("ULTIMATE · " + BattleText.move_name(ult).to_upper()) if ult != "" else "", "desc": _desc(ud, u)})
 	# GUARD
 	var gd_ok: bool = cur >= 0 and skills.has("guard") and _usable("guard") == ""
 	cmds.append({"ok": gd_ok, "move": "guard", "sub": "DIFESA", "cost": "", "title": "GUARDIA", "desc": "Dimezza il danno subito"})
@@ -631,7 +631,8 @@ func _process(delta: float) -> void:
 		fx.queue_redraw()
 	halo.visible = e > 0.01
 	if halo.visible:
-		var hp: float = 0.5 + 0.5 * sin(fx_t * (8.0 if ult else 5.0))
+		# con lampi/effetti ridotti l'alone resta fermo (niente pulsazione)
+		var hp: float = (0.5 + 0.5 * sin(fx_t * (8.0 if ult else 5.0))) if _flash_k() >= 0.05 else 0.5
 		halo.modulate = Color(_G.col, (0.8 + 0.2 * hp) * e * (1.0 if ult else 0.7))
 		halo.scale = Vector2(1.0, 1.0) * (0.85 + 0.05 * hp)
 	# comandi: ingresso a rimbalzo a catena quando cambia il personaggio, impulso al tocco
@@ -803,6 +804,9 @@ func _confirm() -> void:
 	if picked == "ULTIMATE" and not Settings.skip_cutin and _flash_k() >= 0.05:
 		ult_cut = CUT_FRAMES
 		ult_col = _G.col
+	elif picked == "ULTIMATE":
+		# senza esplosione (lampi/cut-in disattivati) un segnale morbido: solo scritta, nessun lampo
+		_float_text("ULTIMATE!", Vector2(560, 300), _G.col, 52, 1.2)
 	Settings.buzz(70 if picked == "ULTIMATE" else 30)
 	picked = ""
 	skill_idx = 0
@@ -1891,13 +1895,21 @@ class _Hud extends Control:
 			var hps: String = "%d" % int(pr["hp"])
 			var ens: String = "%d" % int(pr["en"])
 			var dfont = BattleTheme.display()
-			var hsz: int = 18 if hps.length() <= 3 else 16
+			var hsz: int = 20 if hps.length() <= 3 else 17
+			var hfrac: float = float(pr["hp"]) / maxf(1.0, float(pr["max_hp"]))
+			var hcol: Color = Color("#ff6a5a") if (alive and hfrac < 0.3) else cream
 			_U.skew_text(self, Vector2(tx1, y + 33), "PV", 14, Color(cream, 0.8), Color(0, 0, 0, 0.8), BattleTheme.mono(), 3, 0.0)
-			_U.skew_text(self, Vector2(tx1 + colw - _U.text_w(hps, hsz, dfont), y + 33), hps, hsz, cream, Color(0, 0, 0, 0.9), dfont, 5)
+			_U.skew_text(self, Vector2(tx1 + colw - _U.text_w(hps, hsz, dfont), y + 33), hps, hsz, hcol, Color(0, 0, 0, 0.9), dfont, 5)
 			_U.skew_text(self, Vector2(cx2, y + 33), "EN", 14, Color("#d8ecff", 0.8), Color(0, 0, 0, 0.8), BattleTheme.mono(), 3, 0.0)
 			_U.skew_text(self, Vector2(cx2 + colw - _U.text_w(ens, 18, dfont), y + 33), ens, 18, Color("#d8ecff"), Color(0, 0, 0, 0.9), dfont, 5)
-			_thin(Vector2(tx1, y + 38), colw, float(pr["hp"]) / maxf(1.0, float(pr["max_hp"])), Color("#f3ece0"), 3.5, 0)
-			_thin(Vector2(cx2, y + 38), colw, float(pr["en"]) / float(BattleTypes.MAX_ENERGY), Color("#d8ecff"), 2.5, 0, false)
+			_thin(Vector2(tx1, y + 37), colw, hfrac, Color("#ff8a7a") if (alive and hfrac < 0.3) else Color("#f3ece0"), 6.0, 0)
+			_thin(Vector2(cx2, y + 37), colw, float(pr["en"]) / float(BattleTypes.MAX_ENERGY), Color("#d8ecff"), 4.0, 0, false)
+			if charged and str(pr["chosen"]) == "":
+				var chip := Rect2(tx1 + 66.0, y + 6.0, 36.0, 15.0)
+				draw_colored_polygon(_U.slant(chip, 4.0), Color(pc.lightened(0.55), 0.97))
+				_U.skew_text(self, Vector2(chip.position.x + 6.0, chip.position.y + 7.5 + 0.35 * 12.0), "ULT", 12, Color("#0a0b14"), Color(0, 0, 0, 0), BattleTheme.display(), 0)
+			if not alive:
+				_U.skew_text(self, Vector2(tx1 + 66.0, y + 16), "K.O.", 18, Color("#ff6a5a"), Color(0, 0, 0, 0.95), BattleTheme.display(), 6)
 		# --- comandi rapidi compatti + riserva sulla stessa linea (centro y = 676) ---
 		var items: Array = [["FORMAZIONE", "taunt"], ["BERSAGLIO", "target"], ["AUTO", "bolt"], ["VELOCITA'", "bolt"]]
 		var qr: float = 12.0
