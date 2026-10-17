@@ -38,4 +38,4 @@ jobs:
             return 1
           }
           push "$apk" android-v2test
-          push "$zip" windows-v2test
+          push "$zip" windows-v2b
