@@ -21,6 +21,7 @@ const SCENES: Dictionary = {
 
 const LOADING_TITLES: Dictionary = {
 	"battle": "PREPARAZIONE OPERAZIONE",
+	"battle_v2": "PREPARAZIONE OPERAZIONE",
 }
 
 

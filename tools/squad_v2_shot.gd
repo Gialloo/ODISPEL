@@ -41,10 +41,29 @@ func _init() -> void:
 	await create_timer(0.3).timeout
 	await _shot("4_leggenda")
 	var n0: int = (scn.roster["team"] as Array).size()
-	scn.toggle_team("dax")
+	scn.toggle_team()
 	if (scn.roster["team"] as Array).size() != n0 - 1:
 		fails += 1
 		print("FALLITO: togli squadra")
-	scn.toggle_team("dax")
+	scn.toggle_team()
+	# squadra piena: un operatore di riserva prende il posto di quello scelto
+	RosterState.add_character(scn.roster, "rex")
+	scn.refresh(false)
+	scn.select("kira")
+	scn.select("rex")
+	await create_timer(0.5).timeout
+	scn._set_tab("potenzia")
+	await create_timer(0.3).timeout
+	await _shot("5_riserva")
+	scn.toggle_team()
+	if not (scn.roster["team"] as Array).has("rex") or (scn.roster["team"] as Array).has("kira") or (scn.roster["team"] as Array).size() != 6:
+		fails += 1
+		print("FALLITO: sostituzione")
+	await create_timer(0.4).timeout
+	await _shot("6_dopo")
 	print("FINE fails=%d squadra=%s" % [fails, str(scn.roster["team"])])
+	scn.fight()
+	await create_timer(4.0).timeout
+	var cur: Node = current_scene
+	print("SCENA DOPO COMBATTI: ", cur.scene_file_path if cur != null else "nessuna")
 	quit()
