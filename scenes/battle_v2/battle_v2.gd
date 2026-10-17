@@ -13,6 +13,9 @@ const NAMES: Array = ["ATTACK", "SKILL", "ULTIMATE", "GUARD"]
 const ANG: Array = [-98.0, -8.0, 82.0, 172.0]
 const BOSS_POS: Vector2 = Vector2(663, 172)
 const BOSS_ORIGIN: Vector2 = Vector2(40, 30)       # origine del disegno del boss dentro la sua texture
+const PARTY_BASE: float = 654.0     # y della riga in basso (il bordo inferiore resta a 706, come la capsula RISERVA)
+const PARTY_PITCH: float = 56.0
+const PARTY_H: float = 52.0
 const CONFIRM_RECT: Rect2 = Rect2(650, 586, 156, 40)
 const CANCEL_RECT: Rect2 = Rect2(650, 632, 156, 30)
 const ICON_OF: Dictionary = {"ATTACK": "sword", "SKILL": "bolt", "ULTIMATE": "burst", "GUARD": "defense"}
@@ -802,7 +805,7 @@ func _on_events(events: Array) -> void:
 			if idx < 0:
 				continue
 			col = Color("#ff7a6a")
-			at = Vector2(940, 560.0 + float(slots.size() - 1 - idx + (3 - slots.size())) * 50.0)
+			at = Vector2(940, BattleV2.PARTY_BASE - float(idx) * BattleV2.PARTY_PITCH)
 		_float_text("-%d" % int(e["amount"]), at, col)
 	if boss_rect != null:
 		var tw := create_tween()
@@ -1186,6 +1189,8 @@ class _Wheel extends Control:
 			var subt: String = str(_G.cmds[i]["sub"]) if _G.cmds.size() > i else SUBS[i]
 			var sw: float = _U.text_w(subt, _U.T_SUB, BattleTheme.mono()) + 20.0
 			var sx: float = x0 + (tw - sw if left else 0.0)
+			var plate_w: float = maxf(tw, sw) + (96.0 if (i == 1 or i == 2) else 24.0)
+			draw_colored_polygon(_U.slant(Rect2(minf(x0, sx) - 12.0, y0 - 30.0, plate_w, 66.0), 10.0), Color(0.03, 0.02, 0.08, 0.2 * fa))
 			draw_colored_polygon(_U.slant(Rect2(sx, y0 + 5.0, sw, 23.0), 6.0), Color(cream, 0.95 * fa))
 			_U.skew_text(self, Vector2(sx + 10.0, y0 + 5.0 + 11.5 + 0.35 * float(_U.T_SUB)), subt, _U.T_SUB, Color("#14101c", fa), Color(0, 0, 0, 0), BattleTheme.mono(), 0)
 			_U.skew_text(self, Vector2(x0, y0), NAMES[i], sz, Color("#fff36b", fa) if on else Color(cream, ((0.62 if ok else 0.4) if dimmed else 1.0) * fa))
@@ -1494,8 +1499,8 @@ class _Hud extends Control:
 		for r in n:
 			var s: int = n - 1 - r
 			var pr: Dictionary = party[s]
-			var y: float = 560.0 + float(r + (3 - n)) * 50.0
-			var rh: float = 46.0
+			var y: float = BattleV2.PARTY_BASE - float(n - 1 - r) * BattleV2.PARTY_PITCH
+			var rh: float = BattleV2.PARTY_H
 			var active: bool = s == _G.cur and not ended_ui
 			var alive: bool = bool(pr["alive"])
 			var rx0: float = 860.0
@@ -1519,8 +1524,8 @@ class _Hud extends Control:
 			if not alive:
 				draw_rect(Rect2(rx0 + 24.0, y, 1280.0 - rx0 - 24.0, rh), Color(0, 0, 0, 0.55))
 			if active:
-				draw_colored_polygon(_U.slant(Rect2(818, y + 16, 62, 30), 9.0), Color("#7fdcec"))
-				_U.skew_text(self, Vector2(828, y + 31 + 0.36 * 20.0), "F%d" % (s + 1), 20, Color("#0a1a22"), Color(1, 1, 1, 0.5), BattleTheme.display(), 4)
+				draw_colored_polygon(_U.slant(Rect2(818, y + 20, 62, 32), 9.0), Color("#7fdcec"))
+				_U.skew_text(self, Vector2(828, y + 36 + 0.36 * 20.0), "F%d" % (s + 1), 20, Color("#0a1a22"), Color(1, 1, 1, 0.5), BattleTheme.display(), 4)
 			var ec := Vector2(rx0 + 24.0, y + rh * 0.5)
 			var charged: bool = bool(pr["ult"]) and alive
 			var er: float = 21.0
@@ -1538,23 +1543,23 @@ class _Hud extends Control:
 			_U.icon(self, fk if GameIcon.resolve(fk) != "" else "libracorp", ec, er * 2.0 * _U.ICON_K, cream)
 			var tx1: float = rx0 + 56.0
 			var pname: String = str(pr["name"])
-			_U.skew_text(self, Vector2(tx1, y + 16), pname, 17, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 5)
-			var colw: float = 62.0
-			var cx2: float = tx1 + 74.0
+			_U.skew_text(self, Vector2(tx1, y + 19), pname, 18, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 5)
+			var colw: float = 66.0
+			var cx2: float = tx1 + 76.0
 			if str(pr["chosen"]) != "":
 				var chs: String = str(pr["chosen"])
-				var chw: float = _U.text_w(chs, 12, BattleTheme.mono())
-				_U.skew_text(self, Vector2(tx1 + 136.0 - chw, y + 14), chs, 12, Color("#7fdcec"), Color(0, 0, 0, 0.85), BattleTheme.mono(), 3, 0.0)
+				var chw: float = _U.text_w(chs, 13, BattleTheme.mono())
+				_U.skew_text(self, Vector2(tx1 + 136.0 - chw, y + 17), chs, 13, Color("#7fdcec"), Color(0, 0, 0, 0.85), BattleTheme.mono(), 3, 0.0)
 			var hps: String = "%d" % int(pr["hp"])
 			var ens: String = "%d" % int(pr["en"])
 			var dfont = BattleTheme.display()
-			var hsz: int = 18 if hps.length() <= 3 else 16
-			_U.skew_text(self, Vector2(tx1, y + 33), "PV", 14, Color(cream, 0.8), Color(0, 0, 0, 0.8), BattleTheme.mono(), 3, 0.0)
-			_U.skew_text(self, Vector2(tx1 + colw - _U.text_w(hps, hsz, dfont), y + 33), hps, hsz, cream, Color(0, 0, 0, 0.9), dfont, 5)
-			_U.skew_text(self, Vector2(cx2, y + 33), "EN", 14, Color("#d8ecff", 0.8), Color(0, 0, 0, 0.8), BattleTheme.mono(), 3, 0.0)
-			_U.skew_text(self, Vector2(cx2 + colw - _U.text_w(ens, 18, dfont), y + 33), ens, 18, Color("#d8ecff"), Color(0, 0, 0, 0.9), dfont, 5)
-			_thin(Vector2(tx1, y + 38), colw, float(pr["hp"]) / maxf(1.0, float(pr["max_hp"])), Color("#f3ece0"), 3.5, 0)
-			_thin(Vector2(cx2, y + 38), colw, float(pr["en"]) / float(BattleTypes.MAX_ENERGY), Color("#d8ecff"), 2.5, 0, false)
+			var hsz: int = 19 if hps.length() <= 3 else 17
+			_U.skew_text(self, Vector2(tx1, y + 39), "PV", 13, Color(cream, 0.8), Color(0, 0, 0, 0.8), BattleTheme.mono(), 3, 0.0)
+			_U.skew_text(self, Vector2(tx1 + colw - _U.text_w(hps, hsz, dfont), y + 39), hps, hsz, cream, Color(0, 0, 0, 0.9), dfont, 5)
+			_U.skew_text(self, Vector2(cx2, y + 39), "EN", 13, Color("#d8ecff", 0.8), Color(0, 0, 0, 0.8), BattleTheme.mono(), 3, 0.0)
+			_U.skew_text(self, Vector2(cx2 + colw - _U.text_w(ens, 19, dfont), y + 39), ens, 19, Color("#d8ecff"), Color(0, 0, 0, 0.9), dfont, 5)
+			_thin(Vector2(tx1, y + 45), colw, float(pr["hp"]) / maxf(1.0, float(pr["max_hp"])), Color("#f3ece0"), 3.5, 0)
+			_thin(Vector2(cx2, y + 45), colw, float(pr["en"]) / float(BattleTypes.MAX_ENERGY), Color("#d8ecff"), 2.5, 0, false)
 		# --- comandi rapidi compatti + riserva sulla stessa linea (centro y = 676) ---
 		var items: Array = [["FORMAZIONE", "taunt"], ["BERSAGLIO", "target"], ["AUTO", "bolt"], ["VELOCITA'", "bolt"]]
 		var qr: float = 12.0
