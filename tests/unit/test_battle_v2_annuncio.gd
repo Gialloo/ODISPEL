@@ -47,11 +47,29 @@ func _run() -> void:
 	var seen_normal: bool = false
 	var seen_phase: int = 1
 	var rounds: int = 0
-	while not scn.ended and rounds < 14:
+	var seen_boss_turn: bool = false
+	var last_round: int = -1
+	while not scn.ended and rounds < 40:
+		# attende il turno di un operatore (il boss agisce da solo nel suo turno)
+		var wt: int = 0
+		while (scn.locked or scn.cur < 0) and not scn.ended and wt < 400:
+			if scn.boss_turn and not seen_boss_turn:
+				seen_boss_turn = true
+				_check("turno del boss: annuncio visibile", bool(BattleV2._G.boss["show"]) or int(BattleState.boss(scn._battle()).get("stun", 0)) > 0)
+			await create_timer(0.03).timeout
+			wt += 1
+		if scn.ended:
+			break
+		var new_round: bool = int(scn._battle()["round"]) != last_round
+		last_round = int(scn._battle()["round"])
+		if new_round:
+			seen_boss_turn = false
 		var e: Dictionary = _expected(scn)
 		var g: Dictionary = BattleV2._G.boss
 		var stunned: bool = int(BattleState.boss(scn._battle()).get("stun", 0)) > 0
-		if not stunned:
+		if scn.boss_done:
+			_check("round %d: dopo la mossa del boss nessun annuncio" % rounds, not bool(g["show"]))
+		elif not stunned:
 			_check("round %d: annuncio visibile (%s)" % [rounds, e["id"]], bool(g["show"]))
 			_check("round %d: nome = mossa del motore" % rounds, str(g["move"]) == str(e["name"]))
 			_check("round %d: pesante/normale = regola del motore" % rounds, bool(g["heavy"]) == bool(e["heavy"]))
@@ -73,12 +91,7 @@ func _run() -> void:
 			scn._cancel()
 		seen_phase = maxi(seen_phase, int(scn._battle().get("phase", 1)))
 		await _pick_and_confirm(scn)
-		_check("round %d: nessun annuncio durante la risoluzione" % rounds, not bool(BattleV2._G.boss["show"]))
-		var wt: int = 0
-		while scn.locked and not scn.ended and wt < 120:   # il round si sblocca a fine scritte
-			await create_timer(0.05).timeout
-			wt += 1
-		await create_timer(0.1).timeout
+		_check("turno %d: durante l'azione nessun annuncio" % rounds, not bool(BattleV2._G.boss["show"]) or scn.boss_turn)
 		rounds += 1
 	_check("visto almeno un round con mossa normale", seen_normal)
 	print("round naturali con mossa pesante: ", seen_heavy)

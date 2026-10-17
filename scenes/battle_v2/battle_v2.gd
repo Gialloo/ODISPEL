@@ -49,6 +49,30 @@ class _G:
 	static var banner_sub: String = ""
 	static var auto_on: bool = false
 	static var speed: int = 1
+	static var bench: Array = []
+
+	# Riporta tutto ai valori iniziali: AUTO e velocita' non passano da una battaglia all'altra.
+	static func reset() -> void:
+		col = Color("#9a4dff")
+		spr = null
+		picked = ""
+		turn_txt = "ROUND 1"
+		boss = {"name": "", "hp": 1, "max": 1, "bal": 1, "bal_max": 1, "heavy": false, "move": "", "target": "", "show": false}
+		party = []
+		order = []
+		cur = 0
+		reserve = 0
+		reserve_max = 6
+		cmds = []
+		banner_title = ""
+		banner_tag = ""
+		banner_tag_mult = 1.0
+		matchup = {"show": false, "mult": 1.0, "att": "", "def": ""}
+		sel_p = 0.0
+		banner_sub = ""
+		auto_on = false
+		speed = 1
+		bench = []
 
 
 var src: SoloBattleSource
@@ -100,6 +124,8 @@ var _result: Control
 
 
 func _ready() -> void:
+	_G.reset()
+	_U.boost = 1.0
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var bgt: Texture2D = ArtLibrary.texture("backgrounds/battle_v2.png")
@@ -223,9 +249,7 @@ func _ready() -> void:
 	src.battle_events_received.connect(_on_events)
 	src.start(RosterStore.load_or_new(), "distributore", int(randi()) | 1, 0)
 	slots = src.my_slots()
-	_charge_ult()
-	_next_slot(-1)
-	_refresh()
+	_start_round()
 
 
 var hud_vp: SubViewport
@@ -443,15 +467,6 @@ func _slot_alive(slot_i: int) -> bool:
 	return BattleState.is_alive(u)
 
 
-# Prossimo slot vivo senza scelta, dopo `from_i`; -1 se non ce ne sono.
-func _next_slot(from_i: int) -> void:
-	for i in range(from_i + 1, slots.size()):
-		if _slot_alive(i) and not choices.has(str(slots[i])):
-			cur = i
-			return
-	cur = -1
-
-
 func _choice_for(move_id: String) -> Dictionary:
 	var move: Dictionary = BattleContent.MOVES[move_id]
 	var choice: Dictionary = {"swap": "", "move": move_id, "target": "", "order": "", "push": ""}
@@ -525,7 +540,7 @@ static func _match_text(m: float) -> String:
 # Annuncio della mossa del boss: solo dati che il motore ha gia' deciso (begin_round).
 # Visibile mentre il giocatore sceglie; nascosto a fine battaglia, durante la risoluzione del round e se il boss e' stordito (salta la mossa).
 func _tele_visible(b: Dictionary, mdef: Dictionary) -> bool:
-	if mdef.is_empty() or ended or locked or str(b.get("winner", "")) != "":
+	if mdef.is_empty() or ended or boss_done or (locked and not boss_turn) or str(b.get("winner", "")) != "":
 		return false
 	return int(BattleState.boss(b).get("stun", 0)) <= 0
 
@@ -549,6 +564,7 @@ const SLOT_STEP_HERO: float = 55.0
 const SLOT_PAN_MAX: float = 140.0
 var hero_off: float = 0.0
 var hero_in: float = 1.0
+var ui_dim: float = 1.0          # ruota attenuata quando non e' il turno del giocatore
 var _last_slot: int = -1
 
 
@@ -597,10 +613,23 @@ func _refresh() -> void:
 			chosen = BattleText.move_name(str(choices[str(slots[i])]["move"])).to_upper()
 		party.append({"name": str(u["name"]).to_upper(), "color": BattleTheme.unit_color(str(u["color"])), "hp": int(u["hp"]), "max_hp": int(u["max_hp"]), "en": int(u.get("energy", 0)), "faction": str(u.get("faction", "")), "alive": BattleState.is_alive(u), "ult": int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX, "cut": ArtLibrary.cutin(cid), "chosen": chosen})
 	_G.party = party
+	# panchina: gli operatori del party che non sono in campo (dati del motore; scambi non ancora nel Test V2)
+	var bench: Array = []
+	var lead: Dictionary = BattleState.player(b, str(slots[0]))
+	for uid in BattleState.party_of(b, lead):
+		if BattleState.is_front(b, str(uid)):
+			continue
+		var bu: Dictionary = BattleState.unit(b, str(uid))
+		var bcid: String = str(bu.get("char", ""))
+		bench.append({"color": BattleTheme.unit_color(str(bu.get("color", ""))), "por": ArtLibrary.portrait(bcid, "neutral"), "alive": BattleState.is_alive(bu), "hp": float(bu["hp"]) / float(maxi(1, int(bu["max_hp"]))), "support": Signatures.has_bench(bcid)})
+	_G.bench = bench
 	_G.cur = cur if cur >= 0 else 0
 	# ordine del round (portrait in alto)
 	var order: Array = []
-	for e in BattleResolver.action_order(b):
+	for ti in range(maxi(turn_i, 0), turn_list.size()):
+		var e: Dictionary = turn_list[ti]
+		if not bool(e["boss"]) and not BattleState.is_alive(BattleState.unit(b, str(e["unit"]))):
+			continue
 		var isb: bool = bool(e["boss"])
 		var uu: Dictionary = BattleState.unit(b, str(e["unit"]))
 		order.append({"boss": isb, "color": Color("#ff5a4a") if isb else BattleTheme.unit_color(str(uu["color"])), "por": null if isb else ArtLibrary.portrait(str(uu.get("char", "")), "neutral")})
@@ -669,7 +698,9 @@ func _process(delta: float) -> void:
 	if glow_rect != null:
 		glow_rect.modulate = boss_rect.modulate
 		(glow_rect.material as ShaderMaterial).set_shader_parameter("k", 1.0 + 0.6 * e)
-	wheel_letters.modulate.a = _ease3(appear * 1.4 - 0.15)
+	ui_dim = move_toward(ui_dim, 0.35 if (locked and not ended) else 1.0, delta / 0.2)
+	wheel_letters.modulate.a = _ease3(appear * 1.4 - 0.15) * ui_dim
+	wheel_front.modulate.a = ui_dim
 	wheel_front.t = fx_t
 	ring_fx.t = fx_t
 	# pennellate: entrano a catena, respirano e ondeggiano (solo trasformazioni: costo quasi nullo)
@@ -789,7 +820,14 @@ func _unhandled_key_input(ev: InputEvent) -> void:
 
 
 func _tap(p: Vector2) -> void:
-	if ended or locked:
+	if ended:
+		return
+	if locked:
+		# durante le azioni (o AUTO) restano attivi solo AUTO e VELOCITA'
+		var qh0: Array = hud.qhits
+		for i in qh0.size():
+			if (qh0[i] as Rect2).has_point(p) and (i == 2 or i == 3):
+				_quick(i)
 		return
 	if picked != "":
 		if CONFIRM_RECT.has_point(p):
@@ -814,14 +852,14 @@ func _tap(p: Vector2) -> void:
 
 func _quick(i: int) -> void:
 	match i:
-		0: Notify.toast("FORMAZIONE: non ancora nel Test V2")
+		0: Notify.toast("PANCHINA: %d operatori di riserva, gli scambi non sono ancora nel Test V2" % _G.bench.size())
 		1: Notify.toast("BERSAGLIO: in questo test il bersaglio e' sempre il boss")
 		2:
 			_G.auto_on = not _G.auto_on
 			Notify.toast("AUTO " + ("ATTIVO" if _G.auto_on else "SPENTO"))
 			_hud_dirty()
 			if _G.auto_on and not locked:
-				_auto_round()
+				_auto_turn()
 		3:
 			_G.speed = 2 if _G.speed == 1 else 1
 			Notify.toast("VELOCITA' x%d" % _G.speed)
@@ -869,45 +907,173 @@ func _confirm() -> void:
 		return
 	var i: int = NAMES.find(picked)
 	var move_id: String = str(_G.cmds[i]["move"])
-	choices[str(slots[cur])] = _choice_for(move_id)
+	var choice: Dictionary = _choice_for(move_id)
+	var pid: String = str(slots[cur])
+	_act_fx(picked == "ULTIMATE", _G.col)
+	picked = ""
+	skill_idx = 0
+	_resolve_action(pid, choice)
+
+
+# Effetti della conferma (colpo di camera, lampo, esplosione dell'ultimate): uguali per scelta manuale e AUTO
+func _act_fx(is_ult: bool, col: Color) -> void:
 	cam_v += Vector2(150, -25) * _shk()
 	zoom_v += 0.65 * _shk()
 	flash = _flash_k()
-	if picked == "ULTIMATE" and not Settings.skip_cutin and _flash_k() >= 0.05:
+	if is_ult and not Settings.skip_cutin and _flash_k() >= 0.05:
 		ult_cut = CUT_FRAMES
-		ult_col = _G.col
-	elif picked == "ULTIMATE":
+		ult_col = col
+	elif is_ult:
 		# senza esplosione (lampi/cut-in disattivati) un segnale morbido: solo scritta, nessun lampo
-		_float_text("ULTIMATE!", Vector2(560, 300), _G.col, 52, 1.2)
-	Settings.buzz(70 if picked == "ULTIMATE" else 30)
+		_float_text("ULTIMATE!", Vector2(560, 300), col, 52, 1.2)
+	Settings.buzz(70 if is_ult else 30)
+
+
+# ---------- Round a turni: ognuno sceglie e agisce nel proprio turno, in ordine di velocita' ----------
+# L'azione si risolve subito dopo la conferma (SeqRound), poi tocca al successivo; vale anche per AUTO.
+
+var turn_list: Array = []       # ordine del round (SeqRound.order): operatori e boss per velocita'
+var turn_i: int = -1
+var boss_turn: bool = false     # il boss sta per agire (l'annuncio della sua mossa resta visibile)
+var boss_done: bool = false     # il boss ha gia' agito in questo round
+
+
+func _start_round() -> void:
+	choices = {}
+	boss_turn = false
+	boss_done = false
 	picked = ""
-	skill_idx = 0
-	_next_slot(cur)
-	if cur < 0:
-		_play_round()
-	else:
+	_charge_ult()
+	SeqRound.begin(_battle())
+	turn_list = SeqRound.order(_battle())
+	turn_i = -1
+	_advance()
+
+
+# Passa al turno successivo: salta chi e' a terra, fa agire il boss, ferma il gioco sul prossimo operatore (o lo gioca l'IA con AUTO)
+func _advance() -> void:
+	while is_inside_tree():
+		turn_i += 1
+		var b: Dictionary = _battle()
+		if str(b["winner"]) != "":
+			await _end_battle()
+			return
+		if turn_i >= turn_list.size():
+			locked = true
+			cur = -1
+			_refresh()
+			var ev: Array = SeqRound.finish(b)
+			_on_events(ev)
+			await _fb_settle()
+			if not is_inside_tree():
+				return
+			if str(b["winner"]) != "":
+				await _end_battle()
+			else:
+				_start_round()
+			return
+		var e: Dictionary = turn_list[turn_i]
+		if bool(e["boss"]):
+			await _boss_turn()
+			continue
+		var pid: String = str(e["player"])
+		var pl: Dictionary = BattleState.player(b, pid)
+		if pl.is_empty() or not BattleState.player_alive(b, pl):
+			continue
+		cur = slots.find(pid)
+		picked = ""
+		skill_idx = 0
+		locked = _G.auto_on
 		_refresh()
+		if _G.auto_on:
+			await _auto_act(pid)
+			continue
+		return          # tocca al giocatore: si riprende da _confirm
 
 
-# ---------- Round ----------
-
-func _play_round() -> void:
+# Turno del boss: la camera va verso di lui, la sua mossa resta annunciata un attimo, poi agisce
+func _boss_turn() -> void:
 	locked = true
+	boss_turn = true
+	cur = -1
+	cam.x += -90.0 * _shk()
+	cam_v.x += -100.0 * _shk()
+	hero_in = minf(hero_in, 0.45)
 	_refresh()
-	var ch: Dictionary = choices.duplicate(true)
-	choices = {}
-	src.submit_party(ch)
-	await _after_round()
-
-
-func _auto_round() -> void:
-	if locked or ended:
+	await get_tree().create_timer(0.8 / float(_G.speed)).timeout
+	if not is_inside_tree():
 		return
+	var ev: Array = SeqRound.boss_action(_battle())
+	boss_turn = false
+	boss_done = true
+	_on_events(ev)
+	_refresh()
+	await _fb_settle()
+
+
+# Con AUTO: l'IA sceglie per l'operatore di turno (camera gia' su di lui) e agisce
+func _auto_act(pid: String) -> void:
+	await get_tree().create_timer(0.55 / float(_G.speed)).timeout
+	if not is_inside_tree() or ended:
+		return
+	var choice: Dictionary = BattleAI.choose(_battle(), pid)
+	var mv: String = str(choice.get("move", ""))
+	var is_ult: bool = BattleContent.MOVES.has(mv) and str(BattleContent.MOVES[mv]["kind"]) == "ult"
+	_act_fx(is_ult, _G.col)
+	await _resolve_action_async(pid, choice)
+
+
+func _resolve_action(pid: String, choice: Dictionary) -> void:
+	await _resolve_action_async(pid, choice)
+	if is_inside_tree() and not ended:
+		await _advance()
+
+
+func _resolve_action_async(pid: String, choice: Dictionary) -> void:
 	locked = true
-	choices = {}
-	picked = ""
-	src.autoplay_round()
-	await _after_round()
+	var ev: Array = SeqRound.player_action(_battle(), pid, choice)
+	choices[pid] = {"move": str(choice.get("move", "attack"))}
+	_on_events(ev)
+	_refresh()
+	await _fb_settle()
+
+
+# Dopo ogni azione: attende la fine delle scritte (con tetto) e una pausa breve, cosi' si legge cosa e' successo
+func _fb_settle() -> void:
+	await get_tree().create_timer(0.35 / float(_G.speed)).timeout
+	await _fb_drain()
+
+
+# Per test e strumenti: attiva AUTO e fa giocare il turno corrente
+func _auto_round() -> void:
+	_G.auto_on = true
+	_hud_dirty()
+	_auto_turn()
+
+
+func _auto_turn() -> void:
+	if ended or cur < 0 or locked:
+		return
+	var pid: String = str(slots[cur])
+	locked = true
+	await _auto_act(pid)
+	if is_inside_tree() and not ended:
+		await _advance()
+
+
+func _end_battle() -> void:
+	await get_tree().create_timer(0.9 / float(_G.speed)).timeout
+	await _fb_drain()
+	if not is_inside_tree():
+		return
+	var w: String = str(_battle().get("winner", ""))
+	ended = true
+	hud.ended_ui = true
+	locked = false
+	boss_turn = false
+	cur = -1
+	_refresh()
+	_show_result(w == "players")
 
 
 # SOLO PER I TEST: tutti i personaggi hanno sempre la ultimate carica (a inizio battaglia e a ogni round)
@@ -936,28 +1102,6 @@ func _toggle_ult() -> void:
 		if cur >= 0 and not locked:
 			_refresh()
 	Notify.toast("Ultimate sempre carica: " + ("ON" if ult_sempre else "OFF"))
-
-
-func _after_round() -> void:
-	await get_tree().create_timer(0.9 / float(_G.speed)).timeout
-	await _fb_drain()
-	if not is_inside_tree():
-		return
-	var w: String = str(_battle().get("winner", ""))
-	if w != "":
-		ended = true
-		hud.ended_ui = true
-		locked = false
-		_next_slot(-1)
-		_refresh()
-		_show_result(w == "players")
-		return
-	_charge_ult()
-	_next_slot(-1)
-	locked = false
-	_refresh()
-	if _G.auto_on:
-		_auto_round()
 
 
 # Il round resta "in corso" finche' le scritte non sono finite (con un tetto), cosi' non si legge sopra il turno dopo.
@@ -1156,6 +1300,10 @@ func _fb_item(e: Dictionary) -> Dictionary:
 		item["at"] = _fb_anchor(uid)
 	if item["at"] == null:
 		return {}
+	# gerarchia: PRINCIPALE (peso >= 8: grande, a lungo), SECONDARIO (cura, scudo, stati: piu' piccolo), DETTAGLIO (didascalie e valori minori: piccolo)
+	var wgt: int = int(item["w"])
+	if wgt < 8:
+		item["size"] = mini(int(item["size"]), 34 if wgt >= 5 else (28 if wgt >= 3 else 24))
 	return item
 
 
@@ -1165,6 +1313,23 @@ func _on_events(events: Array) -> void:
 		var it: Dictionary = _fb_item(e)
 		if not it.is_empty():
 			items.append(it)
+	# stessa scritta ripetuta nello stesso punto (es. PURIFICATO su piu' bersagli, SCUDO identici): una sola con "xN"
+	var merged: Array = []
+	for it in items:
+		var m: Dictionary = {}
+		for q in merged:
+			if str(q["base"]) == str(it["text"]) and Vector2(q["at"]) == Vector2(it["at"]) and int(it["w"]) < 8:
+				m = q
+				break
+		if m.is_empty():
+			it["base"] = str(it["text"])
+			it["n"] = 1
+			merged.append(it)
+		else:
+			m["n"] = int(m["n"]) + 1
+			m["text"] = "%s x%d" % [m["base"], int(m["n"])]
+			m["w"] = maxi(int(m["w"]), int(it["w"]))
+	items = merged
 	# troppi eventi: si tolgono prima i meno importanti (peso piu' basso), mantenendo l'ordine
 	while items.size() > FB_MAX:
 		var lowest: int = 0
@@ -1968,6 +2133,28 @@ class _Hud extends Control:
 			if mw > mavail:
 				msz = maxi(12, int(float(msz) * mavail / mw))
 			_U.skew_text(self, Vector2(lt3 + 34.0, my0 + mh * 0.5 + 0.35 * float(msz)), mtxt, msz, Color("#ffffff"), Color(0, 0, 0, 0.9), BattleTheme.mono(), 5)
+		# --- panchina: operatori di riserva (solo lettura) sopra la squadra ---
+		var bn: Array = _G.bench
+		if bn.size() > 0:
+			var bx: float = 1030.0
+			var by: float = 526.0
+			_U.skew_text(self, Vector2(bx, by + 17.0), "PANCHINA", 13, Color(cream, 0.9), Color(0, 0, 0, 0.85), BattleTheme.mono(), 4, 0.0)
+			for k in bn.size():
+				var bi: Dictionary = bn[k]
+				var bc: Color = Color(bi["color"])
+				var br := Rect2(bx + 78.0 + float(k) * 50.0, by - 1.0, 46.0, 28.0)
+				var ba: float = 1.0 if bool(bi["alive"]) else 0.4
+				draw_rect(br, Color(0.04, 0.05, 0.1, 0.92 * ba))
+				var bt: Texture2D = bi["por"]
+				if bt != null:
+					var bts: Vector2 = bt.get_size()
+					draw_texture_rect_region(bt, br, Rect2(bts.x * 0.11, bts.y * 0.1536, bts.x * 0.78, bts.y * 0.328), Color(1, 1, 1, ba))
+				else:
+					_U.head(self, br.get_center() + Vector2(0, 2), 11.0, bc)
+				draw_rect(br, Color(bc.lightened(0.15), 0.95 * ba), false, 1.8)
+				draw_rect(Rect2(br.position + Vector2(0, br.size.y), Vector2(br.size.x * clampf(float(bi["hp"]), 0.0, 1.0), 3.0)), Color(cream, 0.95 * ba))
+				if bool(bi["support"]) and bool(bi["alive"]):
+					draw_colored_polygon(PackedVector2Array([br.position + Vector2(br.size.x - 11.0, 0), br.position + Vector2(br.size.x, 0), br.position + Vector2(br.size.x, 11.0)]), Color("#fff36b"))
 		# --- squadra: righe fisse (in basso F1), la riga attiva ha ritratto largo, etichetta F e linea ciano ---
 		var party: Array = _G.party
 		var n: int = party.size()

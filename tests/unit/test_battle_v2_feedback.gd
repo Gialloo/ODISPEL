@@ -126,6 +126,38 @@ func _run() -> void:
 	_check("attesa entro il tetto (+0.5s di lettura)", el <= BattleV2.FB_WAIT_MAX + 0.7)
 	_check("scritte importanti durano piu' delle normali", BattleV2.FB_HOLD_BIG > BattleV2.FB_HOLD)
 	scn.locked = false
+	# stesse scritte ripetute nello stesso punto: una sola con xN
+	scn._fb_queue.clear()
+	scn._fb_busy = true
+	scn._on_events([{"t": "cleanse", "unit": hero}, {"t": "cleanse", "unit": hero}, {"t": "cleanse", "unit": hero}])
+	_check("scritte identiche unite (PURIFICATO x3)", scn._fb_queue.size() == 1 and str(scn._fb_queue[0]["text"]) == "PURIFICATO x3")
+	scn._fb_queue.clear()
+	scn._fb_busy = false
+	# gli eventi principali vengono davvero mostrati prima che il round si sblocchi
+	var crowd: Array = []
+	for i in 12:
+		crowd.append({"t": "damage", "src": hero, "dst": boss, "amount": 30 + i, "absorbed": 0})
+	crowd.append({"t": "damage", "src": hero, "dst": boss, "amount": 700, "absorbed": 0, "crit": true})
+	crowd.append({"t": "break", "src": hero})
+	crowd.append({"t": "down", "unit": hero})
+	var seen_txt: Dictionary = {}
+	scn._on_events(crowd)
+	var settle_done: bool = false
+	var _wait = func():
+		await scn._fb_settle()
+		settle_done = true
+	_wait.call()
+	var guard2: int = 0
+	while not settle_done and guard2 < 300:
+		guard2 += 1
+		for n in get_nodes_in_group("v2_fb"):
+			if n is Label:
+				seen_txt[(n as Label).text] = true
+		await create_timer(0.02).timeout
+	var all_txt: String = "|".join(seen_txt.keys())
+	_check("principali mostrati prima dello sblocco: CRITICO", all_txt.contains("CRITICO"))
+	_check("principali mostrati prima dello sblocco: ROTTURA", all_txt.contains("ROTTURA"))
+	_check("principali mostrati prima dello sblocco: K.O.", all_txt.contains("K.O."))
 	print("RISULTATO: ", passed, " ok, ", failed, " falliti")
 	print("FAIL: ", failed)
 	quit(1 if failed > 0 else 0)
