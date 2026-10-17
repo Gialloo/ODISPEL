@@ -92,7 +92,8 @@ Screenshot: `/tmp/shots/b35` (prima) e `/tmp/shots/a35` (dopo) nel mio ambiente,
 - Stub / limiti: FORMAZIONE e BERSAGLIO mostrano solo un avviso; DEBOLE assente (il motore non ha dati di debolezze); il boss e' il segnaposto disegnato; arte vera solo per Kira e Dafne, gli altri hanno la testa segnaposto.
 - Verificato: `tools/battle_v2_shot.gd` (xvfb, 1280x720) gioca una battaglia intera (vittoria al round 3, 0 errori) e salva 5 foto; test unitari esistenti ok (test_feedback aggiornato a 10 pulsanti hub).
 - NON verificato: telefono reale (dimensione testi, bersagli di tocco da 44 px, tagli su schermi 20:9, prestazioni), boss con nome molto lungo, squadre con meno di 3 unita'.
-- APK: `releases/ODISPEL-0.26.3-v2test.apk` (versionCode 66), `docs/battaglia_v2_mock/*` escluso dall'export.
+- Animazione (0.26.4-v2test): pennellate che entrano a catena e ondeggiano di continuo, scie di luce e schizzi che scorrono, comandi che entrano a rimbalzo, onda d'urto + scintille al tocco, anelli che pulsano sul comando scelto, oscuramento animato con raggi, bande oblique e energia che converge sull'eroe (ULTIMATE: barre scure oblique, piu' intensa), banner e CONFERMA che scivolano dentro, scossa dello schermo e vibrazione (`Settings.buzz`). Foto: `tools/battle_v2_anim.gd`. NON verificato su telefono: costo per fotogramma (ridisegno a 30 fps delle pennellate, ogni fotogramma dei comandi) e vibrazione.
+- APK: `releases/ODISPEL-0.26.4-v2test.apk` (versionCode 67; la 0.26.3-v2test resta come precedente), `docs/battaglia_v2_mock/*` escluso dall'export.
 
 ## Test
 `tests/unit/test_impact_frames.gd` (26 controlli: normale, critico pesante, eccezionale, ult non critica/critica/devastante, KO, multi-bersaglio, due mosse, contrattacco/spine, sequenze, guardia, progressione). Foto: `tools/impact_shot.gd`.

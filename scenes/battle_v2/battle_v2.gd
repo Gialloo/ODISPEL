@@ -32,6 +32,7 @@ class _G:
 	static var reserve_max: int = 6
 	static var cmds: Array = []
 	static var banner_title: String = ""
+	static var sel_p: float = 0.0
 	static var banner_sub: String = ""
 	static var auto_on: bool = false
 	static var speed: int = 1
@@ -42,6 +43,17 @@ var stage: Control
 var hero: _Hero
 var boss_rect: TextureRect
 var wheel_back: _Wheel
+var wheel_letters: _Wheel
+var fx: _Fx
+var fx_t: float = 0.0
+var appear: float = 0.0
+var sel: float = 0.0
+var flash: float = 0.0
+var _redraw_acc: float = 0.0
+var _last_cur: int = -99
+var intro_t: float = 0.0
+var _last_e: float = 0.0
+var shake: float = 0.0
 var wheel_front: _Wheel
 var hud: _Hud
 var dim: ColorRect
@@ -94,8 +106,22 @@ func _ready() -> void:
 	wheel_back = _Wheel.new()
 	wheel_back.size = Vector2(W, H)
 	wheel_back.part = "back"
+	wheel_back.layer = "paint"
+	wheel_back.appear = 0.0
 	wheel_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(wheel_back)
+	wheel_letters = _Wheel.new()
+	wheel_letters.size = Vector2(W, H)
+	wheel_letters.part = "back"
+	wheel_letters.layer = "letters"
+	wheel_letters.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(wheel_letters)
+	fx = _Fx.new()
+	fx.size = Vector2(W, H)
+	fx.center = WHEEL_C
+	fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(fx)
+	stage.move_child(fx, 0)
 	_bake_boss()
 	hero = _Hero.new()
 	hero.position = Vector2(179, 180)
@@ -130,7 +156,8 @@ func _center() -> void:
 	if stage != null:
 		var k: float = minf(size.x / float(W), size.y / float(H))
 		stage.scale = Vector2(k, k)
-		stage.position = ((size - Vector2(W, H) * k) * 0.5).floor()
+		var sh: Vector2 = Vector2(sin(fx_t * 83.0), cos(fx_t * 71.0)) * 9.0 * shake * shake * k
+		stage.position = ((size - Vector2(W, H) * k) * 0.5).floor() + sh
 
 
 # Il boss (segnaposto disegnato) viene fotografato una volta in una texture: l'alone corallo del bersaglio
@@ -261,6 +288,12 @@ func _desc(md: Dictionary, u: Dictionary) -> String:
 
 
 func _refresh() -> void:
+	if cur != _last_cur:
+		_last_cur = cur
+		appear = 0.0
+		intro_t = 0.0
+		if wheel_front != null:
+			wheel_front.pop = [0.0, 0.0, 0.0, 0.0]
 	var b: Dictionary = _battle()
 	_build_cmds()
 	var boss: Dictionary = BattleState.boss(b)
@@ -303,21 +336,79 @@ func _apply_pick() -> void:
 	if i >= 0:
 		_G.banner_title = str(_G.cmds[i]["title"])
 		_G.banner_sub = str(_G.cmds[i]["desc"])
-	dim.visible = picked != ""
-	if boss_rect != null:
-		boss_rect.modulate = Color(0.42, 0.42, 0.55) if picked != "" else Color.WHITE
-	hero.modulate = Color(0.5, 0.5, 0.62) if picked != "" else Color.WHITE
-	for gm in glow_mats:
-		gm.set_shader_parameter("tint", Color("#ff5a47", minf(float(gm.get_meta("base")) * (1.5 if picked != "" else 1.0), 1.0)))
-	wheel_back.glow = picked != ""
-	wheel_back.picked = picked
+	for wl in [wheel_back, wheel_letters]:
+		wl.glow = picked != ""
+		wl.picked = picked
+		wl.aura = _G.col
 	wheel_front.picked = picked
-	wheel_back.aura = _G.col
 	wheel_front.aura = _G.col
+	fx.col = _G.col
+	fx.ult = picked == "ULTIMATE"
+	if picked != "":
+		flash = 1.0
 	hero.queue_redraw()
 	wheel_back.queue_redraw()
+	wheel_letters.queue_redraw()
 	wheel_front.queue_redraw()
 	hud.queue_redraw()
+
+
+# Animazione continua: ingresso delle pennellate, flusso, oscuramento della scelta
+func _process(delta: float) -> void:
+	fx_t += delta
+	appear = move_toward(appear, 1.0, delta / 0.9)
+	var tgt: float = 1.0 if picked != "" else 0.0
+	sel = move_toward(sel, tgt, delta / (0.5 if picked == "ULTIMATE" else (0.3 if tgt > 0.0 else 0.22)))
+	flash = maxf(0.0, flash - delta * 3.2)
+	var e: float = smoothstep(0.0, 1.0, sel)
+	var ult: bool = picked == "ULTIMATE"
+	dim.visible = e > 0.01
+	dim.color = Color(0.01, 0.0, 0.05, (0.84 if ult else 0.6) * e)
+	if boss_rect != null:
+		boss_rect.modulate = Color.WHITE.lerp(Color(0.42, 0.42, 0.55), e)
+	hero.modulate = Color.WHITE.lerp(Color(0.92, 0.92, 1.0) if ult else Color(0.5, 0.5, 0.62), e)
+	for gm in glow_mats:
+		gm.set_shader_parameter("tint", Color("#ff5a47", minf(float(gm.get_meta("base")) * (1.0 + 0.5 * e), 1.0)))
+	wheel_letters.modulate.a = _ease3(appear * 1.4 - 0.15)
+	wheel_letters.position.y = (1.0 - wheel_letters.modulate.a) * 36.0
+	wheel_back.t = fx_t
+	wheel_front.t = fx_t
+	wheel_back.appear = appear
+	wheel_back.sel = e
+	fx.t = fx_t
+	fx.sel = e
+	fx.flash = flash
+	fx.queue_redraw()
+	# comandi: ingresso a rimbalzo a catena quando cambia il personaggio, impulso al tocco
+	var moving: bool = false
+	for i in 4:
+		var pv: float = float(wheel_front.pop[i])
+		if pv < 1.0:
+			var delay: float = float(i) * 0.09
+			wheel_front.pop[i] = minf(1.0, maxf(0.0, pv + (delta if pv > 0.0 or intro_t >= delay else 0.0) / 0.55))
+			moving = true
+		var pr: float = float(wheel_front.press[i])
+		if pr > 0.0:
+			wheel_front.press[i] = maxf(0.0, pr - delta / 0.55)
+			moving = true
+	intro_t += delta
+	_G.sel_p = e
+	if absf(e - _last_e) > 0.001:
+		_last_e = e
+		hud.queue_redraw()
+	if moving or picked != "" or e > 0.01:
+		wheel_front.queue_redraw()
+	# scossa dello schermo che si smorza
+	shake = maxf(0.0, shake - delta * 4.0)
+	_center()
+	_redraw_acc += delta
+	if _redraw_acc >= 1.0 / 30.0:
+		_redraw_acc = 0.0
+		wheel_back.queue_redraw()
+
+
+func _ease3(x: float) -> float:
+	return 1.0 - pow(1.0 - clampf(x, 0.0, 1.0), 3.0)
 
 
 # ---------- Input ----------
@@ -389,7 +480,13 @@ func _select(i: int) -> void:
 	var c: Dictionary = _G.cmds[i]
 	if not bool(c["ok"]):
 		Notify.toast("%s non disponibile ora" % NAMES[i])
+		wheel_front.press[i] = 0.6
+		shake = 0.25
+		Settings.buzz(12)
 		return
+	wheel_front.press[i] = 1.0
+	shake = 0.85 if NAMES[i] == "ULTIMATE" else 0.4
+	Settings.buzz(45 if NAMES[i] == "ULTIMATE" else 18)
 	if NAMES[i] == "SKILL" and picked == "SKILL" and skill_opts.size() > 1:
 		skill_idx += 1
 		_build_cmds()
@@ -408,6 +505,9 @@ func _confirm() -> void:
 	var i: int = NAMES.find(picked)
 	var move_id: String = str(_G.cmds[i]["move"])
 	choices[str(slots[cur])] = _choice_for(move_id)
+	shake = 0.6
+	flash = 1.0
+	Settings.buzz(70 if picked == "ULTIMATE" else 30)
 	picked = ""
 	skill_idx = 0
 	_next_slot(cur)
@@ -766,61 +866,83 @@ class _Wheel extends Control:
 		if part != "back":
 			_front()
 
+	var t: float = 0.0              # tempo (s) per il flusso continuo
+	var appear: float = 1.0         # 0..1: le pennellate entrano con l'animazione
+	var sel: float = 0.0            # 0..1: intensita' della scelta (skill/ultimate)
+	var pop: Array = [0.0, 0.0, 0.0, 0.0]     # ingresso a rimbalzo dei comandi
+	var press: Array = [0.0, 0.0, 0.0, 0.0]   # impulso al tocco (1 -> 0)
+	var layer: String = "both"      # paint (animato) | letters (ridisegnato solo al cambio scelta) | both
+
+	func _ease(x: float) -> float:
+		return 1.0 - pow(1.0 - clampf(x, 0.0, 1.0), 3.0)
+
 	func _back() -> void:
-		# cerchio sottile: in composizione dietro al personaggio e alle lettere
-		draw_arc(center, R + 52.0, 0.0, TAU, 80, Color("#fffaf0", 0.2), 1.2, true)
-		var rng := RandomNumberGenerator.new()
-		rng.seed = 21
+		var ap: float = _ease(appear)
+		if layer != "letters":
+			# cerchio sottile: in composizione dietro al personaggio e alle lettere
+			draw_arc(center, R + 52.0, 0.0, TAU, 80, Color("#fffaf0", 0.2 * ap), 1.2, true)
 		for i in 4:
 			var d: Vector2 = dir_of(i)
-			var perp: Vector2 = Vector2(-d.y, d.x)
 			var on: bool = picked == NAMES[i]
 			var rs: float = 0.8 if d.y < -0.5 else 1.0
-			if true:
-				# pennellate larghe: rosso pieno + rosa chiaro + tocco ciano, come negli schizzi di Persona/Metaphor
-				var bend: float = 38.0 * (1.0 if i % 2 == 0 else -1.0)
-				var c0: Color = aura.lightened(0.15) if glow else aura
-				if glow:
-					for g in (7 if on else 4):
-						var gw: float = 118.0 + float((7 if on else 4) - g) * 34.0
-						_U.brush(self, center + d * 30.0, center + d * (R + 190.0 * rs), gw, 30.0 + float(4 - g) * 10.0, Color(aura, 0.10 + float(g) * 0.05), 40 + i, bend, 0.1)
-				_U.brush(self, center + d * 40.0, center + d * (R + 170.0 * rs), 118.0, 20.0, Color(c0, 1.0), 40 + i, bend)
-				if glow:
-					_U.brush(self, center + d * 70.0, center + d * (R + 140.0 * rs), 56.0, 10.0, Color(aura.lightened(0.45), 0.9), 90 + i, bend * 0.8)
-				_U.brush(self, center + d * 80.0 + perp * 18.0, center + d * (R + 110.0 * rs) + perp * 30.0, 40.0, 8.0, Color(aura.lightened(0.8), 1.0) if glow else Color(aura.lightened(0.55), 0.92), 60 + i, -20.0)
-				_U.brush(self, center + d * (R + 10.0) - perp * 26.0, center + d * (R + 100.0 * rs) - perp * 44.0, 14.0, 3.0, Color(aura.lightened(0.85), 1.0) if glow else Color("#d8f4ff", 0.95), 80 + i, 8.0, 0.2, 8)
-				# lettera gigante
-				var lp: Vector2 = center + d * (R + 78.0) + Vector2(-44, 62)
-				_U.skew_text(self, lp + Vector2(5, 5), LET[i], 168, Color(aura.darkened(0.35), 0.9), Color(0, 0, 0, 0), BattleTheme.display(), 0)
-				if glow:
-					_U.skew_text(self, lp, LET[i], 168, Color(aura, 0.35), Color(aura, 0.3), BattleTheme.display(), 34)
-					_U.skew_text(self, lp, LET[i], 168, Color(1, 1, 1, 0.9), Color(aura.lightened(0.2), 0.8), BattleTheme.display(), 20)
-				_U.skew_text(self, lp, LET[i], 168, Color("#ffffff") if glow else Color("#fffaf0"), Color(0.05, 0.02, 0.06, 0.95), BattleTheme.display(), 10)
-				# schizzi
-				for k in 14:
-					var q: Vector2 = center + d * rng.randf_range(80.0, R + 190.0) + perp * rng.randf_range(-70.0, 70.0)
-					draw_circle(q, rng.randf_range(1.8, 6.5), (aura.lightened(0.15) if glow else aura) if k % 4 else aura.lightened(0.6))
-			else:
-				# light painting: scie bianche con alone colorato
-				var k: int = 4 if on else 2
-				for s in k:
-					var off: float = (float(s) - float(k - 1) * 0.5) * 22.0
-					var a0: Vector2 = center + d * 70.0 + perp * off
-					var a1: Vector2 = center + d * (R + 190.0 * rs) + perp * (off * 2.6)
-					var pts := PackedVector2Array()
-					for j in 24:
-						var t: float = float(j) / 23.0
-						pts.append(a0.lerp(a1, t) + perp * sin(t * PI * 1.3 + float(s)) * 26.0)
-					draw_polyline(pts, Color(aura, 0.12 if on else 0.08), 34.0, true)
-					draw_polyline(pts, Color(aura, 0.38 if on else 0.22), 15.0, true)
-					draw_polyline(pts, Color(1, 0.96, 0.94, 0.98 if on else 0.6), 4.0 if on else 2.4, true)
-				if on:
-					for k2 in 22:
-						var ang: float = deg_to_rad(float(ANG[i])) + rng.randf_range(-0.7, 0.7)
-						var r0: float = rng.randf_range(R * 0.5, R * 0.9)
-						draw_line(center + Vector2(cos(ang), sin(ang)) * r0, center + Vector2(cos(ang), sin(ang)) * (r0 + rng.randf_range(40.0, 130.0)), Color(1, 0.96, 0.92, 0.85), rng.randf_range(1.5, 3.2), true)
-					# lettera luminosa
-					_U.skew_text(self, center + d * (R + 78.0) + Vector2(-44, 62), LET[i], 168, Color(1, 1, 1, 0.9), Color(aura, 0.8), BattleTheme.display(), 9)
+			if layer != "letters":
+				var pr: float = _ease(appear * 1.7 - float(i) * 0.22)
+				if pr > 0.02:
+					_paint(i, d, on, rs, pr)
+			if layer != "paint":
+				_letter(i, d, on)
+
+	func _ep(d: Vector2, from: float, to: float, pr: float) -> Vector2:
+		return center + d * lerpf(from, to, pr)
+
+	func _paint(i: int, d: Vector2, on: bool, rs: float, pr: float) -> void:
+		var perp: Vector2 = Vector2(-d.y, d.x)
+		var si: float = sel if on else 0.0
+		# le pennellate ondeggiano piano: sempre in movimento
+		var bend: float = 38.0 * (1.0 if i % 2 == 0 else -1.0) + sin(t * 1.7 + float(i) * 1.3) * (11.0 + 9.0 * si)
+		var c0: Color = aura.lightened(0.15) if glow else aura
+		var n_g: int = 7 if on else 4
+		if glow:
+			for g in n_g:
+				var gw: float = 118.0 + float(n_g - g) * 34.0
+				_U.brush(self, center + d * 30.0, _ep(d, 30.0, R + 190.0 * rs, pr), gw, 30.0 + float(4 - g) * 10.0, Color(aura, (0.10 + float(g) * 0.05) * pr), 40 + i, bend, 0.1)
+		_U.brush(self, center + d * 40.0, _ep(d, 40.0, R + 170.0 * rs, pr), 118.0, 20.0, Color(c0, 1.0), 40 + i, bend)
+		if glow:
+			_U.brush(self, center + d * 70.0, _ep(d, 70.0, R + 140.0 * rs, pr), 56.0, 10.0, Color(aura.lightened(0.45), 0.9), 90 + i, bend * 0.8)
+		_U.brush(self, center + d * 80.0 + perp * 18.0, _ep(d, 80.0, R + 110.0 * rs, pr) + perp * 30.0, 40.0, 8.0, Color(aura.lightened(0.8), 1.0) if glow else Color(aura.lightened(0.55), 0.92), 60 + i, -20.0)
+		_U.brush(self, center + d * (R + 10.0) - perp * 26.0, _ep(d, R + 10.0, R + 100.0 * rs, pr) - perp * 44.0, 14.0, 3.0, Color(aura.lightened(0.85), 1.0) if glow else Color("#d8f4ff", 0.95), 80 + i, 8.0, 0.2, 8)
+		# scie di luce che scorrono verso l'esterno (piu' veloci e lunghe sulla scelta)
+		var speed: float = 0.30 + 1.5 * si + 0.15 * sel
+		var cnt: int = 8 if on else 5
+		for k in cnt:
+			var u: float = fposmod(t * speed + float(k) / float(cnt) + float(i) * 0.137, 1.0)
+			var along: float = lerpf(50.0, R + 200.0 * rs, u)
+			var off: float = (float(k) - float(cnt - 1) * 0.5) * (118.0 / float(cnt)) * 1.5 + sin(float(k) * 3.1 + float(i)) * 8.0
+			var ln: float = 34.0 + 70.0 * si + 18.0 * sin(float(k) * 2.3)
+			var al: float = sin(u * PI) * pr * (0.9 if on else 0.55)
+			var p0: Vector2 = center + d * along + perp * off
+			draw_line(p0, p0 + d * ln, Color(aura, al * 0.3), 8.0, true)
+			draw_line(p0, p0 + d * ln, Color(aura.lightened(0.85), al), 2.6, true)
+		# schizzi: restano sempre sparsi e scivolano piano lungo la pennellata
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 21 + i * 7
+		for k in 14:
+			var a0: float = rng.randf_range(80.0, R + 190.0)
+			var off2: float = rng.randf_range(-70.0, 70.0)
+			var rad: float = rng.randf_range(1.8, 6.5)
+			var span: float = R + 110.0
+			var u2: float = fposmod((a0 - 80.0) / span + t * (0.05 + 0.2 * si), 1.0)
+			var q: Vector2 = center + d * (80.0 + u2 * span * pr) + perp * (off2 + sin(t * 1.3 + float(k)) * 5.0)
+			var dc: Color = (aura.lightened(0.15) if glow else aura) if k % 4 else aura.lightened(0.6)
+			draw_circle(q, rad, Color(dc, sin(u2 * PI) * 0.4 + 0.6 * pr if u2 < 0.9 else 0.0))
+
+	func _letter(i: int, d: Vector2, on: bool) -> void:
+		var lp: Vector2 = center + d * (R + 78.0) + Vector2(-44, 62)
+		_U.skew_text(self, lp + Vector2(5, 5), LET[i], 168, Color(aura.darkened(0.35), 0.9), Color(0, 0, 0, 0), BattleTheme.display(), 0)
+		if glow:
+			_U.skew_text(self, lp, LET[i], 168, Color(aura, 0.35), Color(aura, 0.3), BattleTheme.display(), 34)
+			_U.skew_text(self, lp, LET[i], 168, Color(1, 1, 1, 0.9), Color(aura.lightened(0.2), 0.8), BattleTheme.display(), 20)
+		_U.skew_text(self, lp, LET[i], 168, Color("#ffffff") if glow else Color("#fffaf0"), Color(0.05, 0.02, 0.06, 0.95), BattleTheme.display(), 10)
 
 	func _front() -> void:
 		var cream := Color("#fffaf0")
@@ -829,10 +951,16 @@ class _Wheel extends Control:
 		draw_line(hand, Vector2(744, 349), Color(aura, 0.9), 2.0, true)
 		draw_circle(hand, 5.0, Color(aura, 0.95))
 		for i in 4:
-			var p: Vector2 = pos_of(i)
+			var p_rest: Vector2 = pos_of(i)
 			var on: bool = picked == NAMES[i]
 			var ult: bool = NAMES[i] == "ULTIMATE"
-			var rad: float = 27.0 if not on else 35.0
+			var pe: float = clampf(float(pop[i]), 0.0, 1.0)
+			var back: float = 1.0 + 2.2 * pow(pe - 1.0, 3.0) + 1.2 * pow(pe - 1.0, 2.0)    # easeOutBack: sorpassa e rimbalza
+			var pr_: float = float(press[i])
+			var bounce: float = 1.0 + 0.32 * pr_ * cos((1.0 - pr_) * 9.0)
+			var p: Vector2 = center.lerp(p_rest, clampf(back, 0.0, 1.25)) if pe < 1.0 else p_rest
+			var rad: float = (27.0 if not on else 35.0) * clampf(0.35 + 0.65 * back, 0.0, 1.2) * bounce
+			var fa: float = clampf(pe * 1.6, 0.0, 1.0)      # dissolvenza in ingresso
 			var ring: Color = cream if not ult else aura.lightened(0.3)
 			var ok: bool = bool(_G.cmds[i]["ok"]) if _G.cmds.size() > i else true
 			var dimmed: bool = (picked != "" and not on) or not ok
@@ -846,6 +974,28 @@ class _Wheel extends Control:
 			draw_circle(p, rad, Color(cream) if on else Color("#0a0b14"))
 			draw_arc(p, rad, 0.0, TAU, 44, Color(ring, 0.5) if dimmed else ring, 4.0, true)
 			_U.icon(self, KEYS[i], p, rad * 2.0 * _U.ICON_K, Color("#0a0b14") if on else ring)
+			# feedback al tocco: onda d'urto, scintille e lampo
+			if pr_ > 0.01:
+				var grow: float = 1.0 - pr_
+				draw_arc(p, rad + 6.0 + grow * 120.0, 0.0, TAU, 56, Color("#fff36b", pr_ * 0.9), 2.0 + 7.0 * pr_, true)
+				draw_arc(p, rad + 4.0 + grow * 70.0, 0.0, TAU, 48, Color(aura.lightened(0.6), pr_ * 0.8), 2.0 + 4.0 * pr_, true)
+				for k in 12:
+					var ang: float = TAU * float(k) / 12.0 + float(i)
+					var dv: Vector2 = Vector2(cos(ang), sin(ang))
+					draw_line(p + dv * (rad + 8.0 + grow * 40.0), p + dv * (rad + 22.0 + grow * 110.0 * (0.6 + 0.4 * float(k % 3))), Color(1, 0.98, 0.8, pr_), 2.5 * pr_ + 1.0, true)
+				draw_circle(p, rad * (1.0 + 0.4 * pr_), Color(1, 1, 0.9, pr_ * 0.55))
+			# comando scelto: l'energia scorre (anelli che pulsano, tratteggio che gira, scintille che salgono)
+			if on:
+				var pulse: float = 0.5 + 0.5 * sin(t * 7.0)
+				draw_arc(p, rad + 12.0 + 5.0 * pulse, 0.0, TAU, 56, Color(aura.lightened(0.5), 0.35 + 0.4 * pulse), 3.0, true)
+				for k in 8:
+					var a0: float = t * 2.4 + TAU * float(k) / 8.0
+					draw_arc(p, rad + 22.0, a0, a0 + 0.42, 8, Color("#fff36b", 0.95), 4.0, true)
+				for k in 7:
+					var u: float = fposmod(t * 0.9 + float(k) * 0.143, 1.0)
+					var aa: float = float(k) * 2.4 + t * 1.2
+					var rr: float = lerpf(rad + 70.0, rad + 4.0, u)
+					draw_circle(p + Vector2(cos(aa), sin(aa)) * rr, 2.6 * (1.0 - u) + 1.2, Color(1, 0.97, 0.7, sin(u * PI)))
 			# tasto numerato
 			var kp: Vector2 = p + Vector2(rad * 0.72, -rad * 0.72)
 			draw_circle(kp, 9.0, aura)
@@ -855,16 +1005,18 @@ class _Wheel extends Control:
 			var sz: int = 30 if on else 26
 			var tw: float = _U.text_w(NAMES[i], sz)
 			var left: bool = i == 3
-			var x0: float = p.x - rad - 12.0 - tw if left else p.x + rad + 12.0
-			var y0: float = p.y + 8.0
+			var rad_r: float = 27.0 if not on else 35.0
+			var slide: float = (1.0 - clampf(pe * 1.4, 0.0, 1.0)) * (46.0 if left else -46.0)
+			var x0: float = (p_rest.x - rad_r - 12.0 - tw if left else p_rest.x + rad_r + 12.0) + slide
+			var y0: float = p_rest.y + 8.0
 			var subt: String = str(_G.cmds[i]["sub"]) if _G.cmds.size() > i else SUBS[i]
 			var sw: float = _U.text_w(subt, _U.T_SUB, BattleTheme.mono()) + 20.0
 			var sx: float = x0 + (tw - sw if left else 0.0)
-			draw_colored_polygon(_U.slant(Rect2(sx, y0 + 5.0, sw, 23.0), 6.0), Color(cream, 0.95))
-			_U.skew_text(self, Vector2(sx + 10.0, y0 + 5.0 + 11.5 + 0.35 * float(_U.T_SUB)), subt, _U.T_SUB, Color("#14101c"), Color(0, 0, 0, 0), BattleTheme.mono(), 0)
-			_U.skew_text(self, Vector2(x0, y0), NAMES[i], sz, Color("#fff36b") if on else Color(cream, (0.62 if ok else 0.4) if dimmed else 1.0))
+			draw_colored_polygon(_U.slant(Rect2(sx, y0 + 5.0, sw, 23.0), 6.0), Color(cream, 0.95 * fa))
+			_U.skew_text(self, Vector2(sx + 10.0, y0 + 5.0 + 11.5 + 0.35 * float(_U.T_SUB)), subt, _U.T_SUB, Color("#14101c", fa), Color(0, 0, 0, 0), BattleTheme.mono(), 0)
+			_U.skew_text(self, Vector2(x0, y0), NAMES[i], sz, Color("#fff36b", fa) if on else Color(cream, ((0.62 if ok else 0.4) if dimmed else 1.0) * fa))
 			# costo accanto al sottotitolo: SKILL = riserva, ULTIMATE = carica
-			var hit_r := Rect2(p - Vector2(46, 46), Vector2(92, 92)).merge(Rect2(minf(x0, sx) - 6.0, y0 - 30.0, maxf(tw, sw) + 90.0, 66.0))
+			var hit_r := Rect2(p_rest - Vector2(46, 46), Vector2(92, 92)).merge(Rect2(minf(x0, sx) - 6.0, y0 - 30.0, maxf(tw, sw) + 90.0, 66.0))
 			hits[i] = hit_r
 			var ctxt: String = str(_G.cmds[i]["cost"]) if _G.cmds.size() > i else ""
 			if (i == 1 or i == 2) and ctxt != "":
@@ -1129,7 +1281,8 @@ class _Hud extends Control:
 		if selected:
 			var title: String = _G.banner_title
 			var sub: String = _G.banner_sub
-			var bx: float = 450.0
+			var epb: float = 1.0 - pow(1.0 - clampf(_G.sel_p * 1.5, 0.0, 1.0), 3.0)
+			var bx: float = 450.0 - (1.0 - epb) * 170.0
 			var by: float = 100.0
 			var bh: float = 46.0
 			var sl: float = 14.0
@@ -1246,16 +1399,84 @@ class _Hud extends Control:
 				draw_line(Vector2(cx - qsp * 0.5 + 2.0, cyc - 11.0), Vector2(cx - qsp * 0.5 + 2.0, cyc + 11.0), Color(cream, 0.4), 1.5)
 				cx += 16.0
 		if selected:
-			var cr := BattleV2.CONFIRM_RECT
+			var epc: float = 1.0 - pow(1.0 - clampf(_G.sel_p * 1.3 - 0.15, 0.0, 1.0), 3.0)
+			var cr := Rect2(BattleV2.CONFIRM_RECT.position + Vector2((1.0 - epc) * 110.0, 0.0), BattleV2.CONFIRM_RECT.size)
 			draw_colored_polygon(_U.slant(Rect2(cr.position + Vector2(3, 3), cr.size), 9.0), Color(0, 0, 0, 0.5))
 			draw_colored_polygon(_U.slant(cr, 9.0), Color("#fff36b"))
 			var cw0: float = _U.text_w("CONFERMA", 20, BattleTheme.display())
 			_U.skew_text(self, Vector2(cr.position.x + (cr.size.x - cw0) * 0.5, cr.position.y + 27.0), "CONFERMA", 20, Color("#14101c"), Color(1, 1, 1, 0.4), BattleTheme.display(), 3)
-			var ar := BattleV2.CANCEL_RECT
+			var ar := Rect2(BattleV2.CANCEL_RECT.position + Vector2((1.0 - epc) * 110.0, 0.0), BattleV2.CANCEL_RECT.size)
 			draw_colored_polygon(_U.slant(ar, 7.0), Color(0.04, 0.05, 0.1, 0.85))
 			var aw0: float = _U.text_w("ANNULLA", 15, BattleTheme.display())
 			_U.skew_text(self, Vector2(ar.position.x + (ar.size.x - aw0) * 0.5, ar.position.y + 21.0), "ANNULLA", 15, cream, Color(0, 0, 0, 0.9), BattleTheme.display(), 4)
 
+
+
+class _Fx extends Control:
+	# Sfondo animato della scelta: oscuramento con barre oblique, raggi e scie che scorrono (ultimate piu' intensa)
+	var t: float = 0.0
+	var sel: float = 0.0
+	var flash: float = 0.0
+	var ult: bool = false
+	var col: Color = Color.WHITE
+	var center: Vector2 = Vector2(365, 405)
+
+	func _draw() -> void:
+		if sel <= 0.01 and flash <= 0.01:
+			return
+		var e: float = smoothstep(0.0, 1.0, sel)
+		var hi: Color = col.lightened(0.7)
+		# alone pulsante dietro l'eroe
+		var hc: Vector2 = center + Vector2(10, -15)
+		var pul: float = 0.5 + 0.5 * sin(t * (8.0 if ult else 5.0))
+		for g in 9:
+			var gr: float = (60.0 + float(g) * 26.0) * (1.0 + 0.06 * pul)
+			draw_circle(hc, gr, Color(col, (0.07 + 0.03 * pul) * e * (1.4 if ult else 1.0)))
+		# energia che converge sull'eroe (il potere che fluisce verso di lui)
+		var nc: int = 30 if ult else 16
+		for k in nc:
+			var ka: float = float(k) * 2.399 + sin(float(k)) * 0.4
+			var u: float = fposmod(t * (0.8 if ult else 0.55) + float(k) * 0.097, 1.0)
+			var r: float = lerpf(560.0, 40.0, u * u)
+			var dv: Vector2 = Vector2(cos(ka + u * 1.6), sin(ka + u * 1.6))
+			var pt: Vector2 = hc + dv * r
+			var tail: Vector2 = hc + Vector2(cos(ka + (u - 0.07) * 1.6), sin(ka + (u - 0.07) * 1.6)) * (r + 60.0 + 80.0 * (1.0 - u))
+			draw_line(pt, tail, Color(hi, sin(minf(u * 1.2, 1.0) * PI * 0.8 + 0.2) * 0.85 * e), 2.0 + 2.5 * u, true)
+			draw_circle(pt, 2.5 + 3.0 * u, Color(1, 1, 1, 0.9 * e * u))
+		# raggi radiali che si allontanano dal personaggio
+		var n: int = 26 if ult else 14
+		for k in n:
+			var a: float = TAU * float(k) / float(n) + t * (0.16 if ult else 0.07) + sin(float(k) * 7.3) * 0.05
+			var dr: Vector2 = Vector2(cos(a), sin(a))
+			var u: float = fposmod(t * (0.85 if ult else 0.45) + float(k) * 0.37, 1.0)
+			var r0: float = lerpf(130.0, 950.0, u)
+			var r1: float = r0 + (150.0 if ult else 80.0) * (0.4 + u)
+			draw_line(center + dr * r0, center + dr * r1, Color(hi, sin(u * PI) * (0.6 if ult else 0.35) * e), 1.5 + 3.5 * u, true)
+		# bande oblique luminose che attraversano lo schermo
+		var nb: int = 7 if ult else 4
+		for k in nb:
+			var u: float = fposmod(t * (0.5 if ult else 0.28) + float(k) * 0.23, 1.0)
+			var x: float = lerpf(-360.0, size.x + 120.0, u)
+			var w: float = 26.0 + float(k % 3) * 22.0
+			var sk: float = 300.0
+			var al: float = sin(u * PI) * e
+			draw_colored_polygon(PackedVector2Array([Vector2(x, 0), Vector2(x + w, 0), Vector2(x + w - sk, size.y), Vector2(x - sk, size.y)]), Color(col, 0.16 * al))
+			draw_line(Vector2(x + w * 0.5, 0), Vector2(x + w * 0.5 - sk, size.y), Color(hi, 0.55 * al), 2.0, true)
+		# ultimate: barre scure oblique che entrano dall'alto e dal basso, con filo luminoso
+		if ult:
+			var bt: float = size.y * 0.17 * e
+			var bb: float = size.y * 0.17 * e
+			draw_colored_polygon(PackedVector2Array([Vector2(0, 0), Vector2(size.x, 0), Vector2(size.x, bt * 0.6), Vector2(0, bt * 1.4)]), Color(0, 0, 0.03, 0.88))
+			draw_colored_polygon(PackedVector2Array([Vector2(0, size.y), Vector2(size.x, size.y), Vector2(size.x, size.y - bb * 1.4), Vector2(0, size.y - bb * 0.6)]), Color(0, 0, 0.03, 0.88))
+			draw_line(Vector2(0, bt * 1.4), Vector2(size.x, bt * 0.6), Color(hi, 0.9 * e), 3.0, true)
+			draw_line(Vector2(0, size.y - bb * 0.6), Vector2(size.x, size.y - bb * 1.4), Color(hi, 0.9 * e), 3.0, true)
+		# pulviscolo luminoso che sale
+		for k in 20:
+			var px: float = fposmod(float(k) * 97.0, size.x) + sin(t * 0.9 + float(k)) * 22.0
+			var py: float = size.y - fposmod(t * (50.0 + float(k % 5) * 14.0) + float(k) * 53.0, size.y + 40.0)
+			draw_circle(Vector2(px, py), 2.0 + float(k % 4), Color(hi, 0.7 * e))
+		if flash > 0.01:
+			draw_rect(Rect2(Vector2.ZERO, size), Color(hi, flash * (0.55 if ult else 0.3)))
 
 
 class _Vignette extends Control:
