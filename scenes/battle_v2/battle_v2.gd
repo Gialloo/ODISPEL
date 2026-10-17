@@ -15,6 +15,7 @@ const BOSS_POS: Vector2 = Vector2(663, 172)
 const BOSS_ORIGIN: Vector2 = Vector2(40, 30)       # origine del disegno del boss dentro la sua texture
 const CONFIRM_RECT: Rect2 = Rect2(650, 586, 156, 40)
 const CANCEL_RECT: Rect2 = Rect2(650, 632, 156, 30)
+var ult_hide: Array = []
 const ICON_OF: Dictionary = {"ATTACK": "sword", "SKILL": "bolt", "ULTIMATE": "burst", "GUARD": "defense"}
 
 
@@ -126,6 +127,7 @@ func _ready() -> void:
 	sh.size = Vector2(W, H)
 	sh.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world.add_child(sh)
+	ult_hide.append(sh)
 	_build_paint()
 	wheel_letters = _Wheel.new()
 	wheel_letters.size = Vector2(W, H)
@@ -158,10 +160,12 @@ func _ready() -> void:
 	hero.size = Vector2(420, 450)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world.add_child(hero)
+	ult_hide.append(hero)
 	var vig := _Vignette.new()
 	vig.size = Vector2(W, H)
 	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(vig)
+	ult_hide.append(vig)
 	wheel_front = _Wheel.new()
 	wheel_front.size = Vector2(W, H)
 	wheel_front.part = "front"
@@ -176,6 +180,7 @@ func _ready() -> void:
 	hud.size = Vector2(W, H)
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(hud)
+	ult_hide.append(hud)
 	sel_banner = _Hud.new()
 	sel_banner.mode = "banner"
 	sel_confirm = _Hud.new()
@@ -536,7 +541,7 @@ func _process(delta: float) -> void:
 	var e: float = smoothstep(0.0, 1.0, sel)
 	var ult: bool = picked == "ULTIMATE"
 	dim.visible = e > 0.01
-	dim.color = Color(0.01, 0.0, 0.05, (0.84 if ult else 0.6) * e)
+	dim.color = Color(0.0, 0.0, 0.0, e) if ult else Color(0.01, 0.0, 0.05, 0.6 * e)
 	if boss_rect != null:
 		boss_rect.modulate = Color.WHITE.lerp(Color(0.42, 0.42, 0.55), e)
 	hero.modulate = Color.WHITE.lerp(Color(0.92, 0.92, 1.0) if ult else Color(0.5, 0.5, 0.62), e)
@@ -597,7 +602,7 @@ func _process(delta: float) -> void:
 	# banner e CONFERMA: scivolano dentro con sola posizione/opacita' (nessun ridisegno)
 	var epb: float = 1.0 - pow(1.0 - clampf(e * 1.5, 0.0, 1.0), 3.0)
 	var epc: float = 1.0 - pow(1.0 - clampf(e * 1.3 - 0.15, 0.0, 1.0), 3.0)
-	sel_banner.visible = e > 0.01
+	sel_banner.visible = e > 0.01 and not ult
 	sel_banner.modulate.a = clampf(e * 1.6, 0.0, 1.0)
 	sel_banner.position = ui_off * 0.7 + Vector2(-(1.0 - epb) * 170.0, 0.0)
 	sel_confirm.visible = e > 0.01
@@ -626,6 +631,14 @@ func _process(delta: float) -> void:
 	hud.position = ui_off * 0.7
 	fx.position = -cp * 0.6
 	wheel_letters.position = cp * 0.5 + Vector2(0.0, (1.0 - wheel_letters.modulate.a) * 36.0)
+	# PROVA: con ULTIMATE lo schermo diventa nero e restano solo comandi illuminati ed energia
+	var eb: float = e if ult else 0.0
+	for n_ in ult_hide:
+		(n_ as CanvasItem).modulate.a = 1.0 - eb
+	if boss_rect != null:
+		boss_rect.modulate.a = 1.0 - eb
+		glow_rect.modulate.a = 1.0 - eb
+	wheel_letters.modulate.a *= 1.0 - eb
 	if bg_node != null:
 		bg_node.pivot_offset = bg_node.size * 0.5
 		bg_node.scale = Vector2(1.05, 1.05)
