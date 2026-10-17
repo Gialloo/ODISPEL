@@ -665,6 +665,7 @@ func _unhandled_key_input(ev: InputEvent) -> void:
 		KEY_2: _select(1)
 		KEY_3: _select(2)
 		KEY_4: _select(3)
+		KEY_U: _toggle_ult()
 		KEY_ENTER, KEY_KP_ENTER, KEY_SPACE: _confirm()
 		KEY_ESCAPE:
 			if picked != "":
@@ -784,16 +785,31 @@ func _auto_round() -> void:
 
 
 # SOLO PER I TEST: tutti i personaggi hanno sempre la ultimate carica (a inizio battaglia e a ogni round)
-const TEST_ULT_SEMPRE: bool = true
+var ult_sempre: bool = true     # interruttore del test: tasto ULTI in alto o tasto U
+var ult_btn: Button
 
 
 func _charge_ult() -> void:
-	if not TEST_ULT_SEMPRE:
+	if not ult_sempre:
 		return
 	var units: Dictionary = _battle().get("units", {})
 	for uid in units:
 		if str(uid) != BattleState.BOSS_ID:
 			units[uid]["gauge"] = BattleTypes.GAUGE_MAX
+
+
+func _ult_btn_text() -> void:
+	ult_btn.text = "ULTI: ON" if ult_sempre else "ULTI: OFF"
+
+
+func _toggle_ult() -> void:
+	ult_sempre = not ult_sempre
+	_ult_btn_text()
+	if ult_sempre:
+		_charge_ult()
+		if cur >= 0 and not locked:
+			_refresh()
+	Notify.toast("Ultimate sempre carica: " + ("ON" if ult_sempre else "OFF"))
 
 
 func _after_round() -> void:
@@ -906,6 +922,13 @@ func _add_exit() -> void:
 	BattleTheme.style_button(eb, "normal", 16)
 	eb.pressed.connect(_exit)
 	stage.add_child(eb)
+	ult_btn = Button.new()
+	ult_btn.position = Vector2(1040, 10)
+	ult_btn.size = Vector2(120, 40)
+	BattleTheme.style_button(ult_btn, "normal", 16)
+	ult_btn.pressed.connect(_toggle_ult)
+	stage.add_child(ult_btn)
+	_ult_btn_text()
 
 
 

@@ -5,6 +5,10 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.2", "items": [
+		"BATTAGLIA V2: quando lanci l'ultimate, per 2 fotogrammi lo schermo diventa nero con scie di luce del colore del personaggio, nucleo luminoso e comandi a punti bianchi.",
+		"TEST V2: interruttore ULTI (in alto, o tasto U) per avere sempre la ultimate carica a ogni round.",
+	]},
 	{"v": "0.28.1", "items": [
 		"TEST V2: nuova schermata SQUADRA (stile Ashen Vow) prima del combattimento: scegli la squadra, potenzia, equipaggia mosse e pezzi, poi COMBATTI con la schermata di caricamento.",
 		"BATTAGLIA V2: HUD animata con pennellate, camera che segue, ultimate in light painting, molto piu' leggera.",
