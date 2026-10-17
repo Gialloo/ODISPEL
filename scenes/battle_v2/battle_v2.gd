@@ -17,9 +17,9 @@ const CONFIRM_RECT: Rect2 = Rect2(650, 586, 156, 40)
 const CANCEL_RECT: Rect2 = Rect2(650, 632, 156, 30)
 # PROVA (non ufficiale): energia rossa disegnata dal giocatore, mostrata quando si sceglie SKILL.
 #   "anim" = flusso continuo, "static" = immagine ferma, "off" = niente. Tasto E per cambiare durante la prova.
-const ENERGY_ORB := Vector2(325.0, 388.0)          # centro delle sfere nel ritaglio (px del disegno)
-const ENERGY_AT := Vector2(300.0, 412.0)           # dove cade quel centro sul palco
-const ENERGY_K: float = 0.93                       # scala del disegno sul palco
+const ENERGY_ORB := Vector2(365.0, 405.0)          # centro del comando (il disegno e' gia' deformato sui 4 tasti, vedi tools/energia_warp.py)
+const ENERGY_AT := Vector2(365.0, 405.0)
+const ENERGY_K: float = 1.0                       # scala del disegno sul palco
 const ICON_OF: Dictionary = {"ATTACK": "sword", "SKILL": "bolt", "ULTIMATE": "burst", "GUARD": "defense"}
 
 
@@ -589,7 +589,7 @@ func _build_energy() -> void:
 	energy_embers.explosiveness = 0.0
 	energy_embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_POINTS
 	var tips := PackedVector2Array()
-	for tp in [Vector2(140, 15), Vector2(8, 320), Vector2(55, 595), Vector2(550, 485), Vector2(190, 215), Vector2(330, 300)]:
+	for tp in [Vector2(180, 8), Vector2(18, 315), Vector2(75, 612), Vector2(650, 485), Vector2(425, 268), Vector2(570, 335)]:
 		tips.append(tp * ENERGY_K)
 	energy_embers.emission_points = tips
 	energy_embers.direction = Vector2(-0.3, -1.0)
