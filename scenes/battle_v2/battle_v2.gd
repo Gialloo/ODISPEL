@@ -247,7 +247,7 @@ func _ready() -> void:
 	src = SoloBattleSource.new()
 	src.training = true
 	src.battle_events_received.connect(_on_events)
-	src.start(RosterStore.load_or_new(), "distributore", int(randi()) | 1, 0)
+	src.start(RosterStore.load_or_new(), WorldV2Ctx.boss_id, int(randi()) | 1, 0)
 	slots = src.my_slots()
 	_start_round()
 
@@ -1073,6 +1073,8 @@ func _end_battle() -> void:
 	boss_turn = false
 	cur = -1
 	_refresh()
+	if WorldV2Ctx.active:
+		WorldV2Ctx.result = "win" if w == "players" else "lose"
 	_show_result(w == "players")
 
 
@@ -1428,9 +1430,10 @@ func _show_result(won: bool) -> void:
 	again.custom_minimum_size = Vector2(0, 54)
 	BattleTheme.style_button(again, "primary", 22)
 	again.pressed.connect(func() -> void: get_tree().reload_current_scene())
+	again.visible = not WorldV2Ctx.active          # dalla mappa non si ripete lo scontro: si torna a esplorare
 	box.add_child(again)
 	var back := Button.new()
-	back.text = "TORNA ALL'HUB"
+	back.text = "TORNA ALLA MAPPA" if WorldV2Ctx.active else "TORNA ALL'HUB"
 	back.custom_minimum_size = Vector2(0, 54)
 	BattleTheme.style_button(back, "normal", 22)
 	back.pressed.connect(_exit)
@@ -1439,7 +1442,9 @@ func _show_result(won: bool) -> void:
 
 
 func _exit() -> void:
-	SceneRouter.go("squad_v2")
+	if WorldV2Ctx.active and not ended:
+		WorldV2Ctx.result = "flee"
+	SceneRouter.go(WorldV2Ctx.back_scene(), WorldV2Ctx.active)
 
 
 func _add_exit() -> void:

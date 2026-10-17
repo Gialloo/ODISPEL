@@ -5,6 +5,12 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.6", "items": [
+		"TEST V2: dopo la squadra si entra in una mappa 2.5D (citta' di notte): cammini con il primo operatore, gli altri due della front row ti seguono.",
+		"TEST V2: oggetti da leggere, sorveglianti che ti notano con un '!' e ti sfidano, serranda che si apre con due nulla osta, Distributore in fondo al Largo.",
+		"TEST V2: terminale LibraCorp con la scheda del Distributore (colore debole, mosse, contromisure).",
+		"TEST V2: comandi PC (WASD/frecce, E o Invio) e touch (stick a sinistra, tasto AZIONE a destra).",
+	]},
 	{"v": "0.28.5", "items": [
 		"BATTAGLIA V2: ora si combatte a turni. Ogni operatore e il boss agiscono nel proprio turno, in ordine di velocita': scegli, l'azione si risolve subito, poi tocca al successivo.",
 		"BATTAGLIA V2: AUTO usa gli stessi turni: la camera passa da un personaggio all'altro e si vede chi agisce e con quale mossa.",

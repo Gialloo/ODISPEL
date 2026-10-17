@@ -518,7 +518,9 @@ func test_resources() -> void:
 func fight() -> void:
 	_save()
 	Settings.buzz(40)
-	SceneRouter.go("battle_v2", true)
+	WorldV2Ctx.reset()           # il Test V2 parte dalla mappa: il combattimento comincia con un incontro
+	WorldV2Ctx.active = true
+	SceneRouter.go("world_v2", true)
 
 
 # ---------- aggiornamento ----------

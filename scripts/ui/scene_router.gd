@@ -16,12 +16,14 @@ const SCENES: Dictionary = {
 	"battle": "res://scenes/battle/battle_screen.tscn",
 	"battle_v2": "res://scenes/battle_v2/battle_v2.tscn",
 	"squad_v2": "res://scenes/squad_v2/squad_v2.tscn",
+	"world_v2": "res://scenes/world_v2/world_v2.tscn",
 	"pvp": "res://scenes/battle/pvp_screen.tscn",
 }
 
 const LOADING_TITLES: Dictionary = {
 	"battle": "PREPARAZIONE OPERAZIONE",
 	"battle_v2": "PREPARAZIONE OPERAZIONE",
+	"world_v2": "ESPLORAZIONE",
 }
 
 
