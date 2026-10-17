@@ -33,7 +33,7 @@ class _G:
 	static var spr: Texture2D
 	static var picked: String = ""
 	static var turn_txt: String = "ROUND 1"
-	static var boss: Dictionary = {"name": "", "hp": 1, "max": 1, "bal": 1, "bal_max": 1, "heavy": false, "move": ""}
+	static var boss: Dictionary = {"name": "", "hp": 1, "max": 1, "bal": 1, "bal_max": 1, "heavy": false, "move": "", "target": "", "show": false}
 	static var party: Array = []
 	static var order: Array = []
 	static var cur: int = 0
@@ -469,6 +469,25 @@ func _desc(md: Dictionary, u: Dictionary) -> String:
 	return str(lines[0]).trim_suffix(".") if not lines.is_empty() else ""
 
 
+# Annuncio della mossa del boss: solo dati che il motore ha gia' deciso (begin_round).
+# Visibile mentre il giocatore sceglie; nascosto a fine battaglia, durante la risoluzione del round e se il boss e' stordito (salta la mossa).
+func _tele_visible(b: Dictionary, mdef: Dictionary) -> bool:
+	if mdef.is_empty() or ended or locked or str(b.get("winner", "")) != "":
+		return false
+	return int(BattleState.boss(b).get("stun", 0)) <= 0
+
+
+func _tele_target(b: Dictionary, mdef: Dictionary, target_id: String) -> String:
+	if mdef.is_empty():
+		return ""
+	if str(mdef.get("target", "")) == "all":
+		return "TUTTI"
+	var p: Dictionary = BattleState.player(b, target_id)
+	if p.is_empty():
+		return ""
+	return str(BattleState.unit(b, str(p["active"])).get("name", "")).to_upper()
+
+
 func _refresh() -> void:
 	if cur != _last_cur:
 		_last_cur = cur
@@ -482,7 +501,7 @@ func _refresh() -> void:
 	var tele: Dictionary = b.get("telegraph", {})
 	var tmove: String = str(tele.get("move", ""))
 	var mdef: Dictionary = BattleContent.BOSS_MOVES.get(tmove, {})
-	_G.boss = {"name": MissionConfig.boss_title(str(boss["char"])), "hp": int(boss["hp"]), "max": int(boss["max_hp"]), "bal": int(boss.get("balance", 0)), "bal_max": int(boss.get("balance_max", 1)), "heavy": not mdef.is_empty() and BattleResolver.is_heavy_boss_move(mdef), "move": str(mdef.get("name", tmove))}
+	_G.boss = {"name": MissionConfig.boss_title(str(boss["char"])), "hp": int(boss["hp"]), "max": int(boss["max_hp"]), "bal": int(boss.get("balance", 0)), "bal_max": int(boss.get("balance_max", 1)), "heavy": not mdef.is_empty() and BattleResolver.is_heavy_boss_move(mdef), "move": str(mdef.get("name", tmove)), "target": _tele_target(b, mdef, str(tele.get("target", ""))), "show": _tele_visible(b, mdef)}
 	# squadra
 	var party: Array = []
 	for i in slots.size():
@@ -1478,7 +1497,7 @@ class _Hud extends Control:
 			draw_line(rc.position + Vector2(-1, -1), rc.position + Vector2(-1, cl), cc, 2.2)
 			draw_line(rc.end + Vector2(1, 1), rc.end + Vector2(-cl, 1), cc, 2.2)
 			draw_line(rc.end + Vector2(1, 1), rc.end + Vector2(1, -cl), cc, 2.2)
-			if enemy and bool(_G.boss["heavy"]):
+			if enemy and bool(_G.boss["show"]) and bool(_G.boss["heavy"]):
 				_U.icon(self, "danger", rc.position + Vector2(rw - 8.0, 8.0), 13.0, Color("#fff36b"))
 			if not enemy:
 				var bp: Vector2 = rc.position + Vector2(0, rh)
@@ -1545,22 +1564,35 @@ class _Hud extends Control:
 			draw_colored_polygon(PackedVector2Array([Vector2(lt, by0), Vector2(ft, by0), Vector2(fb, by0 + bh0), Vector2(lb, by0 + bh0)]), bcol2)
 			if bk == 1:
 				_U.skew_text(self, Vector2(rt + 10.0, by0 + bh0 * 0.5 + 0.35 * 13.0), "EQUILIBRIO", 15, Color("#c8f4ff"), Color(0, 0, 0, 1.0), BattleTheme.mono(), 6, 0.0)
-		if not selected and bool(_G.boss["heavy"]):
+		if bool(_G.boss["show"]):
+			var heavy: bool = bool(_G.boss["heavy"])
 			var ty0: float = pl.end.y + 20.0
 			var th: float = 30.0
 			var lt2: float = xl0 - kk * (ty0 - ytop)
 			var rt2: float = xr0 - kk * (ty0 - ytop)
-			var tcol: Color = Color("#ff5a47")
-			# leggero glow corallo attorno alla targhetta (strati sfumati), poi targhetta al 98%
-			for gk in 6:
-				var ge: float = 1.0 + float(gk) * 1.4
-				var gp := PackedVector2Array([Vector2(lt2 - ge, ty0 - ge), Vector2(rt2 + ge, ty0 - ge), Vector2(rt2 - kk * th + ge, ty0 + th + ge), Vector2(lt2 - kk * th - ge, ty0 + th + ge)])
-				draw_colored_polygon(gp, Color(tcol.lightened(0.2), 0.16 * pow(1.0 - float(gk) / 6.0, 1.2)))
-			draw_colored_polygon(PackedVector2Array([Vector2(lt2, ty0), Vector2(rt2, ty0), Vector2(rt2 - kk * th, ty0 + th), Vector2(lt2 - kk * th, ty0 + th)]), Color(tcol, 0.62))
+			var tcol: Color = Color("#ff5a47") if heavy else Color("#7fdcec")
+			if heavy:
+				# leggero glow corallo attorno alla targhetta (strati sfumati), poi targhetta al 98%
+				for gk in 6:
+					var ge: float = 1.0 + float(gk) * 1.4
+					var gp := PackedVector2Array([Vector2(lt2 - ge, ty0 - ge), Vector2(rt2 + ge, ty0 - ge), Vector2(rt2 - kk * th + ge, ty0 + th + ge), Vector2(lt2 - kk * th - ge, ty0 + th + ge)])
+					draw_colored_polygon(gp, Color(tcol.lightened(0.2), 0.16 * pow(1.0 - float(gk) / 6.0, 1.2)))
+			draw_colored_polygon(PackedVector2Array([Vector2(lt2, ty0), Vector2(rt2, ty0), Vector2(rt2 - kk * th, ty0 + th), Vector2(lt2 - kk * th, ty0 + th)]), Color(tcol if heavy else Color(0.03, 0.10, 0.14), 0.62 if heavy else 0.82))
 			var tcp := PackedVector2Array([Vector2(lt2, ty0), Vector2(rt2, ty0), Vector2(rt2 - kk * th, ty0 + th), Vector2(lt2 - kk * th, ty0 + th), Vector2(lt2, ty0)])
-			draw_polyline(tcp, tcol.lightened(0.25), 2.4, true)
-			_U.icon(self, "danger", Vector2(lt2 + 26.0, ty0 + 15.0), 20.0, Color("#ffffff"))
-			_U.skew_text(self, Vector2(lt2 + 44.0, ty0 + 15.0 + 0.35 * 19.0), ("CARICA · " + str(_G.boss["move"]).to_upper()), 19, Color("#ffffff"), Color(0.25, 0.02, 0.0, 0.85), BattleTheme.mono(), 6)
+			draw_polyline(tcp, tcol.lightened(0.25) if heavy else tcol, 2.4 if heavy else 1.8, true)
+			if heavy:
+				_U.icon(self, "danger", Vector2(lt2 + 26.0, ty0 + 15.0), 20.0, Color("#ffffff"))
+			# il tipo si legge dalla parola (CARICA / MOSSA), non solo dal colore o dall'icona
+			var label: String = ("CARICA · " if heavy else "MOSSA · ") + str(_G.boss["move"]).to_upper()
+			if str(_G.boss["target"]) != "":
+				label += " > " + str(_G.boss["target"])
+			var lsz: int = 19
+			var tx_start: float = lt2 + (44.0 if heavy else 20.0)
+			var avail: float = (rt2 - kk * th) - tx_start - 8.0
+			var lw: float = _U.text_w(label, lsz, BattleTheme.mono())
+			if lw > avail:
+				lsz = maxi(13, int(float(lsz) * avail / lw))
+			_U.skew_text(self, Vector2(tx_start, ty0 + 15.0 + 0.35 * float(lsz)), label, lsz, Color("#ffffff"), Color(0.25, 0.02, 0.0, 0.85) if heavy else Color(0.0, 0.05, 0.08, 0.9), BattleTheme.mono(), 6)
 		# --- squadra: righe fisse (in basso F1), la riga attiva ha ritratto largo, etichetta F e linea ciano ---
 		var party: Array = _G.party
 		var n: int = party.size()
