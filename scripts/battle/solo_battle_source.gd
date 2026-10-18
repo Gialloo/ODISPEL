@@ -7,6 +7,9 @@ extends RefCounted
 signal battle_updated
 signal battle_events_received(events: Array)
 
+# Round giocati in automatico al massimo, se la tua squadra e' a terra.
+const AUTO_ROUND_LIMIT: int = 200
+
 var battle: Dictionary = {}
 var local_player_id: String = "p1"
 var battle_time_left: float = -1.0     # negativo = nessun timer
@@ -32,9 +35,25 @@ func submit_choice(choice: Dictionary) -> bool:
 	if battle.is_empty() or not BattleResolver.submit_choice(battle, local_player_id, choice):
 		return false
 	var events: Array = BattleResolver.resolve_round(battle)
+	events.append_array(_auto_play())
 	battle_events_received.emit(events)
 	battle_updated.emit()
 	return true
+
+
+# Se la tua squadra e' a terra ma i compagni IA combattono ancora, nessuno puo'
+# piu' scegliere: i round restanti si giocano da soli fino alla fine (altrimenti
+# la battaglia resterebbe bloccata).
+func _auto_play() -> Array:
+	var events: Array = []
+	var rounds: int = 0
+	while str(battle["winner"]) == "" and rounds < AUTO_ROUND_LIMIT:
+		var me: Dictionary = BattleState.player(battle, local_player_id)
+		if not me.is_empty() and BattleState.player_alive(battle, me):
+			break
+		events.append_array(BattleResolver.resolve_round(battle, true))
+		rounds += 1
+	return events
 
 
 # A battaglia finita: assegna i premi alla collezione e la salva. Una volta sola.

@@ -8,10 +8,13 @@ extends RefCounted
 # Stato come lo puo' vedere un singolo giocatore.
 # Tolti:
 #   - seed e stato dell'RNG: con quelli si potrebbero prevedere i bersagli del boss;
-#   - le scelte degli altri durante la pianificazione (resta solo "bloccata").
+#   - le scelte degli altri durante la pianificazione (resta solo "bloccata");
+#   - gli eventi dell'ultimo round: arrivano gia' col messaggio "battle_events",
+#     ripeterli in ogni snapshot raddoppierebbe i dati inviati.
 # viewer_id vuoto = spettatore: non vede nessuna scelta.
 static func snapshot_for(state: Dictionary, viewer_id: String) -> Dictionary:
 	var data: Dictionary = state.duplicate(true)
+	data["events"] = []
 	data["rng_seed"] = "0"
 	data["rng_state"] = "0"
 	for p in data.get("players", []):

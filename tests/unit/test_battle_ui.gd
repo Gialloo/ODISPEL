@@ -167,6 +167,23 @@ func _test_source() -> void:
 	_check("solitaria: collezione salvata e leggibile", RosterStore.load_or_new(TMP)["coins"] == after)
 	_check("solitaria: a battaglia finita le scelte sono rifiutate", not src.submit_choice({"move": "attack"}))
 
+	# la tua squadra cade mentre i compagni IA sono vivi: niente blocco
+	var ko := SoloBattleSource.new()
+	ko.save_path = TMP
+	ko.start(RosterState.new_roster(), "distributore", 5)
+	var me: Dictionary = BattleState.player(ko.battle, "p1")
+	for uid in me["team"]:
+		if uid != me["active"]:
+			BattleState.unit(ko.battle, uid)["hp"] = 0
+	BattleState.unit(ko.battle, str(me["active"]))["hp"] = 1
+	BattleState.unit(ko.battle, str(me["active"]))["def"] = 0
+	ko.battle["telegraph"]["target"] = "p1"
+	var ko_events: Array = []
+	ko.battle_events_received.connect(func(e: Array) -> void: ko_events.append_array(e))
+	ko.submit_choice({"move": "attack"})
+	_check("solitaria: squadra a terra, i compagni finiscono la battaglia", ko.battle["winner"] != "")
+	_check("solitaria: eventi dei round automatici inviati", ko_events.size() > 0 and str(ko_events[-1]["t"]) == "end")
+
 
 func _test_screen() -> void:
 	var src := SoloBattleSource.new()

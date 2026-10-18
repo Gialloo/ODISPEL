@@ -36,6 +36,9 @@ var my_peer_id: String = ""
 var battle: Dictionary = {}
 var battle_time_left: float = 0.0
 var battle_planning_seconds: float = 30.0
+# Se nessun umano deve scegliere (tutti a terra, restano solo IA) il round
+# parte dopo questa pausa, invece di aspettare tutto il timer.
+var battle_auto_round_seconds: float = 4.0
 var battle_timer_enabled: bool = false
 var local_team: Array = []          # squadra di chi gioca (host o client)
 var _player_teams: Dictionary = {}  # player_id -> squadra validata (host)
@@ -349,9 +352,12 @@ func _tick_battle_timer(delta: float) -> void:
 	if battle.is_empty() or str(battle["winner"]) != "":
 		return
 
+	# Solo l'host decide: scaduto il tempo, chi non ha scelto attacca.
+	if is_host and battle_timer_enabled and BattleResolver.can_resolve(battle):
+		battle_time_left = minf(battle_time_left, battle_auto_round_seconds)
+
 	battle_time_left = maxf(0.0, battle_time_left - delta)
 
-	# Solo l'host decide: scaduto il tempo, chi non ha scelto attacca.
 	if is_host and battle_timer_enabled and battle_time_left <= 0.0:
 		_battle_resolve(true)
 

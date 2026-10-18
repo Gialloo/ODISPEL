@@ -15,6 +15,9 @@ var locked: bool = false            # ordine inviato, si aspetta il round
 var pending_swap: String = ""       # personaggio scelto per il cambio
 var log_lines: Array = []
 var _ended_shown: bool = false
+var _event_queue: Array = []       # round arrivati mentre se ne anima un altro
+var _disconnected: bool = false
+var _timer_text: String = ""
 
 var _stage: BattleStage
 var _fx: Control
@@ -61,6 +64,11 @@ func bind_source(src: Variant) -> void:
 	source = src
 	src.battle_updated.connect(_on_updated)
 	src.battle_events_received.connect(_on_events)
+	# Solo in rete: connessione persa e giocatori usciti.
+	if src.has_signal("network_error"):
+		src.network_error.connect(_on_network_error)
+	if src.has_signal("player_left"):
+		src.player_left.connect(_on_player_left)
 	if not src.battle.is_empty():
 		_on_updated()
 
@@ -76,7 +84,10 @@ func _sync() -> void:
 		_push_log("CICLO 01 AVVIATO", "info")
 		_push_log("SEGNALE STABILE", "info")
 	shown = (source.battle as Dictionary).duplicate(true)
-	locked = false
+	# In rete lo stato dice se il mio ordine e' gia' arrivato all'host: cosi' le
+	# scelte degli altri non riattivano i comandi.
+	var me: Dictionary = _local_player()
+	locked = not me.is_empty() and me.get("choice") != null
 	pending_swap = ""
 	_refresh_all()
 	_check_end()
@@ -239,14 +250,22 @@ func _process(delta: float) -> void:
 		var d: Dictionary = Time.get_datetime_dict_from_system()
 		_clock_label.text = "%02d.%02d.%04d  %02d:%02d:%02d" % [d["day"], d["month"], d["year"], d["hour"], d["minute"], d["second"]]
 	if source != null and _timer_label != null:
-		var left: float = float(source.battle_time_left)
-		if left < 0.0:
-			_timer_label.text = "LIBERO"
-			_timer_label.add_theme_color_override("font_color", BattleTheme.CY)
-		else:
-			var secs: int = int(ceil(left))
-			_timer_label.text = "%02d:%02d" % [secs / 60, secs % 60]
-			_timer_label.add_theme_color_override("font_color", BattleTheme.RD if secs <= 10 else BattleTheme.WH)
+		_update_timer(float(source.battle_time_left))
+
+
+# Il testo cambia una volta al secondo: si tocca l'etichetta solo allora.
+func _update_timer(left: float) -> void:
+	var text: String = "LIBERO"
+	var color: Color = BattleTheme.CY
+	if left >= 0.0:
+		var secs: int = int(ceil(left))
+		text = "%02d:%02d" % [secs / 60, secs % 60]
+		color = BattleTheme.RD if secs <= 10 else BattleTheme.WH
+	if text == _timer_text:
+		return
+	_timer_text = text
+	_timer_label.text = text
+	_timer_label.add_theme_color_override("font_color", color)
 
 
 func _refresh_all() -> void:
@@ -328,6 +347,8 @@ func _refresh_operators() -> void:
 		if p["id"] == me["id"]:
 			continue
 		var a: Dictionary = BattleState.unit(shown, str(p["active"]))
+		if a.is_empty():
+			continue
 		var cell := HBoxContainer.new()
 		cell.add_theme_constant_override("separation", 5)
 		cell.add_child(BattleTheme.make_label(str(a.get("name", "?")).to_upper(), 12, BattleTheme.CY_DIM))
@@ -407,6 +428,8 @@ func _on_unit_pressed(uid: String) -> void:
 	if animating or locked or str(shown.get("winner", "")) != "":
 		return
 	var me: Dictionary = _local_player()
+	if me.is_empty():
+		return
 	if uid == str(me["active"]):
 		pending_swap = ""
 	else:
@@ -426,6 +449,11 @@ func _refresh_orders() -> void:
 		return
 	var uid: String = pending_swap if pending_swap != "" else str(me["active"])
 	var u: Dictionary = BattleState.unit(shown, uid)
+	if u.is_empty():
+		return
+	if not BattleState.player_alive(shown, me):
+		_orders_box.add_child(BattleTheme.make_label("SQUADRA FUORI COMBATTIMENTO\nI COMPAGNI CONTINUANO DA SOLI", 15, BattleTheme.RD))
+		return
 	if pending_swap != "":
 		var info := BattleTheme.make_label("CAMBIO » %s (GRATIS)" % str(u["name"]).to_upper(), 13, BattleTheme.WH)
 		_orders_box.add_child(info)
@@ -474,7 +502,10 @@ func _refresh_orders() -> void:
 		_order_buttons.append(b)
 		n += 1
 	_orders_box.add_child(grid)
-	var hint := BattleTheme.make_label("TASTI 1-%d · CLICCA UN OPERATORE PER IL CAMBIO" % (n - 1), 11, BattleTheme.CY_DIM)
+	var hint_text: String = "TASTI 1-%d · CLICCA UN OPERATORE PER IL CAMBIO" % (n - 1)
+	if locked and not animating:
+		hint_text = "ORDINE INVIATO · IN ATTESA DEGLI ALTRI"
+	var hint := BattleTheme.make_label(hint_text, 11, BattleTheme.WH if locked else BattleTheme.CY_DIM)
 	_orders_box.add_child(hint)
 
 
@@ -501,7 +532,7 @@ func _most_hurt_ally() -> String:
 
 
 func _on_order_pressed(move_id: String) -> void:
-	if animating or locked or source == null:
+	if animating or locked or _disconnected or source == null:
 		return
 	var choice: Dictionary = _make_choice(move_id)
 	if BattleResolver.validate_choice(shown, str(source.local_player_id), choice) != "":
@@ -525,24 +556,30 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 # ---------- Eventi del round ----------
 
+# In rete un round nuovo puo' arrivare mentre si anima il precedente: va in coda,
+# cosi' le due animazioni non si sovrappongono.
 func _on_events(events: Array) -> void:
-	_play_events(events)
+	_event_queue.append(events)
+	if not animating:
+		_play_events()
 
 
-func _play_events(events: Array) -> void:
+func _play_events() -> void:
 	animating = true
 	_refresh_orders()
-	for e in events:
-		if not is_inside_tree():
-			return
-		var line: Dictionary = BattleText.describe(shown, e)
-		_push_log(str(line["text"]), str(line["kind"]))
-		_event_fx(e)
-		BattleText.apply_to_display(shown, e)
-		_stage.set_state(shown)
-		_refresh_boss()
-		_refresh_operators()
-		await get_tree().create_timer(event_delay).timeout
+	while not _event_queue.is_empty():
+		var events: Array = _event_queue.pop_front()
+		for e in events:
+			if not is_inside_tree():
+				return
+			var line: Dictionary = BattleText.describe(shown, e)
+			_push_log(str(line["text"]), str(line["kind"]))
+			_event_fx(e)
+			BattleText.apply_to_display(shown, e)
+			_stage.set_state(shown)
+			_refresh_boss()
+			_refresh_operators()
+			await get_tree().create_timer(event_delay).timeout
 	animating = false
 	if not is_inside_tree():
 		return
@@ -601,6 +638,49 @@ func _push_log(text: String, kind: String) -> void:
 func _refresh_log() -> void:
 	if _log_label != null:
 		_log_label.text = "\n".join(log_lines)
+
+
+# ---------- Rete ----------
+
+func _on_player_left(player_id: String) -> void:
+	var p: Dictionary = BattleState.player(shown, player_id)
+	var who: String = str(p.get("name", player_id)).to_upper()
+	_push_log("%s SCOLLEGATO · SUBENTRA L'IA" % who, "down")
+
+
+# Connessione persa (host uscito, rete caduta): la battaglia non puo' continuare.
+func _on_network_error(reason: String) -> void:
+	if _disconnected or _ended_shown:
+		return
+	# L'host ha lo stato completo: un errore (per esempio un nuovo collegamento
+	# fallito) non ferma la battaglia.
+	if bool(source.get("is_host")):
+		_push_log("RETE: %s" % reason.to_upper(), "info")
+		return
+	_disconnected = true
+	_push_log("SEGNALE PERSO: %s" % reason.to_upper(), "end")
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.72)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(dim)
+	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var panel := HudPanel.new().setup("SEGNALE PERSO", BattleTheme.RD)
+	panel.cut = 24.0
+	_overlay.add_child(panel)
+	_anchor(panel, Vector4(0.5, 0.5, 0.5, 0.5), Vector4(-300, -120, 300, 120))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	panel.set_content(box)
+	var msg := BattleTheme.make_label("CONNESSIONE INTERROTTA\n%s" % reason.to_upper(), 20, BattleTheme.RD, true)
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(msg)
+	var hub := Button.new()
+	hub.text = "TORNA ALL'HUB"
+	hub.custom_minimum_size = Vector2(0, 50)
+	BattleTheme.style_button(hub, "primary", 22)
+	hub.pressed.connect(_on_hub)
+	box.add_child(hub)
 
 
 # ---------- Fine battaglia ----------

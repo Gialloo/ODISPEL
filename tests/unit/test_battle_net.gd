@@ -86,6 +86,8 @@ func _test_helpers() -> void:
 	_check("snapshot: la scelta altrui e' solo bloccata", va["players"][1]["choice"] == {"locked": true})
 	_check("snapshot: lo spettatore non vede scelte", BattleNet.snapshot_for(s, "")["players"][0]["choice"] == {"locked": true})
 	_check("snapshot: l'originale non cambia", s["rng_seed"] == "9" and s["players"][1]["choice"]["move"] == "guard")
+	BattleResolver.resolve_round(s)
+	_check("snapshot: senza gli eventi (arrivano a parte)", BattleNet.snapshot_for(s, "a")["events"].is_empty() and not s["events"].is_empty())
 	_check("snapshot: chi non ha scelto resta senza scelta", BattleNet.snapshot_for(BattleState.create([{"id": "a", "name": "A", "ai": false, "team": _entries(["kira"])}], "distributore", 1), "x")["players"][0]["choice"] == null)
 
 	_check("hello senza squadra: squadra di partenza", BattleNet.read_team({})["ok"] and BattleNet.read_team({})["team"].size() == 3)
@@ -185,6 +187,15 @@ func _test_timer() -> void:
 	off.battle_timer_enabled = false
 	off._tick_battle_timer(1000.0)
 	_check("timer disattivato: non scade", off.battle["round"] == 1)
+
+	# tutti gli umani a terra: non si aspettano 30 secondi a round
+	var dead: NetworkManager = _started()
+	for uid in ["player_1:kira", "player_1:dax", "player_1:elle", "player_2:nova", "player_2:bruno", "player_2:mira"]:
+		BattleState.unit(dead.battle, uid)["hp"] = 0
+	dead._tick_battle_timer(0.1)
+	_check("nessuno deve scegliere: pausa breve", dead.battle_time_left <= dead.battle_auto_round_seconds)
+	dead._tick_battle_timer(dead.battle_auto_round_seconds)
+	_check("nessuno deve scegliere: il round parte da solo", dead.battle["winner"] == "boss")
 
 	# un client non risolve mai da solo
 	var c := NetworkManager.new()
