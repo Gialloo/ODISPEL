@@ -12,6 +12,7 @@ const NAMES: Dictionary = {
 	"avvio": "Avvio del gioco",
 	"menu": "Menu",
 	"strada_carico": "Caricamento della strada 3D",
+	"apertura": "Apertura (la cupola)",
 	"strada": "Esplorazione della strada",
 	"dialogo": "Dialogo",
 	"battaglia_carico": "Caricamento del combattimento 3D",

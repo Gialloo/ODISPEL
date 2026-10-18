@@ -40,6 +40,7 @@ func _build() -> void:
 	_row("Sequenza ultimate", "SALTA" if Settings.skip_cutin else "MOSTRA", func() -> void: Settings.skip_cutin = not Settings.skip_cutin)
 	_row("Effetti ridotti", "SÌ" if Settings.light_fx else "NO", func() -> void: Settings.light_fx = not Settings.light_fx)
 	_row("Vibrazione", "SÌ" if Settings.vibration else "NO", func() -> void: Settings.vibration = not Settings.vibration)
+	_row("Attacco a sorpresa (prova A/B)", "SÌ" if Settings.surprise else "NO", func() -> void: Settings.surprise = not Settings.surprise)
 	_row("Contatore FPS", "SÌ" if Settings.show_fps else "NO", func() -> void: Settings.show_fps = not Settings.show_fps)
 
 

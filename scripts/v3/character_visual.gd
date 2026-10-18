@@ -37,9 +37,10 @@ var fall: float = 0.0
 var down: bool = false
 
 
-func setup(char_id: String) -> void:
+func setup(char_id: String, override: Dictionary = {}) -> void:
 	id = char_id
-	var sp: Dictionary = CastVisual.spec(char_id)
+	var sp: Dictionary = CastVisual.spec(char_id).duplicate()
+	sp.merge(override, true)            # espressioni dei portrait: sopracciglia, palpebre, bocca...
 	_scale = float(sp["height"]) / 1.75
 	var b: float = float(sp["build"])
 	var skin: Color = Color(str(sp["skin"]))
@@ -56,7 +57,7 @@ func setup(char_id: String) -> void:
 	add_child(_body)
 	_body.scale = Vector3.ONE * _scale
 	_hips = _pivot(_body, "Hips", Vector3(0, _hip_y, 0))
-	if _build_from_model(char_id):
+	if override.is_empty() and _build_from_model(char_id):
 		return
 
 	# --- stile anime semplificato (AnimeBuilder) ---

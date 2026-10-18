@@ -13,6 +13,8 @@ const R_PLAYER: float = 0.35
 const BOUNDS := Rect2(-6.6, -42.5, 13.2, 54.0)        # x, z percorribili
 const MACHINE_POS := Vector3(5.3, 0.14, -33.0)
 const CCTV_POS := Vector3(-5.6, 0.14, -27.0)
+const RECEIPT_POS := Vector3(3.7, 0.14, -28.6)
+const AMBUSH_TIME: float = 4.5      # secondi fermi davanti al distributore prima che attacchi lui (solo con l'attacco a sorpresa attivo)
 
 var player: CharacterVisual
 var machine: VendingVisual
@@ -21,7 +23,7 @@ var cctv_head: Node3D
 var yaw: float = 0.0
 var pitch: float = 0.3
 var dist: float = 4.8
-var mode: String = "walk"          # walk | dialog | leaving | end
+var mode: String = "walk"          # intro | walk | dialog | leaving | end
 var near: bool = false
 var done: bool = false             # rientro dopo il combattimento
 var won: bool = true
@@ -38,11 +40,23 @@ var _mouse_drag: bool = false
 var _shake: float = 0.0
 var _cam_pos: Vector3
 var _first: bool = true
+var intro: bool = true             # apertura in medias res (cupola) prima della strada
+var clues: Array = []              # indizi trovati
+var _target: String = ""           # oggetto vicino con cui interagire: telecamera, scontrino, distributore
+var _barks: Array = []
+var _bark_lbl: Label
+var _ambush_t: float = 0.0
+var _receipt: Node3D
+var _dome: MeshInstance3D
+var _env: Environment
+var _help: Label
 
 
 func configure(args: Dictionary) -> void:
 	done = bool(args.get("done", false))
 	won = bool(args.get("won", true))
+	intro = bool(args.get("intro", not done))
+	clues = args.get("indizi", [])
 
 
 func crumb() -> String:
@@ -58,6 +72,7 @@ func _ready() -> void:
 	e.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env.environment = e
 	add_child(env)
+	_env = e
 	Toon.set_fog(Color("#1a1030"), 16.0, 60.0)
 
 	var cb := CityBuilder.new(29)
@@ -85,6 +100,7 @@ func _ready() -> void:
 	cb.build(self)
 	_colliders = cb.colliders
 	_build_cctv()
+	_build_receipt()
 
 	machine = VendingVisual.new()
 	machine.position = MACHINE_POS
@@ -110,9 +126,12 @@ func _ready() -> void:
 	cam.current = true
 	_update_camera(1.0, true)
 	_build_ui()
+	_barks = (DialogData.all().get("camminata", []) as Array).duplicate()
 	Breadcrumb.mark("strada")
 	if done:
-		_show_end()
+		_finale()
+	elif intro:
+		_intro()
 
 
 func _build_cctv() -> void:
@@ -134,6 +153,55 @@ func _build_cctv() -> void:
 	cctv_head.add_child(hb.make_instance("CctvHead"))
 
 
+func _build_receipt() -> void:
+	# lo scontrino per terra (indizio) con un bagliore che pulsa
+	if clues.has("scontrino") or done:
+		return
+	_receipt = Node3D.new()
+	_receipt.position = RECEIPT_POS
+	add_child(_receipt)
+	var mb := MeshBatch.new()
+	mb.box(Transform3D(Basis(Vector3.UP, 0.5), Vector3(0, 0.01, 0)), Vector3(0.16, 0.012, 0.3), Color(0.97, 0.95, 0.88, 0.0))
+	_receipt.add_child(mb.make_instance("Receipt"))
+	var g := MeshInstance3D.new()
+	g.name = "Glow"
+	g.mesh = MeshBatch.disc(0.7, Color(0.25, 0.9, 1.0, 0.5), 16, 0.02)
+	g.material_override = Toon.glow()
+	_receipt.add_child(g)
+
+
+func _build_dome() -> void:
+	# cupola che sigilla la citta' (solo nell'apertura): emisfero trasparente additivo
+	var v := PackedVector3Array()
+	var c := PackedColorArray()
+	var rings: int = 10
+	var segs: int = 28
+	var r: float = 75.0
+	for i in rings:
+		for j in segs:
+			var a0: float = PI * 0.5 * float(i) / float(rings)
+			var a1: float = PI * 0.5 * float(i + 1) / float(rings)
+			var b0: float = TAU * float(j) / float(segs)
+			var b1: float = TAU * float(j + 1) / float(segs)
+			var p := func(a: float, b: float) -> Vector3: return Vector3(cos(a) * cos(b) * r, sin(a) * r * 0.75, cos(a) * sin(b) * r - 20.0)
+			var k0: float = 0.28 - 0.2 * float(i) / float(rings)
+			var k1: float = 0.28 - 0.2 * float(i + 1) / float(rings)
+			var c0 := Color(1.0, 0.24, 0.55, k0)
+			var c1 := Color(1.0, 0.24, 0.55, k1)
+			v.append_array([p.call(a0, b0), p.call(a1, b0), p.call(a1, b1), p.call(a0, b0), p.call(a1, b1), p.call(a0, b1)])
+			c.append_array([c0, c1, c1, c0, c1, c0])
+	var arr: Array = []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = v
+	arr[Mesh.ARRAY_COLOR] = c
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	_dome = MeshInstance3D.new()
+	_dome.mesh = m
+	_dome.material_override = Toon.glow()
+	add_child(_dome)
+
+
 func _build_ui() -> void:
 	_ui = CanvasLayer.new()
 	_ui.layer = 10
@@ -145,6 +213,7 @@ func _build_ui() -> void:
 	_touch = TouchControls.new()
 	root.add_child(_touch)
 	_touch.action_pressed.connect(_interact)
+	_touch.action2_pressed.connect(_strike)
 	_goal = Ui.label("", 22, Ui.CREAM, null, 6)
 	_goal.position = Vector2(24, 60 if Settings.show_fps else 20)
 	root.add_child(_goal)
@@ -154,16 +223,21 @@ func _build_ui() -> void:
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(_prompt)
 	if not TouchUi.active():
-		var help := Ui.label("WASD muovi · mouse o Q/R camera · E interagisci · Esc pausa", 18, Color(1, 1, 1, 0.6), null, 4)
-		Ui.place(help, 0, 1.0, 1.0, 1.0, 24, -36, 0, -6)
-		root.add_child(help)
+		_help = Ui.label("WASD muovi · mouse o Q/R camera · E interagisci · F attacca · Esc pausa", 18, Color(1, 1, 1, 0.6), null, 4)
+		Ui.place(_help, 0, 1.0, 1.0, 1.0, 24, -36, 0, -6)
+		root.add_child(_help)
 	_pause_btn = Ui.button("II", Ui.CREAM, 26, 70)
 	Ui.place(_pause_btn, 1.0, 0, 1.0, 0, -94, 20, -24, 84)
 	_pause_btn.pressed.connect(_open_pause)
 	root.add_child(_pause_btn)
+	_bark_lbl = Ui.label("", 24, Ui.CREAM, null, 8)
+	Ui.place(_bark_lbl, 0.5, 0.16, 0.5, 0.16, -460, 0, 460, 70)
+	_bark_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_bark_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_bark_lbl.modulate.a = 0.0
+	root.add_child(_bark_lbl)
 	_dialog = DialogBox.new()
 	root.add_child(_dialog)
-	_dialog.finished.connect(_on_dialog_done)
 
 
 func _main() -> Node:
@@ -204,6 +278,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_open_pause()
 		elif mode == "walk" and k in [KEY_E, KEY_ENTER, KEY_SPACE, KEY_KP_ENTER]:
 			_interact()
+		elif mode == "walk" and k == KEY_F:
+			_strike()
 
 
 func back() -> void:
@@ -232,8 +308,13 @@ func _process(delta: float) -> void:
 	delta = minf(delta, 0.05)
 	if mode == "walk" and _pause == null:
 		_walk(delta)
+		_check_barks()
 	else:
 		player.move_speed = 0.0
+	if _receipt != null:
+		var g: Node3D = _receipt.get_node("Glow")
+		var k: float = 0.75 + 0.35 * sin(Time.get_ticks_msec() * 0.005)
+		g.scale = Vector3(k, 1, k)
 	# la telecamera di sorveglianza segue il giocatore
 	if cctv_head != null:
 		var to: Vector3 = player.position + Vector3(0, 1.2, 0) - cctv_head.position
@@ -243,6 +324,9 @@ func _process(delta: float) -> void:
 	_update_camera(delta, false)
 	_update_prompt()
 	_touch.visible = mode == "walk" and _pause == null
+	_pause_btn.visible = mode == "walk"
+	if _help != null:
+		_help.visible = mode == "walk"
 
 
 func _walk(delta: float) -> void:
@@ -303,7 +387,14 @@ func _update_camera(delta: float, snap: bool) -> void:
 	var target: Vector3 = player.position + Vector3(0, 1.45, 0)
 	var desired: Vector3
 	var look: Vector3
-	if mode == "dialog" or mode == "leaving":
+	if mode == "intro":
+		# campo lungo dall'alto sulla citta' sotto la cupola
+		desired = Vector3(-6.0, 24.0, 26.0)
+		look = Vector3(0.0, 8.0, -24.0)
+	elif (mode == "dialog" or mode == "leaving") and _target != "distributore":
+		desired = player.position + Vector3(-2.2, 2.0, 3.0)
+		look = player.position + Vector3(0.4, 1.4, -1.0)
+	elif mode == "dialog" or mode == "leaving":
 		# inquadratura di dialogo: di lato, Saul a sinistra e il distributore a destra
 		var mid: Vector3 = (player.position + machine.position) * 0.5 + Vector3(0, 1.4, 0)
 		desired = mid + Vector3(-3.6, 0.7, 3.4)
@@ -332,45 +423,235 @@ func _update_camera(delta: float, snap: bool) -> void:
 	cam.look_at(look + sh * 0.5, Vector3.UP)
 
 
+func _dist_xz(p: Vector3) -> float:
+	return Vector2(player.position.x - p.x, player.position.z - p.z).length()
+
+
 func _update_prompt() -> void:
-	var d: float = Vector2(player.position.x - machine.position.x, player.position.z - machine.position.z).length()
-	near = mode == "walk" and not done and d < 2.6
-	if near:
-		_prompt.text = "ISPEZIONA IL DISTRIBUTORE" if TouchUi.active() else "[E]  ISPEZIONA IL DISTRIBUTORE"
-	else:
+	near = false
+	if mode == "walk" and not done:
+		if _dist_xz(MACHINE_POS) < 2.6:
+			_target = "distributore"
+		elif _receipt != null and _dist_xz(RECEIPT_POS) < 1.7:
+			_target = "scontrino"
+		elif _dist_xz(CCTV_POS) < 3.0 and not clues.has("telecamera"):
+			_target = "telecamera"
+		else:
+			_target = ""
+		near = _target != ""
+	var touch: bool = TouchUi.active()
+	var surprise: bool = Settings.surprise and _target == "distributore"
+	match _target:
+		"distributore":
+			if _ambush_t > AMBUSH_TIME * 0.5 and surprise:
+				_prompt.text = "IL DISTRIBUTORE TI STA FISSANDO..."
+			elif surprise:
+				_prompt.text = "PARLA  ·  ATTACCA" if touch else "[E] ISPEZIONA   ·   [F] ATTACCA A SORPRESA"
+			else:
+				_prompt.text = "ISPEZIONA IL DISTRIBUTORE" if touch else "[E]  ISPEZIONA IL DISTRIBUTORE"
+		"scontrino":
+			_prompt.text = "RACCOGLI LO SCONTRINO" if touch else "[E]  RACCOGLI LO SCONTRINO"
+		"telecamera":
+			_prompt.text = "OSSERVA LA TELECAMERA" if touch else "[E]  OSSERVA LA TELECAMERA"
+		_:
+			_prompt.text = ""
+	if mode != "walk":
 		_prompt.text = ""
-	_touch.act_label = "GUARDA" if near else ""
+	_touch.act_label = {"distributore": "PARLA", "scontrino": "PRENDI", "telecamera": "GUARDA"}.get(_target, "")
 	_touch.act_live = near
+	_touch.act2_label = "ATTACCA" if surprise else ""
 
 
-# ---------------------------------------------------------------- dialogo e passaggio alla battaglia
+func _check_barks() -> void:
+	# battute di Saul mentre cammina: non fermano il gioco
+	if not _barks.is_empty() and player.position.z < float((_barks[0] as Dictionary).get("z", 0.0)):
+		var b: Dictionary = _barks.pop_front()
+		_bark(str(b.get("testo", "")))
+	# agguato: se resti troppo davanti al distributore senza fare niente, attacca lui
+	if Settings.surprise and not done and _target == "distributore" and mode == "walk":
+		_ambush_t += get_process_delta_time()
+		if _ambush_t > AMBUSH_TIME:
+			_ambush()
+	else:
+		_ambush_t = 0.0
+
+
+func _bark(text: String) -> void:
+	_bark_lbl.text = "SAUL:  " + text
+	_bark_lbl.add_theme_color_override("font_color", Color("#9ff0bd"))
+	var tw := _bark_lbl.create_tween()
+	tw.tween_property(_bark_lbl, "modulate:a", 1.0, 0.2)
+	tw.tween_interval(3.0)
+	tw.tween_property(_bark_lbl, "modulate:a", 0.0, 0.4)
+
+
+# ---------------------------------------------------------------- apertura (in medias res)
+
+func _intro() -> void:
+	Breadcrumb.mark("apertura")
+	mode = "intro"
+	_goal.visible = false
+	_build_dome()
+	_env.background_color = Color("#2a0b22")
+	_update_camera(1.0, true)
+	await get_tree().create_timer(0.5).timeout
+	if not is_inside_tree():
+		return
+	_shake = 1.2
+	_main().flash(0.7)
+	Settings.buzz(80)
+	await get_tree().create_timer(0.7).timeout
+	_dialog.play(DialogData.lines("apertura"), DialogData.recap("apertura"))
+	await _dialog.finished
+	if not is_inside_tree():
+		return
+	# cartello "TRE ORE PRIMA"
+	var card := ColorRect.new()
+	card.color = Color(0.02, 0.01, 0.05, 1.0)
+	Ui.place(card, 0, 0, 1, 1)
+	card.modulate.a = 0.0
+	(_ui.get_child(0) as Control).add_child(card)
+	var t1 := Ui.label("TRE ORE PRIMA", 64, Ui.CREAM, Ui.display(), 10)
+	Ui.place(t1, 0, 0.4, 1, 0.4, 0, 0, 0, 80)
+	t1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	card.add_child(t1)
+	var t2 := Ui.label("Saul · una consegna come tante", 26, Color("#9ff0bd"), null, 6)
+	Ui.place(t2, 0, 0.52, 1, 0.52, 0, 0, 0, 40)
+	t2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	card.add_child(t2)
+	var tw := create_tween()
+	tw.tween_property(card, "modulate:a", 1.0, 0.35)
+	await tw.finished
+	if _dome != null:
+		_dome.queue_free()
+		_dome = null
+	_env.background_color = Color("#120b22")
+	mode = "walk"
+	_update_camera(1.0, true)
+	mode = "intro_wait"
+	await get_tree().create_timer(1.6).timeout
+	var tw2 := create_tween()
+	tw2.tween_property(card, "modulate:a", 0.0, 0.4)
+	await tw2.finished
+	card.queue_free()
+	mode = "walk"
+	_goal.visible = true
+	Breadcrumb.mark("strada")
+
+
+# ---------------------------------------------------------------- interazioni, indizi e passaggio alla battaglia
+
+func _face(p: Vector3) -> void:
+	var to: Vector3 = p - player.position
+	player.rotation.y = atan2(-to.x, -to.z)
+
 
 func _interact() -> void:
 	if not near or mode != "walk":
 		return
+	var what: String = _target
 	mode = "dialog"
 	_touch.release_all()
 	player.move_speed = 0.0
-	var to: Vector3 = machine.position - player.position
-	player.rotation.y = atan2(-to.x, -to.z)
 	_goal.visible = false
 	Settings.buzz(20)
-	_dialog.play(DialogData.lines("distributore"))
+	match what:
+		"telecamera":
+			_face(CCTV_POS)
+			_dialog.play(DialogData.lines("telecamera"), DialogData.recap("telecamera"))
+			await _dialog.finished
+			if not clues.has("telecamera"):
+				clues.append("telecamera")
+			_back_to_walk()
+		"scontrino":
+			_face(RECEIPT_POS)
+			_dialog.play(DialogData.lines("scontrino"), DialogData.recap("scontrino"))
+			await _dialog.finished
+			if not clues.has("scontrino"):
+				clues.append("scontrino")
+			if _receipt != null:
+				_receipt.queue_free()
+				_receipt = null
+			_toast_prompt("INDIZIO TROVATO: il distributore teme il VIOLA")
+			_back_to_walk()
+		"distributore":
+			_face(MACHINE_POS)
+			_dialog.play(DialogData.lines("distributore"), DialogData.recap("distributore"))
+			await _dialog.finished
+			mode = "leaving"
+			await machine.wake().finished
+			_go_battle("normale", 1.0)
 
 
-func _on_dialog_done() -> void:
-	if mode != "dialog":
+func _back_to_walk() -> void:
+	if is_inside_tree():
+		mode = "walk"
+		_goal.visible = true
+		_target = ""
+
+
+func _toast_prompt(text: String) -> void:
+	_bark_lbl.text = text
+	_bark_lbl.add_theme_color_override("font_color", Ui.CYAN)
+	var tw := _bark_lbl.create_tween()
+	tw.tween_property(_bark_lbl, "modulate:a", 1.0, 0.2)
+	tw.tween_interval(2.6)
+	tw.tween_property(_bark_lbl, "modulate:a", 0.0, 0.4)
+
+
+# Attacco a sorpresa (stile Star Rail): colpisci il distributore prima che si svegli
+func _strike() -> void:
+	if mode != "walk" or _target != "distributore" or not Settings.surprise:
 		return
 	mode = "leaving"
+	_touch.release_all()
+	_goal.visible = false
+	_face(MACHINE_POS)
+	Settings.buzz(40)
+	player.attack()
+	await get_tree().create_timer(0.24).timeout
+	machine.hit()
+	_bark_lbl.text = "ATTACCO A SORPRESA!"
+	_bark_lbl.add_theme_color_override("font_color", Ui.YELLOW)
+	_bark_lbl.modulate.a = 1.0
+	_go_battle("vantaggio", 1.0)
+
+
+# Agguato: sei rimasto troppo davanti al distributore, si sveglia lui e attacca per primo
+func _ambush() -> void:
+	mode = "dialog"
+	_touch.release_all()
+	_goal.visible = false
+	_face(MACHINE_POS)
 	await machine.wake().finished
-	_shake = 1.0
+	_shake = 0.8
+	_dialog.play(DialogData.lines("agguato"), DialogData.recap("agguato"))
+	await _dialog.finished
+	mode = "leaving"
+	_go_battle("agguato", 0.9)
+
+
+func _go_battle(ingresso: String, shake: float) -> void:
+	_shake = shake
 	Settings.buzz(80)
-	if _main().has_method("flash"):
-		_main().flash(0.8)
-	await get_tree().create_timer(0.35).timeout
+	_main().flash(0.8)
+	await get_tree().create_timer(0.4).timeout
 	if is_inside_tree():
 		Breadcrumb.mark("battaglia_carico")
-		_main().go("battle", {"from": "street"})
+		_main().go("battle", {"from": "street", "ingresso": ingresso, "indizi": clues})
+
+
+# Rientro dopo la battaglia: la voce dalla telecamera, poi la schermata di fine
+func _finale() -> void:
+	mode = "dialog"
+	_target = "finale"
+	_goal.visible = false
+	await get_tree().create_timer(0.6).timeout
+	if not is_inside_tree():
+		return
+	_dialog.play(DialogData.lines("finale"), DialogData.recap("finale"))
+	await _dialog.finished
+	_show_end()
 
 
 # ---------------------------------------------------------------- fine del test

@@ -1,5 +1,13 @@
 # Novità
 
+## 0.29.2 · cutscene stile Persona
+- Dialoghi alla Persona 5: ritratti grandi che entrano di lato, chi ascolta si scurisce, l'espressione cambia a ogni battuta.
+- Si parte col botto: la cupola cala sulla città e i quattro si ritrovano in piazza. Poi «Tre ore prima».
+- Saul commenta mentre cammini. Due cose da scoprire in strada: una telecamera e un indizio sul distributore.
+- Attacco a sorpresa: colpisci il distributore prima che si svegli e parti in vantaggio. Se resti fermo davanti a lui, attacca per primo.
+- Se salti un dialogo compare un riassunto. Nelle impostazioni si può spegnere l'attacco a sorpresa per confrontare.
+- I ritratti sono provvisori, fatti dai personaggi 3D: verranno sostituiti da quelli disegnati.
+
 ## 0.29.1 · personaggi in stile anime
 - I quattro protagonisti rifatti in stile anime semplificato: forme morbide, viso a V con occhi anime, capelli a ciocche, contorno pulito.
 - Ombre calde sulla pelle, viso senza ombre dure. Ancora segnaposto fatti da codice, in attesa dei modelli veri.

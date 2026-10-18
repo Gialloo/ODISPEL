@@ -56,4 +56,4 @@ In più per Zecca: `zecca_maschera.png` (stessa posa, con la maschera indossata)
 
 ## 6. Consegna
 Uno zip con tutte le immagini: `portrait_demo.zip`, oppure uno per personaggio (`ferri_portrait.zip`, …).
-Gianluca lo allega nella chat con Claude, che li mette nel gioco e li prova nei dialoghi.
+Gianluca lo allega nella chat con Claude, che li mette in `assets/portraits/` al posto dei ritratti provvisori (stessi nomi) e li prova nei dialoghi.

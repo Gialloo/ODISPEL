@@ -10,6 +10,7 @@ static var skip_cutin: bool = false      # salta la sequenza dell'ultimate
 static var light_fx: bool = false        # effetti ridotti (meno particelle e bagliori)
 static var vibration: bool = true
 static var show_fps: bool = false
+static var surprise: bool = true        # prova A/B: si puo' attaccare il nemico in strada (vantaggio) e farsi sorprendere (agguato)
 static var _loaded: bool = false
 
 const LEVELS: Array = [1.0, 0.5, 0.0]
@@ -31,6 +32,7 @@ static func load_settings() -> void:
 	light_fx = bool(cfg.get_value("video", "light_fx", light_fx))
 	vibration = bool(cfg.get_value("game", "vibration", vibration))
 	show_fps = bool(cfg.get_value("video", "show_fps", show_fps))
+	surprise = bool(cfg.get_value("game", "surprise", surprise))
 
 
 static func save() -> void:
@@ -41,6 +43,7 @@ static func save() -> void:
 	cfg.set_value("video", "light_fx", light_fx)
 	cfg.set_value("game", "vibration", vibration)
 	cfg.set_value("video", "show_fps", show_fps)
+	cfg.set_value("game", "surprise", surprise)
 	cfg.save(path)
 
 

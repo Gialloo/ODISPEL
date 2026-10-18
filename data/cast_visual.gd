@@ -38,3 +38,28 @@ static func spec(id: String) -> Dictionary:
 
 static func col(id: String, key: String) -> Color:
 	return Color(str(spec(id)[key]))
+
+
+# Espressioni dei portrait (dialoghi stile Persona). Valori che si sovrappongono alla scheda del personaggio.
+# I nomi sono quelli dei file: assets/portraits/<personaggio>_<espressione>.png
+const EXPRESSIONS: Dictionary = {
+	"neutro": {},
+	"felice": {"mouth": "smile", "brow": -0.2, "lid": 0.05, "smirk": 0.0},
+	"arrabbiato": {"mouth": "teeth", "brow": 1.8, "lid": 0.25},
+	"triste": {"mouth": "frown", "brow": -1.4, "lid": 0.35, "tear": true},
+	"sorpreso": {"mouth": "open", "wide": true, "brow": -0.4, "brow_up": 0.008, "lid": 0.0},
+	"sfotto": {"mouth": "", "smirk": 1.6, "brow": 0.4, "lid": 0.35},
+	"serio": {"mouth": "", "smirk": 0.0, "brow": 1.0, "lid": 0.2},
+}
+const EXPR_ORDER: Array = ["neutro", "felice", "arrabbiato", "triste", "sorpreso", "sfotto", "serio"]
+
+
+# Valori finali per un'espressione: Nox resta stanca (palpebre calate) tranne quando si sorprende; Zecca senza maschera.
+static func expression(id: String, expr: String) -> Dictionary:
+	var o: Dictionary = (EXPRESSIONS.get(expr, {}) as Dictionary).duplicate()
+	var base: Dictionary = spec(id)
+	if id == "nox" and expr != "sorpreso":
+		o["lid"] = minf(0.7, float(o.get("lid", base["lid"])) + 0.25)
+	if id == "zecca" and expr != "maschera":
+		o["nomask"] = true
+	return o

@@ -8,12 +8,14 @@ extends Control
 # Eventi touch grezzi, piu' dita insieme. Sul PC non si disegna nulla (salvo TouchUi.force).
 
 signal action_pressed
+signal action2_pressed
 
 const R: float = 95.0
 var stick: Vector2 = Vector2.ZERO          # -1..1 (y negativa = avanti)
 var cam_drag: Vector2 = Vector2.ZERO       # pixel trascinati dall'ultimo fotogramma (si azzera dopo la lettura)
 var act_label: String = ""
 var act_live: bool = false
+var act2_label: String = ""            # secondo tasto (es. ATTACCA), piu' piccolo, a sinistra del primo
 
 var _stick_idx: int = -1
 var _cam_idx: int = -1
@@ -30,6 +32,10 @@ func _ready() -> void:
 
 func _home() -> Vector2:
 	return Vector2(190, size.y - 175)
+
+
+func act2_center() -> Vector2:
+	return act_center() + Vector2(-185, 45)
 
 
 func act_center() -> Vector2:
@@ -63,6 +69,9 @@ func handle(event: InputEvent) -> bool:
 		if e.pressed:
 			if act_live and e.position.distance_to(act_center()) < 95.0:
 				action_pressed.emit()
+				return true
+			if act2_label != "" and e.position.distance_to(act2_center()) < 75.0:
+				action2_pressed.emit()
 				return true
 			if e.position.x < size.x * 0.45 and _stick_idx < 0:
 				_stick_idx = e.index
@@ -122,3 +131,12 @@ func _draw() -> void:
 		var fs: int = 22
 		var w: float = f.get_string_size(act_label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(f, ac + Vector2(-w * 0.5, 8.0), act_label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.04, 0.03, 0.08, 1.0))
+	if act2_label != "":
+		var bc: Vector2 = act2_center()
+		var q: float = 1.0 + 0.08 * sin(_t * 8.0)
+		draw_circle(bc + Vector2(6, 6), 56.0 * q, Color(0.04, 0.03, 0.08, 1.0))
+		draw_circle(bc, 56.0 * q, Color(0.04, 0.03, 0.08, 1.0))
+		draw_circle(bc, 50.0 * q, Color(1.0, 0.24, 0.55, 1.0))
+		var f2: Font = Ui.display()
+		var w2: float = f2.get_string_size(act2_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+		draw_string(f2, bc + Vector2(-w2 * 0.5, 7.0), act2_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 0.97, 0.9, 1.0))

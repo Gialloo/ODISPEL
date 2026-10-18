@@ -1,15 +1,86 @@
 {
-	"_nota": "Testi del test 0.29.0. PROVVISORI: si correggono qui, senza toccare il codice. 'chi' = nome mostrato, 'col' = colore del nome.",
-	"distributore": [
-		{"chi": "SAUL", "col": "#46e07a", "testo": "Un distributore che ronza così alle tre di notte non vende merendine. Vende guai."},
-		{"chi": "DISTRIBUTORE", "col": "#ffd23f", "testo": "*KLANG* RESTO NON DISPONIBILE. INSERIRE... ANIMA."}
+	"_nota": "Testi della demo. PROVVISORI: si correggono qui senza toccare il codice. Ogni scena: righe + riassunto (si mostra a chi salta). Battuta: chi (ferri, nox, zecca, saul o un nome libero), espr (neutro, felice, arrabbiato, triste, sorpreso, sfotto, serio), lato (sx/dx), testo. Per i nomi liberi: col = colore del nome.",
+
+	"apertura": {
+		"riassunto": "Una cupola ha sigillato la città. Quattro sconosciuti si ritrovano nella stessa piazza e le telecamere li indicano come colpevoli.",
+		"righe": [
+			{"chi": "zecca", "espr": "sorpreso", "lato": "sx", "testo": "Chat, la cupola è VERA. Non è un filtro. Ripeto: NON è un filtro!"},
+			{"chi": "ferri", "espr": "arrabbiato", "lato": "dx", "testo": "Nessuno si muova. LibraCorp. Siete tutti in stato di fermo."},
+			{"chi": "saul", "espr": "sfotto", "lato": "sx", "testo": "Tutti chi? Siamo in quattro, e uno sei tu."},
+			{"chi": "nox", "espr": "triste", "lato": "dx", "testo": "Il mio turno finiva tra dieci minuti. Dieci."},
+			{"chi": "ferri", "espr": "serio", "lato": "dx", "testo": "Le telecamere vi hanno ripresi vicino al pacco. Tutti e tre."},
+			{"chi": "saul", "espr": "sorpreso", "lato": "sx", "testo": "Tutti e QUATTRO, capo. Guarda bene lo schermo."},
+			{"chi": "ferri", "espr": "sorpreso", "lato": "dx", "testo": "..."}
+		]
+	},
+
+	"camminata": [
+		{"z": 5.0, "chi": "saul", "testo": "Consegna, soldi, letto. Facile."},
+		{"z": -9.0, "chi": "saul", "testo": "Questa strada di notte sembra il set di un film brutto."},
+		{"z": -21.0, "chi": "saul", "testo": "Il pacco è più pesante di quando l'ho preso. I pacchi non ingrassano."}
 	],
+
+	"telecamera": {
+		"riassunto": "Una telecamera sembra seguire Saul.",
+		"righe": [
+			{"chi": "saul", "espr": "serio", "lato": "sx", "testo": "Quella telecamera mi segue da tre isolati."},
+			{"chi": "saul", "espr": "sfotto", "lato": "sx", "testo": "Le telecamere non girano la testa. Di solito."}
+		]
+	},
+
+	"scontrino": {
+		"riassunto": "Indizio: il distributore rifiuta il viola. Forse lo teme.",
+		"righe": [
+			{"chi": "saul", "espr": "sorpreso", "lato": "sx", "testo": "Uno scontrino per terra. «Resto: un'anima. Monete VIOLA rifiutate.»"},
+			{"chi": "saul", "espr": "sfotto", "lato": "sx", "testo": "Un distributore schizzinoso. O spaventato dal viola. Me lo segno."}
+		]
+	},
+
+	"distributore": {
+		"riassunto": "Il distributore si sveglia: è un'Anomalia.",
+		"righe": [
+			{"chi": "saul", "espr": "serio", "lato": "sx", "testo": "Un distributore che ronza così alle tre di notte non vende merendine. Vende guai."},
+			{"chi": "DISTRIBUTORE", "col": "#ffd23f", "testo": "*KLANG* RESTO NON DISPONIBILE. INSERIRE... ANIMA."}
+		]
+	},
+
+	"agguato": {
+		"riassunto": "Il distributore attacca per primo.",
+		"righe": [
+			{"chi": "DISTRIBUTORE", "col": "#ffd23f", "testo": "*KLANG* CLIENTE INDECISO RILEVATO. ADDEBITO IN CORSO."},
+			{"chi": "saul", "espr": "sorpreso", "lato": "sx", "testo": "Ehi! Stavo solo guardando!"}
+		]
+	},
+
+	"finale": {
+		"riassunto": "Una voce dalla telecamera dà appuntamento a Saul in piazza.",
+		"righe": [
+			{"chi": "saul", "espr": "felice", "lato": "sx", "testo": "Fatto. Nessun testimone, nessun problema."},
+			{"chi": "???", "col": "#3fe0ff", "testo": "Bel lavoro, signor Consegna. Peccato per il testimone."},
+			{"chi": "saul", "espr": "sorpreso", "lato": "sx", "testo": "Chi ha parlato?!"},
+			{"chi": "???", "col": "#3fe0ff", "testo": "Tra tre ore, in piazza. Porta il pacco. Non fare tardi."},
+			{"chi": "saul", "espr": "serio", "lato": "sx", "testo": "...La telecamera. Mi sta guardando di nuovo."}
+		]
+	},
+
 	"ultimate": {
 		"ferri": "Articolo dodici: chi colpisce per primo ha ragione.",
 		"nox": "Straordinario non pagato. Di nuovo.",
 		"zecca": "Chat, clippate TUTTO!",
 		"saul": "Questo te lo metto in conto."
 	},
-	"vittoria": {"chi": "ZECCA", "col": "#b45cff", "testo": "Clip salvata. Questa fa il botto."},
-	"sconfitta": {"chi": "NOX", "col": "#3f9dff", "testo": "Perfetto. E il caffè chi me lo ripaga?"}
+
+	"vittoria": {
+		"riassunto": "Il Distributore è chiuso.",
+		"righe": [
+			{"chi": "zecca", "espr": "felice", "lato": "sx", "testo": "Clip salvata. Questa fa il botto."},
+			{"chi": "nox", "espr": "neutro", "lato": "dx", "testo": "Bene. Ora qualcuno mi offre un caffè. Non da quello."}
+		]
+	},
+	"sconfitta": {
+		"riassunto": "La squadra è stata battuta.",
+		"righe": [
+			{"chi": "nox", "espr": "triste", "lato": "dx", "testo": "Perfetto. E il caffè chi me lo ripaga?"}
+		]
+	}
 }

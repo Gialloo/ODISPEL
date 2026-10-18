@@ -18,6 +18,9 @@ const STATUS_NAMES: Dictionary = {
 }
 
 var from: String = "menu"
+var ingresso: String = "normale"      # normale | vantaggio (attacco a sorpresa) | agguato (attacca prima il nemico)
+var indizi: Array = []
+var _round1: bool = true
 var b: Dictionary = {}
 var slots: Array = []                 # id degli slot (p1, p1_f2, ...)
 var vis: Dictionary = {}              # unit id -> CharacterVisual / VendingVisual
@@ -65,6 +68,8 @@ var _pause: Control
 
 func configure(args: Dictionary) -> void:
 	from = str(args.get("from", "menu"))
+	ingresso = str(args.get("ingresso", "normale"))
+	indizi = args.get("indizi", [])
 
 
 func crumb() -> String:
@@ -101,7 +106,17 @@ func _ready() -> void:
 	await get_tree().create_timer(0.6).timeout
 	if not is_inside_tree():
 		return
-	_toast("Il DISTRIBUTORE è GIALLO: il VIOLA (Zecca) lo colpisce più forte", Ui.YELLOW, 3.2)
+	match ingresso:
+		"vantaggio":
+			_toast("ATTACCO A SORPRESA! Il Distributore è già vicino alla rottura e agite per primi", Ui.YELLOW, 3.0)
+		"agguato":
+			_toast("AGGUATO! Il Distributore attacca per primo", Color("#ff7a9c"), 3.0)
+	await get_tree().create_timer(0.4).timeout
+	if indizi.has("scontrino"):
+		var wait: float = 3.4 if ingresso != "normale" else 0.0
+		get_tree().create_timer(wait).timeout.connect(func() -> void:
+			if is_inside_tree():
+				_toast("INDIZIO: il Distributore teme il VIOLA. Fai colpire Zecca.", Ui.CYAN, 3.2))
 	_start_round()
 
 
@@ -138,6 +153,10 @@ func _setup_battle() -> void:
 	for uid in b["units"]:
 		if str(uid) != BattleState.BOSS_ID:
 			b["units"][uid]["gauge"] = START_GAUGE
+	if ingresso == "vantaggio":
+		# PROVVISORIO: l'attacco a sorpresa toglie due terzi dell'equilibrio (rottura vicina)
+		var boss: Dictionary = BattleState.boss(b)
+		boss["balance"] = maxi(1, int(ceil(float(boss["balance"]) * 0.35)))
 
 
 func _build_units() -> void:
@@ -257,6 +276,15 @@ func _start_round() -> void:
 		return
 	SeqRound.begin(b)
 	turn_list = SeqRound.order(b)
+	if _round1:
+		# ingresso: col vantaggio il boss agisce per ultimo nel primo round, con l'agguato per primo
+		_round1 = false
+		var boss_e: Array = turn_list.filter(func(e: Dictionary) -> bool: return bool(e["boss"]))
+		var rest: Array = turn_list.filter(func(e: Dictionary) -> bool: return not bool(e["boss"]))
+		if ingresso == "vantaggio":
+			turn_list = rest + boss_e
+		elif ingresso == "agguato":
+			turn_list = boss_e + rest
 	turn_i = -1
 	_refresh_hud()
 	await _advance()
@@ -586,7 +614,16 @@ func _end_battle() -> void:
 		for uid in vis:
 			if uid != BattleState.BOSS_ID and not (vis[uid] as CharacterVisual).down:
 				(vis[uid] as CharacterVisual).cheer()
-	var ln: Array = DialogData.lines("vittoria" if win else "sconfitta")
+	# due battute in stile Persona, poi il riquadro finale
+	var dlg := DialogBox.new()
+	_root.add_child(dlg)
+	await get_tree().process_frame
+	var key: String = "vittoria" if win else "sconfitta"
+	dlg.play(DialogData.lines(key), DialogData.recap(key))
+	await dlg.finished
+	if not is_inside_tree():
+		return
+	var ln: Array = []
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", Ui.box(Color(0.07, 0.04, 0.12, 0.95), Ui.CREAM, 4, 6, 8))
 	Ui.place(panel, 0.5, 0.5, 0.5, 0.5, -340, -170, 340, 170)

@@ -193,7 +193,7 @@ static func head(sp: Dictionary) -> MeshBatch:
 	# orecchie
 	for s in [-1.0, 1.0]:
 		mb.ball(Transform3D(Basis().scaled(Vector3(0.45, 1.0, 0.7)), Vector3(s * 0.106, HEAD_OFF + 0.105, 0.012)), 0.03, _a(skin, 0.8), true, 4, 8)
-	if extra == "mask":
+	if extra == "mask" and not bool(sp.get("nomask", false)):
 		_mask(mb, accent)
 	else:
 		_eyes(mb, sp)
@@ -206,15 +206,17 @@ static func _eyes(mb: MeshBatch, sp: Dictionary) -> void:
 	var tilt: float = float(sp.get("brow", 0.0))        # + arrabbiato (interno basso), - stanco
 	var lid: float = float(sp.get("lid", 0.0))          # palpebra calata (Nox): 0..1
 	var ink: Color = _a(Toon.INK, 0.6)
+	var wide: float = 1.12 if bool(sp.get("wide", false)) else 1.0    # occhi spalancati (sorpresa)
+	var brow_up: float = float(sp.get("brow_up", 0.0))
 	for s in [-1.0, 1.0]:
 		var c := Vector2(0.043 * s, 0.098)
 		# bianco dell'occhio
-		_decal(mb, _ellipse(c, 0.025, 0.026 * (1.0 - 0.35 * lid)), 0.0015, Color(0.98, 0.97, 1.0, 0.6))
+		_decal(mb, _ellipse(c, 0.025 * wide, 0.026 * wide * (1.0 - 0.35 * lid)), 0.0015, Color(0.98, 0.97, 1.0, 0.6))
 		# iride alta, piu' chiara in basso, pupilla, riflesso
 		var ir := c + Vector2(0.0, -0.002)
 		_decal(mb, _ellipse(ir, 0.0165, 0.024 * (1.0 - 0.3 * lid)), 0.0025, _a(eye, 0.6))
 		_decal(mb, _ellipse(ir + Vector2(0, -0.008), 0.012, 0.011), 0.0032, _a(eye.lightened(0.35), 0.6))
-		_decal(mb, _ellipse(ir + Vector2(0, 0.002), 0.008, 0.012), 0.0038, _a(eye.darkened(0.65), 0.6))
+		_decal(mb, _ellipse(ir + Vector2(0, 0.002), 0.008 / wide / wide, 0.012 / wide / wide), 0.0038, _a(eye.darkened(0.65), 0.6))
 		_decal(mb, _ellipse(ir + Vector2(0.006 * s, 0.009), 0.0048, 0.0048, 8), 0.0045, Color(1, 1, 1, 0.0))
 		# palpebra calata (copre la parte alta)
 		if lid > 0.01:
@@ -231,14 +233,32 @@ static func _eyes(mb: MeshBatch, sp: Dictionary) -> void:
 		lash.append(lash[lash.size() - 1] + Vector2(0.008 * s, -0.004))
 		_decal(mb, _band(lash, 0.008), 0.005, ink)
 		# sopracciglio
-		var b0 := Vector2(0.018 * s, 0.137 - tilt * 0.012)
-		var b1 := Vector2(0.044 * s, 0.142 + tilt * 0.002)
-		var b2 := Vector2(0.068 * s, 0.136 + tilt * 0.008)
+		var b0 := Vector2(0.018 * s, 0.137 - tilt * 0.012 + brow_up)
+		var b1 := Vector2(0.044 * s, 0.142 + tilt * 0.002 + brow_up)
+		var b2 := Vector2(0.068 * s, 0.136 + tilt * 0.008 + brow_up)
 		_decal(mb, _band([b0, b1, b2], 0.006), 0.004, ink)
+		# lacrima (tristezza)
+		if bool(sp.get("tear", false)):
+			_decal(mb, _ellipse(c + Vector2(0.012 * s, -0.034), 0.0045, 0.008, 8), 0.004, Color(0.6, 0.85, 1.0, 0.0))
 	# naso (ombra piccola) e bocca
 	_decal(mb, _ellipse(Vector2(0.0, 0.066), 0.004, 0.007, 6), 0.002, _a(face_col_of(sp).darkened(0.25), 0.6))
 	var smirk: float = float(sp.get("smirk", 0.0))
-	_decal(mb, _band([Vector2(-0.016, 0.038 - smirk * 0.002), Vector2(0.0, 0.036), Vector2(0.017, 0.039 + smirk * 0.006)], 0.0035), 0.003, _a(Toon.INK.lightened(0.15), 0.6))
+	var lip: Color = _a(Toon.INK.lightened(0.15), 0.6)
+	match str(sp.get("mouth", "")):
+		"smile":
+			_decal(mb, _band([Vector2(-0.02, 0.044), Vector2(-0.008, 0.035), Vector2(0.008, 0.035), Vector2(0.02, 0.044)], 0.004), 0.003, lip)
+		"grin":
+			_decal(mb, [Vector2(-0.02, 0.044), Vector2(0.02, 0.044), Vector2(0.01, 0.03), Vector2(-0.01, 0.03)], 0.003, Color(0.35, 0.08, 0.12, 0.6))
+			_decal(mb, [Vector2(-0.018, 0.043), Vector2(0.018, 0.043), Vector2(0.016, 0.039), Vector2(-0.016, 0.039)], 0.0035, Color(1, 1, 1, 0.6))
+		"frown":
+			_decal(mb, _band([Vector2(-0.016, 0.034), Vector2(0.0, 0.039), Vector2(0.016, 0.034)], 0.0035), 0.003, lip)
+		"open":
+			_decal(mb, _ellipse(Vector2(0.0, 0.036), 0.009, 0.011, 12), 0.003, Color(0.35, 0.08, 0.12, 0.6))
+		"teeth":
+			_decal(mb, [Vector2(-0.018, 0.041), Vector2(0.018, 0.041), Vector2(0.015, 0.031), Vector2(-0.015, 0.031)], 0.003, Color(0.35, 0.08, 0.12, 0.6))
+			_decal(mb, [Vector2(-0.016, 0.04), Vector2(0.016, 0.04), Vector2(0.015, 0.035), Vector2(-0.015, 0.035)], 0.0035, Color(1, 1, 1, 0.6))
+		_:
+			_decal(mb, _band([Vector2(-0.016, 0.038 - smirk * 0.002), Vector2(0.0, 0.036), Vector2(0.017, 0.039 + smirk * 0.006)], 0.0035), 0.003, lip)
 
 
 static func face_col_of(sp: Dictionary) -> Color:
