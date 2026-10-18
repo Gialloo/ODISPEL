@@ -1,0 +1,15 @@
+{
+	"_nota": "Testi del test 0.29.0. PROVVISORI: si correggono qui, senza toccare il codice. 'chi' = nome mostrato, 'col' = colore del nome.",
+	"distributore": [
+		{"chi": "SAUL", "col": "#46e07a", "testo": "Un distributore che ronza così alle tre di notte non vende merendine. Vende guai."},
+		{"chi": "DISTRIBUTORE", "col": "#ffd23f", "testo": "*KLANG* RESTO NON DISPONIBILE. INSERIRE... ANIMA."}
+	],
+	"ultimate": {
+		"ferri": "Articolo dodici: chi colpisce per primo ha ragione.",
+		"nox": "Straordinario non pagato. Di nuovo.",
+		"zecca": "Chat, clippate TUTTO!",
+		"saul": "Questo te lo metto in conto."
+	},
+	"vittoria": {"chi": "ZECCA", "col": "#b45cff", "testo": "Clip salvata. Questa fa il botto."},
+	"sconfitta": {"chi": "NOX", "col": "#3f9dff", "testo": "Perfetto. E il caffè chi me lo ripaga?"}
+}

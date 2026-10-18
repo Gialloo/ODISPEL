@@ -1,0 +1,108 @@
+extends Control
+
+# Menu iniziale del test 0.29.0: titolo, avvio, prova diretta del combattimento, impostazioni, info dispositivo.
+
+var _t: float = 0.0
+var _bg: Control
+
+
+func crumb() -> String:
+	return "menu"
+
+
+func _ready() -> void:
+	Breadcrumb.mark("menu")
+	# il menu sta sotto un Node (non un Control): la misura si prende dalla finestra
+	_fit()
+	get_viewport().size_changed.connect(_fit)
+	_bg = Control.new()
+	Ui.place(_bg, 0, 0, 1, 1)
+	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bg.draw.connect(_draw_bg)
+	add_child(_bg)
+
+	var col := VBoxContainer.new()
+	Ui.place(col, 0.07, 0.12, 0.6, 0.95, 0, 0, 0, 0)
+	col.add_theme_constant_override("separation", 12)
+	add_child(col)
+	var title := Ui.label(GameConfig.TITLE, 120, Ui.CREAM, Ui.display(), 14)
+	col.add_child(title)
+	var sub := Ui.label(GameConfig.SUBTITLE, 30, Ui.YELLOW, Ui.display(), 8)
+	col.add_child(sub)
+	var ver := Ui.label("versione %s · prova tecnica per telefono" % GameConfig.VERSION, 20, Color(1, 1, 1, 0.7), null, 4)
+	col.add_child(ver)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 18)
+	col.add_child(gap)
+
+	var note: String = Breadcrumb.crash_note()
+	if note != "":
+		var n := Ui.label("ATTENZIONE: " + note + " Se è un crash, scrivi a Claude cosa stavi facendo.", 20, Ui.YELLOW, null, 4)
+		n.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(n)
+
+	var b1 := Ui.button("INIZIA", Ui.YELLOW, 34, 380)
+	b1.pressed.connect(func() -> void: _main().go("street"))
+	col.add_child(b1)
+	var b2 := Ui.button("SOLO COMBATTIMENTO", Ui.CYAN, 24, 380)
+	b2.pressed.connect(func() -> void: _main().go("battle", {"from": "menu"}))
+	col.add_child(b2)
+	var b3 := Ui.button("IMPOSTAZIONI", Ui.CREAM, 24, 380)
+	b3.pressed.connect(_open_settings)
+	col.add_child(b3)
+	if not OS.has_feature("mobile"):
+		var b4 := Ui.button("ESCI", Color("#ff7a9c"), 22, 380)
+		b4.pressed.connect(func() -> void: _main().quit())
+		col.add_child(b4)
+	for b in col.get_children():
+		if b is Button:
+			(b as Button).size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+
+	var info := Ui.label(_device_info(), 16, Color(1, 1, 1, 0.55), null, 3)
+	Ui.place(info, 0.0, 1.0, 1.0, 1.0, 24, -34, 0, -8)
+	add_child(info)
+
+
+func _fit() -> void:
+	position = Vector2.ZERO
+	size = get_viewport_rect().size
+
+
+func _device_info() -> String:
+	var gpu: String = RenderingServer.get_video_adapter_name()
+	return "%s · %s · Godot %s · Compatibility (GLES3) · GPU: %s" % [OS.get_name(), OS.get_model_name(), Engine.get_version_info()["string"], gpu]
+
+
+func _main() -> Node:
+	return get_parent()
+
+
+func _open_settings() -> void:
+	var p := SettingsPanel.new()
+	add_child(p)
+
+
+func back() -> void:
+	_main().quit()
+
+
+func _process(delta: float) -> void:
+	_t += delta
+	_bg.queue_redraw()
+
+
+# Sfondo pop: notte viola, fasce oblique che scorrono, quattro silhouette di colore (i protagonisti)
+func _draw_bg() -> void:
+	var s: Vector2 = _bg.size
+	_bg.draw_rect(Rect2(Vector2.ZERO, s), Color("#140b24"))
+	var cols: Array = [Color("#e8343f"), Color("#39b7ff"), Color("#8e3df0"), Color("#2f8f5a")]
+	for i in 4:
+		var x: float = s.x * (0.56 + 0.11 * i) + sin(_t * 0.7 + i) * 6.0
+		var w: float = s.x * 0.085
+		var pts := PackedVector2Array([Vector2(x, s.y), Vector2(x + w, s.y), Vector2(x + w + s.x * 0.12, 0), Vector2(x + s.x * 0.12, 0)])
+		_bg.draw_colored_polygon(pts, Color(cols[i].r, cols[i].g, cols[i].b, 0.55))
+	var off: float = fmod(_t * 60.0, 80.0)
+	for k in range(-2, int(s.x / 80.0) + 4):
+		var x0: float = k * 80.0 + off
+		_bg.draw_line(Vector2(x0, s.y), Vector2(x0 + 220, s.y - 220), Color(1, 1, 1, 0.04), 18.0)
+	_bg.draw_rect(Rect2(0, s.y * 0.86, s.x, s.y * 0.14), Color(0.03, 0.02, 0.06, 0.8))
