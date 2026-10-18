@@ -1,5 +1,11 @@
 # Novità
 
+## 0.30.1 · telecamera rotta
+- La battaglia è vista dalle telecamere: quando tocca a un personaggio con pochi PV la sua telecamera si rompe. Sotto il 50% è incrinata, sotto il 25% è in frantumi, con schegge spostate e il nemico che si vede doppio. Quando tocca a chi sta bene, la telecamera torna pulita.
+- Ogni personaggio ha la sua telecamera, quindi il suo disegno di crepe. Comandi e barre restano sempre integri.
+- Nelle impostazioni: «Telecamera rotta (PV bassi)» per spegnerla. Con effetti ridotti è più leggera, con i lampi spenti non tremola.
+- Boss segreto di prova in fondo alla strada del prologo, oltre il distributore: L'Osservatore. Prima chiede se sei sicuro. Porta i personaggi esattamente al 50% e al 25% ignorando scudi e difesa e non uccide mai. Si può rifare quante volte si vuole.
+
 ## 0.30.0 · atto 1 completo
 - Tutto l'atto 1 giocabile: prologo, quattro capitoli e il finale (Il varco). Circa un'ora di gioco.
 - Sei aree da esplorare: la strada, l'Incrocio Nove, il Vicolo delle Civette, la Galleria Lumière, il caveau LibraCorp e tre «interni» delle Anomalie (rosso, blu, verde).

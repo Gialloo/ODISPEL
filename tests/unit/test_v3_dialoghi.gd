@@ -37,6 +37,9 @@ func _init() -> void:
 			if b.has("agguato"):
 				_scene(str(b["agguato"]))
 			check(BattleContent.BOSSES.has(str(b.get("id", ""))), "boss %s nel motore" % str(b.get("id", "")))
+		if a.has("segreto"):
+			_scene(str(a["segreto"].get("dialogo", "")))
+			check(BattleContent.BOSSES.has(str(a["segreto"].get("id", ""))), "boss segreto nel motore")
 		if a.has("uscita") and str((a["uscita"] as Dictionary).get("dialogo", "")) != "":
 			_scene(str(a["uscita"]["dialogo"]))
 		check(a.has("boss") or a.has("uscita"), "area %s ha un'uscita o un boss" % aid)

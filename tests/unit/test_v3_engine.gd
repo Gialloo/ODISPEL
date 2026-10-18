@@ -38,5 +38,23 @@ func _init() -> void:
 			wins += 1
 	print("vittorie IA: %d/20" % wins)
 	check(wins >= 10, "il mini combattimento deve essere vincibile (vittorie %d/20)" % wins)
+	# boss segreto di prova: porta esattamente al 50% e al 25%, ignora scudi e difesa, non uccide mai
+	var c: Dictionary = BattleState.create_solo("IO", team, [], "osservatore", 3)
+	for p in BattleState.alive_players(c):
+		BattleState.active_unit(c, str(p["id"]))["shield"] = 500
+	var seen50: bool = false
+	var seen25: bool = false
+	for i in 12:
+		BattleResolver._camera_cut(c, BattleState.boss(c), [])
+		for p in BattleState.alive_players(c):
+			var u: Dictionary = BattleState.active_unit(c, str(p["id"]))
+			check(int(u["hp"]) >= 1, "l'Osservatore non uccide")
+			if int(u["hp"]) == int(floor(float(u["max_hp"]) * 0.5)):
+				seen50 = true
+			if int(u["hp"]) == int(floor(float(u["max_hp"]) * 0.25)):
+				seen25 = true
+	check(seen50 and seen25, "l'Osservatore porta al 50% e al 25% esatti")
+	check(BattleState.alive_players(c).size() == 4, "dopo l'Osservatore sono tutti vivi")
+	check(BrokenCam.level_for(0.9) == 0.0 and BrokenCam.level_for(0.5) > 0.0 and BrokenCam.level_for(0.25) >= 0.99, "livelli della telecamera rotta")
 	print("test_v3_engine: " + ("OK" if fails == 0 else "%d errori" % fails))
 	quit(1 if fails > 0 else 0)

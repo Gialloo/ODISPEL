@@ -1,6 +1,15 @@
 {
 	"_nota": "Testi dell'atto 1 (PROVVISORI). Scene: righe + riassunto. Una riga puo' avere 'se' o 'se_non' (vale solo se una scelta e' stata fatta o no) e 'scelte' (lista di {testo, imposta, vai}). 'chiacchiere': battute di squadra durante l'esplorazione, per area.",
 
+	"segreto_avviso": {
+		"riassunto": "Un boss segreto troppo forte per voi: lo avete lasciato stare.",
+		"righe": [
+			{"chi": "saul", "espr": "sorpreso", "testo": "Quella telecamera è grande quanto un lampione. E ci sta fissando."},
+			{"chi": "AVVISO", "col": "#ffd23f", "testo": "Questo boss è troppo forte per te al momento. Sei sicuro di affrontarlo?",
+				"scelte": [{"testo": "NO, meglio di no"}, {"testo": "SÌ, affrontiamolo", "imposta": "segreto_si"}]}
+		]
+	},
+
 	"telecamera": {
 		"riassunto": "Una telecamera sembra seguire la squadra.",
 		"righe": [

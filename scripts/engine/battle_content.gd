@@ -247,6 +247,8 @@ const MATERIALS: Dictionary = {"nucleo": "Nucleo", "lega": "Lega"}
 # massimi), "drain" (il boss recupera questa frazione del danno inflitto).
 const BOSS_MOVES: Dictionary = {
 	"scarica": {"name": "Scarica", "target": "one", "mult": 1.6},
+	# solo per il boss di prova della telecamera rotta: porta un personaggio esattamente al 50%, poi al 25% (ignora scudi e difesa)
+	"obiettivo_rotto": {"name": "Obiettivo rotto", "target": "one", "mult": 0.0, "camera": true},
 	"raffica": {"name": "Raffica", "target": "all", "mult": 0.7},
 	"scossa": {"name": "Scossa", "target": "one", "mult": 0.9, "status": {"bleed": 3}},
 	"sovraccarico": {"name": "Sovraccarico", "target": "all", "mult": 1.2},
@@ -337,6 +339,16 @@ const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino", "cabina", "asc
 
 const BOSSES: Dictionary = {
 	# V3: anomalie minori dell'atto 1 (una per colore)
+	# BOSS SEGRETO DI PROVA (PROVVISORIO): non uccide mai, serve a vedere la telecamera rotta
+	"osservatore": {
+		"name": "L'Osservatore", "title": "BOSS SEGRETO · PROVA DELLA TELECAMERA", "color": "viola", "hp_per_player": 1500,
+		"atk": 100, "def": 10, "spd": 90,
+		"desc": "Una telecamera di sorveglianza gigante. Non uccide: rompe l'obiettivo di chi colpisce, prima a meta' vita, poi a un quarto.",
+		"cycle": ["obiettivo_rotto"],
+		"atk_scale": [1.0, 1.0, 1.0],
+		"drops": 0,
+		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},
+	},
 	"frammento_giallo": {
 		"name": "Frammento", "title": "ANOMALIA MINORE", "color": "giallo", "hp_per_player": 260,
 		"atk": 250, "def": 10, "spd": 100,
@@ -734,7 +746,7 @@ static func validate() -> Array:
 			errors.append("%s: colore del boss sconosciuto" % id)
 		if not b.has("reward") or not b.has("name") or not b.has("desc") or not b.has("title"):
 			errors.append("%s: boss incompleto (nome, titolo, descrizione, premi)" % id)
-		if not BOSS_ORDER.has(id) and not id.begins_with("frammento_"):   # i frammenti sono nemici minori, fuori dalla scaletta
+		if not BOSS_ORDER.has(id) and not id.begins_with("frammento_") and id != "osservatore":   # i frammenti sono nemici minori, fuori dalla scaletta
 			errors.append("%s: boss fuori da BOSS_ORDER" % id)
 	for id in BOSS_ORDER:
 		if not BOSSES.has(id):

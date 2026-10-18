@@ -58,7 +58,8 @@
 			],
 			"punti": [{"id": "auto_rossa", "pos": [2.7, -25.0]}, {"id": "panchina", "pos": [-6.1, -21.5]}, {"id": "auto_blu", "pos": [-2.7, -11.0]}],
 			"nemici": [{"id": "f1", "pos": [0.8, -16.0], "boss": "frammento_giallo", "livello": 1}],
-			"boss": {"id": "distributore", "tipo": "distributore", "pos": [5.3, -33.0], "rot": 90, "dialogo": "distributore", "agguato": "agguato", "livello": 1, "arena": "strada", "pv": 1.0, "atk": 1.0}
+			"boss": {"id": "distributore", "tipo": "distributore", "pos": [5.3, -33.0], "rot": 90, "dialogo": "distributore", "agguato": "agguato", "livello": 1, "arena": "strada", "pv": 1.0, "atk": 1.0},
+			"segreto": {"id": "osservatore", "tipo": "telecamera", "pos": [-3.5, -40.0], "rot": 0, "livello": 1, "pv": 1.0, "atk": 1.0, "arena": "strada", "dialogo": "segreto_avviso", "_nota": "BOSS SEGRETO DI PROVA (PROVVISORIO): porta un personaggio al 50% e poi al 25% per vedere la telecamera rotta"}
 		},
 		"incrocio": {
 			"layout": "incrocio", "seme": 41, "capo": "ferri", "chiacchiere": "incrocio",

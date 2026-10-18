@@ -34,6 +34,7 @@ var _colliders: Array = []
 var _markers: Dictionary = {}      # id indizio -> Node3D (bagliore)
 var _enemies: Dictionary = {}      # id -> {"node": VendingVisual, "cfg": {...}, "home": Vector3}
 var _boss: VendingVisual
+var _secret: VendingVisual             # boss segreto di prova (telecamera rotta), solo dove "segreto" e' nei dati
 var _exit_node: Node3D
 var _trail: Array = []
 var _ambush_t: float = 0.0
@@ -168,6 +169,14 @@ func _build_boss_and_exit() -> void:
 		_boss.rotation.y = deg_to_rad(float(b.get("rot", 0)))
 		add_child(_boss)
 		_colliders.append({"rect": Rect2(_boss.position.x - 0.8, _boss.position.z - 0.8, 1.6, 1.6)})
+	if cfg.has("segreto"):
+		var sg: Dictionary = cfg["segreto"]
+		_secret = VendingVisual.new()
+		_secret.kind = str(sg.get("tipo", "telecamera"))
+		_secret.position = _v3(sg["pos"], 0.14)
+		_secret.rotation.y = deg_to_rad(float(sg.get("rot", 0)))
+		add_child(_secret)
+		_colliders.append({"rect": Rect2(_secret.position.x - 0.7, _secret.position.z - 0.7, 1.4, 1.4)})
 	if cfg.has("uscita"):
 		var u: Dictionary = cfg["uscita"]
 		_exit_node = Node3D.new()
@@ -509,6 +518,8 @@ func _update_target() -> void:
 	var key: String = ""
 	if _boss != null and _d(_boss.position) < 2.8:
 		_target = "boss"
+	elif _secret != null and _d(_secret.position) < 2.8:
+		_target = "segreto"
 	elif _exit_node != null and _d(_exit_node.position) < 2.6:
 		_target = "uscita"
 	else:
@@ -535,6 +546,9 @@ func _update_target() -> void:
 		else:
 			_prompt.text = ("PARLA  ·  ATTACCA" if touch else "[E] AVVICINATI   ·   [F] ATTACCA A SORPRESA") if Settings.surprise else ("AVVICINATI" if touch else "[E]  AVVICINATI")
 		key = "PARLA"
+	elif _target == "segreto":
+		_prompt.text = "???" if touch else "[E]  ???"
+		key = "GUARDA"
 	elif _target == "uscita":
 		label = str((cfg["uscita"] as Dictionary).get("etichetta", "ENTRA"))
 		key = str((cfg["uscita"] as Dictionary).get("tasto", "ENTRA"))
@@ -701,6 +715,21 @@ func _interact() -> void:
 		_carry_clues()
 		Story.advance()
 		_main().next_story()
+	elif what == "segreto":
+		# avviso con scelta: si combatte solo se il giocatore dice SI'
+		var sg: Dictionary = cfg["segreto"]
+		mode = "dialog"
+		_face(_secret.position)
+		Story.flags.erase("segreto_si")
+		var ks: String = str(sg.get("dialogo", "segreto_avviso"))
+		_dialog.play(DialogData.lines(ks), DialogData.recap(ks))
+		await _dialog.finished
+		if Story.has_flag("segreto_si"):
+			Story.flags.erase("segreto_si")
+			mode = "leaving"
+			_secret_battle()
+		else:
+			mode = "walk"
 	elif what == "boss":
 		var b: Dictionary = cfg["boss"]
 		mode = "dialog"
@@ -781,6 +810,18 @@ func _enemy_battle(id: String, ingresso: String) -> void:
 	_go_battle({"boss": str(e.get("boss", "frammento_giallo")), "visual": str(e.get("boss", "frammento_giallo")), "livello": int(e.get("livello", 1)),
 		"ingresso": ingresso, "arena": str(cfg.get("tema", "")) if cfg.has("tema") else str(cfg.get("layout", "strada")),
 		"ritorno": {"tipo": "area", "area": area_id, "vinto": win_state, "perso": Story.area_state.duplicate(true)}, "minore": true, "indizi": []})
+
+
+# Il boss segreto si puo' rifare quante volte si vuole: dopo la battaglia si torna qui, vinta o persa
+func _secret_battle() -> void:
+	if mode == "transition":
+		return
+	var sg: Dictionary = cfg["segreto"]
+	_save_state()
+	var st: Dictionary = Story.area_state.duplicate(true)
+	_go_battle({"boss": str(sg.get("id", "osservatore")), "visual": str(sg.get("tipo", "telecamera")), "livello": int(sg.get("livello", 1)),
+		"ingresso": "normale", "arena": str(sg.get("arena", "strada")), "pv": float(sg.get("pv", 1.0)), "atk": float(sg.get("atk", 1.0)),
+		"ritorno": {"tipo": "area", "area": area_id, "vinto": st, "perso": st}, "minore": true, "debolezze": []})
 
 
 func _boss_battle(ingresso: String) -> void:

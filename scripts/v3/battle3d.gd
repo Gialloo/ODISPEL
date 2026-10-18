@@ -55,6 +55,7 @@ var _shake: float = 0.0
 var _ui: CanvasLayer
 var _root: Control
 var _fx_layer: Control
+var _broken: BrokenCam
 var _order_box: VBoxContainer
 var _boss_name: Label
 var _boss_hp: ProgressBar
@@ -683,6 +684,20 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 
 # ---------------------------------------------------------------- fine
 
+# Telecamera rotta: conta solo chi e' di turno (turno del nemico e fine battaglia = telecamera pulita)
+func _update_broken_cam() -> void:
+	if _broken == null:
+		return
+	if cur_pid == "" or ended:
+		_broken.show_for("", 1.0)
+		return
+	var u: Dictionary = _unit_of(cur_pid)
+	if u.is_empty():
+		_broken.show_for("", 1.0)
+		return
+	_broken.show_for(str(u.get("char", cur_pid)), float(u["hp"]) / maxf(1.0, float(u["max_hp"])))
+
+
 func _end_battle() -> void:
 	if ended:
 		return
@@ -766,6 +781,8 @@ func _continue_story() -> void:
 # ---------------------------------------------------------------- interfaccia
 
 func _build_ui() -> void:
+	_broken = BrokenCam.new()
+	add_child(_broken)
 	_ui = CanvasLayer.new()
 	_ui.layer = 10
 	add_child(_ui)
@@ -964,6 +981,7 @@ func _show_commands(on: bool) -> void:
 func _refresh_hud() -> void:
 	if _boss_hp == null:
 		return
+	_update_broken_cam()
 	var boss: Dictionary = BattleState.boss(b)
 	_boss_hp.max_value = int(boss["max_hp"])
 	_boss_hp.value = int(boss["hp"])

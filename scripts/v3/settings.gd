@@ -11,6 +11,7 @@ static var light_fx: bool = false        # effetti ridotti (meno particelle e ba
 static var vibration: bool = true
 static var show_fps: bool = false
 static var surprise: bool = true        # prova A/B: si puo' attaccare il nemico in strada (vantaggio) e farsi sorprendere (agguato)
+static var broken_cam: bool = true      # telecamera rotta quando tocca a chi ha pochi PV
 static var _loaded: bool = false
 
 const LEVELS: Array = [1.0, 0.5, 0.0]
@@ -33,6 +34,7 @@ static func load_settings() -> void:
 	vibration = bool(cfg.get_value("game", "vibration", vibration))
 	show_fps = bool(cfg.get_value("video", "show_fps", show_fps))
 	surprise = bool(cfg.get_value("game", "surprise", surprise))
+	broken_cam = bool(cfg.get_value("video", "broken_cam", broken_cam))
 
 
 static func save() -> void:
@@ -44,6 +46,7 @@ static func save() -> void:
 	cfg.set_value("game", "vibration", vibration)
 	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("game", "surprise", surprise)
+	cfg.set_value("video", "broken_cam", broken_cam)
 	cfg.save(path)
 
 

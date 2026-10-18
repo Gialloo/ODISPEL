@@ -20,7 +20,7 @@ var down: bool = false
 const YEL: Color = Color("#ffc93c")
 
 
-const HEADS: Dictionary = {"distributore": 2.5, "semaforo": 4.2, "cabina": 2.9, "manichino": 3.0, "cassaforte": 2.6, "frammento": 1.9}
+const HEADS: Dictionary = {"distributore": 2.5, "semaforo": 4.2, "cabina": 2.9, "manichino": 3.0, "cassaforte": 2.6, "frammento": 1.9, "telecamera": 3.4}
 const FRAG_COLORS: Dictionary = {"giallo": Color(1.0, 0.82, 0.25, 0.0), "rosso": Color(1.0, 0.25, 0.3, 0.0), "blu": Color(0.3, 0.65, 1.0, 0.0), "verde": Color(0.3, 1.0, 0.5, 0.0), "viola": Color(0.75, 0.35, 1.0, 0.0)}
 var _cubes: Array = []
 
@@ -38,6 +38,8 @@ func _ready() -> void:
 			_build_manichino()
 		"cassaforte":
 			_build_cassaforte()
+		"telecamera":
+			_build_telecamera()
 		"frammento":
 			_build_frammento()
 		_:
@@ -125,6 +127,29 @@ func _build_manichino() -> void:
 	for c in cv.find_children("*", "MeshInstance3D", true, false):
 		_meshes.append(c)
 	_ground(Color(0.3, 1.0, 0.5, 0.3), 2.0)
+
+
+# Boss segreto di prova: una telecamera di sorveglianza gigante su un palo, con l'obiettivo rosso acceso
+func _build_telecamera() -> void:
+	var mb := MeshBatch.new()
+	mb.ink_w = 0.04
+	var grey := Color("#d9d6e0")
+	var dark := Color("#2b2638")
+	mb.prism(Transform3D(Basis(), Vector3.ZERO), 0.14, 0.12, 2.7, 8, dark)
+	mb.box(Transform3D(Basis(), Vector3(0, 2.75, 0.1)), Vector3(0.3, 0.3, 0.5), dark)
+	# corpo della telecamera, inclinato verso il basso
+	var tilt := Basis(Vector3.RIGHT, 0.22)
+	mb.box(Transform3D(tilt, Vector3(0, 3.2, -0.35)), Vector3(0.9, 0.75, 1.7), grey)
+	mb.box(Transform3D(tilt, Vector3(0, 3.62, -0.45)), Vector3(1.05, 0.08, 1.95), grey.darkened(0.15))
+	mb.prism(Transform3D(tilt * Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 3.0, -1.22)), 0.33, 0.33, 0.16, 18, dark)
+	mb.prism(Transform3D(tilt * Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 2.98, -1.3)), 0.22, 0.22, 0.04, 16, Color(1.0, 0.15, 0.25, 0.0), false)
+	mb.ball(Transform3D(Basis(), Vector3(0.36, 3.5, -1.0)), 0.05, Color(1.0, 0.2, 0.3, 0.0), false, 4, 6)
+	# cavi come braccia (l'Anomalia la possiede)
+	for sx in [-1.0, 1.0]:
+		mb.lock(Vector3(sx * 0.2, 2.6, 0), Vector3(sx * 1.2, 2.4, -0.3), Vector3(sx * 1.7, 1.3, -0.6), 0.06, 0.06, Vector3.FORWARD, dark, true, 6)
+		mb.ball(Transform3D(Basis(), Vector3(sx * 1.7, 1.3, -0.6)), 0.12, Color(0.75, 0.35, 1.0, 0.0), true, 4, 6)
+	_add(mb, "Telecamera")
+	_ground(Color(0.75, 0.35, 1.0, 0.35), 2.4)
 
 
 func _build_cassaforte() -> void:
