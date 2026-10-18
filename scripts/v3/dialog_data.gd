@@ -9,12 +9,23 @@ static var _data: Dictionary = {}
 
 static func all() -> Dictionary:
 	if _data.is_empty():
-		var f := FileAccess.open("res://data/dialoghi.json", FileAccess.READ)
-		if f != null:
-			var parsed: Variant = JSON.parse_string(f.get_as_text())
-			if parsed is Dictionary:
-				_data = parsed
+		# testi comuni + testi dell'atto 1 (questi ultimi hanno la precedenza)
+		for path in ["res://data/dialoghi.json", "res://data/dialoghi_atto1.json"]:
+			var f := FileAccess.open(path, FileAccess.READ)
+			if f != null:
+				var parsed: Variant = JSON.parse_string(f.get_as_text())
+				if parsed is Dictionary:
+					_data.merge(parsed, true)
 	return _data
+
+
+# Battute della squadra in esplorazione per un'area
+static func banter(area_key: String) -> Array:
+	var c: Variant = all().get("chiacchiere", {})
+	if c is Dictionary:
+		var v: Variant = (c as Dictionary).get(area_key, [])
+		return v if v is Array else []
+	return []
 
 
 static func lines(key: String) -> Array:

@@ -32,6 +32,8 @@ var _skip: Button
 var _recap_lbl: Label
 var _pt: Dictionary = {}          # "sx"/"dx" -> TextureRect
 var _who: Dictionary = {}         # "sx"/"dx" -> id in scena
+var _choices: VBoxContainer
+var _waiting_choice: bool = false
 var _speaker_col: Color = Ui.YELLOW
 var _speaker_side: String = "sx"
 
@@ -74,6 +76,11 @@ func _ready() -> void:
 	Ui.place(_skip, 1.0, 0, 1.0, 0, -170, 24, -24, 84)
 	_skip.pressed.connect(skip)
 	_stage.add_child(_skip)
+	_choices = VBoxContainer.new()
+	_choices.add_theme_constant_override("separation", 10)
+	Ui.place(_choices, 0.5, 0.2, 0.5, 0.2, -330, 0, 330, 300)
+	_choices.visible = false
+	_stage.add_child(_choices)
 	_recap_lbl = Ui.label("", 22, Ui.CREAM, null, 6)
 	_recap_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_recap_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -172,12 +179,25 @@ func _color_of(id: String, ln: Dictionary) -> Color:
 	return Ui.BATTLE_COLORS.get(str(ch.get("color", "")), Ui.YELLOW)
 
 
+# Una riga vale se le sue condizioni sulle scelte sono vere ("se": flag fatto, "se_non": flag non fatto)
+static func line_ok(ln: Dictionary) -> bool:
+	if ln.has("se") and not Story.has_flag(str(ln["se"])):
+		return false
+	if ln.has("se_non") and Story.has_flag(str(ln["se_non"])):
+		return false
+	return true
+
+
 func _next() -> void:
 	_i += 1
+	while _i < _lines.size() and not line_ok(_lines[_i]):
+		_i += 1
 	if _i >= _lines.size():
 		_close(false)
 		return
 	var ln: Dictionary = _lines[_i]
+	if ln.has("imposta"):
+		Story.set_flag(str(ln["imposta"]))
 	var id: String = str(ln.get("chi", ""))
 	var expr: String = str(ln.get("espr", "neutro"))
 	var tex: Texture2D = _portrait(id, expr)
@@ -231,15 +251,76 @@ func _done() -> bool:
 
 
 func advance() -> void:
-	if not _active:
+	if not _active or _waiting_choice:
 		return
 	if not _done():
 		_text.visible_characters = -1
+		_maybe_choices()
 	else:
 		_next()
 
 
+# Scelte (stile Persona): compaiono quando la riga e' scritta tutta; finche' non si sceglie non si va avanti
+func _maybe_choices() -> void:
+	if _i < 0 or _i >= _lines.size() or _waiting_choice:
+		return
+	var ln: Dictionary = _lines[_i]
+	if not ln.has("scelte") or not _done():
+		return
+	_waiting_choice = true
+	for c in _choices.get_children():
+		c.queue_free()
+	for opt in ln["scelte"]:
+		var b := Ui.button(str(opt.get("testo", "")), Ui.CREAM, 22)
+		b.custom_minimum_size.x = 640
+		b.pressed.connect(_choose.bind(opt))
+		_choices.add_child(b)
+	_choices.visible = true
+
+
+func _choose(opt: Dictionary) -> void:
+	_waiting_choice = false
+	_choices.visible = false
+	Story.set_flag(str(opt.get("imposta", "")))
+	var go: String = str(opt.get("vai", ""))
+	if go != "":
+		var extra: Array = DialogData.lines(go)
+		var r: String = DialogData.recap(go)
+		if r != "":
+			_recap = r
+		for k in extra.size():
+			_lines.insert(_i + 1 + k, extra[k])
+	Settings.buzz(15)
+	_next()
+
+
+# Saltando, le scelte non fatte prendono la prima opzione (e i flag delle sue righe)
+func _auto_resolve_rest() -> void:
+	var j: int = maxi(_i, 0)
+	while j < _lines.size():
+		var ln: Dictionary = _lines[j]
+		if line_ok(ln):
+			if ln.has("imposta"):
+				Story.set_flag(str(ln["imposta"]))
+			if ln.has("scelte") and (ln["scelte"] as Array).size() > 0:
+				var opt: Dictionary = ln["scelte"][0]
+				Story.set_flag(str(opt.get("imposta", "")))
+				var go: String = str(opt.get("vai", ""))
+				if go != "":
+					for k2 in DialogData.lines(go):
+						if (k2 as Dictionary).has("imposta"):
+							Story.set_flag(str(k2["imposta"]))
+					if DialogData.recap(go) != "":
+						_recap = DialogData.recap(go)
+		j += 1
+
+
 func skip() -> void:
+	if not _active:
+		return
+	_auto_resolve_rest()
+	_waiting_choice = false
+	_choices.visible = false
 	_close(true)
 
 
@@ -266,6 +347,8 @@ func _process(delta: float) -> void:
 	_shown += delta * CPS
 	if _text.visible_characters >= 0:
 		_text.visible_characters = int(_shown)
+	if not _waiting_choice and _done():
+		_maybe_choices()
 	_box.queue_redraw()
 
 

@@ -8,7 +8,6 @@ extends Node3D
 # niente luci/ombre/cielo/Label3D). I numeri del danno sono Label 2D proiettati dalla camera.
 
 const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
-const BOSS_ID: String = "distributore"
 const START_GAUGE: int = 60          # PROVVISORIO (test): ultimate gia' a buon punto, cosi' si vede nel mini combattimento
 const ENEMY_POS := Vector3(0, 0.14, -3.4)
 
@@ -20,6 +19,16 @@ const STATUS_NAMES: Dictionary = {
 var from: String = "menu"
 var ingresso: String = "normale"      # normale | vantaggio (attacco a sorpresa) | agguato (attacca prima il nemico)
 var indizi: Array = []
+var boss_id: String = "distributore"     # quale nemico (BattleContent.BOSSES)
+var visual: String = "distributore"      # aspetto 3D (VendingVisual.kind)
+var level: int = 1                       # livello della squadra (PROVVISORIO: cresce coi capitoli)
+var pv_k: float = 1.0                    # scala PV e attacco del nemico (PROVVISORIO, bilanciamento dell'atto 1)
+var atk_k: float = 1.0
+var arena: String = "strada"
+var weak: Array = []                     # debolezze scoperte con gli indizi
+var ritorno: Dictionary = {}             # dove tornare: area (nemico minore), storia (boss), niente = demo dal menu
+var minore: bool = false
+var _args: Dictionary = {}
 var _round1: bool = true
 var b: Dictionary = {}
 var slots: Array = []                 # id degli slot (p1, p1_f2, ...)
@@ -70,6 +79,18 @@ func configure(args: Dictionary) -> void:
 	from = str(args.get("from", "menu"))
 	ingresso = str(args.get("ingresso", "normale"))
 	indizi = args.get("indizi", [])
+	_args = args.duplicate(true)
+	boss_id = str(args.get("boss", "distributore"))
+	visual = str(args.get("visual", boss_id))
+	level = int(args.get("livello", 1))
+	pv_k = float(args.get("pv", 1.0))
+	atk_k = float(args.get("atk", 1.0))
+	arena = str(args.get("arena", "strada"))
+	weak = args.get("debolezze", [])
+	if indizi.has("scontrino") and not weak.has("VIOLA"):
+		weak = weak + ["VIOLA"]
+	ritorno = args.get("ritorno", {})
+	minore = bool(args.get("minore", false))
 
 
 func crumb() -> String:
@@ -108,15 +129,22 @@ func _ready() -> void:
 		return
 	match ingresso:
 		"vantaggio":
-			_toast("ATTACCO A SORPRESA! Il Distributore è già vicino alla rottura e agite per primi", Ui.YELLOW, 3.0)
+			_toast("ATTACCO A SORPRESA! %s è già vicino alla rottura e agite per primi" % _bn(), Ui.YELLOW, 3.0)
 		"agguato":
-			_toast("AGGUATO! Il Distributore attacca per primo", Color("#ff7a9c"), 3.0)
+			_toast("AGGUATO! %s attacca per primo" % _bn(), Color("#ff7a9c"), 3.0)
 	await get_tree().create_timer(0.4).timeout
-	if indizi.has("scontrino"):
-		var wait: float = 3.4 if ingresso != "normale" else 0.0
-		get_tree().create_timer(wait).timeout.connect(func() -> void:
+	var bonds: Array = Story.active_bonds() if not ritorno.is_empty() else []
+	var msgs: Array = []
+	if not weak.is_empty():
+		msgs.append(["INDIZIO: %s teme il %s. Fai colpire %s." % [_bn(), str(weak[0]), _who_is(str(weak[0]))], Ui.CYAN])
+	for bd in bonds:
+		msgs.append(["LEGAME · %s: +5%% attacco a entrambi" % str(bd.get("nome", "")), Ui.PINK])
+	var delay: float = 3.4 if ingresso != "normale" else 0.0
+	for m in msgs:
+		get_tree().create_timer(delay).timeout.connect(func() -> void:
 			if is_inside_tree():
-				_toast("INDIZIO: il Distributore teme il VIOLA. Fai colpire Zecca.", Ui.CYAN, 3.2))
+				_toast(str(m[0]), m[1], 2.8))
+		delay += 3.0
 	_start_round()
 
 
@@ -124,30 +152,89 @@ func _main() -> Node:
 	return get_parent()
 
 
+# Nome del nemico con l'articolo ("il Semaforo", "la Cabina")
+func _bn() -> String:
+	var n: String = str(BattleContent.BOSSES.get(boss_id, {}).get("name", "Anomalia"))
+	var art: String = "la " if n in ["Cabina", "Cassaforte"] else ("lo " if n.begins_with("S") and n.length() > 1 and not n[1] in "aeiou" else "il ")
+	return art + n
+
+
+func _bname() -> String:
+	return str(BattleContent.BOSSES.get(boss_id, {}).get("name", "Anomalia")).to_upper()
+
+
+func _who_is(col: String) -> String:
+	match col:
+		"ROSSO":
+			return "Ferri"
+		"BLU":
+			return "Nox"
+		"VIOLA":
+			return "Zecca"
+		"VERDE":
+			return "Saul"
+	return "chi ha quel colore"
+
+
 # ---------------------------------------------------------------- scena
 
 func _build_arena() -> void:
-	var cb := CityBuilder.new(41)
-	cb.street(16.0, -22.0)
-	for side in [-1.0, 1.0]:
-		var z: float = 16.0
-		while z > -20.0:
-			var l: float = cb.rng.randf_range(6.0, 9.0)
-			cb.building(side, z, l - 0.3, 8.0, cb.rng.randf_range(8.0, 17.0))
-			z -= l
-	cb.backdrop(-22.0)
-	cb.lamp(4.45, 4.0)
-	cb.lamp(-4.45, -5.0)
-	cb.car(-6.0 + 3.3, -12.0, Color("#6b3fa0"))
-	cb.moon(Vector3(24, 40, -110), 8.0)
-	cb.build(self)
+	if arena in ["strada", "incrocio", ""]:
+		var cb := CityBuilder.new(41)
+		cb.street(16.0, -22.0)
+		for side in [-1.0, 1.0]:
+			var z: float = 16.0
+			while z > -20.0:
+				var l: float = cb.rng.randf_range(6.0, 9.0)
+				cb.building(side, z, l - 0.3, 8.0, cb.rng.randf_range(8.0, 17.0))
+				z -= l
+		cb.backdrop(-22.0)
+		cb.lamp(4.45, 4.0)
+		cb.lamp(-4.45, -5.0)
+		cb.car(-6.0 + 3.3, -12.0, Color("#6b3fa0"))
+		cb.moon(Vector3(24, 40, -110), 8.0)
+		cb.build(self)
+		return
+	# arene delle altre aree: stessa scenografia dell'esplorazione (interno Anomalia, vicolo, galleria, caveau)
+	var layout: String = "anomalia" if arena.begins_with("anomalia") or arena in ["rosso", "blu", "verde"] else arena
+	var tema: String = arena.replace("anomalia_", "")
+	var lay: Dictionary = LayoutBuilder.build(layout, 5, tema, self)
+	var env: WorldEnvironment = null
+	for c in get_children():
+		if c is WorldEnvironment:
+			env = c
+	if env != null:
+		env.environment.background_color = lay["bg"]
+	var fog: Array = lay["fog"]
+	Toon.set_fog(fog[0], fog[1] * 0.8, fog[2] * 0.8)
 
 
 func _setup_battle() -> void:
 	var team: Array = []
 	for id in PARTY:
-		team.append(BattleContent.default_entry(id))
-	b = BattleState.create_solo("IO", team, [], BOSS_ID, int(Time.get_ticks_msec()) % 100000 + 7)
+		team.append(BattleContent.default_entry(id, level))
+	b = BattleState.create_solo("IO", team, [], boss_id, int(Time.get_ticks_msec()) % 100000 + 7)
+	var bu: Dictionary = BattleState.boss(b)
+	# nella storia la squadra sale di livello e il nemico no: lo si fa crescere insieme (PROVVISORIO, bilanciamento dell'atto 1)
+	# obiettivo: boss in 4-6 round, frammenti in 1-2
+	if not ritorno.is_empty():
+		var grow: float = 1.0 + 0.14 * float(level - 1)
+		pv_k *= (1.5 if minore else 2.3) * grow
+		atk_k *= 1.0 + 0.09 * float(level - 1)
+	if pv_k != 1.0:
+		bu["max_hp"] = maxi(1, int(round(float(bu["max_hp"]) * pv_k)))
+		bu["hp"] = bu["max_hp"]
+	if atk_k != 1.0:
+		bu["atk"] = maxi(1, int(round(float(bu["atk"]) * atk_k)))
+	# legami del rifugio: +5% attacco alle coppie che hanno passato una serata insieme (PROVVISORIO)
+	if not ritorno.is_empty():
+		for bd in Story.active_bonds():
+			for who in bd.get("chi", []):
+				for uid in b["units"]:
+					var u: Dictionary = b["units"][uid]
+					if str(u.get("char", "")) == str(who):
+						Factions.add_mod(u, "legame", "atk", 50, 999)
+		Factions.refresh(b)
 	for p in b["players"]:
 		slots.append(str(p["id"]))
 	for uid in b["units"]:
@@ -173,6 +260,7 @@ func _build_units() -> void:
 		vis[str(u["id"])] = cv
 		home[str(u["id"])] = pos
 	var m := VendingVisual.new()
+	m.kind = visual
 	m.position = ENEMY_POS
 	m.rotation.y = PI
 	m.awake = true
@@ -449,11 +537,11 @@ func _boss_turn() -> void:
 	var ev: Array = SeqRound.boss_action(b)
 	var m: VendingVisual = vis[BattleState.BOSS_ID]
 	if stunned:
-		_banner("DISTRIBUTORE · STORDITO, SALTA IL TURNO", Ui.CREAM)
+		_banner(_bname() + " · STORDITO, SALTA IL TURNO", Ui.CREAM)
 		await _show_events(ev, true)
 		await _wait(0.4)
 	else:
-		_banner("DISTRIBUTORE · " + str(mv.get("name", "?")).to_upper(), Ui.YELLOW)
+		_banner(_bname() + " · " + str(mv.get("name", "?")).to_upper(), Ui.YELLOW)
 		var all: bool = str(mv.get("target", "one")) == "all"
 		var tw: Tween = m.slam() if all else m.attack()
 		await _wait(0.42 if all else 0.3)
@@ -509,12 +597,12 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 			"debuff":
 				_number(BattleState.BOSS_ID, "INDEBOLITO", Color("#b0a0ff"), 24, delay + 0.15)
 			"break":
-				_toast("ROTTURA! Il Distributore è stordito", Color.WHITE, 1.6)
+				_toast("ROTTURA! %s è stordito" % _bn().capitalize(), Color.WHITE, 1.6)
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				_flash(0.5)
 				_kick(0.8)
 			"phase":
-				_toast("FASE %d · il Distributore si arrabbia" % int(e.get("phase", 2)), Ui.PINK, 1.8)
+				_toast("FASE %d · %s si arrabbia" % [int(e.get("phase", 2)), _bn()], Ui.PINK, 1.8)
 			"down":
 				var du: String = str(e.get("unit", ""))
 				if vis.has(du):
@@ -614,15 +702,16 @@ func _end_battle() -> void:
 		for uid in vis:
 			if uid != BattleState.BOSS_ID and not (vis[uid] as CharacterVisual).down:
 				(vis[uid] as CharacterVisual).cheer()
-	# due battute in stile Persona, poi il riquadro finale
-	var dlg := DialogBox.new()
-	_root.add_child(dlg)
-	await get_tree().process_frame
-	var key: String = "vittoria" if win else "sconfitta"
-	dlg.play(DialogData.lines(key), DialogData.recap(key))
-	await dlg.finished
-	if not is_inside_tree():
-		return
+	# nella demo dal menu: due battute in stile Persona; nella storia ci pensa la scena dopo
+	if ritorno.is_empty():
+		var dlg := DialogBox.new()
+		_root.add_child(dlg)
+		await get_tree().process_frame
+		var key: String = "vittoria" if win else "sconfitta"
+		dlg.play(DialogData.lines(key), DialogData.recap(key))
+		await dlg.finished
+		if not is_inside_tree():
+			return
 	var ln: Array = []
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", Ui.box(Color(0.07, 0.04, 0.12, 0.95), Ui.CREAM, 4, 6, 8))
@@ -644,10 +733,18 @@ func _end_battle() -> void:
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 16)
 	vb.add_child(hb)
-	if win and from == "street":
-		var c := Ui.button("CONTINUA", Ui.YELLOW, 26, 240)
-		c.pressed.connect(func() -> void: _main().go("street", {"done": true, "won": true}))
-		hb.add_child(c)
+	if not ritorno.is_empty():
+		if win:
+			var c := Ui.button("CONTINUA", Ui.YELLOW, 26, 240)
+			c.pressed.connect(_continue_story)
+			hb.add_child(c)
+		else:
+			var r2 := Ui.button("RIPROVA", Ui.YELLOW, 24, 220)
+			r2.pressed.connect(func() -> void: _main().go("battle", _args))
+			hb.add_child(r2)
+			var back := Ui.button("TORNA ALL'AREA", Ui.CREAM, 22, 260)
+			back.pressed.connect(func() -> void: _main().go("area", {"area": str(ritorno.get("area", "")), "resume": ritorno.get("perso", {})}))
+			hb.add_child(back)
 	else:
 		var r := Ui.button("RIPROVA", Ui.YELLOW, 24, 220)
 		r.pressed.connect(func() -> void: _main().go("battle", {"from": from}))
@@ -655,6 +752,15 @@ func _end_battle() -> void:
 		var m := Ui.button("MENU", Ui.CREAM, 24, 220)
 		m.pressed.connect(func() -> void: _main().go("menu"))
 		hb.add_child(m)
+
+
+func _continue_story() -> void:
+	if str(ritorno.get("tipo", "")) == "area":
+		_main().go("area", {"area": str(ritorno.get("area", "")), "resume": ritorno.get("vinto", {})})
+	else:
+		Story.flags.erase("debolezza_nota")
+		Story.advance()
+		_main().next_story()
 
 
 # ---------------------------------------------------------------- interfaccia
@@ -692,7 +798,7 @@ func _build_ui() -> void:
 	bp.add_theme_constant_override("separation", 4)
 	bp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(bp)
-	_boss_name = Ui.label("DISTRIBUTORE", 28, Ui.YELLOW, Ui.display(), 8)
+	_boss_name = Ui.label(_bname(), 28, Ui.YELLOW, Ui.display(), 8)
 	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bp.add_child(_boss_name)
 	_boss_hp = _bar(Color("#ff4b6e"), 22)
@@ -904,7 +1010,7 @@ func _refresh_hud() -> void:
 		if not BattleState.is_alive(uu):
 			continue
 		var is_boss: bool = bool(e["boss"])
-		var nm: String = "DISTRIBUTORE" if is_boss else str(uu.get("name", "?")).to_upper()
+		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
 		var l := Ui.label(("> " if k == turn_i else "   ") + nm, 20 if k == turn_i else 17, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), Ui.display() if k == turn_i else null, 4)
 		_order_box.add_child(l)
 	var nxt := Ui.label("   — round %d —" % int(b.get("round", 1)), 14, Color(1, 1, 1, 0.5))

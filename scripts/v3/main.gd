@@ -6,7 +6,10 @@ extends Node
 
 const SCREENS: Dictionary = {
 	"menu": "res://scripts/v3/menu.gd",
-	"street": "res://scripts/v3/street.gd",
+	"area": "res://scripts/v3/area.gd",
+	"scene": "res://scripts/v3/scene_screen.gd",
+	"card": "res://scripts/v3/card_screen.gd",
+	"ending": "res://scripts/v3/ending_screen.gd",
 	"battle": "res://scripts/v3/battle3d.gd",
 }
 
@@ -86,6 +89,12 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	tw2.tween_property(_fade, "color:a", 0.0, 0.3)
 	await tw2.finished
 	_busy = false
+
+
+# Passo corrente dell'atto 1 -> schermata giusta
+func next_story() -> void:
+	var sc: Array = Story.screen_for_current()
+	go(str(sc[0]), sc[1])
 
 
 func flash(strength: float = 1.0) -> void:

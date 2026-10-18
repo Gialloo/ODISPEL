@@ -193,7 +193,9 @@ static func head(sp: Dictionary) -> MeshBatch:
 	# orecchie
 	for s in [-1.0, 1.0]:
 		mb.ball(Transform3D(Basis().scaled(Vector3(0.45, 1.0, 0.7)), Vector3(s * 0.106, HEAD_OFF + 0.105, 0.012)), 0.03, _a(skin, 0.8), true, 4, 8)
-	if extra == "mask" and not bool(sp.get("nomask", false)):
+	if bool(sp.get("faceless", false)):
+		pass                              # manichino: niente occhi ne' bocca
+	elif extra == "mask" and not bool(sp.get("nomask", false)):
 		_mask(mb, accent)
 	else:
 		_eyes(mb, sp)

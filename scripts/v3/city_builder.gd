@@ -13,6 +13,7 @@ var solid := MeshBatch.new()
 var glow_v := PackedVector3Array()
 var glow_c := PackedColorArray()
 var rng := RandomNumberGenerator.new()
+var road_col: Color = Color("#1f1a2b")
 var colliders: Array = []          # [{"c": Vector2(x,z), "r": raggio}] oppure [{"rect": Rect2 su x,z}]
 
 
@@ -30,7 +31,7 @@ func _c(hex: String) -> Color:
 func street(z0: float, z1: float, half_road: float = 4.0, walk: float = 3.0) -> void:
 	var len: float = z0 - z1
 	var zc: float = (z0 + z1) * 0.5
-	solid.box(Transform3D(Basis(), Vector3(0, -0.05, zc)), Vector3(half_road * 2.0, 0.1, len), _c("#1f1a2b"), false)
+	solid.box(Transform3D(Basis(), Vector3(0, -0.05, zc)), Vector3(half_road * 2.0, 0.1, len), road_col, false)
 	for sx in [-1.0, 1.0]:
 		solid.box(Transform3D(Basis(), Vector3(sx * (half_road + walk * 0.5), 0.07, zc)), Vector3(walk, 0.14, len), _c("#4b4560"), false)
 		solid.box(Transform3D(Basis(), Vector3(sx * (half_road + 0.06), 0.08, zc)), Vector3(0.14, 0.16, len), _c("#8a83a0"), false)
@@ -54,7 +55,7 @@ func crosswalk(z: float, half_road: float = 4.0) -> void:
 
 
 # Palazzo con facciata verso la strada (side = -1 sinistra, +1 destra)
-func building(side: float, z_front: float, length: float, depth: float, height: float, x_face: float = 7.0) -> void:
+func building(side: float, z_front: float, length: float, depth: float, height: float, x_face: float = 7.0, force_shop: int = -1) -> void:
 	var wall: Color = _c(WALLS[rng.randi() % WALLS.size()])
 	var xc: float = side * (x_face + depth * 0.5)
 	var zc: float = z_front - length * 0.5
@@ -65,6 +66,8 @@ func building(side: float, z_front: float, length: float, depth: float, height: 
 	var n := Vector3(-side, 0, 0)
 	# piano terra: vetrina o serranda
 	var shop: bool = rng.randf() < 0.6
+	if force_shop >= 0:
+		shop = force_shop == 1
 	if shop:
 		var sc: Color = LIT[rng.randi() % LIT.size()]
 		sc = Color(sc.r * 0.85, sc.g * 0.85, sc.b * 0.85, 0.0)

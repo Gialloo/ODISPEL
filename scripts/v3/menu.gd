@@ -1,6 +1,6 @@
 extends Control
 
-# Menu iniziale del test 0.29.0: titolo, avvio, prova diretta del combattimento, impostazioni, info dispositivo.
+# Menu iniziale: continua / nuova partita / capitoli, prova diretta del combattimento, impostazioni, info dispositivo.
 
 var _t: float = 0.0
 var _bg: Control
@@ -22,17 +22,17 @@ func _ready() -> void:
 	add_child(_bg)
 
 	var col := VBoxContainer.new()
-	Ui.place(col, 0.07, 0.12, 0.6, 0.95, 0, 0, 0, 0)
-	col.add_theme_constant_override("separation", 12)
+	Ui.place(col, 0.07, 0.07, 0.62, 0.93, 0, 0, 0, 0)
+	col.add_theme_constant_override("separation", 10)
 	add_child(col)
-	var title := Ui.label(GameConfig.TITLE, 120, Ui.CREAM, Ui.display(), 14)
+	var title := Ui.label(GameConfig.TITLE, 100, Ui.CREAM, Ui.display(), 14)
 	col.add_child(title)
 	var sub := Ui.label(GameConfig.SUBTITLE, 30, Ui.YELLOW, Ui.display(), 8)
 	col.add_child(sub)
 	var ver := Ui.label("versione %s · prova tecnica per telefono" % GameConfig.VERSION, 20, Color(1, 1, 1, 0.7), null, 4)
 	col.add_child(ver)
 	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(0, 18)
+	gap.custom_minimum_size = Vector2(0, 6)
 	col.add_child(gap)
 
 	var note: String = Breadcrumb.crash_note()
@@ -41,19 +41,37 @@ func _ready() -> void:
 		n.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		col.add_child(n)
 
-	var b1 := Ui.button("INIZIA", Ui.YELLOW, 34, 380)
-	b1.pressed.connect(func() -> void: _main().go("street"))
+	var cont: bool = Story.has_save()
+	if cont:
+		var bc := Ui.button("CONTINUA", Ui.YELLOW, 34, 380)
+		bc.pressed.connect(func() -> void:
+			Story.load_game()
+			_main().next_story())
+		col.add_child(bc)
+	var b1 := Ui.button("NUOVA PARTITA", Ui.CREAM if cont else Ui.YELLOW, 28 if cont else 34, 380)
+	b1.pressed.connect(func() -> void:
+		Story.new_game()
+		_main().next_story())
 	col.add_child(b1)
-	var b2 := Ui.button("SOLO COMBATTIMENTO", Ui.CYAN, 24, 380)
-	b2.pressed.connect(func() -> void: _main().go("battle", {"from": "menu"}))
-	col.add_child(b2)
-	var b3 := Ui.button("IMPOSTAZIONI", Ui.CREAM, 24, 380)
+	var row1 := HBoxContainer.new()
+	row1.add_theme_constant_override("separation", 10)
+	col.add_child(row1)
+	var b2 := Ui.button("CAPITOLI", Ui.CYAN, 22, 185)
+	b2.pressed.connect(_open_chapters)
+	row1.add_child(b2)
+	var b5 := Ui.button("BATTAGLIA", Ui.CREAM, 22, 185)
+	b5.pressed.connect(func() -> void: _main().go("battle", {"from": "menu"}))
+	row1.add_child(b5)
+	var row2 := HBoxContainer.new()
+	row2.add_theme_constant_override("separation", 10)
+	col.add_child(row2)
+	var b3 := Ui.button("IMPOSTAZIONI", Ui.CREAM, 22, 185 if not OS.has_feature("mobile") else 380)
 	b3.pressed.connect(_open_settings)
-	col.add_child(b3)
+	row2.add_child(b3)
 	if not OS.has_feature("mobile"):
-		var b4 := Ui.button("ESCI", Color("#ff7a9c"), 22, 380)
+		var b4 := Ui.button("ESCI", Color("#ff7a9c"), 22, 185)
 		b4.pressed.connect(func() -> void: _main().quit())
-		col.add_child(b4)
+		row2.add_child(b4)
 	for b in col.get_children():
 		if b is Button:
 			(b as Button).size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
@@ -75,6 +93,32 @@ func _device_info() -> String:
 
 func _main() -> Node:
 	return get_parent()
+
+
+# Salta a un capitolo (per provare e correggere senza rigiocare tutto)
+func _open_chapters() -> void:
+	var shade := ColorRect.new()
+	shade.color = Color(0.02, 0.01, 0.05, 0.85)
+	Ui.place(shade, 0, 0, 1, 1)
+	add_child(shade)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+	Ui.place(vb, 0.5, 0.1, 0.5, 0.95, -330, 0, 330, 0)
+	shade.add_child(vb)
+	var t := Ui.label("CAPITOLI", 36, Ui.YELLOW, Ui.display(), 8)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(t)
+	var chs: Array = Story.chapters()
+	for i in chs.size():
+		var b := Ui.button(str(chs[i].get("titolo", "")), Ui.CREAM, 20, 640)
+		b.pressed.connect(func() -> void:
+			Story.load_game()
+			Story.start_chapter(i)
+			_main().next_story())
+		vb.add_child(b)
+	var c := Ui.button("CHIUDI", Color("#ff7a9c"), 20, 640)
+	c.pressed.connect(shade.queue_free)
+	vb.add_child(c)
 
 
 func _open_settings() -> void:

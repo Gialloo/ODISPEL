@@ -336,6 +336,43 @@ const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino", "cabina", "asc
 	"sirena", "lampione", "bancomat", "scala", "radio", "metro", "cassaforte", "faro", "registro", "eclissi"]
 
 const BOSSES: Dictionary = {
+	# V3: anomalie minori dell'atto 1 (una per colore)
+	"frammento_giallo": {
+		"name": "Frammento", "title": "ANOMALIA MINORE", "color": "giallo", "hp_per_player": 260,
+		"atk": 250, "def": 10, "spd": 100,
+		"desc": "Un pezzo d'Anomalia che vaga per le strade. PROVVISORIO (V3).",
+		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
+		"atk_scale": [0.6, 0.75, 0.9],
+		"drops": 1,
+		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},
+	},
+	"frammento_rosso": {
+		"name": "Frammento", "title": "ANOMALIA MINORE", "color": "rosso", "hp_per_player": 260,
+		"atk": 250, "def": 10, "spd": 100,
+		"desc": "Un pezzo d'Anomalia che vaga per le strade. PROVVISORIO (V3).",
+		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
+		"atk_scale": [0.6, 0.75, 0.9],
+		"drops": 1,
+		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},
+	},
+	"frammento_blu": {
+		"name": "Frammento", "title": "ANOMALIA MINORE", "color": "blu", "hp_per_player": 260,
+		"atk": 250, "def": 10, "spd": 100,
+		"desc": "Un pezzo d'Anomalia che vaga per le strade. PROVVISORIO (V3).",
+		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
+		"atk_scale": [0.6, 0.75, 0.9],
+		"drops": 1,
+		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},
+	},
+	"frammento_verde": {
+		"name": "Frammento", "title": "ANOMALIA MINORE", "color": "verde", "hp_per_player": 260,
+		"atk": 250, "def": 10, "spd": 100,
+		"desc": "Un pezzo d'Anomalia che vaga per le strade. PROVVISORIO (V3).",
+		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
+		"atk_scale": [0.6, 0.75, 0.9],
+		"drops": 1,
+		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},
+	},
 	"distributore": {
 		"name": "Distributore", "title": "CLASSE ANOMALIA · MINACCIA BASSA", "color": "giallo", "hp_per_player": 900,
 		"atk": 390, "def": 25, "spd": 105,
@@ -697,7 +734,7 @@ static func validate() -> Array:
 			errors.append("%s: colore del boss sconosciuto" % id)
 		if not b.has("reward") or not b.has("name") or not b.has("desc") or not b.has("title"):
 			errors.append("%s: boss incompleto (nome, titolo, descrizione, premi)" % id)
-		if not BOSS_ORDER.has(id):
+		if not BOSS_ORDER.has(id) and not id.begins_with("frammento_"):   # i frammenti sono nemici minori, fuori dalla scaletta
 			errors.append("%s: boss fuori da BOSS_ORDER" % id)
 	for id in BOSS_ORDER:
 		if not BOSSES.has(id):

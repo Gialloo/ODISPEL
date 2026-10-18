@@ -1,5 +1,16 @@
 # Novità
 
+## 0.30.0 · atto 1 completo
+- Tutto l'atto 1 giocabile: prologo, quattro capitoli e il finale (Il varco). Circa un'ora di gioco.
+- Sei aree da esplorare: la strada, l'Incrocio Nove, il Vicolo delle Civette, la Galleria Lumière, il caveau LibraCorp e tre «interni» delle Anomalie (rosso, blu, verde).
+- Cinque boss (Distributore, Semaforo, Cabina, Manichino, Cassaforte) e frammenti d'Anomalia minori che girano per le aree: colpiscili prima che ti tocchino.
+- Gli indizi trovati rivelano la debolezza del boss.
+- La squadra chiacchiera mentre cammini: fumetti con la faccina, non fermano il gioco.
+- Serate al rifugio: scegli chi passa la sera insieme, nasce un legame (+5% attacco alla coppia in battaglia).
+- Scelte nei dialoghi (fidarsi del Kairos, la telefonata a Saul) ricordate fino alla fine.
+- Salvataggio automatico a ogni passo: CONTINUA dal menu. CAPITOLI per saltare a un capitolo.
+- Le voci di due inseguitori (LibraCorp e Civette) preparano il seguito.
+
 ## 0.29.2 · cutscene stile Persona
 - Dialoghi alla Persona 5: ritratti grandi che entrano di lato, chi ascolta si scurisce, l'espressione cambia a ogni battuta.
 - Si parte col botto: la cupola cala sulla città e i quattro si ritrovano in piazza. Poi «Tre ore prima».

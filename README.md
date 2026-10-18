@@ -1,15 +1,16 @@
-# OFFICIAL DEMO ODISPEL · V3, prologo 3D (standalone)
+# OFFICIAL DEMO ODISPEL · V3, atto 1 (standalone)
 
 Progetto Godot 4.7.2 separato dalla V2 (`Gialloo/ODISPEL`), renderer **gl_compatibility**, landscape 1280×720.
-Commissione e storia: `docs/HANDOFF_PROLOGO_3D.md`. Stato attuale: **0.29.0 = test sul telefono**, poi stop in attesa dell'esito.
+Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. Stato attuale: **0.30.0 = atto 1 completo**, in attesa delle correzioni dopo la prova.
 
 ## Struttura
 - `scripts/engine/` — motore di combattimento **copiato** dalla V2 (BattleState, SeqRound, BattleResolver e dipendenze).
   Modifiche rispetto alla V2: niente Spedizione/Titoli in `compute_stats`, `FRONT_SIZE = 4`, cast V3 in `BattleContent.V3_CAST` (provvisorio).
-- `scripts/v3/` — gioco: `main.gd` (una schermata alla volta), `menu.gd`, `street.gd` (esplorazione), `battle3d.gd` (combattimento 3D),
+- `scripts/v3/` — gioco: `main.gd` (una schermata alla volta), `menu.gd`, `area.gd` (esplorazione di un'area qualsiasi), `scene_screen.gd` / `card_screen.gd` / `ending_screen.gd` (scene, cartelli, fine),
+  `story.gd` (passi dell'atto e salvataggio), `banter.gd` (chiacchiere), `dialog_box.gd` (dialoghi stile Persona), `layout_builder.gd` (le aree), `battle3d.gd` (combattimento 3D),
   `character_visual.gd` / `vending_visual.gd` (segnaposto 3D, interfaccia sostituibile coi glTF), `toon.gd` + `mesh_batch.gd` + `city_builder.gd` (grafica).
-- `data/` — `dialoghi.json` (testi, si correggono senza toccare il codice), `cast_visual.gd` (colori e proporzioni dei segnaposto).
-- `tests/unit/` — `test_v3_engine.gd` + test del motore portati dalla V2.  `tools/v3_shot.gd` — screenshot del flusso completo.
+- `data/` — `atto1.json` (capitoli, passi, aree, nemici, boss), `dialoghi_atto1.json` + `dialoghi.json` (testi, si correggono senza toccare il codice), `cast_visual.gd` (colori e proporzioni dei segnaposto).
+- `tests/unit/` — `test_v3_engine.gd` + test del motore portati dalla V2.  `tools/v3_atto1.gd` — gioca da solo l'atto 1 (battaglie in AUTO) e fa gli screenshot.
 
 ## Rendering (per cercare eventuali crash)
 Shader spatial **unshaded** fatti a mano (toon a due toni e nebbia dentro lo shader), contorni a guscio rovesciato come
@@ -22,8 +23,9 @@ nessuna luce, nessuna ombra in tempo reale, nessun Label3D/Sprite3D (tutto il te
 export PATH=/root/bin:$PATH
 godot --headless --path . --import
 godot --headless --path . -s tests/unit/test_v3_engine.gd
-xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_shot.gd -- /tmp/shot
-xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_shot.gd -- /tmp/shot_t touch
+godot --headless --path . -s tests/unit/test_v3_dialoghi.gd
+xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_atto1.gd -- /tmp/atto1 [tutte] [capitolo=N]
+xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_atto1.gd -- /tmp/atto1_t touch
 ```
 
 ## Rilascio

@@ -1,0 +1,139 @@
+{
+	"_nota": "Struttura dell'atto 1 (PROVVISORIA). Ogni capitolo e' una lista di passi eseguiti in ordine. Tipi: cartello, scena, area, rifugio, fine. Le aree sono descritte in 'aree'. I testi stanno in data/dialoghi_atto1.json.",
+
+	"capitoli": [
+		{"id": "prologo", "titolo": "PROLOGO · LA NOTTE DELLA CUPOLA", "passi": [
+			{"tipo": "area", "area": "strada"},
+			{"tipo": "scena", "dialogo": "accordo", "sfondo": "strada"},
+			{"tipo": "scena", "dialogo": "rifugio_arrivo", "sfondo": "rifugio"}
+		]},
+		{"id": "cap1", "titolo": "CAPITOLO 1 · ROSSO FISSO", "passi": [
+			{"tipo": "cartello", "titolo": "CAPITOLO 1", "sotto": "Rosso fisso"},
+			{"tipo": "scena", "dialogo": "c1_briefing", "sfondo": "rifugio"},
+			{"tipo": "area", "area": "incrocio"},
+			{"tipo": "area", "area": "dentro_semaforo"},
+			{"tipo": "scena", "dialogo": "c1_braccio", "sfondo": "anomalia_rossa"},
+			{"tipo": "rifugio", "dialogo": "c1_serata"}
+		]},
+		{"id": "cap2", "titolo": "CAPITOLO 2 · LA LINEA", "passi": [
+			{"tipo": "cartello", "titolo": "CAPITOLO 2", "sotto": "La linea"},
+			{"tipo": "scena", "dialogo": "c2_briefing", "sfondo": "rifugio"},
+			{"tipo": "area", "area": "vicolo"},
+			{"tipo": "area", "area": "dentro_cabina"},
+			{"tipo": "scena", "dialogo": "c2_dopo", "sfondo": "anomalia_blu"},
+			{"tipo": "rifugio", "dialogo": "c2_serata"}
+		]},
+		{"id": "cap3", "titolo": "CAPITOLO 3 · VETRINA", "passi": [
+			{"tipo": "cartello", "titolo": "CAPITOLO 3", "sotto": "Vetrina"},
+			{"tipo": "scena", "dialogo": "c3_briefing", "sfondo": "rifugio"},
+			{"tipo": "area", "area": "galleria"},
+			{"tipo": "area", "area": "dentro_vetrina"},
+			{"tipo": "scena", "dialogo": "c3_faccia", "sfondo": "anomalia_verde"},
+			{"tipo": "rifugio", "dialogo": "c3_serata"}
+		]},
+		{"id": "cap4", "titolo": "CAPITOLO 4 · IL COLPO", "passi": [
+			{"tipo": "cartello", "titolo": "CAPITOLO 4", "sotto": "Il colpo"},
+			{"tipo": "scena", "dialogo": "c4_briefing", "sfondo": "rifugio"},
+			{"tipo": "scena", "dialogo": "c4_committente", "sfondo": "notte"},
+			{"tipo": "area", "area": "caveau"},
+			{"tipo": "scena", "dialogo": "c4_dopo", "sfondo": "caveau"}
+		]},
+		{"id": "finale", "titolo": "FINALE · IL VARCO", "passi": [
+			{"tipo": "cartello", "titolo": "FINALE", "sotto": "Il varco"},
+			{"tipo": "scena", "dialogo": "varco", "sfondo": "varco"},
+			{"tipo": "cartello", "titolo": "FINE DELL'ATTO 1", "sotto": "La cupola è caduta. Adesso vi cerca tutto il paese."},
+			{"tipo": "fine"}
+		]}
+	],
+
+	"aree": {
+		"strada": {
+			"layout": "strada", "seme": 29, "capo": "saul", "chiacchiere": "strada",
+			"intro": "apertura", "intro_cartello": ["POCO DOPO", "Via dalla piazza, prima che arrivi LibraCorp"],
+			"obiettivo": "Allontanatevi dalla piazza. Qualcosa ronza in fondo alla strada.",
+			"telecamera": [-5.6, -27.0],
+			"indizi": [
+				{"id": "telecamera", "pos": [-5.6, -27.0], "raggio": 3.0, "etichetta": "OSSERVA LA TELECAMERA", "tasto": "GUARDA", "dialogo": "telecamera"},
+				{"id": "scontrino", "pos": [3.7, -28.6], "raggio": 1.7, "etichetta": "RACCOGLI LO SCONTRINO", "tasto": "PRENDI", "dialogo": "scontrino", "oggetto": true, "debolezza": "VIOLA"}
+			],
+			"punti": [{"id": "auto_rossa", "pos": [2.7, -25.0]}, {"id": "panchina", "pos": [-6.1, -21.5]}, {"id": "auto_blu", "pos": [-2.7, -11.0]}],
+			"nemici": [{"id": "f1", "pos": [0.8, -16.0], "boss": "frammento_giallo", "livello": 1}],
+			"boss": {"id": "distributore", "tipo": "distributore", "pos": [5.3, -33.0], "rot": 90, "dialogo": "distributore", "agguato": "agguato", "livello": 1, "arena": "strada", "pv": 1.0, "atk": 1.0}
+		},
+		"incrocio": {
+			"layout": "incrocio", "seme": 41, "capo": "ferri", "chiacchiere": "incrocio",
+			"obiettivo": "Raggiungete l'Incrocio Nove. Il semaforo al centro è fermo sul rosso da ore.",
+			"telecamera": [6.2, -8.0],
+			"indizi": [
+				{"id": "radio", "pos": [-5.4, -9.0], "raggio": 2.4, "etichetta": "ASCOLTA LA RADIO LIBRACORP", "tasto": "ASCOLTA", "dialogo": "c1_radio"},
+				{"id": "multa", "pos": [3.4, -15.5], "raggio": 1.8, "etichetta": "LEGGI LA MULTA", "tasto": "LEGGI", "dialogo": "c1_multa", "oggetto": true, "debolezza": "BLU"}
+			],
+			"punti": [{"id": "auto_ferme", "pos": [-2.2, -21.0]}, {"id": "barriera", "pos": [0.0, -5.0]}],
+			"nemici": [{"id": "f1", "pos": [-1.0, -12.0], "boss": "frammento_rosso", "livello": 3}, {"id": "f2", "pos": [2.0, -27.0], "boss": "frammento_rosso", "livello": 3}],
+			"uscita": {"pos": [0.0, -33.0], "etichetta": "ENTRA NELL'ANOMALIA", "tasto": "ENTRA", "dialogo": "c1_soglia", "tipo": "semaforo"}
+		},
+		"dentro_semaforo": {
+			"layout": "anomalia", "seme": 7, "capo": "ferri", "chiacchiere": "dentro_rosso", "tema": "rosso",
+			"obiettivo": "Dentro l'Anomalia. Raggiungete il cuore del semaforo.",
+			"nemici": [{"id": "f1", "pos": [0.0, -10.0], "boss": "frammento_rosso", "livello": 3}],
+			"boss": {"id": "semaforo", "tipo": "semaforo", "pos": [0.0, -24.0], "rot": 0, "dialogo": "c1_boss", "agguato": "c1_agguato", "livello": 3, "arena": "anomalia_rossa", "pv": 0.9, "atk": 0.9}
+		},
+		"vicolo": {
+			"layout": "vicolo", "seme": 53, "capo": "nox", "chiacchiere": "vicolo",
+			"obiettivo": "Vicolo delle Civette. Tutti i telefoni squillano alle 3:12.",
+			"telecamera": [-3.4, -18.0],
+			"indizi": [
+				{"id": "registro", "pos": [3.2, -10.0], "raggio": 2.0, "etichetta": "APRI IL REGISTRO DEI TURNI", "tasto": "APRI", "dialogo": "c2_registro"},
+				{"id": "adesivo", "pos": [-3.1, -26.0], "raggio": 1.8, "etichetta": "GUARDA L'ADESIVO", "tasto": "GUARDA", "dialogo": "c2_adesivo", "oggetto": true, "debolezza": "VERDE"}
+			],
+			"punti": [{"id": "cabine", "pos": [3.0, -18.0]}, {"id": "manifesti", "pos": [-3.3, -6.0]}],
+			"nemici": [{"id": "f1", "pos": [0.0, -14.0], "boss": "frammento_blu", "livello": 5}, {"id": "f2", "pos": [0.5, -29.0], "boss": "frammento_blu", "livello": 5}],
+			"uscita": {"pos": [0.0, -35.0], "etichetta": "RISPONDI ALLA CABINA", "tasto": "RISPONDI", "dialogo": "c2_soglia", "tipo": "cabina"}
+		},
+		"dentro_cabina": {
+			"layout": "anomalia", "seme": 11, "capo": "nox", "chiacchiere": "dentro_blu", "tema": "blu",
+			"obiettivo": "Dentro la linea. Seguite lo squillo.",
+			"nemici": [{"id": "f1", "pos": [0.5, -11.0], "boss": "frammento_blu", "livello": 5}],
+			"boss": {"id": "cabina", "tipo": "cabina", "pos": [0.0, -24.0], "rot": 0, "dialogo": "c2_boss", "agguato": "c2_agguato", "livello": 5, "arena": "anomalia_blu", "pv": 0.8, "atk": 0.9}
+		},
+		"galleria": {
+			"layout": "galleria", "seme": 67, "capo": "zecca", "chiacchiere": "galleria",
+			"obiettivo": "Galleria Lumière. Chi entra esce senza faccia.",
+			"telecamera": [5.6, -14.0],
+			"indizi": [
+				{"id": "chat", "pos": [-3.0, -9.0], "raggio": 2.2, "etichetta": "LEGGI LA CHAT DELLA DIRETTA", "tasto": "LEGGI", "dialogo": "c3_chat"},
+				{"id": "etichetta", "pos": [3.3, -22.0], "raggio": 1.8, "etichetta": "LEGGI IL CARTELLINO", "tasto": "LEGGI", "dialogo": "c3_etichetta", "oggetto": true, "debolezza": "ROSSO"}
+			],
+			"punti": [{"id": "vetrine", "pos": [-4.0, -16.0]}, {"id": "manichini", "pos": [4.0, -28.0]}],
+			"nemici": [{"id": "f1", "pos": [0.5, -13.0], "boss": "frammento_verde", "livello": 7}, {"id": "f2", "pos": [-0.8, -27.0], "boss": "frammento_verde", "livello": 7}],
+			"uscita": {"pos": [0.0, -35.0], "etichetta": "GUARDA NELLA VETRINA", "tasto": "GUARDA", "dialogo": "c3_soglia", "tipo": "manichino"}
+		},
+		"dentro_vetrina": {
+			"layout": "anomalia", "seme": 13, "capo": "zecca", "chiacchiere": "dentro_verde", "tema": "verde",
+			"obiettivo": "Dietro il vetro. Qualcuno vi sta copiando.",
+			"nemici": [{"id": "f1", "pos": [-0.5, -11.0], "boss": "frammento_verde", "livello": 7}],
+			"boss": {"id": "manichino", "tipo": "manichino", "pos": [0.0, -24.0], "rot": 0, "dialogo": "c3_boss", "agguato": "c3_agguato", "livello": 7, "arena": "anomalia_verde", "pv": 0.8, "atk": 0.85}
+		},
+		"caveau": {
+			"layout": "caveau", "seme": 79, "capo": "saul", "chiacchiere": "caveau",
+			"obiettivo": "Il caveau LibraCorp sotto la Banca Centrale. Il colpo della vita.",
+			"telecamera": [-2.6, -12.0],
+			"indizi": [
+				{"id": "inventario", "pos": [2.4, -9.0], "raggio": 2.0, "etichetta": "CONSULTA L'INVENTARIO", "tasto": "LEGGI", "dialogo": "c4_inventario"},
+				{"id": "combinazione", "pos": [-2.3, -21.0], "raggio": 1.8, "etichetta": "STUDIA LA SERRATURA", "tasto": "STUDIA", "dialogo": "c4_combinazione", "oggetto": true, "debolezza": "ROSSO"}
+			],
+			"punti": [{"id": "lingotti", "pos": [2.3, -16.0]}, {"id": "laser", "pos": [0.0, -5.0]}],
+			"nemici": [{"id": "f1", "pos": [0.0, -13.0], "boss": "frammento_verde", "livello": 9}, {"id": "f2", "pos": [-0.5, -25.0], "boss": "frammento_verde", "livello": 9}],
+			"boss": {"id": "cassaforte", "tipo": "cassaforte", "pos": [0.0, -34.0], "rot": 0, "dialogo": "c4_boss", "agguato": "c4_agguato", "livello": 9, "arena": "caveau", "pv": 0.6, "atk": 0.75}
+		}
+	},
+
+	"legami": {
+		"legame_ferri_saul": {"chi": ["ferri", "saul"], "nome": "Ferri e Saul"},
+		"legame_nox_zecca": {"chi": ["nox", "zecca"], "nome": "Nox e Zecca"},
+		"legame_ferri_nox": {"chi": ["ferri", "nox"], "nome": "Ferri e Nox"},
+		"legame_saul_zecca": {"chi": ["saul", "zecca"], "nome": "Saul e Zecca"},
+		"legame_ferri_zecca": {"chi": ["ferri", "zecca"], "nome": "Ferri e Zecca"},
+		"legame_nox_saul": {"chi": ["nox", "saul"], "nome": "Nox e Saul"}
+	}
+}
