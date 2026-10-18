@@ -144,6 +144,8 @@ var _stick_idx: int = -1
 var _stick_vec: Vector2 = Vector2.ZERO
 var _near: Dictionary = {}                 # oggetto interagibile piu' vicino
 var _wmats: Array = []
+var _act_sig: String = ""
+var _prev_fps: int = -1
 
 var ui: Control
 var zone_label: Label
@@ -199,8 +201,17 @@ class ActBtn extends Control:
 
 # ---------------------------------------------------------------- avvio
 
+func _exit_tree() -> void:
+	if _prev_fps >= 0:
+		Engine.max_fps = _prev_fps
+
+
 func _ready() -> void:
 	Settings.load_settings()
+	# esplorazione leggera: sui telefoni senza limite scelto si ferma a 60 fotogrammi (meno calore e batteria che a 90/120)
+	if OS.has_feature("mobile") and Settings.fps_limit == 0 and (Engine.max_fps == 0 or Engine.max_fps > 60):
+		_prev_fps = Engine.max_fps
+		Engine.max_fps = 60
 	roster = RosterStore.load_or_new()
 	var team: Array = roster.get("team", [])
 	for i in range(mini(team.size(), BattleTypes.FRONT_SIZE)):
@@ -369,6 +380,7 @@ func _in_walk(p: Vector2) -> bool:
 
 
 func _build_map() -> void:
+	_batch_begin()
 	# strada: viola scuro pieno
 	var ground := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
@@ -397,14 +409,13 @@ func _build_map() -> void:
 		mi.position = Vector3(r.position.x + r.size.x * 0.5, 0.0, r.position.y + r.size.y * 0.5)
 		add_child(mi)
 	# strisce spesse gialle e nere nelle due vie
-	var line_m: ShaderMaterial = _mat(Color("#ffe14a"), 1.0, 0.0)
 	var zz: float = -5.0
 	while zz > -25.0:
-		_box(Vector3(0, 0.03, zz), Vector3(0.45, 0.03, 1.3), line_m)
+		_bbox(Vector3(0, 0.03, zz), Vector3(0.45, 0.03, 1.3), Color("#ffe14a"), 0.0)
 		zz -= 2.6
 	var xx: float = 11.0
 	while xx < 22.5:
-		_box(Vector3(xx, 0.03, 2.0), Vector3(1.3, 0.03, 0.45), line_m)
+		_bbox(Vector3(xx, 0.03, 2.0), Vector3(1.3, 0.03, 0.45), Color("#ffe14a"), 0.0)
 		xx += 2.6
 	_decals()
 	# sole enorme da fumetto, in fondo al cielo
@@ -432,6 +443,7 @@ func _build_map() -> void:
 	_lamp(Vector3(-6.0, 0, -30.0), Color("#ffd98a"), false)
 	_lamp(Vector3(6.0, 0, -30.0), Color("#ffd98a"), false)
 	_props()
+	_batch_flush()
 	_gate()
 	_boss_machine()
 	_trainers()
@@ -486,17 +498,15 @@ func _decals() -> void:
 	_decal(Vector2(4.0, -36.0), 3.6, Color("#ff3d8b"), 31, 2.2)
 	# strisce pedonali all'imbocco di Via della Serranda
 	for i in range(6):
-		_box(Vector3(-2.25 + i * 0.9, 0.03, -3.3), Vector3(0.55, 0.03, 1.6), _mat(CREAM, 1.0, 0.0))
+		_bbox(Vector3(-2.25 + i * 0.9, 0.03, -3.3), Vector3(0.55, 0.03, 1.6), CREAM, 0.0)
 
 
 func _lamp(p: Vector3, c: Color, _with_light: bool) -> void:
-	_cyl(p + Vector3(0, 1.6, 0), 0.08, 3.2, _mat(INK, 0.0, 0.04))
-	var bulb: MeshInstance3D = _box(p + Vector3(0, 3.25, 0), Vector3(0.5, 0.26, 0.5), _mat(c, 1.0, 0.06))
-	bulb.name = "Bulb"
+	_bbox(p + Vector3(0, 1.6, 0), Vector3(0.14, 3.2, 0.14), INK, 0.04)
+	_bbox(p + Vector3(0, 3.25, 0), Vector3(0.5, 0.26, 0.5), c, 0.06)
 
 
 func _build_walls() -> void:
-	_batch_begin()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 424242
 	var names: Array = ["OSTERIA DA NINO", "TABACCHI 24H", "LIBRACORP", "FARMACIA", "RONDINI BAR", "MAGA·MARKET", "KAIROS?", "ELETTRO NODO", "NOODLE"]
@@ -548,7 +558,6 @@ func _build_walls() -> void:
 						ni += 1
 					pos += w
 				cur = run_end
-	_batch_flush()
 
 
 # ---- edifici in un solo mesh (tutti i corpi) e un solo mesh di contorni: poche decine di disegni invece di centinaia ----
@@ -611,6 +620,8 @@ func _batch_box(c: Vector3, sz: Vector3, col: Color, uvk: Vector2, uvo: Vector2,
 			var v1: float = sz.y / 6.8
 			uv = [Vector2(uvo.x, uvo.y + v1), Vector2(uvo.x + u1, uvo.y + v1), Vector2(uvo.x + u1, uvo.y), Vector2(uvo.x, uvo.y)]
 		_quad(_bst, c + (f[1] as Vector3), c + (f[2] as Vector3), c + (f[3] as Vector3), c + (f[4] as Vector3), f[0], col, uv)
+	if outline <= 0.0:
+		return
 	# contorno: stesso box ingrandito (si vede solo il retro, dietro al corpo)
 	var e := Vector3(outline, outline, outline)
 	var ox: float = hx + e.x
@@ -627,6 +638,10 @@ func _batch_box(c: Vector3, sz: Vector3, col: Color, uvk: Vector2, uvo: Vector2,
 	var z4: Array = [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
 	for f in ofaces:
 		_quad(_ost, c + (f[1] as Vector3), c + (f[2] as Vector3), c + (f[3] as Vector3), c + (f[4] as Vector3), f[0], INK, z4)
+
+
+func _bbox(center: Vector3, size: Vector3, col: Color, outline: float = 0.05) -> void:
+	_batch_box(center, size, col, Vector2.ZERO, Vector2.ZERO, outline)
 
 
 func _batch_flush() -> void:
@@ -668,11 +683,10 @@ func _edge_point(r: Rect2, side: int, along: float, out: float) -> Vector2:
 	return Vector2(r.end.x + out, r.position.y + along)
 
 
-func _prop(c2: Vector2, size3: Vector3, col: Color, emit: float = 0.0, collide: bool = true) -> MeshInstance3D:
-	var mi: MeshInstance3D = _box(Vector3(c2.x, size3.y * 0.5, c2.y), size3, _mat(col, emit))
+func _prop(c2: Vector2, size3: Vector3, col: Color, emit: float = 0.0, collide: bool = true) -> void:
+	_bbox(Vector3(c2.x, size3.y * 0.5, c2.y), size3, col)
 	if collide:
 		obstacles.append(Rect2(c2.x - size3.x * 0.5, c2.y - size3.z * 0.5, size3.x, size3.z))
-	return mi
 
 
 func _talk(id: String, c2: Vector2, title: String, lines: Array, radius: float = 1.9) -> void:
@@ -682,7 +696,7 @@ func _talk(id: String, c2: Vector2, title: String, lines: Array, radius: float =
 func _props() -> void:
 	# distributore guasto (la prima cosa che si vede: avvisa del tono)
 	_prop(Vector2(-6.4, -3.3), Vector3(0.95, 1.9, 0.8), Color("#ff3d8b"))
-	_box(Vector3(-6.4, 1.15, -2.88), Vector3(0.7, 1.0, 0.05), _mat(Color("#ffcf5a"), 1.8))
+	_bbox(Vector3(-6.4, 1.15, -2.88), Vector3(0.7, 1.0, 0.05), Color("#ffcf5a"))
 	_text3d("NON SPINGERE", Vector3(-6.4, 1.8, -2.87), 22, Color("#fff1c0"))
 	_talk("vend", Vector2(-6.4, -2.4), "Distributore guasto", [
 		["", "Un distributore spento. Sul display, a intermittenza: «NON SPINGERE»."],
@@ -702,10 +716,10 @@ func _props() -> void:
 		["", "Le Anomalie urbane, di notte, preferiscono i posti dove la gente non guarda."]], 1.5)
 	# semaforo che lampeggia (via Elettra)
 	_prop(Vector2(9.9, -0.3), Vector3(0.18, 3.2, 0.18), Color("#0b0814"))
-	_box(Vector3(9.9, 3.2, -0.3), Vector3(0.45, 1.1, 0.35), _mat(Color("#0b0814")))
-	_box(Vector3(9.9, 3.55, -0.1), Vector3(0.2, 0.2, 0.05), _mat(Color("#ff5a4f"), 2.4))
-	_box(Vector3(9.9, 3.2, -0.1), Vector3(0.2, 0.2, 0.05), _mat(Color("#ffd23f"), 0.5))
-	_box(Vector3(9.9, 2.85, -0.1), Vector3(0.2, 0.2, 0.05), _mat(Color("#4fd17a"), 0.5))
+	_bbox(Vector3(9.9, 3.2, -0.3), Vector3(0.45, 1.1, 0.35), Color("#0b0814"))
+	_bbox(Vector3(9.9, 3.55, -0.1), Vector3(0.2, 0.2, 0.05), Color("#ff5a4f"))
+	_bbox(Vector3(9.9, 3.2, -0.1), Vector3(0.2, 0.2, 0.05), Color("#ffd23f"))
+	_bbox(Vector3(9.9, 2.85, -0.1), Vector3(0.2, 0.2, 0.05), Color("#4fd17a"))
 	_talk("semaforo", Vector2(10.0, 0.9), "Semaforo", [
 		["", "Il semaforo lampeggia sul rosso da un'ora. Nessuno lo ha mai visto passare al verde."],
 		["", "Forse è solo guasto. Forse no."]], 1.7)
@@ -718,7 +732,7 @@ func _props() -> void:
 	# rifugio dei Rondini (insegna in fondo alla piazza, verso la camera: solo un'insegna bassa)
 	# cabina telefonica (fondo del vicolo)
 	_prop(Vector2(-21.8, 5.5), Vector3(1.1, 2.4, 1.1), Color("#ff3d8b"))
-	_box(Vector3(-21.25, 1.4, 5.5), Vector3(0.05, 1.6, 0.8), _mat(Color("#bfe9ff"), 1.0))
+	_bbox(Vector3(-21.25, 1.4, 5.5), Vector3(0.05, 1.6, 0.8), Color("#bfe9ff"))
 	_talk("cabina", Vector2(-20.4, 5.5), "Cabina telefonica", [
 		["", "La cornetta è sganciata. Dall'altra parte, qualcuno respira piano."],
 		["", "Riattacchi. Il filo, notate, non è collegato a niente."]], 1.9)
@@ -727,7 +741,7 @@ func _props() -> void:
 	_prop(Vector2(-18.5, 8.2), Vector3(1.0, 0.8, 0.8), Color("#ffe14a"))
 	# terminale LibraCorp: la scheda del Distributore (cosa fa e come si contrasta)
 	_prop(Vector2(2.35, -9.5), Vector3(0.8, 1.5, 0.6), Color("#8a5bff"))
-	_box(Vector3(2.35, 1.2, -9.18), Vector3(0.6, 0.5, 0.05), _mat(Color("#4fe3ff"), 2.0))
+	_bbox(Vector3(2.35, 1.2, -9.18), Vector3(0.6, 0.5, 0.05), Color("#4fe3ff"))
 	_text3d("LIBRACORP\nSCHEDA ANOMALIA", Vector3(2.35, 1.95, -9.15), 20, Color("#4fe3ff"))
 	_talk("terminale", Vector2(1.5, -9.5), "Terminale LibraCorp", _boss_card(), 2.0)
 	# serranda: interazione con la serranda, il testo dipende dallo stato
@@ -1784,8 +1798,12 @@ func _hud(dt: float) -> void:
 		act.label = verb
 		act.live = true
 		prompt.text = ("%s · %s" % [verb, str(_near["title"])]) if TouchUi.active() else ("[E]  %s · %s" % [verb, str(_near["title"])])
-	act.pulse += dt
-	act.queue_redraw()
+	# si ridisegna il tasto solo se pulsa (azione disponibile) o se e' appena cambiato: a vuoto non costa nulla
+	var sig: String = "%s|%s" % [act.label, act.live]
+	if act.live or sig != _act_sig:
+		act.pulse += dt
+		act.queue_redraw()
+	_act_sig = sig
 
 
 func _is_trainer(id: String) -> bool:

@@ -5,6 +5,10 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.28.11", "items": [
+		"TEST V2: mappa ancora piu' leggera: oggetti, lampioni e strisce sono disegnati in blocco insieme agli edifici (circa la meta' dei disegni rispetto alla 0.28.8).",
+		"TEST V2: sui telefoni la mappa si ferma a 60 fotogrammi se non hai scelto un limite (meno calore e batteria che a 90/120).",
+	]},
 	{"v": "0.28.10", "items": [
 		"TEST V2: corretto il blocco del gioco quando compare il '!' di un sorvegliante (la stella partiva da scala zero).",
 	]},
