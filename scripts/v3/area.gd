@@ -39,6 +39,9 @@ var _exit_node: Node3D
 var _trail: Array = []
 var _ambush_t: float = 0.0
 var _t: float = 0.0
+var _enemy_t: float = 0.0          # tempo dei frammenti: scorre solo mentre si esplora (fermi in pausa e nei dialoghi)
+var _grace: float = 0.0            # secondi senza agguati, tornando nell'area dopo una battaglia
+var _points: Dictionary = {}       # punti delle chiacchiere (dal layout e dai dati), calcolati una volta
 
 var _ui: CanvasLayer
 var _root: Control
@@ -88,6 +91,12 @@ func _ready() -> void:
 	var fog: Array = _lay["fog"]
 	Toon.set_fog(fog[0], fog[1], fog[2])
 	_colliders = _lay["colliders"]
+	_points = (_lay.get("points", {}) as Dictionary).duplicate()
+	for p in cfg.get("punti", []):
+		_points[str(p["id"])] = Vector2(float(p["pos"][0]), float(p["pos"][1]))
+	# tornando da una battaglia (persa o vinta) si riparte vicino al nemico: un attimo di respiro prima di un altro agguato
+	if not resume.is_empty():
+		_grace = 2.5
 	if cfg.has("telecamera"):
 		_build_cctv(_v3(cfg["telecamera"], 0.14))
 	_build_clues()
@@ -330,8 +339,11 @@ func _process(delta: float) -> void:
 	delta = minf(delta, 0.05)
 	_t += delta
 	var moving: bool = false
-	if mode == "walk" and _pause == null:
+	var exploring: bool = mode == "walk" and _pause == null
+	if exploring:
 		moving = _walk(delta)
+		_enemy_t += delta
+		_grace = maxf(0.0, _grace - delta)
 	else:
 		player.move_speed = 0.0
 	_follow(delta)
@@ -345,7 +357,8 @@ func _process(delta: float) -> void:
 	_goal.visible = mode == "walk"
 	_banter.paused = mode != "walk" or _pause != null
 	_banter.tick(delta, player.position.z, moving, _near_points())
-	if mode == "walk":
+	# in pausa niente agguati (prima un frammento poteva toccarti col menu di pausa aperto)
+	if exploring:
 		_check_threats(delta)
 
 
@@ -407,7 +420,7 @@ func _animate_world(delta: float) -> void:
 	for id in _enemies:
 		var e: Dictionary = _enemies[id]
 		var v: VendingVisual = e["node"]
-		var ph: float = float(e["phase"]) + _t * 0.6
+		var ph: float = float(e["phase"]) + _enemy_t * 0.6
 		v.position = (e["home"] as Vector3) + Vector3(sin(ph) * 1.6, 0, cos(ph * 0.7) * 1.2)
 		var to: Vector3 = player.position - v.position
 		v.rotation.y = lerp_angle(v.rotation.y, atan2(-to.x, -to.z) + PI, minf(1.0, delta * 2.0))
@@ -495,12 +508,9 @@ func _d(p: Vector3) -> float:
 
 func _near_points() -> Array:
 	var out: Array = []
-	var pts: Dictionary = _lay.get("points", {})
-	for p in cfg.get("punti", []):
-		pts[str(p["id"])] = Vector2(float(p["pos"][0]), float(p["pos"][1]))
-	for k in pts:
-		var v: Vector2 = pts[k]
-		if Vector2(player.position.x, player.position.z).distance_to(v) < 3.5:
+	var here := Vector2(player.position.x, player.position.z)
+	for k in _points:
+		if here.distance_to(_points[k]) < 3.5:
 			out.append(str(k))
 	return out
 
@@ -567,6 +577,9 @@ func _update_target() -> void:
 
 # Frammenti che ti toccano e boss che ti fissa: agguato
 func _check_threats(delta: float) -> void:
+	if _grace > 0.0:
+		_ambush_t = 0.0
+		return
 	for id in _enemies:
 		if _d((_enemies[id]["node"] as Node3D).position) < 1.0:
 			_enemy_battle(str(id), "agguato" if Settings.surprise else "normale")
@@ -677,7 +690,7 @@ func _clue_cfg(id: String) -> Dictionary:
 
 
 func _interact() -> void:
-	if not near or mode != "walk":
+	if not near or mode != "walk" or _pause != null:
 		return
 	var what: String = _target
 	_touch.release_all()
@@ -743,7 +756,7 @@ func _interact() -> void:
 
 # Attacco a sorpresa (stile Star Rail): su un frammento o sul boss
 func _strike() -> void:
-	if mode != "walk" or not Settings.surprise:
+	if mode != "walk" or _pause != null or not Settings.surprise:
 		return
 	if _target == "boss":
 		mode = "leaving"

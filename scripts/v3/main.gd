@@ -18,6 +18,8 @@ var _overlay: CanvasLayer
 var _fade: ColorRect
 var _fps: Label
 var _busy: bool = false
+var _pending: Array = []          # cambio di schermata chiesto durante un altro cambio: [schermata, argomenti]
+var _going: Array = []            # cambio in corso: [schermata, argomenti]
 
 
 func _ready() -> void:
@@ -67,9 +69,17 @@ func _notification(what: int) -> void:
 
 
 func go(screen: String, args: Dictionary = {}) -> void:
+	# Durante un cambio la richiesta non si perde: si esegue appena finito (l'ultima vince).
+	# Prima veniva ignorata: un tocco sul cartello durante la dissolvenza faceva avanzare la storia
+	# ma lasciava la schermata ferma, senza piu' modo di proseguire.
 	if _busy:
+		if _going != [screen, args]:          # un doppio tocco sullo stesso pulsante non ricarica due volte
+			_pending = [screen, args]
 		return
 	_busy = true
+	_going = [screen, args]
+	# durante la dissolvenza i tocchi non arrivano alle schermate (ne' alla vecchia ne' alla nuova)
+	_fade.mouse_filter = Control.MOUSE_FILTER_STOP
 	var tw := create_tween()
 	tw.tween_property(_fade, "color:a", 1.0, 0.25)
 	await tw.finished
@@ -91,6 +101,12 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	tw2.tween_property(_fade, "color:a", 0.0, 0.3)
 	await tw2.finished
 	_busy = false
+	_going = []
+	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if not _pending.is_empty():
+		var p: Array = _pending
+		_pending = []
+		go(str(p[0]), p[1])
 
 
 # PRESTAZIONI: il 3D si disegna a risoluzione ridotta (circa 720 righe su telefono, 1080 su PC), l'interfaccia resta nitida.

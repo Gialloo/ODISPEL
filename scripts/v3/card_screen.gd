@@ -20,6 +20,7 @@ func _ready() -> void:
 	var bg := ColorRect.new()
 	bg.color = Color(0.02, 0.01, 0.05)
 	Ui.place(bg, 0, 0, 1, 1)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE      # il tocco deve arrivare al cartello (_gui_input), non fermarsi qui
 	add_child(bg)
 	var t1 := Ui.label(str(passo.get("titolo", "")), 72, Ui.CREAM, Ui.display(), 10)
 	Ui.place(t1, 0, 0.36, 1, 0.36, 0, 0, 0, 100)

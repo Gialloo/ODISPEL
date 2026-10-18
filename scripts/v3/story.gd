@@ -58,6 +58,8 @@ static func start_chapter(i: int) -> void:
 	chapter = clampi(i, 0, chapters().size() - 1)
 	step = 0
 	area_state = {}
+	# le debolezze portate da un'area all'altra valgono solo nel capitolo in cui si sono trovate
+	flags.erase("debolezza_nota")
 	save()
 
 
@@ -71,7 +73,8 @@ static func load_game() -> bool:
 		return false
 	chapter = int(cfg.get_value("storia", "capitolo", 0))
 	step = int(cfg.get_value("storia", "passo", 0))
-	flags = cfg.get_value("storia", "flag", {})
+	var saved: Variant = cfg.get_value("storia", "flag", {})
+	flags = saved if saved is Dictionary else {}
 	area_state = {}
 	return true
 

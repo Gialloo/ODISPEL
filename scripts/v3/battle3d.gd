@@ -130,9 +130,9 @@ func _ready() -> void:
 		return
 	match ingresso:
 		"vantaggio":
-			_toast("ATTACCO A SORPRESA! %s è già vicino alla rottura e agite per primi" % _bn(), Ui.YELLOW, 3.0)
+			_toast("ATTACCO A SORPRESA! %s è già %s alla rottura e agite per primi" % [_cap(_bn()), _g("vicino", "vicina")], Ui.YELLOW, 3.0)
 		"agguato":
-			_toast("AGGUATO! %s attacca per primo" % _bn(), Color("#ff7a9c"), 3.0)
+			_toast("AGGUATO! %s attacca per %s" % [_cap(_bn()), _g("primo", "prima")], Color("#ff7a9c"), 3.0)
 	await get_tree().create_timer(0.4).timeout
 	var bonds: Array = Story.active_bonds() if not ritorno.is_empty() else []
 	var msgs: Array = []
@@ -153,11 +153,36 @@ func _main() -> Node:
 	return get_parent()
 
 
-# Nome del nemico con l'articolo ("il Semaforo", "la Cabina")
+# Nemici femminili (per l'articolo); gli altri sono maschili
+const FEMININE: Array = ["Cabina", "Cassaforte", "Sirena", "Scala mobile", "Radio", "Metro", "Anomalia", "Eclissi"]
+
+
+# Nome del nemico con l'articolo ("il Semaforo", "la Cabina", "lo Specchio", "l'Orologio").
+# Un nome che ha gia' l'articolo ("L'Osservatore") resta com'e', con la minuscola.
 func _bn() -> String:
 	var n: String = str(BattleContent.BOSSES.get(boss_id, {}).get("name", "Anomalia"))
-	var art: String = "la " if n in ["Cabina", "Cassaforte"] else ("lo " if n.begins_with("S") and n.length() > 1 and not n[1] in "aeiou" else "il ")
-	return art + n
+	return article(n)
+
+
+static func article(n: String) -> String:
+	if n.begins_with("L'"):
+		return "l'" + n.substr(2)
+	if n.length() > 0 and n[0].to_lower() in "aeiou":
+		return "l'" + n
+	if n in FEMININE:
+		return "la " + n
+	var lo: bool = n.begins_with("Z") or n.begins_with("Gn") or (n.begins_with("S") and n.length() > 1 and not n[1] in "aeiou")
+	return ("lo " if lo else "il ") + n
+
+
+# Parola accordata al genere del nemico
+func _g(masc: String, fem: String) -> String:
+	return fem if str(BattleContent.BOSSES.get(boss_id, {}).get("name", "Anomalia")) in FEMININE else masc
+
+
+# Prima lettera maiuscola, il resto come sta ("l'Osservatore" -> "L'Osservatore")
+static func _cap(t: String) -> String:
+	return t.left(1).to_upper() + t.substr(1)
 
 
 func _bname() -> String:
@@ -448,7 +473,8 @@ func _usable(move_id: String) -> bool:
 
 
 func _command(kind: String) -> void:
-	if not waiting or ended:
+	# in pausa (Engine.time_scale = 0) i tasti 1-4 / Spazio non devono far partire l'azione
+	if not waiting or ended or _pause != null:
 		return
 	var u: Dictionary = _unit_of(cur_pid)
 	var mv: String = "attack"
@@ -616,7 +642,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_number(BattleState.BOSS_ID, "INDEBOLITO", Color("#b0a0ff"), 24, delay + 0.15)
 			"break":
 				_shatter_later("boss", delay, 1.0)        # solo l'animazione: lo schermo poi torna pulito
-				_toast("ROTTURA! %s è stordito" % _bn().capitalize(), Color.WHITE, 1.6)
+				_toast("ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				_flash(0.5)
 				_kick(0.8)
@@ -1089,6 +1115,8 @@ func _toast(text: String, col: Color, sec: float) -> void:
 
 
 func _toggle_auto() -> void:
+	if _pause != null:
+		return
 	auto_on = not auto_on
 	_btn_auto.text = "AUTO ON" if auto_on else "AUTO"
 	if auto_on and waiting:
@@ -1100,6 +1128,8 @@ func _toggle_auto() -> void:
 
 
 func _toggle_fast() -> void:
+	if _pause != null:
+		return
 	fast = not fast
 	Engine.time_scale = 1.8 if fast else 1.0
 	_btn_fast.text = "x2" if fast else "x1"

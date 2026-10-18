@@ -337,7 +337,9 @@ func _close(skipped: bool) -> void:
 		tw.tween_interval(3.2)
 		tw.tween_property(_recap_lbl, "modulate:a", 0.0, 0.4)
 		tw.tween_callback(func() -> void: _recap_lbl.visible = false)
-	finished.emit()
+	# differito: chi chiama fa play() e poi "await finished". Una scena senza righe (testo mancante nei dati)
+	# si chiude dentro play(), prima dell'await: col segnale immediato si restava bloccati per sempre.
+	finished.emit.call_deferred()
 
 
 func _process(delta: float) -> void:

@@ -56,5 +56,10 @@ func _init() -> void:
 	check(seen50 and seen25, "l'Osservatore porta al 50% e al 25% esatti")
 	check(BattleState.alive_players(c).size() == 4, "dopo l'Osservatore sono tutti vivi")
 	check(BrokenCam.level_for(0.9) == 0.0 and BrokenCam.level_for(0.5) > 0.0 and BrokenCam.level_for(0.25) >= 0.99, "livelli della telecamera rotta")
+	# articoli dei nemici nei messaggi di battaglia
+	var b3: GDScript = load("res://scripts/v3/battle3d.gd")
+	for pair in [["Semaforo", "il Semaforo"], ["Cabina", "la Cabina"], ["Specchio", "lo Specchio"], ["Orologio", "l'Orologio"],
+			["L'Osservatore", "l'Osservatore"], ["Sirena", "la Sirena"], ["Scala mobile", "la Scala mobile"]]:
+		check(b3.article(str(pair[0])) == str(pair[1]), "articolo: %s -> %s (non %s)" % [pair[0], pair[1], b3.article(str(pair[0]))])
 	print("test_v3_engine: " + ("OK" if fails == 0 else "%d errori" % fails))
 	quit(1 if fails > 0 else 0)
