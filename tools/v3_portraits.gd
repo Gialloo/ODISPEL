@@ -36,12 +36,15 @@ func _run() -> void:
 			list.append("maschera")
 		for expr in list:
 			var cv := CharacterVisual.new()
-			cv.setup(id, CastVisual.expression(id, expr))
+			var ov: Dictionary = CastVisual.expression(id, expr)
+			ov["no_props"] = true                  # bastoni, carte e mazza coprirebbero il ritratto
+			cv.setup(id, ov)
 			world.add_child(cv)
 			cv.rotation.y = PI + 0.64
 			var s: float = float(CastVisual.spec(id)["height"]) / 1.75
-			var top: float = (2.02 if id == "zecca" else 1.93) * s
-			var bottom: float = 1.12 * s
+			# i copricapi forti (elmo, cappuccio con orecchie, cappello da giullare) alzano la cima
+			var top: float = float({"ferri": 2.06, "nox": 2.08, "zecca": 2.16, "saul": 2.04}.get(id, 2.0)) * s
+			var bottom: float = 1.16 * s
 			cam.size = (top - bottom) * 1.04
 			cam.position = Vector3(0.02, (top + bottom) * 0.5, 6.0)
 			cam.look_at(Vector3(0.02, (top + bottom) * 0.5, 0), Vector3.UP)

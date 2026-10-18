@@ -1,5 +1,14 @@
 # Novità
 
+## 0.31.0 · nuovo stile visivo
+- Il gioco segue lo stile deciso dall'autore (docs/STILE_VISIVO.md): silhouette esagerate alla Kingdom Hearts con la resa dei primi Final Fantasy, classi RPG sopra vestiti di oggi.
+- Ferri è il cavaliere del disegno dell'autore: elmo d'argento con alette e grata, capelli verdi, armatura a bande, stivaloni con spuntoni dorati, mantello rosso, mazza ferrata enorme su catena e la mascotte con gli occhi.
+- Zecca giullare (cappello coi sonagli, scacchi, maschera, sneakers enormi), Saul ladro e giocatore d'azzardo (carte che volano, amuleti), Nox guardiana notturna. Questi tre sono PROVVISORI.
+- Per tutti: mani e piedi enormi, busto e gambe sottili, metallo lucido a bande, una sola tinta forte (il colore di battaglia) su base spenta.
+- Pose diagonali in battaglia, mai rigidi di fronte.
+- Cornici gotiche in filigrana d'argento: menu, dialoghi, cartelli, fine dell'atto e sequenza dell'ultimate.
+- Ritratti dei dialoghi rifatti dai nuovi segnaposto. Restano provvisori, in attesa dei modelli della pipeline (TRELLIS.2 + Mixamo).
+
 ## 0.30.1 · telecamera rotta
 - La battaglia è vista dalle telecamere: quando tocca a un personaggio con pochi PV la sua telecamera si rompe. Sotto il 50% è incrinata, sotto il 25% è in frantumi, con schegge spostate e il nemico che si vede doppio. Quando tocca a chi sta bene, la telecamera torna pulita.
 - Ogni personaggio ha la sua telecamera, quindi il suo disegno di crepe. Comandi e barre restano sempre integri.

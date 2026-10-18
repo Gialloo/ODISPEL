@@ -1,5 +1,10 @@
 # ODISPEL — Handoff: i 4 protagonisti in 3D
 
+> **SUPERATO IN PARTE (18 ottobre 2026):** lo stile e la pipeline definitivi sono in `docs/STILE_VISIVO.md`, che vince su questo file.
+> Cambiano: l'aspetto dei personaggi (classi RPG: Ferri cavaliere dal disegno dell'autore, gli altri PROVVISORI), la pipeline
+> (TRELLIS.2 + Mixamo, gratuita), le animazioni minime (7 invece di 11) e i nomi delle ossa (quelli di Mixamo, vedi in fondo).
+> Restano validi: scala e orientamento, limiti di peso (10.000 triangoli, 2 materiali, texture 1024), colori piatti, mesh chiusa.
+
 Destinatario: un'IA (o un artista) che deve disegnare e modellare i quattro protagonisti del videogioco ODISPEL.
 Scritto il 18 ottobre 2026 per Gianluca (l'autore). Lingua: italiano.
 Nel gioco oggi ci sono **segnaposto** fatti di forme semplici: le foto sono in `docs/ref_personaggi/` (fronte, tre quarti, lato, retro).
@@ -189,3 +194,28 @@ Provvisorie, servono a dare carattere. Battuta che il personaggio dice nella seq
 - [ ] oggetti separati coi nomi esatti; `maschera` di Zecca rimovibile con viso sotto; `braccio_segreto` di Ferri nascosto
 - [ ] il colore di battaglia si riconosce subito; la silhouette si riconosce in nero
 - [ ] nessun elemento copiato da personaggi o marchi esistenti; tutti chiaramente maggiorenni
+
+
+## 10. Sezione Mixamo (pipeline definitiva, vedi docs/STILE_VISIVO.md)
+
+Mixamo assegna lo scheletro da solo: le ossa si chiamano `mixamorig:Hips`, `mixamorig:Spine`, `mixamorig:Spine1`, `mixamorig:Spine2`,
+`mixamorig:Neck`, `mixamorig:Head`, `mixamorig:LeftShoulder`, `mixamorig:LeftArm`, `mixamorig:LeftForeArm`, `mixamorig:LeftHand`,
+`mixamorig:LeftUpLeg`, `mixamorig:LeftLeg`, `mixamorig:LeftFoot`, `mixamorig:LeftToeBase` (e le `Right…`). Il gioco li mappa sul profilo
+umanoide di Godot all'importazione: non serve rinominarli.
+
+**Animazioni minime (7), scaricate da Mixamo in FBX, una per file, «In Place» attivo:**
+
+| File | Animazione nel gioco | Al posto di |
+|---|---|---|
+| `<id>_fermo.fbx` | idle | `idle`, `battle_idle`, `talk` |
+| `<id>_camminata.fbx` | walk | `walk` |
+| `<id>_corsa.fbx` | run | `run` |
+| `<id>_attacco.fbx` | attack | `attack`, `skill`, `ultimate` |
+| `<id>_colpito.fbx` | hit | `hit` |
+| `<id>_ko.fbx` | ko | `ko` |
+| `<id>_vittoria.fbx` | victory | `victory` |
+
+Il primo file (`<id>_fermo.fbx`) va scaricato **With Skin**; gli altri possono essere **Without Skin**.
+Shape key del viso, oggetti separati con nomi esatti e braccio segreto di Ferri: non servono più nel primo giro (si aggiungono dopo).
+Consegna: `ferri_fase1.zip` con il modello e i 7 FBX. Il supporto ai modelli con scheletro nel gioco si fa quando arriva il primo file
+(oggi il gioco usa i segnaposto fatti da codice e, se c'è, un `.glb` **senza** scheletro).

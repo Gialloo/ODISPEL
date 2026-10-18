@@ -119,7 +119,7 @@ func _build_manichino() -> void:
 	mb.prism(Transform3D(Basis(), Vector3.ZERO), 0.8, 0.7, 0.35, 16, Color("#cfc9be"))
 	_add(mb, "Base")
 	var cv := CharacterVisual.new()
-	cv.setup("zecca", {"faceless": true, "nomask": true, "skin": "#efece6", "hair": "#e2ddd4", "top": "#f5f2ec", "bottom": "#d8d2c6", "accent": "#46e07a", "shoes": "#c4beb2"})
+	cv.setup("zecca", {"faceless": true, "nomask": true, "kit": "", "no_props": true, "skin": "#efece6", "hair": "#e2ddd4", "top": "#f5f2ec", "bottom": "#d8d2c6", "accent": "#46e07a", "shoes": "#c4beb2"})
 	cv.position = Vector3(0, 0.35, 0)
 	cv.scale = Vector3.ONE * 1.35
 	cv.stance = true

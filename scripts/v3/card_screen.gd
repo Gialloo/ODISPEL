@@ -21,6 +21,12 @@ func _ready() -> void:
 	bg.color = Color(0.02, 0.01, 0.05)
 	Ui.place(bg, 0, 0, 1, 1)
 	add_child(bg)
+	# momento forte: cornice gotica in filigrana
+	var fr := Control.new()
+	Ui.place(fr, 0, 0, 1, 1)
+	fr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fr.draw.connect(func() -> void: Filigree.frame(fr, Rect2(Vector2(36, 36), fr.size - Vector2(72, 72)), 1.1, Ui.YELLOW))
+	add_child(fr)
 	var t1 := Ui.label(str(passo.get("titolo", "")), 72, Ui.CREAM, Ui.display(), 10)
 	Ui.place(t1, 0, 0.36, 1, 0.36, 0, 0, 0, 100)
 	t1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

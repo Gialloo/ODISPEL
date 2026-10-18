@@ -144,7 +144,7 @@ static func _galleria(cb: CityBuilder, out: Dictionary, parent: Node3D) -> void:
 	for i in 6:
 		var mv := CharacterVisual.new()
 		var who: String = ["nox", "saul", "zecca", "ferri", "nox", "saul"][i]
-		mv.setup(who, {"faceless": true, "skin": "#e8e4dc", "hair": "#d8d3ca", "top": "#f2efe8", "bottom": "#cfc9be", "accent": "#ffffff", "shoes": "#bdb7ac", "nomask": true})
+		mv.setup(who, {"faceless": true, "kit": "", "no_props": true, "skin": "#e8e4dc", "hair": "#d8d3ca", "top": "#f2efe8", "bottom": "#cfc9be", "accent": "#ffffff", "shoes": "#bdb7ac", "nomask": true})
 		parent.add_child(mv)
 		var side: float = -1.0 if i % 2 == 0 else 1.0
 		mv.position = Vector3(side * 6.3, 0.14, -6.0 - 5.5 * i)

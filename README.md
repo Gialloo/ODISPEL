@@ -1,7 +1,7 @@
 # OFFICIAL DEMO ODISPEL · V3, atto 1 (standalone)
 
 Progetto Godot 4.7.2 separato dalla V2 (`Gialloo/ODISPEL`), renderer **gl_compatibility**, landscape 1280×720.
-Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. Stato attuale: **0.30.0 = atto 1 completo**, in attesa delle correzioni dopo la prova.
+Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. **Stile visivo definitivo: `docs/STILE_VISIVO.md`** (vince su tutti gli altri handoff; ogni nuovo personaggio, nemico, luogo o schermata lo segue). Stato attuale: **0.31.0 = atto 1 nel nuovo stile visivo**, in attesa delle correzioni dopo la prova.
 
 ## Struttura
 - `scripts/engine/` — motore di combattimento **copiato** dalla V2 (BattleState, SeqRound, BattleResolver e dipendenze).

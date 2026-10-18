@@ -910,6 +910,12 @@ func _build_ui() -> void:
 	Ui.place(band, 0, 0.66, 1.0, 0.84, 0, 0, 0, 0)
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cutin.add_child(band)
+	# momento forte: filigrana d'argento attorno alla fascia dell'ultimate
+	var fr := Control.new()
+	Ui.place(fr, 0, 0.66, 1.0, 0.84, 0, 0, 0, 0)
+	fr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fr.draw.connect(func() -> void: Filigree.frame(fr, Rect2(Vector2(10, 4), fr.size - Vector2(20, 8)), 0.75, Ui.YELLOW))
+	_cutin.add_child(fr)
 	var nl := Ui.label("", 44, Ui.CREAM, Ui.display(), 12)
 	nl.name = "Name"
 	Ui.place(nl, 0.05, 0.66, 0.95, 0.66, 0, 8, 0, 64)

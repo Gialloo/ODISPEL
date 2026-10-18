@@ -1,8 +1,9 @@
 class_name AnimeBuilder
 extends RefCounted
 
-# Costruisce i personaggi in stile anime semplificato, tutto da codice (PROVVISORIO, in attesa dei modelli glTF):
-# forme morbide con normali lisce, testa grande, viso a V, occhi anime disegnati sulla faccia, capelli a ciocche.
+# Costruisce i personaggi tutto da codice (PROVVISORIO, in attesa dei modelli della pipeline TRELLIS.2 + Mixamo).
+# Stile: docs/STILE_VISIVO.md — silhouette esagerate alla Kingdom Hearts, classi RPG (cavaliere, guardiana, giullare, ladro)
+# sopra vestiti di oggi, metallo a bande, testa anime con viso a V, occhi grandi, capelli a ciocche.
 # Coordinate: metri, personaggio alto 1,75 (poi scalato), guarda verso -Z. Ogni parte e' nello spazio del suo perno:
 #   busto -> perno dei fianchi (y = 0 all'anca) · testa -> base del collo · braccio -> spalla · gamba -> anca.
 # Colore dei vertici, canale alpha = tipo di superficie per lo shader toon:
@@ -35,6 +36,48 @@ static func _r(y: float, rx: float, rz: float, z: float = 0.0, x: float = 0.0) -
 	return MeshBatch.ring(x, y, z, rx, rz)
 
 
+# ================================================================ regole comuni (docs/STILE_VISIVO.md)
+# Silhouette alla Kingdom Hearts: busto e gambe SOTTILI, mani e piedi ENORMI (stivali grandi quanto la testa),
+# copricapo forte, un oggetto grande in diagonale. Base spenta + un solo accento saturo (colore di battaglia).
+
+static func _m(c: Color) -> Color:
+	return Color(c.r, c.g, c.b, Toon.METAL_A)
+
+
+static func _c(sp: Dictionary, key: String, fallback: String = "#888888") -> Color:
+	return Color(str(sp.get(key, fallback)))
+
+
+# Spuntone (cono) dalla base verso dir
+static func spike(mb: MeshBatch, base: Vector3, dir: Vector3, length: float, r: float, col: Color) -> void:
+	var y: Vector3 = dir.normalized()
+	var ref: Vector3 = Vector3.FORWARD if absf(y.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT
+	var x: Vector3 = y.cross(ref).normalized()
+	var z: Vector3 = x.cross(y).normalized()
+	mb.prism(Transform3D(Basis(x, y, z), base), r, 0.003, length, 6, col)
+
+
+# Asta dritta da a a b (bastoni, scettri)
+static func rod(mb: MeshBatch, a: Vector3, b: Vector3, r: float, col: Color) -> void:
+	var y: Vector3 = (b - a).normalized()
+	var ref: Vector3 = Vector3.FORWARD if absf(y.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT
+	var x: Vector3 = y.cross(ref).normalized()
+	var z: Vector3 = x.cross(y).normalized()
+	mb.prism(Transform3D(Basis(x, y, z), a), r, r, (b - a).length(), 8, col)
+
+
+# Telo (mantello): sezioni piatte lungo un percorso, si allarga verso il fondo
+static func _sheet(mb: MeshBatch, pts: Array, widths: Array, th: float, side: Vector3, col: Color) -> void:
+	var secs: Array = []
+	for i in pts.size():
+		var p: Vector3 = pts[i]
+		var tg: Vector3 = ((pts[mini(i + 1, pts.size() - 1)] as Vector3) - (pts[maxi(i - 1, 0)] as Vector3)).normalized()
+		var sx: Vector3 = side.normalized()
+		var sz: Vector3 = tg.cross(sx).normalized()
+		secs.append([p, sx, sz, float(widths[i]), th])
+	mb.sweep(secs, 8, col, true, true, true)
+
+
 # ================================================================ busto
 
 static func torso(sp: Dictionary) -> MeshBatch:
@@ -42,63 +85,95 @@ static func torso(sp: Dictionary) -> MeshBatch:
 	mb.ink_w = 0.012
 	var b: float = float(sp.get("build", 1.0))
 	var fem: bool = bool(sp.get("fem", false))
-	var top: Color = Color(str(sp["top"]))
-	var bottom: Color = Color(str(sp["bottom"]))
-	var accent: Color = Color(str(sp["accent"]))
-	var skin: Color = _a(Color(str(sp["skin"])), 0.8)
-	var extra: String = str(sp["extra"])
-	var puff: float = 0.012 if extra in ["mask", "bag"] else 0.0
-	var wx: float = (0.112 if fem else 0.125) * b
-	var hx: float = (0.142 if fem else 0.132) * b
-	var cx: float = (0.13 if fem else 0.15) * b
-	var sx: float = (0.14 if fem else 0.168) * b
-	# bacino (colore dei pantaloni)
-	mb.sweep([_r(-0.07, hx * 0.9, 0.085), _r(0.0, hx, 0.092), _r(0.07, hx * 0.98, 0.09), _r(0.13, wx + 0.005, 0.083)], 14, bottom, true, true, false)
-	# busto (giacca)
+	var kit: String = str(sp.get("kit", ""))
+	var top: Color = _c(sp, "top")
+	var bottom: Color = _c(sp, "bottom")
+	var accent: Color = _c(sp, "accent")
+	var metal: Color = _m(_c(sp, "metal"))
+	var gold: Color = _m(_c(sp, "gold"))
+	var skin: Color = _a(_c(sp, "skin"), 0.8)
+	var puff: float = 0.012 if kit in ["giullare", "ladro"] else 0.0
+	# busto sottile (KH): vita stretta, spalle contenute
+	var wx: float = (0.098 if fem else 0.105) * b
+	var hx: float = (0.122 if fem else 0.115) * b
+	var cx: float = (0.118 if fem else 0.13) * b
+	var sx: float = (0.13 if fem else 0.148) * b
+	var pelvis: Color = metal if kit == "cavaliere" else bottom
+	mb.sweep([_r(-0.07, hx * 0.9, 0.08), _r(0.0, hx, 0.086), _r(0.07, hx * 0.98, 0.084), _r(0.13, wx + 0.005, 0.078)], 14, pelvis, true, true, false)
 	var rings: Array = [
-		_r(0.11, wx + 0.008 + puff, 0.085 + puff),
-		_r(0.2, wx + 0.012 + puff, 0.088 + puff),
-		_r(0.31, cx + puff, 0.1 + puff, -0.008 if fem else -0.004),
-		_r(0.40, sx + puff * 0.5, 0.092 + puff),
-		_r(0.455, sx * 0.85, 0.08),
-		_r(0.50, 0.075, 0.058),
-		_r(0.53, 0.045, 0.042, 0.005),
+		_r(0.11, wx + 0.008 + puff, 0.08 + puff),
+		_r(0.2, wx + 0.01 + puff, 0.082 + puff),
+		_r(0.31, cx + puff, 0.094 + puff, -0.008 if fem else -0.004),
+		_r(0.40, sx + puff * 0.5, 0.086 + puff),
+		_r(0.455, sx * 0.85, 0.075),
+		_r(0.50, 0.072, 0.056),
+		_r(0.53, 0.044, 0.041, 0.005),
 	]
 	mb.sweep(rings, 16, top, true, false, true)
-	# cintura
-	mb.sweep([_r(0.105, wx + 0.016 + puff, 0.093 + puff), _r(0.14, wx + 0.016 + puff, 0.093 + puff)], 16, bottom.darkened(0.45), false, false, false)
-	match extra:
-		"cap":
-			# uniforme LibraCorp: spalline rosse, collo alto, placca, fibbia
-			for s in [-1.0, 1.0]:
-				mb.ball(Transform3D(Basis().scaled(Vector3(1.0, 0.35, 0.8)), Vector3(s * sx * 0.82, 0.45, 0.0)), 0.07, accent)
-			mb.sweep([_r(0.48, 0.07, 0.06), _r(0.56, 0.062, 0.055, 0.004)], 14, top.darkened(0.15), true, false, false)
-			mb.sweep([_r(0.535, 0.064, 0.057, 0.004), _r(0.55, 0.064, 0.057, 0.004)], 14, accent, false, false, false)
-			mb.box(Transform3D(Basis(), Vector3(0.06, 0.34, -0.108)), Vector3(0.05, 0.035, 0.012), Color("#d9dde8"), false)
-			mb.box(Transform3D(Basis(), Vector3(0, 0.125, -wx * 0.75 - 0.03)), Vector3(0.05, 0.035, 0.015), Color("#c9ccd6"), false)
-			mb.box(Transform3D(Basis(), Vector3(0, 0.27, -0.1)), Vector3(0.012, 0.28, 0.01), accent, false)
-		"coat":
-			# cappotto delle Civette: si apre a campana fino al ginocchio, collo alto, profilo blu davanti
-			mb.sweep([_r(0.13, wx + 0.02, 0.09), _r(0.0, hx + 0.03, 0.105), _r(-0.25, hx + 0.07, 0.13, 0.01), _r(-0.5, hx + 0.12, 0.16, 0.02)], 16, top.darkened(0.12), true, false, false)
-			mb.sweep([_r(0.46, 0.085, 0.07), _r(0.585, 0.078, 0.068, 0.01)], 14, top.darkened(0.2), true, false, false)
-			mb.box(Transform3D(Basis(), Vector3(0, 0.0, -0.13)), Vector3(0.018, 0.86, 0.012), accent, false)
-			mb.box(Transform3D(Basis(), Vector3(-0.07, 0.36, -0.1)), Vector3(0.035, 0.035, 0.012), Color(accent.r, accent.g, accent.b, 0.0), false)
-		"mask":
-			# felpa larga: tasca davanti, cappuccio dietro il collo, lacci gialli
-			mb.box(Transform3D(Basis(Vector3.RIGHT, -0.12), Vector3(0, 0.17, -wx - 0.03)), Vector3(0.16, 0.08, 0.02), top.darkened(0.15))
-			mb.ball(Transform3D(Basis().scaled(Vector3(1.0, 0.75, 0.75)), Vector3(0, 0.52, 0.075)), 0.105, top.darkened(0.2))
-			for s in [-1.0, 1.0]:
-				mb.lock(Vector3(s * 0.035, 0.48, -0.09), Vector3(s * 0.04, 0.42, -0.115), Vector3(s * 0.038, 0.36, -0.12), 0.006, 0.006, Vector3.FORWARD, Ui.YELLOW, false, 3)
-			mb.box(Transform3D(Basis(), Vector3(0.06, 0.33, -0.115)), Vector3(0.05, 0.03, 0.01), Color(1.0, 0.82, 0.25, 0.0), false)
-		"bag":
-			# bomber: polsini a costine, colletto, tracolla e borsa
-			mb.sweep([_r(0.11, wx + 0.026, 0.1), _r(0.16, wx + 0.026, 0.1)], 16, top.darkened(0.3), false, false, false)
-			mb.sweep([_r(0.47, 0.08, 0.066), _r(0.54, 0.07, 0.06, 0.006)], 14, top.darkened(0.3), true, false, false)
-			mb.lock(Vector3(-sx * 0.75, 0.47, -0.06), Vector3(0.0, 0.3, -0.13), Vector3(sx * 0.95, 0.08, -0.04), 0.022, 0.006, Vector3.FORWARD, Color("#5a3b26"), false, 6)
-			mb.box(Transform3D(Basis(Vector3.UP, 0.25), Vector3(sx * 0.95 + 0.04, 0.02, 0.0)), Vector3(0.08, 0.17, 0.22), Color("#8a5a32"))
-			mb.box(Transform3D(Basis(Vector3.UP, 0.25), Vector3(sx * 0.95 + 0.085, 0.06, -0.01)), Vector3(0.02, 0.05, 0.12), accent, false)
 	# collo (pelle)
-	mb.sweep([_r(0.5, 0.04, 0.038, 0.012), _r(0.6, 0.036, 0.034, 0.012)], 10, skin, false, false, false)
+	mb.sweep([_r(0.5, 0.039, 0.037, 0.012), _r(0.6, 0.035, 0.033, 0.012)], 10, skin, false, false, false)
+	match kit:
+		"cavaliere":
+			# maglione blu a coste sotto il pettorale d'argento, spallacci (uno con spuntoni dorati), gorgiera, mantello rosso
+			for i in 7:
+				var x: float = lerpf(-wx * 0.8, wx * 0.8, float(i) / 6.0)
+				mb.box(Transform3D(Basis(), Vector3(x, 0.19, -wx * 0.8 - 0.012)), Vector3(0.006, 0.12, 0.004), top.darkened(0.35), false)
+			mb.sweep([_r(0.24, wx + 0.03, 0.095), _r(0.3, cx + 0.022, 0.108, -0.006), _r(0.39, sx + 0.012, 0.1), _r(0.45, sx * 0.88, 0.084)], 16, metal, true, true, true)
+			mb.sweep([_r(0.1, wx + 0.022, 0.09), _r(0.135, wx + 0.022, 0.09)], 16, Color("#3a2a20"), false, false, false)
+			mb.box(Transform3D(Basis(), Vector3(0, 0.118, -wx - 0.03)), Vector3(0.05, 0.04, 0.014), gold, false)
+			for s in [-1.0, 1.0]:
+				var sp_pos := Vector3(s * (sx + 0.02), 0.445, 0.0)
+				mb.ball(Transform3D(Basis().scaled(Vector3(1.05, 0.62, 0.95)), sp_pos), 0.105, metal)
+				mb.ball(Transform3D(Basis().scaled(Vector3(1.0, 0.5, 0.9)), sp_pos + Vector3(s * 0.02, -0.05, 0)), 0.092, metal)
+				if s < 0.0:
+					for k in 4:
+						var a: float = lerpf(-0.7, 0.9, float(k) / 3.0)
+						var d := Vector3(s * cos(a) * 0.8, 0.65 + 0.2 * sin(a), sin(a) * 0.4)
+						spike(mb, sp_pos + d.normalized() * 0.07, d, 0.12, 0.03, gold)
+			mb.sweep([_r(0.47, 0.08, 0.068), _r(0.57, 0.07, 0.062, 0.006)], 14, metal, true, false, false)
+			# mantello rosso: dalle spalle, si gonfia dietro sul lato sinistro
+			var cape: Color = accent.darkened(0.12)
+			_sheet(mb, [Vector3(-0.02, 0.47, 0.09), Vector3(-0.08, 0.2, 0.2), Vector3(-0.2, -0.15, 0.3), Vector3(-0.32, -0.5, 0.36), Vector3(-0.4, -0.72, 0.32)],
+				[0.16, 0.22, 0.28, 0.32, 0.3], 0.018, Vector3(1, 0, -0.35), cape)
+		"guardiana":
+			# cappotto lungo che diventa tunica fino agli stinchi, bordi blu, cintura con fibbia d'argento
+			var coat: Color = top
+			mb.sweep([_r(0.13, wx + 0.02, 0.088), _r(0.0, hx + 0.03, 0.1), _r(-0.25, hx + 0.08, 0.13, 0.01), _r(-0.55, hx + 0.14, 0.17, 0.02), _r(-0.72, hx + 0.16, 0.18, 0.025)], 16, coat.darkened(0.08), true, false, false)
+			for s in [-1.0, 1.0]:
+				mb.box(Transform3D(Basis(), Vector3(s * 0.012, -0.28, -0.155)), Vector3(0.014, 0.88, 0.01), _a(accent, 0.0), false)
+			mb.sweep([_r(0.1, wx + 0.026, 0.094), _r(0.14, wx + 0.026, 0.094)], 16, Color("#1a1724"), false, false, false)
+			mb.box(Transform3D(Basis(), Vector3(0, 0.12, -wx - 0.03)), Vector3(0.045, 0.04, 0.012), metal, false)
+			mb.sweep([_r(0.46, 0.085, 0.07), _r(0.585, 0.078, 0.068, 0.01)], 14, coat.darkened(0.2), true, false, false)
+			mb.box(Transform3D(Basis(), Vector3(-0.065, 0.36, -0.098)), Vector3(0.035, 0.035, 0.012), _a(accent, 0.0), false)
+			for s in [-1.0, 1.0]:
+				mb.ball(Transform3D(Basis().scaled(Vector3(1.0, 0.5, 0.9)), Vector3(s * (sx + 0.01), 0.44, 0.0)), 0.075, coat.darkened(0.15))
+		"giullare":
+			# felpa scura con rombi da arlecchino viola solo a sinistra (asimmetrico), gorgiera a punte, tasca
+			for row in 4:
+				for col in 2:
+					var cxp: float = -0.035 - 0.05 * col - (0.025 if row % 2 == 1 else 0.0)
+					var cyp: float = 0.17 + 0.075 * row
+					var rh: Basis = Basis(Vector3.BACK, PI * 0.25)
+					mb.box(Transform3D(rh, Vector3(cxp, cyp, -cx - puff - 0.004)), Vector3(0.034, 0.034, 0.004), accent, false)
+			for k in 7:
+				var a: float = TAU * float(k) / 7.0
+				var d := Vector3(cos(a), -0.35, sin(a))
+				spike(mb, Vector3(cos(a) * 0.07, 0.49, sin(a) * 0.06), d, 0.07, 0.03, accent if k % 2 == 0 else Color("#ece8f2"))
+			mb.box(Transform3D(Basis(Vector3.RIGHT, -0.12), Vector3(0, 0.17, -wx - 0.03)), Vector3(0.15, 0.075, 0.02), top.darkened(0.2))
+		"ladro":
+			# bomber oliva a strati, sciarpa, tracolla con borsa, amuleti con gemme tonde (rossa, gialla, blu)
+			mb.sweep([_r(0.11, wx + 0.026, 0.094), _r(0.16, wx + 0.026, 0.094)], 16, top.darkened(0.3), false, false, false)
+			mb.sweep([_r(0.46, 0.09, 0.075), _r(0.52, 0.085, 0.072, 0.006), _r(0.56, 0.07, 0.06, 0.008)], 14, Color("#6e5a44"), true, false, false)
+			mb.lock(Vector3(-0.03, 0.5, -0.07), Vector3(-0.05, 0.38, -0.11), Vector3(-0.03, 0.22, -0.1), 0.04, 0.012, Vector3.FORWARD, Color("#6e5a44"), true, 5)
+			mb.lock(Vector3(-sx * 0.75, 0.47, -0.06), Vector3(0.0, 0.3, -0.12), Vector3(sx * 0.95, 0.08, -0.04), 0.022, 0.006, Vector3.FORWARD, Color("#5a3b26"), false, 6)
+			mb.box(Transform3D(Basis(Vector3.UP, 0.25), Vector3(sx * 0.95 + 0.04, 0.02, 0.0)), Vector3(0.08, 0.17, 0.22), Color("#8a5a32"))
+			mb.box(Transform3D(Basis(Vector3.UP, 0.25), Vector3(sx * 0.95 + 0.085, 0.06, -0.01)), Vector3(0.02, 0.05, 0.12), _m(_c(sp, "gold")), false)
+			var gems: Array = [Color(0.95, 0.2, 0.25, 0.0), Color(1.0, 0.8, 0.2, 0.0), Color(0.3, 0.6, 1.0, 0.0)]
+			for i in 3:
+				var gx: float = 0.02 + 0.03 * float(i)
+				var gy: float = 0.36 - 0.035 * float(i)
+				mb.box(Transform3D(Basis(), Vector3(gx, gy + 0.05, -0.1)), Vector3(0.003, 0.09, 0.003), Color("#d8cdb5"), false)
+				mb.ball(Transform3D(Basis(), Vector3(gx, gy, -0.105)), 0.014, gems[i], true, 4, 6)
 	return mb
 
 
@@ -200,6 +275,7 @@ static func head(sp: Dictionary) -> MeshBatch:
 	else:
 		_eyes(mb, sp)
 	_hair(mb, style, hair, accent, sp)
+	_hat(mb, sp)
 	return mb
 
 
@@ -339,6 +415,12 @@ static func _bangs(mb: MeshBatch, hair: Color, xs: Array, root_y: float, tip_y: 
 
 static func _hair(mb: MeshBatch, style: String, hair: Color, accent: Color, sp: Dictionary) -> void:
 	match style:
+		"knight":
+			# capelli verdi che escono dall'elmo: frangia sugli occhi e ciocche ai lati
+			_shell(mb, hair, 0.2, 0.03, 0.01)
+			_bangs(mb, hair, [-0.07, -0.04, -0.01, 0.025, 0.06], 0.2, 0.145, 0.03)
+			for s in [-1.0, 1.0]:
+				mb.lock(_hp(s * 0.11, 0.17, -0.03), _hp(s * 0.125, 0.11, -0.05), _hp(s * 0.115, 0.05, -0.06), 0.03, 0.014, Vector3.RIGHT, hair, true, 4)
 		"crew":
 			# corti sotto il berretto, basette
 			_shell(mb, hair, 0.19, 0.02, 0.008)
@@ -360,7 +442,8 @@ static func _hair(mb: MeshBatch, style: String, hair: Color, accent: Color, sp: 
 			mb.lock(_hp(0.04, 0.21, -0.1), _hp(0.06, 0.15, -0.125), _hp(0.05, 0.085, -0.12), 0.03, 0.016, Vector3.FORWARD, hair, true, 5)
 			for s in [-1.0, 1.0]:
 				mb.lock(_hp(s * 0.1, 0.17, -0.02), _hp(s * 0.125, 0.06, -0.03), _hp(s * 0.12, -0.04, -0.01), 0.032, 0.018, Vector3.RIGHT, hair, true, 5)
-				mb.lock(_hp(s * 0.065, 0.25, 0.02), _hp(s * 0.1, 0.3, 0.005), _hp(s * 0.125, 0.335, 0.025), 0.032, 0.018, Vector3.BACK, hair, true, 5)
+				if str(sp.get("kit", "")) != "guardiana":
+					mb.lock(_hp(s * 0.065, 0.25, 0.02), _hp(s * 0.1, 0.3, 0.005), _hp(s * 0.125, 0.335, 0.025), 0.032, 0.018, Vector3.BACK, hair, true, 5)
 			# massa dietro fino alle scapole
 			for i in 5:
 				var x: float = lerpf(-0.075, 0.075, float(i) / 4.0)
@@ -384,10 +467,77 @@ static func _hair(mb: MeshBatch, style: String, hair: Color, accent: Color, sp: 
 				mb.lock(_hp(s * 0.1, 0.17, -0.04), _hp(s * 0.118, 0.1, -0.05), _hp(s * 0.112, 0.03, -0.045), 0.024, 0.014, Vector3.RIGHT, hair, true, 4)
 			mb.lock(_hp(0, 0.13, 0.11), _hp(0, 0.04, 0.17), _hp(0.01, -0.13, 0.15), 0.04, 0.03, Vector3.RIGHT, hair, true, 6)
 			mb.ball(Transform3D(Basis(), _hp(0, 0.135, 0.115)), 0.022, accent.darkened(0.2), true, 4, 8)
+
+
+# ================================================================ copricapi (forti, alla Kingdom Hearts)
+
+static func _hat(mb: MeshBatch, sp: Dictionary) -> void:
+	var kit: String = str(sp.get("kit", ""))
+	var metal: Color = _m(_c(sp, "metal"))
+	var gold: Color = _m(_c(sp, "gold"))
+	var accent: Color = _c(sp, "accent")
+	match kit:
+		"cavaliere":
+			# elmo d'argento a cupola con alette, cresta, e una grata che copre bocca e mento
+			_shell(mb, metal, 0.175, 0.03, 0.026)
+			mb.sweep([_r(0.17 + HEAD_OFF, 0.142, 0.15, 0.006), _r(0.2 + HEAD_OFF, 0.146, 0.154, 0.006)], 18, metal, true, false, false)
+			mb.lock(_hp(0, 0.2, -0.15), _hp(0, 0.36, -0.06), _hp(0, 0.36, 0.12), 0.012, 0.03, Vector3.RIGHT, metal, true, 6)
+			for s in [-1.0, 1.0]:
+				for j in 2:
+					var y0: float = 0.2 + 0.035 * j
+					mb.lock(_hp(s * 0.14, y0, 0.02), _hp(s * 0.17, y0 + 0.045, 0.05), _hp(s * 0.19, y0 + 0.06 - 0.02 * j, 0.09), 0.034 - 0.008 * j, 0.007, Vector3.FORWARD, Color("#eef0f6"), true, 5)
+				mb.ball(Transform3D(Basis().scaled(Vector3(0.5, 1.0, 1.0)), _hp(s * 0.135, 0.12, 0.0)), 0.04, metal, true, 5, 8)
+			_grate(mb, metal)
+		"guardiana":
+			# cappuccio con orecchie da civetta (sopra i capelli)
+			var hood: Color = _c(sp, "top").darkened(0.1)
+			_shell(mb, hood, 0.235, -0.06, 0.03)
+			for s in [-1.0, 1.0]:
+				mb.lock(_hp(s * 0.075, 0.26, 0.0), _hp(s * 0.12, 0.34, -0.005), _hp(s * 0.14, 0.4, 0.02), 0.06, 0.03, Vector3.BACK, hood, true, 5)
+				mb.lock(_hp(s * 0.13, 0.12, 0.03), _hp(s * 0.16, 0.0, 0.05), _hp(s * 0.15, -0.1, 0.06), 0.06, 0.02, Vector3.RIGHT, hood, true, 5)
+		"giullare":
+			# cappello da giullare: fascia e due corna morbide con sonagli dorati, una viola e una a scacchi chiari
+			mb.sweep([_r(0.2 + HEAD_OFF, 0.13, 0.138, 0.01), _r(0.23 + HEAD_OFF, 0.133, 0.14, 0.01)], 18, Color("#2e2838"), true, false, false)
+			_shell(mb, Color("#2e2838"), 0.215, 0.05, 0.03)
+			for s in [-1.0, 1.0]:
+				var col: Color = accent if s < 0.0 else Color("#ece8f2")
+				var tip: Vector3 = _hp(s * 0.3, 0.36, 0.06)
+				mb.lock(_hp(s * 0.05, 0.28, 0.0), _hp(s * 0.22, 0.46, 0.02), tip, 0.09, 0.07, Vector3.FORWARD, col, true, 7)
+				mb.ball(Transform3D(Basis(), tip + Vector3(0, -0.035, 0)), 0.035, gold, true, 5, 8)
+		"ladro":
+			# berretto a punta che ricade dietro (da ladro), con una toppa
 			var beanie: Color = Color("#3b4a3f")
-			mb.sweep([_r(0.215 + HEAD_OFF, 0.126, 0.134, 0.012), _r(0.26 + HEAD_OFF, 0.13, 0.138, 0.01), _r(0.31 + HEAD_OFF, 0.1, 0.11, 0.015), _r(0.335 + HEAD_OFF, 0.04, 0.045, 0.02)], 18, beanie, true, false, true)
-			mb.sweep([_r(0.205 + HEAD_OFF, 0.13, 0.138, 0.012), _r(0.235 + HEAD_OFF, 0.132, 0.14, 0.012)], 18, beanie.darkened(0.2), false, false, false)
-			mb.box(Transform3D(Basis(Vector3.UP, 0.4), _hp(0.1, 0.23, -0.075)), Vector3(0.025, 0.02, 0.006), accent, false)
+			mb.sweep([_r(0.205 + HEAD_OFF, 0.13, 0.138, 0.012), _r(0.235 + HEAD_OFF, 0.132, 0.14, 0.012)], 18, beanie.darkened(0.2), true, false, false)
+			_shell(mb, beanie, 0.215, 0.04, 0.02)
+			mb.lock(_hp(0, 0.3, 0.02), _hp(0, 0.38, 0.14), _hp(0.02, 0.22, 0.26), 0.11, 0.08, Vector3.RIGHT, beanie, true, 7)
+			mb.ball(Transform3D(Basis(), _hp(0.02, 0.21, 0.27)), 0.03, _a(accent, 1.0), true, 4, 6)
+			mb.box(Transform3D(Basis(Vector3.UP, 0.4), _hp(0.1, 0.26, -0.08)), Vector3(0.03, 0.03, 0.006), Color("#7a6a4a"), false)
+
+
+# Grata dell'elmo su bocca e mento
+static func _grate(mb: MeshBatch, metal: Color) -> void:
+	var cols: int = 12
+	var rows: int = 4
+	var grid: Array = []
+	for i in rows + 1:
+		var y: float = lerpf(-0.012, 0.072, float(i) / float(rows))
+		var row: Array = []
+		for j in cols + 1:
+			var phi: float = lerpf(-1.45, 1.45, float(j) / float(cols))
+			row.append(_head_pt(phi, y, 0.016))
+		grid.append(row)
+	for i in rows:
+		for j in cols:
+			var a: Array = grid[i][j]
+			var b: Array = grid[i + 1][j]
+			var c: Array = grid[i][j + 1]
+			var d: Array = grid[i + 1][j + 1]
+			mb._tri_smooth(a[0], b[0], c[0], a[1], b[1], c[1], metal, false)
+			mb._tri_smooth(c[0], b[0], d[0], c[1], b[1], d[1], metal, false)
+	for k in 5:
+		var x: float = lerpf(-0.06, 0.06, float(k) / 4.0)
+		_decal(mb, [Vector2(x - 0.004, 0.0), Vector2(x + 0.004, 0.0), Vector2(x + 0.004, 0.06), Vector2(x - 0.004, 0.06)], 0.02, Color(0.08, 0.06, 0.12, 0.6))
+	_decal(mb, [Vector2(-0.085, 0.07), Vector2(0.085, 0.07), Vector2(0.085, 0.077), Vector2(-0.085, 0.077)], 0.02, Color(0.08, 0.06, 0.12, 0.6))
 
 
 # ================================================================ braccia e gambe
@@ -395,79 +545,161 @@ static func _hair(mb: MeshBatch, style: String, hair: Color, accent: Color, sp: 
 static func arm(sp: Dictionary, side: float) -> MeshBatch:
 	var mb := MeshBatch.new()
 	mb.ink_w = 0.009
-	var top: Color = Color(str(sp["top"]))
-	var accent: Color = Color(str(sp["accent"]))
-	var skin: Color = _a(Color(str(sp["skin"])), 0.8)
-	var extra: String = str(sp["extra"])
+	var kit: String = str(sp.get("kit", ""))
+	var top: Color = _c(sp, "top")
+	var accent: Color = _c(sp, "accent")
+	var metal: Color = _m(_c(sp, "metal"))
+	var gold: Color = _m(_c(sp, "gold"))
+	var glove: Color = _c(sp, "glove")
+	var wrap: Color = _c(sp, "wrap")
 	var fem: bool = bool(sp.get("fem", false))
 	var k: float = 0.88 if fem else 1.0
-	var puff: float = 0.01 if extra in ["mask", "bag"] else 0.0
-	var sleeve: Color = top.darkened(0.06)
-	mb.ball(Transform3D(Basis(), Vector3(0, -0.02, 0)), (0.05 + puff) * k, top, true, 6, 10)
-	mb.sweep([_r(-0.01, (0.052 + puff) * k, (0.05 + puff) * k), _r(-0.15, (0.047 + puff) * k, (0.046 + puff) * k), _r(-0.29, (0.04 + puff) * k, (0.04 + puff) * k)], 10, top, true, false, false)
-	var fore: Color = sleeve
-	var hand: Color = skin
-	if extra == "cap" and side > 0.0:
-		fore = Color("#15151d")       # guanto lungo fino al gomito
-		hand = Color("#15151d")
-	elif extra == "cap":
-		hand = Color("#15151d")
-	mb.sweep([_r(-0.28, (0.04 + puff) * k, (0.04 + puff) * k), _r(-0.42, (0.038 + puff * 0.5) * k, (0.036 + puff * 0.5) * k), _r(-0.54, 0.032 * k, 0.03 * k)], 10, fore, true, false, false)
-	if extra == "cap" and side > 0.0:
-		mb.sweep([_r(-0.31, 0.045, 0.045), _r(-0.33, 0.045, 0.045)], 10, accent, false, false, false)
-	elif extra == "bag":
-		mb.sweep([_r(-0.5, 0.036, 0.034), _r(-0.55, 0.036, 0.034)], 10, top.darkened(0.3), true, false, false)
-	elif extra == "coat":
-		mb.sweep([_r(-0.48, 0.042, 0.04), _r(-0.55, 0.044, 0.042)], 10, top.darkened(0.12), true, false, false)
-	# mano (a paletta) con il pollice
-	mb.ball(Transform3D(Basis().scaled(Vector3(0.62, 1.0, 0.95)), Vector3(0, -0.6, -0.005)), 0.05 * k, hand, true, 5, 8)
-	mb.ball(Transform3D(Basis(Vector3.BACK, 0.5 * side).scaled(Vector3(0.45, 1.0, 0.45)), Vector3(-side * 0.02, -0.585, -0.03)), 0.028 * k, hand, true, 4, 6)
+	var upper: Color = top
+	var fore: Color = top.darkened(0.06)
+	if kit == "cavaliere":
+		upper = wrap                           # braccia fasciate di bende
+		fore = wrap
+	elif kit == "giullare" and side < 0.0:
+		upper = accent                         # una manica viola, l'altra scura: asimmetria da giullare
+		fore = accent
+	# braccio sottile
+	mb.ball(Transform3D(Basis(), Vector3(0, -0.02, 0)), 0.044 * k, upper, true, 6, 10)
+	mb.sweep([_r(-0.01, 0.045 * k, 0.044 * k), _r(-0.15, 0.04 * k, 0.04 * k), _r(-0.29, 0.034 * k, 0.034 * k)], 10, upper, true, false, false)
+	mb.sweep([_r(-0.28, 0.034 * k, 0.034 * k), _r(-0.42, 0.032 * k, 0.031 * k), _r(-0.52, 0.029 * k, 0.028 * k)], 10, fore, true, false, false)
+	match kit:
+		"cavaliere":
+			for i in 6:
+				var y: float = -0.04 - 0.08 * float(i)
+				mb.sweep([_r(y, 0.047 * k - 0.002 * i, 0.046 * k - 0.002 * i), _r(y - 0.008, 0.047 * k - 0.002 * i, 0.046 * k - 0.002 * i)], 10, wrap.darkened(0.25), false, false, false)
+			# bracciale d'argento svasato
+			mb.sweep([_r(-0.34, 0.04, 0.04), _r(-0.46, 0.055, 0.054), _r(-0.535, 0.075, 0.072)], 12, metal, true, true, true)
+			mb.ball(Transform3D(Basis(), Vector3(0, -0.44, -0.05)), 0.014, gold, true, 4, 6)
+		"guardiana":
+			# maniche a campana
+			mb.sweep([_r(-0.3, 0.04, 0.04), _r(-0.45, 0.06, 0.058), _r(-0.53, 0.078, 0.075)], 12, top.darkened(0.1), true, true, true)
+			mb.sweep([_r(-0.52, 0.079, 0.076), _r(-0.535, 0.079, 0.076)], 12, _a(accent, 0.0), false, false, false)
+		"giullare":
+			mb.sweep([_r(-0.47, 0.055, 0.053), _r(-0.53, 0.06, 0.058)], 12, Color("#ece8f2"), true, true, true)
+		"ladro":
+			mb.sweep([_r(-0.47, 0.04, 0.038), _r(-0.53, 0.04, 0.038)], 10, top.darkened(0.3), true, false, false)
+			for i in 3:
+				var y2: float = -0.33 - 0.045 * float(i)
+				mb.sweep([_r(y2, 0.036, 0.035), _r(y2 - 0.012, 0.036, 0.035)], 10, wrap.darkened(0.15), false, false, false)
+	# mano: pugno grosso (guanto)
+	var hand_c: Color = glove
+	mb.ball(Transform3D(Basis().scaled(Vector3(0.85, 1.0, 1.0)), Vector3(0, -0.61, -0.008)), 0.08 * k, hand_c, true, 6, 10)
+	mb.ball(Transform3D(Basis(Vector3.BACK, 0.5 * side).scaled(Vector3(0.5, 1.0, 0.5)), Vector3(-side * 0.04, -0.585, -0.055)), 0.04 * k, hand_c, true, 4, 6)
+	if kit == "ladro":
+		mb.sweep([_r(-0.635, 0.03, 0.03, -0.01), _r(-0.645, 0.03, 0.03, -0.01)], 8, gold, false, false, false)
+	# oggetti in mano (l'arma grande attraversa il corpo in diagonale); nei ritratti i bastoni lunghi si tolgono
+	var long_props: bool = not bool(sp.get("no_props", false))
 	if side > 0.0:
-		match extra:
-			"coat":
-				mb.sweep([_r(-0.6, 0.036, 0.036, -0.06), _r(-0.7, 0.042, 0.042, -0.06)], 10, Color("#f4efe6"), true, true, true)
-				mb.sweep([_r(-0.64, 0.043, 0.043, -0.06), _r(-0.665, 0.043, 0.043, -0.06)], 10, Color("#8a5a32"), false, false, false)
-			"mask":
-				mb.box(Transform3D(Basis(), Vector3(0, -0.63, -0.055)), Vector3(0.055, 0.1, 0.012), Color("#1a1a22"))
-				mb.box(Transform3D(Basis(), Vector3(0, -0.63, -0.062)), Vector3(0.045, 0.085, 0.002), Color(0.55, 0.4, 1.0, 0.0), false)
-	elif extra == "bag":
-		mb.box(Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, -0.66, -0.05)), Vector3(0.1, 0.09, 0.12), Color("#c9a36b"))
-		mb.box(Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, -0.66, -0.05)), Vector3(0.104, 0.012, 0.124), Color("#5a3b26"), false)
+		match kit:
+			"cavaliere":
+				# manico della mazza (la sfera e la catena le muove CharacterVisual)
+				mb.prism(Transform3D(Basis(Vector3.RIGHT, 0.25), Vector3(0, -0.72, 0.02)), 0.022, 0.022, 0.28, 8, Color("#2b2638"))
+				mb.ball(Transform3D(Basis(), Vector3(0, -0.72, 0.02)), 0.03, gold, true, 4, 6)
+			"guardiana":
+				# caffe' da asporto
+				mb.sweep([_r(-0.6, 0.036, 0.036, -0.075), _r(-0.71, 0.043, 0.043, -0.075)], 10, Color("#f4efe6"), true, true, true)
+				mb.sweep([_r(-0.645, 0.044, 0.044, -0.075), _r(-0.67, 0.044, 0.044, -0.075)], 10, Color("#8a5a32"), false, false, false)
+			"giullare" when long_props:
+				# scettro-asta da selfie: lungo, in diagonale, telefono in cima con alette
+				var a0 := Vector3(0, -0.85, 0.12)
+				var a1 := Vector3(0.05, 0.35, -0.42)
+				rod(mb, a0, a1, 0.018, metal)
+				mb.box(Transform3D(Basis(Vector3.RIGHT, -0.5), a1 + Vector3(0, 0.06, 0)), Vector3(0.09, 0.16, 0.016), Color("#1a1a22"))
+				mb.box(Transform3D(Basis(Vector3.RIGHT, -0.5), a1 + Vector3(0, 0.06, -0.009)), Vector3(0.075, 0.135, 0.002), _a(accent.lightened(0.2), 0.0), false)
+				for s2 in [-1.0, 1.0]:
+					mb.lock(a1 + Vector3(s2 * 0.045, 0.06, 0), a1 + Vector3(s2 * 0.1, 0.11, 0.02), a1 + Vector3(s2 * 0.15, 0.1, 0.04), 0.035, 0.008, Vector3.FORWARD, Color("#f4f2f8"), true, 4)
+			"ladro" when long_props:
+				# bastone da prestigiatore col pomolo a gemma, in diagonale
+				var c0 := Vector3(0, -0.95, 0.18)
+				var c1 := Vector3(-0.02, 0.3, -0.36)
+				rod(mb, c0, c1, 0.018, Color("#2a1d17"))
+				mb.ball(Transform3D(Basis(), c1), 0.04, gold, true, 5, 8)
+				mb.ball(Transform3D(Basis(), c1 + Vector3(0, 0.0, -0.035)), 0.018, _a(accent.lightened(0.2), 0.0), false, 4, 6)
+	else:
+		match kit:
+			"guardiana" when long_props:
+				# bastone con la lanterna (luce blu) in cima: lungo, in diagonale
+				var l0 := Vector3(0, -0.95, 0.15)
+				var l1 := Vector3(-0.04, 0.32, -0.38)
+				rod(mb, l0, l1, 0.017, Color("#2b2638"))
+				mb.box(Transform3D(Basis(), l1 + Vector3(0, -0.03, 0)), Vector3(0.12, 0.014, 0.014), metal)
+				var lp: Vector3 = l1 + Vector3(-0.05, -0.12, 0)
+				mb.prism(Transform3D(Basis(), lp + Vector3(0, -0.06, 0)), 0.045, 0.045, 0.11, 6, Color("#2b2638"))
+				mb.prism(Transform3D(Basis(), lp + Vector3(0, -0.05, 0)), 0.038, 0.038, 0.09, 6, _a(accent.lightened(0.3), 0.0), false)
+				mb.prism(Transform3D(Basis(), lp + Vector3(0, 0.05, 0)), 0.05, 0.005, 0.05, 6, metal)
+				for s3 in [-1.0, 1.0]:
+					mb.lock(lp + Vector3(s3 * 0.04, 0.03, 0), lp + Vector3(s3 * 0.09, 0.07, 0.01), lp + Vector3(s3 * 0.12, 0.06, 0.02), 0.03, 0.006, Vector3.FORWARD, Color("#f4f2f8"), true, 4)
+			"ladro":
+				# il pacco come reliquia: carta, spago e una luce verde che filtra
+				mb.box(Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, -0.68, -0.05)), Vector3(0.12, 0.1, 0.14), Color("#c9a36b"))
+				mb.box(Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, -0.68, -0.05)), Vector3(0.124, 0.014, 0.144), Color("#5a3b26"), false)
+				mb.box(Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, -0.68, -0.05)), Vector3(0.014, 0.104, 0.144), Color("#5a3b26"), false)
+				mb.box(Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, -0.62, -0.05)), Vector3(0.05, 0.004, 0.06), _a(accent.lightened(0.3), 0.0), false)
 	return mb
 
 
 static func leg(sp: Dictionary, side: float) -> MeshBatch:
 	var mb := MeshBatch.new()
 	mb.ink_w = 0.01
-	var bottom: Color = Color(str(sp["bottom"]))
-	var shoes: Color = Color(str(sp["shoes"]))
-	var accent: Color = Color(str(sp["accent"]))
-	var extra: String = str(sp["extra"])
+	var kit: String = str(sp.get("kit", ""))
+	var bottom: Color = _c(sp, "bottom")
+	var shoes: Color = _c(sp, "shoes")
+	var accent: Color = _c(sp, "accent")
+	var metal: Color = _m(_c(sp, "metal"))
+	var gold: Color = _m(_c(sp, "gold"))
 	var fem: bool = bool(sp.get("fem", false))
 	var k: float = 0.9 if fem else 1.0
-	var baggy: float = 0.012 if extra in ["bag", "cap"] else 0.0
+	var leg_c: Color = metal if kit == "cavaliere" else bottom
+	if kit == "giullare" and side > 0.0:
+		leg_c = accent                         # una gamba viola, l'altra a righe
+	# gamba lunga e sottile
 	mb.sweep([
-		_r(0.0, (0.078 + baggy) * k, (0.078 + baggy) * k),
-		_r(-0.2, (0.066 + baggy) * k, (0.068 + baggy) * k),
-		_r(-0.42, (0.05 + baggy) * k, (0.052 + baggy) * k, -0.004),
-		_r(-0.55, (0.054 + baggy) * k, (0.056 + baggy) * k, 0.006),
-		_r(-0.74, (0.038 + baggy * 0.6) * k, (0.04 + baggy * 0.6) * k),
-		_r(-0.8, 0.036 * k, 0.038 * k),
-	], 12, bottom, true, false, false)
-	match extra:
-		"mask":
-			# sneakers bianche enormi
-			mb.ball(Transform3D(Basis().scaled(Vector3(0.75, 0.62, 1.3)), Vector3(0, -0.835, -0.045)), 0.075, shoes, true, 6, 10)
-			mb.box(Transform3D(Basis(), Vector3(0, -0.88, -0.045)), Vector3(0.11, 0.025, 0.24), Color("#d8d4e6"))
-			mb.box(Transform3D(Basis(), Vector3(side * 0.052, -0.83, -0.05)), Vector3(0.006, 0.03, 0.1), Ui.YELLOW, false)
-		"cap", "coat":
-			# anfibi / stivali
-			mb.sweep([_r(-0.66, 0.05, 0.052), _r(-0.8, 0.05, 0.054), _r(-0.84, 0.052, 0.058)], 12, shoes, true, false, false)
-			mb.ball(Transform3D(Basis().scaled(Vector3(0.7, 0.55, 1.25)), Vector3(0, -0.85, -0.05)), 0.07, shoes, true, 6, 10)
-			mb.box(Transform3D(Basis(), Vector3(0, -0.885, -0.04)), Vector3(0.1, 0.022, 0.22), shoes.darkened(0.4))
-			if extra == "cap":
-				mb.sweep([_r(-0.68, 0.052, 0.054), _r(-0.695, 0.052, 0.054)], 12, accent, false, false, false)
-		_:
-			mb.ball(Transform3D(Basis().scaled(Vector3(0.7, 0.55, 1.25)), Vector3(0, -0.845, -0.045)), 0.07, shoes, true, 6, 10)
-			mb.box(Transform3D(Basis(), Vector3(0, -0.88, -0.04)), Vector3(0.1, 0.02, 0.21), shoes.darkened(0.4))
+		_r(0.0, 0.07 * k, 0.07 * k),
+		_r(-0.2, 0.058 * k, 0.06 * k),
+		_r(-0.42, 0.042 * k, 0.044 * k, -0.004),
+		_r(-0.55, 0.045 * k, 0.047 * k, 0.006),
+		_r(-0.72, 0.032 * k, 0.034 * k),
+		_r(-0.78, 0.031 * k, 0.033 * k),
+	], 12, leg_c, true, false, false)
+	match kit:
+		"cavaliere":
+			# schiniere a punta sul ginocchio
+			mb.ball(Transform3D(Basis().scaled(Vector3(1.0, 1.1, 0.8)), Vector3(0, -0.44, -0.03)), 0.06, metal)
+			spike(mb, Vector3(0, -0.44, -0.07), Vector3(0, 0.25, -1.0), 0.09, 0.035, metal)
+		"giullare":
+			if side < 0.0:
+				for i in 6:
+					var y: float = -0.06 - 0.12 * float(i)
+					mb.sweep([_r(y, 0.072 - 0.007 * i, 0.072 - 0.007 * i), _r(y - 0.05, 0.07 - 0.007 * i, 0.07 - 0.007 * i)], 12, Color("#ece8f2"), false, false, false)
+		"ladro":
+			# jeans strappati con toppa
+			mb.box(Transform3D(Basis(), Vector3(side * 0.01, -0.3, -0.055)), Vector3(0.05, 0.05, 0.006), Color("#7a6a4a"), false)
+			mb.box(Transform3D(Basis(Vector3.BACK, 0.3), Vector3(0, -0.5, -0.048)), Vector3(0.05, 0.008, 0.004), _a(_c(sp, "skin"), 0.8), false)
+	# STIVALE ENORME con la punta tonda e gonfia (grande quanto la testa)
+	var boot_r: float = 0.165 * (0.92 if fem else 1.0)     # piu' grande della testa (regola dello stile)
+	var bk: float = boot_r / 0.14
+	var boot_c: Color = shoes
+	if kit == "cavaliere":
+		boot_c = metal
+	mb.sweep([_r(-0.6, 0.05, 0.052), _r(-0.7, 0.075 * bk, 0.078 * bk), _r(-0.79, 0.095 * bk, 0.1 * bk)], 12, boot_c, true, false, false)
+	var toe := Vector3(side * 0.03, -0.81 + (boot_r - 0.14) * 0.3, -0.075 * bk)
+	mb.ball(Transform3D(Basis(Vector3.UP, -side * 0.16).scaled(Vector3(0.95, 0.82, 1.5)), toe), boot_r, boot_c, true, 8, 14)
+	mb.box(Transform3D(Basis(Vector3.UP, -side * 0.16), Vector3(side * 0.03, -0.915, -0.075 * bk)), Vector3(0.24 * bk, 0.028, 0.4 * bk), boot_c.darkened(0.45) if kit != "cavaliere" else Color("#3a3446"))
+	match kit:
+		"cavaliere":
+			for i in 6:
+				var a: float = lerpf(-2.4, 2.4, float(i) / 5.0)
+				var d := Vector3(sin(a), 0.15, -cos(a))
+				spike(mb, toe + Vector3(d.x * 0.125 * bk, -0.05, d.z * 0.19 * bk), d, 0.08, 0.026, gold)
+		"guardiana":
+			mb.box(Transform3D(Basis(), toe + Vector3(0, 0.1, -0.03)), Vector3(0.12, 0.022, 0.06), _a(accent, 0.0), false)
+		"giullare":
+			mb.box(Transform3D(Basis(Vector3.UP, -side * 0.12), toe + Vector3(side * 0.13, 0.0, 0.0)), Vector3(0.008, 0.05, 0.3), accent, false)
+			mb.lock(toe + Vector3(0, 0.07, 0.16), toe + Vector3(0, 0.16, 0.26), toe + Vector3(0, 0.13, 0.34), 0.07, 0.01, Vector3.RIGHT, Color("#f4f2f8"), true, 4)
+		"ladro":
+			mb.sweep([_r(-0.69, 0.08, 0.083), _r(-0.715, 0.083, 0.086)], 12, _m(_c(sp, "gold")), false, false, false)
 	return mb

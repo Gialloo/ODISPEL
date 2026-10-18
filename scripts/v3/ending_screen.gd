@@ -18,6 +18,11 @@ func _ready() -> void:
 	bg.color = Color("#140b24")
 	Ui.place(bg, 0, 0, 1, 1)
 	add_child(bg)
+	var fr := Control.new()
+	Ui.place(fr, 0, 0, 1, 1)
+	fr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fr.draw.connect(func() -> void: Filigree.frame(fr, Rect2(Vector2(28, 28), fr.size - Vector2(56, 56)), 1.0, Ui.PINK))
+	add_child(fr)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 14)
 	Ui.place(vb, 0.1, 0.08, 0.9, 0.95)

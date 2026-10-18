@@ -36,6 +36,15 @@ var hop: float = 0.0
 var fall: float = 0.0
 var down: bool = false
 
+# Oggetti del kit mossi dal motore (docs/STILE_VISIVO.md): mazza ferrata con catena e mascotte (Ferri), carte che volano (Saul)
+var kit: String = ""
+var _mace: Node3D
+var _mace_pos: Vector3
+var _links: Array = []
+var _mascot: Node3D
+var _cards: Array = []
+var _swing: float = 0.0              # 0..1 durante l'attacco: la mazza vola in avanti
+
 
 func setup(char_id: String, override: Dictionary = {}) -> void:
 	id = char_id
@@ -66,7 +75,7 @@ func setup(char_id: String, override: Dictionary = {}) -> void:
 	var sw: float = (0.14 if bool(sp.get("fem", false)) else 0.168) * b
 	_mesh(_hips, AnimeBuilder.torso(sp), "Torso")
 	_head = _pivot(_hips, "Head", Vector3(0, AnimeBuilder.NECK_Y, 0))
-	_head.scale = Vector3.ONE * 1.1          # testa un po' piu' grande: si legge meglio sul telefono
+	_head.scale = Vector3.ONE * 1.16         # testa grande da anime: si legge meglio sul telefono
 	_mesh(_head, AnimeBuilder.head(sp), "HeadMesh")
 	_arm_l = _pivot(_hips, "ArmL", Vector3(-sw - 0.035, AnimeBuilder.SHOULDER_Y, 0))
 	_arm_r = _pivot(_hips, "ArmR", Vector3(sw + 0.035, AnimeBuilder.SHOULDER_Y, 0))
@@ -80,6 +89,9 @@ func setup(char_id: String, override: Dictionary = {}) -> void:
 	_shadow.mesh = MeshBatch.disc(0.42 * _scale, Color(0.02, 0.0, 0.06, 0.55), 14, 0.015)
 	_shadow.material_override = Toon.shadow()
 	add_child(_shadow)
+	kit = str(sp.get("kit", ""))
+	if not bool(sp.get("no_props", false)):
+		_build_props(sp)
 
 
 func _pivot(parent: Node3D, n: String, pos: Vector3) -> Node3D:
@@ -107,14 +119,17 @@ func _process(delta: float) -> void:
 	var s: float = sin(_phase)
 	var breath: float = sin(_t * 2.2) * 0.008
 	var st: float = 1.0 if stance else 0.0
-	_leg_l.rotation = Vector3(s * 0.65 * w, 0, 0)
-	_leg_r.rotation = Vector3(-s * 0.65 * w, 0, 0)
-	_arm_l.rotation = Vector3(-s * 0.55 * w + arm_l_x + 0.35 * st, 0, -0.12 - 0.15 * st + arm_l_z)
-	_arm_r.rotation = Vector3(s * 0.55 * w + arm_r_x + 0.45 * st, 0, 0.12 + 0.15 * st + arm_r_z)
-	_hips.rotation = Vector3(-0.08 * w - lean - 0.06 * st, sin(_phase) * 0.08 * w, 0)
-	_head.rotation = Vector3(0.05 * w + lean * 0.4, 0, sin(_t * 1.3) * 0.03 * (1.0 - w))
-	var bob: float = absf(cos(_phase)) * 0.05 * w + breath
+	# mai rigidi di fronte: da fermi un leggero contrapposto, in battaglia una posa diagonale (gambe larghe, busto girato e in avanti)
+	var idle: float = (1.0 - w) * (1.0 - st)
+	_leg_l.rotation = Vector3(s * 0.65 * w - 0.32 * st, 0, -0.2 * st - 0.04 * idle)
+	_leg_r.rotation = Vector3(-s * 0.65 * w + 0.26 * st, 0, 0.2 * st + 0.02 * idle)
+	_arm_l.rotation = Vector3(-s * 0.55 * w + arm_l_x + 0.35 * st, 0, -0.12 - 0.22 * st + arm_l_z)
+	_arm_r.rotation = Vector3(s * 0.55 * w + arm_r_x + 0.45 * st, 0, 0.12 + 0.22 * st + arm_r_z)
+	_hips.rotation = Vector3(-0.08 * w - lean - 0.2 * st - 0.04 * idle, sin(_phase) * 0.08 * w + 0.38 * st, 0.05 * idle)
+	_head.rotation = Vector3(0.05 * w + lean * 0.4 + 0.08 * st, -0.3 * st, sin(_t * 1.3) * 0.03 * (1.0 - w) - 0.05 * idle)
+	var bob: float = absf(cos(_phase)) * 0.05 * w + breath - 0.07 * st * _scale
 	_body.position = Vector3(0, bob + hop, 0)
+	_update_props(delta)
 	_body.rotation = Vector3(-fall * 1.45, 0, fall * 0.2)
 	if _shadow != null:
 		var k: float = clampf(1.0 - hop * 0.8, 0.4, 1.0)
@@ -134,6 +149,11 @@ func chest_point() -> Vector3:
 
 func attack() -> Tween:
 	var tw := create_tween()
+	if _mace != null:
+		var sw := create_tween()
+		sw.tween_property(self, "_swing", 1.0, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		sw.tween_interval(0.15)
+		sw.tween_property(self, "_swing", 0.0, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_property(self, "arm_r_x", -2.6, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(self, "lean", -0.15, 0.12)
 	tw.tween_property(self, "arm_r_x", 0.6, 0.1).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
@@ -181,6 +201,120 @@ func cheer() -> Tween:
 	tw.parallel().tween_property(self, "hop", 0.3, 0.2)
 	tw.tween_property(self, "hop", 0.0, 0.2)
 	return tw
+
+
+# ---------- oggetti del kit ----------
+
+func _build_props(sp: Dictionary) -> void:
+	var metal: Color = AnimeBuilder._m(Color(str(sp.get("metal", "#c4cad6"))))
+	var gold: Color = AnimeBuilder._m(Color(str(sp.get("gold", "#e0b54a"))))
+	match kit:
+		"cavaliere":
+			# mazza ferrata enorme con spuntoni dorati, legata al manico da una lunga catena
+			var mb := MeshBatch.new()
+			mb.ink_w = 0.02
+			mb.ball(Transform3D(), 0.27, metal, true, 8, 14)
+			var dirs: Array = []
+			for i in 14:
+				var y: float = 1.0 - 2.0 * (float(i) + 0.5) / 14.0
+				var r: float = sqrt(maxf(0.0, 1.0 - y * y))
+				var a: float = 2.39996 * float(i)
+				dirs.append(Vector3(cos(a) * r, y, sin(a) * r))
+			for d in dirs:
+				AnimeBuilder.spike(mb, (d as Vector3) * 0.24, d, 0.17, 0.05, gold)
+			mb.prism(Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0, -0.27)), 0.07, 0.07, 0.02, 12, gold)
+			mb.box(Transform3D(Basis(Vector3.BACK, PI * 0.25), Vector3(0, 0, -0.29)), Vector3(0.1, 0.025, 0.01), Color(0.35, 0.95, 0.5, 0.0), false)
+			mb.box(Transform3D(Basis(Vector3.BACK, -PI * 0.25), Vector3(0, 0, -0.29)), Vector3(0.1, 0.025, 0.01), Color(0.35, 0.95, 0.5, 0.0), false)
+			_mace = Node3D.new()
+			_mace.name = "Mazza"
+			_mace.add_child(_inst(mb, "MazzaMesh"))
+			add_child(_mace)
+			_mace_pos = Vector3(0.62, 0.3, 0.45) * _scale
+			_mace.position = _mace_pos
+			var lb := MeshBatch.new()
+			lb.ink_w = 0.006
+			lb.box(Transform3D(), Vector3(0.022, 0.05, 0.012), metal)
+			var link_mesh: ArrayMesh = lb.build()
+			for i in 11:
+				var li := MeshInstance3D.new()
+				li.mesh = link_mesh
+				Toon.dress(li)
+				add_child(li)
+				_links.append(li)
+			# mascotte: piccola mazza nera con occhi bianchi, alette d'argento e spuntoni
+			var ms := MeshBatch.new()
+			ms.ink_w = 0.008
+			ms.ball(Transform3D(), 0.075, Color("#1e1a26"), true, 6, 10)
+			for s2 in [-1.0, 1.0]:
+				ms.ball(Transform3D(Basis().scaled(Vector3(0.8, 1.1, 0.4)), Vector3(s2 * 0.028, 0.012, -0.066)), 0.02, Color(1, 1, 1, 0.0), false, 4, 6)
+				ms.lock(Vector3(s2 * 0.06, 0.02, 0.0), Vector3(s2 * 0.11, 0.07, 0.02), Vector3(s2 * 0.15, 0.06, 0.04), 0.05, 0.008, Vector3.FORWARD, metal, true, 4)
+			for d2 in [Vector3(0, 1, 0), Vector3(0.5, 0.6, 0.6), Vector3(-0.5, 0.6, 0.6), Vector3(0, -1, 0.2)]:
+				AnimeBuilder.spike(ms, (d2 as Vector3).normalized() * 0.065, d2, 0.04, 0.016, metal)
+			_mascot = Node3D.new()
+			_mascot.name = "Mascotte"
+			_mascot.add_child(_inst(ms, "MascotteMesh"))
+			add_child(_mascot)
+		"ladro":
+			# carte da gioco che volano attorno
+			var cb := MeshBatch.new()
+			cb.ink_w = 0.004
+			cb.box(Transform3D(), Vector3(0.08, 0.115, 0.004), Color("#f4efe6"))
+			cb.box(Transform3D(Basis(Vector3.BACK, PI * 0.25), Vector3(0, 0, -0.003)), Vector3(0.03, 0.03, 0.002), Color(0.35, 0.95, 0.5, 0.0), false)
+			cb.box(Transform3D(Basis(), Vector3(0, 0, 0.003)), Vector3(0.066, 0.1, 0.002), Color("#2f8f5a").darkened(0.3), false)
+			var card_mesh: ArrayMesh = cb.build()
+			for i in (3 if Settings.light_fx else 5):
+				var ci := MeshInstance3D.new()
+				ci.mesh = card_mesh
+				Toon.dress(ci)
+				add_child(ci)
+				_cards.append(ci)
+
+
+func _inst(mb: MeshBatch, n: String) -> MeshInstance3D:
+	var mi: MeshInstance3D = mb.make_instance(n)
+	_meshes.append(mi)
+	return mi
+
+
+func _update_props(delta: float) -> void:
+	if _mace != null and _arm_r != null:
+		var hand: Vector3 = transform.affine_inverse() * (_arm_r.global_transform * Vector3(0, -0.72, 0.02))
+		var rest := Vector3(0.62, 0.27, 0.5) * _scale
+		if stance:
+			rest = Vector3(0.75, 0.27, 0.1) * _scale
+		if down:
+			rest = Vector3(0.6, 0.27, 0.3) * _scale
+		var fly: Vector3 = hand + Vector3(0.1, 0.2, -1.2) * _scale
+		var target: Vector3 = rest.lerp(fly, _swing)
+		_mace_pos = _mace_pos.lerp(target, minf(1.0, delta * (14.0 if _swing > 0.01 else 5.0)))
+		_mace_pos.y = maxf(_mace_pos.y, 0.27 * _scale)
+		_mace.position = _mace_pos
+		_mace.rotation.y += delta * (6.0 * _swing + 0.4 * _walk)
+		# catena: curva che pende fra il manico e la sfera
+		var mid: Vector3 = (hand + _mace_pos) * 0.5 + Vector3(0, -0.25 * (1.0 - _swing), 0)
+		mid.y = maxf(mid.y, 0.03)
+		for i in _links.size():
+			var t: float = (float(i) + 0.5) / float(_links.size())
+			var p: Vector3 = hand.lerp(mid, t).lerp(mid.lerp(_mace_pos, t), t)
+			var tg: Vector3 = (2.0 * (1.0 - t) * (mid - hand) + 2.0 * t * (_mace_pos - mid)).normalized()
+			var li: MeshInstance3D = _links[i]
+			li.position = p
+			if tg.length() > 0.01:
+				var up: Vector3 = tg
+				var side: Vector3 = up.cross(Vector3.FORWARD if absf(up.dot(Vector3.FORWARD)) < 0.9 else Vector3.RIGHT).normalized()
+				li.basis = Basis(side, up, side.cross(up)).rotated(up, PI * 0.5 * float(i % 2)) * Basis().scaled(Vector3.ONE * _scale)
+	if _mascot != null:
+		var want := Vector3(-0.42, 1.85 + 0.06 * sin(_t * 2.4), 0.12) * _scale
+		if down:
+			want = Vector3(-0.3, 0.5, 0.0) * _scale
+		_mascot.position = _mascot.position.lerp(want, minf(1.0, delta * 3.0))
+		_mascot.rotation = Vector3(0.1 * sin(_t * 1.7), 0.25 * sin(_t * 0.9), 0.12 * sin(_t * 2.4))
+	for i in _cards.size():
+		var a: float = _t * 0.9 + TAU * float(i) / float(_cards.size())
+		var ci: MeshInstance3D = _cards[i]
+		ci.position = Vector3(cos(a) * 0.62, 1.05 + 0.25 * sin(a * 1.7 + float(i)), sin(a) * 0.5) * _scale
+		ci.rotation = Vector3(0.3 * sin(_t + float(i)), -a + PI * 0.5, 0.4 * cos(_t * 1.3 + float(i)))
+		ci.visible = not down
 
 
 func _flash(on: bool) -> void:

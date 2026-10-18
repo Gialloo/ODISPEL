@@ -59,6 +59,8 @@ func _run() -> void:
 		guard += 1
 		await _secs(0.9)
 		var sc: Node = _cur()
+		if sc == null or not is_instance_valid(sc):
+			continue
 		var path: String = sc.get_script().resource_path.get_file()
 		var tag: String = "c%d_p%d" % [Story.chapter, Story.step]
 		print("PASSO ", tag, " ", path)

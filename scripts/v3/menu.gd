@@ -150,3 +150,5 @@ func _draw_bg() -> void:
 		var x0: float = k * 80.0 + off
 		_bg.draw_line(Vector2(x0, s.y), Vector2(x0 + 220, s.y - 220), Color(1, 1, 1, 0.04), 18.0)
 	_bg.draw_rect(Rect2(0, s.y * 0.86, s.x, s.y * 0.14), Color(0.03, 0.02, 0.06, 0.8))
+	# cornice gotica in filigrana (docs/STILE_VISIVO.md)
+	Filigree.frame(_bg, Rect2(Vector2(14, 14), s - Vector2(28, 28)), 1.0, Color("#e8343f"))

@@ -5,7 +5,7 @@ Documento di lavoro. Le parti segnate **PROVVISORIO** sono nomi o scelte da conf
 ## Premessa
 
 Una notte una cupola rosa chiude la città. Dentro restano quattro sconosciuti — **Ferri** (ex LibraCorp, vanguard),
-**Nox** (centralinista delle Civette, warden), **Zecca** (ladra, striker) e **Saul** (truffatore, striker) — e una voce che
+**Nox** (centralinista delle Civette, warden), **Zecca** (ragazzo di 19 anni, Masca, striker) e **Saul** (truffatore, striker) — e una voce che
 parla da una telecamera di sorveglianza: il **Kairos**. Il Kairos dice di essere bloccato qui come loro e propone un
 accordo: lui li guida verso le Anomalie che tengono su la cupola, loro le spengono. Ogni Anomalia è un oggetto
 quotidiano diventato un mostro (un distributore, un semaforo, una cabina telefonica, un manichino, una cassaforte).
@@ -40,9 +40,9 @@ Si odiano e si rispettano: lavorano per fazioni rivali ma si riconoscono come gl
 
 ## Il seguito (piano deciso, da scrivere)
 
-1. **Metà gioco — il tradimento del Kairos.** Si scopre che il Kairos lavorava per il Committente: le Anomalie
-   spente non servivano a liberare la città, ma a raccogliere qualcosa. Cade il sigillo, la cupola si apre:
-   **si apre il paese** (mappa più grande, più città).
+1. **Metà gioco = fine dell'atto 1 — il tradimento del Kairos.** Nel finale dell'atto 1 (scena `varco`) il Kairos confessa di averli incastrati, il Committente gli ruba il varco, il sigillo cade e
+   **si apre il paese** (mappa più grande, più città). Nel seguito si scopre fin dove il Kairos lavorava (senza saperlo)
+   per il Committente: le Anomalie spente non servivano a liberare la città, ma a raccogliere qualcosa (PROVVISORIO).
 2. **Seconda parte — la caccia al Committente.** La squadra insegue il Committente fuori dalla città, con
    **LibraCorp** e **le Civette** alle calcagna.
 3. **Inseguitori ricorrenti con un volto:** Asta (contro Ferri) e Allocco (contro Nox). Battaglie ripetute,
