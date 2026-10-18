@@ -25,10 +25,12 @@ void vertex() {
 void fragment() {
 	vec3 base = COLOR.rgb;
 	vec3 c = base;
-	if (COLOR.a > 0.5) {
+	// alpha: 1 normale (ombra fredda) · 0.8 pelle (ombra calda) · 0.6 piatto (viso) · 0 luce propria
+	if (COLOR.a > 0.7) {
 		float nl = dot(normalize(wn), normalize(light_dir));
 		float lit = smoothstep(-0.03, 0.05, nl);
-		c = mix(base * shade_tint, base, lit);
+		vec3 tint = COLOR.a > 0.9 ? shade_tint : vec3(0.88, 0.64, 0.70);
+		c = mix(base * tint, base, lit);
 		float r = 1.0 - clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
 		c = mix(c, rim_col, step(0.80, r) * rim_k * lit);
 	}

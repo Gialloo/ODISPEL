@@ -4,12 +4,14 @@ extends SceneTree
 # Uso: xvfb-run -a godot --path . --resolution 1600x900 -s tools/v3_cast_shot.gd -- <cartella>
 
 var out: String = "/tmp/cast"
+var face: bool = false
 
 
 func _init() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if args.size() > 0:
 		out = args[0]
+	face = args.has("face")
 	DirAccess.make_dir_recursive_absolute(out)
 	_run()
 
@@ -36,10 +38,14 @@ func _run() -> void:
 			var cv := CharacterVisual.new()
 			cv.setup(id)
 			row.add_child(cv)
-			cv.position = Vector3(-2.7 + 1.8 * i, 0, 0)
+			cv.position = Vector3((-1.2 + 0.8 * i) if face else (-2.7 + 1.8 * i), 0, 0)
 			cv.rotation.y = PI + float(angles[i])
-		cam.position = Vector3(0, 1.0, 7.0)
-		cam.look_at(Vector3(0, 0.9, 0), Vector3.UP)
+		if face:
+			cam.position = Vector3(0, 1.62, 3.4)
+			cam.look_at(Vector3(0, 1.58, 0), Vector3.UP)
+		else:
+			cam.position = Vector3(0, 1.0, 7.0)
+			cam.look_at(Vector3(0, 0.9, 0), Vector3.UP)
 		for f in 6:
 			await process_frame
 		root.get_texture().get_image().save_png(out + "/" + id + ".png")

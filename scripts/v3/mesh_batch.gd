@@ -160,6 +160,94 @@ func _ball(xf: Transform3D, r: float, col: Color, ol: bool, lat: int, lon: int) 
 				_tri_smooth(xf * (d01 * r), xf * (d10 * r), xf * (d11 * r), n01, n10, n11, col, ol)
 
 
+# ---------- forme morbide (stile anime) ----------
+# Sezioni: [centro, asse_x, asse_z, rx, rz]. Si collegano anelli ellittici con normali lisce calcolate dalla griglia.
+# Con outline il contorno e' la stessa forma gonfiata di ink_w (anelli piu' larghi e punte allungate).
+func sweep(sections: Array, segs: int, col: Color, outline: bool = true, cap0: bool = true, cap1: bool = true) -> void:
+	_sweep(sections, segs, col, false, cap0, cap1, 0.0)
+	if outline:
+		_sweep(sections, segs, Toon.INK, true, cap0, cap1, ink_w)
+
+
+func _sweep(sections: Array, segs: int, col: Color, ol: bool, cap0: bool, cap1: bool, grow: float) -> void:
+	var n: int = sections.size()
+	if n < 2:
+		return
+	var grid: Array = []
+	var centers: Array = []
+	for i in n:
+		var sec: Array = sections[i]
+		var c: Vector3 = sec[0]
+		if grow > 0.0 and (i == 0 or i == n - 1):
+			var t: Vector3 = ((sections[1][0] as Vector3) - (sections[0][0] as Vector3)) if i == 0 else ((sections[n - 1][0] as Vector3) - (sections[n - 2][0] as Vector3))
+			if t.length() > 0.0001:
+				c += t.normalized() * grow * (-1.0 if i == 0 else 1.0)
+		centers.append(c)
+		var ring: Array = []
+		for j in segs:
+			var a: float = TAU * float(j) / float(segs)
+			var rx: float = float(sec[3]) + grow
+			var rz: float = float(sec[4]) + grow
+			ring.append(c + (sec[1] as Vector3) * cos(a) * rx + (sec[2] as Vector3) * sin(a) * rz)
+		grid.append(ring)
+	var norms: Array = []
+	for i in n:
+		var row: Array = []
+		for j in segs:
+			var pj1: Vector3 = grid[i][(j + 1) % segs]
+			var pj0: Vector3 = grid[i][(j - 1 + segs) % segs]
+			var pi1: Vector3 = grid[mini(i + 1, n - 1)][j]
+			var pi0: Vector3 = grid[maxi(i - 1, 0)][j]
+			var nn: Vector3 = (pj1 - pj0).cross(pi1 - pi0)
+			var out: Vector3 = (grid[i][j] as Vector3) - (centers[i] as Vector3)
+			if out.length() < 0.0005:
+				out = (centers[i] as Vector3) - (centers[maxi(i - 1, 0)] as Vector3) if i > 0 else (centers[0] as Vector3) - (centers[1] as Vector3)
+			if nn.length() < 0.000001:
+				nn = out
+			nn = nn.normalized()
+			if nn.dot(out) < 0.0:
+				nn = -nn
+			row.append(nn)
+		norms.append(row)
+	for i in n - 1:
+		for j in segs:
+			var j1: int = (j + 1) % segs
+			_tri_smooth(grid[i][j], grid[i + 1][j], grid[i][j1], norms[i][j], norms[i + 1][j], norms[i][j1], col, ol)
+			_tri_smooth(grid[i][j1], grid[i + 1][j], grid[i + 1][j1], norms[i][j1], norms[i + 1][j], norms[i + 1][j1], col, ol)
+	if cap0:
+		_cap(centers[0], grid[0], ((centers[0] as Vector3) - (centers[1] as Vector3)).normalized(), col, ol)
+	if cap1:
+		_cap(centers[n - 1], grid[n - 1], ((centers[n - 1] as Vector3) - (centers[n - 2] as Vector3)).normalized(), col, ol)
+
+
+func _cap(c: Vector3, ring: Array, nrm: Vector3, col: Color, ol: bool) -> void:
+	var m: int = ring.size()
+	for j in m:
+		_tri_smooth(c, ring[j], ring[(j + 1) % m], nrm, nrm, nrm, col, ol)
+
+
+# Sezione verticale comoda: anello orizzontale ad altezza y
+static func ring(x: float, y: float, z: float, rx: float, rz: float) -> Array:
+	return [Vector3(x, y, z), Vector3.RIGHT, Vector3.BACK, rx, rz]
+
+
+# Ciocca/cono curvo lungo una curva di Bezier (capelli, ciuffi, code): w = larghezza, th = spessore alla radice
+func lock(p0: Vector3, p1: Vector3, p2: Vector3, w: float, th: float, side_hint: Vector3, col: Color, outline: bool = true, steps: int = 6) -> void:
+	var secs: Array = []
+	for i in steps + 1:
+		var t: float = float(i) / float(steps)
+		var p: Vector3 = p0.lerp(p1, t).lerp(p1.lerp(p2, t), t)
+		var tg: Vector3 = (2.0 * (1.0 - t) * (p1 - p0) + 2.0 * t * (p2 - p1)).normalized()
+		var sx: Vector3 = side_hint.cross(tg)
+		if sx.length() < 0.001:
+			sx = Vector3.UP.cross(tg)
+		sx = sx.normalized()
+		var sz: Vector3 = tg.cross(sx).normalized()
+		var k: float = pow(1.0 - t, 0.85)
+		secs.append([p, sx, sz, maxf(0.0005, w * k), maxf(0.0005, th * k)])
+	sweep(secs, 6, col, outline, true, false)
+
+
 # Quadrilatero piatto (pannelli, insegne, finestre): niente contorno
 func quad(a: Vector3, b: Vector3, c: Vector3, d: Vector3, n: Vector3, col: Color) -> void:
 	_tri(a, b, c, n, col, false)
