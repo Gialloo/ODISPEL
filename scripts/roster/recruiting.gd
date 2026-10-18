@@ -5,8 +5,8 @@ extends RefCounted
 #
 # - Un reclutamento costa SINGLE_COST monete; dieci costano TEN_COST (sconto 10%)
 #   e garantiscono almeno un personaggio raro o migliore.
-# - Garanzia: dopo PITY_LIMIT reclutamenti senza epici o leggendari, il successivo
-#   e' almeno epico.
+# - Garanzia: se i PITY_LIMIT - 1 reclutamenti precedenti non hanno dato epici o
+#   leggendari, il PITY_LIMIT-esimo e' almeno epico.
 # - Un personaggio gia' posseduto e' una copia: sale di rank. A rank massimo
 #   viene convertito in monete.
 

@@ -148,7 +148,7 @@ static func default_entry(char_id: String, level: int = 1, rank: int = 0) -> Dic
 	}
 
 
-# Rarita' estratta con un tiro: 45% comune, 30% rara, 22% epica, 3% leggendaria.
+# Rarita' estratta con un tiro: 55% comune, 30% rara, 12% epica, 3% leggendaria.
 static func roll_rarity(rng: RNGState) -> int:
 	var roll: int = rng.random_int(1, 100)
 	if roll > 97:

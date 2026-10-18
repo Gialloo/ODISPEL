@@ -124,10 +124,21 @@ func _build_interface() -> void:
 	profile_layout.add_child(total_exp_label)
 
 	var currency_label := Label.new()
-	currency_label.text = "MONETE: " + str(profile["player_currency"])
+	currency_label.text = "MONETE CAMPAGNA: " + str(profile["player_currency"])
 	currency_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	currency_label.add_theme_font_size_override("font_size", 16)
 	profile_layout.add_child(currency_label)
+
+	# La collezione della battaglia nuova ha monete sue, separate dalla campagna.
+	var roster: Dictionary = RosterStore.load_or_new()
+	var roster_label := Label.new()
+	roster_label.text = (
+		"SQUADRA: " + str(roster["characters"].size()) + " operatori  |  "
+		+ str(roster["coins"]) + " monete archivio"
+	)
+	roster_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	roster_label.add_theme_font_size_override("font_size", 14)
+	profile_layout.add_child(roster_label)
 
 	separator = HSeparator.new()
 	layout.add_child(separator)

@@ -20,11 +20,35 @@ var _t: float = 0.0
 var _positions: Dictionary = {}
 
 
+# Lo sfondo e' fermo: sta in un nodo a parte, disegnato dietro e ridisegnato solo
+# quando cambia la dimensione (sono centinaia di rettangoli, non vanno rifatti a
+# ogni fotogramma insieme alle figure animate).
+class Backdrop extends Control:
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESIZED:
+			queue_redraw()
+
+	func _draw() -> void:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(size.x / BattleStage.DW, size.y / BattleStage.DH))
+		BattleStage.draw_background(self)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _ready() -> void:
+	var backdrop := Backdrop.new()
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	backdrop.show_behind_parent = true
+	add_child(backdrop)
+
+
 func _process(delta: float) -> void:
 	_t += delta
 	boss_hit = maxf(0.0, boss_hit - delta * 3.0)
 	for uid in hit_flash.keys():
 		hit_flash[uid] = maxf(0.0, float(hit_flash[uid]) - delta * 3.0)
+		if hit_flash[uid] <= 0.0:
+			hit_flash.erase(uid)
 	queue_redraw()
 
 
@@ -76,8 +100,6 @@ func _entity_transform(gx: float) -> void:
 
 
 func _draw() -> void:
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2(size.x / DW, size.y / DH))
-	_draw_background()
 	_entity_transform(BOSS_X)
 	_draw_boss()
 	_draw_fighters()
@@ -86,14 +108,14 @@ func _draw() -> void:
 
 # ---------- Sfondo ----------
 
-func _draw_background() -> void:
+static func draw_background(c: CanvasItem) -> void:
 	# cielo a strisce
 	var top: Color = Color("#041015")
 	var bottom: Color = Color("#0c3038")
 	var strips: int = 22
 	for i in strips:
 		var f: float = float(i) / float(strips - 1)
-		draw_rect(Rect2(0.0, HORIZON * float(i) / float(strips), DW, HORIZON / float(strips) + 1.0), top.lerp(bottom, f))
+		c.draw_rect(Rect2(0.0, HORIZON * float(i) / float(strips), DW, HORIZON / float(strips) + 1.0), top.lerp(bottom, f))
 
 	# palazzi lontani
 	var rng := RandomNumberGenerator.new()
@@ -102,43 +124,43 @@ func _draw_background() -> void:
 	while x < DW:
 		var w: float = rng.randf_range(60.0, 150.0)
 		var h: float = rng.randf_range(70.0, 190.0)
-		draw_rect(Rect2(x, HORIZON - h, w, h), Color("#08242c"))
-		draw_rect(Rect2(x, HORIZON - h, w, 3.0), Color("#12505e"))
+		c.draw_rect(Rect2(x, HORIZON - h, w, h), Color("#08242c"))
+		c.draw_rect(Rect2(x, HORIZON - h, w, 3.0), Color("#12505e"))
 		var wy: float = HORIZON - h + 14.0
 		while wy < HORIZON - 12.0:
 			var wx: float = x + 8.0
 			while wx < x + w - 12.0:
 				if rng.randf() < 0.28:
-					draw_rect(Rect2(wx, wy, 7.0, 9.0), Color(CY_WINDOW, rng.randf_range(0.25, 0.8)))
+					c.draw_rect(Rect2(wx, wy, 7.0, 9.0), Color(CY_WINDOW, rng.randf_range(0.25, 0.8)))
 				wx += 16.0
 			wy += 20.0
 		x += w + rng.randf_range(2.0, 14.0)
 
 	# asfalto
-	draw_rect(Rect2(0.0, HORIZON, DW, DH - HORIZON), Color("#071a20"))
+	c.draw_rect(Rect2(0.0, HORIZON, DW, DH - HORIZON), Color("#071a20"))
 	var vp := Vector2(DW * 0.5, HORIZON)
 	var lx: float = -900.0
 	while lx < DW + 900.0:
-		draw_line(vp, Vector2(lx, DH), Color("#103c46", 0.75), 1.5)
+		c.draw_line(vp, Vector2(lx, DH), Color("#103c46", 0.75), 1.5)
 		lx += 150.0
 	for row in 9:
 		var y: float = HORIZON + pow(float(row + 1), 2.0) * 4.6
-		draw_line(Vector2(0.0, y), Vector2(DW, y), Color("#0f3640", 0.6), 1.0)
+		c.draw_line(Vector2(0.0, y), Vector2(DW, y), Color("#0f3640", 0.6), 1.0)
 
 	# strisce dei parcheggi
 	for side in [-1.0, 1.0]:
 		for j in 4:
 			var base_x: float = DW * 0.5 + side * (190.0 + float(j) * 210.0)
-			draw_line(vp + Vector2(side * 18.0 * float(j + 1), 0.0), Vector2(base_x + side * 120.0, DH), Color("#9ceaf5", 0.28), 3.0)
+			c.draw_line(vp + Vector2(side * 18.0 * float(j + 1), 0.0), Vector2(base_x + side * 120.0, DH), Color("#9ceaf5", 0.28), 3.0)
 
 	# lampioni
 	for lamp_x in [70.0, 1210.0]:
-		draw_line(Vector2(lamp_x, FLOOR_Y + 30.0), Vector2(lamp_x, 110.0), Color("#1a5a68"), 6.0)
-		draw_line(Vector2(lamp_x, 110.0), Vector2(lamp_x + (46.0 if lamp_x < 640.0 else -46.0), 98.0), Color("#1a5a68"), 5.0)
+		c.draw_line(Vector2(lamp_x, FLOOR_Y + 30.0), Vector2(lamp_x, 110.0), Color("#1a5a68"), 6.0)
+		c.draw_line(Vector2(lamp_x, 110.0), Vector2(lamp_x + (46.0 if lamp_x < 640.0 else -46.0), 98.0), Color("#1a5a68"), 5.0)
 		var lh: float = lamp_x + (46.0 if lamp_x < 640.0 else -46.0)
-		draw_circle(Vector2(lh, 100.0), 9.0, Color("#d6ffff"))
+		c.draw_circle(Vector2(lh, 100.0), 9.0, Color("#d6ffff"))
 		var cone: PackedVector2Array = PackedVector2Array([Vector2(lh, 104.0), Vector2(lh - 120.0, FLOOR_Y + 30.0), Vector2(lh + 120.0, FLOOR_Y + 30.0)])
-		draw_colored_polygon(cone, Color("#7cf0ff", 0.06))
+		c.draw_colored_polygon(cone, Color("#7cf0ff", 0.06))
 
 
 const CY_WINDOW: Color = Color("#8ff6ff")
