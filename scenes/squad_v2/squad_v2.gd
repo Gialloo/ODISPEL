@@ -520,6 +520,8 @@ func fight() -> void:
 	Settings.buzz(40)
 	WorldV2Ctx.reset()           # il Test V2 parte dalla mappa: il combattimento comincia con un incontro
 	WorldV2Ctx.active = true
+	WorldV2Ctx.persist = true     # scoperte e tag di vernice restano tra una sessione e l'altra (file a parte, non il salvataggio)
+	WorldV2Ctx.load_persist()
 	SceneRouter.go("world_v2", true)
 
 

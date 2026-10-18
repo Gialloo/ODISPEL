@@ -5,6 +5,12 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.29.0", "items": [
+		"TEST V2: la mappa e' molto piu' grande: mercato notturno, terrazza sui tetti con panorama, cortile dei Magabondi, giardino delle rane, boschetto dei Sinistri, lungocanale, banchina, ponte e isolotto col ciliegio.",
+		"TEST V2: ora si puo' girare senza meta: 47 scoperte (oggetti, panchine dove sedersi, gatti da accarezzare, segreti), minimappa e contatore, e muri da spruzzare di vernice (si ricordano).",
+		"TEST V2: movimento piu' morbido (partenza e frenata), corsa (Maiusc su PC, tasto CORRI su telefono), polvere, passanti che camminano, musicista, vapore e lucciole.",
+		"Le scoperte della mappa si salvano in un file a parte: non toccano il salvataggio, la progressione ne' il bilanciamento.",
+	]},
 	{"v": "0.28.11", "items": [
 		"TEST V2: mappa ancora piu' leggera: oggetti, lampioni e strisce sono disegnati in blocco insieme agli edifici (circa la meta' dei disegni rispetto alla 0.28.8).",
 		"TEST V2: sui telefoni la mappa si ferma a 60 fotogrammi se non hai scelto un limite (meno calore e batteria che a 90/120).",

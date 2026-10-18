@@ -8,7 +8,7 @@ func _run() -> void:
 	var w = (load("res://scenes/world_v2/world_v2.tscn") as PackedScene).instantiate()
 	root.add_child(w)
 	await create_timer(0.6).timeout
-	for p in [Vector2(0, 6.5), Vector2(15, 2), Vector2(0, -10), Vector2(0, -32)]:
+	for p in [Vector2(0, 6.5), Vector2(15, 2), Vector2(0, -10), Vector2(0, -32), Vector2(33, 1.5), Vector2(-34, 7), Vector2(0, 19), Vector2(45, 21)]:
 		w.player = p; w._seed_trail(); w._place_all()
 		await create_timer(0.5).timeout
 		await process_frame
