@@ -51,6 +51,24 @@ void fragment() {
 }
 """
 
+# Contorno per i modelli importati (glTF): la mesh si gonfia lungo le normali lisce nello shader.
+const _INK_GROW: String = """
+shader_type spatial;
+render_mode unshaded, cull_front;
+uniform float grow = 0.022;
+uniform vec3 ink : source_color = vec3(0.07, 0.04, 0.11);
+uniform vec3 fog_col : source_color = vec3(0.10, 0.07, 0.17);
+uniform float fog_near = 18.0;
+uniform float fog_far = 70.0;
+void vertex() {
+	VERTEX += NORMAL * grow;
+}
+void fragment() {
+	float f = smoothstep(fog_near, fog_far, length(VERTEX));
+	ALBEDO = mix(ink, fog_col, f);
+}
+"""
+
 const _GLOW: String = """
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
@@ -93,6 +111,10 @@ static func ink() -> ShaderMaterial:
 	return _shader_mat("ink", _INK)
 
 
+static func ink_grow() -> ShaderMaterial:
+	return _shader_mat("ink_grow", _INK_GROW)
+
+
 static func glow() -> ShaderMaterial:
 	return _shader_mat("glow", _GLOW)
 
@@ -114,7 +136,7 @@ static func hit_flash() -> StandardMaterial3D:
 
 # Nebbia: ogni scena sceglie colore e distanze (la strada e' lunga, l'arena e' corta).
 static func set_fog(col: Color, near: float, far: float) -> void:
-	for m in [body(), ink()]:
+	for m in [body(), ink(), ink_grow()]:
 		m.set_shader_parameter("fog_col", Vector3(col.r, col.g, col.b))
 		m.set_shader_parameter("fog_near", near)
 		m.set_shader_parameter("fog_far", far)

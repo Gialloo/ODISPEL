@@ -1,0 +1,18 @@
+ODISPEL — FERRI — PROTOTIPO 3D v0
+
+File: ferri.glb
+Formato: glTF 2.0 binario
+Scala progettuale: circa 1,80 m; origine vicino ai piedi; asse Y verticale e fronte verso +Z.
+Contenuto: blockout stilizzato low-poly con uniforme blu notte, dettagli rossi, berretto, guanto destro, cintura, anfibi, viso semplificato e arma separata.
+
+STATO: PROTOTIPO VISIVO INIZIALE, NON PRONTO PER L'INTEGRAZIONE DEFINITIVA.
+
+Non ancora implementati/verificati:
+- scheletro umanoide e pesi skinning;
+- animazioni richieste (idle, walk, run, battle_idle, attack, skill, ultimate, hit, ko, victory, talk);
+- shape key blink, smile, angry, surprised, mouth_open;
+- nodo braccio_segreto separato e nascosto;
+- materiali/texture finali e controllo del numero di triangoli secondo le specifiche di produzione;
+- test di importazione e animazione in Godot.
+
+Il modello è geometria procedurale di blockout, utile come prima base tecnica da valutare, non un modello anime rifinito né una consegna conforme a tutte le specifiche del handoff.

@@ -56,6 +56,8 @@ func setup(char_id: String) -> void:
 	add_child(_body)
 	_body.scale = Vector3.ONE * _scale
 	_hips = _pivot(_body, "Hips", Vector3(0, _hip_y, 0))
+	if _build_from_model(char_id):
+		return
 
 	# --- busto ---
 	var mb := MeshBatch.new()
@@ -268,3 +270,143 @@ func cheer() -> Tween:
 func _flash(on: bool) -> void:
 	for mi in _meshes:
 		(mi as MeshInstance3D).material_override = Toon.hit_flash() if on else null
+
+
+# ---------- modello vero (glTF) al posto del segnaposto ----------
+# Se esiste res://assets/characters/<id>/<id>.glb lo si usa. Per ora i modelli arrivano SENZA scheletro:
+# i pezzi si dividono per nome in testa, busto, braccia e gambe e si appendono ai perni del segnaposto,
+# cosi' le animazioni procedurali funzionano lo stesso. Quando arrivera' lo scheletro si passera' all'AnimationPlayer.
+# Convenzione del file: Y in alto, metri, guarda verso +Z, origine fra i piedi.
+
+const MODEL_PATH: String = "res://assets/characters/%s/%s.glb"
+const _LEG: Array = ["trouser", "knee", "boot", "cargo_pocket", "pocket_flap", "leg", "shin", "thigh", "shoe"]
+const _ARM: Array = ["upper_arm", "elbow", "forearm", "hand", "armband", "glove", "arma", "arm_", "sleeve"]
+const _HEAD: Array = ["head", "hair", "ear", "eye", "brow", "nose", "mouth", "cap", "mask", "maschera", "face"]
+
+
+static func has_model(char_id: String) -> bool:
+	return ResourceLoader.exists(MODEL_PATH % [char_id, char_id])
+
+
+func _group_of(n: String, x: float) -> String:
+	var low: String = n.to_lower()
+	for k in _HEAD:
+		if low.begins_with(k):
+			return "head"
+	for k in _LEG:
+		if low.begins_with(k):
+			return "leg_l" if x < 0.0 else "leg_r"
+	for k in _ARM:
+		if low.begins_with(k) or low.contains(k):
+			return "arm_l" if x < 0.0 else "arm_r"
+	return "torso"
+
+
+func _collect(n: Node, xf: Transform3D, out: Array) -> void:
+	var here: Transform3D = xf
+	if n is Node3D:
+		here = xf * (n as Node3D).transform
+	if n is MeshInstance3D and (n as MeshInstance3D).mesh != null:
+		out.append([n, here])
+	for c in n.get_children():
+		_collect(c, here, out)
+
+
+func _build_from_model(char_id: String) -> bool:
+	var path: String = MODEL_PATH % [char_id, char_id]
+	if not ResourceLoader.exists(path):
+		return false
+	var ps: Variant = load(path)
+	if not (ps is PackedScene):
+		return false
+	var inst: Node = (ps as PackedScene).instantiate()
+	var parts: Array = []
+	_collect(inst, Transform3D(), parts)
+	if parts.is_empty():
+		inst.free()
+		return false
+	# misure nel sistema del file
+	var head_top: float = 0.0
+	var leg_top: float = 0.0
+	var sh_y: float = 0.0
+	var sh_x: float = 0.0
+	var neck_y: float = 99.0
+	var leg_x: float = 0.0
+	var all_top: float = 0.0
+	for pr in parts:
+		var mi: MeshInstance3D = pr[0]
+		var box: AABB = (pr[1] as Transform3D) * mi.mesh.get_aabb()
+		var low: String = mi.name.to_lower()
+		all_top = maxf(all_top, box.end.y)
+		if low.begins_with("head"):
+			head_top = maxf(head_top, box.end.y)
+			neck_y = minf(neck_y, box.position.y)
+		if low.begins_with("trouser") or low.begins_with("leg") or low.begins_with("thigh"):
+			leg_top = maxf(leg_top, box.end.y)
+			leg_x = maxf(leg_x, absf(box.get_center().x))
+		if low.begins_with("upper_arm"):
+			sh_y = maxf(sh_y, box.end.y)
+			sh_x = maxf(sh_x, absf(box.get_center().x))
+	if head_top <= 0.0:
+		head_top = all_top
+	if leg_top <= 0.0:
+		leg_top = head_top * 0.52
+	if sh_y <= 0.0:
+		sh_y = head_top * 0.8
+	if neck_y > 90.0:
+		neck_y = head_top * 0.86
+	var k: float = 1.75 / head_top                     # altezza normalizzata; _body.scale porta poi all'altezza del personaggio
+	var to_body := Transform3D(Basis(Vector3.UP, PI).scaled(Vector3(k, k, k)), Vector3.ZERO)   # +Z del file -> -Z del gioco
+	_hip_y = leg_top * k
+	_hips.position = Vector3(0, _hip_y, 0)
+	_head = _pivot(_hips, "Head", Vector3(0, neck_y * k - _hip_y, 0))
+	_arm_l = _pivot(_hips, "ArmL", Vector3(-sh_x * k, sh_y * k - 0.06 - _hip_y, 0))
+	_arm_r = _pivot(_hips, "ArmR", Vector3(sh_x * k, sh_y * k - 0.06 - _hip_y, 0))
+	_leg_l = _pivot(_body, "LegL", Vector3(-leg_x * k, _hip_y, 0))
+	_leg_r = _pivot(_body, "LegR", Vector3(leg_x * k, _hip_y, 0))
+	var pivots: Dictionary = {"torso": _hips, "head": _head, "arm_l": _arm_l, "arm_r": _arm_r, "leg_l": _leg_l, "leg_r": _leg_r}
+	var flat: Dictionary = {}
+	var smooth: Dictionary = {}
+	for pr in parts:
+		var mi: MeshInstance3D = pr[0]
+		var xf_body: Transform3D = to_body * (pr[1] as Transform3D)
+		var c: Vector3 = xf_body * mi.mesh.get_aabb().get_center()
+		var g: String = _group_of(str(mi.name), c.x)
+		var pv: Node3D = pivots[g]
+		var pv_body: Transform3D = Transform3D(Basis(), pv.position)
+		if pv.get_parent() == _hips:
+			pv_body = Transform3D(Basis(), _hips.position + pv.position)
+		elif pv == _hips:
+			pv_body = Transform3D(Basis(), _hips.position)
+		var local: Transform3D = pv_body.affine_inverse() * xf_body
+		if not flat.has(g):
+			flat[g] = SurfaceTool.new()
+			smooth[g] = SurfaceTool.new()
+		for si in mi.mesh.get_surface_count():
+			(flat[g] as SurfaceTool).append_from(mi.mesh, si, local)
+			(smooth[g] as SurfaceTool).append_from(mi.mesh, si, local)
+	inst.free()
+	for g in flat:
+		var stf: SurfaceTool = flat[g]
+		stf.deindex()
+		stf.generate_normals()
+		var body_mi := MeshInstance3D.new()
+		body_mi.name = "Model_" + str(g)
+		body_mi.mesh = stf.commit()
+		body_mi.material_override = Toon.body()
+		body_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		(pivots[g] as Node3D).add_child(body_mi)
+		_meshes.append(body_mi)
+		var sts: SurfaceTool = smooth[g]
+		sts.generate_normals()
+		var ink_mi := MeshInstance3D.new()
+		ink_mi.name = "Ink_" + str(g)
+		ink_mi.mesh = sts.commit()
+		ink_mi.material_override = Toon.ink_grow()
+		ink_mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		(pivots[g] as Node3D).add_child(ink_mi)
+	_shadow = MeshInstance3D.new()
+	_shadow.mesh = MeshBatch.disc(0.42 * _scale, Color(0.02, 0.0, 0.06, 0.55), 14, 0.015)
+	_shadow.material_override = Toon.shadow()
+	add_child(_shadow)
+	return true
