@@ -25,6 +25,8 @@ func _ready() -> void:
 	Breadcrumb.mark("avvio")
 	Settings.ensure_loaded()
 	Engine.max_fps = GameConfig.MAX_FPS
+	_fit_3d_resolution()
+	get_viewport().size_changed.connect(_fit_3d_resolution)
 	get_tree().set_auto_accept_quit(false)
 	_overlay = CanvasLayer.new()
 	_overlay.layer = 90
@@ -89,6 +91,16 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	tw2.tween_property(_fade, "color:a", 0.0, 0.3)
 	await tw2.finished
 	_busy = false
+
+
+# PRESTAZIONI: il 3D si disegna a risoluzione ridotta (circa 720 righe su telefono, 1080 su PC), l'interfaccia resta nitida.
+# Sui telefoni lo schermo e' spesso 2400x1080: disegnare il 3D a piena risoluzione costa piu' del doppio.
+func _fit_3d_resolution() -> void:
+	var vp: Viewport = get_viewport()
+	var h: float = float(DisplayServer.window_get_size().y)
+	var want: float = 720.0 if OS.has_feature("mobile") else 1080.0
+	vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_BILINEAR
+	vp.scaling_3d_scale = clampf(want / maxf(1.0, h), 0.5, 1.0)
 
 
 # Passo corrente dell'atto 1 -> schermata giusta

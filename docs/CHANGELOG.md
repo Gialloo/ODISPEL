@@ -1,5 +1,17 @@
 # Novità
 
+## 0.31.1 · personaggi moderni, telecamera rotta leggibile, prestazioni
+- Personaggi di nuovo urbani e di oggi (il look medievale è bocciato): Ferri in divisa tattica LibraCorp col manganello elettrico, Nox col cappotto lungo delle Civette e il caffè, Zecca con la felpa oversize viola, maschera e sneakers, Saul col bomber verde, cargo, tracolla e il pacco. Ritratti rifatti.
+- Tolte le cornici gotiche da menu, dialoghi, cartelli e ultimate.
+- Telecamera rotta rifatta:
+  - si rompe nel momento esatto del colpo, quando un nemico fa scendere un personaggio sotto il 50% o sotto il 25%;
+  - anche quando la squadra manda il nemico in ROTTURA (barra bianca a 0) c'è l'animazione, poi lo schermo torna pulito;
+  - sul turno di un personaggio ferito restano crepe sottili, con il centro dello schermo quasi pulito: si legge tutto.
+- Prestazioni:
+  - il 3D si disegna a risoluzione ridotta (circa 720 righe su telefono, 1080 su PC), l'interfaccia resta nitida;
+  - i manichini della galleria si disegnano tutti insieme (da 187 a 113 chiamate di disegno);
+  - via la mazza con la catena (11 pezzi mossi a ogni fotogramma), meno carte attorno a Saul.
+
 ## 0.31.0 · nuovo stile visivo
 - Il gioco segue lo stile deciso dall'autore (docs/STILE_VISIVO.md): silhouette esagerate alla Kingdom Hearts con la resa dei primi Final Fantasy, classi RPG sopra vestiti di oggi.
 - Ferri è il cavaliere del disegno dell'autore: elmo d'argento con alette e grata, capelli verdi, armatura a bande, stivaloni con spuntoni dorati, mantello rosso, mazza ferrata enorme su catena e la mascotte con gli occhi.

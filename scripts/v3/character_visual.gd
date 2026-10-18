@@ -36,7 +36,7 @@ var hop: float = 0.0
 var fall: float = 0.0
 var down: bool = false
 
-# Oggetti del kit mossi dal motore (docs/STILE_VISIVO.md): mazza ferrata con catena e mascotte (Ferri), carte che volano (Saul)
+# Oggetti mossi dal motore: carte che girano attorno a Saul
 var kit: String = ""
 var _mace: Node3D
 var _mace_pos: Vector3
@@ -92,6 +92,36 @@ func setup(char_id: String, override: Dictionary = {}) -> void:
 	kit = str(sp.get("kit", ""))
 	if not bool(sp.get("no_props", false)):
 		_build_props(sp)
+
+
+# Personaggio fermo "cotto" in una sola mesh (2 superfici: corpo + contorno). Serve per le comparse immobili
+# (i manichini della galleria): con un MultiMesh si disegnano tutte insieme in 2 chiamate invece di ~12 a testa.
+static func baked_mesh(char_id: String, override: Dictionary) -> ArrayMesh:
+	var cv := CharacterVisual.new()
+	cv.setup(char_id, override)
+	var tools: Array = [SurfaceTool.new(), SurfaceTool.new()]
+	for st in tools:
+		(st as SurfaceTool).begin(Mesh.PRIMITIVE_TRIANGLES)
+	var stack: Array = [[cv, Transform3D()]]
+	while not stack.is_empty():
+		var it: Array = stack.pop_back()
+		var n: Node = it[0]
+		var xf: Transform3D = it[1]
+		for c in n.get_children():
+			if c is Node3D:
+				var cx: Transform3D = xf * (c as Node3D).transform
+				if c is MeshInstance3D and c != cv._shadow and (c as MeshInstance3D).mesh is ArrayMesh:
+					var m: ArrayMesh = (c as MeshInstance3D).mesh
+					for si in mini(2, m.get_surface_count()):
+						(tools[si] as SurfaceTool).append_from(m, si, cx)
+				stack.append([c, cx])
+	var out := ArrayMesh.new()
+	for st in tools:
+		var arr: Array = (st as SurfaceTool).commit_to_arrays()
+		if arr.size() > 0 and arr[Mesh.ARRAY_VERTEX] != null and (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() > 0:
+			out.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	cv.free()
+	return out
 
 
 func _pivot(parent: Node3D, n: String, pos: Vector3) -> Node3D:
@@ -209,60 +239,15 @@ func _build_props(sp: Dictionary) -> void:
 	var metal: Color = AnimeBuilder._m(Color(str(sp.get("metal", "#c4cad6"))))
 	var gold: Color = AnimeBuilder._m(Color(str(sp.get("gold", "#e0b54a"))))
 	match kit:
-		"cavaliere":
-			# mazza ferrata enorme con spuntoni dorati, legata al manico da una lunga catena
-			var mb := MeshBatch.new()
-			mb.ink_w = 0.02
-			mb.ball(Transform3D(), 0.27, metal, true, 8, 14)
-			var dirs: Array = []
-			for i in 14:
-				var y: float = 1.0 - 2.0 * (float(i) + 0.5) / 14.0
-				var r: float = sqrt(maxf(0.0, 1.0 - y * y))
-				var a: float = 2.39996 * float(i)
-				dirs.append(Vector3(cos(a) * r, y, sin(a) * r))
-			for d in dirs:
-				AnimeBuilder.spike(mb, (d as Vector3) * 0.24, d, 0.17, 0.05, gold)
-			mb.prism(Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(0, 0, -0.27)), 0.07, 0.07, 0.02, 12, gold)
-			mb.box(Transform3D(Basis(Vector3.BACK, PI * 0.25), Vector3(0, 0, -0.29)), Vector3(0.1, 0.025, 0.01), Color(0.35, 0.95, 0.5, 0.0), false)
-			mb.box(Transform3D(Basis(Vector3.BACK, -PI * 0.25), Vector3(0, 0, -0.29)), Vector3(0.1, 0.025, 0.01), Color(0.35, 0.95, 0.5, 0.0), false)
-			_mace = Node3D.new()
-			_mace.name = "Mazza"
-			_mace.add_child(_inst(mb, "MazzaMesh"))
-			add_child(_mace)
-			_mace_pos = Vector3(0.62, 0.3, 0.45) * _scale
-			_mace.position = _mace_pos
-			var lb := MeshBatch.new()
-			lb.ink_w = 0.006
-			lb.box(Transform3D(), Vector3(0.022, 0.05, 0.012), metal)
-			var link_mesh: ArrayMesh = lb.build()
-			for i in 11:
-				var li := MeshInstance3D.new()
-				li.mesh = link_mesh
-				Toon.dress(li)
-				add_child(li)
-				_links.append(li)
-			# mascotte: piccola mazza nera con occhi bianchi, alette d'argento e spuntoni
-			var ms := MeshBatch.new()
-			ms.ink_w = 0.008
-			ms.ball(Transform3D(), 0.075, Color("#1e1a26"), true, 6, 10)
-			for s2 in [-1.0, 1.0]:
-				ms.ball(Transform3D(Basis().scaled(Vector3(0.8, 1.1, 0.4)), Vector3(s2 * 0.028, 0.012, -0.066)), 0.02, Color(1, 1, 1, 0.0), false, 4, 6)
-				ms.lock(Vector3(s2 * 0.06, 0.02, 0.0), Vector3(s2 * 0.11, 0.07, 0.02), Vector3(s2 * 0.15, 0.06, 0.04), 0.05, 0.008, Vector3.FORWARD, metal, true, 4)
-			for d2 in [Vector3(0, 1, 0), Vector3(0.5, 0.6, 0.6), Vector3(-0.5, 0.6, 0.6), Vector3(0, -1, 0.2)]:
-				AnimeBuilder.spike(ms, (d2 as Vector3).normalized() * 0.065, d2, 0.04, 0.016, metal)
-			_mascot = Node3D.new()
-			_mascot.name = "Mascotte"
-			_mascot.add_child(_inst(ms, "MascotteMesh"))
-			add_child(_mascot)
-		"ladro":
-			# carte da gioco che volano attorno
+		"corriere":
+			# carte da gioco che girano attorno (il trucco del truffatore)
 			var cb := MeshBatch.new()
 			cb.ink_w = 0.004
 			cb.box(Transform3D(), Vector3(0.08, 0.115, 0.004), Color("#f4efe6"))
 			cb.box(Transform3D(Basis(Vector3.BACK, PI * 0.25), Vector3(0, 0, -0.003)), Vector3(0.03, 0.03, 0.002), Color(0.35, 0.95, 0.5, 0.0), false)
 			cb.box(Transform3D(Basis(), Vector3(0, 0, 0.003)), Vector3(0.066, 0.1, 0.002), Color("#2f8f5a").darkened(0.3), false)
 			var card_mesh: ArrayMesh = cb.build()
-			for i in (3 if Settings.light_fx else 5):
+			for i in (0 if Settings.light_fx else 3):
 				var ci := MeshInstance3D.new()
 				ci.mesh = card_mesh
 				Toon.dress(ci)

@@ -523,7 +523,8 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 		await _tw_done(a2)
 	_refresh_hud()
 	await _wait(0.25)
-	_cam_overview()
+	# dopo l'inquadratura frontale si stacca di netto (cambio di telecamera): niente viaggio attraverso i compagni
+	_cam_overview(tgt != "enemy")
 
 
 func _boss_turn() -> void:
@@ -564,6 +565,13 @@ func _boss_turn() -> void:
 
 func _show_events(ev: Array, hit_anims: bool) -> void:
 	var delay: float = 0.0
+	# PV prima di ogni colpo (il motore ha gia' applicato tutto): per sapere chi scende sotto il 50% o il 25% e quando
+	var run_hp: Dictionary = {}
+	for e in ev:
+		if str(e.get("t", "")) == "damage" and not bool(e.get("cost", false)):
+			var d0: String = str(e.get("dst", ""))
+			if d0 != BattleState.BOSS_ID and b["units"].has(d0):
+				run_hp[d0] = int(run_hp.get(d0, int(b["units"][d0]["hp"]))) + int(e.get("amount", 0))
 	for e in ev:
 		var t: String = str(e.get("t", ""))
 		match t:
@@ -580,6 +588,15 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					var v: Node3D = vis[dst]
 					if v.has_method("hit"):
 						v.call("hit")
+				if run_hp.has(dst):
+					# telecamera che si rompe nel momento del colpo, se scende di livello (50% / 25%)
+					var u2: Dictionary = b["units"][dst]
+					var mx: float = maxf(1.0, float(u2["max_hp"]))
+					var before: int = int(run_hp[dst])
+					var after: int = maxi(0, before - amt)
+					run_hp[dst] = after
+					if after > 0 and BrokenCam.tier(float(after) / mx) > BrokenCam.tier(float(before) / mx):
+						_shatter_later(str(u2.get("char", dst)), delay, 0.7 if BrokenCam.tier(float(after) / mx) == 1 else 1.0)
 				delay += 0.12
 			"heal":
 				_number(str(e.get("dst", "")), "+%d" % int(e.get("amount", 0)), Color("#62f08c"), 36, delay)
@@ -598,6 +615,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 			"debuff":
 				_number(BattleState.BOSS_ID, "INDEBOLITO", Color("#b0a0ff"), 24, delay + 0.15)
 			"break":
+				_shatter_later("boss", delay, 1.0)        # solo l'animazione: lo schermo poi torna pulito
 				_toast("ROTTURA! %s è stordito" % _bn().capitalize(), Color.WHITE, 1.6)
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				_flash(0.5)
@@ -683,6 +701,15 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 
 
 # ---------------------------------------------------------------- fine
+
+func _shatter_later(key: String, delay: float, strength: float) -> void:
+	if _broken == null:
+		return
+	if delay > 0.01:
+		await get_tree().create_timer(delay).timeout
+	if is_inside_tree():
+		_broken.shatter(key, strength)
+
 
 # Telecamera rotta: conta solo chi e' di turno (turno del nemico e fine battaglia = telecamera pulita)
 func _update_broken_cam() -> void:
@@ -910,12 +937,6 @@ func _build_ui() -> void:
 	Ui.place(band, 0, 0.66, 1.0, 0.84, 0, 0, 0, 0)
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cutin.add_child(band)
-	# momento forte: filigrana d'argento attorno alla fascia dell'ultimate
-	var fr := Control.new()
-	Ui.place(fr, 0, 0.66, 1.0, 0.84, 0, 0, 0, 0)
-	fr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fr.draw.connect(func() -> void: Filigree.frame(fr, Rect2(Vector2(10, 4), fr.size - Vector2(20, 8)), 0.75, Ui.YELLOW))
-	_cutin.add_child(fr)
 	var nl := Ui.label("", 44, Ui.CREAM, Ui.display(), 12)
 	nl.name = "Name"
 	Ui.place(nl, 0.05, 0.66, 0.95, 0.66, 0, 8, 0, 64)

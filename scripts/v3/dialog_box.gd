@@ -149,9 +149,6 @@ func _draw_box() -> void:
 	_box.draw_colored_polygon(shadow, Color(_speaker_col.r, _speaker_col.g, _speaker_col.b, 0.9))
 	_box.draw_colored_polygon(border, Ui.CREAM)
 	_box.draw_colored_polygon(pts, Color(0.04, 0.02, 0.08, 0.97))
-	# filigrana gotica d'argento negli angoli (docs/STILE_VISIVO.md), gemma del colore di chi parla
-	Filigree.corner(_box, pts[1] + Vector2(-4, 4), -1.0, 1.0, 0.62, _speaker_col)
-	Filigree.corner(_box, pts[3] + Vector2(4, -4), 1.0, -1.0, 0.62, _speaker_col)
 	# targhetta del nome (parallelogramma inclinato)
 	var nw: float = _name.get_combined_minimum_size().x + 46.0
 	var np: Vector2 = r.position + Vector2(24, -48)

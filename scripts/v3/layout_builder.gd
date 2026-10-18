@@ -140,16 +140,25 @@ static func _galleria(cb: CityBuilder, out: Dictionary, parent: Node3D) -> void:
 		cb.lamp(4.45 if i % 2 == 0 else -4.45, 6.0 - 9.0 * i)
 	cb.bench(-6.1, -10.0)
 	cb.bench(6.1, -24.0)
-	# manichini senza faccia davanti alle vetrine
-	for i in 6:
-		var mv := CharacterVisual.new()
-		var who: String = ["nox", "saul", "zecca", "ferri", "nox", "saul"][i]
-		mv.setup(who, {"faceless": true, "kit": "", "no_props": true, "skin": "#e8e4dc", "hair": "#d8d3ca", "top": "#f2efe8", "bottom": "#cfc9be", "accent": "#ffffff", "shoes": "#bdb7ac", "nomask": true})
-		parent.add_child(mv)
-		var side: float = -1.0 if i % 2 == 0 else 1.0
-		mv.position = Vector3(side * 6.3, 0.14, -6.0 - 5.5 * i)
-		mv.rotation.y = side * PI * 0.5
-		cb.colliders.append({"c": Vector2(side * 6.3, -6.0 - 5.5 * i), "r": 0.4})
+	# manichini senza faccia davanti alle vetrine: due forme cotte in una mesh, disegnate con MultiMesh (4 chiamate in tutto)
+	var look: Dictionary = {"faceless": true, "kit": "", "no_props": true, "skin": "#e8e4dc", "hair": "#d8d3ca", "top": "#f2efe8", "bottom": "#cfc9be", "accent": "#ffffff", "shoes": "#bdb7ac", "nomask": true}
+	for v in 2:
+		var mesh: ArrayMesh = CharacterVisual.baked_mesh(["nox", "saul"][v], look)
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = mesh
+		mm.instance_count = 3
+		for j in 3:
+			var i: int = v + 2 * j
+			var side: float = -1.0 if i % 2 == 0 else 1.0
+			var pos := Vector3(side * 6.3, 0.14, -6.0 - 5.5 * i)
+			mm.set_instance_transform(j, Transform3D(Basis(Vector3.UP, side * PI * 0.5), pos))
+			cb.colliders.append({"c": Vector2(side * 6.3, pos.z), "r": 0.4})
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		parent.add_child(mmi)
+		_dress_multi(mmi, mesh)
 	out["points"] = {"vetrine": Vector2(-4.0, -16.0), "manichini": Vector2(4.0, -28.0)}
 
 
@@ -217,3 +226,10 @@ static func _anomalia(cb: CityBuilder, out: Dictionary, tema: String) -> void:
 	out["cam_x"] = 6.5
 	out["bg"] = Color(th["bg"])
 	out["fog"] = [Color(th["fog"]), 10.0, 42.0]
+
+
+# Materiali toon per un MultiMesh (corpo + contorno): MultiMeshInstance non ha override per superficie,
+# quindi i materiali si mettono direttamente sulla mesh.
+static func _dress_multi(mmi: MultiMeshInstance3D, mesh: ArrayMesh) -> void:
+	for si in mesh.get_surface_count():
+		mesh.surface_set_material(si, Toon.body() if si == 0 else Toon.ink())

@@ -1,4 +1,19 @@
-# ODISPEL — Stile visivo (DEFINITIVO)
+# ODISPEL — Stile visivo
+
+> **AGGIORNAMENTO DELL'AUTORE (18 ottobre 2026, sera) — VINCE SU TUTTO IL RESTO DI QUESTO FILE.**
+> Provata nel gioco (0.31.0), la direzione «classi medievali» è stata **bocciata**: «sembrano usciti dal medioevo».
+> L'ambientazione è **urbana, ai giorni nostri**: i personaggi devono essere **moderni e belli**.
+> - Niente armature, mantelli, elmi, mazze, cappelli da giullare, cornici gotiche in filigrana.
+> - Vestiti di oggi: divise e streetwear (giacche tattiche, cappotti, felpe oversize, bomber, cargo, sneakers).
+> - Resta valido: anime con occhi grandi e capelli a ciocche, cel shading a due toni con contorno scuro, colori di battaglia
+>   fissi, dialoghi con ritratti alla Persona 5, boss = oggetti quotidiani posseduti, città notturna pop su viola notte.
+> - Nel gioco (0.31.1): Ferri divisa tattica LibraCorp (berretto, gilet, fascia rossa, guanto lungo, manganello elettrico),
+>   Nox cappotto lungo delle Civette (sciarpa, profili blu, caffè), Zecca felpa oversize viola (maschera, telefono, sneakers grosse),
+>   Saul bomber verde su felpa grigia (cargo, berretto di lana, tracolla, pacco, carte). Segnaposto PROVVISORI.
+> - Restano utili di sotto: la pipeline gratuita (TRELLIS.2 + Mixamo), i vincoli del motore, il modo di lavorare con l'autore.
+>   Le regole «Silhouette», «Vocabolario degli oggetti», «Armi» e i design dei quattro qui sotto sono **superati**.
+
+## (Superato) La versione del pomeriggio del 18 ottobre
 
 Fonte: «ODISPEL — Handoff stile visivo dei personaggi», Gianluca, 18 ottobre 2026 (PDF di 8 pagine).
 **Questo documento vince su tutti gli altri** (HANDOFF_PERSONAGGI_3D, HANDOFF_PORTRAIT, primo handoff dello stile).
