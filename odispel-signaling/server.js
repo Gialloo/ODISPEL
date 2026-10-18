@@ -12,6 +12,10 @@ const HOST =
 const PORT = Number(process.env.ODISPEL_SIGNALING_PORT || CLOUD_PORT || 9080);
 const MAX_CLIENTS_PER_ROOM = 6;
 const MAX_MESSAGE_BYTES = 64 * 1024;
+// Ogni HEARTBEAT_MS il server manda un ping; chi non risponde col pong entro
+// il giro successivo viene chiuso. Senza, un host caduto senza chiudere la
+// connessione (Wi-Fi perso, PC spento) terrebbe la stanza occupata per sempre.
+const HEARTBEAT_MS = Number(process.env.ODISPEL_HEARTBEAT_MS || 30000);
 
 // rooms:   roomId -> { host: socket, clients: Set<socket> }
 // clients: socket  -> { roomId, role }
@@ -137,6 +141,10 @@ function handleJoin(socket, message) {
 
 server.on("connection", (socket) => {
   socket.peerId = crypto.randomUUID();
+  socket.isAlive = true;
+  socket.on("pong", () => {
+    socket.isAlive = true;
+  });
 
   send(socket, { type: "connected", peer_id: socket.peerId });
 
@@ -212,6 +220,21 @@ server.on("connection", (socket) => {
   socket.on("close", () => leaveRoom(socket));
   socket.on("error", () => leaveRoom(socket));
 });
+
+const heartbeat = setInterval(() => {
+  for (const socket of server.clients) {
+    if (!socket.isAlive) {
+      // terminate() fa scattare "close", che libera la stanza.
+      socket.terminate();
+      continue;
+    }
+
+    socket.isAlive = false;
+    socket.ping();
+  }
+}, HEARTBEAT_MS);
+
+server.on("close", () => clearInterval(heartbeat));
 
 httpServer.on("listening", () => {
   console.log(`ODISPEL signaling in ascolto su ws://${HOST}:${PORT}`);

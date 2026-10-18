@@ -152,6 +152,7 @@ before(async () => {
         ...process.env,
         ODISPEL_SIGNALING_HOST: HOST,
         ODISPEL_SIGNALING_PORT: String(PORT),
+        ODISPEL_HEARTBEAT_MS: "150",
       },
       stdio: ["ignore", "pipe", "pipe"],
     }
@@ -420,4 +421,27 @@ test("chi non è in una stanza non può inviare segnali", async () => {
   );
 
   assert.equal(error.code, "not_in_room");
+});
+test("un host che non risponde ai ping libera la stanza", async () => {
+  // autoPong: false simula un host caduto senza chiudere la connessione.
+  const ghost = await new Promise((resolve, reject) => {
+    const socket = new WebSocket(URL, { autoPong: false });
+    socket.once("open", () => resolve(socket));
+    socket.once("error", reject);
+  });
+  clients.add(ghost);
+  await joinRoom(ghost, "ghost-room", "host");
+
+  await new Promise((resolve) => ghost.once("close", resolve));
+
+  const host = await newClient();
+  const joined = await joinRoom(host, "ghost-room", "host");
+  assert.equal(joined.role, "host");
+});
+
+test("chi risponde ai ping resta collegato", async () => {
+  const host = await newClient();
+  await joinRoom(host, "alive-room", "host");
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  assert.equal(host.readyState, WebSocket.OPEN);
 });
