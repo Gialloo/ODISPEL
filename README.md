@@ -1,7 +1,7 @@
 # OFFICIAL DEMO ODISPEL · V3, atto 1 (standalone)
 
 Progetto Godot 4.7.2 separato dalla V2 (`Gialloo/ODISPEL`), renderer **gl_compatibility**, landscape 1280×720.
-Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. **Stile visivo: `docs/STILE_VISIVO.md`** — conta l'aggiornamento in cima: urbano di oggi, niente look medievale. Stato attuale: **0.31.1 = atto 1, personaggi urbani moderni**, in attesa delle correzioni dopo la prova.
+Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. **Stile visivo: `docs/STILE_VISIVO.md`** — conta l'aggiornamento in cima: urbano di oggi, niente look medievale. Stato attuale: **0.32.0 = atto 1 riscritto (Lance, Nox, Rio, Saul ed Echo) con il capitolo 5**, in attesa delle correzioni dopo la prova.
 
 ## Struttura
 - `scripts/engine/` — motore di combattimento **copiato** dalla V2 (BattleState, SeqRound, BattleResolver e dipendenze).
@@ -9,7 +9,7 @@ Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STO
 - `scripts/v3/` — gioco: `main.gd` (una schermata alla volta), `menu.gd`, `area.gd` (esplorazione di un'area qualsiasi), `scene_screen.gd` / `card_screen.gd` / `ending_screen.gd` (scene, cartelli, fine),
   `story.gd` (passi dell'atto e salvataggio), `banter.gd` (chiacchiere), `dialog_box.gd` (dialoghi stile Persona), `layout_builder.gd` (le aree), `battle3d.gd` (combattimento 3D),
   `character_visual.gd` / `vending_visual.gd` (segnaposto 3D, interfaccia sostituibile coi glTF), `toon.gd` + `mesh_batch.gd` + `city_builder.gd` (grafica).
-- `data/` — `atto1.json` (capitoli, passi, aree, nemici, boss), `dialoghi_atto1.json` + `dialoghi.json` (testi, si correggono senza toccare il codice), `cast_visual.gd` (colori e proporzioni dei segnaposto).
+- `data/` — `atto1.json` (capitoli, passi, aree, nemici, boss), `dialoghi_atto1.json` (testi, generati da `tools/gen_dialoghi.py`: si corregge lo script e si rigenera) + `dialoghi.json`, `cast_visual.gd` (colori e proporzioni dei segnaposto).
 - `tests/unit/` — `test_v3_engine.gd` + test del motore portati dalla V2.  `tools/v3_atto1.gd` — gioca da solo l'atto 1 (battaglie in AUTO) e fa gli screenshot.
 
 ## Rendering (per cercare eventuali crash)

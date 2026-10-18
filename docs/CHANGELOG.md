@@ -1,5 +1,15 @@
 # Novità
 
+## 0.32.0 · la storia riscritta e il capitolo 5
+- Nomi nuovi: Ferri ora è **Lance**, Zecca ora è **Rio**. Il Kairos si chiama **Echo**. La comandante di LibraCorp è **Astrid**, il capoturno di Nox è **Strix**.
+- Apertura nuova: la racconta Echo dalle telecamere. Presenta i quattro, spiega perché ognuno è in piazza alle tre di notte, poi cala la cupola e gli schermi li accusano. Si capisce subito cosa succede e perché scappano insieme.
+- Echo è un personaggio vero: ha un ritratto e parla durante le esplorazioni. Fa a ognuno una promessa su misura (il grado a Lance, le ferie a Nox, la live dell'anno a Rio, le taglie a Saul), ed è per questo che si fidano di lei.
+- Il tradimento nel varco: non le servivano quattro fazioni, le servivano quattro persone compromesse che nessuno avrebbe creduto. Ogni promessa crolla davanti a chi l'aveva ricevuta. Poi la cupola viene giù e Lance usa il braccio davanti a tutte le telecamere del paese per salvare Rio.
+- Tutti i dialoghi riscritti, circa 500 battute e 80 chiacchiere. Voci più distinte: Saul calmo, mai un punto esclamativo, dà un prezzo a tutto e cita nonne inventate; Rio veloce, sincero, con i titoli dei video e i suoi 32 follower. Il gruppo passa dalla diffidenza alla fiducia, poi rischia la vita l'uno per l'altro (Saul tiene aperta la porta blindata per Rio) e diventa una famiglia.
+- Nuova vigilia prima del varco e una serata nuova Nox-Echo.
+- **Capitolo 5 · La tangenziale**, subito dopo la caduta della cupola: la tangenziale all'alba, il cartellone dei ricercati, Astrid e Strix al casello e un boss nuovo, l'**Autovelox** (teme il viola). Echo spegne la città per farli scappare.
+- Durante i dialoghi le chiacchiere non si sovrappongono più ai ritratti.
+
 ## 0.31.2 · correzioni
 - Niente più blocchi sul cartello dei capitoli: toccandolo mentre lo schermo schiariva la storia andava avanti ma la schermata restava ferma. E ora il tocco sul cartello funziona davvero (prima si andava avanti solo aspettando).
 - La pausa ferma tutto: in esplorazione i frammenti stanno fermi e non possono farti un agguato col menu aperto; E/F non agiscono dietro il menu. In battaglia con la pausa aperta i tasti 1-4, Spazio, AUTO e x2 non fanno partire niente.

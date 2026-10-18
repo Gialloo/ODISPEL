@@ -1,59 +1,88 @@
 # ODISPEL V3 — la storia
 
-Documento di lavoro. Le parti segnate **PROVVISORIO** sono nomi o scelte da confermare.
+Documento di lavoro. Le parti segnate **PROVVISORIO** sono da confermare.
+I testi stanno in `data/dialoghi_atto1.json`, generato da `tools/gen_dialoghi.py` (si corregge lo script, poi
+`python3 tools/gen_dialoghi.py data/dialoghi_atto1.json`). La struttura dei capitoli è in `data/atto1.json`.
 
-## Premessa
+## Nomi (aggiornati il 19 ottobre 2026)
 
-Una notte una cupola rosa chiude la città. Dentro restano quattro sconosciuti — **Ferri** (ex LibraCorp, vanguard),
-**Nox** (centralinista delle Civette, warden), **Zecca** (ragazzo di 19 anni, Masca, striker) e **Saul** (truffatore, striker) — e una voce che
-parla da una telecamera di sorveglianza: il **Kairos**. Il Kairos dice di essere bloccato qui come loro e propone un
-accordo: lui li guida verso le Anomalie che tengono su la cupola, loro le spengono. Ogni Anomalia è un oggetto
-quotidiano diventato un mostro (un distributore, un semaforo, una cabina telefonica, un manichino, una cassaforte).
+| Personaggio | Prima | Note |
+|---|---|---|
+| **Lance** | Ferri | id interno resta `ferri` (file, ritratti, modelli) |
+| **Nox** | — | |
+| **Rio** | Zecca | id interno resta `zecca` |
+| **Saul** | — | |
+| **Echo** | «il Kairos» | Echo è il suo nome; «Kairos» è la sua specie. Femminile. |
+| **Comandante Astrid** | Asta | LibraCorp, istruttrice di Lance |
+| **Strix** | Allocco | capoturno di Nox nelle Civette |
 
-## Come si racconta (senza bombardare di filmati)
+## Premessa (quello che il giocatore capisce nella prima scena)
 
-- **Scene corte** in stile Persona 5: ritratti e fumetti, un riassunto in una riga se le salti.
-- **Chiacchiere in esplorazione**: fumetti con faccina che non fermano il gioco (commenti sui posti, battute fra loro, frasi tipiche).
-- **Indizi** sparsi nelle aree: leggerli è facoltativo, ma rivelano la debolezza del boss.
-- **Serate al rifugio** a fine capitolo: scegli con chi passare la sera → nasce un **legame** (+5% attacco alla coppia, PROVVISORIO).
-- **Scelte** con conseguenze piccole ma ricordate (fiducia nel Kairos, Saul e la telefonata del Committente).
+Piazza Centrale, ore 2:58. Echo, un Kairos che vive nelle telecamere della città, ci presenta quattro sconosciuti di
+quattro fazioni che si odiano, ognuno lì per un motivo suo:
 
-## Atto 1 (in gioco dalla 0.30.0)
+- **Nox**, Odispeller delle Civette (maghi con licenza), a due minuti dalla fine del turno di notte;
+- **Lance**, agente LibraCorp (la polizia che caccia la magia), appena retrocesso a pattuglia;
+- **Rio**, 19 anni, Masca: una maschera arrivata per posta gli dà poteri e lui la usa per fare dirette;
+- **Saul**, Magabondo contrabbandiere, che deve consegnare un pacco alle tre in punto senza sapere cosa contiene.
 
-| Capitolo | Luogo | Boss | Cosa succede |
-|---|---|---|---|
-| Prologo · La notte della cupola | strada | Distributore | La cupola cade, i quattro si incontrano, l'accordo col Kairos, il rifugio nella metro. |
-| 1 · Rosso fisso | Incrocio Nove → dentro l'Anomalia | Semaforo | Auto congelate, la barriera LibraCorp; Ferri riconosce le procedure dei suoi ex colleghi. |
-| 2 · La linea | Vicolo delle Civette → dentro la linea | Cabina | Tutti i telefoni squillano alle 3:12; la linea porta la voce del capoturno di Nox. |
-| 3 · Vetrina | Galleria Lumière → dietro il vetro | Manichino | Chi entra esce senza faccia; Zecca vede una copia di sé. |
-| 4 · Il colpo | Caveau LibraCorp | Cassaforte | Il Committente chiama Saul e offre una via d'uscita solo per lui (scelta: dirlo agli altri o no). |
-| Finale · Il varco | la piazza | — | Il varco si apre. Prime crepe nel Kairos; si sentono per radio **Asta** e **Allocco**. |
+Alle tre il pacco si apre: una **cupola rosa** sigilla la città. Su ogni schermo compaiono le loro quattro facce:
+«RESPONSABILI DEL SIGILLO. RICERCATI». LibraCorp e Civette arrivano da due lati. Scappano nella stessa direzione.
+Dopo il primo mostro (un distributore posseduto) Echo si presenta: la cupola è retta da quattro **Anomalie**; se loro
+le chiudono, lei consegnerà le registrazioni della piazza che li scagionano. E a ognuno promette quello che vuole di più:
 
-Ogni area ha frammenti d'Anomalia minori (si possono colpire prima che ti tocchino = vantaggio; se ti toccano = agguato).
+- **Lance**: chiudere il caso della cupola, tornare in servizio col nome pulito e col grado;
+- **Nox**: le ferie che le Civette danno per ogni Anomalia chiusa (dodici settimane: sonno);
+- **Rio**: la live dell'anno, una città sotto una cupola con i mostri, in diretta;
+- **Saul**: le taglie che LibraCorp paga per ogni Anomalia chiusa.
 
-### Inseguitori introdotti nell'atto 1 (solo voci alla radio)
+Ognuno ci guadagna e la cosa è plausibile: per questo si alleano tra loro e si fidano di lei.
+**La verità (finale):** Echo non aveva bisogno di quattro fazioni. Le Anomalie tenevano chiuso il varco verso casa sua
+e le serviva qualcuno che le chiudesse senza poter andare né da LibraCorp né dalle Civette: quattro persone
+**compromesse** (un braccio illegale, una chiamata senza risposta, una maschera, un pacco), che nessuno avrebbe creduto.
+Le registrazioni non sono mai esistite e le promesse erano false. Quello che è nato dopo la piazza, invece, era vero.
 
-- **Comandante Asta** — LibraCorp, ex istruttore di Ferri. Nome PROVVISORIO.
-- **Allocco** — Civette, ex capoturno di Nox. Nome PROVVISORIO.
+## Le voci
 
-Si odiano e si rispettano: lavorano per fazioni rivali ma si riconoscono come gli unici professionisti in campo.
+- **Lance**: articoli del regolamento (anche inventati), «lo metto a verbale», chiama Rio «minorenne». Rigido perché ha paura.
+- **Nox**: frasi corte, conta le ore senza dormire (salgono capitolo dopo capitolo), il caffè. Stanca, non cattiva.
+- **Rio**: veloce, «raga», titoli di video in MAIUSCOLO, la chat che non c'è più, 32 follower. Dice sempre quello che sente.
+- **Saul**: calmo, poche parole, mai un punto esclamativo. Dà un prezzo a tutto; proverbi di nonne inventate («Quale nonna?» «Ne ho tre»). Non dice cosa prova: lo fa.
+- **Echo**: precisa (orari, numeri delle telecamere), curiosa degli umani, impara a scherzare e le battute le vengono male.
+  Parla durante le esplorazioni (fumetti) tranne dentro le Anomalie, dove le sue telecamere non arrivano.
+
+## L'arco: da sconosciuti a famiglia
+
+| Momento | Dove sono | Cosa cambia |
+|---|---|---|
+| Prologo | Diffidenza | Lance vuole arrestarli tutti, Saul dorme col pacco sotto la testa, Rio filma tutto, Nox vuole solo il caffè. Echo: «Dormite con un occhio aperto. Lo riconosco.» |
+| Cap. 1 · Rosso fisso (Lance) | Primo segreto custodito | Gli altri vedono il braccio magico di Lance e tacciono. Echo «inceppa» la sua telecamera. |
+| Cap. 2 · La linea (Nox) | Fiducia | La coprono mentre affronta la notte delle 3:12. Lance rinuncia a un articolo. Serata Nox-Echo: Echo era la telecamera del vicolo, quella notte. |
+| Cap. 3 · Vetrina (Rio) | Collaborazione | Rio si toglie la maschera; Saul gli parla sul serio per la prima volta. Echo diventa la sua follower numero 33. |
+| Cap. 4 · Il colpo (Saul) | Rischiare la vita | Il Committente tenta Saul. La porta blindata si chiude su Rio: Saul la tiene aperta col proprio corpo. Vigilia: ognuno racconta cosa farà con la promessa di Echo; lei chiede di stare nei contatti di Rio e quasi confessa. |
+| Finale · Il varco | Il tradimento | Echo confessa: li ha incastrati lei perché erano compromessi, e ogni promessa era falsa. Ognuno è ferito dove si era legato a lei. Il Committente ruba il varco, la cupola crolla, Lance usa il braccio davanti a tutte le telecamere del paese per salvare Rio: Astrid lo classifica come Anomalia. |
+| Cap. 5 · La tangenziale | Famiglia | All'alba scappano insieme. Astrid e Strix al casello. Echo spegne ogni luce e telecamera della città per farli fuggire, anche se per lei è come chiudere gli occhi. Saul regala (non vende) la batteria a Rio; il telefono si riaccende: «Vi vedo.» |
+
+Scelte che il gioco ricorda: fiducia in Echo all'inizio (`echo_fiducia` / `echo_diffidenza`), la telefonata di Saul
+(`saul_leale` / `saul_tentato`), tregua o rancore con Echo all'alba (`echo_tregua` / `echo_rancore`), i legami delle serate.
+
+## Capitolo 5 · La tangenziale (nuovo)
+
+Subito dopo la caduta della cupola. Area: tangenziale sopraelevata all'alba, auto abbandonate, il cartellone dei
+ricercati, il casello in fondo. Indizi: il cartellone (le descrizioni dei ricercati), il verbale dell'autovelox
+(debolezza VIOLA: il flash del telefono di Rio), la radio di un'auto (Astrid e Strix litigano: erano compagni di pattuglia).
+Boss: **Autovelox**, un'Anomalia nuova nata dal crollo. Finale al casello e cartello «FINE DELL'ATTO 1».
+
+## Inseguitori ricorrenti
+
+- **Comandante Astrid** — LibraCorp, ha addestrato Lance e gli ha fatto montare il braccio («L'ho costruito io»). PROVVISORIO.
+- **Strix** — Civette, capoturno di Nox; l'ha cresciuta nel mestiere e, a modo suo, la protegge. PROVVISORIO.
+
+Si odiano e si rispettano: dieci anni fa erano compagni di pattuglia, poi qualcosa è andato storto (da scrivere).
 
 ## Il seguito (piano deciso, da scrivere)
 
-1. **Metà gioco = fine dell'atto 1 — il tradimento del Kairos.** Nel finale dell'atto 1 (scena `varco`) il Kairos confessa di averli incastrati, il Committente gli ruba il varco, il sigillo cade e
-   **si apre il paese** (mappa più grande, più città). Nel seguito si scopre fin dove il Kairos lavorava (senza saperlo)
-   per il Committente: le Anomalie spente non servivano a liberare la città, ma a raccogliere qualcosa (PROVVISORIO).
-2. **Seconda parte — la caccia al Committente.** La squadra insegue il Committente fuori dalla città, con
-   **LibraCorp** e **le Civette** alle calcagna.
-3. **Inseguitori ricorrenti con un volto:** Asta (contro Ferri) e Allocco (contro Nox). Battaglie ripetute,
-   ognuna con un pezzo del loro passato; fra loro due rivalità e rispetto, a volte un'alleanza scomoda.
-4. **Il finale resta quello deciso:** il Kairos, che ha tradito, alla fine **rinuncia a tornare a casa per restare con loro**.
-
-Semi già piantati nell'atto 1 per il tradimento: la scelta di fiducia/diffidenza verso il Kairos (flag
-`kairos_fiducia` / `kairos_diffidenza`), le sue risposte evasive nelle serate al rifugio, il varco finale.
-
-## Dove sta cosa
-
-- Struttura e aree: `data/atto1.json` (capitoli → passi; aree con indizi, nemici, boss, chiacchiere).
-- Testi: `data/dialoghi_atto1.json` (scene, scelte, chiacchiere) e `data/dialoghi.json` (testi comuni).
-- Salvataggio: `user://salvataggio.cfg` (capitolo, passo, scelte).
+1. **Metà gioco = fine dell'atto 1.** Echo ha confessato, il Committente ha preso il varco, il sigillo è caduto: **si apre il paese**.
+2. **Seconda parte — la caccia al Committente**, con LibraCorp e le Civette alle calcagna.
+3. **Astrid e Strix** inseguitori ricorrenti, ognuno con un pezzo del passato di Lance e di Nox; a volte un'alleanza scomoda.
+4. **Il finale resta quello deciso:** Echo rinuncia a tornare a casa per restare con loro.

@@ -119,6 +119,8 @@ func _next_line() -> void:
 
 func _add_bubble(who: String, expr: String, text: String) -> void:
 	var col: Color = Ui.BATTLE_COLORS.get(str(BattleContent.CHARACTERS.get(who, {}).get("color", "")), Ui.YELLOW)
+	if who == "echo":
+		col = Ui.CYAN                      # Echo, il Kairos delle telecamere
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE

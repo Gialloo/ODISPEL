@@ -36,12 +36,19 @@
 			{"tipo": "scena", "dialogo": "c4_briefing", "sfondo": "rifugio"},
 			{"tipo": "scena", "dialogo": "c4_committente", "sfondo": "notte"},
 			{"tipo": "area", "area": "caveau"},
-			{"tipo": "scena", "dialogo": "c4_dopo", "sfondo": "caveau"}
+			{"tipo": "scena", "dialogo": "c4_dopo", "sfondo": "caveau"},
+			{"tipo": "rifugio", "dialogo": "c4_vigilia", "sfondo": "rifugio"}
 		]},
 		{"id": "finale", "titolo": "FINALE · IL VARCO", "passi": [
 			{"tipo": "cartello", "titolo": "FINALE", "sotto": "Il varco"},
-			{"tipo": "scena", "dialogo": "varco", "sfondo": "varco"},
-			{"tipo": "cartello", "titolo": "FINE DELL'ATTO 1", "sotto": "La cupola è caduta. Adesso vi cerca tutto il paese."},
+			{"tipo": "scena", "dialogo": "varco", "sfondo": "varco"}
+		]},
+		{"id": "cap5", "titolo": "CAPITOLO 5 · LA TANGENZIALE", "passi": [
+			{"tipo": "cartello", "titolo": "CAPITOLO 5", "sotto": "La tangenziale"},
+			{"tipo": "scena", "dialogo": "c5_alba", "sfondo": "alba"},
+			{"tipo": "area", "area": "tangenziale"},
+			{"tipo": "scena", "dialogo": "c5_casello", "sfondo": "alba"},
+			{"tipo": "cartello", "titolo": "FINE DELL'ATTO 1", "sotto": "Fuori dalla città, insieme. Adesso comincia la caccia."},
 			{"tipo": "fine"}
 		]}
 	],
@@ -126,15 +133,27 @@
 			"punti": [{"id": "lingotti", "pos": [2.3, -16.0]}, {"id": "laser", "pos": [0.0, -5.0]}],
 			"nemici": [{"id": "f1", "pos": [0.0, -13.0], "boss": "frammento_verde", "livello": 9}, {"id": "f2", "pos": [-0.5, -25.0], "boss": "frammento_verde", "livello": 9}],
 			"boss": {"id": "cassaforte", "tipo": "cassaforte", "pos": [0.0, -34.0], "rot": 0, "dialogo": "c4_boss", "agguato": "c4_agguato", "livello": 9, "arena": "caveau", "pv": 0.6, "atk": 0.75}
+		},
+		"tangenziale": {
+			"layout": "tangenziale", "seme": 91, "capo": "ferri", "chiacchiere": "tangenziale",
+			"obiettivo": "La tangenziale all'alba. Il casello in fondo è l'unica uscita che non porta in cella.",
+			"telecamera": [-4.9, -14.0],
+			"indizi": [
+				{"id": "ricercati", "pos": [4.2, -17.0], "raggio": 2.4, "etichetta": "LEGGI IL CARTELLONE DEI RICERCATI", "tasto": "LEGGI", "dialogo": "c5_ricercati"},
+				{"id": "verbale", "pos": [-0.6, -19.0], "raggio": 1.8, "etichetta": "PRENDI IL VERBALE SUL CRUSCOTTO", "tasto": "PRENDI", "dialogo": "c5_verbale", "oggetto": true, "debolezza": "VIOLA"},
+				{"id": "radio", "pos": [3.3, -11.0], "raggio": 1.9, "etichetta": "ASCOLTA LA RADIO DELL'AUTO", "tasto": "ASCOLTA", "dialogo": "c5_radio"}
+			],
+			"nemici": [{"id": "f1", "pos": [0.0, -8.0], "boss": "frammento_giallo", "livello": 10}, {"id": "f2", "pos": [-0.5, -23.0], "boss": "frammento_rosso", "livello": 10}],
+			"boss": {"id": "autovelox", "tipo": "autovelox", "pos": [0.0, -31.0], "rot": 0, "dialogo": "c5_boss", "agguato": "c5_agguato", "livello": 11, "arena": "tangenziale", "pv": 0.65, "atk": 0.8}
 		}
 	},
 
 	"legami": {
-		"legame_ferri_saul": {"chi": ["ferri", "saul"], "nome": "Ferri e Saul"},
-		"legame_nox_zecca": {"chi": ["nox", "zecca"], "nome": "Nox e Zecca"},
-		"legame_ferri_nox": {"chi": ["ferri", "nox"], "nome": "Ferri e Nox"},
-		"legame_saul_zecca": {"chi": ["saul", "zecca"], "nome": "Saul e Zecca"},
-		"legame_ferri_zecca": {"chi": ["ferri", "zecca"], "nome": "Ferri e Zecca"},
+		"legame_ferri_saul": {"chi": ["ferri", "saul"], "nome": "Lance e Saul"},
+		"legame_nox_zecca": {"chi": ["nox", "zecca"], "nome": "Nox e Rio"},
+		"legame_ferri_nox": {"chi": ["ferri", "nox"], "nome": "Lance e Nox"},
+		"legame_saul_zecca": {"chi": ["saul", "zecca"], "nome": "Saul e Rio"},
+		"legame_ferri_zecca": {"chi": ["ferri", "zecca"], "nome": "Lance e Rio"},
 		"legame_nox_saul": {"chi": ["nox", "saul"], "nome": "Nox e Saul"}
 	}
 }

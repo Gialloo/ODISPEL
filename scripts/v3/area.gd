@@ -356,6 +356,7 @@ func _process(delta: float) -> void:
 		_help.visible = mode == "walk"
 	_goal.visible = mode == "walk"
 	_banter.paused = mode != "walk" or _pause != null
+	_banter.visible = not _banter.paused     # i fumetti non si sovrappongono ai dialoghi e alla pausa
 	_banter.tick(delta, player.position.z, moving, _near_points())
 	# in pausa niente agguati (prima un frammento poteva toccarti col menu di pausa aperto)
 	if exploring:

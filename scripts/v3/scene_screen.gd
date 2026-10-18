@@ -4,7 +4,7 @@ extends Control
 # Usata per i passi "scena" e "rifugio" di data/atto1.json.
 
 const BACKS: Dictionary = {
-	"strada": {"top": "#1a0f30", "bot": "#3a1840", "luogo": "%s · STRADA" , "forme": "citta"},
+	"strada": {"top": "#1a0f30", "bot": "#3a1840", "luogo": "VIA DALLA PIAZZA" , "forme": "citta"},
 	"rifugio": {"top": "#1e140c", "bot": "#3a2614", "luogo": "RIFUGIO · DEPOSITO DELLA METRO", "forme": "archi"},
 	"anomalia_rossa": {"top": "#2a0710", "bot": "#5a0f22", "luogo": "DENTRO L'ANOMALIA", "forme": "vetri"},
 	"anomalia_blu": {"top": "#060c2a", "bot": "#0f2050", "luogo": "DENTRO LA LINEA", "forme": "vetri"},
@@ -12,6 +12,7 @@ const BACKS: Dictionary = {
 	"notte": {"top": "#0a0814", "bot": "#1a1430", "luogo": "NOTTE", "forme": "citta"},
 	"caveau": {"top": "#0c0e14", "bot": "#2a3040", "luogo": "CAVEAU LIBRACORP", "forme": "sbarre"},
 	"varco": {"top": "#12062a", "bot": "#4a1050", "luogo": "LA PIAZZA", "forme": "varco"},
+	"alba": {"top": "#3a1a4a", "bot": "#ff9a6a", "luogo": "LA TANGENZIALE · ALBA", "forme": "citta"},
 }
 
 var passo: Dictionary = {}

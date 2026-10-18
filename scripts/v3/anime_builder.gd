@@ -37,7 +37,7 @@ static func _r(y: float, rx: float, rz: float, z: float = 0.0, x: float = 0.0) -
 
 
 # ================================================================ regole comuni
-# Kit moderni: tattico (Ferri, LibraCorp), notturna (Nox, Civette), streamer (Zecca, Masca), corriere (Saul, Magabondi).
+# Kit moderni: tattico (Lance, LibraCorp), notturna (Nox, Civette), streamer (Rio, Masca), corriere (Saul, Magabondi).
 # Silhouette leggibile sul telefono: busto snello, scarpe e mani un po' grandi, un capo d'abbigliamento riconoscibile a testa.
 
 static func _m(c: Color) -> Color:
@@ -543,7 +543,7 @@ static func arm(sp: Dictionary, side: float) -> MeshBatch:
 				mb.sweep([_r(-0.535, 0.032, 0.032), _r(-0.545, 0.032, 0.032)], 8, accent, false, false, false)
 		"corriere":
 			mb.sweep([_r(-0.46, 0.044, 0.043), _r(-0.52, 0.04, 0.039)], 10, top.darkened(0.3), true, false, false)
-	# mano (un po' grande, si legge meglio): guanto per Ferri, mano nuda per gli altri
+	# mano (un po' grande, si legge meglio): guanto per Lance, mano nuda per gli altri
 	var hand_c: Color = glove if kit == "tattico" else _a(_c(sp, "skin"), 0.8)
 	mb.ball(Transform3D(Basis().scaled(Vector3(0.85, 1.0, 1.0)), Vector3(0, -0.585, -0.008)), 0.064 * k, hand_c, true, 6, 10)
 	mb.ball(Transform3D(Basis(Vector3.BACK, 0.5 * side).scaled(Vector3(0.5, 1.0, 0.5)), Vector3(-side * 0.032, -0.565, -0.045)), 0.032 * k, hand_c, true, 4, 6)

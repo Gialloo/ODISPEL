@@ -1,7 +1,7 @@
 class_name BrokenCam
 extends CanvasLayer
 
-# TELECAMERA ROTTA: la battaglia e' vista dalle telecamere (lo sguardo del Kairos).
+# TELECAMERA ROTTA: la battaglia e' vista dalle telecamere (lo sguardo di Echo, il Kairos).
 #
 # 1. ROTTURA (animazione): nel momento esatto del colpo lo schermo si spezza, le schegge saltano e ricadono.
 #    - quando il nemico colpisce un personaggio e lo fa scendere sotto il 50% o sotto il 25% dei PV;

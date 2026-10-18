@@ -192,11 +192,11 @@ func _bname() -> String:
 func _who_is(col: String) -> String:
 	match col:
 		"ROSSO":
-			return "Ferri"
+			return "Lance"
 		"BLU":
 			return "Nox"
 		"VIOLA":
-			return "Zecca"
+			return "Rio"
 		"VERDE":
 			return "Saul"
 	return "chi ha quel colore"

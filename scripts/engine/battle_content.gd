@@ -194,11 +194,11 @@ const _V2_CHARACTERS: Dictionary = {
 # PROVVISORIO: nomi, colori, classi, mosse e numeri sono segnaposto da rivedere con l'utente.
 # Le fazioni "civette" e "masca" non hanno ancora aure (Factions le ignora).
 const V3_CAST: Dictionary = {
-	"ferri": {"name": "Ferri", "color": "rosso", "cls": "vanguard", "rarity": 0, "skill": "provoca", "ult": "bastione", "passive": "p_hp", "faction": "libracorp",
+	"ferri": {"name": "Lance", "color": "rosso", "cls": "vanguard", "rarity": 0, "skill": "provoca", "ult": "bastione", "passive": "p_hp", "faction": "libracorp",
 		"role": "Ex soldato LibraCorp", "stat_mult": {"hp": 1.15, "atk": 1.2}},
 	"nox": {"name": "Nox", "color": "blu", "cls": "warden", "rarity": 0, "skill": "cura", "ult": "rinascita", "passive": "p_swap", "faction": "civette",
 		"role": "Odispeller del turno di notte", "stat_mult": {"hp": 1.15, "atk": 1.3}},
-	"zecca": {"name": "Zecca", "color": "viola", "cls": "striker", "rarity": 0, "skill": "marchio", "ult": "spezzatutto", "passive": "p_atk", "faction": "masca",
+	"zecca": {"name": "Rio", "color": "viola", "cls": "striker", "rarity": 0, "skill": "marchio", "ult": "spezzatutto", "passive": "p_atk", "faction": "masca",
 		"role": "Masca in diretta"},
 	"saul": {"name": "Saul", "color": "verde", "cls": "striker", "rarity": 0, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_hunter", "faction": "magabondi",
 		"role": "Contrabbandiere"},
@@ -248,6 +248,11 @@ const MATERIALS: Dictionary = {"nucleo": "Nucleo", "lega": "Lega"}
 const BOSS_MOVES: Dictionary = {
 	"scarica": {"name": "Scarica", "target": "one", "mult": 1.6},
 	# solo per il boss di prova della telecamera rotta: porta un personaggio esattamente al 50%, poi al 25% (ignora scudi e difesa)
+	# Autovelox (capitolo 5)
+	"flash": {"name": "Flash", "target": "all", "mult": 0.55, "status": {"mark": 2}},
+	"verbale": {"name": "Verbale", "target": "one", "mult": 1.85},
+	"punti": {"name": "Decurtazione punti", "target": "weakest", "mult": 0.9, "drain": 0.5},
+	"pignoramento": {"name": "Pignoramento", "target": "all", "mult": 0.95},
 	"obiettivo_rotto": {"name": "Obiettivo rotto", "target": "one", "mult": 0.0, "camera": true},
 	"raffica": {"name": "Raffica", "target": "all", "mult": 0.7},
 	"scossa": {"name": "Scossa", "target": "one", "mult": 0.9, "status": {"bleed": 3}},
@@ -339,6 +344,16 @@ const BOSS_ORDER: Array = ["distributore", "semaforo", "tombino", "cabina", "asc
 
 const BOSSES: Dictionary = {
 	# V3: anomalie minori dell'atto 1 (una per colore)
+	# Capitolo 5: l'Anomalia del casello. Fotografa, marchia, multa.
+	"autovelox": {
+		"name": "Autovelox", "title": "CLASSE ANOMALIA · MINACCIA ALTA", "color": "giallo", "hp_per_player": 1500,
+		"atk": 460, "def": 50, "spd": 112,
+		"desc": "L'autovelox del casello. Il flash marchia tutti, il verbale colpisce forte un bersaglio, la decurtazione dei punti succhia via la vita al piu' debole.",
+		"cycle": ["flash", "verbale", "punti", "pignoramento"],
+		"atk_scale": [0.62, 0.8, 1.0],
+		"drops": 4,
+		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},
+	},
 	# BOSS SEGRETO DI PROVA (PROVVISORIO): non uccide mai, serve a vedere la telecamera rotta
 	"osservatore": {
 		"name": "L'Osservatore", "title": "BOSS SEGRETO · PROVA DELLA TELECAMERA", "color": "viola", "hp_per_player": 1500,
@@ -746,7 +761,7 @@ static func validate() -> Array:
 			errors.append("%s: colore del boss sconosciuto" % id)
 		if not b.has("reward") or not b.has("name") or not b.has("desc") or not b.has("title"):
 			errors.append("%s: boss incompleto (nome, titolo, descrizione, premi)" % id)
-		if not BOSS_ORDER.has(id) and not id.begins_with("frammento_") and id != "osservatore":   # i frammenti sono nemici minori, fuori dalla scaletta
+		if not BOSS_ORDER.has(id) and not id.begins_with("frammento_") and not id in ["osservatore", "autovelox"]:   # i frammenti sono nemici minori, fuori dalla scaletta
 			errors.append("%s: boss fuori da BOSS_ORDER" % id)
 	for id in BOSS_ORDER:
 		if not BOSSES.has(id):

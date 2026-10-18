@@ -11,7 +11,7 @@ extends RefCounted
 # metal = parti metalliche (shader toon a bande, alpha 0.4) · gold = anelli e fibbie.
 const CAST: Dictionary = {
 	"ferri": {
-		"name": "Ferri", "faction": "LibraCorp", "height": 1.80, "build": 1.08, "kit": "tattico",
+		"name": "Lance", "faction": "LibraCorp", "height": 1.80, "build": 1.08, "kit": "tattico",
 		"skin": "#e9b996", "hair": "#1d1a22", "top": "#25324f", "bottom": "#1b2236", "accent": "#e8343f", "shoes": "#14121a",
 		"metal": "#aab0c0", "gold": "#d9b44a", "glove": "#18161e",
 		"hair_style": "crew", "extra": "cap", "eyes": "#6b3a2e", "brow": 1.0, "lid": 0.15, "smirk": 0.0,
@@ -23,7 +23,7 @@ const CAST: Dictionary = {
 		"hair_style": "owl", "extra": "coat", "fem": true, "eyes": "#3f6dff", "brow": -0.6, "lid": 0.45, "smirk": 0.0,
 	},
 	"zecca": {
-		"name": "Zecca", "faction": "Masca", "height": 1.66, "build": 0.9, "kit": "streamer",
+		"name": "Rio", "faction": "Masca", "height": 1.66, "build": 0.9, "kit": "streamer",
 		"skin": "#d79f7c", "hair": "#f0e6ff", "top": "#8e3df0", "bottom": "#2a2140", "accent": "#ffd23f", "shoes": "#f2f2f2",
 		"metal": "#b8bccb", "gold": "#e0b54a", "glove": "#f2f0f6",
 		"hair_style": "spiky", "extra": "mask", "eyes": "#b45cff", "brow": 0.2, "lid": 0.0, "smirk": 1.0,
@@ -61,7 +61,7 @@ const EXPRESSIONS: Dictionary = {
 const EXPR_ORDER: Array = ["neutro", "felice", "arrabbiato", "triste", "sorpreso", "sfotto", "serio"]
 
 
-# Valori finali per un'espressione: Nox resta stanca (palpebre calate) tranne quando si sorprende; Zecca senza maschera.
+# Valori finali per un'espressione: Nox resta stanca (palpebre calate) tranne quando si sorprende; Rio senza maschera.
 static func expression(id: String, expr: String) -> Dictionary:
 	var o: Dictionary = (EXPRESSIONS.get(expr, {}) as Dictionary).duplicate()
 	var base: Dictionary = spec(id)

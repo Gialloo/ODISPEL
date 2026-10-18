@@ -20,7 +20,7 @@ var down: bool = false
 const YEL: Color = Color("#ffc93c")
 
 
-const HEADS: Dictionary = {"distributore": 2.5, "semaforo": 4.2, "cabina": 2.9, "manichino": 3.0, "cassaforte": 2.6, "frammento": 1.9, "telecamera": 3.4}
+const HEADS: Dictionary = {"distributore": 2.5, "semaforo": 4.2, "cabina": 2.9, "manichino": 3.0, "cassaforte": 2.6, "frammento": 1.9, "telecamera": 3.4, "autovelox": 3.1}
 const FRAG_COLORS: Dictionary = {"giallo": Color(1.0, 0.82, 0.25, 0.0), "rosso": Color(1.0, 0.25, 0.3, 0.0), "blu": Color(0.3, 0.65, 1.0, 0.0), "verde": Color(0.3, 1.0, 0.5, 0.0), "viola": Color(0.75, 0.35, 1.0, 0.0)}
 var _cubes: Array = []
 
@@ -40,6 +40,8 @@ func _ready() -> void:
 			_build_cassaforte()
 		"telecamera":
 			_build_telecamera()
+		"autovelox":
+			_build_autovelox()
 		"frammento":
 			_build_frammento()
 		_:
@@ -150,6 +152,29 @@ func _build_telecamera() -> void:
 		mb.ball(Transform3D(Basis(), Vector3(sx * 1.7, 1.3, -0.6)), 0.12, Color(0.75, 0.35, 1.0, 0.0), true, 4, 6)
 	_add(mb, "Telecamera")
 	_ground(Color(0.75, 0.35, 1.0, 0.35), 2.4)
+
+
+# Capitolo 5: l'autovelox del casello. Cassetta grigia su un palo, obiettivo e flash, cavi come braccia.
+func _build_autovelox() -> void:
+	var mb := MeshBatch.new()
+	mb.ink_w = 0.04
+	var grey := Color("#c9cbd4")
+	var dark := Color("#2b2638")
+	mb.prism(Transform3D(Basis(), Vector3.ZERO), 0.13, 0.11, 2.2, 8, dark)
+	mb.box(Transform3D(Basis(), Vector3(0, 2.85, 0)), Vector3(1.1, 1.3, 0.9), grey)
+	mb.box(Transform3D(Basis(), Vector3(0, 3.55, -0.05)), Vector3(1.25, 0.12, 1.05), grey.darkened(0.2))
+	mb.box(Transform3D(Basis(), Vector3(0, 2.3, -0.46)), Vector3(0.9, 0.12, 0.02), Color(1.0, 0.82, 0.25, 0.0), false)
+	# obiettivo e flash
+	mb.prism(Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(-0.2, 2.75, -0.45)), 0.24, 0.24, 0.1, 16, dark)
+	mb.prism(Transform3D(Basis(Vector3.RIGHT, PI * 0.5), Vector3(-0.2, 2.75, -0.5)), 0.16, 0.16, 0.02, 14, Color(1.0, 0.85, 0.3, 0.0), false)
+	mb.box(Transform3D(Basis(), Vector3(0.3, 2.95, -0.46)), Vector3(0.3, 0.45, 0.02), Color(1.0, 1.0, 0.95, 0.0), false)
+	# cavi come braccia
+	for sx in [-1.0, 1.0]:
+		mb.lock(Vector3(sx * 0.5, 2.6, 0), Vector3(sx * 1.4, 2.4, -0.3), Vector3(sx * 1.8, 1.2, -0.6), 0.06, 0.06, Vector3.FORWARD, dark, true, 6)
+		mb.ball(Transform3D(Basis(), Vector3(sx * 1.8, 1.2, -0.6)), 0.12, Color(1.0, 0.82, 0.25, 0.0), true, 4, 6)
+	_add(mb, "Autovelox")
+	_eyes_panel(3.25, -0.47, 0.7, Color(1.0, 0.9, 0.4, 0.0))
+	_ground(Color(1.0, 0.8, 0.25, 0.35), 2.3)
 
 
 func _build_cassaforte() -> void:

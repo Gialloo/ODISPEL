@@ -29,10 +29,14 @@ func _ready() -> void:
 		bonds.append(str(bd.get("nome", "")))
 	vb.add_child(Ui.label("Legami: " + (", ".join(bonds) if not bonds.is_empty() else "nessuno"), 22, Ui.PINK))
 	var picks: Array = []
-	if Story.has_flag("kairos_fiducia"):
-		picks.append("Ti sei fidato del Kairos")
-	if Story.has_flag("kairos_diffidenza"):
-		picks.append("Hai tenuto d'occhio il Kairos")
+	if Story.has_flag("echo_fiducia"):
+		picks.append("Ti sei fidato di Echo")
+	if Story.has_flag("echo_diffidenza"):
+		picks.append("Hai tenuto d'occhio Echo")
+	if Story.has_flag("echo_tregua"):
+		picks.append("Hai concesso una tregua a Echo")
+	if Story.has_flag("echo_rancore"):
+		picks.append("Echo vi guida, ma non è dei vostri")
 	if Story.has_flag("saul_leale"):
 		picks.append("Saul ha detto tutto agli altri")
 	if Story.has_flag("saul_tentato"):
