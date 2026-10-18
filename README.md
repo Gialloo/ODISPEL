@@ -1,4 +1,4 @@
-# ODISPEL V3 · prologo 3D (standalone)
+# OFFICIAL DEMO ODISPEL · V3, prologo 3D (standalone)
 
 Progetto Godot 4.7.2 separato dalla V2 (`Gialloo/ODISPEL`), renderer **gl_compatibility**, landscape 1280×720.
 Commissione e storia: `docs/HANDOFF_PROLOGO_3D.md`. Stato attuale: **0.29.0 = test sul telefono**, poi stop in attesa dell'esito.
@@ -29,9 +29,10 @@ xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s
 ## Rilascio
 1. Versione in `scripts/v3/game_config.gd`, `project.godot`, `export_presets.cfg` (code = X.YY.Z → 2900 per 0.29.0), `docs/CHANGELOG.md`.
 2. `godot --headless --path . --export-release "Android" build/raw.apk` (preset non firmato; serve un SDK anche finto con `platform-tools/adb` e `build-tools/*/apksigner`).
-3. `python3 tools/sign_apk.py build/raw.apk "releases/ODISPEL V3 mobile v.X.Y.Z.apk" /root/odispel_v3_key.pem` (firma v2, la chiave NON va nel repo:
+3. `python3 tools/sign_apk.py build/raw.apk "releases/OFFICIAL DEMO ODISPEL mobile v.X.Y.Z.apk" /root/odispel_v3_key.pem` (firma v2, la chiave NON va nel repo:
    con una chiave diversa l'aggiornamento non si installa sopra, bisogna disinstallare).
-4. `godot --headless --path . --export-release "Windows Desktop" build/win/ODISPEL_V3.exe` e zip in `releases/ODISPEL V3 pc vX.Y.Z.zip`.
-5. `releases/SHA256SUMS.txt`, commit, push su `main`: il workflow `itch.yml` verifica la firma con apksigner e carica su `boomeranza/odispel-v3`.
+4. `godot --headless --path . --export-release "Windows Desktop" build/win/OFFICIAL_DEMO_ODISPEL.exe` e zip in `releases/OFFICIAL DEMO ODISPEL pc vX.Y.Z.zip`.
+5. `releases/SHA256SUMS.txt`, commit, push sul branch `claude/v3-prologo` del repo `Gialloo/ODISPEL` (branch orfano, niente storia in comune con la V2):
+   il workflow `itch.yml` verifica la firma con apksigner e carica sulla pagina della V2 `boomeranza/odispel`, canali `android-v3` e `windows-v3`.
 
 Pacchetto Android: `com.gialloo.odispel.v3` (convive con la V2 sul telefono).

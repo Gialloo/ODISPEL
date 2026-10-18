@@ -1,15 +1,16 @@
-# Pubblica su itch.io la V3 (pagina boomeranza/odispel-v3, separata dalla V2).
-#   releases/ODISPEL V3 mobile v.X.Y.Z.apk -> canale android
-#   releases/ODISPEL V3 pc vX.Y.Z.zip      -> canale windows
+# Pubblica su itch.io la V3 "OFFICIAL DEMO ODISPEL" sulla stessa pagina della V2 (boomeranza/odispel), su canali propri.
+#   releases/OFFICIAL DEMO ODISPEL mobile v.X.Y.Z.apk -> canale android-v3
+#   releases/OFFICIAL DEMO ODISPEL pc vX.Y.Z.zip      -> canale windows-v3
+# I canali della V2 (android-mobile, windows-pc) non si toccano.
 # Prima di caricare controlla la firma dell'APK con apksigner del runner (l'APK e' firmato da tools/sign_apk.py).
 name: Pubblica V3 su itch.io
 
 on:
   push:
-    branches: [main]
+    branches: [claude/v3-prologo]
     paths:
-      - 'releases/ODISPEL V3 mobile v.*.apk'
-      - 'releases/ODISPEL V3 pc v*.zip'
+      - 'releases/OFFICIAL DEMO ODISPEL mobile v.*.apk'
+      - 'releases/OFFICIAL DEMO ODISPEL pc v*.zip'
       - '.github/workflows/itch.yml'
   workflow_dispatch:
 
@@ -18,12 +19,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
-      ITCH_TARGET: boomeranza/odispel-v3
+      ITCH_TARGET: boomeranza/odispel
     steps:
       - uses: actions/checkout@v4
       - name: Controlla la firma dell'APK
         run: |
-          apk=$(ls releases/ODISPEL\ V3\ mobile\ v.*.apk | sort -V | tail -1)
+          apk=$(ls releases/OFFICIAL\ DEMO\ ODISPEL\ mobile\ v.*.apk | sort -V | tail -1)
           signer=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
           "$signer" verify --verbose --min-sdk-version 24 "$apk"
       - name: Controlla che la chiave ci sia
@@ -43,8 +44,8 @@ jobs:
             echo "::error::butler push $2 fallito: $(tail -c 400 out.txt | tr '\n' ' ')"
             return 1
           }
-          apk=$(ls releases/ODISPEL\ V3\ mobile\ v.*.apk | sort -V | tail -1)
-          zip=$(ls releases/ODISPEL\ V3\ pc\ v*.zip | sort -V | tail -1)
-          ver=$(basename "$apk" .apk | sed 's/ODISPEL V3 mobile v\.//')
-          push "$apk" android "$ver"
-          push "$zip" windows "$ver"
+          apk=$(ls releases/OFFICIAL\ DEMO\ ODISPEL\ mobile\ v.*.apk | sort -V | tail -1)
+          zip=$(ls releases/OFFICIAL\ DEMO\ ODISPEL\ pc\ v*.zip | sort -V | tail -1)
+          ver=$(basename "$apk" .apk | sed 's/OFFICIAL DEMO ODISPEL mobile v\.//')
+          push "$apk" android-v3 "$ver"
+          push "$zip" windows-v3 "$ver"
