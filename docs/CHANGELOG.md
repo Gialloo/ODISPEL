@@ -1,5 +1,14 @@
 # Novità
 
+## 0.31.2 · correzioni
+- Niente più blocchi sul cartello dei capitoli: toccandolo mentre lo schermo schiariva la storia andava avanti ma la schermata restava ferma. E ora il tocco sul cartello funziona davvero (prima si andava avanti solo aspettando).
+- La pausa ferma tutto: in esplorazione i frammenti stanno fermi e non possono farti un agguato col menu aperto; E/F non agiscono dietro il menu. In battaglia con la pausa aperta i tasti 1-4, Spazio, AUTO e x2 non fanno partire niente.
+- Tornando in un'area dopo una battaglia ci sono 2,5 secondi senza agguati.
+- Articoli giusti nei nomi dei nemici («l'Osservatore», «la Cabina è stordita», «attacca per prima»).
+- Un dialogo senza testo non blocca più il gioco. Salvataggio letto in modo sicuro anche se rovinato.
+- CAPITOLI chiede conferma (secondo tocco) se c'è una partita avviata, perché il salto sovrascrive i progressi.
+- I test e il giro automatico di prova usano un salvataggio a parte: non toccano più quello vero.
+
 ## 0.31.1 · personaggi moderni, telecamera rotta leggibile, prestazioni
 - Personaggi di nuovo urbani e di oggi (il look medievale è bocciato): Ferri in divisa tattica LibraCorp col manganello elettrico, Nox col cappotto lungo delle Civette e il caffè, Zecca con la felpa oversize viola, maschera e sneakers, Saul col bomber verde, cargo, tracolla e il pacco. Ritratti rifatti.
 - Tolte le cornici gotiche da menu, dialoghi, cartelli e ultimate.

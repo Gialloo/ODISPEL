@@ -111,7 +111,19 @@ func _open_chapters() -> void:
 	var chs: Array = Story.chapters()
 	for i in chs.size():
 		var b := Ui.button(str(chs[i].get("titolo", "")), Ui.CREAM, 20, 640)
+		var title: String = str(chs[i].get("titolo", ""))
+		# saltare a un capitolo sovrascrive il salvataggio: col salvataggio gia' avviato si chiede conferma (secondo tocco)
 		b.pressed.connect(func() -> void:
+			if _progress_saved() and not b.has_meta("ok"):
+				b.set_meta("ok", true)
+				b.text = "PERDI I PROGRESSI. TOCCA DI NUOVO PER CONFERMARE"
+				b.add_theme_color_override("font_color", Color("#c0143c"))
+				get_tree().create_timer(3.0).timeout.connect(func() -> void:
+					if is_instance_valid(b):
+						b.remove_meta("ok")
+						b.text = title
+						b.remove_theme_color_override("font_color"))
+				return
 			Story.load_game()
 			Story.start_chapter(i)
 			_main().next_story())
@@ -119,6 +131,16 @@ func _open_chapters() -> void:
 	var c := Ui.button("CHIUDI", Color("#ff7a9c"), 20, 640)
 	c.pressed.connect(shade.queue_free)
 	vb.add_child(c)
+
+
+# C'e' una partita gia' avanzata (non solo l'inizio)?
+func _progress_saved() -> bool:
+	if not Story.has_save():
+		return false
+	var cfg := ConfigFile.new()
+	if cfg.load(Story.save_path) != OK:
+		return false
+	return int(cfg.get_value("storia", "capitolo", 0)) > 0 or int(cfg.get_value("storia", "passo", 0)) > 0
 
 
 func _open_settings() -> void:

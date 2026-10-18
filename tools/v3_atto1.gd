@@ -14,6 +14,7 @@ var start_ch: int = -1
 
 
 func _init() -> void:
+	Story.save_path = "user://salvataggio_prova.cfg"     # mai il salvataggio vero
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if args.size() > 0:
 		out = args[0]

@@ -5,6 +5,8 @@ extends RefCounted
 # Tiene il punto raggiunto, le scelte fatte (flag) e lo salva su disco (user://salvataggio.cfg).
 
 const SAVE_PATH: String = "user://salvataggio.cfg"
+# I test e gli strumenti di prova usano un file a parte, per non toccare il salvataggio vero di chi gioca
+static var save_path: String = SAVE_PATH
 
 static var _data: Dictionary = {}
 static var chapter: int = 0
@@ -64,12 +66,12 @@ static func start_chapter(i: int) -> void:
 
 
 static func has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+	return FileAccess.file_exists(save_path)
 
 
 static func load_game() -> bool:
 	var cfg := ConfigFile.new()
-	if cfg.load(SAVE_PATH) != OK:
+	if cfg.load(save_path) != OK:
 		return false
 	chapter = int(cfg.get_value("storia", "capitolo", 0))
 	step = int(cfg.get_value("storia", "passo", 0))
@@ -84,7 +86,7 @@ static func save() -> void:
 	cfg.set_value("storia", "capitolo", chapter)
 	cfg.set_value("storia", "passo", step)
 	cfg.set_value("storia", "flag", flags)
-	cfg.save(SAVE_PATH)
+	cfg.save(save_path)
 
 
 static func set_flag(f: String) -> void:

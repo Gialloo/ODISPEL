@@ -12,6 +12,7 @@ func check(cond: bool, msg: String) -> void:
 
 
 func _init() -> void:
+	Story.save_path = "user://salvataggio_prova.cfg"     # mai il salvataggio vero
 	var data: Dictionary = DialogData.all()
 	check(not data.is_empty(), "dialoghi.json si legge")
 	for key in ["apertura", "telecamera", "scontrino", "distributore", "agguato", "vittoria", "sconfitta"]:
