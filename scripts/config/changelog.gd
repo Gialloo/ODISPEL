@@ -5,6 +5,10 @@ extends RefCounted
 # Aggiungi una voce IN CIMA a ogni versione nuova (testi brevi, in italiano semplice).
 
 const ENTRIES: Array = [
+	{"v": "0.29.1", "items": [
+		"TEST V2: la mappa si carica piu' in fretta e, tornando da una battaglia, quasi subito (le immagini generate a mano restano in memoria).",
+		"TEST V2: macchie di vernice, sagome e contorni piu' leggeri da generare.",
+	]},
 	{"v": "0.29.0", "items": [
 		"TEST V2: la mappa e' molto piu' grande: mercato notturno, terrazza sui tetti con panorama, cortile dei Magabondi, giardino delle rane, boschetto dei Sinistri, lungocanale, banchina, ponte e isolotto col ciliegio.",
 		"TEST V2: ora si puo' girare senza meta: 47 scoperte (oggetti, panchine dove sedersi, gatti da accarezzare, segreti), minimappa e contatore, e muri da spruzzare di vernice (si ricordano).",

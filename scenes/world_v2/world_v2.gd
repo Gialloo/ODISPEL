@@ -126,7 +126,10 @@ void sky() {
 
 var _toon_sh: Shader
 var _line_sh: Shader
-var _sprite_cache: Dictionary = {}
+# cache delle texture generate a mano: restano tra un ricaricamento e l'altro della mappa (si torna dalla battaglia piu' in fretta)
+static var _sprite_cache: Dictionary = {}
+static var _splat_cache: Dictionary = {}
+static var _tex_cache: Dictionary = {}
 var test_move: Vector2 = Vector2.ZERO      # SOLO PER I TEST: movimento forzato
 var mode: String = "walk"                  # walk, dialog, exclaim, approach, fade, pause
 var player: Vector2 = SPAWN
@@ -376,6 +379,8 @@ func _build_env() -> void:
 
 # Facciata da fumetto: finestre con contorno nero, colori pieni, qualche striscia di graffiti
 func _window_tex(seed_v: int) -> Texture2D:
+	if _tex_cache.has("w%d" % seed_v):
+		return _tex_cache["w%d" % seed_v]
 	var img := Image.create(128, 256, false, Image.FORMAT_RGBA8)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_v
@@ -390,10 +395,14 @@ func _window_tex(seed_v: int) -> Texture2D:
 	img.fill_rect(Rect2i(0, 0, 128, 8), INK)
 	img.fill_rect(Rect2i(0, 248, 128, 8), INK)
 	# (la striscia 9..22 resta bianca: i tetti campionano li')
-	return ImageTexture.create_from_image(img)
+	var out: ImageTexture = ImageTexture.create_from_image(img)
+	_tex_cache["w%d" % seed_v] = out
+	return out
 
 
 func _floor_tex() -> Texture2D:
+	if _tex_cache.has("floor"):
+		return _tex_cache["floor"]
 	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	img.fill(Color.WHITE)
 	img.fill_rect(Rect2i(32, 0, 32, 32), Color(0.88, 0.88, 0.88))
@@ -402,16 +411,22 @@ func _floor_tex() -> Texture2D:
 		for t in range(3):
 			img.set_pixel(i, t, INK)
 			img.set_pixel(t, i, INK)
-	return ImageTexture.create_from_image(img)
+	var out: ImageTexture = ImageTexture.create_from_image(img)
+	_tex_cache["floor"] = out
+	return out
 
 
 func _blob_tex() -> Texture2D:
+	if _tex_cache.has("blob"):
+		return _tex_cache["blob"]
 	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	for y in range(64):
 		for x in range(64):
 			var d: float = Vector2(x - 31.5, y - 31.5).length() / 31.0
 			img.set_pixel(x, y, Color(0.04, 0.02, 0.1, 0.6) if d < 1.0 else Color(0, 0, 0, 0))
-	return ImageTexture.create_from_image(img)
+	var out: ImageTexture = ImageTexture.create_from_image(img)
+	_tex_cache["blob"] = out
+	return out
 
 
 func _in_walk(p: Vector2) -> bool:
@@ -493,25 +508,44 @@ func _build_map() -> void:
 
 
 # Macchie di vernice e stelle sul selciato (stesso linguaggio delle pennellate della HUD di battaglia)
-func _splat_tex(col: Color, seed_v: int) -> Texture2D:
-	var img := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+func _splat_tex(_col: Color, seed_v: int) -> Texture2D:
+	# macchia BIANCA con contorno nero, uguale per ogni colore: il colore si applica con albedo_color. Poche texture condivise.
+	var key: int = seed_v % 6
+	if _splat_cache.has(key):
+		return _splat_cache[key]
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed_v
+	rng.seed = 7 + key * 13
+	var data := PackedByteArray()
+	data.resize(128 * 128 * 4)
 	var blobs: Array = []
 	for i in range(7):
-		var a: float = rng.randf() * TAU
+		var ang: float = rng.randf() * TAU
 		var d: float = rng.randf() * 26.0
-		blobs.append([Vector2(64, 64) + Vector2(cos(a), sin(a)) * d, 14.0 + rng.randf() * 18.0])
-	for y in range(128):
-		for x in range(128):
-			var best: float = 999.0
-			for b in blobs:
-				best = minf(best, Vector2(x, y).distance_to(b[0]) - float(b[1]))
-			if best < 0.0:
-				img.set_pixel(x, y, col)
-			elif best < 4.0:
-				img.set_pixel(x, y, INK)
-	return ImageTexture.create_from_image(img)
+		blobs.append([Vector2(64, 64) + Vector2(cos(ang), sin(ang)) * d, 14.0 + rng.randf() * 18.0])
+	for pass_i in range(2):
+		for bl in blobs:
+			var c: Vector2 = bl[0]
+			var rad: float = float(bl[1]) + (4.0 if pass_i == 0 else 0.0)
+			var x0: int = maxi(0, int(c.x - rad) - 1)
+			var x1: int = mini(127, int(c.x + rad) + 1)
+			var y0: int = maxi(0, int(c.y - rad) - 1)
+			var y1: int = mini(127, int(c.y + rad) + 1)
+			for y in range(y0, y1 + 1):
+				for x in range(x0, x1 + 1):
+					if Vector2(x, y).distance_to(c) < rad:
+						var o: int = (y * 128 + x) * 4
+						if pass_i == 0:
+							data[o] = 11
+							data[o + 1] = 8
+							data[o + 2] = 20
+						else:
+							data[o] = 255
+							data[o + 1] = 255
+							data[o + 2] = 255
+						data[o + 3] = 255
+	var tex: ImageTexture = ImageTexture.create_from_image(Image.create_from_data(128, 128, false, Image.FORMAT_RGBA8, data))
+	_splat_cache[key] = tex
+	return tex
 
 
 func _decal(c2: Vector2, size: float, col: Color, seed_v: int, rot: float = 0.0) -> void:
@@ -522,6 +556,7 @@ func _decal(c2: Vector2, size: float, col: Color, seed_v: int, rot: float = 0.0)
 	mi.mesh = q
 	var m := StandardMaterial3D.new()
 	m.albedo_texture = _splat_tex(col, seed_v)
+	m.albedo_color = col
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mi.material_override = m
@@ -1359,7 +1394,9 @@ func _paint_tag(i: int, c: int) -> void:
 		mi.rotation.z = (-0.06 if i % 2 == 0 else 0.07)
 		add_child(mi)
 		_spray_nodes[i] = mi
-	(mi.material_override as StandardMaterial3D).albedo_texture = _splat_tex(POP[c % POP.size()], 100 + i * 7 + c)
+	var tm: StandardMaterial3D = mi.material_override
+	tm.albedo_texture = _splat_tex(POP[c % POP.size()], 100 + i * 7 + c)
+	tm.albedo_color = POP[c % POP.size()]
 
 
 func _spray(i: int) -> void:
@@ -1557,24 +1594,29 @@ func _boss_machine() -> void:
 
 func _figure_tex(body: Color, accent: Color, hood: bool) -> Texture2D:
 	var img := Image.create(128, 256, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
 	var skin := Color("#e8c9a8")
-	for y in range(256):
-		for x in range(128):
-			var c: Color = Color(0, 0, 0, 0)
-			var head: float = Vector2(x - 64, y - 52).length()
-			if head < 24.0:
-				c = body.darkened(0.2) if hood and y < 54 else skin
-			if y >= 70 and y < 80 and abs(x - 64) < 9:
-				c = skin
-			if y > 78 and y < 190 and abs(x - 64) < 34 - (y - 80) * 0.08:
-				c = body
-			if y > 190 and y < 246 and (abs(x - 50) < 12 or abs(x - 78) < 12):
-				c = body.darkened(0.35)
-			if y > 92 and y < 100 and abs(x - 64) < 36:
-				c = accent
-			if y > 44 and y < 54 and abs(x - 64) < 22 and head < 24.0 and not hood:
-				c = accent
-			img.set_pixel(x, y, c)
+	var hc: Color = body.darkened(0.2)
+	for y in range(28, 77):
+		for x in range(40, 89):
+			if Vector2(x - 64, y - 52).length() < 24.0:
+				img.set_pixel(x, y, hc if (hood and y < 54) else skin)
+	img.fill_rect(Rect2i(56, 70, 17, 10), skin)
+	for y in range(79, 190):
+		var half: float = 34.0 - float(y - 80) * 0.08
+		var x0: int = int(floor(64.0 - half)) + 1
+		var x1: int = int(ceil(64.0 + half)) - 1
+		img.fill_rect(Rect2i(x0, y, x1 - x0 + 1, 1), body)
+	var legs: Color = body.darkened(0.35)
+	img.fill_rect(Rect2i(39, 191, 23, 55), legs)
+	img.fill_rect(Rect2i(67, 191, 23, 55), legs)
+	img.fill_rect(Rect2i(29, 93, 71, 7), accent)
+	if not hood:
+		for y in range(45, 54):
+			for x in range(43, 86):
+				if Vector2(x - 64, y - 52).length() < 24.0:
+					img.set_pixel(x, y, accent)
+	img.resize(96, 192, Image.INTERPOLATE_BILINEAR)
 	return ImageTexture.create_from_image(img)
 
 
@@ -1652,7 +1694,7 @@ func _trainers() -> void:
 		_talk(str(t["id"]), pp + Vector2(-(t["face"] as Vector2).x * 0.0, 0.0), str(t["name"]), [], 1.9, {"nodid": true, "verb": "PARLA"})
 
 
-var _burst: Texture2D
+static var _burst: Texture2D
 
 
 func _burst_tex() -> Texture2D:
@@ -1691,6 +1733,8 @@ func _make_excl(pos: Vector3, parent: Node, size: int) -> Label3D:
 
 
 func _cone_tex() -> Texture2D:
+	if _tex_cache.has("cone"):
+		return _tex_cache["cone"]
 	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	for y in range(64):
 		for x in range(64):
@@ -1702,7 +1746,9 @@ func _cone_tex() -> Texture2D:
 			if dx < half:
 				a = (1.0 - dx / half) * 0.35 * (0.35 + 0.65 * (1.0 - k))
 			img.set_pixel(x, y, Color(1, 1, 1, a))
-	return ImageTexture.create_from_image(img)
+	var out: ImageTexture = ImageTexture.create_from_image(img)
+	_tex_cache["cone"] = out
+	return out
 
 
 func _shadow(parent: Node3D) -> MeshInstance3D:
@@ -1733,9 +1779,9 @@ func _outlined(tex: Texture2D, key: String) -> Texture2D:
 	if src.is_compressed():
 		src.decompress()
 	src.convert(Image.FORMAT_RGBA8)
-	if src.get_height() > 480:
-		var k: float = 480.0 / float(src.get_height())
-		src.resize(int(float(src.get_width()) * k), 480, Image.INTERPOLATE_BILINEAR)
+	if src.get_height() > 256:
+		var k: float = 256.0 / float(src.get_height())
+		src.resize(int(float(src.get_width()) * k), 256, Image.INTERPOLATE_BILINEAR)
 	var w: int = src.get_width()
 	var h: int = src.get_height()
 	var r_in: int = maxi(3, int(round(h / 90.0)))
