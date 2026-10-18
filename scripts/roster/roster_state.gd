@@ -237,14 +237,23 @@ static func validate_entry(entry: Dictionary) -> String:
 		if not BattleContent.PASSIVES.has(str(p)) or seen.has(str(p)):
 			return "passiva non valida"
 		seen[str(p)] = true
+	# Un pezzo per slot e livello entro il massimo della rarita': una squadra
+	# ricevuta dalla rete non puo' sommare dieci armi o pezzi oltre il limite.
+	var slots: Dictionary = {}
 	for piece in entry.get("gear", []):
-		if not BattleContent.GEAR_BASE.has(str(piece.get("slot", ""))):
+		if not (piece is Dictionary):
 			return "pezzo non valido"
+		var slot: String = str(piece.get("slot", ""))
+		if not BattleContent.GEAR_BASE.has(slot):
+			return "pezzo non valido"
+		if slots.has(slot):
+			return "due pezzi nello stesso slot"
+		slots[slot] = true
 		var r: int = int(piece.get("rarity", -1))
 		if r < 0 or r >= BattleContent.GEAR_RARITY_MULT.size():
 			return "rarita' pezzo non valida"
 		var gl: int = int(piece.get("level", 0))
-		if gl < 1 or gl > MAX_LEVEL:
+		if gl < 1 or gl > int(BattleContent.GEAR_MAX_LEVEL[r]):
 			return "livello pezzo non valido"
 	return ""
 

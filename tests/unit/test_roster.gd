@@ -139,6 +139,15 @@ func _test_validation() -> void:
 	bad = e.duplicate(true)
 	bad["gear"] = [{"slot": "arma", "rarity": 7, "level": 1}]
 	_check("pezzo con rarita' inesistente", RosterState.validate_entry(bad) != "")
+	bad = e.duplicate(true)
+	bad["gear"] = [{"slot": "arma", "rarity": 0, "level": 1}, {"slot": "arma", "rarity": 0, "level": 1}]
+	_check("due pezzi nello stesso slot", RosterState.validate_entry(bad) != "")
+	bad = e.duplicate(true)
+	bad["gear"] = [{"slot": "arma", "rarity": 0, "level": int(BattleContent.GEAR_MAX_LEVEL[0]) + 1}]
+	_check("pezzo oltre il livello massimo della rarita'", RosterState.validate_entry(bad) != "")
+	bad = e.duplicate(true)
+	bad["gear"] = ["arma"]
+	_check("pezzo che non e' un dizionario", RosterState.validate_entry(bad) != "")
 	_check("squadra valida", RosterState.validate_team([e, BattleContent.default_entry("dax")]) == "")
 	_check("squadra con duplicato", RosterState.validate_team([e, e]) != "")
 	_check("squadra vuota", RosterState.validate_team([]) != "")
@@ -166,8 +175,15 @@ func _test_json_and_store() -> void:
 	f.store_string("{ rovinato")
 	f.close()
 	_check("file rovinato: parte una collezione nuova", RosterStore.load_or_new(path) == RosterState.new_roster())
+	_check("file rovinato: copia di sicurezza", FileAccess.file_exists(path + ".corrotto"))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path + ".corrotto"))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	_check("file mancante: collezione nuova", RosterStore.load_or_new(path) == RosterState.new_roster())
+	var tmp: FileAccess = FileAccess.open(path + ".tmp", FileAccess.WRITE)
+	tmp.store_string(RosterState.to_json(r))
+	tmp.close()
+	_check("salvataggio interrotto: si recupera il .tmp", RosterStore.load_or_new(path) == r)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path + ".tmp"))
 	_check("non si salva una collezione non valida", not RosterStore.save(broken, path))
 
 
