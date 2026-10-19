@@ -55,6 +55,32 @@ func _init() -> void:
 				seen25 = true
 	check(seen50 and seen25, "l'Osservatore porta al 50% e al 25% esatti")
 	check(BattleState.alive_players(c).size() == 4, "dopo l'Osservatore sono tutti vivi")
+	# l'avviso nomina chi verra' colpito davvero: la previsione coincide con i colpi
+	var d: Dictionary = BattleState.create_solo("IO", team, [], "osservatore", 5)
+	for i in 6:
+		var want: Array = []
+		for pk in BattleResolver.camera_targets(d):
+			want.append(str((pk["unit"] as Dictionary)["id"]))
+		var ev: Array = []
+		BattleResolver._camera_cut(d, BattleState.boss(d), ev)
+		var got: Array = []
+		for e in ev:
+			if str(e.get("t", "")) == "damage":
+				got.append(str(e["dst"]))
+		check(want == got, "avviso dell'Osservatore: previsti %s, colpiti %s" % [want, got])
+	# salvataggio a meta' area: posizione, indizi e nemici battuti tornano dopo il caricamento
+	Story.save_path = "user://salvataggio_test.cfg"
+	Story.new_game()
+	Story.area_state = {"pos": Vector3(1, 0.14, -7), "yaw": 0.5, "clues": ["scontrino"], "defeated": ["f1"], "banter_used": {}}
+	Story.save()
+	Story.area_state = {}
+	Story.load_game()
+	check((Story.area_state.get("clues", []) as Array).has("scontrino"), "indizi salvati a meta' area")
+	check(Story.area_state.get("pos", Vector3.ZERO) == Vector3(1, 0.14, -7), "posizione salvata a meta' area")
+	Story.advance()
+	Story.load_game()
+	check(Story.area_state.is_empty(), "passando al passo dopo lo stato dell'area si azzera")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(Story.save_path))
 	check(BrokenCam.level_for(0.9) == 0.0 and BrokenCam.level_for(0.5) > 0.0 and BrokenCam.level_for(0.25) >= 0.99, "livelli della telecamera rotta")
 	# articoli dei nemici nei messaggi di battaglia
 	var b3: GDScript = load("res://scripts/v3/battle3d.gd")
