@@ -49,6 +49,8 @@ var _swing: float = 0.0              # 0..1 durante l'attacco: la mazza vola in 
 func setup(char_id: String, override: Dictionary = {}) -> void:
 	id = char_id
 	var sp: Dictionary = CastVisual.spec(char_id).duplicate()
+	if char_id == "zecca" and mask_cracked():
+		sp["mask_crack"] = true          # la crepa resta per il resto dell'atto (un ritratto puo' toglierla con l'override)
 	sp.merge(override, true)            # espressioni dei portrait: sopracciglia, palpebre, bocca...
 	_scale = float(sp["height"]) / 1.75
 	var b: float = float(sp["build"])
@@ -92,6 +94,11 @@ func setup(char_id: String, override: Dictionary = {}) -> void:
 	kit = str(sp.get("kit", ""))
 	if not bool(sp.get("no_props", false)):
 		_build_props(sp)
+
+
+# La maschera di Rio si incrina nel capitolo 3 (Vetrina), dopo lo scontro col Manichino, e resta incrinata fino alla fine dell'atto
+static func mask_cracked() -> bool:
+	return Story.chapter > 3 or (Story.chapter == 3 and Story.step >= 4)
 
 
 # Personaggio fermo "cotto" in una sola mesh (2 superfici: corpo + contorno). Serve per le comparse immobili

@@ -138,3 +138,24 @@ illustrazioni dipinte né modelli 3D). Niente strumenti a pagamento. Segnare PRO
 I segnaposto fatti da codice seguono già queste regole (estremità grandi, busto e gambe sottili, copricapi, armi grandi,
 base spenta + accento, metallo a bande, pose diagonali in battaglia, cornici in filigrana nei dialoghi e nel menu).
 Restano segnaposto: verranno sostituiti dai modelli della pipeline.
+
+## Asset visivi nel gioco (19 ottobre 2026, ramo `claude/v3-asset-visivi-pow9x4`)
+
+Aggiunte, niente tolto. Seguono la regola madre della SINTESI: **la città è di oggi, la magia si disegna con la luce, lo sguardo è una telecamera.**
+
+| Cosa | Dove | Perché |
+|---|---|---|
+| **Pennellate di luce** nel colore del personaggio con nucleo avorio `#F5E9C9`, dal personaggio al nemico, su Abilità e Ultimate; spirale di luce sulle abilità di supporto | `scripts/v3/light_fx.gd`, `battle3d.gd` | «I poteri sono disegnati con istinto»: la luce è l'evento, poi sparisce |
+| **Due fotogrammi neri** con una sola pennellata del colore del personaggio prima della sequenza dell'Ultimate (spenti se i lampi sono a zero) | `LightFx.blackout` | battaglia V2 del 17/10 |
+| **Scintille d'impatto** arancio `#FF7438` su ogni colpo, avorio e più grandi su critico e rottura | `LightFx.sparks` | il colpo si sente anche senza suono |
+| **Cerchio di luce** del suo colore sotto chi è di turno | `LightFx.glyph` | si capisce subito chi agisce (regola 11) |
+| **Sigillo magenta** `#E83DCE` sotto le Anomalie, con tacche da timbro e scintille che salgono; alla sconfitta la magia lascia l'oggetto in una spirale | `LightFx.seal` | la ferita diventa mostro grazie alla magia (U5); le Anomalie parlano in burocratese (U6) |
+| **La cupola nel cielo per tutto l'atto**, non solo nell'apertura: bagliore magenta all'orizzonte e cuciture di meridiani e paralleli che pulsano piano. Solo all'aperto (strada, incrocio, vicolo, tangenziale), mai nelle Anomalie né al chiuso | `scripts/v3/sky_dome.gd` | «una città sotto una cupola rosa», e tutti la vedono |
+| **Mirino di Echo**: angoli dell'inquadratura, REC che lampeggia, numero della telecamera (in battaglia segue chi è di turno, col suo colore), ora della notte dalle 3:12 verso l'alba, grana leggerissima. Dentro le Anomalie: «NESSUN SEGNALE» in magenta | `scripts/v3/cam_hud.gd`, `area.gd`, `battle3d.gd` | lo sguardo come linguaggio dell'universo (U12); «dentro le Anomalie le telecamere non arrivano e l'interfaccia cambia» |
+| **La maschera di Rio incrinata** dal capitolo 3 (dopo il Manichino) alla fine dell'atto: una crepa dalla fronte e, dentro, il suo occhio viola | `anime_builder.gd` (`_mask_crack`), `character_visual.gd` | «Da qui si vede... un occhio. Il mio.» La maschera si incrina e non cade: toglierla resta il climax del suo arco (U18) |
+
+Con «effetti ridotti» le pennellate hanno meno segmenti, le scintille sono la metà e la grana è spenta.
+Volutamente **non** fatto: il braccio di Lance che si accende nell'Ultimate (il braccio si vede solo al climax del suo arco, U18).
+
+Per guardare tutto senza giocare: `xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_vetrina.gd -- /tmp/vetrina`
+(protagonisti di fronte, di schiena e in posa, primi piani, Rio con la maschera incrinata, i nemici, gli effetti e la cupola).

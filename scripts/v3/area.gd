@@ -87,6 +87,8 @@ func _ready() -> void:
 	env.environment = _env
 	add_child(env)
 	_lay = LayoutBuilder.build(str(cfg.get("layout", "strada")), int(cfg.get("seme", 29)), str(cfg.get("tema", "")), self)
+	if SkyDome.outdoor(str(cfg.get("layout", "strada"))):
+		add_child(SkyDome.new())         # la cupola magenta resta nel cielo per tutto l'atto
 	_env.background_color = _lay["bg"]
 	var fog: Array = _lay["fog"]
 	Toon.set_fog(fog[0], fog[1], fog[2])
@@ -239,6 +241,13 @@ func _build_ui() -> void:
 	Ui.place(_root, 0, 0, 1, 1)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ui.add_child(_root)
+	# lo sguardo di Echo: mirino, REC e ora della notte (sotto a tutto il resto dell'interfaccia)
+	var hud := CamHud.new()
+	hud.anomaly = str(cfg.get("layout", "strada")) == "anomalia"
+	hud.tag_right = true
+	hud.tag_y = 94.0
+	_root.add_child(hud)
+	hud.watch("", Ui.CREAM, 1 + absi(hash(area_id)) % 24)
 	_touch = TouchControls.new()
 	_root.add_child(_touch)
 	_touch.action_pressed.connect(_interact)
