@@ -1,5 +1,9 @@
 # Novità
 
+## 0.33.1 · Guardia a tempo e battaglie più veloci
+- **Guardia a tempo** (idea approvata dall'autore, da Expedition 33): quando parte il colpo annunciato del nemico compare un cerchio. Tocca lo schermo al momento giusto per incassare meno danno e caricare l'Ultimate; con il tocco perfetto contrattacchi.
+- Pause più brevi tra un'azione e l'altra: si guarda meno e si agisce di più.
+
 ## 0.33.0 · revisione con la bibbia di lavoro, climax al loro posto
 Revisione di tutto il gioco con la bibbia di lavoro (`BIBBIA_DI_LAVORO.md`) e le decisioni dell'autore del 19/10.
 - Finale: quando Echo spegne la città per farli scappare non torna come prima. Si riaccende nel telefono di Rio ma di lei resta solo il nucleo, un puntino di luce: per riaverla servono pezzi (telecamere rotte, circuiti) e i frammenti delle Anomalie. È il piccolo sacrificio deciso dall'autore e l'aggancio per il seguito.
