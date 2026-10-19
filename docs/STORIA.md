@@ -58,10 +58,12 @@ Le registrazioni non sono mai esistite e le promesse erano false. Quello che è 
 | Prologo | Diffidenza | Lance vuole arrestarli tutti, Saul dorme col pacco sotto la testa, Rio filma tutto, Nox vuole solo il caffè. Echo: «Dormite con un occhio aperto. Lo riconosco.» |
 | Cap. 1 · Rosso fisso (Lance) | Primo segreto custodito | Gli altri vedono il braccio magico di Lance e tacciono. Echo «inceppa» la sua telecamera. |
 | Cap. 2 · La linea (Nox) | Fiducia | La coprono mentre affronta la notte delle 3:12. Lance rinuncia a un articolo. Serata Nox-Echo: Echo era la telecamera del vicolo, quella notte. |
-| Cap. 3 · Vetrina (Rio) | Collaborazione | Rio si toglie la maschera; Saul gli parla sul serio per la prima volta. Echo diventa la sua follower numero 33. |
+| Cap. 3 · Vetrina (Rio) | Collaborazione | La maschera di Rio si incrina e da lì si vede un occhio: non è ancora pronto a toglierla, e nessuno insiste. Saul gli parla sul serio per la prima volta. Echo diventa la sua follower numero 33. |
 | Cap. 4 · Il colpo (Saul) | Rischiare la vita | Il Committente tenta Saul. La porta blindata si chiude su Rio: Saul la tiene aperta col proprio corpo. Vigilia: ognuno racconta cosa farà con la promessa di Echo; lei chiede di stare nei contatti di Rio e quasi confessa. |
-| Finale · Il varco | Il tradimento | Echo confessa: li ha incastrati lei perché erano compromessi, e ogni promessa era falsa. Ognuno è ferito dove si era legato a lei. Il Committente ruba il varco, la cupola crolla, Lance usa il braccio davanti a tutte le telecamere del paese per salvare Rio: Astrid lo classifica come Anomalia. |
+| Finale · Il varco | Il tradimento | Echo confessa: li ha incastrati lei perché erano compromessi, e ogni promessa era falsa. Ognuno è ferito dove si era legato a lei. Il Committente ruba il varco, la cupola crolla, Lance usa il braccio per salvare Rio. Echo inceppa le telecamere della piazza: il braccio lo vede solo il gruppo. |
 | Cap. 5 · La tangenziale | Famiglia | All'alba scappano insieme. Astrid e Strix al casello. Echo spegne ogni luce e telecamera della città per farli fuggire, anche se per lei è come chiudere gli occhi. Saul regala (non vende) la batteria a Rio; il telefono si riaccende: «Vi vedo.» |
+
+I momenti chiave dei quattro (Rio senza maschera, Lance che mostra il braccio al paese) arrivano al climax dell'arco di ciascuno, non nell'atto 1 e non alla fine della storia.
 
 Scelte che il gioco ricorda: fiducia in Echo all'inizio (`echo_fiducia` / `echo_diffidenza`), la telefonata di Saul
 (`saul_leale` / `saul_tentato`), tregua o rancore con Echo all'alba (`echo_tregua` / `echo_rancore`), i legami delle serate.

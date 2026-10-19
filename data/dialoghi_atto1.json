@@ -466,14 +466,15 @@
 		]
 	},
 	"c3_boss": {
-		"riassunto": "Il Manichino vuole la faccia di Rio. Rio si toglie la maschera e se la tiene.",
+		"riassunto": "Il Manichino vuole la faccia di Rio. La maschera si incrina, ma Rio la tiene su e si tiene la faccia.",
 		"righe": [
 			{"chi": "MANICHINO", "col": "#46e07a", "testo": "Dammi la tua faccia. Tanto non la usi. Hai sempre la maschera."},
 			{"chi": "zecca", "espr": "triste", "testo": "...Forse hai ragione. Senza maschera non sono nessuno."},
 			{"chi": "saul", "espr": "arrabbiato", "testo": "Ragazzino. Guarda me. Ho mentito a mezza città e la faccia ce l'ho ancora. Tienitela."},
-			{"chi": "nox", "espr": "serio", "testo": "Rio. Noi la tua faccia l'abbiamo vista dormire sul divano con la bocca aperta. Non è niente di speciale. È tua."},
+			{"chi": "nox", "espr": "serio", "testo": "Rio. Ti abbiamo visto dormire sul divano con la bocca aperta e la maschera storta. Non sei niente di speciale. Sei tu."},
 			{"chi": "zecca", "espr": "serio", "testo": "...Ok. Ho capito una cosa."},
-			{"chi": "zecca", "espr": "sfotto", "testo": "Questa faccia è mia. Brutta, ma MIA. Tu non te la prendi."}
+			{"chi": "zecca", "espr": "sfotto", "testo": "Questa faccia è mia. Brutta, ma MIA. Tu non te la prendi."},
+			{"chi": "zecca", "espr": "serio", "testo": "E la maschera me la tolgo quando decido io. Non quando lo dici tu."}
 		]
 	},
 	"c3_agguato": {
@@ -484,13 +485,13 @@
 		]
 	},
 	"c3_faccia": {
-		"riassunto": "Rio resta senza maschera davanti agli altri. I volti tornano alla gente. Tre Anomalie chiuse.",
+		"riassunto": "La maschera di Rio ha una crepa: da lì si vede un occhio. Rio non è ancora pronto a toglierla, e nessuno insiste. I volti tornano alla gente. Tre Anomalie chiuse.",
 		"righe": [
-			{"chi": "zecca", "espr": "neutro", "testo": "Allora? Dite qualcosa. Sono così brutto?"},
-			{"chi": "nox", "espr": "felice", "testo": "Sei un ragazzino normale. È peggio: adesso non puoi più fare il misterioso."},
-			{"chi": "ferri", "espr": "neutro", "testo": "La maschera rimettila quando vuoi. Ma ora sappiamo chi c'è sotto."},
-			{"chi": "saul", "espr": "neutro", "testo": "Hai il naso di uno che non sa mentire. Un giorno ti servirà."},
-			{"chi": "zecca", "espr": "felice", "testo": "Raga... vi presento Rio. Quello vero. Trentadue follower e un cuore d'oro."},
+			{"chi": "zecca", "espr": "sorpreso", "testo": "Raga. La maschera. Si è crepata. Da qui si vede... un occhio. Il mio."},
+			{"chi": "nox", "espr": "neutro", "testo": "Un occhio solo. Basta per vedere che hai paura. Va bene così."},
+			{"chi": "ferri", "espr": "neutro", "testo": "La crepa non la metto a verbale. Quando vorrai toglierla, ci saremo. Non prima."},
+			{"chi": "saul", "espr": "neutro", "testo": "Hai l'occhio di uno che non sa mentire. Un giorno ti servirà."},
+			{"chi": "zecca", "espr": "felice", "testo": "Raga... vi presento un occhio di Rio. Quello vero. Il resto arriva. Trentadue follower e un cuore d'oro."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Trentatré. Mi sono iscritta. Con la telecamera quattordici."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "...Echo. Sei la mia follower più strana."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Tre su quattro. L'ultima è sotto la Banca Centrale. Saul, credo che ti piacerà."},
@@ -647,7 +648,7 @@
 		]
 	},
 	"varco": {
-		"riassunto": "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale. Il Committente le ruba il varco, la cupola crolla e Lance usa il braccio davanti a tutte le telecamere del paese per salvare Rio. Ora li cerca il paese intero.",
+		"riassunto": "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale. Il Committente le ruba il varco, la cupola crolla e Lance usa il braccio per salvare Rio. Echo inceppa le telecamere della piazza: il braccio lo vede solo il gruppo. Ora li cerca il paese intero.",
 		"righe": [
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Quattro Anomalie chiuse. La cupola è appesa a un filo. E il filo... si apre."},
 			{"chi": "nox", "espr": "sorpreso", "testo": "Il cielo... si sta aprendo un buco. Lì, sopra la piazza."},
@@ -679,14 +680,15 @@
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Raga... sopra di me! Il tabellone!"},
 			{"chi": "ferri", "espr": "arrabbiato", "testo": "RIO!"},
 			{"chi": "ferri", "espr": "serio", "testo": "...Ce l'ho. L'ho preso. Sta' giù."},
-			{"chi": "zecca", "espr": "sorpreso", "testo": "Lance... il braccio. Lo stanno vedendo tutti. Ci sono telecamere ovunque."},
+			{"chi": "zecca", "espr": "sorpreso", "testo": "Lance... il braccio. Ci sono telecamere ovunque. Ti vedono tutti."},
 			{"chi": "ferri", "espr": "neutro", "testo": "Lo so."},
-			{"chi": "COMANDANTE ASTRID", "col": "#ff4b4b", "testo": "(da tutti gli schermi della città) Agente Lance. Quel braccio. Da questo momento sei classificato come Anomalia."},
-			{"chi": "ferri", "espr": "serio", "testo": "Allora sono un'Anomalia che vi para la testa. Rio. Alzati. Correte."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "No. Piazza Centrale, telecamere dalla uno alla dodici: inceppate. Come all'Incrocio Nove."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Questa non è una promessa. È l'unica cosa che so fare."},
+			{"chi": "ferri", "espr": "serio", "testo": "...Non ti ringrazio. Rio. Alzati. Correte."},
 			{"chi": "COMANDANTE ASTRID", "col": "#ff4b4b", "testo": "A tutte le unità del paese: il sigillo è caduto. Cercate i quattro. Ovunque."},
 			{"chi": "STRIX", "col": "#3f9dff", "testo": "(alla radio) Civette, in caccia. Nox... mi dispiace. Stavolta non posso coprirti."},
 			{"chi": "saul", "espr": "serio", "testo": "Il tizio del pacco si è preso il varco. E noi abbiamo il paese addosso."},
-			{"chi": "nox", "espr": "serio", "testo": "Prima ci cercava una città. Adesso ci cerca tutto il paese. E abbiamo un agente classificato come mostro."},
+			{"chi": "nox", "espr": "serio", "testo": "Prima ci cercava una città. Adesso ci cerca tutto il paese. E abbiamo un agente con un braccio che brilla."},
 			{"chi": "ferri", "espr": "neutro", "testo": "Ex agente. Fa meno male se lo dico io."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "...Portatemi con voi. Non per tornare a casa. Non ho più una casa. Per rimediare."},
 			{"chi": "zecca", "espr": "serio", "testo": "..."},
@@ -702,7 +704,7 @@
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Due per cento."},
 			{"chi": "saul", "espr": "neutro", "testo": "Una costola e mezza. Non dimentichiamo le mie costole."},
 			{"chi": "nox", "espr": "neutro", "testo": "Lance. Il braccio. Come va?"},
-			{"chi": "ferri", "espr": "neutro", "testo": "Brilla. Non serve più nasconderlo. È quasi un sollievo."},
+			{"chi": "ferri", "espr": "neutro", "testo": "Brilla. L'hanno visto tre persone e una telecamera inceppata. Per ora."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "(dal cartello luminoso della rampa) Sono qui. Il cartello «RALLENTARE» è mio, adesso."},
 			{"chi": "ferri", "espr": "arrabbiato", "testo": "Tu stai zitta."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Sì. Ma so dove sono tutti i posti di blocco. Il più debole è il casello della tangenziale."},
@@ -725,7 +727,7 @@
 			{"chi": "zecca", "espr": "arrabbiato", "testo": "MOLESTO?"},
 			{"chi": "saul", "espr": "neutro", "testo": "«SAUL. Sguardo onesto: non fidarsi.» Mi hanno capito."},
 			{"chi": "nox", "espr": "neutro", "testo": "«NOX. Pericolosa se svegliata.» Vero."},
-			{"chi": "ferri", "espr": "triste", "testo": "«LANCE. Anomalia. Non avvicinarsi.» Ieri c'era scritto «uniforme in ordine»."},
+			{"chi": "ferri", "espr": "triste", "testo": "«LANCE. Disertore. Non avvicinarsi.» Ieri c'era scritto «uniforme in ordine»."},
 			{"chi": "zecca", "espr": "serio", "testo": "La tua uniforme è ancora molto in ordine, Lance."},
 			{"chi": "ferri", "espr": "neutro", "testo": "Grazie. Ci tengo. È l'unica cosa che mi è rimasta in ordine."},
 			{"chi": "nox", "espr": "neutro", "testo": "Non l'unica."}
@@ -806,7 +808,7 @@
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "...Vi vedo. Male. Sgranati. Siete bellissimi."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Tregua?", "se": "echo_tregua"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Lo so. Non sono dei vostri. Ma vi vedo lo stesso.", "se": "echo_rancore"},
-			{"chi": "nox", "espr": "neutro", "testo": "Siamo latitanti. Senza casa, senza caffè, con un mostro, un ladro, un bambino e una telecamera."},
+			{"chi": "nox", "espr": "neutro", "testo": "Siamo latitanti. Senza casa, senza caffè, con un disertore, un ladro, un bambino e una telecamera."},
 			{"chi": "nox", "espr": "felice", "testo": "E sono felice. Non ditelo a nessuno."},
 			{"chi": "ferri", "espr": "neutro", "testo": "Lo metto a verbale. Pagina uno. Di un taccuino nuovo."},
 			{"chi": "zecca", "espr": "felice", "testo": "TITOLO: «La mia famiglia è assurda». ...Raga, no. Questa non la posto. Questa la tengo."},

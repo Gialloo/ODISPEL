@@ -1,5 +1,10 @@
 # Novità
 
+## Non ancora pubblicata · i climax al loro posto
+- Capitolo 3: la maschera di Rio si incrina invece di cadere. Da lì si vede un occhio; Rio non è ancora pronto a toglierla e nessuno insiste. Toglierla sarà il climax del suo arco.
+- Varco: Lance usa il braccio per salvare Rio, ma Echo inceppa le telecamere della piazza e il braccio lo vede solo il gruppo. Astrid non lo classifica come Anomalia davanti al paese. Mostrarlo a tutti sarà il climax dell'arco di Lance.
+- Capitolo 5 allineato: sul cartellone dei ricercati Lance è «Disertore», non «Anomalia».
+
 ## 0.32.0 · la storia riscritta e il capitolo 5
 - Nomi nuovi: Ferri ora è **Lance**, Zecca ora è **Rio**. Il Kairos si chiama **Echo**. La comandante di LibraCorp è **Astrid**, il capoturno di Nox è **Strix**.
 - Apertura nuova: la racconta Echo dalle telecamere. Presenta i quattro, spiega perché ognuno è in piazza alle tre di notte, poi cala la cupola e gli schermi li accusano. Si capisce subito cosa succede e perché scappano insieme.
