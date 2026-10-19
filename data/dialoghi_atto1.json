@@ -159,7 +159,8 @@
 			{"chi": "nox", "espr": "neutro", "testo": "Ci guardi anche mentre dormiamo?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Io ne tengo aperti centoquarantadue."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Domani tocca a un semaforo. In un quartiere che uno di voi conosce bene."},
-			{"chi": "ferri", "espr": "serio", "testo": "...L'Incrocio Nove."}
+			{"chi": "ferri", "espr": "serio", "testo": "...L'Incrocio Nove."},
+			{"chi": "ferri", "espr": "serio", "testo": "Siamo già in ritardo, seguitemi. E niente colpi di testa."}
 		]
 	},
 	"c1_briefing": {

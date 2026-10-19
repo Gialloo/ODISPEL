@@ -191,7 +191,8 @@ scene("rifugio_arrivo", "Echo porta la squadra in un deposito della metro abband
     L("nox/neutro", "Ci guardi anche mentre dormiamo?"),
     L("echo/neutro", "Io ne tengo aperti centoquarantadue."),
     L("echo/serio", "Domani tocca a un semaforo. In un quartiere che uno di voi conosce bene."),
-    L("ferri/serio", "...L'Incrocio Nove."))
+    L("ferri/serio", "...L'Incrocio Nove."),
+    L("ferri/serio", "Siamo già in ritardo, seguitemi. E niente colpi di testa."))
 # ================================================================== CAPITOLO 1 · ROSSO FISSO (Lance)
 # Dalla diffidenza al primo segreto custodito: gli altri vedono il braccio di Lance e tacciono.
 
