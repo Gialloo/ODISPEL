@@ -118,7 +118,7 @@ func _add_member(stage: Control, spec: Dictionary) -> void:
 	lean.tween_property(tr, "rotation_degrees", float(spec["rot"]) * 1.5, 1.4 + randf() * 0.5)
 	lean.tween_property(tr, "rotation_degrees", float(spec["rot"]), 1.4 + randf() * 0.5)
 	# fumetto del sussurro sopra la testa
-	var b := Ui.label("", 18, Ui.CREAM, null, 5)
+	var b := Ui.label("", 22, Ui.CREAM, null, 5)
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	b.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	b.size = Vector2(240, 60)
@@ -136,7 +136,7 @@ func _note(text: String, owner_text: String, rot: float, action: Callable) -> Co
 		if not _busy:
 			action.call())
 	vb.add_child(b)
-	var o := Ui.label(owner_text, 16, Color(1, 1, 1, 0.7))
+	var o := Ui.label(owner_text, 20, Color(1, 1, 1, 0.9))
 	o.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(o)
 	vb.pivot_offset = Vector2(115, 30)

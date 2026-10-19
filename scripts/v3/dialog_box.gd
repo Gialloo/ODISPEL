@@ -81,7 +81,9 @@ func _ready() -> void:
 	Ui.place(_choices, 0.5, 0.2, 0.5, 0.2, -330, 0, 330, 300)
 	_choices.visible = false
 	_stage.add_child(_choices)
-	_recap_lbl = Ui.label("", 22, Ui.CREAM, null, 6)
+	_recap_lbl = Ui.label("", 24, Ui.CREAM, null, 8)
+	# fondo scuro: il riassunto si legge anche sopra una strada piena di neon
+	_recap_lbl.add_theme_stylebox_override("normal", Ui.box(Color(0.06, 0.03, 0.1, 0.85), Ui.INK, 0, 6, 0))
 	_recap_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_recap_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	Ui.place(_recap_lbl, 0.15, 0, 0.85, 0, 0, 96, 0, 200)

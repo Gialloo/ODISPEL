@@ -925,7 +925,9 @@ func _end_battle() -> void:
 	_root.add_child(panel)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 12)
+	vb.alignment = BoxContainer.ALIGNMENT_CENTER
 	panel.add_child(vb)
+	_hint.visible = false
 	var t := Ui.label("VITTORIA" if win else "SCONFITTA", 54, Ui.YELLOW if win else Color("#ff7a9c"), Ui.display(), 10)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(t)
@@ -1011,7 +1013,7 @@ func _build_ui() -> void:
 	var ov := VBoxContainer.new()
 	ov.add_theme_constant_override("separation", 4)
 	ob.add_child(ov)
-	var ot := Ui.label("TURNI", 16, Color(1, 1, 1, 0.6), Ui.display())
+	var ot := Ui.label("TURNI", 18, Color(1, 1, 1, 0.85), Ui.display())
 	ov.add_child(ot)
 	_order_box = VBoxContainer.new()
 	_order_box.add_theme_constant_override("separation", 4)
@@ -1028,7 +1030,7 @@ func _build_ui() -> void:
 	bp.add_child(_boss_name)
 	_boss_hp = _bar(Color("#ff4b6e"), 22)
 	bp.add_child(_boss_hp)
-	_boss_hp_txt = Ui.label("", 18, Ui.CREAM, null, 5)
+	_boss_hp_txt = Ui.label("", 22, Ui.CREAM, null, 5)
 	_boss_hp_txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_hp.add_child(_boss_hp_txt)
 	Ui.place(_boss_hp_txt, 0, 0, 1, 1)
@@ -1080,7 +1082,7 @@ func _build_ui() -> void:
 	Ui.place(_turn_lbl, 1.0, 1.0, 1.0, 1.0, -600, -385, -16, -340)
 	_turn_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_root.add_child(_turn_lbl)
-	_hint = Ui.label("", 20, Color(1, 1, 1, 0.85), null, 6)
+	_hint = Ui.label("", 24, Ui.CREAM, null, 8)
 	Ui.place(_hint, 0.5, 0.62, 0.5, 0.62, -420, 0, 420, 60)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1158,9 +1160,9 @@ func _make_card() -> Dictionary:
 	vb.add_child(name_l)
 	var hp := _bar(Color("#62f08c"), 16)
 	vb.add_child(hp)
-	var hp_t := Ui.label("", 16, Ui.CREAM, null, 4)
+	var hp_t := Ui.label("", 20, Ui.CREAM, null, 4)
 	vb.add_child(hp_t)
-	var en := Ui.label("", 18, Ui.CYAN, null, 4)
+	var en := Ui.label("", 21, Ui.CYAN, null, 4)
 	vb.add_child(en)
 	var ult := _bar(Ui.PINK, 10)
 	vb.add_child(ult)
@@ -1178,7 +1180,7 @@ func _show_commands(on: bool) -> void:
 	var skm: Dictionary = BattleContent.MOVES.get(sk, {})
 	_btn_atk.disabled = not _usable("attack")
 	_btn_guard.disabled = not _usable("guard")
-	_btn_skill.text = "%s  ·  %d EN" % [str(skm.get("name", "ABILITÀ")).to_upper(), int(skm.get("cost", 0))]
+	_btn_skill.text = "%s  ·  %d ENERGIA" % [str(skm.get("name", "ABILITÀ")).to_upper(), int(skm.get("cost", 0))]
 	_btn_skill.disabled = not _usable(sk)
 	var ult_ok: bool = _usable(str(u.get("ult", "")))
 	_btn_ult.disabled = not ult_ok
@@ -1223,7 +1225,8 @@ func _refresh_hud() -> void:
 		(c["panel"] as PanelContainer).add_theme_stylebox_override("panel",
 			Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.55), col if active else Ui.INK, 4 if active else 3, 6, 5))
 		(c["panel"] as Control).modulate.a = 1.0 if alive else 0.45
-		(c["name"] as Label).text = str(u["name"]).to_upper() + ("  KO" if not alive else "")
+		# il colore anche scritto: chi non distingue i colori sa lo stesso chi colpisce le debolezze
+		(c["name"] as Label).text = str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
 		(c["name"] as Label).add_theme_color_override("font_color", col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
@@ -1245,7 +1248,7 @@ func _refresh_hud() -> void:
 		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
 		var l := Ui.label(("> " if k == turn_i else "   ") + nm, 20 if k == turn_i else 17, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), Ui.display() if k == turn_i else null, 4)
 		_order_box.add_child(l)
-	var nxt := Ui.label("   — round %d —" % int(b.get("round", 1)), 14, Color(1, 1, 1, 0.5))
+	var nxt := Ui.label("   — round %d —" % int(b.get("round", 1)), 18, Color(1, 1, 1, 0.85))
 	_order_box.add_child(nxt)
 	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper()) if cur_pid != "" and not ended else ""
 	if waiting:

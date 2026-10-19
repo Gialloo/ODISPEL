@@ -407,7 +407,7 @@ func _follow(delta: float) -> void:
 		var f: CharacterVisual = followers[i]
 		var idx: int = mini(_trail.size() - 1, 4 + 4 * i)
 		var target: Vector3 = _trail[idx]
-		target.x += (0.5 if i % 2 == 0 else -0.5)
+		target.x += (0.8 if i % 2 == 0 else -0.8)
 		var d: Vector3 = target - f.position
 		d.y = 0.0
 		var len: float = d.length()
@@ -421,6 +421,10 @@ func _follow(delta: float) -> void:
 			if mode == "dialog" or mode == "leaving":
 				var to: Vector3 = _focus - f.position
 				f.rotation.y = lerp_angle(f.rotation.y, atan2(-to.x, -to.z), minf(1.0, delta * 4.0))
+		# un compagno troppo vicino alla telecamera copre la scena: si nasconde finche' non si allontana
+		if cam != null:
+			var dc: Vector3 = f.position + Vector3(0, 1.0, 0) - cam.position
+			f.visible = dc.length() > 2.0 and dc.dot(-cam.global_transform.basis.z) > 0.6
 
 
 func _animate_world(delta: float) -> void:
