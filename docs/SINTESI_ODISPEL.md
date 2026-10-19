@@ -65,7 +65,7 @@ Queste idee tornano in ogni chat, in ogni versione e in ogni media. Sono il DNA 
 | **Combattimento** | V2: ruota A-S-U-G a pennellate, camera alla Metaphor, lightpainting, turni uno alla volta. V3: motore V2 copiato con presentazione 3D nuova, telecamere che si rompono | Unire: presentazione V2 + telecamera rotta V3 (sez. 6) |
 | **Stile visivo** | sei direzioni in otto giorni (sez. 5) | Una regola che le tiene tutte (sez. 5) |
 | **Rondini / Civette** | V2 Rondini, V3 Civette | Civette nel gioco, Rondini nel manga (deciso) |
-| **Kairos e Anomalie** | sinonimi in V2; specie e oggetti posseduti in V3 | Kairos = la specie; Anomalia = un Kairos dentro un oggetto |
+| **Kairos e Anomalie** | sinonimi in V2; specie e oggetti posseduti in V3 | Kairos = la specie, con stadi di crescita (Echo è piccola e può retrocedere); Anomalia = un Kairos dentro un oggetto |
 
 ### Le contraddizioni di trama che la lore del manga risolve
 
@@ -122,19 +122,19 @@ Quindi nel primo gioco la storia passa soprattutto da:
 
 ### Il finale dell'atto (deciso dall'autore il 19/10, dettagli da scrivere)
 
-- **Echo fa un piccolo sacrificio, ma non è persa per sempre.** Per salvare i quattro perde qualcosa di sé (oggi nella V3: spegne la città ed è come chiudere gli occhi). Non muore e non sparisce del tutto.
+- **Echo fa un piccolo sacrificio, ma non è persa per sempre.** Echo è un Kairos di piccola entità, non una predatrice da agguato come i soliti Kairos. La mossa con cui salva il gruppo e lo fa scappare (oggi nella V3: spegne la città) la fa **retrocedere a uno stadio precedente** (autore, 19/10). Non muore e non sparisce.
 - **L'aggancio per l'arco successivo**: i quattro dovranno fare missioni per recuperare **pezzi di artefatti e telecamere** e riportarla tra loro. È un obiettivo concreto per il seguito, e rovescia l'atto: prima era Echo a guardare loro, poi saranno loro a cercare lei.
 - Questo scioglie la contraddizione 1: la scelta di Echo resta sua, e il finale «Echo rinuncia a tornare a casa per restare con loro» può arrivare più avanti, quando l'avranno riportata indietro.
 - Proposta di lettura con lo sguardo: Echo si sacrifica spegnendo le telecamere, cioè i suoi occhi; ogni pezzo recuperato le restituisce un pezzo di vista. «Vi vedo. Male. Sgranati.» diventa l'inizio di un recupero, non una chiusura.
-- Dal finale pensato nella chat 04 restano utilizzabili, quando servirà, i finali dei quattro (Lance che rifiuta l'offerta di LibraCorp, Nox che resta nelle Civette, la maschera di Rio che impara la sua faccia, Saul che lascia andare il colpo della vita ma si intasca qualcosa).
-- **Il Committente** resta l'antagonista: il suo volto non si vede nell'atto. Le maschere dei Masca restano lo stesso mistero del manga.
+- **I momenti decisivi dei quattro** pensati il 18/10 (Lance che rifiuta l'offerta di LibraCorp e mostra il braccio da sé, Nox che potrebbe mollare e resta nelle Civette, la maschera di Rio che impara la sua faccia, Saul che lascia andare il colpo della vita ma si intasca qualcosa) vanno **al climax dell'arco di ciascun personaggio**: non dove li mostra oggi la V3 (troppo presto) né alla fine del gioco (troppo tardi) (autore, 19/10). Nella demo dell'atto restano quindi davanti, come promessa.
+- **Il Committente** resta l'antagonista: una **figura nascosta con piani nascosti**, che in passato ha avuto a che fare con ognuno dei quattro e con Echo, senza che nessuno di loro lo sappia ancora (autore, 19/10). Nell'atto il suo volto non si vede. Oggi la V3 mostra già due di questi legami (il pacco di Saul, la maschera di Rio); gli altri tre (Lance, Nox, Echo) sono da scrivere e possono uscire uno per arco.
 
 ### Cosa resta aperto nella storia del gioco
 
-- Chi è il Committente (nome provvisorio): antagonista del gioco, figura ancora da decidere. Non è Malocchio, che è troppo presto per mostrare.
+- Il Committente (nome provvisorio): figura nascosta, non Malocchio. Da decidere: chi è, cosa vuole davvero, e qual era il suo legame passato con Lance, Nox ed Echo (proposte possibili: il «prototipo» del braccio di Lance; la chiamata delle 3:12 a cui Nox non rispose; il varco verso casa di Echo).
 - Cosa è successo tra Astrid e Strix dieci anni fa.
 - Il mondo di Echo: casa sua, perché è bloccata qui.
-- Cosa perde Echo esattamente nel sacrificio, e quali pezzi (artefatti, telecamere) servono a riportarla.
+- Com'è Echo allo stadio precedente (cosa ricorda, come parla, cosa sa ancora fare) e quali pezzi (artefatti, telecamere) servono a riportarla.
 - Il nome della città e del paese.
 
 ---
@@ -284,10 +284,10 @@ Le maschere dei Masca arrivano nella città di Mada (arco 3) e in quella del gio
 
 In ordine di quanto bloccano.
 
-Già deciso il 19/10: il primo gioco è un atto e la demo va rifinita; Echo fa un piccolo sacrificio e verrà recuperata nell'arco successivo; il Committente è l'antagonista e non è Malocchio.
+Già deciso il 19/10: il primo gioco è un atto e la demo va rifinita; Echo, Kairos di piccola entità, retrocede a uno stadio precedente per salvarli e verrà recuperata nell'arco successivo; il Committente è l'antagonista, figura nascosta che ha già incrociato tutti, e non è Malocchio; i momenti decisivi dei quattro vanno al climax dei loro archi.
 
-1. **Chi è il Committente** (figura e nome).
-2. **Il sacrificio di Echo**: cosa perde, e quali pezzi servono a riportarla.
+1. **Chi è il Committente**: identità, nome e il legame passato con ciascuno dei quattro e con Echo.
+2. **Echo retrocessa**: com'è allo stadio precedente e quali pezzi servono a riportarla.
 3. **Collocare il gioco dopo l'arco 6 del manga** (proposta, non confermata): spiega velo e LibraCorp.
 4. **Battaglia V2 dentro la V3** (sez. 6).
 5. **Nome della città e del paese** (oggi `[CITTÀ]`).
