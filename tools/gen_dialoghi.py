@@ -148,7 +148,7 @@ scene("accordo", "Echo si presenta: è un Kairos, vive nelle telecamere. La cupo
     L("echo/serio", "LibraCorp e Odispeller sono là fuori a darvi la caccia. Le Anomalie sono qua dentro e voi siete ricercati: non mi pare abbiate molto da perdere."),
     L("nox/neutro", "E tu che ci guadagni?"),
     L("echo/neutro", "Sono chiusa qui dentro come voi. Cerchiamo la stessa porta."),
-    L("saul/neutro", "Nessuno regala niente."),
+    L("saul/neutro", "Ragazzi, se c'è qualcosa che ho imparato nella vita è che niente è gratis, quindi occhio."),
     L("echo/neutro", "Allora parliamo di prezzi. Lance: chi chiude il caso torna in servizio. Nome pulito. E il grado."),
     L("ferri/sorpreso", "...Il grado."),
     L("nox/neutro", "Gli si è inceppata la faccia."),

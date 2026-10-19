@@ -115,7 +115,7 @@
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "LibraCorp e Odispeller sono là fuori a darvi la caccia. Le Anomalie sono qua dentro e voi siete ricercati: non mi pare abbiate molto da perdere."},
 			{"chi": "nox", "espr": "neutro", "testo": "E tu che ci guadagni?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Sono chiusa qui dentro come voi. Cerchiamo la stessa porta."},
-			{"chi": "saul", "espr": "neutro", "testo": "Nessuno regala niente."},
+			{"chi": "saul", "espr": "neutro", "testo": "Ragazzi, se c'è qualcosa che ho imparato nella vita è che niente è gratis, quindi occhio."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Allora parliamo di prezzi. Lance: chi chiude il caso torna in servizio. Nome pulito. E il grado."},
 			{"chi": "ferri", "espr": "sorpreso", "testo": "...Il grado."},
 			{"chi": "nox", "espr": "neutro", "testo": "Gli si è inceppata la faccia."},
