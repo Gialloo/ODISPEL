@@ -36,6 +36,15 @@ static func body() -> Font:
 	return _font("Roboto-Bold.ttf")
 
 
+# Tipografia scelta dall'autore (13/10): Merriweather per dialoghi e descrizioni, Libre Caslon per il titolo e i nomi
+static func story() -> Font:
+	return _font("Merriweather-Bold.ttf")
+
+
+static func names() -> Font:
+	return _font("LibreCaslonText-Bold.ttf")
+
+
 static func is_touch() -> bool:
 	return TouchUi.active()
 

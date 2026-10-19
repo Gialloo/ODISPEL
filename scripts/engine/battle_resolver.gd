@@ -1078,27 +1078,39 @@ static func _summon_upkeep(state: Dictionary, events: Array, shoot: bool) -> voi
 # Boss di prova della telecamera rotta (ignora scudi e difesa, non uccide mai). A ogni turno:
 # chi e' gia' fra 50% e 25% scende esattamente al 25% (telecamera rotta) e il piu' in salute sopra il 50%
 # scende esattamente al 50% (telecamera incrinata). Cosi' in pochi round si vedono entrambi i livelli su tutti.
-static func _camera_cut(state: Dictionary, boss: Dictionary, events: Array) -> void:
-	var hit: int = 0
+# Chi colpira' "Obiettivo rotto" con i PV di adesso: prima chi e' tra meta' e un quarto (scende al 25%),
+# poi il piu' sano sopra meta' (scende al 50%). Serve anche all'avviso, che cosi' nomina chi verra' colpito davvero.
+static func camera_targets(state: Dictionary) -> Array:
+	var out: Array = []
+	var taken: Array = []
 	for step in [0.25, 0.5]:
 		var best: Dictionary = {}
 		var best_r: float = -1.0
 		for p in BattleState.alive_players(state):
 			var au: Dictionary = BattleState.active_unit(state, str(p["id"]))
+			if taken.has(str(au["id"])):
+				continue
 			var mx: float = maxf(1.0, float(au["max_hp"]))
 			var r: float = float(au["hp"]) / mx
 			var ok: bool = (r <= 0.5 and int(au["hp"]) > int(floor(mx * 0.25))) if step == 0.25 else int(au["hp"]) > int(floor(mx * 0.5))
 			if ok and r > best_r:
 				best = au
 				best_r = r
-		if best.is_empty():
-			continue
-		var to_hp: int = maxi(1, int(floor(float(best["max_hp"]) * step)))
+		if not best.is_empty():
+			taken.append(str(best["id"]))
+			out.append({"unit": best, "step": step})
+	return out
+
+
+static func _camera_cut(state: Dictionary, boss: Dictionary, events: Array) -> void:
+	var picks: Array = camera_targets(state)
+	for pk in picks:
+		var best: Dictionary = pk["unit"]
+		var to_hp: int = maxi(1, int(floor(float(best["max_hp"]) * float(pk["step"]))))
 		var dmg: int = int(best["hp"]) - to_hp
 		best["hp"] = to_hp
 		events.append({"t": "damage", "src": boss["id"], "dst": best["id"], "amount": dmg, "crit": false, "absorbed": 0, "pierce": true})
-		hit += 1
-	if hit == 0:
+	if picks.is_empty():
 		events.append({"t": "status", "unit": boss["id"], "status": "osserva"})
 
 

@@ -86,15 +86,25 @@ var _pattern: String = ""
 func _ready() -> void:
 	layer = 5          # sopra il 3D, sotto l'interfaccia della battaglia (10)
 	_mat = ShaderMaterial.new()
-	var sh := Shader.new()
-	sh.code = SHADER
-	_mat.shader = sh
+	_mat.shader = shader()
 	_rect = ColorRect.new()
 	_rect.material = _mat
 	_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	Ui.place(_rect, 0, 0, 1, 1)
 	_rect.visible = false
 	add_child(_rect)
+
+
+# Lo shader si compila una volta sola per tutta la partita (prima se ne creava uno nuovo a ogni battaglia,
+# e il telefono lo ricompilava proprio quando la telecamera si incrinava: un piccolo scatto nel momento piu' forte)
+static var _shader: Shader = null
+
+
+static func shader() -> Shader:
+	if _shader == null:
+		_shader = Shader.new()
+		_shader.code = SHADER
+	return _shader
 
 
 # 0 = sopra il 50% · 1 = incrinata (50%..25%) · 2 = rotta (sotto il 25%)

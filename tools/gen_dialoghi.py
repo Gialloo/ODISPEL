@@ -1,14 +1,24 @@
 # Genera data/dialoghi_atto1.json: la sceneggiatura dell'atto 1 (prologo, capitoli 1-5, finale) e le chiacchiere.
 #
 # VOCI
-#  Lance (id ferri) - 23, LibraCorp. Cita articoli del regolamento (anche inventati), "lo metto a verbale", taccuino. Chiama Rio "minorenne".
+# Regola del gruppo: Lance organizza, Saul sfrutta, Rio spettacolarizza, Nox evita altre sei ore di lavoro.
+# Lance e Saul sono i combattenti veterani, fighi senza volerlo; Rio vuole sembrare figo a tutti i costi.
+# La comicita' nasce dal contrasto tra loro, non dall'incompetenza.
+#  Lance (id ferri) - 23, LibraCorp. Il Braccio della Legge. Articoli del regolamento (anche inventati), "lo metto a verbale",
+#           taccuino, l'orologio (dice l'ora al secondo, "siamo in ritardo di quattro secondi"). Chiama Rio "minorenne".
 #           Rigido perche' ha paura: il braccio magico e' il suo segreto. Cresce: dalle regole alle persone.
-#  Nox    - 24, Civette. Frasi corte e asciutte, conta le ore senza dormire, caffe'. Cinica per stanchezza, non per cattiveria.
-#           La notte delle 3:12 e' la sua ferita. Cresce: torna a rispondere quando qualcuno chiama.
-#  Rio (id zecca) - 19, Masca. Veloce, gergo da creator ("raga", titoli in MAIUSCOLO, la chat che non c'e'), 32 follower.
-#           Non contratta mai, dice sempre quello che sente, anche troppo. Cresce: si fa vedere senza maschera.
-#  Saul   - 22, Magabondo. Calmo, poche parole, MAI punti esclamativi, niente gergo. Da' un prezzo a tutto.
+#  Nox    - 24, Civette. Frasi corte e asciutte, conta le ore senza dormire, il thermos del caffe', il divano. Cinica per
+#           stanchezza, non per cattiveria. La notte delle 3:12 e' la sua ferita. Cresce: torna a rispondere quando qualcuno chiama.
+#  Rio (id zecca) - 19, Masca. Il Re del Circo. Parla come un presentatore a un pubblico che non c'e' ("raga", "signore e
+#           signori", titoli in MAIUSCOLO), vuole l'entrata, la ripresa, il merito. 32 follower, la batteria sempre a zero.
+#           Dice sempre quello che sente, anche troppo. Cresce: si fa vedere senza maschera
+#           (nell'atto 1 la maschera si incrina e basta: toglierla e' il climax del suo arco, non arriva qui).
+#  Saul   - 22, Magabondo. Il Favorito del Caos. Parla come un negoziatore: rilassato, mezze verita', una scappatoia in ogni
+#           frase. MAI punti esclamativi, niente gergo. Da' un prezzo a tutto e tiene il conto (con gli interessi).
 #           Proverbi di nonne inventate ("Quale nonna?" "Ne ho tre"). Non dice cosa prova: lo fa. Cresce: smette di contare.
+# GAG DA FUGGITIVI (gag, poi ricorrenza; il payoff vero arriva al climax di ogni arco, non nell'atto 1): il distributore
+#  (Saul col colpetto, Lance che ci prova di nascosto), il divano del rifugio, la batteria di Rio, l'orologio di Lance,
+#  il conto di Saul, il thermos di Nox, "non dobbiamo dare nell'occhio", i nomi falsi, il pasto da cinque minuti.
 #  Echo   - un Kairos, femminile, vive nelle telecamere. Precisa (orari, numeri delle telecamere), curiosa degli umani,
 #           impara a scherzare e le battute le vengono male. Si affeziona davvero, ed e' per questo che il tradimento fa male.
 import json, sys
@@ -61,9 +71,9 @@ scene("apertura", "Echo, un'entità che vive nelle telecamere, presenta quattro 
     L("echo/neutro", "Quella seduta sulla panchina è Nox. Odispeller delle Civette: i maghi con la licenza. Turno di notte."),
     L("nox/triste", "Due minuti alla fine del turno. Poi doccia, letto, e nessuno mi chiama fino a giovedì."),
     L("echo/neutro", "Quello col berretto è Ferri. LibraCorp: la polizia che dà la caccia alla magia. L'hanno appena retrocesso a pattuglia."),
-    L("ferri/serio", "Piazza Centrale, tutto regolare. Una ragazza che dorme seduta. Un tizio con un pacco. Un minorenne che parla da solo."),
+    L("ferri/serio", "Piazza Centrale, ore 2:58 e quaranta secondi. Tutto regolare. Una ragazza che dorme seduta. Un tizio con un pacco. Un minorenne che parla da solo."),
     L("echo/neutro", "Il «minorenne» si chiama Zecca. Ha diciannove anni e una maschera che gli dà poteri. Gli è arrivata per posta."),
-    L("zecca/felice", "Raga, sono in piazza alle tre di notte. Perché? Perché i contenuti non dormono!"),
+    L("zecca/felice", "Buonasera raga, e benvenuti a un'altra puntata di RIO ALLE TRE DI NOTTE. Perché alle tre? Perché i contenuti non dormono!"),
     L("echo/neutro", "E quello col pacco è Saul. Contrabbandiere. Deve consegnarlo qui, alle tre in punto. Non sa cosa c'è dentro."),
     L("saul/neutro", "Tre in punto. Consegna, soldi, letto. Niente domande. Le domande costano."),
     L("echo/neutro", "Quattro sconosciuti di quattro fazioni che si odiano. Nessun motivo al mondo per parlarsi."),
@@ -80,9 +90,9 @@ scene("apertura", "Echo, un'entità che vive nelle telecamere, presenta quattro 
     L("ferri/serio", "Io non scappo dalla mia squadra. Mi spiegherò."),
     L("saul/neutro", "Fai pure. Ti arresteranno con l'uniforme in ordine."),
     L("nox/neutro", "Io scappo. Nessuno mi arresta prima del caffè."),
-    L("zecca/felice", "Seguo quello col pacco! Ha la faccia di uno che sa scappare!"),
-    L("saul/neutro", "Non seguirmi, ragazzino. Porto sfortuna."),
-    L("zecca/felice", "Allora siamo in due!"),
+    L("zecca/felice", "Raga, cambio di programma: seguiamo quello col pacco. Ha la faccia di uno che sa scappare!"),
+    L("saul/neutro", "Non seguirmi, ragazzino. Porto sfortuna. Agli altri. A me di solito va benissimo."),
+    L("zecca/felice", "Allora mi metto dalla tua parte!"),
     L("ferri/arrabbiato", "...Articolo nove: in mancanza di ordini, si seguono i sospettati. Vi seguo. Per arrestarvi dopo."),
     L("echo/neutro", "E così cominciò. Quattro sconosciuti costretti a correre nella stessa direzione."),
     L("echo/serio", "Io li guardavo. Andava tutto come avevo previsto. Quasi tutto."))
@@ -90,9 +100,12 @@ scene("apertura", "Echo, un'entità che vive nelle telecamere, presenta quattro 
 scene("telecamera", "Una telecamera sembra seguire la squadra. Saul se ne accorge.",
     L("saul/serio", "Quella telecamera ci segue da tre isolati."),
     L("nox/neutro", "Le telecamere non girano la testa. Non da sole."),
-    L("zecca/felice", "Raga, salutate! Magari è un fan."),
-    L("ferri/serio", "O una prova. Teniamo le facce basse."),
-    L("saul/neutro", "La tua faccia è su ogni schermo della città, capo. Tenerla bassa non la rimpicciolisce."))
+    L("ferri/serio", "Regola numero uno per chi scappa: non dare nell'occhio."),
+    L("zecca/felice", "Ciao! Raga, salutate, magari è un fan."),
+    L("ferri/arrabbiato", "Rio. Che cosa ho appena detto?"),
+    L("zecca/sorpreso", "Ma questo è il mio normale!"),
+    L("nox/neutro", "È questo il problema."),
+    L("saul/neutro", "La tua faccia è su ogni schermo della città, capo. Per non dare nell'occhio te ne servirebbe un'altra."))
 
 scene("scontrino", "Indizio: il distributore rifiuta il viola. Forse lo teme.",
     L("saul/sorpreso", "Uno scontrino per terra. «Resto: un'anima. Monete VIOLA rifiutate.»"),
@@ -109,10 +122,15 @@ scene("distributore", "Il distributore in fondo alla strada si sveglia: è un'An
 
 scene("agguato", "Il distributore attacca per primo.",
     L("DISTRIBUTORE", "*KLANG* CLIENTE INDECISO RILEVATO. ADDEBITO IN CORSO."),
-    L("saul/sorpreso", "Stavo solo guardando la vetrina."))
+    L("saul/sorpreso", "Stavo solo guardando la vetrina."),
+    L("zecca/felice", "Aspettate, raga, mi serve un'entrata..."),
+    L("ferri/serio", "Niente entrate. Distanza tre metri. Adesso."))
 
 scene("vittoria", "L'Anomalia è chiusa.",
     L("zecca/felice", "Clip salvata! Questa fa il botto. Cioè, trentadue visualizzazioni. Ma col botto."),
+    L("saul/neutro", "Un colpetto qui, sul fianco. Due merendine. Ci doveva il resto."),
+    L("ferri/serio", "Questa è appropriazione."),
+    L("saul/neutro", "È un rimborso, capo. Voleva addebitarci un'anima."),
     L("nox/neutro", "Qualcuno mi offre un caffè. Non da quello."))
 
 scene("sconfitta", "La squadra è stata battuta.",
@@ -157,18 +175,19 @@ scene("accordo", "Echo si presenta: è un Kairos, vive nelle telecamere. La cupo
     L("echo/felice", "Grazie. Non me l'aveva mai detto nessuno. Seguite le lucine rosse: vi porto in un posto asciutto.", se="echo_fiducia"))
 
 scene("rifugio_arrivo", "Echo porta la squadra in un deposito della metro abbandonato: sarà il loro rifugio. Nessuno si fida di nessuno.",
-    L("zecca/sorpreso", "Un deposito della metro. Topi, muffa e un divano. Raga, room tour!"),
+    L("zecca/sorpreso", "Raga, benvenuti nella nuova casa. Room tour: topi, muffa e un divano. Il divano è il pezzo forte."),
     L("saul/neutro", "Il divano è mio. L'ho visto per primo."),
     L("ferri/serio", "Il divano va a turni. Articolo ventidue: il riposo si assegna per anzianità di servizio."),
     L("saul/neutro", "Allora è mio. Ho più anni di galera di tutti voi messi insieme."),
     L("ferri/arrabbiato", "La galera non è servizio."),
     L("saul/neutro", "Dipende da quale lato delle sbarre la guardi, capo."),
+    L("nox/neutro", "Mentre discutevate mi ci sono sdraiata. Il divano è occupato. Parlate piano."),
     L("ferri/serio", "Turni di guardia. Due ore a testa. Il primo lo faccio io. Il secondo... non lo faccio fare a nessuno di voi."),
     L("nox/neutro", "Quindi fai tutti i turni."),
     L("ferri/serio", "Faccio tutti i turni."),
     L("saul/neutro", "Io dormo col pacco sotto la testa. Nessuno lo tocca."),
-    L("zecca/serio", "Io dormo col telefono acceso. Se mi rapiscono, almeno ho la diretta."),
-    L("nox/felice", "C'è una macchinetta del caffè. Funziona. Fate pure la rivoluzione senza di me."),
+    L("zecca/serio", "Io dormo col telefono acceso. Nove per cento. Se mi rapiscono, almeno ho la diretta."),
+    L("nox/felice", "C'è una macchinetta del caffè. Funziona. Chi mi riempie il thermos ha il divano dopo di me."),
     L("echo/neutro", "Nessuno di voi si fida degli altri. Me ne accorgo da come dormite."),
     L("nox/neutro", "Come dormiamo?"),
     L("echo/neutro", "Con un occhio aperto. Lo riconosco. Io ne ho centoquarantadue."),
@@ -188,7 +207,7 @@ scene("c1_briefing", "All'Incrocio Nove il tempo si è fermato sul rosso. È il 
     L("zecca/felice", "TITOLO: «La guardia e il ladro: la reunion». Raga, fa i numeri."),
     L("nox/neutro", "Gente ferma da sei ore. Muoviamoci, prima che diventino sette."),
     L("echo/serio", "Lance. Ci saranno pattuglie LibraCorp. Gente che conosci."),
-    L("ferri/serio", "Guido io. In fila. E nessuno attraversa col rosso."))
+    L("ferri/serio", "Siamo già in ritardo di quattro secondi. Guido io. In fila. E nessuno attraversa col rosso."))
 
 scene("c1_radio", "Alla radio, la Comandante Astrid di LibraCorp dà la caccia alla squadra. È stata l'istruttrice di Lance.",
     L("RADIO LIBRACORP", "...a tutte le unità: i quattro della piazza sono considerati pericolosi. Priorità uno."),
@@ -386,7 +405,8 @@ scene("c2_sera_nox_saul", "Nox e Saul trattano su tutto. Legame Nox e Saul.",
     L("saul/serio", "Sei l'unica guardia che non mi ha mai guardato come un mostro."),
     L("nox/neutro", "Ho visto mostri veri, Saul. Tu sei solo un idiota con un giubbotto. Lo dico con affetto.", imposta="legame_nox_saul"))
 # ================================================================== CAPITOLO 3 · VETRINA (Rio)
-# Collaborazione: Saul parla sul serio a Rio, Rio si fa vedere senza maschera. Nessuno ride di lui.
+# Collaborazione: Saul parla sul serio a Rio. La maschera si incrina e da li' si vede un occhio: Rio non e' ancora pronto
+# a toglierla e nessuno insiste. Toglierla e' il climax del suo arco, piu' avanti.
 
 scene("c3_briefing", "Nella Galleria Lumière chi entra perde la faccia e diventa un manichino. I video sono ovunque. Guida Rio.",
     L("zecca/sorpreso", "Raga, guardate i video della Galleria Lumière. La gente si fa un selfie e... non ha più la faccia."),
@@ -419,24 +439,25 @@ scene("c3_soglia", "Nella vetrina c'è un manichino che copia la squadra. Rio ci
     L("zecca/sfotto", "Io vivo di gente che mi guarda troppo. Entriamo."),
     L("ferri/serio", "Insieme. Nessuno entra da solo. Articolo... lascia stare. Insieme e basta."))
 
-scene("c3_boss", "Il Manichino vuole la faccia di Rio. Rio si toglie la maschera e se la tiene.",
+scene("c3_boss", "Il Manichino vuole la faccia di Rio. La maschera si incrina, ma Rio la tiene su e si tiene la faccia.",
     L("MANICHINO", "Dammi la tua faccia. Tanto non la usi. Hai sempre la maschera."),
     L("zecca/triste", "...Forse hai ragione. Senza maschera non sono nessuno."),
     L("saul/arrabbiato", "Ragazzino. Guarda me. Ho mentito a mezza città e la faccia ce l'ho ancora. Tienitela."),
-    L("nox/serio", "Rio. Noi la tua faccia l'abbiamo vista dormire sul divano con la bocca aperta. Non è niente di speciale. È tua."),
+    L("nox/serio", "Rio. Ti abbiamo visto dormire sul divano con la bocca aperta e la maschera storta. Non sei niente di speciale. Sei tu."),
     L("zecca/serio", "...Ok. Ho capito una cosa."),
-    L("zecca/sfotto", "Questa faccia è mia. Brutta, ma MIA. Tu non te la prendi."))
+    L("zecca/sfotto", "Questa faccia è mia. Brutta, ma MIA. Tu non te la prendi."),
+    L("zecca/serio", "E la maschera me la tolgo quando decido io. Non quando lo dici tu."))
 
 scene("c3_agguato", "Il Manichino attacca per primo.",
     L("MANICHINO", "Sorridete. Non muovetevi. Clic."),
     L("zecca/sorpreso", "Non ero pronto! Rifacciamola!"))
 
-scene("c3_faccia", "Rio resta senza maschera davanti agli altri. I volti tornano alla gente. Tre Anomalie chiuse.",
-    L("zecca/neutro", "Allora? Dite qualcosa. Sono così brutto?"),
-    L("nox/felice", "Sei un ragazzino normale. È peggio: adesso non puoi più fare il misterioso."),
-    L("ferri/neutro", "La maschera rimettila quando vuoi. Ma ora sappiamo chi c'è sotto."),
-    L("saul/neutro", "Hai il naso di uno che non sa mentire. Un giorno ti servirà."),
-    L("zecca/felice", "Raga... vi presento Rio. Quello vero. Trentadue follower e un cuore d'oro."),
+scene("c3_faccia", "La maschera di Rio ha una crepa: da lì si vede un occhio. Rio non è ancora pronto a toglierla, e nessuno insiste. I volti tornano alla gente. Tre Anomalie chiuse.",
+    L("zecca/sorpreso", "Raga. La maschera. Si è crepata. Da qui si vede... un occhio. Il mio."),
+    L("nox/neutro", "Un occhio solo. Basta per vedere che hai paura. Va bene così."),
+    L("ferri/neutro", "La crepa non la metto a verbale. Quando vorrai toglierla, ci saremo. Non prima."),
+    L("saul/neutro", "Hai l'occhio di uno che non sa mentire. Un giorno ti servirà."),
+    L("zecca/felice", "Signore e signori... vi presento un occhio di Rio. Quello vero. Il resto arriva. Trentadue follower e un cuore d'oro."),
     L("echo/felice", "Trentatré. Mi sono iscritta. Con la telecamera quattordici."),
     L("zecca/sorpreso", "...Echo. Sei la mia follower più strana."),
     L("echo/neutro", "Tre su quattro. L'ultima è sotto la Banca Centrale. Saul, credo che ti piacerà."),
@@ -482,6 +503,8 @@ scene("c4_briefing", "L'ultima Anomalia è la Cassaforte nel caveau LibraCorp so
     L("saul/neutro", "Il caveau. Ci penso da dieci anni. Guido io. Ovviamente."),
     L("ferri/serio", "Si entra, si chiude l'Anomalia, si esce. Niente tasche piene."),
     L("saul/neutro", "Le mie tasche sono sempre piene, capo. È un problema di sartoria."),
+    L("nox/neutro", "Quanto è sicuro, da uno a dieci?"),
+    L("saul/neutro", "Non ho detto che è sicuro. Ho detto che, statisticamente, è improbabile che moriamo tutti."),
     L("zecca/felice", "TITOLO: «Rapina in banca, ma è legale». Raga, è il video della vita!"),
     L("nox/neutro", "Non è legale. Niente di quello che facciamo è legale. Quarantadue ore sveglia."))
 
@@ -531,10 +554,10 @@ scene("c4_agguato", "La Cassaforte attacca per prima.",
     L("saul/neutro", "Non ho ancora toccato niente. Di solito aspettano."))
 
 scene("c4_dopo", "La cassaforte è chiusa: quattro Anomalie chiuse. Saul ha due costole incrinate e non se ne pente. Echo li manda a riposare: all'alba, in piazza.",
-    L("zecca/felice", "Quattro su quattro! Raga, siamo leggenda! ...Ah, la chat non c'è. Siamo leggenda lo stesso."),
+    L("zecca/felice", "Quattro su quattro! Avete visto QUELLO CHE HO FATTO? ...Cioè, quello che ha fatto Saul. Ma io ero nell'inquadratura."),
     L("nox/neutro", "Saul. Fammi vedere le costole."),
     L("saul/neutro", "Sono a posto."),
-    L("nox/neutro", "Due incrinate. Stai zitto e respira piano. È un ordine medico."),
+    L("nox/neutro", "Due incrinate. Stai zitto, respira piano e stanotte il divano è tuo. È un ordine medico."),
     L("zecca/serio", "Saul... perché l'hai fatto?"),
     L("saul/neutro", "Non lo so. Di solito so sempre perché faccio le cose. Quanto ci guadagno."),
     L("saul/serio", "Stavolta niente. È la cosa più strana che mi sia mai successa."),
@@ -563,18 +586,16 @@ scene("c4_vigilia", "L'ultima notte al rifugio. Ognuno dice cosa farà con quell
     L("echo/neutro", "Niente. Era una domanda per un film. Rio mi ha fatto vedere un film. Dormite."),
     L("ferri/serio", "...Ha cambiato discorso. Di nuovo."))
 # ================================================================== FINALE · IL VARCO
-# Il tradimento. Ognuno viene colpito nel punto in cui si era legato a Echo. Poi la cupola cade e Lance mostra il braccio
-# al mondo intero per salvare gli altri: la sua carriera, il suo sogno, finiti in diretta. Diventano qualcosa di piu' di una squadra.
+# Il tradimento. Ognuno viene colpito nel punto in cui si era legato a Echo. Poi la cupola cade e Lance usa il braccio per
+# salvare Rio. Echo inceppa le telecamere della piazza come all'Incrocio Nove: il braccio lo vede solo il gruppo. Mostrarlo
+# al paese e' il climax dell'arco di Lance, piu' avanti.
 
-scene("varco", "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale. Il Committente le ruba il varco, la cupola crolla e Lance usa il braccio davanti a tutte le telecamere del paese per salvare Rio. Ora li cerca il paese intero.",
-    L("echo/neutro", "Quattro Anomalie chiuse. La cupola è appesa a un filo. E il filo... si apre."),
-    L("nox/sorpreso", "Il cielo... si sta aprendo un buco. Lì, sopra la piazza."),
-    L("echo/felice", "È un varco. Porta a casa mia. Grazie. A tutti e quattro. Davvero."),
+scene("varco", "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale. Il Committente le ruba il varco, la cupola crolla e Lance usa il braccio per salvare Rio. Echo inceppa le telecamere della piazza: il braccio lo vede solo il gruppo. Ora li cerca il paese intero.",
+    L("echo/felice", "Quattro Anomalie chiuse. Lassù, sopra la piazza: è un varco. Porta a casa mia. Grazie. A tutti e quattro. Davvero."),
     L("ferri/serio", "Echo. Le registrazioni. Le avevi promesse all'alba, in piazza. Dove sono?"),
     L("echo/triste", "..."),
-    L("ferri/arrabbiato", "Rispondi."),
     L("echo/triste", "Non esistono. Le ho cancellate io, alle tre e un minuto. Le facce sugli schermi... le ho messe io."),
-    L("echo/triste", "Le quattro Anomalie tenevano chiuso il varco. Mi serviva qualcuno che le chiudesse. Qualcuno che non potesse andare né da LibraCorp né dalle Civette."),
+    L("echo/triste", "Mi serviva qualcuno che chiudesse le Anomalie. Qualcuno che non potesse andare né da LibraCorp né dalle Civette."),
     L("echo/serio", "Un agente con un braccio illegale. Una Civetta con una chiamata senza risposta. Un ragazzino con una maschera che non doveva avere. Un contrabbandiere con un pacco in mano."),
     L("echo/triste", "Quattro persone compromesse. Se aveste detto la verità, nessuno vi avrebbe creduto. Vi ho scelti per questo."),
     L("ferri/serio", "Il grado. Il nome pulito. Non c'era nessun caso da chiudere. C'eravamo solo noi da usare."),
@@ -593,34 +614,32 @@ scene("varco", "In piazza si apre un varco. Echo confessa: li ha incastrati lei 
     L("VOCE SENZA VOLTO", "Che scena commovente. Grazie per il varco, piccola Echo. Non era tuo."),
     L("echo/sorpreso", "Tu... il Committente. No. No, no, no. Il varco si sta chiudendo!"),
     L("VOCE SENZA VOLTO", "Si sta chiudendo per te. Per me si è appena aperto."),
-    L("nox/sorpreso", "La cupola! Si sta crepando ovunque! Viene giù!"),
-    L("zecca/sorpreso", "Raga... sopra di me! Il tabellone!"),
+    L("zecca/sorpreso", "Raga... la cupola viene giù! Il tabellone! Sopra di me!"),
     L("ferri/arrabbiato", "RIO!"),
     L("ferri/serio", "...Ce l'ho. L'ho preso. Sta' giù."),
-    L("zecca/sorpreso", "Lance... il braccio. Lo stanno vedendo tutti. Ci sono telecamere ovunque."),
+    L("zecca/sorpreso", "Lance... il braccio. Ci sono telecamere ovunque. Ti vedono tutti."),
     L("ferri/neutro", "Lo so."),
-    L("COMANDANTE ASTRID", "(da tutti gli schermi della città) Agente Lance. Quel braccio. Da questo momento sei classificato come Anomalia."),
-    L("ferri/serio", "Allora sono un'Anomalia che vi para la testa. Rio. Alzati. Correte."),
-    L("COMANDANTE ASTRID", "A tutte le unità del paese: il sigillo è caduto. Cercate i quattro. Ovunque."),
-    L("STRIX", "(alla radio) Civette, in caccia. Nox... mi dispiace. Stavolta non posso coprirti."),
-    L("saul/serio", "Il tizio del pacco si è preso il varco. E noi abbiamo il paese addosso."),
-    L("nox/serio", "Prima ci cercava una città. Adesso ci cerca tutto il paese. E abbiamo un agente classificato come mostro."),
+    L("echo/serio", "No. Piazza Centrale, telecamere dalla uno alla dodici: inceppate. Come all'Incrocio Nove."),
+    L("ferri/serio", "...Non ti ringrazio. Rio. Alzati. Correte."),
+    L("STRIX", "(alla radio) Civette, in caccia in tutto il paese. Nox... mi dispiace. Stavolta non posso coprirti."),
+    L("nox/serio", "Prima ci cercava una città. Adesso ci cerca tutto il paese. E abbiamo un agente con un braccio che brilla."),
     L("ferri/neutro", "Ex agente. Fa meno male se lo dico io."),
     L("echo/triste", "...Portatemi con voi. Non per tornare a casa. Non ho più una casa. Per rimediare."),
     L("zecca/serio", "..."),
     L("zecca/serio", "Corri."))
 
 # ================================================================== CAPITOLO 5 · LA TANGENZIALE
-# Famiglia. Si scappa insieme, ci si para le spalle, si decide cosa fare di Echo. Echo si spegne per loro.
+# Famiglia. Si scappa insieme, ci si para le spalle, si decide cosa fare di Echo. Echo si spegne per loro e torna nucleo
+# (autore, 19/10: piccolo sacrificio, non persa per sempre). Aggancio del seguito: recuperare pezzi e frammenti per riaverla.
 
 scene("c5_alba", "All'alba, sulla rampa della tangenziale, la squadra decide cosa fare di Echo. Lei conosce l'unico casello che non porta in prigione.",
     L("zecca/triste", "L'alba. Non la vedevo da quando è iniziata la cupola. È bruttissima. È bellissima."),
     L("nox/neutro", "Cinquantasei ore sveglia. Vedo due soli."),
-    L("ferri/serio", "Situazione. Ricercati da LibraCorp, dalle Civette e dal paese. Risorse: un manganello, un caffè freddo, un telefono al tre per cento."),
+    L("ferri/serio", "Situazione. Ore 6:02 e undici secondi. Ricercati da LibraCorp, dalle Civette e dal paese. Risorse: un manganello, un caffè freddo, un telefono al tre per cento."),
     L("zecca/sorpreso", "Due per cento."),
     L("saul/neutro", "Una costola e mezza. Non dimentichiamo le mie costole."),
     L("nox/neutro", "Lance. Il braccio. Come va?"),
-    L("ferri/neutro", "Brilla. Non serve più nasconderlo. È quasi un sollievo."),
+    L("ferri/neutro", "Brilla. L'hanno visto tre persone e una telecamera inceppata. Per ora."),
     L("echo/neutro", "(dal cartello luminoso della rampa) Sono qui. Il cartello «RALLENTARE» è mio, adesso."),
     L("ferri/arrabbiato", "Tu stai zitta."),
     L("echo/triste", "Sì. Ma so dove sono tutti i posti di blocco. Il più debole è il casello della tangenziale."),
@@ -642,7 +661,7 @@ scene("c5_ricercati", "Il cartellone dei ricercati: le quattro facce, con descri
     L("zecca/arrabbiato", "MOLESTO?"),
     L("saul/neutro", "«SAUL. Sguardo onesto: non fidarsi.» Mi hanno capito."),
     L("nox/neutro", "«NOX. Pericolosa se svegliata.» Vero."),
-    L("ferri/triste", "«LANCE. Anomalia. Non avvicinarsi.» Ieri c'era scritto «uniforme in ordine»."),
+    L("ferri/triste", "«LANCE. Disertore. Non avvicinarsi.» Ieri c'era scritto «uniforme in ordine»."),
     L("zecca/serio", "La tua uniforme è ancora molto in ordine, Lance."),
     L("ferri/neutro", "Grazie. Ci tengo. È l'unica cosa che mi è rimasta in ordine."),
     L("nox/neutro", "Non l'unica."))
@@ -675,7 +694,7 @@ scene("c5_agguato", "L'Autovelox attacca per primo.",
     L("AUTOVELOX", "FLASH. FLASH. FOTO SCATTATA. VERBALE IN ARRIVO."),
     L("zecca/sorpreso", "Sono venuto malissimo! Cancellala!"))
 
-scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Echo spegne ogni telecamera e ogni luce della città per farli scappare, anche se per lei è come chiudere gli occhi. Nella fuga i quattro diventano una famiglia.",
+scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Echo spegne ogni telecamera e ogni luce della città per farli scappare, anche se per lei è come chiudere gli occhi. Si riaccende nel telefono di Rio, ma di lei resta solo il nucleo: per riaverla servono pezzi e frammenti. Nella fuga i quattro diventano una famiglia.",
     L("zecca/felice", "La sbarra è alzata! Raga, siamo fuori!"),
     L("ferri/sorpreso", "No. Fermi. Fari. Due colonne di fari."),
     L("COMANDANTE ASTRID", "(dal megafono) Lance. Torna a casa. Ti sistemiamo noi. Ti aggiustiamo."),
@@ -706,11 +725,16 @@ scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Ec
     L("saul/neutro", "...Te la regalo. Non dirlo in giro. Ho una reputazione."),
     L("zecca/sorpreso", "Si accende. Si sta accendendo. Echo? Ci sei?"),
     L("echo/triste", "...Vi vedo. Male. Sgranati. Siete bellissimi."),
+    L("zecca/sorpreso", "Echo... sul display c'è solo un puntino. Un puntino di luce che trema."),
+    L("echo/triste", "Mi sono spenta tutta. È rimasto il nucleo. Il resto l'ho lasciato sulla tangenziale."),
+    L("nox/serio", "Come ti rimettiamo in piedi?"),
+    L("echo/neutro", "Pezzi. Telecamere rotte, circuiti. E i frammenti delle Anomalie, quelli che vagano per strada. Ogni pezzo è un occhio in più."),
+    L("saul/neutro", "Rottami e roba che non dovrebbe esistere. Finalmente un lavoro che so fare."),
     L("echo/felice", "Tregua?", se="echo_tregua"),
-    L("echo/neutro", "Lo so. Non sono dei vostri. Ma vi vedo lo stesso.", se="echo_rancore"),
-    L("nox/neutro", "Siamo latitanti. Senza casa, senza caffè, con un mostro, un ladro, un bambino e una telecamera."),
+    L("echo/neutro", "Lo so. Non sono dei vostri. Ma vi vedo lo stesso. Un pochino.", se="echo_rancore"),
+    L("nox/neutro", "Siamo latitanti. Senza casa, senza caffè, con un disertore, un ladro, un bambino e una telecamera."),
     L("nox/felice", "E sono felice. Non ditelo a nessuno."),
-    L("ferri/neutro", "Lo metto a verbale. Pagina uno. Di un taccuino nuovo."),
+    L("ferri/neutro", "Lo metto a verbale. Pagina uno di un taccuino nuovo: riportare Echo intera."),
     L("zecca/felice", "TITOLO: «La mia famiglia è assurda». ...Raga, no. Questa non la posto. Questa la tengo."),
     L("saul/neutro", "Famiglia. Mia nonna diceva che è una cosa che costa tantissimo."),
     L("saul/serio", "Aveva ragione. E io pago."))
@@ -729,6 +753,9 @@ F = {"tipo": "fermo"}
 
 CH = {}
 CH["strada"] = [
+    B("s_orologio", C, L("saul/neutro", "Capo, che ore sono?"), L("ferri/serio", "Tre e ventuno. E quaranta secondi."),
+      L("saul/neutro", "Non ti ho chiesto i secondi."), L("ferri/serio", "Te li ho dati gratis."),
+      L("saul/neutro", "Niente è gratis, capo. Adesso ti devo quaranta secondi.")),
     B("s_inizio", Z(6.0), L("ferri/serio", "Formazione. Io davanti, voi dietro, nessuno parla."),
       L("saul/neutro", "Tu davanti, con quella divisa? Ci vedono arrivare da tre isolati."),
       L("zecca/felice", "Raga, lui è Lance. Salutate Lance. ...Lance non saluta.")),
@@ -766,6 +793,9 @@ CH["strada"] = [
     B("s_f2", F, L("zecca/felice", "Raga, se stiamo fermi faccio una live. Tre... due..."), L("ferri/serio", "Cammina.")),
 ]
 CH["incrocio"] = [
+    B("i_ripresa", C, L("zecca/felice", "Lance, Saul, quella di prima la rifacciamo? Due colpi e giù. Non stavo registrando."),
+      L("ferri/serio", "No."), L("saul/neutro", "La seconda ripresa si paga. La prima era gratis perché non lo sapevo."),
+      L("nox/neutro", "E io ci passo davanti. Ogni volta. Per principio.")),
     B("i_inizio", Z(5.0), L("ferri/serio", "Il mio vecchio giro. Lì facevo le multe. Lì ho fermato un ladro di biciclette."),
       L("saul/neutro", "Era mio cugino. Ti saluta."), L("ferri/serio", "Tuo cugino aveva sessant'anni."),
       L("saul/neutro", "Siamo una famiglia lunga.")),
@@ -794,6 +824,9 @@ CH["incrocio"] = [
     B("i_f1", F, L("ferri/serio", "Non si sosta in mezzo all'incrocio. Neanche con la fine del mondo.")),
 ]
 CH["dentro_rosso"] = [
+    B("dr_conto", C, L("saul/neutro", "Capo. Prima ti ho tolto un pugno dalla faccia. Sono venti."),
+      L("ferri/serio", "Non pago."), L("saul/neutro", "Ventidue. Gli interessi corrono."),
+      L("ferri/serio", "Ventidue cosa?"), L("saul/neutro", "Lo decidiamo quando paghi.")),
     B("dr_inizio", Z(6.0), L("zecca/sorpreso", "È tutto rosso. Anche il cielo. Anche i pensieri."),
       L("ferri/serio", "Restate vicini. Qui dentro le regole le fa lui.")),
     B("dr_echo", Z(-6.0), L("zecca/serio", "Raga, è strano senza Echo. Non c'è nessuno che ci guarda."),
@@ -806,6 +839,16 @@ CH["dentro_rosso"] = [
       L("saul/neutro", "Aprirei un'officina. Clienti fermi. Letteralmente.")),
 ]
 CH["vicolo"] = [
+    B("v_distributore", C, L("ferri/serio", "Echo. Tu che vedi tutto. Mi sta guardando qualcuno?"),
+      L("echo/neutro", "Telecamera trentuno. Io."), L("ferri/serio", "A parte te."),
+      L("echo/neutro", "Nessuno. Ha appena dato un colpetto al distributore. Sul fianco. Come Saul."),
+      L("ferri/serio", "Verifica tecnica."), L("echo/felice", "Le sono uscite due merendine."),
+      L("ferri/neutro", "...Non è a verbale.")),
+    B("v_batteria", C, L("zecca/sorpreso", "Raga. Emergenza. Quattro per cento."),
+      L("ferri/serio", "Ho un cavo."), L("zecca/triste", "Connettore sbagliato."), L("ferri/serio", "È quello regolamentare."),
+      L("saul/neutro", "Io ho un adattatore."), L("zecca/sorpreso", "Da dove viene?"),
+      L("saul/neutro", "Da un posto onesto. Prima che ci passassi io."),
+      L("nox/neutro", "Il mio è al due per cento da sei ore. Si vive.")),
     B("v_inizio", Z(5.0), L("nox/neutro", "Il mio vecchio posto. Mangiavo qui, su quel gradino. Panino e silenzio."),
       L("zecca/felice", "Che vita glamour, le Civette."), L("nox/neutro", "Il gradino era comodo. Il panino no.")),
     B("v_echo", Z(-3.0), L("echo/neutro", "Nox. In questo vicolo c'è la telecamera trentuno. Da qui ti vedevo mangiare."),
@@ -831,6 +874,11 @@ CH["vicolo"] = [
     B("v_f1", F, L("nox/serio", "Non fermatevi. Le cabine pensano che aspettiate una chiamata.")),
 ]
 CH["dentro_blu"] = [
+    B("db_thermos", C, L("nox/serio", "Chi ha toccato il thermos."),
+      L("zecca/sorpreso", "Io no! Cioè, l'ho spostato. Per l'inquadratura."),
+      L("nox/neutro", "Era pieno a metà. Adesso è pieno a metà meno un sorso."),
+      L("zecca/triste", "...Era un sorso piccolo."),
+      L("saul/neutro", "Mia nonna diceva: tra una donna e il suo caffè non ci si mette. Si guarda da lontano. Con rispetto.")),
     B("db_inizio", Z(6.0), L("nox/serio", "Sento lo squillo. Ovunque. Anche dentro la testa."),
       L("saul/neutro", "Allora parliamo noi, copriamo il rumore. Capo, racconta una barzelletta."),
       L("ferri/serio", "Articolo quattordici: è vietato raccontare barzellette in servizio."),
@@ -841,6 +889,11 @@ CH["dentro_blu"] = [
       L("nox/neutro", "Saul, questa è la cosa più gentile che tu abbia mai detto."), L("saul/neutro", "Lo nego.")),
 ]
 CH["galleria"] = [
+    B("g_travestimenti", C, L("ferri/serio", "Siamo in una galleria piena di gente. Non dobbiamo dare nell'occhio."),
+      L("zecca/sfotto", "Lance, con quel cappotto sembri un armadio triste."), L("ferri/serio", "Un armadio anonimo. È il punto."),
+      L("nox/neutro", "Io ho messo un cappello. Operazione conclusa."),
+      L("saul/neutro", "Io ho scambiato la giacca con un manichino. Ci ha guadagnato lui."),
+      L("zecca/felice", "Io non mi travesto. Un profilo così non si nasconde."), L("nox/neutro", "È questo il problema.")),
     B("g_inizio", Z(5.0), L("zecca/felice", "La Galleria Lumière! Qui ho girato il mio primo video. Tre like. Uno era mia madre."),
       L("nox/neutro", "E gli altri due?"), L("zecca/triste", "Mia madre con altri due account.")),
     B("g_echo", Z(-4.0), L("echo/neutro", "Rio. Ho visto il tuo primo video. Era qui, telecamera nove."),
@@ -864,6 +917,10 @@ CH["galleria"] = [
     B("g_f1", F, L("zecca/serio", "Raga, se restiamo fermi i manichini ci copiano. Muoviamoci con stile.")),
 ]
 CH["dentro_verde"] = [
+    B("dv_entrata", C, L("zecca/felice", "Raga, dal boss entro io per primo. Al rallentatore."),
+      L("ferri/serio", "Si entra in formazione."), L("zecca/felice", "Una formazione al rallentatore."),
+      L("saul/neutro", "Entra pure per primo, ragazzino. Il primo colpo lo prendi tu, io intanto guardo dove picchia."),
+      L("zecca/serio", "...Formazione. Va bene la formazione.")),
     B("dv_inizio", Z(6.0), L("zecca/sorpreso", "Ci sono io. Ovunque. Mille me in posa. Nessuno ha la faccia."),
       L("saul/neutro", "Guarda me, ragazzino. Io una faccia ce l'ho. Bellissima, tra l'altro."),
       L("zecca/felice", "...Grazie, Saul. Credo.")),
@@ -873,6 +930,10 @@ CH["dentro_verde"] = [
       L("nox/neutro", "No. Ma se ce l'hai tu, la tengo io per tutti e due.")),
 ]
 CH["caveau"] = [
+    B("c_orologio", C, L("saul/neutro", "Capo, che ore sono?"),
+      L("ferri/serio", "Quattro e diciassette e nove secondi. Siamo in ritardo di quattro secondi."),
+      L("saul/neutro", "Mia nonna diceva: chi conta i secondi non si gode i minuti."), L("ferri/serio", "Quale nonna?"),
+      L("saul/neutro", "Quella puntuale. Non l'ho mai vista. Arrivava sempre prima di me.")),
     B("c_inizio", Z(5.0), L("saul/neutro", "Il caveau. Sentite l'odore? Soldi vecchi e cattive intenzioni."),
       L("ferri/serio", "Mani in vista, Saul."), L("saul/neutro", "Le mie mani sono sempre in vista. È questo il trucco.")),
     B("c_echo", Z(-3.0), L("echo/neutro", "Saul. Ci sono diciotto telecamere qui sotto. Le ho spente tutte."),
@@ -895,6 +956,19 @@ CH["caveau"] = [
     B("c_f1", F, L("saul/neutro", "Non fermatevi davanti ai lingotti. Le telecamere vi registrano la faccia golosa.")),
 ]
 CH["tangenziale"] = [
+    B("t_nomi", C, L("ferri/serio", "Fuori dalla città servono nomi falsi. Io sono Luca Bianchi. Impiegato. Documenti in ordine."),
+      L("saul/neutro", "Troppo in ordine, capo. Nessun impiegato ha i documenti in ordine."),
+      L("zecca/felice", "Io sono Rio Tempesta."), L("nox/neutro", "Ti trovano in un minuto."),
+      L("zecca/sorpreso", "Ma è memorabile!"), L("nox/neutro", "Appunto. Io sono Maria. Sono sempre Maria. Nessuno si ricorda una Maria."),
+      L("saul/neutro", "Io ne ho cinque. Il più onesto è un vescovo.")),
+    B("t_conto", C, L("saul/neutro", "Capo, siamo a trentuno."), L("ferri/serio", "Trentuno cosa?"),
+      L("saul/neutro", "Il pugno dell'Incrocio. Più gli interessi."),
+      L("ferri/serio", "Nel caveau ti ho tirato fuori io da sotto la porta."),
+      L("saul/neutro", "Lo so. L'ho scalato dal conto. Restano trentuno.")),
+    B("t_pasto", F, L("nox/neutro", "Fermiamoci cinque minuti. Mangiamo tranquilli."),
+      L("ferri/serio", "Perché l'hai detto ad alta voce."), L("saul/neutro", "Adesso succede qualcosa. Succede sempre."),
+      L("zecca/felice", "...Non succede niente. Visto? Raga, non succede niente."),
+      L("echo/neutro", "Pattuglia a quattrocento metri."), L("nox/neutro", "Bene. Benissimo. Il panino lo mangio correndo.")),
     B("t_inizio", Z(6.0), L("ferri/serio", "Tangenziale. Sei corsie, nessuna auto, il sole in faccia. Il posto peggiore per nascondersi."),
       L("saul/neutro", "E il migliore per scappare."),
       L("nox/neutro", "E per dormire. Sdraiatevi sull'asfalto e fingetevi un incidente.")),

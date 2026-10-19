@@ -114,6 +114,9 @@ func _ready() -> void:
 	Breadcrumb.mark("strada")
 	if cfg.has("intro") and resume.is_empty():
 		_intro()
+	elif not resume.is_empty():
+		# tornando da una battaglia vinta lo stato nuovo (nemico battuto) va anche su disco
+		_persist()
 
 
 # ---------------------------------------------------------------- costruzione
@@ -659,8 +662,9 @@ func _build_dome() -> void:
 			var b0: float = TAU * float(j) / float(segs)
 			var b1: float = TAU * float(j + 1) / float(segs)
 			var p := func(a: float, b: float) -> Vector3: return Vector3(cos(a) * cos(b) * r, sin(a) * r * 0.75, cos(a) * sin(b) * r - 20.0)
-			var c0 := Color(1.0, 0.24, 0.55, 0.28 - 0.2 * float(i) / float(rings))
-			var c1 := Color(1.0, 0.24, 0.55, 0.28 - 0.2 * float(i + 1) / float(rings))
+			# la cupola e' magenta rituale #E83DCE, il colore della magia (palette dell'IP)
+			var c0 := Color(0.91, 0.24, 0.81, 0.28 - 0.2 * float(i) / float(rings))
+			var c1 := Color(0.91, 0.24, 0.81, 0.28 - 0.2 * float(i + 1) / float(rings))
 			v.append_array([p.call(a0, b0), p.call(a1, b0), p.call(a1, b1), p.call(a0, b0), p.call(a1, b1), p.call(a0, b1)])
 			c.append_array([c0, c1, c1, c0, c1, c0])
 	var arr: Array = []
@@ -707,6 +711,7 @@ func _interact() -> void:
 		await _dialog.finished
 		if not clues.has(id):
 			clues.append(id)
+			_persist()
 		if _markers.has(id):
 			(_markers[id] as Node).queue_free()
 			_markers.erase(id)
@@ -813,6 +818,20 @@ func _save_state(extra_defeated: String = "") -> void:
 		"banter_used": (_banter.get("_used") as Dictionary).duplicate()}
 
 
+# Salva su disco il punto dell'area (posizione, indizi, nemici battuti): chi esce o chiude l'app riprende da qui
+func _persist() -> void:
+	if player == null or _banter == null:
+		return
+	_save_state()
+	Story.save()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_PAUSED:
+		if mode == "walk":
+			_persist()
+
+
 func _enemy_battle(id: String, ingresso: String) -> void:
 	if mode == "transition":
 		return
@@ -854,6 +873,7 @@ func _boss_battle(ingresso: String) -> void:
 
 
 func _go_battle(args: Dictionary) -> void:
+	Story.save()        # se l'app si chiude in battaglia si riprende davanti al nemico, non dall'inizio dell'area
 	_shake = 0.8
 	Settings.buzz(80)
 	_main().flash(0.8)
@@ -878,30 +898,17 @@ func _open_pause() -> void:
 	if _pause != null:
 		return
 	_touch.release_all()
-	var shade := ColorRect.new()
-	shade.color = Color(0.02, 0.01, 0.05, 0.7)
-	Ui.place(shade, 0, 0, 1, 1)
-	_root.add_child(shade)
-	_pause = shade
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 14)
-	Ui.place(vb, 0.5, 0.5, 0.5, 0.5, -200, -150, 200, 150)
-	shade.add_child(vb)
-	var t := Ui.label("PAUSA", 40, Ui.YELLOW, Ui.display(), 8)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(t)
-	var b1 := Ui.button("RIPRENDI", Ui.YELLOW, 26)
-	b1.pressed.connect(_close_pause)
-	vb.add_child(b1)
-	var b2 := Ui.button("IMPOSTAZIONI", Ui.CREAM, 22)
-	b2.pressed.connect(func() -> void: shade.add_child(SettingsPanel.new()))
-	vb.add_child(b2)
-	var b3 := Ui.button("MENU (salvato: riparti da quest'area)", Color("#ff7a9c"), 20)
-	b3.pressed.connect(func() -> void: _main().go("menu"))
-	vb.add_child(b3)
+	_pause = HuddleMenu.new("MENU", _close_pause, _exit_to_menu, "Saul: «si riparte da qui, indizi compresi»")
+	_root.add_child(_pause)
+
+
+func _exit_to_menu() -> void:
+	_persist()
+	_main().go("menu")
 
 
 func _close_pause() -> void:
 	if _pause != null:
 		_pause.queue_free()
 		_pause = null
+		HuddleMenu.quip(_root)

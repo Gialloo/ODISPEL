@@ -66,9 +66,9 @@ func _ready() -> void:
 	_box.draw.connect(_draw_box)
 	Ui.place(_box, 0, 0, 1, 1)
 	_stage.add_child(_box)
-	_name = Ui.label("", 34, Ui.INK, Ui.display())
+	_name = Ui.label("", 34, Ui.INK, Ui.names())
 	_stage.add_child(_name)
-	_text = Ui.label("", 30 if Ui.is_touch() else 27, Ui.CREAM)
+	_text = Ui.label("", 29 if Ui.is_touch() else 26, Ui.CREAM, Ui.story())
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	_stage.add_child(_text)

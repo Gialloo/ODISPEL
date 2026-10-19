@@ -66,20 +66,6 @@ static func rod(mb: MeshBatch, a: Vector3, b: Vector3, r: float, col: Color) -> 
 	mb.prism(Transform3D(Basis(x, y, z), a), r, r, (b - a).length(), 8, col)
 
 
-# Telo (mantello): sezioni piatte lungo un percorso, si allarga verso il fondo
-static func _sheet(mb: MeshBatch, pts: Array, widths: Array, th: float, side: Vector3, col: Color) -> void:
-	var secs: Array = []
-	for i in pts.size():
-		var p: Vector3 = pts[i]
-		var tg: Vector3 = ((pts[mini(i + 1, pts.size() - 1)] as Vector3) - (pts[maxi(i - 1, 0)] as Vector3)).normalized()
-		var sx: Vector3 = side.normalized()
-		var sz: Vector3 = tg.cross(sx).normalized()
-		secs.append([p, sx, sz, float(widths[i]), th])
-	mb.sweep(secs, 8, col, true, true, true)
-
-
-# ================================================================ busto
-
 static func torso(sp: Dictionary) -> MeshBatch:
 	var mb := MeshBatch.new()
 	mb.ink_w = 0.012
@@ -409,12 +395,6 @@ static func _bangs(mb: MeshBatch, hair: Color, xs: Array, root_y: float, tip_y: 
 
 static func _hair(mb: MeshBatch, style: String, hair: Color, accent: Color, sp: Dictionary) -> void:
 	match style:
-		"knight":
-			# capelli verdi che escono dall'elmo: frangia sugli occhi e ciocche ai lati
-			_shell(mb, hair, 0.2, 0.03, 0.01)
-			_bangs(mb, hair, [-0.07, -0.04, -0.01, 0.025, 0.06], 0.2, 0.145, 0.03)
-			for s in [-1.0, 1.0]:
-				mb.lock(_hp(s * 0.11, 0.17, -0.03), _hp(s * 0.125, 0.11, -0.05), _hp(s * 0.115, 0.05, -0.06), 0.03, 0.014, Vector3.RIGHT, hair, true, 4)
 		"crew":
 			# corti sotto il berretto, basette
 			_shell(mb, hair, 0.19, 0.02, 0.008)
@@ -463,7 +443,7 @@ static func _hair(mb: MeshBatch, style: String, hair: Color, accent: Color, sp: 
 			mb.ball(Transform3D(Basis(), _hp(0, 0.135, 0.115)), 0.022, accent.darkened(0.2), true, 4, 8)
 
 
-# ================================================================ copricapi (forti, alla Kingdom Hearts)
+# ================================================================ copricapi (silhouette forti, abiti di oggi)
 
 static func _hat(mb: MeshBatch, sp: Dictionary) -> void:
 	var kit: String = str(sp.get("kit", ""))
@@ -475,32 +455,6 @@ static func _hat(mb: MeshBatch, sp: Dictionary) -> void:
 			mb.sweep([_r(0.205 + HEAD_OFF, 0.13, 0.138, 0.012), _r(0.24 + HEAD_OFF, 0.133, 0.141, 0.012)], 18, beanie.darkened(0.2), true, false, false)
 			_shell(mb, beanie, 0.215, 0.04, 0.02)
 			mb.box(Transform3D(Basis(Vector3.UP, 0.4), _hp(0.1, 0.26, -0.085)), Vector3(0.03, 0.025, 0.006), accent, false)
-
-
-# Grata dell'elmo su bocca e mento
-static func _grate(mb: MeshBatch, metal: Color) -> void:
-	var cols: int = 12
-	var rows: int = 4
-	var grid: Array = []
-	for i in rows + 1:
-		var y: float = lerpf(-0.012, 0.072, float(i) / float(rows))
-		var row: Array = []
-		for j in cols + 1:
-			var phi: float = lerpf(-1.45, 1.45, float(j) / float(cols))
-			row.append(_head_pt(phi, y, 0.016))
-		grid.append(row)
-	for i in rows:
-		for j in cols:
-			var a: Array = grid[i][j]
-			var b: Array = grid[i + 1][j]
-			var c: Array = grid[i][j + 1]
-			var d: Array = grid[i + 1][j + 1]
-			mb._tri_smooth(a[0], b[0], c[0], a[1], b[1], c[1], metal, false)
-			mb._tri_smooth(c[0], b[0], d[0], c[1], b[1], d[1], metal, false)
-	for k in 5:
-		var x: float = lerpf(-0.06, 0.06, float(k) / 4.0)
-		_decal(mb, [Vector2(x - 0.004, 0.0), Vector2(x + 0.004, 0.0), Vector2(x + 0.004, 0.06), Vector2(x - 0.004, 0.06)], 0.02, Color(0.08, 0.06, 0.12, 0.6))
-	_decal(mb, [Vector2(-0.085, 0.07), Vector2(0.085, 0.07), Vector2(0.085, 0.077), Vector2(-0.085, 0.077)], 0.02, Color(0.08, 0.06, 0.12, 0.6))
 
 
 # ================================================================ braccia e gambe

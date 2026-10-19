@@ -25,7 +25,7 @@ func _ready() -> void:
 	Ui.place(col, 0.07, 0.07, 0.62, 0.93, 0, 0, 0, 0)
 	col.add_theme_constant_override("separation", 10)
 	add_child(col)
-	var title := Ui.label(GameConfig.TITLE, 100, Ui.CREAM, Ui.display(), 14)
+	var title := Ui.label(GameConfig.TITLE, 100, Ui.CREAM, Ui.names(), 14)
 	col.add_child(title)
 	var sub := Ui.label(GameConfig.SUBTITLE, 30, Ui.YELLOW, Ui.display(), 8)
 	col.add_child(sub)
