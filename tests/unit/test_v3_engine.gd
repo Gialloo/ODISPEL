@@ -81,6 +81,8 @@ func _init() -> void:
 	Story.load_game()
 	check(Story.area_state.is_empty(), "passando al passo dopo lo stato dell'area si azzera")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(Story.save_path))
+	check(UpdateCheck.newer("0.33.2", "0.33.1") and UpdateCheck.newer("0.34.0", "0.33.9") and not UpdateCheck.newer("0.33.1", "0.33.1")
+		and not UpdateCheck.newer("0.32.9", "0.33.0") and UpdateCheck.newer("1.0", "0.99.9"), "confronto delle versioni per l'aggiornamento")
 	check(BrokenCam.level_for(0.9) == 0.0 and BrokenCam.level_for(0.5) > 0.0 and BrokenCam.level_for(0.25) >= 0.99, "livelli della telecamera rotta")
 	# articoli dei nemici nei messaggi di battaglia
 	var b3: GDScript = load("res://scripts/v3/battle3d.gd")

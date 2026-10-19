@@ -4,6 +4,12 @@ extends Control
 
 var _t: float = 0.0
 var _bg: Control
+var _upd: Button
+
+
+func show_update(version: String) -> void:
+	_upd.text = "AGGIORNA ALLA %s" % version
+	_upd.visible = true
 
 
 func crumb() -> String:
@@ -34,6 +40,15 @@ func _ready() -> void:
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 6)
 	col.add_child(gap)
+	# pulsante "aggiorna", nascosto finche' itch non dice che c'e' una versione nuova
+	_upd = Ui.button("", Color("#46e07a"), 22, 380)
+	_upd.visible = false
+	_upd.pressed.connect(func() -> void: OS.shell_open(UpdateCheck.PAGE))
+	col.add_child(_upd)
+	if DisplayServer.get_name() != "headless":
+		var chk := UpdateCheck.new()
+		chk.found.connect(show_update)
+		add_child(chk)
 
 	var note: String = Breadcrumb.crash_note()
 	if note != "":
