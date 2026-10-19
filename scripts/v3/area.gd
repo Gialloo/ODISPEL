@@ -878,30 +878,12 @@ func _open_pause() -> void:
 	if _pause != null:
 		return
 	_touch.release_all()
-	var shade := ColorRect.new()
-	shade.color = Color(0.02, 0.01, 0.05, 0.7)
-	Ui.place(shade, 0, 0, 1, 1)
-	_root.add_child(shade)
-	_pause = shade
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 14)
-	Ui.place(vb, 0.5, 0.5, 0.5, 0.5, -200, -150, 200, 150)
-	shade.add_child(vb)
-	var t := Ui.label("PAUSA", 40, Ui.YELLOW, Ui.display(), 8)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(t)
-	var b1 := Ui.button("RIPRENDI", Ui.YELLOW, 26)
-	b1.pressed.connect(_close_pause)
-	vb.add_child(b1)
-	var b2 := Ui.button("IMPOSTAZIONI", Ui.CREAM, 22)
-	b2.pressed.connect(func() -> void: shade.add_child(SettingsPanel.new()))
-	vb.add_child(b2)
-	var b3 := Ui.button("MENU (salvato: riparti da quest'area)", Color("#ff7a9c"), 20)
-	b3.pressed.connect(func() -> void: _main().go("menu"))
-	vb.add_child(b3)
+	_pause = HuddleMenu.new("MENU", _close_pause, func() -> void: _main().go("menu"), "Saul: «si riparte da quest'area»")
+	_root.add_child(_pause)
 
 
 func _close_pause() -> void:
 	if _pause != null:
 		_pause.queue_free()
 		_pause = null
+		HuddleMenu.quip(_root)

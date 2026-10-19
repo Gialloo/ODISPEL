@@ -212,6 +212,17 @@ const MOVES: Dictionary = {
 	"u_cato_ult": {"name": "Linea Invalicabile", "kind": "ult", "cost": 0, "priority": 1, "target": "allies", "shield": 1.5, "bonus": {"stat": "def", "pct": 30}, "unique": "cato"},
 	"u_lyra_a": {"name": "Marchio di Priorita'", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "mult": 0.6, "status": {"mark": 2}, "bonus": {"stat": "crit", "pct": 10}, "unique": "lyra"},
 	"u_lyra_ult": {"name": "Sentenza Coordinata", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 2.8, "status": {"mark": 1}, "debuff": {"def": 1}, "bonus": {"stat": "atk", "pct": 30}, "unique": "lyra"},
+	# --- V3 (PROVVISORIO). Saul e Rio non devono combattere allo stesso modo:
+	# Saul e' un veterano dei Magabondi, efficace senza volerlo: trova il punto debole e ha una fortuna sfacciata.
+	"u_saul_a": {"name": "Colpo basso", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.6, "pierce": 30, "debuff": {"def": 1},
+		"bonus": {"stat": "atk", "pct": 18}, "unique": "saul"},
+	"u_saul_ult": {"name": "Colpo di fortuna", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 4.4, "crit_pm": 400, "pierce": 30,
+		"bonus": {"stat": "crit", "pct": 30}, "unique": "saul"},
+	# Rio vuole sembrare figo a tutti i costi: tanto spettacolo, meno danno. Il suo pubblico carica la squadra.
+	"u_zecca_a": {"name": "In diretta", "kind": "skill", "cost": 1, "priority": 0, "target": "enemy", "mult": 0.7, "status": {"mark": 2}, "ally_buff": {"atk": 2},
+		"bonus": {"stat": "spd", "pct": 10}, "unique": "zecca"},
+	"u_zecca_ult": {"name": "Gran finale", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 1.15, "hits": 3, "ally_buff": {"atk": 3},
+		"bonus": {"stat": "atk", "pct": 10}, "unique": "zecca"},
 }
 
 # Rank che sblocca ogni abilita' unica: tutte subito (il rank ora le potenzia invece di sbloccarle).

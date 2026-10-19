@@ -198,10 +198,10 @@ const V3_CAST: Dictionary = {
 		"role": "Ex soldato LibraCorp", "stat_mult": {"hp": 1.15, "atk": 1.2}},
 	"nox": {"name": "Nox", "color": "blu", "cls": "warden", "rarity": 0, "skill": "cura", "ult": "rinascita", "passive": "p_swap", "faction": "civette",
 		"role": "Odispeller del turno di notte", "stat_mult": {"hp": 1.15, "atk": 1.3}},
-	"zecca": {"name": "Rio", "color": "viola", "cls": "striker", "rarity": 0, "skill": "marchio", "ult": "spezzatutto", "passive": "p_atk", "faction": "masca",
-		"role": "Masca in diretta"},
-	"saul": {"name": "Saul", "color": "verde", "cls": "striker", "rarity": 0, "skill": "colpo_caricato", "ult": "spezzatutto", "passive": "p_hunter", "faction": "magabondi",
-		"role": "Contrabbandiere"},
+	"zecca": {"name": "Rio", "color": "viola", "cls": "striker", "rarity": 0, "skill": "u_zecca_a", "ult": "u_zecca_ult", "passive": "p_atk", "faction": "masca",
+		"role": "Masca in diretta", "stat_mult": {"atk": 0.9, "spd": 1.1}},
+	"saul": {"name": "Saul", "color": "verde", "cls": "striker", "rarity": 0, "skill": "u_saul_a", "ult": "u_saul_ult", "passive": "p_hunter", "faction": "magabondi",
+		"role": "Contrabbandiere veterano", "stat_mult": {"atk": 1.1}},
 }
 
 

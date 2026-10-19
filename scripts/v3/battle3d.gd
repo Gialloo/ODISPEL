@@ -1165,33 +1165,15 @@ func _open_pause() -> void:
 	if _pause != null:
 		return
 	Engine.time_scale = 0.0          # ferma animazioni e timer della battaglia
-	var shade := ColorRect.new()
-	shade.color = Color(0.02, 0.01, 0.05, 0.7)
-	Ui.place(shade, 0, 0, 1, 1)
-	_root.add_child(shade)
-	_pause = shade
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 14)
-	Ui.place(vb, 0.5, 0.5, 0.5, 0.5, -200, -150, 200, 150)
-	shade.add_child(vb)
-	var t := Ui.label("PAUSA", 40, Ui.YELLOW, Ui.display(), 8)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(t)
-	var b1 := Ui.button("RIPRENDI", Ui.YELLOW, 26)
-	b1.pressed.connect(_close_pause)
-	vb.add_child(b1)
-	var b2 := Ui.button("IMPOSTAZIONI", Ui.CREAM, 22)
-	b2.pressed.connect(func() -> void: shade.add_child(SettingsPanel.new()))
-	vb.add_child(b2)
-	var b3 := Ui.button("ESCI DAL COMBATTIMENTO", Color("#ff7a9c"), 20)
-	b3.pressed.connect(func() -> void:
+	_pause = HuddleMenu.new("ESCI", _close_pause, func() -> void:
 		Engine.time_scale = 1.0
 		_main().go("menu"))
-	vb.add_child(b3)
+	_root.add_child(_pause)
 
 
 func _close_pause() -> void:
 	if _pause != null:
 		_pause.queue_free()
 		_pause = null
+		HuddleMenu.quip(_root)
 	Engine.time_scale = 1.8 if fast else 1.0
