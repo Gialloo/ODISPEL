@@ -1044,7 +1044,13 @@ func _refresh_hud() -> void:
 	var tele: Dictionary = b.get("telegraph", {})
 	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	var who: String = "TUTTI"
-	if str(mv.get("target", "one")) != "all":
+	if bool(mv.get("camera", false)):
+		# la telecamera non segue il bersaglio annunciato: colpisce in base ai PV del momento
+		var names: Array = []
+		for pk in BattleResolver.camera_targets(b):
+			names.append(str((pk["unit"] as Dictionary).get("name", "?")).to_upper())
+		who = " e ".join(PackedStringArray(names)) if not names.is_empty() else "NESSUNO"
+	elif str(mv.get("target", "one")) != "all":
 		var tu: Dictionary = BattleState.active_unit(b, str(tele.get("target", "")))
 		who = str(tu.get("name", "?")).to_upper()
 	if ended or not BattleState.is_alive(boss):

@@ -12,7 +12,8 @@ static var _data: Dictionary = {}
 static var chapter: int = 0
 static var step: int = 0
 static var flags: Dictionary = {}
-static var area_state: Dictionary = {}     # stato dell'area corrente (nemici battuti, indizi, posizione) per tornare dopo una battaglia
+static var area_state: Dictionary = {}     # stato dell'area corrente (nemici battuti, indizi, posizione): per tornare dopo una battaglia
+                                           # e, salvato su disco, per riprendere a meta' area senza perdere gli indizi
 
 
 static func data() -> Dictionary:
@@ -77,7 +78,8 @@ static func load_game() -> bool:
 	step = int(cfg.get_value("storia", "passo", 0))
 	var saved: Variant = cfg.get_value("storia", "flag", {})
 	flags = saved if saved is Dictionary else {}
-	area_state = {}
+	var st: Variant = cfg.get_value("storia", "area", {})
+	area_state = st if st is Dictionary else {}
 	return true
 
 
@@ -86,6 +88,8 @@ static func save() -> void:
 	cfg.set_value("storia", "capitolo", chapter)
 	cfg.set_value("storia", "passo", step)
 	cfg.set_value("storia", "flag", flags)
+	if not area_state.is_empty():
+		cfg.set_value("storia", "area", area_state)
 	cfg.save(save_path)
 
 

@@ -114,6 +114,9 @@ func _ready() -> void:
 	Breadcrumb.mark("strada")
 	if cfg.has("intro") and resume.is_empty():
 		_intro()
+	elif not resume.is_empty():
+		# tornando da una battaglia vinta lo stato nuovo (nemico battuto) va anche su disco
+		_persist()
 
 
 # ---------------------------------------------------------------- costruzione
@@ -707,6 +710,7 @@ func _interact() -> void:
 		await _dialog.finished
 		if not clues.has(id):
 			clues.append(id)
+			_persist()
 		if _markers.has(id):
 			(_markers[id] as Node).queue_free()
 			_markers.erase(id)
@@ -813,6 +817,20 @@ func _save_state(extra_defeated: String = "") -> void:
 		"banter_used": (_banter.get("_used") as Dictionary).duplicate()}
 
 
+# Salva su disco il punto dell'area (posizione, indizi, nemici battuti): chi esce o chiude l'app riprende da qui
+func _persist() -> void:
+	if player == null or _banter == null:
+		return
+	_save_state()
+	Story.save()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_APPLICATION_PAUSED:
+		if mode == "walk":
+			_persist()
+
+
 func _enemy_battle(id: String, ingresso: String) -> void:
 	if mode == "transition":
 		return
@@ -854,6 +872,7 @@ func _boss_battle(ingresso: String) -> void:
 
 
 func _go_battle(args: Dictionary) -> void:
+	Story.save()        # se l'app si chiude in battaglia si riprende davanti al nemico, non dall'inizio dell'area
 	_shake = 0.8
 	Settings.buzz(80)
 	_main().flash(0.8)
@@ -878,8 +897,13 @@ func _open_pause() -> void:
 	if _pause != null:
 		return
 	_touch.release_all()
-	_pause = HuddleMenu.new("MENU", _close_pause, func() -> void: _main().go("menu"), "Saul: «si riparte da quest'area»")
+	_pause = HuddleMenu.new("MENU", _close_pause, _exit_to_menu, "Saul: «si riparte da qui, indizi compresi»")
 	_root.add_child(_pause)
+
+
+func _exit_to_menu() -> void:
+	_persist()
+	_main().go("menu")
 
 
 func _close_pause() -> void:

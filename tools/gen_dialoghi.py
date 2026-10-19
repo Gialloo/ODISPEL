@@ -571,14 +571,11 @@ scene("c4_vigilia", "L'ultima notte al rifugio. Ognuno dice cosa farà con quell
 # al paese e' il climax dell'arco di Lance, piu' avanti.
 
 scene("varco", "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale. Il Committente le ruba il varco, la cupola crolla e Lance usa il braccio per salvare Rio. Echo inceppa le telecamere della piazza: il braccio lo vede solo il gruppo. Ora li cerca il paese intero.",
-    L("echo/neutro", "Quattro Anomalie chiuse. La cupola è appesa a un filo. E il filo... si apre."),
-    L("nox/sorpreso", "Il cielo... si sta aprendo un buco. Lì, sopra la piazza."),
-    L("echo/felice", "È un varco. Porta a casa mia. Grazie. A tutti e quattro. Davvero."),
+    L("echo/felice", "Quattro Anomalie chiuse. Lassù, sopra la piazza: è un varco. Porta a casa mia. Grazie. A tutti e quattro. Davvero."),
     L("ferri/serio", "Echo. Le registrazioni. Le avevi promesse all'alba, in piazza. Dove sono?"),
     L("echo/triste", "..."),
-    L("ferri/arrabbiato", "Rispondi."),
     L("echo/triste", "Non esistono. Le ho cancellate io, alle tre e un minuto. Le facce sugli schermi... le ho messe io."),
-    L("echo/triste", "Le quattro Anomalie tenevano chiuso il varco. Mi serviva qualcuno che le chiudesse. Qualcuno che non potesse andare né da LibraCorp né dalle Civette."),
+    L("echo/triste", "Mi serviva qualcuno che chiudesse le Anomalie. Qualcuno che non potesse andare né da LibraCorp né dalle Civette."),
     L("echo/serio", "Un agente con un braccio illegale. Una Civetta con una chiamata senza risposta. Un ragazzino con una maschera che non doveva avere. Un contrabbandiere con un pacco in mano."),
     L("echo/triste", "Quattro persone compromesse. Se aveste detto la verità, nessuno vi avrebbe creduto. Vi ho scelti per questo."),
     L("ferri/serio", "Il grado. Il nome pulito. Non c'era nessun caso da chiudere. C'eravamo solo noi da usare."),
@@ -597,18 +594,14 @@ scene("varco", "In piazza si apre un varco. Echo confessa: li ha incastrati lei 
     L("VOCE SENZA VOLTO", "Che scena commovente. Grazie per il varco, piccola Echo. Non era tuo."),
     L("echo/sorpreso", "Tu... il Committente. No. No, no, no. Il varco si sta chiudendo!"),
     L("VOCE SENZA VOLTO", "Si sta chiudendo per te. Per me si è appena aperto."),
-    L("nox/sorpreso", "La cupola! Si sta crepando ovunque! Viene giù!"),
-    L("zecca/sorpreso", "Raga... sopra di me! Il tabellone!"),
+    L("zecca/sorpreso", "Raga... la cupola viene giù! Il tabellone! Sopra di me!"),
     L("ferri/arrabbiato", "RIO!"),
     L("ferri/serio", "...Ce l'ho. L'ho preso. Sta' giù."),
     L("zecca/sorpreso", "Lance... il braccio. Ci sono telecamere ovunque. Ti vedono tutti."),
     L("ferri/neutro", "Lo so."),
     L("echo/serio", "No. Piazza Centrale, telecamere dalla uno alla dodici: inceppate. Come all'Incrocio Nove."),
-    L("echo/triste", "Questa non è una promessa. È l'unica cosa che so fare."),
     L("ferri/serio", "...Non ti ringrazio. Rio. Alzati. Correte."),
-    L("COMANDANTE ASTRID", "A tutte le unità del paese: il sigillo è caduto. Cercate i quattro. Ovunque."),
-    L("STRIX", "(alla radio) Civette, in caccia. Nox... mi dispiace. Stavolta non posso coprirti."),
-    L("saul/serio", "Il tizio del pacco si è preso il varco. E noi abbiamo il paese addosso."),
+    L("STRIX", "(alla radio) Civette, in caccia in tutto il paese. Nox... mi dispiace. Stavolta non posso coprirti."),
     L("nox/serio", "Prima ci cercava una città. Adesso ci cerca tutto il paese. E abbiamo un agente con un braccio che brilla."),
     L("ferri/neutro", "Ex agente. Fa meno male se lo dico io."),
     L("echo/triste", "...Portatemi con voi. Non per tornare a casa. Non ho più una casa. Per rimediare."),
@@ -616,7 +609,8 @@ scene("varco", "In piazza si apre un varco. Echo confessa: li ha incastrati lei 
     L("zecca/serio", "Corri."))
 
 # ================================================================== CAPITOLO 5 · LA TANGENZIALE
-# Famiglia. Si scappa insieme, ci si para le spalle, si decide cosa fare di Echo. Echo si spegne per loro.
+# Famiglia. Si scappa insieme, ci si para le spalle, si decide cosa fare di Echo. Echo si spegne per loro e torna nucleo
+# (autore, 19/10: piccolo sacrificio, non persa per sempre). Aggancio del seguito: recuperare pezzi e frammenti per riaverla.
 
 scene("c5_alba", "All'alba, sulla rampa della tangenziale, la squadra decide cosa fare di Echo. Lei conosce l'unico casello che non porta in prigione.",
     L("zecca/triste", "L'alba. Non la vedevo da quando è iniziata la cupola. È bruttissima. È bellissima."),
@@ -680,7 +674,7 @@ scene("c5_agguato", "L'Autovelox attacca per primo.",
     L("AUTOVELOX", "FLASH. FLASH. FOTO SCATTATA. VERBALE IN ARRIVO."),
     L("zecca/sorpreso", "Sono venuto malissimo! Cancellala!"))
 
-scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Echo spegne ogni telecamera e ogni luce della città per farli scappare, anche se per lei è come chiudere gli occhi. Nella fuga i quattro diventano una famiglia.",
+scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Echo spegne ogni telecamera e ogni luce della città per farli scappare, anche se per lei è come chiudere gli occhi. Si riaccende nel telefono di Rio, ma di lei resta solo il nucleo: per riaverla servono pezzi e frammenti. Nella fuga i quattro diventano una famiglia.",
     L("zecca/felice", "La sbarra è alzata! Raga, siamo fuori!"),
     L("ferri/sorpreso", "No. Fermi. Fari. Due colonne di fari."),
     L("COMANDANTE ASTRID", "(dal megafono) Lance. Torna a casa. Ti sistemiamo noi. Ti aggiustiamo."),
@@ -711,11 +705,16 @@ scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Ec
     L("saul/neutro", "...Te la regalo. Non dirlo in giro. Ho una reputazione."),
     L("zecca/sorpreso", "Si accende. Si sta accendendo. Echo? Ci sei?"),
     L("echo/triste", "...Vi vedo. Male. Sgranati. Siete bellissimi."),
+    L("zecca/sorpreso", "Echo... sul display c'è solo un puntino. Un puntino di luce che trema."),
+    L("echo/triste", "Mi sono spenta tutta. È rimasto il nucleo. Il resto l'ho lasciato sulla tangenziale."),
+    L("nox/serio", "Come ti rimettiamo in piedi?"),
+    L("echo/neutro", "Pezzi. Telecamere rotte, circuiti. E i frammenti delle Anomalie, quelli che vagano per strada. Ogni pezzo è un occhio in più."),
+    L("saul/neutro", "Rottami e roba che non dovrebbe esistere. Finalmente un lavoro che so fare."),
     L("echo/felice", "Tregua?", se="echo_tregua"),
-    L("echo/neutro", "Lo so. Non sono dei vostri. Ma vi vedo lo stesso.", se="echo_rancore"),
+    L("echo/neutro", "Lo so. Non sono dei vostri. Ma vi vedo lo stesso. Un pochino.", se="echo_rancore"),
     L("nox/neutro", "Siamo latitanti. Senza casa, senza caffè, con un disertore, un ladro, un bambino e una telecamera."),
     L("nox/felice", "E sono felice. Non ditelo a nessuno."),
-    L("ferri/neutro", "Lo metto a verbale. Pagina uno. Di un taccuino nuovo."),
+    L("ferri/neutro", "Lo metto a verbale. Pagina uno di un taccuino nuovo: riportare Echo intera."),
     L("zecca/felice", "TITOLO: «La mia famiglia è assurda». ...Raga, no. Questa non la posto. Questa la tengo."),
     L("saul/neutro", "Famiglia. Mia nonna diceva che è una cosa che costa tantissimo."),
     L("saul/serio", "Aveva ragione. E io pago."))
