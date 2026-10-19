@@ -817,7 +817,7 @@ CH["incrocio"] = [
     B("i_barriera", V("barriera"), L("ferri/sorpreso", "Una barriera LibraCorp. Montata male. Chi l'ha montata verrà richiamato."),
       L("nox/neutro", "Sei ricercato."), L("ferri/serio", "Lui di più.")),
     B("i_radio", E("radio"), L("saul/neutro", "Con me «vivo» è un buon inizio di trattativa."),
-      L("ferri/serio", "Con Astrid non si tratta. Si rifà la branda.")),
+      L("ferri/serio", "Con Astrid non si tratta.")),
     B("i_multa", E("multa"), L("zecca/felice", "Nox è un lampeggiante! Nox, fai «niinoo»."), L("nox/neutro", "No."),
       L("zecca/felice", "Una volta!"), L("nox/neutro", "...niinoo."),
       L("echo/felice", "Registrato.")),
