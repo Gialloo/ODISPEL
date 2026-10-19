@@ -250,7 +250,7 @@ scene("c1_braccio", "Nella lotta il guanto di Lance si strappa: il suo braccio �
     L("zecca/sorpreso", "Lance... il tuo braccio. Brilla. Perché brilla?"),
     L("ferri/arrabbiato", "Non avete visto niente."),
     L("nox/serio", "Magia sequestrata. LibraCorp la confisca, poi la monta ai suoi."),
-    L("saul/neutro", "Il soldatino che odia la magia ha la magia attaccata alla spalla."),
+    L("saul/neutro", "Wow, quindi questo fa di te... uno sbirro magico?"),
     L("ferri/triste", "Se lo scoprono mi contengono. Come un'Anomalia. Fine."),
     L("saul/neutro", "Rilassati, capo. Con me il segreto è al sicuro. Il prezzo lo decidiamo con calma."),
     L("nox/neutro", "Saul."),
