@@ -1,6 +1,9 @@
 # Novità
 
-## 0.33.2 · aggiornare è più semplice, testi più leggibili
+## 0.33.2 · kit dei personaggi, battute più secche, aggiornare è più semplice
+- **Ogni personaggio combatte a modo suo** (kit presi da archetipo, oggetto e fazione). Lance protegge: Copertura prende il colpo diretto a un compagno, il Braccio della Legge spezza l'equilibrio. Saul sfrutta l'occasione: Testa o croce (testa critico, croce energia a un compagno) e Il colpo grosso, che ruba lo scudo del nemico. Rio fa spettacolo: Inquadratura e Gran finale crescono con l'Hype. Nox evita la fatica inutile: Pausa caffè cura chi serve o la fa riposare, Rispondo io rialza un compagno KO. Ognuno ha anche un tratto passivo, scritto in battaglia.
+- Tutti i dialoghi e le chiacchiere riscritti con le regole dell'autore: niente spiegazioni, botta e risposta secchi, ogni battuta fedele al personaggio. Esempi: «C'è una cupola sopra la città e tu pensi ancora alle strisce pedonali?» «Sì.»; «Ma sul pacco c'era scritto "Documenti!".» «Ma che razza di documenti porti in giro?!»
+- Indizi più asciutti («Uno scontrino per terra. Prezzo: un'anima. Non dà resto VIOLA.»).
 - **Avviso di aggiornamento**: all'avvio il menu controlla su itch.io se c'è una versione nuova. Se c'è, compare il pulsante verde «AGGIORNA ALLA …» che apre la pagina del gioco. Su Android la nuova versione si installa sopra la vecchia, senza disinstallare.
 - Le scelte nei dialoghi non si sommano più rigiocando una scena (prima, alla seconda volta, partivano entrambi i rami).
 - La vittoria si salva appena compare il pannello: chiudere il gioco lì non fa più rigiocare la battaglia.
