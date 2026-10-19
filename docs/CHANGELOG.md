@@ -1,5 +1,9 @@
 # Novità
 
+## Non ancora pubblicata · battute più secche
+- Tutti i dialoghi e le chiacchiere riscritti con le regole dell'autore: niente spiegazioni, botta e risposta secchi, ogni battuta fedele al personaggio. Esempi: «C'è una cupola sopra la città e tu pensi ancora alle strisce pedonali?» «Sì.»; «Ma sul pacco c'era scritto "Documenti!".» «Ma che razza di documenti porti in giro?!»
+- Indizi più asciutti («Uno scontrino per terra. Prezzo: un'anima. Non dà resto VIOLA.»).
+
 ## 0.33.1 · Guardia a tempo e battaglie più veloci
 - **Guardia a tempo** (idea approvata dall'autore, da Expedition 33): quando parte il colpo annunciato del nemico compare un cerchio. Tocca lo schermo al momento giusto per incassare meno danno e caricare l'Ultimate; con il tocco perfetto contrattacchi.
 - Pause più brevi tra un'azione e l'altra: si guarda meno e si agisce di più.
