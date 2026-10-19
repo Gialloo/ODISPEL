@@ -274,11 +274,12 @@ Colori: i cinque colori OPTC del gioco possono essere i colori delle carte, con 
 
 ### Il punto di contatto: la cupola (autore, 19/10)
 
-La cupola collega gioco e manga.
+Gioco e manga **non si incrociano**: la cupola è solo il punto in cui le due cronologie si toccano.
+- L'atto del gioco ha un **posto preciso nella cronologia** del mondo.
 - Nel manga la cupola viene **menzionata di passaggio**, in una conversazione.
-- Quando la cupola si rompe, **molti personaggi interagiscono con i fuggitivi**: il legame spiega perché, e apre le porte agli incontri dell'arco successivo.
-- Resta valida la regola dell'IP: il manga non spiega il gioco e il gioco non spiega il manga; la cupola è un fatto del mondo che entrambi vedono da lati diversi.
-- Da confermare: in quale momento della storia di Mada cade la cupola, e quali personaggi del manga incontrano i quattro.
+- I personaggi del manga che in quel periodo non compaiono sono via: a risolvere l'anomalia della cupola o a riprendere i fuggiaschi. Non li si vede accanto ai quattro.
+- Solo accenni che fanno capire che è la stessa lore, nessuna unione di trama. Il manga non spiega il gioco e il gioco non spiega il manga.
+- Da confermare: in quale momento della storia di Mada cade l'atto del gioco.
 
 Le maschere dei Masca arrivano nella città di Mada (arco 3) e in quella del gioco: un'eco lontana tra i due media, non un legame di trama (chat 04).
 
@@ -293,7 +294,7 @@ Già deciso il 19/10: il primo gioco è un atto e la demo va rifinita; Echo, Kai
 1. **Il Committente**: vero volto, nome, cosa vuole, e cosa ha fatto a Nox, Saul ed Echo.
 2. **Echo da nucleo**: cosa ricorda e come comunica.
 3. **Perché tutti vedono la cupola**: la spiegazione dentro la storia dell'atto.
-   E in quale momento del manga cade la cupola, e quali suoi personaggi incontrano i fuggitivi.
+   E in quale momento della storia di Mada si colloca l'atto (chi manca nel manga in quel periodo è via per la cupola).
 4. **Battaglia V2 dentro la V3** (sez. 6).
 5. **Nome della città e del paese** (oggi `[CITTÀ]`).
 6. **Dottrine di Civette e Masca** (sez. 6).
