@@ -28,7 +28,7 @@ Stato al 19 ottobre 2026, seconda versione (con tutte le conversazioni). Documen
 2. **Il tema che unisce manga e gioco è l'appartenenza.** Mada vuole una vita normale e finisce dio; il Moontaker vuole un posto sulla Luna; i quattro del gioco diventano famiglia; Echo resta perché «casa è dove sono le persone a cui tieni». Il proverbio da cui nasce Mada lo dice: *«Priva un giovane del calore del villaggio e lui lo brucerà per sentirne il calore.»*
 3. **Il primo gioco è la V3, ma con la presentazione della battaglia della V2.** La storia, i personaggi, il modo di raccontare e il motore a turni sono già nella V3. L'interfaccia di battaglia che l'autore ha curato di più (ruota A-S-U-G a pennellate, lightpainting, camera alla Metaphor) sta nella V2 e va portata dentro.
 4. **Il primo gioco è un atto, e quello che esiste è la sua demo** (deciso dall'autore il 19/10). Il lavoro adesso è rifinirla, non allargarla. Gli archi successivi verranno dopo.
-5. **Molte contraddizioni si sciolgono con la lore del manga.** Il velo che si assottiglia spiega perché tutti vedono la cupola; la LibraCorp «riconosciuta dallo Stato» suggerisce di collocare il gioco dopo l'arco 6 del manga (proposta, non confermata). Il Committente (nome provvisorio) è l'antagonista di questo gioco e **non è Malocchio**: è troppo presto per mostrarlo.
+5. **Molte contraddizioni si sciolgono con la lore del manga.** Il Committente (nome provvisorio) è l'antagonista di questo gioco e **non è Malocchio**: è troppo presto per mostrarlo.
 
 ---
 
@@ -71,7 +71,7 @@ Queste idee tornano in ogni chat, in ogni versione e in ogni media. Sono il DNA 
 
 | Contraddizione (Bibbia del mondo) | Cosa dice la lore | Soluzione |
 |---|---|---|
-| **5 · Il velo**: tutti vedono la cupola, il braccio di Lance, LibraCorp | Nel manga «il velo si assottiglia sempre di più»; dopo l'arco 6 LibraCorp è riconosciuta dallo Stato e dalla gente | Proposta (non ancora confermata): il gioco si colloca **dopo l'arco 6**: il velo è già sottile, la gente comune intravede l'impossibile. Spiegherebbe anche perché LibraCorp è «la polizia della magia» e non un segreto |
+| **5 · Il velo**: tutti vedono la cupola, il braccio di Lance, LibraCorp | Autore, 19/10: la spiegazione sta nella storia della demo V3, non nella cronologia del manga | Va scritta dentro l'atto: cosa del sigillo, delle Anomalie o della cupola rende visibile ciò che il velo di solito nasconde |
 | **3 · Echo e il Committente**: chi ha pianificato cosa | Chat 04: il Committente ha commissionato il pacco e spedisce le maschere; **vuole aprire del tutto il varco per fondere i due piani**; «il Kairos ha solo sfruttato la situazione». Autore, 19/10: il Committente è l'antagonista del gioco, figura ancora da decidere, **non Malocchio** | Echo è un parassita del piano del Committente, non una complice. Deciso dall'autore, va solo scritto in STORIA.md |
 | **1 · La rinuncia di Echo** già forzata nel varco | Finale originale (chat 04): il varco si chiude solo usando l'energia che avrebbe riportato a casa il Kairos; lui la usa e resta | Autore, 19/10: Echo fa un **piccolo sacrificio** ma non è persa per sempre. Vedi sez. 4, «Il finale dell'atto» |
 | **Committente / maschere dei Masca** | Arco 3 del manga: «chi c'è dietro le maschere?» resta aperto | Lo stesso mittente agisce nel manga e nel gioco. Il gioco mostra un pezzo della risposta senza darla tutta: è l'esempio perfetto di regola dell'IP |
@@ -258,7 +258,7 @@ Gacha, collezione e reclutamento, 24 operatori, online, PvP, modalità roguelike
 | Media | Cosa fa provare | Elementi del mondo che mostra |
 |---|---|---|
 | **Manga** (Mada, città delle Rondini) | crescere con un potere che fa paura; la scuola di magia, le brigate, la profezia | Odispeller dall'interno, Leviatano e LibraCorp prima e dopo la redenzione, Bestie, Masca, Moontakers, Shadow Workers, Neden, Malocchio |
-| **Primo gioco** (i quattro, paese lontano; momento della cronologia da confermare) | essere braccati e osservati ai margini; diventare famiglia | Civette, Magabondi, Masca e le maschere, LibraCorp riconosciuta, Kairos e Anomalie, il Committente |
+| **Primo gioco** (i quattro, paese lontano) | essere braccati e osservati ai margini; diventare famiglia | Civette, Magabondi, Masca e le maschere, LibraCorp riconosciuta, Kairos e Anomalie, il Committente |
 | **Gioco di carte** (VTCG) | **il destino che si può cambiare** | tutte le fazioni e i colori; i 24 operatori V2 e le Anomalie non usate; la profezia frammentata |
 | **Action RPG** | da decidere | proposta: un altro punto di vista, per esempio un'Odispeller delle Civette o un agente di Astrid |
 
@@ -272,16 +272,7 @@ La proposta di Claude in quella chat (ogni carta Destino ha un effetto e un Pres
 
 Colori: i cinque colori OPTC del gioco possono essere i colori delle carte, con le fazioni come identità dei mazzi. Resta aperta la prima domanda posta da Claude: il Leader attacca (Vanguard) o è un avatar con punti vita (Shadowverse)?
 
-### La cronologia (proposta, non confermata dall'autore)
-
-| Momento | Manga | Gioco |
-|---|---|---|
-| Anni prima | incendio, rapimento del futuro Leviatano | Astrid e Strix si separano; Saul in gabbia; Lance riceve il braccio |
-| Archi 1-5 | Bestie, scuola, Masca, LibraCorp, Moontakers | — |
-| Arco 6 | LibraCorp spazza via i Moontakers ed è riconosciuta dallo Stato; il velo sparisce sempre più | — |
-| **Dopo l'arco 6** | Shadow Workers, Neden, finale | **il primo gioco** nel paese lontano |
-
-Le maschere dei Masca arrivano nella città di Mada (arco 3) e in quella del gioco: lo stesso mittente, mai svelato del tutto.
+Le maschere dei Masca arrivano nella città di Mada (arco 3) e in quella del gioco: un'eco lontana tra i due media, non un legame di trama (chat 04).
 
 ---
 
@@ -293,7 +284,7 @@ Già deciso il 19/10: il primo gioco è un atto e la demo va rifinita; Echo, Kai
 
 1. **Il Committente**: vero volto, nome, cosa vuole, e cosa ha fatto a Nox, Saul ed Echo.
 2. **Echo da nucleo**: cosa ricorda e come comunica.
-3. **Collocare il gioco dopo l'arco 6 del manga** (proposta, non confermata): spiega velo e LibraCorp.
+3. **Perché tutti vedono la cupola**: la spiegazione dentro la storia dell'atto.
 4. **Battaglia V2 dentro la V3** (sez. 6).
 5. **Nome della città e del paese** (oggi `[CITTÀ]`).
 6. **Dottrine di Civette e Masca** (sez. 6).
