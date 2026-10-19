@@ -225,6 +225,15 @@ func ko() -> Tween:
 	return tw
 
 
+# Torna in piedi (Rispondo io di Nox)
+func revive() -> Tween:
+	down = false
+	stance = true
+	var tw := create_tween()
+	tw.tween_property(self, "fall", 0.0, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	return tw
+
+
 func cheer() -> Tween:
 	var tw := create_tween()
 	tw.tween_property(self, "arm_r_x", -3.0, 0.2)
