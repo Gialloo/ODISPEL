@@ -216,7 +216,7 @@ scene("c1_radio", "Alla radio, la Comandante Astrid di LibraCorp dà la caccia a
     L("ferri/triste", "La Comandante Astrid. Mi ha insegnato a rifare la branda. E tutto il resto."),
     L("zecca/serio", "Però ti vuole vivo. È buono, no?"),
     L("ferri/serio", "Con Astrid «vivo» è la parte brutta."),
-    L("saul/neutro", "Se ti ha insegnato tutto, sa dove scappi. Andiamo dove non ti ha insegnato."),
+    L("saul/neutro", "Ti ha insegnato tutto, quindi sa anche dove scappi. Ci penso io per stavolta, poi ricambi il favore."),
     L("ferri/serio", "...Non è un brutto ragionamento."))
 
 scene("c1_multa", "Indizio: il semaforo teme il blu dei lampeggianti.",
