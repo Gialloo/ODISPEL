@@ -1,7 +1,7 @@
 # OFFICIAL DEMO ODISPEL · V3, atto 1 (standalone)
 
 Progetto Godot 4.7.2 separato dalla V2 (`Gialloo/ODISPEL`), renderer **gl_compatibility**, landscape 1280×720.
-Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. **Stile visivo: `docs/STILE_VISIVO.md`** — conta l'aggiornamento in cima: urbano di oggi, niente look medievale. Stato attuale: **0.32.0 = atto 1 riscritto (Lance, Nox, Rio, Saul ed Echo) con il capitolo 5**, in attesa delle correzioni dopo la prova.
+Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. **Stile visivo: `docs/STILE_VISIVO.md`** — conta l'aggiornamento in cima: urbano di oggi, niente look medievale. Stato attuale: **0.33.0 = atto 1 rivisto con la bibbia di lavoro** (climax al loro posto, finale con Echo ridotta a nucleo, ripresa a metà area). Regole: `BIBBIA_DI_LAVORO.md` nella cartella del progetto.
 
 ## Struttura
 - `scripts/engine/` — motore di combattimento **copiato** dalla V2 (BattleState, SeqRound, BattleResolver e dipendenze).
@@ -31,7 +31,7 @@ xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s
 ## Rilascio
 1. Versione in `scripts/v3/game_config.gd`, `project.godot`, `export_presets.cfg` (code = X.YY.Z → 2900 per 0.29.0), `docs/CHANGELOG.md`.
 2. `godot --headless --path . --export-release "Android" build/raw.apk` (preset non firmato; serve un SDK anche finto con `platform-tools/adb` e `build-tools/*/apksigner`).
-3. `python3 tools/sign_apk.py build/raw.apk "releases/OFFICIAL DEMO ODISPEL mobile v.X.Y.Z.apk" /root/odispel_v3_key.pem` (firma v2, la chiave NON va nel repo:
+3. `python3 tools/sign_apk.py build/raw.apk "releases/OFFICIAL DEMO ODISPEL mobile v.X.Y.Z.apk" /mnt/project-files/odispel/chiavi/odispel_v3_release.pem` (firma v2; la chiave NON va nel repo, che è pubblico: sta nella cartella del progetto,
    con una chiave diversa l'aggiornamento non si installa sopra, bisogna disinstallare).
 4. `godot --headless --path . --export-release "Windows Desktop" build/win/OFFICIAL_DEMO_ODISPEL.exe` e zip in `releases/OFFICIAL DEMO ODISPEL pc vX.Y.Z.zip`.
 5. `releases/SHA256SUMS.txt`, commit, push sul branch `claude/v3-prologo` del repo `Gialloo/ODISPEL` (branch orfano, niente storia in comune con la V2):

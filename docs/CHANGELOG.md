@@ -1,6 +1,17 @@
 # Novità
 
-## Non ancora pubblicata · i climax al loro posto
+## 0.33.0 · revisione con la bibbia di lavoro, climax al loro posto
+Revisione di tutto il gioco con la bibbia di lavoro (`BIBBIA_DI_LAVORO.md`) e le decisioni dell'autore del 19/10.
+- Finale: quando Echo spegne la città per farli scappare non torna come prima. Si riaccende nel telefono di Rio ma di lei resta solo il nucleo, un puntino di luce: per riaverla servono pezzi (telecamere rotte, circuiti) e i frammenti delle Anomalie. È il piccolo sacrificio deciso dall'autore e l'aggancio per il seguito.
+- Varco più corto (da 49 a 36 battute): via le ripetizioni, restano il tradimento di ognuno e il salvataggio di Rio. «Le promesse erano false. Questa no.» ora arriva solo al casello, dove pesa di più.
+- Riprendendo una partita a metà area si torna dove si era, con gli indizi trovati e i nemici battuti (prima si ripartiva dall'inizio dell'area e gli indizi andavano persi). Il salvataggio scatta su ogni indizio, prima di ogni battaglia, uscendo dal menu e quando il telefono mette l'app in pausa.
+- L'avviso del boss segreto (l'Osservatore) nomina chi verrà colpito davvero: la telecamera colpisce in base alla vita del momento, non il bersaglio estratto a inizio turno.
+- Tipografia scelta dall'autore: dialoghi e chiacchiere in Merriweather, nomi e titolo in Libre Caslon. Testi più leggibili sul telefono.
+- La cupola è magenta (#E83DCE), il colore della magia nella palette dell'IP.
+- Fluidità: gli shader del gioco si preparano nel menu. Prima il telefono li compilava al primo colpo, al primo bagliore e alla prima telecamera incrinata, con uno scatto proprio nei momenti forti. Lo shader della telecamera rotta non si ricompila più a ogni battaglia.
+- Tolti i pezzi rimasti della direzione medievale scartata (elmo, grata, mantello) dal costruttore dei personaggi.
+- Nuovo `tools/v3_prestazioni.gd`: misura chiamate di disegno, primitive, nodi e caricamento di ogni area e arena.
+- Chiave di firma Android nuova (la vecchia è andata persa): chi ha la 0.32.0 deve disinstallarla una volta prima di installare questa.
 - Capitolo 3: la maschera di Rio si incrina invece di cadere. Da lì si vede un occhio; Rio non è ancora pronto a toglierla e nessuno insiste. Toglierla sarà il climax del suo arco.
 - Varco: Lance usa il braccio per salvare Rio, ma Echo inceppa le telecamere della piazza e il braccio lo vede solo il gruppo. Astrid non lo classifica come Anomalia davanti al paese. Mostrarlo a tutti sarà il climax dell'arco di Lance.
 - Capitolo 5 allineato: sul cartellone dei ricercati Lance è «Disertore», non «Anomalia».
