@@ -91,6 +91,9 @@ var _hint: Label
 var _kit_lbl: Label                   # cosa fa l'Abilita' di chi e' di turno e il suo tratto
 var _cutin: Control
 var _pause: Control
+var _cam_hud: CamHud                  # lo sguardo di Echo: mirino, REC, numero della telecamera
+var _glyph: LightFx                   # cerchio di luce sotto chi e' di turno
+var _seal: LightFx                    # sigillo magenta sotto l'Anomalia
 
 
 func configure(args: Dictionary) -> void:
@@ -237,11 +240,14 @@ func _build_arena() -> void:
 		cb.car(-6.0 + 3.3, -12.0, Color("#6b3fa0"))
 		cb.moon(Vector3(24, 40, -110), 8.0)
 		cb.build(self)
+		add_child(SkyDome.new())
 		return
 	# arene delle altre aree: stessa scenografia dell'esplorazione (interno Anomalia, vicolo, galleria, caveau)
 	var layout: String = "anomalia" if arena.begins_with("anomalia") or arena in ["rosso", "blu", "verde"] else arena
 	var tema: String = arena.replace("anomalia_", "")
 	var lay: Dictionary = LayoutBuilder.build(layout, 5, tema, self)
+	if SkyDome.outdoor(layout):
+		add_child(SkyDome.new())
 	var env: WorldEnvironment = null
 	for c in get_children():
 		if c is WorldEnvironment:
@@ -310,6 +316,7 @@ func _build_units() -> void:
 	add_child(m)
 	vis[BattleState.BOSS_ID] = m
 	home[BattleState.BOSS_ID] = ENEMY_POS
+	_seal = LightFx.seal(self, ENEMY_POS + Vector3(0, -0.1, 0), 2.0 if not minore else 1.4)
 
 
 func _face(n: Node3D, at: Vector3) -> void:
@@ -446,6 +453,7 @@ func _advance() -> void:
 		cur_pid = pid
 		var uid: String = str(_unit_of(pid)["id"])
 		_cam_actor(uid)
+		_fx_turn(uid)
 		_refresh_hud()
 		if auto_on:
 			await _wait(0.2)
@@ -525,6 +533,7 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 	var cv: CharacterVisual = vis[uid]
 	var col: Color = _col(u)
 	if kind == "ult":
+		await LightFx.blackout(_root, col)
 		await _play_cutin(u, str(move.get("name", "ULTIMATE")))
 	_banner(str(u["name"]).to_upper() + " · " + str(move.get("name", mv)).to_upper(), col)
 	if tgt == "enemy":
@@ -540,6 +549,9 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 		cv.move_speed = 0.0
 		var a: Tween = cv.cast() if kind != "basic" else cv.attack()
 		await _wait(0.16)
+		if kind != "basic":
+			# la magia si disegna con la luce: una pennellata del suo colore dal personaggio al nemico
+			LightFx.stroke(self, cv.chest_point(), (boss_v as Node).call("chest_point"), col, 0.6 if kind == "ult" else 0.42)
 		_ring(boss_v.position + Vector3(0, 0.05, 0), col, 2.8 if kind == "ult" else 1.8)
 		if kind == "ult":
 			_flash(0.9)
@@ -559,6 +571,7 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 		_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
 		var a2: Tween = cv.cast()
 		await _wait(0.16)
+		LightFx.rise(self, home[uid], col)
 		_ring(home[uid], col, 2.2)
 		if kind == "ult":
 			_flash(0.6)
@@ -572,6 +585,7 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 
 func _boss_turn() -> void:
 	cur_pid = ""
+	_fx_turn("")
 	_refresh_hud()
 	var tele: Dictionary = b["telegraph"]
 	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
@@ -769,6 +783,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					var v: Node3D = vis[dst]
 					if v.has_method("hit"):
 						v.call("hit")
+					_sparks_later(dst, delay, crit)
 				if run_hp.has(dst):
 					# telecamera che si rompe nel momento del colpo, se scende di livello (50% / 25%)
 					var u2: Dictionary = b["units"][dst]
@@ -797,6 +812,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_number(BattleState.BOSS_ID, "INDEBOLITO", Color("#b0a0ff"), 24, delay + 0.15)
 			"break":
 				_shatter_later("boss", delay, 1.0)        # solo l'animazione: lo schermo poi torna pulito
+				_sparks_later(BattleState.BOSS_ID, delay, true)
 				_toast("ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				_flash(0.5)
@@ -848,6 +864,9 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					var dv: Node3D = vis[du]
 					if dv.has_method("ko"):
 						dv.call("ko")
+				if du == BattleState.BOSS_ID and _seal != null and is_instance_valid(_seal):
+					_seal.stop()              # la magia lascia l'oggetto: torna un oggetto qualsiasi
+					LightFx.rise(self, ENEMY_POS, LightFx.MAGIC, 1.1, 1.3)
 	_refresh_hud()
 	await _wait(0.22 + delay)
 
@@ -896,6 +915,35 @@ func _ring(at: Vector3, col: Color, radius: float) -> void:
 	tw.tween_property(mi, "scale", Vector3(radius, 1, radius), 0.35).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	tw.tween_property(mi, "transparency", 1.0, 0.3)
 	tw.tween_callback(mi.queue_free)
+
+
+# Scintille d'impatto nel momento del colpo (arancio; avorio e piu' grandi sul critico)
+func _sparks_later(uid: String, delay: float, crit: bool) -> void:
+	if delay > 0.01:
+		await get_tree().create_timer(delay).timeout
+	if not is_inside_tree() or not vis.has(uid):
+		return
+	var v: Node3D = vis[uid]
+	var at: Vector3 = v.call("chest_point") if v.has_method("chest_point") else v.global_position + Vector3(0, 1, 0)
+	LightFx.sparks(self, at, LightFx.IVORY if crit else LightFx.IMPACT, 16 if crit else 10)
+
+
+# Chi e' di turno: cerchio di luce del suo colore ai piedi e la telecamera che lo inquadra (vuoto = turno del nemico)
+func _fx_turn(uid: String) -> void:
+	if uid == "" or not b["units"].has(uid) or not home.has(uid):
+		if _glyph != null and is_instance_valid(_glyph):
+			_glyph.stop()
+		if _cam_hud != null:
+			_cam_hud.watch("", Ui.CREAM, 1)
+		return
+	var u: Dictionary = b["units"][uid]
+	var col: Color = _col(u)
+	if _glyph == null or not is_instance_valid(_glyph):
+		_glyph = LightFx.glyph(self, home[uid], col)
+	else:
+		_glyph.move_to(home[uid], col)
+	if _cam_hud != null:
+		_cam_hud.watch(str(u.get("name", "")), col, 2 + maxi(0, slots.find(cur_pid)))
 
 
 # Sequenza dell'ultimate: primo piano, fascia colorata, nome e battuta. Si salta con l'impostazione.
@@ -1063,6 +1111,10 @@ func _build_ui() -> void:
 	Ui.place(_root, 0, 0, 1, 1)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ui.add_child(_root)
+	# lo sguardo di Echo sotto a tutto; dentro le Anomalie le telecamere non arrivano
+	_cam_hud = CamHud.new()
+	_cam_hud.anomaly = arena.begins_with("anomalia") or arena in ["rosso", "blu", "verde"]
+	_root.add_child(_cam_hud)
 	_fx_layer = Control.new()
 	Ui.place(_fx_layer, 0, 0, 1, 1)
 	_fx_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
