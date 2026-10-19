@@ -1356,7 +1356,7 @@ var _toasts: Array = []
 
 # I messaggi che arrivano insieme si mettono uno sotto l'altro invece di sovrapporsi
 func _toast(text: String, col: Color, sec: float) -> void:
-	_toasts = _toasts.filter(func(t: Label) -> bool: return is_instance_valid(t) and t.modulate.a > 0.05)
+	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t) and (t as Label).modulate.a > 0.05)
 	var row: int = _toasts.size()
 	var l := Ui.label(text, 26, col, Ui.display(), 10)
 	Ui.place(l, 0.5, 0.3, 0.5, 0.3, -560, 48 * row, 560, 80 + 48 * row)
