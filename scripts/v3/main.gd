@@ -46,6 +46,8 @@ func _ready() -> void:
 		if str(a).begins_with("--screen="):
 			screen = str(a).substr(9)
 	go(screen)
+	if DisplayServer.get_name() != "headless":
+		add_child(ShaderWarmup.new())
 
 
 func _process(_delta: float) -> void:

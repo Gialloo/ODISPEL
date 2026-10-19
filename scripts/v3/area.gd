@@ -662,8 +662,9 @@ func _build_dome() -> void:
 			var b0: float = TAU * float(j) / float(segs)
 			var b1: float = TAU * float(j + 1) / float(segs)
 			var p := func(a: float, b: float) -> Vector3: return Vector3(cos(a) * cos(b) * r, sin(a) * r * 0.75, cos(a) * sin(b) * r - 20.0)
-			var c0 := Color(1.0, 0.24, 0.55, 0.28 - 0.2 * float(i) / float(rings))
-			var c1 := Color(1.0, 0.24, 0.55, 0.28 - 0.2 * float(i + 1) / float(rings))
+			# la cupola e' magenta rituale #E83DCE, il colore della magia (palette dell'IP)
+			var c0 := Color(0.91, 0.24, 0.81, 0.28 - 0.2 * float(i) / float(rings))
+			var c1 := Color(0.91, 0.24, 0.81, 0.28 - 0.2 * float(i + 1) / float(rings))
 			v.append_array([p.call(a0, b0), p.call(a1, b0), p.call(a1, b1), p.call(a0, b0), p.call(a1, b1), p.call(a0, b1)])
 			c.append_array([c0, c1, c1, c0, c1, c0])
 	var arr: Array = []

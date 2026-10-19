@@ -154,9 +154,9 @@ func _add_bubble(who: String, expr: String, text: String) -> void:
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 0)
 	vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var name_l := Ui.label(str(CastVisual.CAST.get(who, {}).get("name", who)).to_upper(), 18, col.darkened(0.25), Ui.display())
+	var name_l := Ui.label(str(CastVisual.CAST.get(who, {}).get("name", who)).to_upper(), 19, col.darkened(0.25), Ui.names())
 	vb.add_child(name_l)
-	var t := Ui.label(text, 22 if Ui.is_touch() else 20, Ui.INK)
+	var t := Ui.label(text, 22 if Ui.is_touch() else 20, Ui.INK, Ui.story())
 	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	t.custom_minimum_size = Vector2(420, 0)
 	vb.add_child(t)
