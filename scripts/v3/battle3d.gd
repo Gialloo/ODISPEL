@@ -941,6 +941,7 @@ func _end_battle() -> void:
 	vb.add_child(hb)
 	if not ritorno.is_empty():
 		if win:
+			_save_win()
 			var c := Ui.button("CONTINUA", Ui.YELLOW, 26, 240)
 			c.pressed.connect(_continue_story)
 			hb.add_child(c)
@@ -960,12 +961,27 @@ func _end_battle() -> void:
 		hb.add_child(m)
 
 
-func _continue_story() -> void:
+# La vittoria si salva subito, non al tocco su CONTINUA: chi chiude l'app sul pannello non deve rifare la battaglia
+var _win_saved: bool = false
+
+
+func _save_win() -> void:
+	if _win_saved:
+		return
+	_win_saved = true
 	if str(ritorno.get("tipo", "")) == "area":
-		_main().go("area", {"area": str(ritorno.get("area", "")), "resume": ritorno.get("vinto", {})})
+		Story.area_state = (ritorno.get("vinto", {}) as Dictionary).duplicate(true)
+		Story.save()
 	else:
 		Story.flags.erase("debolezza_nota")
 		Story.advance()
+
+
+func _continue_story() -> void:
+	_save_win()
+	if str(ritorno.get("tipo", "")) == "area":
+		_main().go("area", {"area": str(ritorno.get("area", "")), "resume": ritorno.get("vinto", {})})
+	else:
 		_main().next_story()
 
 

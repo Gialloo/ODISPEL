@@ -282,6 +282,13 @@ func _main() -> Node:
 
 func _input(event: InputEvent) -> void:
 	if mode != "walk" or _pause != null:
+		_mouse_drag = false      # il tasto rilasciato durante un dialogo non arriva qui: niente camera che gira da sola dopo
+		return
+	# pausa anche col secondo dito (pollice sullo stick): Godot trasforma in clic solo il primo dito
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed \
+			and _pause_btn.visible and _pause_btn.get_global_rect().grow(12).has_point((event as InputEventScreenTouch).position):
+		get_viewport().set_input_as_handled()
+		_open_pause()
 		return
 	if _touch.handle(event):
 		get_viewport().set_input_as_handled()

@@ -96,7 +96,8 @@ func is_open() -> bool:
 
 # Avvia una scena: righe e (facoltativo) il riassunto da mostrare se si salta
 func play(lines: Array, recap: String = "") -> void:
-	_lines = lines
+	# copia: le scelte inseriscono righe e non devono toccare i dati condivisi (prima, rigiocando, partivano due rami)
+	_lines = lines.duplicate()
 	_recap = recap
 	_i = -1
 	_who = {}
