@@ -27,8 +27,8 @@ Stato al 19 ottobre 2026, seconda versione (con tutte le conversazioni). Documen
 1. **ODISPEL ha già una spina dorsale, e l'ha trovata l'autore il primo giorno: lo sguardo.** L'11 ottobre, prima di qualsiasi storia, la telecamera del gioco era «il footage di una telecamera di sorveglianza». Da lì sono nati Echo che vive nelle telecamere, il velo che decide chi vede la magia, Malocchio e l'Eye of the Beast, e Mada che alla fine «protegge la Terra da osservatore». Lo sguardo è il linguaggio dell'intero universo.
 2. **Il tema che unisce manga e gioco è l'appartenenza.** Mada vuole una vita normale e finisce dio; il Moontaker vuole un posto sulla Luna; i quattro del gioco diventano famiglia; Echo resta perché «casa è dove sono le persone a cui tieni». Il proverbio da cui nasce Mada lo dice: *«Priva un giovane del calore del villaggio e lui lo brucerà per sentirne il calore.»*
 3. **Il primo gioco è la V3, ma con la presentazione della battaglia della V2.** La storia, i personaggi, il modo di raccontare e il motore a turni sono già nella V3. L'interfaccia di battaglia che l'autore ha curato di più (ruota A-S-U-G a pennellate, lightpainting, camera alla Metaphor) sta nella V2 e va portata dentro.
-4. **Va ristretto all'atto 1**, che diventa un gioco completo (8-12 ore). Le 100 ore restano il piano per il seguito.
-5. **Molte contraddizioni si sciolgono con la lore del manga.** Il velo che si assottiglia spiega perché tutti vedono la cupola; la LibraCorp «riconosciuta dallo Stato» colloca il gioco dopo l'arco 6 del manga; il Committente vuole fondere i due piani e fa patti come Malocchio.
+4. **Il primo gioco è un atto, e quello che esiste è la sua demo** (deciso dall'autore il 19/10). Il lavoro adesso è rifinirla, non allargarla. Gli archi successivi verranno dopo.
+5. **Molte contraddizioni si sciolgono con la lore del manga.** Il velo che si assottiglia spiega perché tutti vedono la cupola; la LibraCorp «riconosciuta dallo Stato» suggerisce di collocare il gioco dopo l'arco 6 del manga (proposta, non confermata). Il Committente (nome provvisorio) è l'antagonista di questo gioco e **non è Malocchio**: è troppo presto per mostrarlo.
 
 ---
 
@@ -71,9 +71,9 @@ Queste idee tornano in ogni chat, in ogni versione e in ogni media. Sono il DNA 
 
 | Contraddizione (Bibbia del mondo) | Cosa dice la lore | Soluzione |
 |---|---|---|
-| **5 · Il velo**: tutti vedono la cupola, il braccio di Lance, LibraCorp | Nel manga «il velo si assottiglia sempre di più»; dopo l'arco 6 LibraCorp è riconosciuta dallo Stato e dalla gente | Il gioco si colloca **dopo l'arco 6**: il velo è già sottile, la gente comune intravede l'impossibile. Spiega anche perché LibraCorp è «la polizia della magia» e non un segreto |
-| **3 · Echo e il Committente**: chi ha pianificato cosa | Chat 04: il Committente ha commissionato il pacco e spedisce le maschere; **vuole aprire del tutto il varco per fondere i due piani**; fa patti come Malocchio; «il Kairos ha solo sfruttato la situazione» | Echo è un parassita del piano del Committente, non una complice. Deciso dall'autore, va solo scritto in STORIA.md |
-| **1 · La rinuncia di Echo** già forzata nel varco | Finale originale (chat 04): il varco si chiude solo usando l'energia che avrebbe riportato a casa il Kairos; lui la usa e resta | La rinuncia deve tornare una scelta: vedi sez. 4, «Il finale del primo gioco» |
+| **5 · Il velo**: tutti vedono la cupola, il braccio di Lance, LibraCorp | Nel manga «il velo si assottiglia sempre di più»; dopo l'arco 6 LibraCorp è riconosciuta dallo Stato e dalla gente | Proposta (non ancora confermata): il gioco si colloca **dopo l'arco 6**: il velo è già sottile, la gente comune intravede l'impossibile. Spiegherebbe anche perché LibraCorp è «la polizia della magia» e non un segreto |
+| **3 · Echo e il Committente**: chi ha pianificato cosa | Chat 04: il Committente ha commissionato il pacco e spedisce le maschere; **vuole aprire del tutto il varco per fondere i due piani**; «il Kairos ha solo sfruttato la situazione». Autore, 19/10: il Committente è l'antagonista del gioco, figura ancora da decidere, **non Malocchio** | Echo è un parassita del piano del Committente, non una complice. Deciso dall'autore, va solo scritto in STORIA.md |
+| **1 · La rinuncia di Echo** già forzata nel varco | Finale originale (chat 04): il varco si chiude solo usando l'energia che avrebbe riportato a casa il Kairos; lui la usa e resta | Autore, 19/10: Echo fa un **piccolo sacrificio** ma non è persa per sempre. Vedi sez. 4, «Il finale dell'atto» |
 | **Committente / maschere dei Masca** | Arco 3 del manga: «chi c'è dietro le maschere?» resta aperto | Lo stesso mittente agisce nel manga e nel gioco. Il gioco mostra un pezzo della risposta senza darla tutta: è l'esempio perfetto di regola dell'IP |
 | **4 · Perché proprio quei quattro** | Chat 04: «gli servivano quattro fazioni»; chat 01 (22:40): «li ha usati perché erano compromessi» | Vale la seconda, l'ultima parola dell'autore |
 | **8 · Nox corrotta** | Chat 04: mazzette; chat 01: ferie e sonno | Vale la V3; la corruzione può restare come passato |
@@ -120,21 +120,21 @@ Quindi nel primo gioco la storia passa soprattutto da:
 - **cutscene brevi** con ritratti grandi, mai lunghe (il varco oggi supera le 40 battute: va tagliato);
 - **le serate** facoltative tra due personaggi.
 
-### Il finale del primo gioco (proposta)
+### Il finale dell'atto (deciso dall'autore il 19/10, dettagli da scrivere)
 
-Due finali esistono: quello deciso nella chat 04 per il gioco intero e quello scritto nella V3 per l'atto 1. Con il primo gioco ridotto all'atto 1 si possono unire:
-
-1. **Varco (fine cap. 4)**: Echo confessa; il Committente arriva per prendersi il varco e fondere i piani. Come nel finale originale, il varco si può chiudere solo con l'energia che riporterebbe Echo a casa.
-2. **Tangenziale (cap. 5)**: Echo sceglie. Usa quell'energia, il varco si chiude, lei resta per sempre. È la rinuncia scelta, non subita (risolve la contraddizione 1).
-3. Restano i finali dei quattro già decisi dall'autore: Lance rifiuta l'offerta di LibraCorp e mostra il braccio da sé; Nox potrebbe mollare tutto e resta nelle Civette; Rio si toglie la maschera, che ha imparato la sua faccia e da allora risponde solo a lui; Saul tiene in mano il nucleo del varco e lo lascia andare, ma nei titoli di coda si scopre che si è intascato qualcosa.
-4. Il merito ufficiale va a LibraCorp, i quattro restano mezzi ricercati: «una famiglia sgangherata».
-5. **Il Committente scappa.** Il suo volto non si vede: è il gancio per il seguito, e le sue maschere sono lo stesso mistero del manga.
+- **Echo fa un piccolo sacrificio, ma non è persa per sempre.** Per salvare i quattro perde qualcosa di sé (oggi nella V3: spegne la città ed è come chiudere gli occhi). Non muore e non sparisce del tutto.
+- **L'aggancio per l'arco successivo**: i quattro dovranno fare missioni per recuperare **pezzi di artefatti e telecamere** e riportarla tra loro. È un obiettivo concreto per il seguito, e rovescia l'atto: prima era Echo a guardare loro, poi saranno loro a cercare lei.
+- Questo scioglie la contraddizione 1: la scelta di Echo resta sua, e il finale «Echo rinuncia a tornare a casa per restare con loro» può arrivare più avanti, quando l'avranno riportata indietro.
+- Proposta di lettura con lo sguardo: Echo si sacrifica spegnendo le telecamere, cioè i suoi occhi; ogni pezzo recuperato le restituisce un pezzo di vista. «Vi vedo. Male. Sgranati.» diventa l'inizio di un recupero, non una chiusura.
+- Dal finale pensato nella chat 04 restano utilizzabili, quando servirà, i finali dei quattro (Lance che rifiuta l'offerta di LibraCorp, Nox che resta nelle Civette, la maschera di Rio che impara la sua faccia, Saul che lascia andare il colpo della vita ma si intasca qualcosa).
+- **Il Committente** resta l'antagonista: il suo volto non si vede nell'atto. Le maschere dei Masca restano lo stesso mistero del manga.
 
 ### Cosa resta aperto nella storia del gioco
 
-- Chi è il Committente e se ha un legame diretto con Malocchio (oggi: «fa patti come lui, ma Malocchio non viene mai nominato»).
+- Chi è il Committente (nome provvisorio): antagonista del gioco, figura ancora da decidere. Non è Malocchio, che è troppo presto per mostrare.
 - Cosa è successo tra Astrid e Strix dieci anni fa.
 - Il mondo di Echo: casa sua, perché è bloccata qui.
+- Cosa perde Echo esattamente nel sacrificio, e quali pezzi (artefatti, telecamere) servono a riportarla.
 - Il nome della città e del paese.
 
 ---
@@ -199,7 +199,9 @@ La direzione KH + primi FF con classi medievali. Restano valide le silhouette fo
 
 ### Cosa è
 
-**ODISPEL: [titolo dell'atto]**, JRPG a turni story-driven per telefono e PC, 8-12 ore, una città sotto una cupola rosa, quattro ricercati, una Kairos nelle telecamere. Si chiude all'alba sulla tangenziale.
+**ODISPEL: [titolo dell'atto]**, JRPG a turni story-driven per telefono e PC: **un atto**, una città sotto una cupola rosa, quattro ricercati, una Kairos nelle telecamere. Si chiude all'alba sulla tangenziale, con il sacrificio di Echo.
+
+Quello che esiste oggi (V3 0.32.0) è **la demo di questo atto, da rifinire** (autore, 19/10). Rifinire significa, in ordine: dialoghi e ritmo (il varco troppo lungo, le battute ancora poco umane), battaglia (sotto), prova su un telefono vero, le correzioni aperte in `PANORAMICA.md` (ripresa a metà area, avviso dell'Osservatore, chiave di firma).
 
 ### Il ciclo di gioco
 
@@ -251,7 +253,7 @@ Gacha, collezione e reclutamento, 24 operatori, online, PvP, modalità roguelike
 | Media | Cosa fa provare | Elementi del mondo che mostra |
 |---|---|---|
 | **Manga** (Mada, città delle Rondini) | crescere con un potere che fa paura; la scuola di magia, le brigate, la profezia | Odispeller dall'interno, Leviatano e LibraCorp prima e dopo la redenzione, Bestie, Masca, Moontakers, Shadow Workers, Neden, Malocchio |
-| **Primo gioco** (i quattro, paese lontano, dopo l'arco 6) | essere braccati e osservati ai margini; diventare famiglia | Civette, Magabondi, Masca e le maschere, LibraCorp riconosciuta, Kairos e Anomalie, il Committente |
+| **Primo gioco** (i quattro, paese lontano; momento della cronologia da confermare) | essere braccati e osservati ai margini; diventare famiglia | Civette, Magabondi, Masca e le maschere, LibraCorp riconosciuta, Kairos e Anomalie, il Committente |
 | **Gioco di carte** (VTCG) | **il destino che si può cambiare** | tutte le fazioni e i colori; i 24 operatori V2 e le Anomalie non usate; la profezia frammentata |
 | **Action RPG** | da decidere | proposta: un altro punto di vista, per esempio un'Odispeller delle Civette o un agente di Astrid |
 
@@ -265,7 +267,7 @@ La proposta di Claude in quella chat (ogni carta Destino ha un effetto e un Pres
 
 Colori: i cinque colori OPTC del gioco possono essere i colori delle carte, con le fazioni come identità dei mazzi. Resta aperta la prima domanda posta da Claude: il Leader attacca (Vanguard) o è un avatar con punti vita (Shadowverse)?
 
-### La cronologia (proposta)
+### La cronologia (proposta, non confermata dall'autore)
 
 | Momento | Manga | Gioco |
 |---|---|---|
@@ -282,15 +284,16 @@ Le maschere dei Masca arrivano nella città di Mada (arco 3) e in quella del gio
 
 In ordine di quanto bloccano.
 
-1. **Scala del primo gioco**: atto 1 chiuso (proposta) o tutte le 100 ore.
-2. **Il finale del primo gioco** proposto in sez. 4 (Echo sceglie sulla tangenziale).
-3. **Chi è il Committente** e quanto è vicino a Malocchio.
-4. **Collocare il gioco dopo l'arco 6 del manga** (proposta): spiega velo e LibraCorp.
-5. **Battaglia V2 dentro la V3** (sez. 6).
-6. **Nome della città e del paese** (oggi `[CITTÀ]`).
-7. **Dottrine di Civette e Masca** (sez. 6).
-8. **Gioco di carte**: Leader che attacca o avatar; profezia frammentata nelle carte Destino.
-9. **Destino degli operatori V2**: nel gioco di carte (proposta).
+Già deciso il 19/10: il primo gioco è un atto e la demo va rifinita; Echo fa un piccolo sacrificio e verrà recuperata nell'arco successivo; il Committente è l'antagonista e non è Malocchio.
+
+1. **Chi è il Committente** (figura e nome).
+2. **Il sacrificio di Echo**: cosa perde, e quali pezzi servono a riportarla.
+3. **Collocare il gioco dopo l'arco 6 del manga** (proposta, non confermata): spiega velo e LibraCorp.
+4. **Battaglia V2 dentro la V3** (sez. 6).
+5. **Nome della città e del paese** (oggi `[CITTÀ]`).
+6. **Dottrine di Civette e Masca** (sez. 6).
+7. **Gioco di carte**: Leader che attacca o avatar; profezia frammentata nelle carte Destino.
+8. **Destino degli operatori V2**: nel gioco di carte (proposta).
 10. Le contraddizioni minori rimaste nella Bibbia (follower di Rio, capelli di Lance, titolo della Cassaforte, legame Nox-Echo, caveau).
 
 ---
