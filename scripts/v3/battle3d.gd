@@ -11,6 +11,14 @@ const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
 const START_GAUGE: int = 60          # PROVVISORIO (test): ultimate gia' a buon punto, cosi' si vede nel mini combattimento
 const ENEMY_POS := Vector3(0, 0.14, -3.4)
 
+# GUARDIA A TEMPO: quando parte il colpo annunciato un cerchio si chiude sul bersaglio; toccare quando si chiude
+# riduce il danno e carica l'ultimate, toccare proprio all'impatto e' una parata perfetta con contrattacco.
+# Tempi in secondi REALI (non cambiano con x2): la finestra deve restare leggibile anche accelerando.
+const QTE_LEAD: float = 0.9          # dall'apparire del cerchio all'impatto
+const QTE_GOOD: float = 0.3          # quanto prima dell'impatto vale gia' come guardia
+const QTE_LATE: float = 0.12         # tolleranza dopo l'impatto
+const QTE_PERFECT: float = 0.08      # +- attorno all'impatto per la parata perfetta
+
 const STATUS_NAMES: Dictionary = {
 	"guard": "GUARDIA", "taunt": "PROVOCA", "mark": "MARCHIO", "bleed": "SANGUINA", "stun": "STORDITO",
 	"shield": "SCUDO", "ronda": "RONDA",
@@ -42,6 +50,12 @@ var ended: bool = false
 var auto_on: bool = false
 var fast: bool = false
 var first_turn: bool = true
+var first_qte: bool = true
+var _qte_on: bool = false
+var _qte_t: float = 0.0
+var _qte_lead: float = QTE_LEAD      # la prima volta il cerchio e' piu' lento, per leggere l'indicazione
+var _qte_grade: String = ""          # "" = nessun tocco | early | good | perfect
+var _qte_ring: QteRing
 
 var cam: Camera3D
 var _cam_pos: Vector3
@@ -431,7 +445,7 @@ func _advance() -> void:
 		_cam_actor(uid)
 		_refresh_hud()
 		if auto_on:
-			await _wait(0.35)
+			await _wait(0.2)
 			if not is_inside_tree() or ended:
 				return
 			await _do_action(pid, BattleAI.choose(b, pid))
@@ -518,11 +532,11 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 			_cam_side(home[uid], ENEMY_POS)
 		cv.move_speed = 1.0
 		var tw := create_tween()
-		tw.tween_property(cv, "position", strike, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+		tw.tween_property(cv, "position", strike, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 		await tw.finished
 		cv.move_speed = 0.0
 		var a: Tween = cv.cast() if kind != "basic" else cv.attack()
-		await _wait(0.22)
+		await _wait(0.16)
 		_ring(boss_v.position + Vector3(0, 0.05, 0), col, 2.8 if kind == "ult" else 1.8)
 		if kind == "ult":
 			_flash(0.9)
@@ -533,7 +547,7 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 		await _tw_done(a)
 		cv.move_speed = 1.0
 		var back := create_tween()
-		back.tween_property(cv, "position", home[uid], 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		back.tween_property(cv, "position", home[uid], 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		await back.finished
 		cv.move_speed = 0.0
 		_face(cv, ENEMY_POS)
@@ -541,14 +555,14 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 		_cam_front(uid)
 		_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
 		var a2: Tween = cv.cast()
-		await _wait(0.25)
+		await _wait(0.16)
 		_ring(home[uid], col, 2.2)
 		if kind == "ult":
 			_flash(0.6)
 		await _show_events(ev, true)
 		await _tw_done(a2)
 	_refresh_hud()
-	await _wait(0.25)
+	await _wait(0.12)
 	# dopo l'inquadratura frontale si stacca di netto (cambio di telecamera): niente viaggio attraverso i compagni
 	_cam_overview(tgt != "enemy")
 
@@ -561,18 +575,26 @@ func _boss_turn() -> void:
 	var boss_u: Dictionary = BattleState.boss(b)
 	var stunned: bool = int(boss_u.get("stun", 0)) > 0
 	_cam_boss()
-	await _wait(0.5)
-	var ev: Array = SeqRound.boss_action(b)
 	var m: VendingVisual = vis[BattleState.BOSS_ID]
 	if stunned:
+		await _wait(0.3)
+		var evs: Array = SeqRound.boss_action(b)
 		_banner(_bname() + " · STORDITO, SALTA IL TURNO", Ui.CREAM)
-		await _show_events(ev, true)
-		await _wait(0.4)
+		await _show_events(evs, true)
+		await _wait(0.25)
 	else:
 		_banner(_bname() + " · " + str(mv.get("name", "?")).to_upper(), Ui.YELLOW)
+		await _wait(0.25)
 		var all: bool = str(mv.get("target", "one")) == "all"
+		if _guardable(mv):
+			var grade: String = await _timed_guard()
+			if not is_inside_tree() or ended:
+				return
+			if grade == "good" or grade == "perfect":
+				b["timed_guard"] = grade
+		var ev: Array = SeqRound.boss_action(b)
 		var tw: Tween = m.slam() if all else m.attack()
-		await _wait(0.42 if all else 0.3)
+		await _wait(0.3 if all else 0.2)
 		if all:
 			_ring(ENEMY_POS, Ui.YELLOW, 6.5)
 			_flash(0.35)
@@ -583,8 +605,118 @@ func _boss_turn() -> void:
 		await _tw_done(tw)
 	m.stunned = int(BattleState.boss(b).get("stun", 0)) > 0
 	_refresh_hud()
-	await _wait(0.3)
+	await _wait(0.15)
 	_cam_overview()
+
+
+# ---------------------------------------------------------------- guardia a tempo
+
+# Si para solo un colpo vero (niente "Obiettivo rotto", che non fa danno) e solo giocando a mano (con AUTO no).
+func _guardable(mv: Dictionary) -> bool:
+	return not auto_on and not mv.is_empty() and float(mv.get("mult", 0.0)) > 0.0 and not bool(mv.get("camera", false))
+
+
+# Il cerchio sta sempre al centro dello schermo: dalla camera del boss il bersaglio puo' essere coperto dal nemico.
+# Ritorna "", early, good o perfect.
+func _timed_guard() -> String:
+	_qte_ring = QteRing.new()
+	_fx_layer.add_child(_qte_ring)
+	_qte_ring.place(_root.size)
+	_qte_lead = QTE_LEAD
+	if first_qte:
+		first_qte = false
+		_qte_lead = QTE_LEAD * 2.0
+		_hint.text = "GUARDIA A TEMPO: tocca lo schermo quando il cerchio si chiude. Proprio all'impatto è una parata perfetta"
+	_qte_t = 0.0
+	_qte_grade = ""
+	_qte_on = true
+	while _qte_t < _qte_lead + QTE_LATE and _qte_grade == "":
+		await get_tree().process_frame
+		if not is_inside_tree() or ended:
+			_qte_on = false
+			return ""
+		if Engine.time_scale > 0.0 and _pause == null:
+			_qte_t += get_process_delta_time() / Engine.time_scale
+		_qte_ring.progress = _qte_t / _qte_lead
+		_qte_ring.in_window = _qte_t >= _qte_lead - QTE_GOOD
+		_qte_ring.queue_redraw()
+	_qte_on = false
+	_hint.text = ""
+	_qte_ring.finish(_qte_grade)
+	_qte_ring = null
+	match _qte_grade:
+		"perfect":
+			Settings.buzz(45)
+			_flash(0.35)
+		"good":
+			Settings.buzz(25)
+		"early":
+			_toast("TROPPO PRESTO", Color("#ff7a9c"), 0.7)
+	return _qte_grade
+
+
+func _qte_tap() -> void:
+	if not _qte_on or _qte_grade != "" or _pause != null:
+		return
+	var d: float = _qte_t - _qte_lead
+	if absf(d) <= QTE_PERFECT:
+		_qte_grade = "perfect"
+	elif d >= -QTE_GOOD and d <= QTE_LATE:
+		_qte_grade = "good"
+	else:
+		_qte_grade = "early"
+
+
+# Cerchio della guardia a tempo: un anello fisso (il bersaglio) e uno che si stringe fino a toccarlo.
+class QteRing extends Control:
+	const R: float = 54.0
+	var progress: float = 0.0
+	var in_window: bool = false
+	var _label: Label
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		size = Vector2(R * 6.0, R * 6.0)
+		pivot_offset = size * 0.5
+		_label = Ui.label("TOCCA", 26, Ui.CREAM, Ui.display(), 8)
+		_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_label.size = size
+		_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_label)
+
+	func place(screen: Vector2) -> void:
+		position = screen * Vector2(0.5, 0.45) - size * 0.5
+
+	func _draw() -> void:
+		var center: Vector2 = size * 0.5
+		var col: Color = Ui.CYAN if in_window else Ui.YELLOW
+		draw_arc(center, R, 0.0, TAU, 48, Color(0, 0, 0, 0.55), 12.0, true)
+		draw_arc(center, R, 0.0, TAU, 48, Ui.CREAM, 5.0, true)
+		var r2: float = R * (1.0 + 1.7 * clampf(1.0 - progress, 0.0, 1.0))
+		draw_arc(center, r2, 0.0, TAU, 48, Color(0, 0, 0, 0.5), 11.0, true)
+		draw_arc(center, r2, 0.0, TAU, 48, col, 6.0, true)
+
+	# esito: il cerchio diventa la parola e svanisce
+	func finish(grade: String) -> void:
+		progress = 1.0
+		match grade:
+			"perfect":
+				_label.text = "PERFETTA!"
+				_label.add_theme_color_override("font_color", Color.WHITE)
+				in_window = true
+			"good":
+				_label.text = "GUARDIA!"
+				_label.add_theme_color_override("font_color", Ui.CYAN)
+				in_window = true
+			_:
+				_label.text = ""
+		queue_redraw()
+		var tw := create_tween()
+		tw.tween_property(self, "scale", Vector2(1.25, 1.25), 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_interval(0.35)
+		tw.tween_property(self, "modulate:a", 0.0, 0.3)
+		tw.tween_callback(queue_free)
 
 
 # ---------------------------------------------------------------- eventi del motore -> effetti
@@ -646,6 +778,12 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				_flash(0.5)
 				_kick(0.8)
+			"parry":
+				var pu: String = str(e.get("unit", ""))
+				if vis.has(pu) and vis[pu] is CharacterVisual:
+					(vis[pu] as CharacterVisual).attack()
+				_kick(0.5)
+				delay += 0.15
 			"phase":
 				_toast("FASE %d · %s si arrabbia" % [int(e.get("phase", 2)), _bn()], Ui.PINK, 1.8)
 			"down":
@@ -655,7 +793,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					if dv.has_method("ko"):
 						dv.call("ko")
 	_refresh_hud()
-	await _wait(0.35 + delay)
+	await _wait(0.22 + delay)
 
 
 func _number(uid: String, text: String, col: Color, size: int, delay: float) -> void:
@@ -852,6 +990,7 @@ func _build_ui() -> void:
 	var ob := PanelContainer.new()
 	ob.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.72), Ui.INK, 3, 6, 0))
 	ob.position = Vector2(16, 70 if Settings.show_fps else 16)
+	ob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(ob)
 	var ov := VBoxContainer.new()
 	ov.add_theme_constant_override("separation", 4)
@@ -1142,6 +1281,14 @@ func _toggle_fast() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _qte_on:
+		var tap: bool = (event is InputEventScreenTouch and event.pressed) \
+			or (event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT) \
+			or (event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode in [KEY_SPACE, KEY_ENTER, KEY_1, KEY_4])
+		if tap:
+			_qte_tap()
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var k: int = (event as InputEventKey).physical_keycode
 		match k:

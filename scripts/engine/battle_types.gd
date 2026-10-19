@@ -97,3 +97,11 @@ const RESERVE_DRAIN_ROUND: int = 1        # e in fase 2+ il boss ne assorbe anco
 const INTERRUPT_PTS: int = 4              # equilibrio tolto da un'Interruzione
 const RESCUE_HP: float = 0.25            # PV con cui torna chi viene soccorso
 const INTERCEPT_FACTOR: float = 0.6       # danno preso da chi intercetta
+
+# GUARDIA A TEMPO (V3): il giocatore tocca lo schermo quando parte il colpo annunciato del boss.
+# "good" = nella finestra, "perfect" = proprio al momento dell'impatto (vedi state["timed_guard"]).
+const TIMED_GUARD_FACTOR: float = 0.6     # danno preso con la guardia a tempo
+const TIMED_PERFECT_FACTOR: float = 0.25  # danno preso con la parata perfetta
+const TIMED_GUARD_GAUGE: int = 8          # ultimate caricata a chi para in tempo
+const TIMED_PERFECT_GAUGE: int = 18       # ultimate caricata a chi para perfetto
+const TIMED_COUNTER_MULT: float = 0.9     # contrattacco della parata perfetta (scalfisce anche l'equilibrio)
