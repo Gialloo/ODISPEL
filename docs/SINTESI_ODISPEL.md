@@ -15,9 +15,9 @@ Stato al 19 ottobre 2026. Documento nuovo: non sostituisce né modifica nessun f
 | # | Conversazione | Cosa aggiungerà |
 |---|---|---|
 | 1 | Gioco 3D story-driven simil Persona (V3) | le ragioni delle scelte V3; il codice è già nel branch e qui è coperto |
-| 2 | Lore del manga dal punto di vista di Mada | il pezzo più grande che manca: la storia principale dell'universo |
+| 2 | Lore del manga dal punto di vista di Mada | le regole del mondo come le vede il manga, per non contraddirle |
 | 3 | Stile visivo di partenza | la direzione originale, prima di Art Bible V2 e STILE_VISIVO V3 |
-| 4 | Arco di Mada | il protagonista dell'IP, da cui dipende il legame gioco-manga |
+| 4 | Arco di Mada | il tema della storia di Mada, da tenere distinto da quello del gioco |
 | 5 | UI commissionate per sperimentare | le alternative di interfaccia, da confrontare con HUD V2 e V3 |
 | 6 | Bozza del gioco di carte | regole e carte, da allineare con fazioni e dottrine |
 | 7 | Conversazione di partenza sui videogiochi | l'intenzione originale, utile per capire cosa non si è mai perso |
@@ -30,7 +30,7 @@ Stato al 19 ottobre 2026. Documento nuovo: non sostituisce né modifica nessun f
 2. **Va ristretto**: l'atto 1 (prologo + 5 capitoli, circa 8-12 ore) diventa *il gioco intero*, un episodio che si chiude. Le 100 ore alla FFX restano il sogno per il seguito, non per il primo titolo.
 3. **L'essenza della storia è lo sguardo**: chi guarda, chi viene visto, chi si nasconde. Telecamere, velo, maschere, follower, la chiamata senza risposta: tutto il materiale scritto finora parla di questo, anche quando non lo dice.
 4. **Il linguaggio visivo esiste già, sparso in tre documenti**: città notturna pop di oggi (V3), poteri disegnati come luce (V2), interfaccia come occhio di sorveglianza (V2 e V3). Unito, regge da solo; manca solo di essere scritto in un posto.
-5. **Tre decisioni bloccano tutto il resto**: il legame col manga di Mada, chi è il Committente, il nome della città. Le prime due dipendono dalle conversazioni che non ho potuto leggere.
+5. **Gioco e manga sono storie separate nello stesso universo** (chiarito dall'autore): ogni medium fa vivere il mondo da un lato diverso, senza spiegarlo. Le decisioni che bloccano il resto sono chi è il Committente e il nome della città.
 
 ---
 
@@ -88,7 +88,7 @@ Tutto il materiale converge su una domanda: **cosa succede quando qualcuno ti gu
 - La cupola li mostra su ogni schermo come colpevoli: **visti, ma sbagliati**.
 - Il finale dell'atto: Lance usa il braccio davanti a tutte le telecamere del paese. Echo spegne tutte le telecamere per salvarli: **chiude gli occhi per loro**. E poi «Vi vedo. Male. Sgranati. Siete bellissimi.»
 
-L'arco «da sconosciuti a famiglia» della V3 è la superficie; sotto, è «da sorvegliati a visti». Proposta di frase-guida per tutto l'IP: **«Il velo nasconde la magia. Le persone si nascondono da sole.»** [DA INTEGRARE: va verificato con la lore di Mada; se il manga ha un tema diverso, il gioco deve esserne un riflesso, non un doppione.]
+L'arco «da sconosciuti a famiglia» della V3 è la superficie; sotto, è «da sorvegliati a visti». Proposta di frase-guida per tutto l'IP: **«Il velo nasconde la magia. Le persone si nascondono da sole.»** [DA INTEGRARE: da confrontare con la storia di Mada; essendo storie separate, il tema può essere solo del gioco.]
 
 ### La struttura che funziona (da tenere)
 
@@ -109,16 +109,17 @@ Questa è la firma narrativa di ODISPEL: **i mostri parlano in burocratese e dic
 4. **Il capitolo 5** dentro l'atto 1 va tenuto, ma come epilogo del primo gioco, non come ponte verso 100 ore.
 5. **Il cattivo**: oggi il Committente è una voce. Il primo gioco può chiudersi senza svelarlo, ma deve lasciare **un oggetto** che il giocatore porta via (la maschera di Rio arrivata da lui? un pezzo del pacco?) per agganciare il seguito e il manga.
 
-### Il legame con il manga di Mada
+### Il rapporto con il manga di Mada (chiarito dall'autore, 19/10)
 
-Deciso finora: il gioco è in un **paese lontano**, Mada non compare, arrivano solo «influenze lontane»; le Rondini sono la brigata della città del manga.
+**Il gioco e la storia di Mada sono due storie separate nello stesso universo.** Non c'è un ponte di trama da costruire: ogni medium serve ad allargare la conoscenza dell'universo **senza spiegarlo**, facendolo vivere e sperimentare in forme diverse. Il gioco è in un paese lontano, Mada non compare; le Rondini sono la brigata della città del manga.
 
-Proposta di ponti possibili, tutti senza nominare Mada:
-- **Il Leviatano**: fondatore di LibraCorp, citato e mai visto. Se è un personaggio del manga, il gioco ne mostra solo l'ombra.
-- **Il Committente e le maschere**: se le maschere dei Masca arrivano «per posta» anche nella città del manga, il gioco mostra la stessa mano da un'altra parte del mondo.
-- **Le notizie**: un TG, una radio, un cartellone che parla di «fatti in un'altra città» con le Rondini.
+Cosa significa in pratica per il primo gioco:
+- **Il mondo si impara giocando, non leggendo.** Le regole (licenza, velo, brigate, Kairos, LibraCorp) arrivano dagli oggetti, dalle battute e dalle meccaniche: una multa, un registro dei turni, un cartellone dei ricercati, un'Anomalia che parla. Niente glossari o spiegoni.
+- **Ogni medium fa provare una cosa diversa dello stesso mondo.** Il gioco fa provare cosa vuol dire essere braccati e osservati ai margini; il manga lo fa vivere con Mada; le carte fanno toccare con mano le fazioni e i loro modi di combattere.
+- **Gli elementi condivisi sono il mondo, non la trama**: fazioni, velo, Kairos e Anomalie, LibraCorp e il Leviatano, le maschere dei Masca. Possono comparire in più media, ognuno visto da un lato diverso, senza che uno serva a capire l'altro.
+- **Chi conosce più media vede di più**, chi ne conosce uno solo ha comunque una storia completa.
 
-**[DA INTEGRARE]** Le conversazioni 2 e 4 (lore di Mada e suo arco) decidono quale di questi ponti è vero. Senza di loro, il legame gioco-manga resta la lacuna più grande.
+**[DA INTEGRARE]** Le conversazioni 2 e 4 servono a sapere quali elementi del mondo il manga mostra già e come, per non contraddirli e per scegliere cosa il gioco fa vivere da un altro lato.
 
 ---
 
@@ -203,12 +204,12 @@ Online, PvP, 24 operatori, collezione e reclutamento, atto 2. Tutto conservato n
 
 | Media | Prospettiva | Cosa mostra dell'universo |
 |---|---|---|
-| **Manga** | Mada, città delle Rondini | la storia principale, gli Odispeller dall'interno [DA INTEGRARE: conv. 2 e 4] |
+| **Manga** | Mada, città delle Rondini | una storia sua, gli Odispeller dall'interno [DA INTEGRARE: conv. 2 e 4] |
 | **Primo gioco** | quattro ricercati in un paese lontano, con l'occhio di Echo | cosa succede ai margini: chi ha poteri senza licenza, LibraCorp vista da sotto, i Kairos |
 | **Gioco di carte** | tutte le fazioni | il posto naturale per i 24 operatori V2 e le 13 Anomalie inutilizzate; fazioni = colori/mazzi, dottrine = meccaniche [DA INTEGRARE: conv. 6] |
 | **Action RPG** | da decidere | un altro punto di vista (un Odispeller delle Civette? Astrid?) |
 
-Regola dell'IP già scritta e da mantenere: **nessun media racconta tutto**. Aggiunta proposta: ogni media deve lasciare **una domanda** che un altro media risponde.
+Regola dell'IP (confermata dall'autore il 19/10): **storie separate, stesso universo; nessun media racconta tutto e nessuno spiega**. Il mondo si scopre vivendolo, in forme diverse. Ogni media è completo da solo; chi ne conosce più di uno vede più facce dello stesso mondo.
 
 ---
 
@@ -216,8 +217,8 @@ Regola dell'IP già scritta e da mantenere: **nessun media racconta tutto**. Agg
 
 In ordine di quanto bloccano.
 
-1. **Legame gioco-manga**: quale ponte (Leviatano, maschere, notizie). [DA INTEGRARE]
-2. **Chi è il Committente** e cosa vuole dal varco.
+1. **Chi è il Committente** e cosa vuole dal varco.
+2. **Quali elementi del mondo condivide con il manga** (fazioni, Leviatano, maschere) e da che lato li mostra ciascuno. [DA INTEGRARE: conv. 2 e 4]
 3. **Nome della città e del paese** (oggi `[CITTÀ]`).
 4. **Scala del primo gioco**: atto 1 chiuso (proposta) o tutte le 100 ore.
 5. **Echo parassita del piano del Committente** o complice (proposta: parassita).
@@ -234,9 +235,9 @@ In ordine di quanto bloccano.
 | Conversazione | Domande precise |
 |---|---|
 | 1 · V3 | perché la V3 ha superato la V2; scelte rimaste a metà; idee scartate da riprendere |
-| 2 · Lore di Mada | la città di Mada, cosa sa Mada di Kairos, LibraCorp, Leviatano; il ruolo delle Rondini; esiste un Committente nel manga? |
+| 2 · Lore di Mada | quali regole del mondo il manga mostra già (Kairos, LibraCorp, Leviatano, Rondini, licenza) e come, per non contraddirle |
 | 3 · Stile visivo | il primo look di ODISPEL; se il lightpainting nasce lì; riferimenti originali |
-| 4 · Arco di Mada | tema del manga, per allineare «essere visti» o sostituirlo |
+| 4 · Arco di Mada | tema del manga, per capire se «essere visti» è un tema del gioco solo o dell'intero universo |
 | 5 · UI | quali interfacce hanno funzionato; se confermano lo sguardo-telecamera |
 | 6 · Gioco di carte | fazioni come mazzi, risorse, rapporto col combattimento a turni |
 | 7 · Partenza | l'intenzione iniziale: cosa voleva essere il primo gioco prima di tutte le versioni |
