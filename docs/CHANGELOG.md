@@ -4,6 +4,10 @@
 - Capitolo 3: la maschera di Rio si incrina invece di cadere. Da lì si vede un occhio; Rio non è ancora pronto a toglierla e nessuno insiste. Toglierla sarà il climax del suo arco.
 - Varco: Lance usa il braccio per salvare Rio, ma Echo inceppa le telecamere della piazza e il braccio lo vede solo il gruppo. Astrid non lo classifica come Anomalia davanti al paese. Mostrarlo a tutti sarà il climax dell'arco di Lance.
 - Capitolo 5 allineato: sul cartellone dei ricercati Lance è «Disertore», non «Anomalia».
+- Menu pausa nuovo: la riunione d'emergenza. I quattro si stringono in cerchio e sussurrano mentre il mondo resta fermo, ripresi da una telecamera di Echo. Ogni voce ha il suo padrone (Lance riparte, Nox abbassa il volume, Saul conosce un'uscita) e alla ripresa qualcuno rovina il piano.
+- Saul e Rio combattono in modo diverso. Saul, veterano: Colpo basso (sfonda la difesa) e Colpo di fortuna (critico quasi sicuro). Rio, showman: In diretta (marca il nemico e carica i compagni) e Gran finale (tre colpi e tutta la squadra più forte).
+- Voci rifinite: Saul parla come un negoziatore (mezze verità, il conto con gli interessi), Rio come un presentatore davanti a un pubblico che non c'è. Lance e Saul sono i veterani che chiudono i combattimenti senza sforzo.
+- Gag da fuggitivi che tornano lungo l'atto: il distributore, il divano del rifugio, la batteria di Rio, l'orologio di Lance, il thermos di Nox, i travestimenti, i nomi falsi e il pasto da cinque minuti. Dodici chiacchiere nuove.
 
 ## 0.32.0 · la storia riscritta e il capitolo 5
 - Nomi nuovi: Ferri ora è **Lance**, Zecca ora è **Rio**. Il Kairos si chiama **Echo**. La comandante di LibraCorp è **Astrid**, il capoturno di Nox è **Strix**.
