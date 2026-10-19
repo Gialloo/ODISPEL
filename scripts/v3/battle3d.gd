@@ -54,6 +54,8 @@ var first_qte: bool = true
 var _qte_on: bool = false
 var _qte_t: float = 0.0
 var _qte_lead: float = QTE_LEAD      # la prima volta il cerchio e' piu' lento, per leggere l'indicazione
+var _qte_good: float = QTE_GOOD      # Al secondo (Lance): finestre piu' larghe sui colpi che prende lui
+var _qte_perfect: float = QTE_PERFECT
 var _qte_grade: String = ""          # "" = nessun tocco | early | good | perfect
 var _qte_ring: QteRing
 
@@ -86,6 +88,7 @@ var _btn_guard: Button
 var _btn_auto: Button
 var _btn_fast: Button
 var _hint: Label
+var _kit_lbl: Label                   # cosa fa l'Abilita' di chi e' di turno e il suo tratto
 var _cutin: Control
 var _pause: Control
 
@@ -613,7 +616,8 @@ func _boss_turn() -> void:
 
 # Si para solo un colpo vero (niente "Obiettivo rotto", che non fa danno) e solo giocando a mano (con AUTO no).
 func _guardable(mv: Dictionary) -> bool:
-	return not auto_on and not mv.is_empty() and float(mv.get("mult", 0.0)) > 0.0 and not bool(mv.get("camera", false))
+	return not auto_on and not mv.is_empty() and float(mv.get("mult", 0.0)) > 0.0 and not bool(mv.get("camera", false)) \
+		and not bool(b.get("nullify", false))
 
 
 # Il cerchio sta sempre al centro dello schermo: dalla camera del boss il bersaglio puo' essere coperto dal nemico.
@@ -623,6 +627,11 @@ func _timed_guard() -> String:
 	_fx_layer.add_child(_qte_ring)
 	_qte_ring.place(_root.size)
 	_qte_lead = QTE_LEAD
+	_qte_good = QTE_GOOD
+	_qte_perfect = QTE_PERFECT
+	if _hits_lance():
+		_qte_good = QTE_GOOD * 1.5
+		_qte_perfect = QTE_PERFECT * 1.6
 	if first_qte:
 		first_qte = false
 		_qte_lead = QTE_LEAD * 2.0
@@ -638,7 +647,7 @@ func _timed_guard() -> String:
 		if Engine.time_scale > 0.0 and _pause == null:
 			_qte_t += get_process_delta_time() / Engine.time_scale
 		_qte_ring.progress = _qte_t / _qte_lead
-		_qte_ring.in_window = _qte_t >= _qte_lead - QTE_GOOD
+		_qte_ring.in_window = _qte_t >= _qte_lead - _qte_good
 		_qte_ring.queue_redraw()
 	_qte_on = false
 	_hint.text = ""
@@ -655,13 +664,27 @@ func _timed_guard() -> String:
 	return _qte_grade
 
 
+# Il colpo annunciato finira' su Lance? (bersaglio lui, oppure copre il bersaglio)
+func _hits_lance() -> bool:
+	var tele: Dictionary = b.get("telegraph", {})
+	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	if str(mv.get("target", "one")) == "all":
+		return false
+	var tu: Dictionary = BattleState.active_unit(b, str(tele.get("target", "")))
+	if tu.is_empty():
+		return false
+	if Kits.is_char(tu, Kits.LANCE):
+		return true
+	return not Kits.coverer(b, tu).is_empty() and Kits.is_char(Kits.coverer(b, tu), Kits.LANCE)
+
+
 func _qte_tap() -> void:
 	if not _qte_on or _qte_grade != "" or _pause != null:
 		return
 	var d: float = _qte_t - _qte_lead
-	if absf(d) <= QTE_PERFECT:
+	if absf(d) <= _qte_perfect:
 		_qte_grade = "perfect"
-	elif d >= -QTE_GOOD and d <= QTE_LATE:
+	elif d >= -_qte_good and d <= QTE_LATE:
 		_qte_grade = "good"
 	else:
 		_qte_grade = "early"
@@ -778,6 +801,39 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				_flash(0.5)
 				_kick(0.8)
+			"cover":
+				_number(str(e.get("unit", "")), "COPRE " + _uname(str(e.get("who", ""))), _col_of(str(e.get("unit", ""))), 24, delay + 0.1)
+			"cover_hit":
+				_toast("%s si mette davanti a %s" % [_uname(str(e.get("unit", ""))), _uname(str(e.get("who", "")))], Ui.CREAM, 1.4)
+			"coin":
+				var testa: bool = str(e.get("side", "")) == "testa"
+				_toast("TESTA! Critico sicuro" if testa else "CROCE! Saul passa energia a un compagno", Ui.YELLOW if testa else Color("#62f08c"), 1.4)
+			"energy_gift":
+				_number(str(e.get("dst", "")), "+%d ENERGIA" % int(e.get("amount", 0)), Ui.CYAN, 24, delay + 0.2)
+			"heist":
+				if int(e.get("amount", 0)) > 0:
+					_toast("IL COLPO GROSSO: scudo rubato e diviso con la squadra", Color("#62f08c"), 1.6)
+				else:
+					_toast("IL COLPO GROSSO: niente scudi da rubare, si prende tutto in danno", Color("#62f08c"), 1.6)
+			"finale":
+				_toast("GRAN FINALE · HYPE %d%%" % int(e.get("hype", 0)), Ui.VIOLET.lightened(0.3), 1.4)
+			"hype":
+				if int(e.get("amount", 0)) >= 10:
+					_number(str(e.get("unit", "")), "+HYPE", Ui.VIOLET.lightened(0.35), 22, delay + 0.5)
+			"kit_trait":
+				var tr_name: String = "FUORI DALLA LUCE" if str(e.get("trait", "")) == "luce" else "VEGLIA"
+				_number(str(e.get("unit", "")), tr_name, _col_of(str(e.get("unit", ""))).lightened(0.3), 22, delay)
+			"rest":
+				_toast("NOX SI RIPOSA · il prossimo round agisce due volte", Color("#39b7ff"), 1.8)
+			"revive":
+				var rw: String = str(e.get("who", ""))
+				if vis.has(rw) and vis[rw] is CharacterVisual:
+					(vis[rw] as CharacterVisual).revive()
+				_toast("RISPONDO IO · %s torna in piedi" % _uname(rw), Ui.CYAN, 1.8)
+			"answer":
+				_toast("RISPONDO IO · il prossimo colpo del nemico non passa", Ui.CYAN, 1.8)
+			"nullified":
+				_toast("COLPO ANNULLATO · Nox ha risposto", Ui.CYAN, 1.6)
 			"parry":
 				var pu: String = str(e.get("unit", ""))
 				if vis.has(pu) and vis[pu] is CharacterVisual:
@@ -794,6 +850,14 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 						dv.call("ko")
 	_refresh_hud()
 	await _wait(0.22 + delay)
+
+
+func _uname(uid: String) -> String:
+	return str(b["units"].get(uid, {}).get("name", "?")).to_upper()
+
+
+func _col_of(uid: String) -> Color:
+	return _col(b["units"].get(uid, {}))
 
 
 func _number(uid: String, text: String, col: Color, size: int, delay: float) -> void:
@@ -1082,6 +1146,13 @@ func _build_ui() -> void:
 	Ui.place(_turn_lbl, 1.0, 1.0, 1.0, 1.0, -600, -385, -16, -340)
 	_turn_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_root.add_child(_turn_lbl)
+	_kit_lbl = Ui.label("", 20, Ui.CREAM, null, 6)
+	Ui.place(_kit_lbl, 1.0, 1.0, 1.0, 1.0, -620, -392, -16, -392)
+	_kit_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_kit_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_kit_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_kit_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_kit_lbl)
 	_hint = Ui.label("", 24, Ui.CREAM, null, 8)
 	Ui.place(_hint, 0.5, 0.62, 0.5, 0.62, -420, 0, 420, 60)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1173,6 +1244,8 @@ func _show_commands(on: bool) -> void:
 	if _cmd_box == null:
 		return
 	_cmd_box.visible = on
+	if _kit_lbl != null:
+		_kit_lbl.visible = on
 	if not on:
 		return
 	var u: Dictionary = _unit_of(cur_pid)
@@ -1186,6 +1259,16 @@ func _show_commands(on: bool) -> void:
 	_btn_ult.disabled = not ult_ok
 	var um: Dictionary = BattleContent.MOVES.get(str(u.get("ult", "")), {})
 	_btn_ult.text = ("ULTIMATE · " + str(um.get("name", "")).to_upper()) if ult_ok else "ULTIMATE  %d%%" % int(u.get("gauge", 0))
+	# cosa fa l'abilita' e il tratto di chi e' di turno (si gioca capendo, non a memoria)
+	var tr: Dictionary = Kits.TRAITS.get(str(u.get("char", "")), {})
+	var lines: Array = []
+	if skm.has("desc"):
+		lines.append("%s: %s" % [str(skm.get("name", "")), str(skm["desc"])])
+	if ult_ok and um.has("desc"):
+		lines.append("%s: %s" % [str(um.get("name", "")), str(um["desc"])])
+	if not tr.is_empty():
+		lines.append("%s: %s" % [str(tr["name"]), str(tr["desc"])])
+	_kit_lbl.text = "\n".join(lines)
 
 
 func _refresh_hud() -> void:
@@ -1233,6 +1316,8 @@ func _refresh_hud() -> void:
 		(c["hp_t"] as Label).text = "PV %d/%d" % [int(u["hp"]), int(u["max_hp"])]
 		var en: int = int(u.get("energy", 0))
 		(c["en"] as Label).text = "ENERGIA %d/%d" % [en, BattleTypes.MAX_ENERGY]
+		if Kits.is_char(u, Kits.RIO):
+			(c["en"] as Label).text += "  ·  HYPE %d" % int(u.get("hype", 0))
 		(c["ult"] as ProgressBar).max_value = BattleTypes.GAUGE_MAX
 		(c["ult"] as ProgressBar).value = int(u.get("gauge", 0))
 	# ordine dei turni rimasti in questo round
@@ -1266,9 +1351,16 @@ func _banner(text: String, col: Color) -> void:
 	tw.tween_callback(l.queue_free)
 
 
+var _toasts: Array = []
+
+
+# I messaggi che arrivano insieme si mettono uno sotto l'altro invece di sovrapporsi
 func _toast(text: String, col: Color, sec: float) -> void:
+	_toasts = _toasts.filter(func(t: Label) -> bool: return is_instance_valid(t) and t.modulate.a > 0.05)
+	var row: int = _toasts.size()
 	var l := Ui.label(text, 26, col, Ui.display(), 10)
-	Ui.place(l, 0.5, 0.3, 0.5, 0.3, -560, 0, 560, 80)
+	Ui.place(l, 0.5, 0.3, 0.5, 0.3, -560, 48 * row, 560, 80 + 48 * row)
+	_toasts.append(l)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_fx_layer.add_child(l)

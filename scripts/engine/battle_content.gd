@@ -194,9 +194,9 @@ const _V2_CHARACTERS: Dictionary = {
 # PROVVISORIO: nomi, colori, classi, mosse e numeri sono segnaposto da rivedere con l'utente.
 # Le fazioni "civette" e "masca" non hanno ancora aure (Factions le ignora).
 const V3_CAST: Dictionary = {
-	"ferri": {"name": "Lance", "color": "rosso", "cls": "vanguard", "rarity": 0, "skill": "provoca", "ult": "bastione", "passive": "p_hp", "faction": "libracorp",
+	"ferri": {"name": "Lance", "color": "rosso", "cls": "vanguard", "rarity": 0, "skill": "u_ferri_a", "ult": "u_ferri_ult", "passive": "p_hp", "faction": "libracorp",
 		"role": "Ex soldato LibraCorp", "stat_mult": {"hp": 1.15, "atk": 1.2}},
-	"nox": {"name": "Nox", "color": "blu", "cls": "warden", "rarity": 0, "skill": "cura", "ult": "rinascita", "passive": "p_swap", "faction": "civette",
+	"nox": {"name": "Nox", "color": "blu", "cls": "warden", "rarity": 0, "skill": "u_nox_a", "ult": "u_nox_ult", "passive": "p_swap", "faction": "civette",
 		"role": "Odispeller del turno di notte", "stat_mult": {"hp": 1.15, "atk": 1.3}},
 	"zecca": {"name": "Rio", "color": "viola", "cls": "striker", "rarity": 0, "skill": "u_zecca_a", "ult": "u_zecca_ult", "passive": "p_atk", "faction": "masca",
 		"role": "Masca in diretta", "stat_mult": {"atk": 0.9, "spd": 1.1}},
