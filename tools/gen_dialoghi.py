@@ -145,7 +145,7 @@ scene("accordo", "Echo si presenta: è un Kairos, vive nelle telecamere. La cupo
     L("zecca/sorpreso", "Ma che razza di documenti porti in giro?!"),
     L("echo/serio", "Chiudete le quattro Anomalie e la cupola cade. Io ho le registrazioni della piazza: vi scagionano. Ve le do alla fine."),
     L("ferri/serio", "Le Anomalie le chiude LibraCorp."),
-    L("echo/neutro", "LibraCorp sta stampando la tua faccia formato poster."),
+    L("echo/serio", "LibraCorp e Odispeller sono là fuori a darvi la caccia. Le Anomalie sono qua dentro e voi siete ricercati: non mi pare abbiate molto da perdere."),
     L("nox/neutro", "E tu che ci guadagni?"),
     L("echo/neutro", "Sono chiusa qui dentro come voi. Cerchiamo la stessa porta."),
     L("saul/neutro", "Nessuno regala niente."),

@@ -112,7 +112,7 @@
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Ma che razza di documenti porti in giro?!"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Chiudete le quattro Anomalie e la cupola cade. Io ho le registrazioni della piazza: vi scagionano. Ve le do alla fine."},
 			{"chi": "ferri", "espr": "serio", "testo": "Le Anomalie le chiude LibraCorp."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "LibraCorp sta stampando la tua faccia formato poster."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "LibraCorp e Odispeller sono là fuori a darvi la caccia. Le Anomalie sono qua dentro e voi siete ricercati: non mi pare abbiate molto da perdere."},
 			{"chi": "nox", "espr": "neutro", "testo": "E tu che ci guadagni?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Sono chiusa qui dentro come voi. Cerchiamo la stessa porta."},
 			{"chi": "saul", "espr": "neutro", "testo": "Nessuno regala niente."},
