@@ -134,7 +134,7 @@
 			{"chi": "saul", "espr": "neutro", "testo": "E da quando siamo una squadra?"},
 			{"chi": "ferri", "espr": "serio", "testo": "Non è una squadra. È un'emergenza."},
 			{"chi": "nox", "espr": "neutro", "testo": "Allora. Ci fidiamo della telecamera parlante?", "scelte": [{"testo": "«Affare fatto. Ma ti teniamo d'occhio.»", "imposta": "echo_diffidenza"}, {"testo": "«Va bene. Guidaci.»", "imposta": "echo_fiducia"}]},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Anch'io vi tengo d'occhio. Ne ho parecchi.", "se": "echo_diffidenza"},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Anch'io vi tengo d'occhio. Letteralmente.", "se": "echo_diffidenza"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Grazie. Seguite le lucine rosse: vi porto in un posto asciutto.", "se": "echo_fiducia"}
 		]
 	},

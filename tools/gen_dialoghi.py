@@ -169,7 +169,7 @@ scene("accordo", "Echo si presenta: è un Kairos, vive nelle telecamere. La cupo
     scelta("nox/neutro", "Allora. Ci fidiamo della telecamera parlante?",
         [{"testo": "«Affare fatto. Ma ti teniamo d'occhio.»", "imposta": "echo_diffidenza"},
          {"testo": "«Va bene. Guidaci.»", "imposta": "echo_fiducia"}]),
-    L("echo/felice", "Anch'io vi tengo d'occhio. Ne ho parecchi.", se="echo_diffidenza"),
+    L("echo/felice", "Anch'io vi tengo d'occhio. Letteralmente.", se="echo_diffidenza"),
     L("echo/felice", "Grazie. Seguite le lucine rosse: vi porto in un posto asciutto.", se="echo_fiducia"))
 
 scene("rifugio_arrivo", "Echo porta la squadra in un deposito della metro abbandonato: sarà il loro rifugio. Nessuno si fida di nessuno.",
