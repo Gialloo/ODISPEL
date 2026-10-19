@@ -61,5 +61,42 @@ func _init() -> void:
 	for pair in [["Semaforo", "il Semaforo"], ["Cabina", "la Cabina"], ["Specchio", "lo Specchio"], ["Orologio", "l'Orologio"],
 			["L'Osservatore", "l'Osservatore"], ["Sirena", "la Sirena"], ["Scala mobile", "la Scala mobile"]]:
 		check(b3.article(str(pair[0])) == str(pair[1]), "articolo: %s -> %s (non %s)" % [pair[0], pair[1], b3.article(str(pair[0]))])
+	_timed_guard(team)
 	print("test_v3_engine: " + ("OK" if fails == 0 else "%d errori" % fails))
 	quit(1 if fails > 0 else 0)
+
+
+# Guardia a tempo: stesso colpo annunciato, stesso seme. La guardia riduce il danno e carica l'ultimate,
+# la parata perfetta lo riduce di piu' e contrattacca il boss. Il segnale vale per un solo colpo.
+func _boss_hit(team: Array, grade: String) -> Dictionary:
+	var s: Dictionary = BattleState.create_solo("IO", team, [], "distributore", 11)
+	SeqRound.begin(s)
+	s["telegraph"] = {"move": "scarica", "target": str(s["players"][0]["id"])}
+	var u: Dictionary = BattleState.active_unit(s, str(s["players"][0]["id"]))
+	u["gauge"] = 0
+	var boss: Dictionary = BattleState.boss(s)
+	var boss_hp: int = int(boss["hp"])
+	if grade != "":
+		s["timed_guard"] = grade
+	var ev: Array = SeqRound.boss_action(s)
+	var taken: int = 0
+	var parry: bool = false
+	for e in ev:
+		if str(e.get("t", "")) == "damage" and str(e.get("dst", "")) == str(u["id"]):
+			taken += int(e["amount"])
+		if str(e.get("t", "")) == "parry":
+			parry = true
+	return {"taken": taken, "gauge": int(u["gauge"]), "boss_lost": boss_hp - int(boss["hp"]), "parry": parry, "left": s.has("timed_guard")}
+
+
+func _timed_guard(team: Array) -> void:
+	var none: Dictionary = _boss_hit(team, "")
+	var good: Dictionary = _boss_hit(team, "good")
+	var perf: Dictionary = _boss_hit(team, "perfect")
+	check(none["taken"] > 0, "senza guardia il colpo fa danno")
+	check(good["taken"] < none["taken"], "la guardia a tempo riduce il danno (%d contro %d)" % [good["taken"], none["taken"]])
+	check(perf["taken"] < good["taken"], "la parata perfetta riduce piu' della guardia (%d contro %d)" % [perf["taken"], good["taken"]])
+	check(good["gauge"] > none["gauge"] and perf["gauge"] > good["gauge"], "parare carica l'ultimate (%d, %d, %d)" % [none["gauge"], good["gauge"], perf["gauge"]])
+	check(perf["parry"] and perf["boss_lost"] > 0, "la parata perfetta contrattacca")
+	check(not good["parry"] and perf["boss_lost"] > none["boss_lost"], "solo la parata perfetta aggiunge un contrattacco")
+	check(not good["left"] and not perf["left"], "il segnale della guardia vale per un solo colpo")

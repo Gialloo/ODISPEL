@@ -1104,6 +1104,10 @@ static func _camera_cut(state: Dictionary, boss: Dictionary, events: Array) -> v
 
 static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, target_pid: String, rng: RNGState, events: Array) -> void:
 	var move: Dictionary = BattleContent.BOSS_MOVES[move_id]
+	# guardia a tempo: vale solo per il colpo annunciato, non per i colpi in piu' della catena
+	var timed: String = str(state.get("timed_guard", ""))
+	state.erase("timed_guard")
+	var countered: bool = false
 	events.append({"t": "boss_move", "move": move_id})
 	if bool(move.get("camera", false)):
 		_camera_cut(state, boss, events)
@@ -1155,10 +1159,20 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		if not intercepted.is_empty() and BattleState.is_alive(intercepted) and str(intercepted["id"]) != str(t["id"]) and targets.size() == 1:
 			t = intercepted
 			hit_mult *= BattleTypes.INTERCEPT_FACTOR
+		if timed == "good" or timed == "perfect":
+			var perfect: bool = timed == "perfect"
+			hit_mult *= BattleTypes.TIMED_PERFECT_FACTOR if perfect else BattleTypes.TIMED_GUARD_FACTOR
+			t["gauge"] = mini(BattleTypes.GAUGE_MAX, int(t["gauge"]) + (BattleTypes.TIMED_PERFECT_GAUGE if perfect else BattleTypes.TIMED_GUARD_GAUGE))
+			events.append({"t": "timed_guard", "unit": t["id"], "grade": timed})
 		var hp_before: int = int(t["hp"])
 		_hit(state, boss, t, hit_mult, events)
 		lost_total += hp_before - int(t["hp"])
 		_counter(state, boss, t, events)
+		if timed == "perfect" and not countered and BattleState.is_alive(t) and BattleState.is_alive(boss) and str(state["winner"]) == "":
+			# parata perfetta: chi ha parato risponde subito (un solo contrattacco anche contro i colpi a tutti)
+			countered = true
+			events.append({"t": "parry", "unit": t["id"]})
+			_hit(state, t, boss, BattleTypes.TIMED_COUNTER_MULT, events)
 		var drain: float = float(move.get("drain", 0.0)) + float(state.get("boss_drain", 0.0))
 		if drain > 0.0:
 			var dealt: int = hp_before - int(t["hp"])
