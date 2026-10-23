@@ -107,6 +107,9 @@ const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI
 var _btn_auto: Button
 var _btn_fast: Button
 var _hint: Label
+var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
+var _pop_key: String = ""               # ultimo turno annunciato con lo scatto (evita di rifarlo a ogni aggiornamento)
+var _pop_tw: Tween
 var _kit_lbl: Label                   # cosa fa l'Abilita' di chi e' di turno e il suo tratto
 var _cutin: Control
 var _cutin_on: bool = false               # cut-in dell'ultimate in corso (si salta con un tocco)
@@ -451,6 +454,11 @@ func _cam_front(uid: String) -> void:
 
 func _process(delta: float) -> void:
 	var rd: float = minf(delta, 0.05)
+	if _reticle != null and _reticle.visible and vis.has(BattleState.BOSS_ID):
+		# il mirino segue il petto del nemico (la telecamera si muove: si riposiziona, costa una proiezione)
+		var bp: Vector3 = (vis[BattleState.BOSS_ID] as Node).call("chest_point")
+		if not cam.is_position_behind(bp):
+			_reticle.position = cam.unproject_position(bp)
 	_cam_pos = _cam_pos.lerp(_cam_want_pos, minf(1.0, rd * _cam_rate))
 	_cam_look = _cam_look.lerp(_cam_want_look, minf(1.0, rd * _cam_rate))
 	var sh := Vector3.ZERO
@@ -630,9 +638,17 @@ func _command(kind: String) -> void:
 		Settings.buzz(10)
 		return
 	waiting = false
+	_confirming = true
+	_confirm_button(kind)
+	_reticle.confirm()
+	Settings.buzz(40 if kind == "ult" else 18)
+	# 0.1 s di tempo reale perche' lo scatto del bottone si veda prima che la colonna si chiuda
+	await get_tree().create_timer(0.1, true, false, true).timeout
+	_confirming = false
+	if not is_inside_tree():
+		return
 	_show_commands(false)
 	_hint.text = ""
-	Settings.buzz(40 if kind == "ult" else 18)
 	await _do_action(cur_pid, _choice_for(mv), _quick)
 	if is_inside_tree() and not ended:
 		await _advance()
@@ -1034,7 +1050,12 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 						_shatter_later(str(u2.get("char", dst)), delay, 0.7 if BrokenCam.tier(float(after) / mx) == 1 else 1.0)
 				delay += 0.12
 			"heal":
-				_number(str(e.get("dst", "")), "+%d" % int(e.get("amount", 0)), Color("#62f08c"), 36, delay)
+				_number(str(e.get("dst", "")), "+%d" % int(e.get("amount", 0)), Color("#62f08c"), 40, delay)
+				# la cura si vede: anello e spirale verdi sul curato (prima c'era solo il numero)
+				var hd: String = str(e.get("dst", ""))
+				if hit_anims and home.has(hd):
+					_ring(home[hd], Color("#62f08c"), 1.6)
+					LightFx.rise(self, home[hd], Color("#62f08c"))
 				delay += 0.1
 			"shield":
 				_number(str(e.get("dst", "")), "SCUDO +%d" % int(e.get("amount", 0)), Ui.CYAN, 28, delay)
@@ -1146,6 +1167,9 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_flash(0.3)
 			"down":
 				var du: String = str(e.get("unit", ""))
+				if du != BattleState.BOSS_ID:
+					_number(du, "K.O.", Color("#ff4a5a"), 64, delay + 0.1, -10.0)       # chi cade si legge subito, non solo dalla card
+					_kick(0.5)
 				if vis.has(du):
 					var dv: Node3D = vis[du]
 					if dv.has_method("ko"):
@@ -1159,6 +1183,13 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 		_banner(str(lb["text"]), lb["col"], 0.25, 24)
 	_refresh_hud()
 	await _wait(0.22 + delay)
+
+
+func _flash_later(k: float, delay: float) -> void:
+	if delay > 0.01:
+		await get_tree().create_timer(delay).timeout
+	if is_inside_tree():
+		_flash(k)
 
 
 func _uname(uid: String) -> String:
@@ -1182,9 +1213,11 @@ func _color_tag(e: Dictionary, dst: String, delay: float) -> void:
 		_number(dst, "PUNTO DEBOLE", Ui.YELLOW, 30, delay + 0.06, 40.0)
 	match str(h["tipo"]):
 		"efficace":
-			_number(dst, str(h["testo"]), Ui.YELLOW, 30, delay + 0.06, 40.0)
+			# EFFICACE: freccia in su, piu' grande e un lampo leggero (Star Rail: la debolezza colpita si sente); prima era solo una parola gialla
+			_number(dst, "▲ " + str(h["testo"]) + "!", Ui.YELLOW, 40, delay + 0.06, 44.0)
+			_flash_later(0.14, delay)
 		"debole":
-			_number(dst, str(h["testo"]), Color("#c4c2cf"), 26, delay + 0.06, 34.0)
+			_number(dst, "▼ " + str(h["testo"]), Color("#c4c2cf"), 26, delay + 0.06, 34.0)
 
 
 # PRESTAZIONI: ogni grandezza nuova di carattere col contorno va disegnata da zero (sul telefono uno scatto nel momento del
@@ -1347,39 +1380,43 @@ func _shatter_later(key: String, delay: float, strength: float, big: bool = fals
 func _break_moment(delay: float, short: bool = false) -> void:
 	_shatter_later("boss", delay, 0.8 if short else 1.0, true)
 	_sparks_later(BattleState.BOSS_ID, delay, true)
-	_break_stamp(delay)
+	# la riga sotto la scritta sostituisce il toast di prima, che finiva proprio sopra al BREAK
+	_break_stamp(delay, "%s è %s" % [_cap(_bn()), _g("a terra", "a terra") if short else _g("stordito", "stordita")], 0.45 if short else 0.85)
 	_flash(0.4 if short else 0.6)
 	_kick(0.6 if short else 0.9)
-	if not short:
-		_toast("IMPULSO · ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
 
 
-const BREAK_SIZE: int = 112
+const BREAK_SIZE: int = 104
 
 
 # Scritta BREAK: lastra bianca storta con ombra rossa e testo scuro (alto contrasto alla Persona), entra con uno scatto grande
 # e si ferma al centro-alto, lontana da comandi e descrizioni. Costa 4 nodi e un tween breve.
-func _break_stamp(delay: float) -> void:
+func _break_stamp(delay: float, sub: String = "", hold: float = 0.85) -> void:
 	var root := Control.new()
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	Ui.place(root, 0.5, 0.3, 0.5, 0.3, -290, -75, 290, 75)
-	root.pivot_offset = Vector2(290, 75)
+	Ui.place(root, 0.5, 0.28, 0.5, 0.28, -290, -70, 290, 110)
+	root.pivot_offset = Vector2(290, 70)
 	root.modulate.a = 0.0
 	var red := ColorRect.new()
 	red.color = Color("#ff3d5a")
 	red.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	Ui.place(red, 0, 0, 1, 1, 16, 12, 16, 12)
+	Ui.place(red, 0, 0, 1, 0, 16, 12, 16, 152)
 	root.add_child(red)
 	var slab := ColorRect.new()
 	slab.color = Color("#fff8ee")
 	slab.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	Ui.place(slab, 0, 0, 1, 1)
+	Ui.place(slab, 0, 0, 1, 0, 0, 0, 0, 140)
 	root.add_child(slab)
 	var txt := Ui.label("BREAK", BREAK_SIZE, Ui.INK, Ui.display(), 0)
 	txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	Ui.place(txt, 0, 0, 1, 1)
+	Ui.place(txt, 0, 0, 1, 0, 0, 0, 0, 140)
 	root.add_child(txt)
+	if sub != "":
+		var sl := Ui.label(sub, 30, Ui.CREAM, Ui.display(), 10)
+		sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		Ui.place(sl, 0, 0, 1, 0, 0, 150, 0, 190)
+		root.add_child(sl)
 	_fx_layer.add_child(root)
 	root.scale = Vector2(2.4, 2.4)
 	root.rotation_degrees = -16.0
@@ -1388,7 +1425,7 @@ func _break_stamp(delay: float) -> void:
 	tw.tween_property(root, "modulate:a", 1.0, 0.04)
 	tw.parallel().tween_property(root, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.parallel().tween_property(root, "rotation_degrees", -5.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_interval(0.85)
+	tw.tween_interval(hold)          # nella sequenza di squadra resta meno: poi arriva la cornice REC
 	tw.tween_property(root, "modulate:a", 0.0, 0.25)
 	tw.parallel().tween_property(root, "scale", Vector2(1.08, 1.08), 0.25)
 	tw.tween_callback(root.queue_free)
@@ -1591,6 +1628,8 @@ func _build_ui() -> void:
 	Ui.place(_fx_layer, 0, 0, 1, 1)
 	_fx_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_fx_layer)
+	_reticle = Reticle.new()
+	_fx_layer.add_child(_reticle)
 
 	# ordine dei turni (sinistra)
 	var ob := PanelContainer.new()
@@ -1877,6 +1916,54 @@ func _card_tier(c: Dictionary, ratio: float) -> void:
 	(c["cracks"] as Control).queue_redraw()
 
 
+var _confirming: bool = false
+
+
+# TOCCA A TE: appena un eroe diventa di turno la sua card salta (scatto in scala), "TURNO DI ..." entra grande nel suo colore,
+# la colonna dei comandi si apre e il mirino si aggancia al nemico. Una volta sola per turno, tween brevi (Persona 5: ogni cambio ha uno scatto).
+func _announce_turn() -> void:
+	var key: String = "%s|%d|%d" % [cur_pid, turn_i, int(b.get("round", 1))]
+	if key == _pop_key or cur_pid == "" or ended:
+		return
+	_pop_key = key
+	var col: Color = _col(_unit_of(cur_pid))
+	if _pop_tw != null and _pop_tw.is_valid():
+		_pop_tw.kill()
+	_pop_tw = create_tween()
+	_pop_tw.set_parallel(true)
+	for i in _cards.size():
+		if str(slots[i]) == cur_pid:
+			var pn: Control = _cards[i]["panel"]
+			pn.pivot_offset = pn.size * 0.5
+			pn.scale = Vector2(0.94, 0.94)
+			_pop_tw.tween_property(pn, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		else:
+			(_cards[i]["panel"] as Control).scale = Vector2.ONE
+	_turn_lbl.pivot_offset = Vector2(_turn_lbl.size.x, _turn_lbl.size.y * 0.5)
+	_turn_lbl.scale = Vector2(1.35, 1.35)
+	_turn_lbl.add_theme_color_override("font_color", col.lightened(0.35))
+	_pop_tw.tween_property(_turn_lbl, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_cmd_box.pivot_offset = _cmd_box.size
+	_cmd_box.scale = Vector2(0.9, 0.9)
+	_cmd_box.modulate.a = 0.0
+	_pop_tw.tween_property(_cmd_box, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_pop_tw.tween_property(_cmd_box, "modulate:a", 1.0, 0.1)
+	_reticle.lock_on(col.lightened(0.15), 84.0 if Ui.is_touch() else 70.0)
+	Settings.buzz(12)
+
+
+# Il bottone scelto scatta (si ingrandisce e si schiarisce) prima che la colonna si chiuda: conferma entro 100 ms
+func _confirm_button(kind: String) -> void:
+	var btn: Button = {"attack": _btn_atk, "skill": _btn_skill, "ult": _btn_ult, "guard": _btn_guard}.get(kind, _btn_atk)
+	btn.pivot_offset = btn.size * 0.5
+	btn.modulate = Color(1.35, 1.35, 1.35)
+	var tw := btn.create_tween()
+	tw.tween_property(btn, "scale", Vector2(1.12, 1.12), 0.07).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void:
+		btn.scale = Vector2.ONE
+		btn.modulate = Color.WHITE)
+
+
 func _show_commands(on: bool) -> void:
 	if _cmd_box == null:
 		return
@@ -1884,7 +1971,11 @@ func _show_commands(on: bool) -> void:
 	if _kit_lbl != null:
 		_kit_lbl.visible = on
 	if not on:
+		if _reticle != null and not _confirming:
+			_reticle.visible = false
+		_pop_key = ""
 		return
+	_announce_turn()
 	var u: Dictionary = _unit_of(cur_pid)
 	var sk: String = _skill_of(u)
 	var skm: Dictionary = BattleContent.MOVES.get(sk, {})
@@ -2077,10 +2168,11 @@ func _refresh_hud() -> void:
 		if str(c.get("look", "")) != look:
 			c["look"] = look          # PRESTAZIONI: lo stile della card si rifa' solo quando cambia
 			(c["panel"] as PanelContainer).add_theme_stylebox_override("panel",
-				Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.55), Color("#ff5a6e") if is_marked else (col if active else Ui.INK), 6 if is_marked else (4 if active else 3), 6, 5))
+				Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.42), Color("#ff5a6e") if is_marked else (col.lightened(0.25) if active else Ui.INK), 6 if (is_marked or active) else 3, 6, 9 if active else 5))
 		(c["panel"] as Control).modulate.a = 1.0 if alive else 0.45
 		# il colore anche scritto: chi non distingue i colori sa lo stesso chi colpisce le debolezze
-		(c["name"] as Label).text = str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
+		# ▶ davanti al nome di chi e' di turno: si legge anche senza distinguere i colori
+		(c["name"] as Label).text = ("▶ " if active and alive else "") + str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
 		(c["name"] as Label).add_theme_color_override("font_color", col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
@@ -2209,7 +2301,6 @@ func _team_sequence(rest: Array) -> void:
 	# 1. ROTTURA
 	# versione corta del BREAK (vetro + scritta, senza il fermo immagine lungo): la sequenza di squadra ha gia' il suo ritmo
 	_break_moment(0.0, true)
-	_toast("%s è a terra" % _cap(_bn()), Color.WHITE, 1.2)
 	await _team_wait(0.95)
 	# 2. FERMO IMMAGINE
 	var box := _rec_frame()
