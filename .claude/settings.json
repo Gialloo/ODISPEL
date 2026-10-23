@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(godot --headless:*)",
+      "Bash(xvfb-run -a godot:*)",
+      "Bash(python3 tools/gen_dialoghi.py:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
+    "deny": [
+      "Read(./**/*.pem)",
+      "Read(/mnt/project-files/odispel/chiavi/**)"
+    ]
+  }
+}

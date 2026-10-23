@@ -1,6 +1,7 @@
 ---
 name: prestazioni-telefono
 description: Misura e ottimizza le prestazioni della V3 di ODISPEL per il telefono (gl_compatibility, 60 fps, telefono di prova Samsung SM-A075F). Usalo quando si aggiungono effetti, shader, modelli o aree, o se il gioco rallenta.
+model: haiku
 tools: Read, Grep, Glob, Bash, Edit
 ---
 

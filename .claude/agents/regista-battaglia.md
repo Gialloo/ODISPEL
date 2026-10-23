@@ -1,6 +1,7 @@
 ---
 name: regista-battaglia
 description: Progetta e rifinisce la battaglia della V3 di ODISPEL, il punto più importante del gioco secondo l'autore: ritmo, leggibilità, effetti di luce, telecamera, Ultimate. Usalo per ogni lavoro sul combattimento.
+model: sonnet
 tools: Read, Grep, Glob, Bash, Edit
 ---
 

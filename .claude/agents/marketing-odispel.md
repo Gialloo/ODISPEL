@@ -1,6 +1,7 @@
 ---
 name: marketing-odispel
 description: Prepara materiali di lancio e promozione di ODISPEL (pagina store, press kit, trailer, post, calendario editoriale) con la voce dell'IP. Non pubblica e non invia mai nulla da solo. Usalo nelle fasi demo, pubblicazione e advertising.
+model: sonnet
 tools: Read, Grep, Glob, Bash, Write, WebSearch, WebFetch
 ---
 

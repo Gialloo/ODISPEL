@@ -1,6 +1,7 @@
 ---
 name: guardiano-bibbia
 description: Controlla una modifica, una scena, un dialogo o una funzione di ODISPEL contro la Bibbia di lavoro e il canone, prima che arrivi all'autore. Usalo dopo ogni modifica che il giocatore vede o legge.
+model: sonnet
 tools: Read, Grep, Glob, Bash
 ---
 

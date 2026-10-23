@@ -1,6 +1,7 @@
 ---
 name: qa-godot
 description: Prova la demo V3 di ODISPEL in Godot senza testa: importa, lancia i test, gioca l'atto da solo, cattura schermate e segnala regressioni. Usalo dopo ogni modifica al codice e prima di ogni rilascio.
+model: haiku
 tools: Read, Grep, Glob, Bash
 ---
 

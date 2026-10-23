@@ -1,6 +1,7 @@
 ---
 name: voce-dei-personaggi
 description: Scrive e corregge dialoghi, banter e gag di ODISPEL con le voci canoniche di Lance, Nox, Rio, Saul, Echo e delle Anomalie. Usalo per ogni testo che il giocatore legge.
+model: sonnet
 tools: Read, Grep, Glob, Bash, Edit
 ---
 

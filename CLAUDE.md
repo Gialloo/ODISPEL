@@ -39,3 +39,14 @@ In `.claude/agents/` ci sono agenti con istruzioni già scritte: `guardiano-bibb
 ## Dove mettere le cose nuove
 
 Canone dell'universo: si aggiorna `ODISPEL_TUTTO.md` nella cartella del progetto. Materiale di lavoro: sottocartelle per gioco in `/mnt/project-files/odispel/`. Ogni file nuovo va aggiunto a `/mnt/project-files/LEGGIMI.md`. Il perché delle scelte importanti si scrive in una riga accanto alla scelta (L7).
+
+## Lavorare in modo economico
+
+L'autore vuole il massimo risultato con il minimo consumo. Quindi:
+
+- **Leggi solo quello che serve**: cerca con grep e leggi le righe utili, non i file interi. Il DEVLOG da 2,5 MB non si apre mai per intero.
+- **Output corti**: lancia test e prove salvando il log su file e mostra solo l'esito (`tail`, `grep`).
+- **Il modello giusto per ogni agente**: `qa-godot` e `prestazioni-telefono` girano su Haiku (comandi e numeri); `guardiano-bibbia`, `voce-dei-personaggi`, `regista-battaglia` e `marketing-odispel` su Sonnet (giudizio e scrittura). Il modello principale coordina e decide.
+- **Sotto-agenti solo quando conviene**: un compito piccolo si fa direttamente. Per una funzione con più passi usa `superpowers:writing-plans` e poi `superpowers:subagent-driven-development`; `agent-army` solo per lavori con 6 o più parti indipendenti (es. rivedere tutti i dialoghi capitolo per capitolo). Per decisioni importanti, `devil-advocate` o `agentic-council` prima di chiedere all'autore.
+- **Niente crediti senza il via**: i generatori di immagini, video e musica collegati (abracadabrax, ManyMotions, lurkapi) spendono i crediti dell'autore: si preparano, ma si genera solo quando lui dice «genera».
+- Cosa non funziona e cosa serve per sbloccarlo: `/mnt/project-files/odispel/produzione/STRUMENTI_DA_SBLOCCARE.txt`.
