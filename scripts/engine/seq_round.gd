@@ -92,11 +92,31 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary, qu
 		BattleResolver._summon_upkeep(state, events, false)
 		BattleResolver._check_winner(state, events)
 		Kits.after_events(state, events)
+		_team_strike(state, actor, events)
 		if not quick:
 			_check_slancio(state, actor, events)
 	p["choice"] = null
 	_log(state, events)
 	return events
+
+
+# ATTACCO DI SQUADRA: alla rottura del boss tutti gli altri eroi in piedi lo colpiscono subito (fuori turno, BREAK_TEAM_MULT).
+# Evento {"t": "team_strike", "unit": chi ha rotto}: battle3d ci mette il fermo immagine di Echo.
+static func _team_strike(state: Dictionary, breaker: Dictionary, events: Array) -> void:
+	var broke: bool = false
+	for e in events:
+		if str(e.get("t", "")) == "break":
+			broke = true
+	var boss: Dictionary = BattleState.boss(state)
+	if not broke or BattleTypes.BREAK_TEAM_MULT <= 0.0 or not BattleState.is_alive(boss) or str(state["winner"]) != "":
+		return
+	events.append({"t": "team_strike", "unit": str(breaker["id"])})
+	for p in BattleState.alive_players(state):
+		var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+		if str(u["id"]) == str(breaker["id"]) or not BattleState.is_alive(u) or not BattleState.is_alive(boss):
+			continue
+		BattleResolver._hit(state, u, boss, BattleTypes.BREAK_TEAM_MULT, events)
+	BattleResolver._check_winner(state, events)
 
 
 # SLANCIO: chi colpisce il boss col colore vincente guadagna mezzo turno: subito dopo agisce ancora, ma solo con Attacco o Guardia.

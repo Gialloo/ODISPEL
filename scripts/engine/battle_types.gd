@@ -72,6 +72,7 @@ const STORY_ATK_K: float = 1.0            # attacco di tutti i nemici della stor
 const STORY_HP_PER_LEVEL: float = 0.14    # +14% PV per livello sopra il primo
 const STORY_ATK_PER_LEVEL: float = 0.09   # +9% attacco per livello sopra il primo
 const SLANCIO_ON: bool = true             # colpo col colore vincente = azione rapida subito dopo (una volta a round, squadra)
+const BREAK_TEAM_MULT: float = 0.6         # attacco di squadra alla rottura: colpo di ogni altro eroe (0 = spento)
 const BREAK_RECOVER: float = 0.75       # frazione della barra con cui il boss si riprende dopo una rottura (1 = piena)
 const BREAK_REGEN: int = 1             # equilibrio recuperato a fine round se non e' stato rotto
 # SINERGIE tra compagni nello stesso round

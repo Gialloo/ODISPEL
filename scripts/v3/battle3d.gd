@@ -92,6 +92,8 @@ var _react_box: VBoxContainer        # REAZIONE: compare solo quando il boss car
 var _react_lbl: Label
 var _react_btns: Dictionary = {}      # id reazione -> pulsante
 var _react_hint_seen: bool = false
+var _freeze_on: bool = false            # fermo immagine di Echo in corso (si salta con un tocco)
+var _freeze_skip: bool = false
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
@@ -587,7 +589,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			_kick(1.0)
 		else:
 			_kick(0.45 if kind == "basic" else 0.7)
-		await _show_events(ev, true)
+		await _show_events_freeze(ev)
 		await _tw_done(a)
 		cv.move_speed = 1.0
 		var back := create_tween()
@@ -604,7 +606,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		_ring(home[uid], col, 2.2)
 		if kind == "ult":
 			_flash(0.6)
-		await _show_events(ev, true)
+		await _show_events_freeze(ev)
 		await _tw_done(a2)
 	_refresh_hud()
 	await _wait(0.12)
@@ -1690,6 +1692,77 @@ var _toasts: Array = []
 
 
 # I messaggi che arrivano insieme si mettono uno sotto l'altro invece di sovrapporsi
+# Mostra gli eventi; se c'e' un ATTACCO DI SQUADRA (rottura del boss) prima mostra la rottura, poi il fermo immagine di Echo,
+# poi i colpi dei compagni.
+func _show_events_freeze(ev: Array) -> void:
+	var idx: int = -1
+	for i in ev.size():
+		if str(ev[i].get("t", "")) == "team_strike":
+			idx = i
+			break
+	if idx < 0:
+		await _show_events(ev, true)
+		return
+	await _show_events(ev.slice(0, idx), true)
+	await _freeze_frame()
+	if not is_inside_tree() or ended:
+		return
+	var rest: Array = ev.slice(idx)
+	for e in rest:
+		if str(e.get("t", "")) == "team_strike":
+			# i compagni scattano insieme verso il boss: una pennellata di luce dal colore di ognuno
+			for uid in vis:
+				if str(uid) != BattleState.BOSS_ID and str(uid) != str(e.get("unit", "")) and vis[uid] is CharacterVisual and BattleState.is_alive(BattleState.unit(b, str(uid))):
+					var cvv: CharacterVisual = vis[uid]
+					cvv.attack()
+					if not Settings.light_fx:
+						LightFx.stroke(self, cvv.chest_point(), (vis[BattleState.BOSS_ID] as Node).call("chest_point"), _col(BattleState.unit(b, str(uid))), 0.4)
+	_toast("ATTACCO DI SQUADRA", Ui.YELLOW, 1.2)
+	await _show_events(rest, true)
+
+
+# FERMO IMMAGINE (telecamera di Echo): alla rottura la scena si ferma un istante dentro una cornice REC. Si salta con un tocco.
+# Effetti ridotti: niente velo scuro e fermo piu' breve; Lampi a zero: niente lampo.
+func _freeze_frame() -> void:
+	var dur: float = 0.35 if Settings.light_fx else 0.7
+	var box := Control.new()
+	Ui.place(box, 0, 0, 1, 1)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fx_layer.add_child(box)
+	if not Settings.light_fx:
+		var veil := ColorRect.new()
+		veil.color = Color(0.02, 0.0, 0.05, 0.3)
+		Ui.place(veil, 0, 0, 1, 1)
+		veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(veil)
+	var rec: Color = Color("#ff4630")
+	for side in 4:
+		var bar := ColorRect.new()
+		bar.color = rec
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		match side:
+			0: Ui.place(bar, 0, 0, 1, 0, 0, 0, 0, 8)
+			1: Ui.place(bar, 0, 1, 1, 1, 0, -8, 0, 0)
+			2: Ui.place(bar, 0, 0, 0, 1, 0, 0, 8, 0)
+			3: Ui.place(bar, 1, 0, 1, 1, -8, 0, 0, 0)
+		box.add_child(bar)
+	var lbl := Ui.label("●  REC  ·  FERMO IMMAGINE", 30, rec, Ui.display(), 8)
+	Ui.place(lbl, 0.2, 0.2, 0.6, 0.2, 0, 0, 0, 50)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(lbl)
+	_flash(0.4)
+	var prev_scale: float = Engine.time_scale
+	Engine.time_scale = 0.03
+	_freeze_on = true
+	_freeze_skip = false
+	var t0: int = Time.get_ticks_msec()
+	while is_inside_tree() and not ended and not _freeze_skip and float(Time.get_ticks_msec() - t0) / 1000.0 < dur:
+		await get_tree().process_frame
+	_freeze_on = false
+	Engine.time_scale = prev_scale
+	box.queue_free()
+
+
 # Titolo grande "in diretta" (stile di Rio): pallino rosso REC che lampeggia + parola grande + una riga sotto. Non copre le descrizioni:
 # sta nella fascia centrale alta, come i toast.
 func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
@@ -1754,6 +1827,11 @@ func _toggle_fast() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _freeze_on and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) \
+			or (event is InputEventKey and event.pressed and not event.echo)):
+		_freeze_skip = true
+		get_viewport().set_input_as_handled()
+		return
 	if _cutin_on and _pause == null and not ended:
 		var skip: bool = (event is InputEventScreenTouch and event.pressed) \
 			or (event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT) \
