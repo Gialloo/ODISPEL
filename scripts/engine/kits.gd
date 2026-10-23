@@ -93,6 +93,11 @@ static func acts_last(state: Dictionary, actor: Dictionary) -> bool:
 	return true
 
 
+# Il caffe' a riposo al massimo una volta ogni 2 round (mai di seguito): poi Nox torna a fare altro.
+static func coffee_ready(state: Dictionary, actor: Dictionary) -> bool:
+	return not actor.has("rest_round") or int(state.get("round", 1)) - int(actor["rest_round"]) >= 2
+
+
 # Veglia: Nox "vede" il pericolo. Scatta se agisce per ultima, se il boss sta caricando un colpo pesante o se un compagno e' sotto il 50% PV.
 static func vigil_on(state: Dictionary, actor: Dictionary) -> bool:
 	if acts_last(state, actor):
@@ -165,11 +170,12 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 			for p in BattleState.alive_players(state):
 				var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
 				worst = minf(worst, float(u["hp"]) / maxf(1.0, float(u["max_hp"])))
-			if worst > COFFEE_REST_ABOVE:
+			if worst > COFFEE_REST_ABOVE and coffee_ready(state, actor):
 				# nessuno ne ha bisogno: Nox si riposa (energia restituita) e il prossimo round agisce due volte
 				out["skip"] = true
 				actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + int(move.get("cost", 0)))
 				actor["rested"] = true
+				actor["rest_round"] = int(state.get("round", 1))
 				events.append({"t": "rest", "unit": actor["id"]})
 				# il caffe' si offre a tutti: scudo a ciascuno e 1 energia ai compagni (il riposo non e' tempo perso)
 				for p in BattleState.alive_players(state):
@@ -341,5 +347,5 @@ static func ai_wants(state: Dictionary, u: Dictionary, move_id: String, move: Di
 				var q2: Dictionary = BattleState.active_unit(state, str(p["id"]))
 				if BattleState.is_alive(q2) and float(q2["hp"]) / float(maxi(1, int(q2["max_hp"]))) <= COFFEE_REST_ABOVE:
 					return -1
-			return 1
+			return 1 if coffee_ready(state, u) else 0
 	return -1
