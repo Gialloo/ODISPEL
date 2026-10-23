@@ -481,7 +481,7 @@ func _advance() -> void:
 		_show_commands(true)
 		if first_turn:
 			first_turn = false
-			_hint.text = "ATTACCO ricarica energia · ABILITÀ la spende · ULTIMATE quando la barra è piena"
+			_hint.text = "GUARDIA ricarica energia (+1 anche a ogni round) · ABILITÀ la spende · ULTIMATE quando la barra è piena"
 		return
 
 
