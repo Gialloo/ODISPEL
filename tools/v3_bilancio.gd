@@ -2,8 +2,9 @@ extends SceneTree
 
 # BILANCIO DELLA BATTAGLIA: simula gli scontri dell'atto 1 con l'IA automatica (BattleAI) e stampa le metriche del piano combat.
 # Serve a tarare le costanti del motore (equilibrio, Riserva, ...) senza giocare: ripetibile, deterministica (semi fissi).
-# Uso: godot --headless --path . --script tools/v3_bilancio.gd -- [semi=40] [minori] [solo=distributore]
+# Uso: godot --headless --path . --script tools/v3_bilancio.gd -- [semi=40] [minori] [dettaglio] [solo=distributore]
 #   semi=N      quanti semi per scontro (default 40)
+#   dettaglio   sotto ogni scontro la quota di danno di tutti e quattro
 #   minori      include anche i frammenti (nemici minori)
 #   solo=ID     un solo scontro
 # Gli scontri e le scale PV/attacco replicano battle3d.gd (pv_k, atk_k, livello); la squadra e' quella dell'atto 1 con ultimate al 60%.
@@ -54,10 +55,9 @@ func _scan(ev: Array, st: Dictionary) -> void:
 				if str(e.get("src", "")) != "boss":
 					var c2: String = _char_of(str(e.get("src", "")))
 					st["heal_" + c2] = float(st.get("heal_" + c2, 0.0)) + 1.0
-			"shield":
-				if str(e.get("src", "")) != "boss":
-					var c3: String = _char_of(str(e.get("src", "")))
-					st["shield_" + c3] = float(st.get("shield_" + c3, 0.0)) + 1.0
+			"rest":
+				# Pausa caffe' a riposo (scudo a tutti): un'azione utile di Nox, conta come una cura
+				st["heal_nox"] = float(st.get("heal_nox", 0.0)) + 1.0
 			"kit_trait":
 				if str(e.get("trait", "")) == "veglia":
 					st["veglia"] = float(st.get("veglia", 0.0)) + 1.0
@@ -107,9 +107,12 @@ func _init() -> void:
 	var seeds: int = 40
 	var minori: bool = false
 	var solo: String = ""
+	var dettaglio: bool = false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("semi="):
 			seeds = int(a.substr(5))
+		elif a == "dettaglio":
+			dettaglio = true
 		elif a == "minori":
 			minori = true
 		elif a.begins_with("solo="):
@@ -129,8 +132,13 @@ func _init() -> void:
 			enc[0], enc[1], 100.0 * float(st.get("wins", 0.0)) / r, float(st.get("ko", 0.0)) / r, float(st.get("rounds", 0.0)) / r,
 			float(st.get("boss_giocati", 0.0)) / r, float(st.get("boss_persi", 0.0)) / r, float(st.get("break", 0.0)) / r,
 			100.0 * float(st.get("dmg_saul", 0.0)) / tot_dmg, 100.0 * float(st.get("dmg_nox", 0.0)) / tot_dmg,
-			(float(st.get("heal_nox", 0.0)) + float(st.get("shield_nox", 0.0))) / r, float(st.get("veglia", 0.0)) / r,
+			float(st.get("heal_nox", 0.0)) / r, float(st.get("veglia", 0.0)) / r,
 			float(st.get("occasioni", 0.0)) / r, float(st.get("react", 0.0)) / r])
+		if dettaglio:
+			var parts: String = "     quota danno sul boss:"
+			for c in PARTY:
+				parts += "  %s %.0f%%" % [c, 100.0 * float(st.get("dmg_" + c, 0.0)) / tot_dmg]
+			print(parts)
 		if not bool(enc[4]):
 			n_boss += 1
 			for k in st:
@@ -142,6 +150,6 @@ func _init() -> void:
 			"MEDIA BOSS", "", 100.0 * float(tot.get("wins", 0.0)) / r2, float(tot.get("ko", 0.0)) / r2, float(tot.get("rounds", 0.0)) / r2,
 			float(tot.get("boss_giocati", 0.0)) / r2, float(tot.get("boss_persi", 0.0)) / r2, float(tot.get("break", 0.0)) / r2,
 			100.0 * float(tot.get("dmg_saul", 0.0)) / d2, 100.0 * float(tot.get("dmg_nox", 0.0)) / d2,
-			(float(tot.get("heal_nox", 0.0)) + float(tot.get("shield_nox", 0.0))) / r2, float(tot.get("veglia", 0.0)) / r2,
+			float(tot.get("heal_nox", 0.0)) / r2, float(tot.get("veglia", 0.0)) / r2,
 			float(tot.get("occasioni", 0.0)) / r2, float(tot.get("react", 0.0)) / r2])
 	quit()

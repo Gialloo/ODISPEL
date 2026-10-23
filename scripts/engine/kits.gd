@@ -30,6 +30,8 @@ const FINALE_PER_HYPE: float = 1.5      # ... e quanto aggiunge l'Hype pieno
 const MASK_AGGRO_PM: int = 350          # con la maschera Rio attira i colpi singoli del boss (35%)
 const VIGIL_MULT: float = 1.35          # Veglia: Nox agisce per ultima nel round
 const COFFEE_REST_ABOVE: float = 0.7    # Pausa caffe': se tutti stanno sopra il 70% Nox si riposa
+const COFFEE_SHIELD: float = 0.08       # Pausa caffe' a riposo: scudo a tutti (in % dei loro PV massimi) e 1 energia
+const VIGIL_HURT_BELOW: float = 0.5     # Veglia: scatta anche se un compagno e' sotto il 50% PV (o c'e' una carica in arrivo)
 const ANSWER_HP: float = 0.4            # Rispondo io: un compagno KO torna con il 40% dei PV
 
 const HYPE_GAIN: Dictionary = {
@@ -40,7 +42,7 @@ const TRAITS: Dictionary = {
 	LANCE: {"name": "Al secondo", "desc": "Sui colpi diretti a lui la Guardia a tempo è più larga; la sua parata perfetta toglie equilibrio."},
 	SAUL: {"name": "Fuori dalla luce", "desc": "Colpisce più forte quando il nemico ha di mira qualcun altro."},
 	RIO: {"name": "In diretta", "desc": "Tutto ciò che è spettacolare riempie l'Hype. Con la maschera il nemico lo prende di mira più spesso."},
-	NOX: {"name": "Veglia", "desc": "Se agisce per ultima nel round fa di più e spende meno."},
+	NOX: {"name": "Veglia", "desc": "Se vede un pericolo (una carica in arrivo o un compagno sotto il 50% PV) fa di più e spende meno."},
 }
 
 
@@ -89,6 +91,21 @@ static func acts_last(state: Dictionary, actor: Dictionary) -> bool:
 		if str(u["id"]) != str(actor["id"]) and BattleState.is_alive(u) and not acts.has(str(u["id"])):
 			return false
 	return true
+
+
+# Veglia: Nox "vede" il pericolo. Scatta se agisce per ultima, se il boss sta caricando un colpo pesante o se un compagno e' sotto il 50% PV.
+static func vigil_on(state: Dictionary, actor: Dictionary) -> bool:
+	if acts_last(state, actor):
+		return true
+	var tele: Dictionary = state.get("telegraph", {})
+	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	if not bm.is_empty() and int(BattleState.boss(state).get("stun", 0)) == 0 and BattleResolver.is_heavy_boss_move(bm):
+		return true
+	for p in BattleState.alive_players(state):
+		var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+		if BattleState.is_alive(u) and float(u["hp"]) < float(u["max_hp"]) * VIGIL_HURT_BELOW:
+			return true
+	return false
 
 
 static func add_hype(u: Dictionary, n: int, events: Array, why: String) -> void:
@@ -153,8 +170,17 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 				actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + int(move.get("cost", 0)))
 				actor["rested"] = true
 				events.append({"t": "rest", "unit": actor["id"]})
+				# il caffe' si offre a tutti: scudo a ciascuno e 1 energia ai compagni (il riposo non e' tempo perso)
+				for p in BattleState.alive_players(state):
+					var m: Dictionary = BattleState.active_unit(state, str(p["id"]))
+					var sh: int = int(round(float(m["max_hp"]) * COFFEE_SHIELD))
+					m["shield"] = int(m["shield"]) + sh
+					events.append({"t": "shield", "src": actor["id"], "dst": m["id"], "amount": sh})
+					if str(m["id"]) != str(actor["id"]):
+						m["energy"] = mini(BattleTypes.MAX_ENERGY, int(m["energy"]) + 1)
+						events.append({"t": "energy_gift", "unit": actor["id"], "dst": m["id"], "amount": 1})
 	# Veglia: Nox per ultima nel round (non quando si riposa: non sta facendo niente)
-	if is_char(actor, NOX) and move_id != BattleTypes.ACTION_GUARD and not bool(out["skip"]) and acts_last(state, actor):
+	if is_char(actor, NOX) and move_id != BattleTypes.ACTION_GUARD and not bool(out["skip"]) and vigil_on(state, actor):
 		out["mult"] = float(out["mult"]) * VIGIL_MULT
 		if str(move.get("kind", "")) == "skill" and int(move.get("cost", 0)) > 0:
 			actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + 1)     # costa un'energia in meno
@@ -308,4 +334,11 @@ static func ai_wants(state: Dictionary, u: Dictionary, move_id: String, move: Di
 			return 1 if str(tm.get("target", "")) == "all" and float(tm.get("mult", 0.0)) >= 0.9 else 0
 		"finale":
 			return 1 if int(u.get("hype", 0)) >= 50 else 0
+		"coffee":
+			# tutti bene: il caffe' a tutti (scudo + energia) vale piu' di un attacco da Nox; se c'e' un ferito decide la regola generica
+			for p in state["players"]:
+				var q2: Dictionary = BattleState.active_unit(state, str(p["id"]))
+				if BattleState.is_alive(q2) and float(q2["hp"]) / float(maxi(1, int(q2["max_hp"]))) <= COFFEE_REST_ABOVE:
+					return -1
+			return 1
 	return -1

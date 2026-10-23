@@ -236,7 +236,7 @@ const MOVES: Dictionary = {
 	# Nox evita il lavoro inutile: cura quando serve, altrimenti si riposa.
 	"u_nox_a": {"name": "Pausa caffè", "kind": "skill", "cost": 2, "priority": 0, "target": "ally", "heal": 1.6, "kit": "coffee",
 		"bonus": {"stat": "max_hp", "pct": 6}, "unique": "nox",
-		"desc": "Cura il compagno più ferito e gli dà 1 energia. Se stanno tutti bene, Nox si riposa e il round dopo agisce due volte."},
+		"desc": "Cura il compagno più ferito e gli dà 1 energia. Se stanno tutti bene, offre il caffè: scudo e 1 energia a tutti, e il round dopo agisce due volte."},
 	"u_nox_ult": {"name": "Rispondo io", "kind": "ult", "cost": 0, "priority": 1, "target": "self", "kit": "answer", "unique": "nox",
 		"desc": "Rimette in piedi un compagno KO. Se sono tutti in piedi, annulla il prossimo colpo del nemico."},
 }

@@ -890,7 +890,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				var tr_name: String = "FUORI DALLA LUCE" if str(e.get("trait", "")) == "luce" else "VEGLIA"
 				_number(str(e.get("unit", "")), tr_name, _col_of(str(e.get("unit", ""))).lightened(0.3), 22, delay)
 			"rest":
-				_toast("NOX SI RIPOSA · il prossimo round agisce due volte", Color("#39b7ff"), 1.8)
+				_toast("NOX OFFRE IL CAFFÈ · scudo e energia a tutti, il prossimo round agisce due volte", Color("#39b7ff"), 1.8)
 			"revive":
 				var rw: String = str(e.get("who", ""))
 				if vis.has(rw) and vis[rw] is CharacterVisual:
