@@ -34,6 +34,7 @@ var pv_k: float = 1.0                    # scala PV e attacco del nemico (PROVVI
 var atk_k: float = 1.0
 var arena: String = "strada"
 var weak: Array = []                     # debolezze scoperte con gli indizi
+var _boss_known: bool = false             # il giocatore conosce il colore del boss (indizio o primo colpo)
 var ritorno: Dictionary = {}             # dove tornare: area (nemico minore), storia (boss), niente = demo dal menu
 var minore: bool = false
 var _args: Dictionary = {}
@@ -777,6 +778,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				var amt: int = int(e.get("amount", 0))
 				var crit: bool = bool(e.get("crit", false))
 				_number(dst, ("%d" % amt) + ("!" if crit else ""), Ui.YELLOW if crit else Ui.CREAM, 46 if crit else 38, delay)
+				_color_tag(e, dst, delay)
 				if int(e.get("absorbed", 0)) > 0:
 					_number(dst, "SCUDO -%d" % int(e["absorbed"]), Ui.CYAN, 24, delay + 0.1)
 				if hit_anims and vis.has(dst):
@@ -879,7 +881,23 @@ func _col_of(uid: String) -> Color:
 	return _col(b["units"].get(uid, {}))
 
 
-func _number(uid: String, text: String, col: Color, size: int, delay: float) -> void:
+# EFFICACE (giallo, grande) o DEBOLE (grigio) sotto il numero del colpo, in entrambe le direzioni.
+# Il primo colpo che il giocatore mette a segno sul boss ne rivela il colore anche per la riga dei comandi.
+func _color_tag(e: Dictionary, dst: String, delay: float) -> void:
+	var src: String = str(e.get("src", ""))
+	if src == "" or src == dst or not b["units"].has(src) or not b["units"].has(dst):
+		return
+	if dst == BattleState.BOSS_ID and str(b["units"][src].get("side", "")) != "boss":
+		_boss_known = true
+	var h: Dictionary = ColorHint.eval(str(b["units"][src].get("color", "")), str(b["units"][dst].get("color", "")))
+	match str(h["tipo"]):
+		"efficace":
+			_number(dst, str(h["testo"]), Ui.YELLOW, 30, delay + 0.06, 40.0)
+		"debole":
+			_number(dst, str(h["testo"]), Color("#9a98a6"), 22, delay + 0.06, 34.0)
+
+
+func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0) -> void:
 	if not vis.has(uid):
 		return
 	var v: Node3D = vis[uid]
@@ -888,6 +906,8 @@ func _number(uid: String, text: String, col: Color, size: int, delay: float) -> 
 	l.modulate.a = 0.0
 	_fx_layer.add_child(l)
 	var jitter := Vector2(randf_range(-30, 30), randf_range(-10, 10))
+	if yoff != 0.0:
+		jitter = Vector2(randf_range(-8, 8), yoff)
 	var tw := l.create_tween()
 	tw.tween_interval(delay)
 	tw.tween_callback(func() -> void:
@@ -1322,6 +1342,11 @@ func _show_commands(on: bool) -> void:
 		lines.append("%s: %s" % [str(um.get("name", "")), str(um["desc"])])
 	if not tr.is_empty():
 		lines.append("%s: %s" % [str(tr["name"]), str(tr["desc"])])
+	# vantaggio o svantaggio di colore contro il boss (solo se il giocatore sa gia' di che colore e')
+	if _boss_known or not weak.is_empty():
+		var hl: String = ColorHint.line(str(u.get("color", "")), str(BattleState.boss(b).get("color", "")), _bname())
+		if hl != "":
+			lines.insert(0, hl)
 	_kit_lbl.text = "\n".join(lines)
 
 
