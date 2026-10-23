@@ -284,7 +284,7 @@ const BOSS_MOVES: Dictionary = {
 	"riflesso": {"name": "Riflesso", "target": "one", "mult": 2.1},
 	"frantumi": {"name": "Frantumi", "target": "all", "mult": 0.95, "status": {"bleed": 3}},
 	"doppio": {"name": "Doppio", "target": "weakest", "mult": 0.85, "drain": 0.5, "self_shield": 0.05},
-	"furia": {"name": "Furia", "target": "all", "mult": 0.7, "status": {"bleed": 2}},
+	"furia": {"name": "Furia", "target": "all", "mult": 0.95, "status": {"bleed": 2}},
 	"ultimo_respiro": {"name": "Ultimo respiro", "target": "all", "mult": 0.9, "status": {"mark": 3}, "self_shield": 0.04},
 	"simmetria": {"name": "Simmetria", "target": "all", "mult": 0.7, "status": {"mark": 3}, "self_shield": 0.06},
 	"ululato": {"name": "Ululato", "target": "all", "mult": 0.6, "status": {"mark": 2}},
@@ -574,7 +574,7 @@ static func cycle_for(boss_id: String, phase: int) -> Array:
 	if phase >= 3 and c.size() >= 4:
 		return ["ultimo_respiro", c[1], c[3], "furia", c[0], c[2]]
 	if phase == 2 and c.size() >= 4:
-		return [c[2], c[0], "furia", c[3], c[1]]
+		return ["furia", c[2], c[0], c[3], c[1]]      # FASE 2: si apre con Furia (carica su tutti, telegrafata: si puo' reagire)
 	return c
 
 

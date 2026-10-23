@@ -907,7 +907,9 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_kick(0.5)
 				delay += 0.15
 			"phase":
-				_toast("FASE %d · %s si arrabbia" % [int(e.get("phase", 2)), _bn()], Ui.PINK, 1.8)
+				_live_banner("FASE %d" % int(e.get("phase", 2)), "%s si arrabbia · guarda la prossima mossa" % _cap(_bn()), Ui.PINK, 2.2)
+				_kick(0.8)
+				_flash(0.3)
 			"down":
 				var du: String = str(e.get("unit", ""))
 				if vis.has(du):
@@ -1677,6 +1679,32 @@ var _toasts: Array = []
 
 
 # I messaggi che arrivano insieme si mettono uno sotto l'altro invece di sovrapporsi
+# Titolo grande "in diretta" (stile di Rio): pallino rosso REC che lampeggia + parola grande + una riga sotto. Non copre le descrizioni:
+# sta nella fascia centrale alta, come i toast.
+func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
+	var box := VBoxContainer.new()
+	Ui.place(box, 0.2, 0.17, 0.6, 0.17, 0, 0, 0, 150)
+	box.add_theme_constant_override("separation", 0)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var live := Ui.label("●  IN DIRETTA", 20, Color("#ff4630"), Ui.display(), 6)
+	live.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(live)
+	var big := Ui.label(title, 64, col, Ui.display(), 12)
+	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(big)
+	var sm := Ui.label(sub, 22, Ui.CREAM, null, 6)
+	sm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(sm)
+	_fx_layer.add_child(box)
+	box.modulate.a = 0.0
+	var tw := box.create_tween()
+	tw.tween_property(box, "modulate:a", 1.0, 0.12)
+	tw.tween_interval(sec)
+	tw.tween_property(box, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(box.queue_free)
+
+
 func _toast(text: String, col: Color, sec: float) -> void:
 	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t) and (t as Label).modulate.a > 0.05)
 	var row: int = _toasts.size()
