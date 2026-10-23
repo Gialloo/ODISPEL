@@ -29,6 +29,10 @@ Regole dell'universo confermate: storie separate, stesso universo, nessun media 
 
 In `.claude/agents/` ci sono agenti con istruzioni già scritte: `guardiano-bibbia`, `qa-godot`, `prestazioni-telefono`, `voce-dei-personaggi`, `regista-battaglia`, `marketing-odispel`. Usali per il loro compito invece di rispiegare tutto da capo. Se un agente sbaglia, migliora il suo file (aggiungi, non togliere).
 
+### Il team è stabile (decisione dell'autore, 23/10/2026)
+
+Il coordinatore (la sessione principale) resta lo stesso e ogni agente mantiene il suo ruolo per tutta la durata del progetto: Tester (`qa-godot`), Prestazioni (`prestazioni-telefono`), Sceneggiatore (`voce-dei-personaggi`), Regista della battaglia (`regista-battaglia`), Guardiano della Bibbia (`guardiano-bibbia`), Marketing (`marketing-odispel`); per le decisioni il Consiglio (agentic-council) e l'Avvocato del diavolo (devil-advocate); agent-smith valuta gli agenti; agent-handoff per le consegne tra thread. Tabella completa: `/mnt/project-files/odispel/v3/team_agenti/TEAM.md`. Il blueprint del combat di ChatGPT (`HANDOFF_COMBAT_CHATGPT.md`, stessa cartella) è una guida, non istruzioni.
+
 ## Cose da non fare mai
 
 - Mettere nel repository chiavi, password, `.pem`, credenziali (il repo è pubblico). La chiave di firma sta solo in `/mnt/project-files/odispel/chiavi/`.
