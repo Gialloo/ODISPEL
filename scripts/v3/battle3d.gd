@@ -92,8 +92,10 @@ var _react_box: VBoxContainer        # REAZIONE: compare solo quando il boss car
 var _react_lbl: Label
 var _react_btns: Dictionary = {}      # id reazione -> pulsante
 var _react_hint_seen: bool = false
+var _live_btns: Array = []            # ULTIMATE IN DIRETTA: un pulsante per compagno con la barra piena (fuori turno, durante una carica)
 var _freeze_on: bool = false            # fermo immagine di Echo in corso (si salta con un tocco)
 var _freeze_skip: bool = false
+var _live_back: String = ""             # chi stava scegliendo quando e' partita un'Ultimate in diretta
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
@@ -1285,6 +1287,7 @@ func _build_ui() -> void:
 	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
 	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
 	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_cmd_box.grow_vertical = Control.GROW_DIRECTION_BEGIN       # con REAZIONE e Ultimate in diretta la colonna cresce verso l'alto
 	_cmd_box.add_theme_constant_override("separation", 8)
 	_root.add_child(_cmd_box)
 	# REAZIONE (contestuale): sta in cima alla colonna, che cresce verso l'alto; nascosta quando non c'e' una finestra
@@ -1307,6 +1310,17 @@ func _build_ui() -> void:
 		rb.visible = false
 		rrow.add_child(rb)
 		_react_btns[rid] = rb
+	var lrow2 := HBoxContainer.new()
+	lrow2.add_theme_constant_override("separation", 6)
+	_react_box.add_child(lrow2)
+	for k in 3:
+		var lb: Button = Ui.button("", Ui.PINK, 17)
+		lb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lb.clip_text = true
+		lb.visible = false
+		lb.pressed.connect(_live_ult.bind(k))
+		lrow2.add_child(lb)
+		_live_btns.append(lb)
 	_btn_ult = Ui.button("ULTIMATE", Ui.PINK, 26)
 	_btn_ult.pressed.connect(_command.bind("ult"))
 	_cmd_box.add_child(_btn_ult)
@@ -1539,19 +1553,60 @@ func _update_react() -> void:
 	for r in ([] if _quick else BattleResolver.reactions_for(b, cur_pid)):
 		if str(r["err"]) == "":
 			usable.append(str(r["id"]))
-	_react_box.visible = not usable.is_empty()
+	var lives: Array = [] if _quick else SeqRound.live_ults(b, cur_pid)
+	_react_box.visible = not usable.is_empty() or not lives.is_empty()
+	for k in _live_btns.size():
+		var lb: Button = _live_btns[k]
+		lb.visible = k < lives.size()
+		if lb.visible:
+			lb.text = "ULT\n%s" % str(_unit_of(str(lives[k])).get("name", "")).to_upper()
+			lb.set_meta("pid", str(lives[k]))
+			lb.add_theme_font_size_override("font_size", 15)
+			lb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
 	for rid in _react_btns:
 		var rb: Button = _react_btns[rid]
 		rb.visible = usable.has(rid)
 		if rb.visible:
 			rb.text = "%s\nCOSTA %d" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]
-			rb.add_theme_font_size_override("font_size", 17)
-			rb.custom_minimum_size.y = 64.0 if Ui.is_touch() else 52.0
+			rb.add_theme_font_size_override("font_size", 15)
+			rb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
+	# la colonna e' piu' alta con la riga delle Ultimate in diretta: titolo e descrizioni salgono per non essere coperti
+	var up: float = 40.0 if not lives.is_empty() else 0.0
+	Ui.place(_turn_lbl, 1.0, 1.0, 1.0, 1.0, -600, -385 - up, -16, -340 - up)
+	Ui.place(_kit_lbl, 1.0, 1.0, 1.0, 1.0, -620, -392 - up, -16, -392 - up)
 	if _react_box.visible:
-		_react_lbl.text = "REAZIONE · RISERVA %d  (COSTA IL TURNO)" % int(b.get("reserve", 0))
+		_react_lbl.text = ("REAZIONE · RISERVA %d  (COSTA IL TURNO)" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA · SENZA RISERVA"
 		if not _react_hint_seen and not first_turn and _hint != null and not usable.is_empty():
 			_react_hint_seen = true
 			_hint.text = "CARICA IN ARRIVO: puoi reagire con la Riserva di squadra. SCHIVA evita il colpo, COPRI lo prende al posto di un compagno, FERMA toglie equilibrio al boss"
+
+
+# ULTIMATE IN DIRETTA: un compagno con la barra piena lancia l'Ultimate fuori turno durante una carica. Non costa Riserva ne' il
+# turno di chi sta scegliendo: finita l'Ultimate si torna alla sua scelta.
+func _live_ult(k: int) -> void:
+	if not waiting or ended or _pause != null or k >= _live_btns.size():
+		return
+	var lb: Button = _live_btns[k]
+	if not lb.visible or not lb.has_meta("pid"):
+		return
+	var pid: String = str(lb.get_meta("pid"))
+	_live_back = cur_pid
+	if not SeqRound.live_ults(b, cur_pid).has(pid):
+		Settings.buzz(10)
+		return
+	waiting = false
+	_show_commands(false)
+	_hint.text = ""
+	Settings.buzz(40)
+	var u: Dictionary = _unit_of(pid)
+	await _do_action(pid, {"swap": "", "move": str(u["ult"]), "target": "", "order": "", "push": ""})
+	if not is_inside_tree() or ended:
+		return
+	cur_pid = _live_back
+	_refresh_hud()
+	_cam_actor(str(_unit_of(cur_pid)["id"]))
+	waiting = true
+	_show_commands(true)
 
 
 func _react_cmd(rid: String) -> void:

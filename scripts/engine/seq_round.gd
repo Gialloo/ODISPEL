@@ -100,6 +100,27 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary, qu
 	return events
 
 
+# ULTIMATE IN DIRETTA: durante una carica del boss (stessa finestra delle reazioni) un compagno con la barra piena puo' lanciare
+# la sua Ultimate anche fuori turno, senza costare Riserva. Ritorna gli slot (diversi da `except_pid`) che possono farlo adesso.
+static func live_ults(state: Dictionary, except_pid: String) -> Array:
+	var out: Array = []
+	if str(state["winner"]) != "" or not state.has("seq"):
+		return out
+	var tele: Dictionary = state.get("telegraph", {})
+	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	var boss: Dictionary = BattleState.boss(state)
+	if bm.is_empty() or int(boss.get("stun", 0)) > 0 or not BattleResolver.is_heavy_boss_move(bm) or bool(state["seq"].get("boss_acted", false)):
+		return out
+	for p in BattleState.alive_players(state):
+		var pid: String = str(p["id"])
+		if pid == except_pid:
+			continue
+		var u: Dictionary = BattleState.active_unit(state, pid)
+		if BattleState.is_alive(u) and str(u["ult"]) != "" and int(u["gauge"]) >= BattleTypes.GAUGE_MAX:
+			out.append(pid)
+	return out
+
+
 # ATTACCO DI SQUADRA: alla rottura del boss tutti gli altri eroi in piedi lo colpiscono subito (fuori turno, BREAK_TEAM_MULT).
 # Evento {"t": "team_strike", "unit": chi ha rotto}: battle3d ci mette il fermo immagine di Echo.
 static func _team_strike(state: Dictionary, breaker: Dictionary, events: Array) -> void:
