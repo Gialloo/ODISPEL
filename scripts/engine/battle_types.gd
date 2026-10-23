@@ -52,7 +52,7 @@ const BLEED_FRACTION: float = 0.04
 const GUARD_FACTOR: float = 0.5
 const ENRAGE_BONUS: float = 1.25
 const ENRAGE_BELOW: float = 0.5
-const HUNTER_BONUS: float = 1.2
+const HUNTER_BONUS: float = 1.1
 const RHYTHM_BONUS: float = 1.1        # RITMO: danno in piu' se cambi mossa rispetto al round prima
 # EQUILIBRIO del boss (rottura): i colpi lo consumano; a zero il boss e' STORDITO, perde la mossa annunciata e prende piu' danno.
 const BREAK_BASE: float = 22.0

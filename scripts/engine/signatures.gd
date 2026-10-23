@@ -220,10 +220,10 @@ const MOVES: Dictionary = {
 		"bonus": {"stat": "atk", "pct": 20}, "unique": "ferri",
 		"desc": "Via il guanto: colpo pesante che toglie quasi tutto l'equilibrio del nemico."},
 	# Saul sfrutta: la fortuna, l'occasione, quello che hanno gli altri.
-	"u_saul_a": {"name": "Testa o croce", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.4, "kit": "coin",
+	"u_saul_a": {"name": "Testa o croce", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.25, "kit": "coin",
 		"bonus": {"stat": "atk", "pct": 15}, "unique": "saul",
 		"desc": "Lancia la moneta. Testa: critico sicuro. Croce: passa 2 energia al compagno che ne ha meno."},
-	"u_saul_ult": {"name": "Il colpo grosso", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 3.8, "pierce": 30, "kit": "heist",
+	"u_saul_ult": {"name": "Il colpo grosso", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 3.4, "pierce": 30, "kit": "heist",
 		"bonus": {"stat": "crit", "pct": 20}, "unique": "saul",
 		"desc": "Ruba lo scudo del nemico e lo divide con la squadra. Se non ha scudi, colpisce più forte."},
 	# Rio spettacolarizza: piu' pubblico ha, piu' fa.

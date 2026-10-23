@@ -20,8 +20,8 @@ const COVER_GUARD_TURNS: int = 1        # Copertura senza nessuno da coprire: La
 const ARM_BALANCE: int = 8              # Braccio della Legge: equilibrio tolto (la barra e' ~20 con quattro in squadra)
 const PARRY_ARM_MULT: float = 1.4       # Al secondo: contrattacco della parata perfetta di Lance (invece di 0.9)
 const PARRY_ARM_BALANCE: int = 3
-const SHADOW_MULT: float = 1.25         # Fuori dalla luce: Saul colpisce di piu' se il boss guarda un altro
-const COIN_HEADS_MULT: float = 1.2      # Testa: critico sicuro e un po' di danno in piu'
+const SHADOW_MULT: float = 1.15         # Fuori dalla luce: Saul colpisce di piu' se il boss guarda un altro
+const COIN_HEADS_MULT: float = 1.1      # Testa: critico sicuro e un po' di danno in piu'
 const COIN_TAILS_ENERGY: int = 2        # Croce: energia passata al compagno che ne ha meno
 const HEIST_NO_SHIELD_MULT: float = 1.4 # Il colpo grosso senza scudi da rubare: si prende tutto in danno
 const HYPE_MAX: int = 100
@@ -124,8 +124,8 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 	var out: Dictionary = {"mult": 1.0, "crit_pm": 0, "skip": false}
 	var kit: String = str(move.get("kit", ""))
 	var hits_enemy: bool = move.has("mult") and str(move.get("target", "")) == "enemy"
-	# Fuori dalla luce: Saul colpisce meglio quando il boss guarda un altro
-	if is_char(actor, SAUL) and hits_enemy and not targeted(state, actor):
+	# Fuori dalla luce: Saul colpisce meglio quando il boss guarda un altro (non sull'Ultimate: il colpo grosso e' gia' il suo picco)
+	if is_char(actor, SAUL) and hits_enemy and str(move.get("kind", "")) != "ult" and not targeted(state, actor):
 		out["mult"] = float(out["mult"]) * SHADOW_MULT
 		events.append({"t": "kit_trait", "unit": actor["id"], "trait": "luce"})
 	match kit:
@@ -135,7 +135,8 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 			BattleResolver._save_rng(state, rng)
 			actor["coin"] = "testa" if heads else "croce"
 			if heads:
-				out["mult"] = float(out["mult"]) * COIN_HEADS_MULT
+				# Testa e Fuori dalla luce non si sommano: il critico sicuro resta, il bonus danno e' quello piu' alto dei due
+				out["mult"] = maxf(float(out["mult"]), COIN_HEADS_MULT)
 				out["crit_pm"] = 1000
 			events.append({"t": "coin", "unit": actor["id"], "side": actor["coin"]})
 		"heist":
