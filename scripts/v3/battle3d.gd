@@ -88,6 +88,11 @@ var _btn_atk: Button
 var _btn_skill: Button
 var _btn_ult: Button
 var _btn_guard: Button
+var _react_box: VBoxContainer        # REAZIONE: compare solo quando il boss carica un colpo (o c'e' un caduto da soccorrere)
+var _react_lbl: Label
+var _react_btns: Dictionary = {}      # id reazione -> pulsante
+var _react_hint_seen: bool = false
+const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
 var _btn_fast: Button
 var _hint: Label
@@ -277,9 +282,9 @@ func _setup_battle() -> void:
 	# nella storia la squadra sale di livello e il nemico no: lo si fa crescere insieme (PROVVISORIO, bilanciamento dell'atto 1)
 	# obiettivo: boss in 4-6 round, frammenti in 1-2
 	if not ritorno.is_empty():
-		var grow: float = 1.0 + 0.14 * float(level - 1)
-		pv_k *= (1.5 if minore else 2.3) * grow
-		atk_k *= 1.0 + 0.09 * float(level - 1)
+		var grow: float = 1.0 + BattleTypes.STORY_HP_PER_LEVEL * float(level - 1)
+		pv_k *= (BattleTypes.STORY_HP_MINOR if minore else BattleTypes.STORY_HP_BOSS) * grow
+		atk_k *= BattleTypes.STORY_ATK_K * (1.0 + BattleTypes.STORY_ATK_PER_LEVEL * float(level - 1))
 	if pv_k != 1.0:
 		bu["max_hp"] = maxi(1, int(round(float(bu["max_hp"]) * pv_k)))
 		bu["hp"] = bu["max_hp"]
@@ -1267,6 +1272,26 @@ func _build_ui() -> void:
 	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_cmd_box.add_theme_constant_override("separation", 8)
 	_root.add_child(_cmd_box)
+	# REAZIONE (contestuale): sta in cima alla colonna, che cresce verso l'alto; nascosta quando non c'e' una finestra
+	_react_box = VBoxContainer.new()
+	_react_box.add_theme_constant_override("separation", 4)
+	_react_box.visible = false
+	_cmd_box.add_child(_react_box)
+	_react_lbl = Ui.label("", 18, Ui.CREAM, null, 5)
+	_react_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_react_box.add_child(_react_lbl)
+	var rrow := HBoxContainer.new()
+	rrow.add_theme_constant_override("separation", 6)
+	_react_box.add_child(rrow)
+	var rcols: Dictionary = {"schivata": Ui.CYAN, "intercettazione": Color("#62f08c"), "interruzione": Ui.PINK, "soccorso": Ui.YELLOW}
+	for rid in ["schivata", "intercettazione", "interruzione", "soccorso"]:
+		var rb: Button = Ui.button(str(REACT_SHORT[rid]), rcols[rid], 17)
+		rb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rb.clip_text = true
+		rb.pressed.connect(_react_cmd.bind(rid))
+		rb.visible = false
+		rrow.add_child(rb)
+		_react_btns[rid] = rb
 	_btn_ult = Ui.button("ULTIMATE", Ui.PINK, 26)
 	_btn_ult.pressed.connect(_command.bind("ult"))
 	_cmd_box.add_child(_btn_ult)
@@ -1441,6 +1466,7 @@ func _show_commands(on: bool) -> void:
 	_btn_skill.disabled = not _usable(sk)
 	var ult_ok: bool = _usable(str(u.get("ult", "")))
 	_btn_ult.disabled = not ult_ok
+	_update_react()
 	var um: Dictionary = BattleContent.MOVES.get(str(u.get("ult", "")), {})
 	_btn_ult.text = ("ULTIMATE · " + str(um.get("name", "")).to_upper()) if ult_ok else "ULTIMATE  %d%%" % int(u.get("gauge", 0))
 	_fit_btn(_btn_ult, 26)
@@ -1459,6 +1485,43 @@ func _show_commands(on: bool) -> void:
 		if hl != "":
 			lines.insert(0, hl)
 	_kit_lbl.text = "\n".join(lines)
+
+
+# REAZIONE: una finestra c'e' solo se il boss carica un colpo pesante non ancora fermato (o c'e' un caduto da soccorrere) e la
+# Riserva basta. Mostra solo le reazioni che si possono fare adesso, ognuna col suo costo in Riserva. Reagire costa il turno.
+func _update_react() -> void:
+	if _react_box == null:
+		return
+	var usable: Array = []
+	for r in BattleResolver.reactions_for(b, cur_pid):
+		if str(r["err"]) == "":
+			usable.append(str(r["id"]))
+	_react_box.visible = not usable.is_empty()
+	for rid in _react_btns:
+		var rb: Button = _react_btns[rid]
+		rb.visible = usable.has(rid)
+		if rb.visible:
+			rb.text = "%s\n%d RISERVA" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]
+			rb.add_theme_font_size_override("font_size", 17)
+			rb.custom_minimum_size.y = 64.0 if Ui.is_touch() else 52.0
+	if _react_box.visible:
+		_react_lbl.text = "REAZIONE · RISERVA %d  (COSTA IL TURNO)" % int(b.get("reserve", 0))
+		if not _react_hint_seen and not first_turn and _hint != null and not usable.is_empty():
+			_react_hint_seen = true
+			_hint.text = "CARICA IN ARRIVO: puoi reagire con la Riserva di squadra. SCHIVA evita il colpo, COPRI lo prende al posto di un compagno, FERMA toglie equilibrio al boss"
+
+
+func _react_cmd(rid: String) -> void:
+	if not waiting or ended or _pause != null or not _usable(rid):
+		Settings.buzz(10)
+		return
+	waiting = false
+	_show_commands(false)
+	_hint.text = ""
+	Settings.buzz(30)
+	await _do_action(cur_pid, _choice_for(rid))
+	if is_inside_tree() and not ended:
+		await _advance()
 
 
 # Rimpicciolisce il testo del pulsante finche' entra nella colonna dei comandi: la colonna resta larga 314 px
@@ -1654,6 +1717,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				_command("skill")
 			KEY_3:
 				_command("ult")
+			KEY_R:
+				for rid in ["interruzione", "schivata", "intercettazione", "soccorso"]:
+					if _usable(rid) and (_react_btns[rid] as Button).visible:
+						_react_cmd(rid)
+						break
 			KEY_4:
 				_command("guard")
 

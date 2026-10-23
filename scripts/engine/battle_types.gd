@@ -65,6 +65,12 @@ const BREAK_DISADV: int = 1
 const BREAK_MARKED: int = 1            # il boss e' marchiato: ogni colpo rompe di piu' (chi marchia prepara, chi colpisce rompe)
 const BREAK_HEAVY: int = 1             # colpo pesante (moltiplicatore >= 2)
 const BREAK_DAMAGE: float = 1.25       # danno extra sul boss stordito
+# SCALA DEL NEMICO NELLA STORIA (la squadra sale di livello, il nemico cresce con lei): usata da battle3d.gd e da tools/v3_bilancio.gd
+const STORY_HP_BOSS: float = 3.0          # PV del boss rispetto al motore
+const STORY_HP_MINOR: float = 1.5         # PV di un nemico minore (frammento)
+const STORY_ATK_K: float = 1.0            # attacco di tutti i nemici della storia
+const STORY_HP_PER_LEVEL: float = 0.14    # +14% PV per livello sopra il primo
+const STORY_ATK_PER_LEVEL: float = 0.09   # +9% attacco per livello sopra il primo
 const BREAK_RECOVER: float = 0.75       # frazione della barra con cui il boss si riprende dopo una rottura (1 = piena)
 const BREAK_REGEN: int = 1             # equilibrio recuperato a fine round se non e' stato rotto
 # SINERGIE tra compagni nello stesso round

@@ -22,6 +22,11 @@ static func choose(state: Dictionary, pid: String) -> Dictionary:
 
 	# cambio: se sono quasi a terra e il boss mi colpira', entra chi sta meglio
 	var current: Dictionary = me
+	# reazione con la Riserva: solo se serve davvero (regola semplice, vedi _reaction)
+	var react: String = _reaction(state, pid, me, tele, tele_move)
+	if react != "":
+		choice["move"] = react
+		return choice
 	if BattleState.is_alive(me) and _ratio(me) < 0.35 and targeted:
 		var best: String = ""
 		var best_ratio: float = _ratio(me) + 0.25
@@ -45,6 +50,40 @@ static func choose(state: Dictionary, pid: String) -> Dictionary:
 	if BattleResolver.validate_choice(state, pid, choice) != "":
 		choice["move"] = _basic_for(current)
 	return choice
+
+
+# REAZIONE dell'IA (AUTO): contro una carica annunciata, e solo una a round, costa il turno e la Riserva di squadra, quindi
+# si usa solo se la squadra rischia davvero:
+#  1. Soccorso: c'e' un caduto (ricomprare un compagno vale piu' di un colpo);
+#  2. Schivata: la carica e' su di me (o su tutti) e sono sotto il 50% PV;
+#  3. Intercettazione: la carica e' su un compagno sotto il 50% PV e io sto sopra il 60%;
+#  4. Interruzione: all'equilibrio del boss mancano al massimo i punti che toglie (la rottura annulla la carica).
+
+static func _reaction(state: Dictionary, pid: String, me: Dictionary, tele: Dictionary, tele_move: Dictionary) -> String:
+	if not BattleState.is_alive(me) or not (state.get("reactions", []) as Array).is_empty():
+		return ""
+	var ok: Dictionary = {}
+	for r in BattleResolver.reactions_for(state, pid):
+		if str(r["err"]) == "":
+			ok[str(r["id"])] = true
+	if ok.is_empty():
+		return ""
+	if ok.has("soccorso"):
+		return "soccorso"
+	var tgt: String = str(tele.get("target", ""))
+	var all: bool = str(tele_move.get("target", "")) == "all"
+	var on_me: bool = tgt == pid or all
+	if ok.has("schivata") and on_me and _ratio(me) < 0.5:
+		return "schivata"
+	if ok.has("intercettazione") and not all and tgt != "" and tgt != pid and _ratio(me) > 0.6:
+		var victim: Dictionary = BattleState.active_unit(state, tgt)
+		if BattleState.is_alive(victim) and _ratio(victim) < 0.5:
+			return "intercettazione"
+	if ok.has("interruzione"):
+		var boss: Dictionary = BattleState.boss(state)
+		if not bool(boss.get("exposed", false)) and int(boss.get("balance", 99)) <= BattleTypes.INTERRUPT_PTS:
+			return "interruzione"
+	return ""
 
 
 # Mossa di ripiego: Attacco se e' nel kit, altrimenti Guardia, altrimenti la prima mossa.

@@ -445,7 +445,7 @@ static func _enrage_possible(boss: Dictionary) -> bool:
 
 # Una mossa del boss e' una CARICA se colpisce forte uno solo o tutti con molta potenza: si puo' interrompere con la rottura.
 static func is_heavy_boss_move(m: Dictionary) -> bool:
-	return float(m.get("mult", 0.0)) >= 1.7 or (str(m.get("target", "")) == "all" and float(m.get("mult", 0.0)) >= 0.95)
+	return float(m.get("mult", 0.0)) >= 1.6 or (str(m.get("target", "")) == "all" and float(m.get("mult", 0.0)) >= 0.95)
 
 
 # SUGGERIMENTI di pianificazione per chi sta per attaccare: quali sinergie sono gia' pronte con le scelte dei compagni.
