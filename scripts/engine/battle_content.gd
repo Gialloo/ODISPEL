@@ -284,7 +284,7 @@ const BOSS_MOVES: Dictionary = {
 	"riflesso": {"name": "Riflesso", "target": "one", "mult": 2.1},
 	"frantumi": {"name": "Frantumi", "target": "all", "mult": 0.95, "status": {"bleed": 3}},
 	"doppio": {"name": "Doppio", "target": "weakest", "mult": 0.85, "drain": 0.5, "self_shield": 0.05},
-	"furia": {"name": "Furia", "target": "all", "mult": 0.7, "status": {"bleed": 2}},
+	"furia": {"name": "Furia", "target": "all", "mult": 1.5, "status": {"bleed": 2}},
 	"ultimo_respiro": {"name": "Ultimo respiro", "target": "all", "mult": 0.9, "status": {"mark": 3}, "self_shield": 0.04},
 	"simmetria": {"name": "Simmetria", "target": "all", "mult": 0.7, "status": {"mark": 3}, "self_shield": 0.06},
 	"ululato": {"name": "Ululato", "target": "all", "mult": 0.6, "status": {"mark": 2}},
@@ -346,7 +346,7 @@ const BOSSES: Dictionary = {
 	# V3: anomalie minori dell'atto 1 (una per colore)
 	# Capitolo 5: l'Anomalia del casello. Fotografa, marchia, multa.
 	"autovelox": {
-		"name": "Autovelox", "title": "CLASSE ANOMALIA · MINACCIA ALTA", "color": "giallo", "hp_per_player": 1500,
+		"name": "Autovelox", "title": "CLASSE ANOMALIA · MINACCIA ALTA", "weak2": "blu", "color": "giallo", "hp_per_player": 1500,
 		"atk": 460, "def": 50, "spd": 112,
 		"desc": "L'autovelox del casello. Il flash marchia tutti, il verbale colpisce forte un bersaglio, la decurtazione dei punti succhia via la vita al piu' debole.",
 		"cycle": ["flash", "verbale", "punti", "pignoramento"],
@@ -365,7 +365,7 @@ const BOSSES: Dictionary = {
 		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},
 	},
 	"frammento_giallo": {
-		"name": "Frammento", "title": "ANOMALIA MINORE", "color": "giallo", "hp_per_player": 260,
+		"name": "Frammento", "title": "ANOMALIA MINORE", "weak2": "rosso", "color": "giallo", "hp_per_player": 260,
 		"atk": 250, "def": 10, "spd": 100,
 		"desc": "Un pezzo d'Anomalia che vaga per le strade. PROVVISORIO (V3).",
 		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
@@ -401,7 +401,7 @@ const BOSSES: Dictionary = {
 		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},
 	},
 	"distributore": {
-		"name": "Distributore", "title": "CLASSE ANOMALIA · MINACCIA BASSA", "color": "giallo", "hp_per_player": 900,
+		"name": "Distributore", "title": "CLASSE ANOMALIA · MINACCIA BASSA", "weak2": "rosso", "color": "giallo", "hp_per_player": 900,
 		"atk": 390, "def": 25, "spd": 105,
 		"desc": "Un distributore automatico impazzito. Colpi pesanti a un solo bersaglio e scosse che fanno sanguinare.",
 		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
@@ -485,7 +485,7 @@ const BOSSES: Dictionary = {
 		"reward": {"coins": 5000, "nucleo": [24, 32], "lega": [20, 28], "gear_chance": 100},
 	},
 	"lampione": {
-		"name": "Lampione", "title": "S2 · MINACCIA ALTA", "color": "giallo", "hp_per_player": 1300,
+		"name": "Lampione", "title": "S2 · MINACCIA ALTA", "weak2": "blu", "color": "giallo", "hp_per_player": 1300,
 		"atk": 440, "def": 44, "spd": 98,
 		"desc": "Un lampione di Piazza dei Salici che accende il buio invece di spegnerlo. Abbaglia un bersaglio, marchia tutti nel buio e attira le falene sui piu' feriti.",
 		"cycle": ["abbaglio", "buio", "falena", "cono_di_luce"],
@@ -548,7 +548,7 @@ const BOSSES: Dictionary = {
 		"reward": {"coins": 11700, "nucleo": [38, 46], "lega": [34, 42], "gear_chance": 100},
 	},
 	"registro": {
-		"name": "Registro", "title": "S2 · OLTRE LA SCALA", "color": "giallo", "hp_per_player": 1850,
+		"name": "Registro", "title": "S2 · OLTRE LA SCALA", "weak2": "verde", "color": "giallo", "hp_per_player": 1850,
 		"atk": 510, "def": 62, "spd": 106,
 		"desc": "L'archivio nero di LibraCorp: dove finisce chi viene cancellato. Cancella un bersaglio, schedatura marchia tutti, l'archiviazione si nutre dei piu' deboli.",
 		"cycle": ["cancellazione", "protocollo_nero", "fascicolo", "archiviazione"],
@@ -574,7 +574,7 @@ static func cycle_for(boss_id: String, phase: int) -> Array:
 	if phase >= 3 and c.size() >= 4:
 		return ["ultimo_respiro", c[1], c[3], "furia", c[0], c[2]]
 	if phase == 2 and c.size() >= 4:
-		return [c[2], c[0], "furia", c[3], c[1]]
+		return ["furia", c[2], c[0], c[3], c[1]]      # FASE 2: si apre con Furia (carica su tutti, telegrafata: si puo' reagire)
 	return c
 
 

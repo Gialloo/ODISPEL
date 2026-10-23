@@ -41,7 +41,12 @@ static func current() -> Dictionary:
 	var passi: Array = ch[chapter].get("passi", [])
 	if step >= passi.size():
 		return {"tipo": "fine"}
-	return passi[step]
+	var p: Dictionary = passi[step]
+	# nella Replica della diretta i cartelli lo dicono, così si capisce subito che è un nuovo giro
+	if replica() > 0 and str(p.get("tipo", "")) == "cartello":
+		p = p.duplicate()
+		p["titolo"] = "REPLICA %d · %s" % [replica(), str(p.get("titolo", ""))]
+	return p
 
 
 static func chapter_title() -> String:
@@ -53,6 +58,25 @@ static func new_game() -> void:
 	chapter = 0
 	step = 0
 	flags = {}
+	area_state = {}
+	save()
+
+
+# Replica della diretta (New Game+, alla Chrono Trigger): si rigioca l'atto tenendo i legami stretti,
+# le scelte su Echo e Saul si rifanno da capo e i nemici sono più duri (vedi "replica" negli argomenti della battaglia).
+static func replica() -> int:
+	return int(flags.get("replica", 0))
+
+
+static func new_replica() -> void:
+	var keep: Dictionary = {}
+	for k in data().get("legami", {}):
+		if has_flag(str(k)):
+			keep[str(k)] = true
+	keep["replica"] = replica() + 1
+	chapter = 0
+	step = 0
+	flags = keep
 	area_state = {}
 	save()
 

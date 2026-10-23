@@ -34,6 +34,9 @@ var pv_k: float = 1.0                    # scala PV e attacco del nemico (PROVVI
 var atk_k: float = 1.0
 var arena: String = "strada"
 var weak: Array = []                     # debolezze scoperte con gli indizi
+const FOV_BASE: float = 58.0
+var _pinched: bool = false                # il FOV e' stretto dalla scossa: va riportato a FOV_BASE
+var _boss_known: bool = false             # il giocatore conosce il colore del boss (indizio o primo colpo)
 var ritorno: Dictionary = {}             # dove tornare: area (nemico minore), storia (boss), niente = demo dal menu
 var minore: bool = false
 var _args: Dictionary = {}
@@ -85,14 +88,31 @@ var _btn_atk: Button
 var _btn_skill: Button
 var _btn_ult: Button
 var _btn_guard: Button
+var _react_box: VBoxContainer        # REAZIONE: compare solo quando il boss carica un colpo (o c'e' un caduto da soccorrere)
+var _react_lbl: Label
+var _react_btns: Dictionary = {}      # id reazione -> pulsante
+var _react_hint_seen: bool = false
+var _live_btns: Array = []            # ULTIMATE IN DIRETTA: un pulsante per compagno con la barra piena (fuori turno, durante una carica)
+var _freeze_on: bool = false            # fermo immagine di Echo in corso (si salta con un tocco)
+var _freeze_skip: bool = false
+var _live_back: String = ""             # chi stava scegliendo quando e' partita un'Ultimate in diretta
+var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
+const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
 var _btn_fast: Button
 var _hint: Label
 var _kit_lbl: Label                   # cosa fa l'Abilita' di chi e' di turno e il suo tratto
 var _cutin: Control
+var _cutin_on: bool = false               # cut-in dell'ultimate in corso (si salta con un tocco)
+var _cutin_tw: Tween
+var _cutin_seen: Dictionary = {}          # personaggi di cui hai gia' visto il cut-in: dalla seconda volta e' piu' breve
+signal _cutin_end
 var _pause: Control
 var _cam_hud: CamHud                  # lo sguardo di Echo: mirino, REC, numero della telecamera
 var _glyph: LightFx                   # cerchio di luce sotto chi e' di turno
+var _mark: LightFx                    # segnalino ai piedi del bersaglio annunciato dal boss
+var _mark_uid: String = ""
+var _boss_acting: bool = false        # il boss sta agendo: il segnalino resta spento
 var _seal: LightFx                    # sigillo magenta sotto l'Anomalia
 
 
@@ -106,6 +126,10 @@ func configure(args: Dictionary) -> void:
 	level = int(args.get("livello", 1))
 	pv_k = float(args.get("pv", 1.0))
 	atk_k = float(args.get("atk", 1.0))
+	# REPLICA DELLA DIRETTA (nuovo giro): i nemici sono piu' duri a ogni giro, PV e attacco x(1 + REPLICA_K * giro)
+	var replica_k: float = 1.0 + BattleTypes.REPLICA_K * float(maxi(0, int(args.get("replica", 0))))
+	pv_k *= replica_k
+	atk_k *= replica_k
 	arena = str(args.get("arena", "strada"))
 	weak = args.get("debolezze", [])
 	if indizi.has("scontrino") and not weak.has("VIOLA"):
@@ -136,7 +160,7 @@ func _ready() -> void:
 	_setup_battle()
 	_build_units()
 	cam = Camera3D.new()
-	cam.fov = 58.0
+	cam.fov = FOV_BASE
 	cam.near = 0.1
 	cam.far = 120.0
 	add_child(cam)
@@ -267,9 +291,9 @@ func _setup_battle() -> void:
 	# nella storia la squadra sale di livello e il nemico no: lo si fa crescere insieme (PROVVISORIO, bilanciamento dell'atto 1)
 	# obiettivo: boss in 4-6 round, frammenti in 1-2
 	if not ritorno.is_empty():
-		var grow: float = 1.0 + 0.14 * float(level - 1)
-		pv_k *= (1.5 if minore else 2.3) * grow
-		atk_k *= 1.0 + 0.09 * float(level - 1)
+		var grow: float = 1.0 + BattleTypes.STORY_HP_PER_LEVEL * float(level - 1)
+		pv_k *= (BattleTypes.STORY_HP_MINOR if minore else BattleTypes.STORY_HP_BOSS) * grow
+		atk_k *= BattleTypes.STORY_ATK_K * (1.0 + BattleTypes.STORY_ATK_PER_LEVEL * float(level - 1))
 	if pv_k != 1.0:
 		bu["max_hp"] = maxi(1, int(round(float(bu["max_hp"]) * pv_k)))
 		bu["hp"] = bu["max_hp"]
@@ -383,6 +407,12 @@ func _process(delta: float) -> void:
 		_shake = maxf(0.0, _shake - rd * 3.0)
 		var k: float = _shake * Settings.shake * 0.22
 		sh = Vector3(randf_range(-k, k), randf_range(-k, k), randf_range(-k, k) * 0.5)
+		# colpo forte: il campo visivo si stringe appena e poi si riapre, insieme alla scossa
+		cam.fov = FOV_BASE - _shake * Settings.shake * 3.5
+		_pinched = true
+	elif _pinched:
+		cam.fov = FOV_BASE
+		_pinched = false
 	cam.position = _cam_pos + sh
 	if cam.position.distance_to(_cam_look) > 0.01:
 		cam.look_at(_cam_look, Vector3.UP)
@@ -425,7 +455,30 @@ func _start_round() -> void:
 			turn_list = boss_e + rest
 	turn_i = -1
 	_refresh_hud()
+	_round_hint()
 	await _advance()
+
+
+# INDIZIO DI INIZIO ROUND: una riga breve su cio' che cambia questo round (evento dell'arena, catena del boss). Va nella fascia del
+# suggerimento (al centro), sparisce da sola e non scavalca altri suggerimenti.
+func _round_hint() -> void:
+	if _hint == null or _hint.text != "" or ended:
+		return
+	var line: String = ""
+	var al: Array = Arena.hint_lines(b)
+	if not al.is_empty():
+		line = str(al[0])
+	var chain: String = str(b.get("telegraph", {}).get("chain", ""))
+	if chain != "":
+		line = "CATENA: se nessuno reagisce, subito dopo segue %s" % BattleText.move_name(chain).to_upper()
+	if line == "":
+		return
+	_hint.text = line
+	var tw := create_tween()
+	tw.tween_interval(3.2)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(_hint) and _hint.text == line:
+			_hint.text = "")
 
 
 func _advance() -> void:
@@ -451,6 +504,7 @@ func _advance() -> void:
 		if pl.is_empty() or not BattleState.player_alive(b, pl):
 			continue
 		cur_pid = pid
+		_quick = bool(e.get("quick", false))
 		var uid: String = str(_unit_of(pid)["id"])
 		_cam_actor(uid)
 		_fx_turn(uid)
@@ -459,13 +513,13 @@ func _advance() -> void:
 			await _wait(0.2)
 			if not is_inside_tree() or ended:
 				return
-			await _do_action(pid, BattleAI.choose(b, pid))
+			await _do_action(pid, BattleAI.choose(b, pid), _quick)
 			continue
 		waiting = true
 		_show_commands(true)
 		if first_turn:
 			first_turn = false
-			_hint.text = "ATTACCO ricarica energia · ABILITÀ la spende · ULTIMATE quando la barra è piena"
+			_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
 		return
 
 
@@ -494,6 +548,8 @@ func _skill_of(u: Dictionary) -> String:
 func _usable(move_id: String) -> bool:
 	if cur_pid == "" or move_id == "" or not BattleContent.MOVES.has(move_id):
 		return false
+	if _quick and str(BattleContent.MOVES[move_id].get("kind", "")) != "basic":
+		return false
 	return BattleResolver.validate_choice(b, cur_pid, _choice_for(move_id)) == ""
 
 
@@ -517,19 +573,23 @@ func _command(kind: String) -> void:
 	_show_commands(false)
 	_hint.text = ""
 	Settings.buzz(40 if kind == "ult" else 18)
-	await _do_action(cur_pid, _choice_for(mv))
+	await _do_action(cur_pid, _choice_for(mv), _quick)
 	if is_inside_tree() and not ended:
 		await _advance()
 
 
-func _do_action(pid: String, choice: Dictionary) -> void:
+func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 	var u: Dictionary = _unit_of(pid)
 	var uid: String = str(u["id"])
 	var mv: String = str(choice.get("move", "attack"))
 	var move: Dictionary = BattleContent.MOVES.get(mv, {})
 	var kind: String = str(move.get("kind", "basic"))
 	var tgt: String = str(move.get("target", "enemy"))
-	var ev: Array = SeqRound.player_action(b, pid, choice)
+	var ev: Array = SeqRound.player_action(b, pid, choice, quick)
+	for x in ev:
+		if str(x.get("t", "")) == "slancio":
+			# SLANCIO: subito dopo agisce ancora lo stesso eroe, ma solo con Attacco o Guardia
+			turn_list.insert(turn_i + 1, {"unit": str(x["unit"]), "player": str(x["player"]), "boss": false, "spd": -1, "extra": true, "quick": true})
 	var cv: CharacterVisual = vis[uid]
 	var col: Color = _col(u)
 	if kind == "ult":
@@ -558,7 +618,7 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 			_kick(1.0)
 		else:
 			_kick(0.45 if kind == "basic" else 0.7)
-		await _show_events(ev, true)
+		await _show_events_freeze(ev)
 		await _tw_done(a)
 		cv.move_speed = 1.0
 		var back := create_tween()
@@ -575,7 +635,7 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 		_ring(home[uid], col, 2.2)
 		if kind == "ult":
 			_flash(0.6)
-		await _show_events(ev, true)
+		await _show_events_freeze(ev)
 		await _tw_done(a2)
 	_refresh_hud()
 	await _wait(0.12)
@@ -585,6 +645,8 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 
 func _boss_turn() -> void:
 	cur_pid = ""
+	_quick = false
+	_boss_acting = true
 	_fx_turn("")
 	_refresh_hud()
 	var tele: Dictionary = b["telegraph"]
@@ -621,6 +683,7 @@ func _boss_turn() -> void:
 		await _show_events(ev, true)
 		await _tw_done(tw)
 	m.stunned = int(BattleState.boss(b).get("stun", 0)) > 0
+	_boss_acting = false
 	_refresh_hud()
 	await _wait(0.15)
 	_cam_overview()
@@ -776,7 +839,14 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					continue
 				var amt: int = int(e.get("amount", 0))
 				var crit: bool = bool(e.get("crit", false))
-				_number(dst, ("%d" % amt) + ("!" if crit else ""), Ui.YELLOW if crit else Ui.CREAM, 46 if crit else 38, delay)
+				# il peso del colpo si legge dalla grandezza del numero (danno / PV massimi del bersaglio); rosso-arancio se tocca uno dei tuoi
+				var dmax: float = maxf(1.0, float(b["units"].get(dst, {}).get("max_hp", 1)))
+				var sz: int = clampi(int(round(lerpf(30.0, 64.0, clampf(float(amt) / dmax / 0.25, 0.0, 1.0)))), 30, 64)
+				var ncol: Color = Ui.YELLOW if crit else Ui.CREAM
+				if dst != BattleState.BOSS_ID:
+					ncol = Color("#ff6a5a")
+				_number(dst, ("%d" % amt) + ("!" if crit else ""), ncol, sz, delay)
+				_color_tag(e, dst, delay)
 				if int(e.get("absorbed", 0)) > 0:
 					_number(dst, "SCUDO -%d" % int(e["absorbed"]), Ui.CYAN, 24, delay + 0.1)
 				if hit_anims and vis.has(dst):
@@ -810,13 +880,33 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_number(str(e.get("unit", "")), "POTENZIATO", Color("#ffb04a"), 24, delay + 0.15)
 			"debuff":
 				_number(BattleState.BOSS_ID, "INDEBOLITO", Color("#b0a0ff"), 24, delay + 0.15)
+			"balance":
+				# quanto equilibrio toglie questo colpo (lo stesso numero che scende nella barra bianca)
+				if int(e.get("amount", 0)) > 0:
+					_number(BattleState.BOSS_ID, "Equilibrio -%d" % int(e.get("amount", 0)), Color("#f2f0ea"), 20, delay + 0.2, 76.0)
 			"break":
 				_shatter_later("boss", delay, 1.0)        # solo l'animazione: lo schermo poi torna pulito
 				_sparks_later(BattleState.BOSS_ID, delay, true)
-				_toast("ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
+				_toast("IMPULSO · ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				_flash(0.5)
 				_kick(0.8)
+			"tenacity":
+				# il colpo era mortale: resta in piedi con 1 PV e l'ultimate piena
+				var tn: String = str(e.get("unit", ""))
+				_number(tn, "TENACIA", Ui.CYAN, 30, delay + 0.3, -26.0)
+				_banner("TENACIA · %s RESISTE CON 1 PV" % _uname(tn), Ui.CYAN, 0.25, 24)
+			"resolve":
+				_number(str(e.get("unit", "")), "DETERMINAZIONE", Color("#ffb04a"), 26, delay + 0.3, -26.0)
+			"counter":
+				_number(str(e.get("unit", "")), "CONTRATTACCO", Ui.YELLOW, 26, delay + 0.2, -26.0)
+			"act":
+				# ARDORE: sotto il 30% dei PV chi attacca colpisce piu' forte (il motore non emette un evento: si legge dallo stato)
+				var au: Dictionary = b["units"].get(str(e.get("unit", "")), {})
+				var amv: Dictionary = BattleContent.MOVES.get(str(e.get("move", "")), {})
+				if not au.is_empty() and str(au.get("side", "")) == "player" and BattleState.is_alive(au) and amv.has("mult") \
+						and str(amv.get("target", "")) == "enemy" and float(au["hp"]) < float(au["max_hp"]) * BattleTypes.ARDOR_BELOW:
+					_number(str(au["id"]), "ARDORE", Color("#ff6a5a"), 26, delay + 0.05, -26.0)
 			"cover":
 				_number(str(e.get("unit", "")), "COPRE " + _uname(str(e.get("who", ""))), _col_of(str(e.get("unit", ""))), 24, delay + 0.1)
 			"cover_hit":
@@ -840,7 +930,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				var tr_name: String = "FUORI DALLA LUCE" if str(e.get("trait", "")) == "luce" else "VEGLIA"
 				_number(str(e.get("unit", "")), tr_name, _col_of(str(e.get("unit", ""))).lightened(0.3), 22, delay)
 			"rest":
-				_toast("NOX SI RIPOSA · il prossimo round agisce due volte", Color("#39b7ff"), 1.8)
+				_toast("IMPULSO · CAFFÈ DI NOX · scudo e +1 energia a tutti", Color("#39b7ff"), 1.8)
 			"revive":
 				var rw: String = str(e.get("who", ""))
 				if vis.has(rw) and vis[rw] is CharacterVisual:
@@ -856,8 +946,16 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					(vis[pu] as CharacterVisual).attack()
 				_kick(0.5)
 				delay += 0.15
+			"arena", "behavior", "chain":
+				var dsc: Dictionary = BattleText.describe(b, e)
+				if str(dsc.get("text", "")) != "":
+					_toast(str(dsc["text"]), Ui.PINK if str(dsc.get("kind", "")) == "boss" else (Ui.YELLOW if str(dsc.get("kind", "")) == "link" else Ui.CREAM), 1.6)
+			"slancio":
+				_toast("SLANCIO · agisce ancora %s" % _uname(str(e.get("unit", ""))), Ui.YELLOW, 1.4)
 			"phase":
-				_toast("FASE %d · %s si arrabbia" % [int(e.get("phase", 2)), _bn()], Ui.PINK, 1.8)
+				_live_banner("FASE %d" % int(e.get("phase", 2)), "%s passa al piano B · guarda la prossima mossa" % _cap(_bn()), Ui.PINK, 2.2)
+				_kick(0.8)
+				_flash(0.3)
 			"down":
 				var du: String = str(e.get("unit", ""))
 				if vis.has(du):
@@ -867,6 +965,10 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if du == BattleState.BOSS_ID and _seal != null and is_instance_valid(_seal):
 					_seal.stop()              # la magia lascia l'oggetto: torna un oggetto qualsiasi
 					LightFx.rise(self, ENEMY_POS, LightFx.MAGIC, 1.1, 1.3)
+	# legami e combo muti prima: UN solo banner per azione, il piu' forte, sotto quello della mossa
+	var lb: Dictionary = CombatHud.link_banner(ev)
+	if not lb.is_empty():
+		_banner(str(lb["text"]), lb["col"], 0.25, 24)
 	_refresh_hud()
 	await _wait(0.22 + delay)
 
@@ -879,7 +981,25 @@ func _col_of(uid: String) -> Color:
 	return _col(b["units"].get(uid, {}))
 
 
-func _number(uid: String, text: String, col: Color, size: int, delay: float) -> void:
+# EFFICACE (giallo, grande) o DEBOLE (grigio) sotto il numero del colpo, in entrambe le direzioni.
+# Il primo colpo che il giocatore mette a segno sul boss ne rivela il colore anche per la riga dei comandi.
+func _color_tag(e: Dictionary, dst: String, delay: float) -> void:
+	var src: String = str(e.get("src", ""))
+	if src == "" or src == dst or not b["units"].has(src) or not b["units"].has(dst):
+		return
+	if dst == BattleState.BOSS_ID and str(b["units"][src].get("side", "")) != "boss":
+		_boss_known = true
+	var h: Dictionary = ColorHint.eval(str(b["units"][src].get("color", "")), str(b["units"][dst].get("color", "")))
+	if dst == BattleState.BOSS_ID and BattleTypes.hits_weak2(b["units"][src], b["units"][dst]):
+		_number(dst, "PUNTO DEBOLE", Ui.YELLOW, 30, delay + 0.06, 40.0)
+	match str(h["tipo"]):
+		"efficace":
+			_number(dst, str(h["testo"]), Ui.YELLOW, 30, delay + 0.06, 40.0)
+		"debole":
+			_number(dst, str(h["testo"]), Color("#c4c2cf"), 26, delay + 0.06, 34.0)
+
+
+func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0) -> void:
 	if not vis.has(uid):
 		return
 	var v: Node3D = vis[uid]
@@ -888,6 +1008,8 @@ func _number(uid: String, text: String, col: Color, size: int, delay: float) -> 
 	l.modulate.a = 0.0
 	_fx_layer.add_child(l)
 	var jitter := Vector2(randf_range(-30, 30), randf_range(-10, 10))
+	if yoff != 0.0:
+		jitter = Vector2(randf_range(-8, 8), yoff)
 	var tw := l.create_tween()
 	tw.tween_interval(delay)
 	tw.tween_callback(func() -> void:
@@ -966,14 +1088,32 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	line_l.text = "«" + DialogData.ult_line(str(u["char"])) + "»"
 	_cutin.modulate.a = 0.0
 	band.position.x = -_root.size.x
+	var ch: String = str(u["char"])
+	var hold: float = 0.45 if _cutin_seen.has(ch) else 1.1
+	_cutin_seen[ch] = true
+	_cutin_on = true
 	var tw := create_tween()
+	_cutin_tw = tw
 	tw.tween_property(_cutin, "modulate:a", 1.0, 0.12)
 	tw.parallel().tween_property(band, "position:x", 0.0, 0.25).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	tw.tween_interval(1.1)
+	tw.tween_interval(hold)
 	tw.tween_property(_cutin, "modulate:a", 0.0, 0.18)
-	await tw.finished
+	tw.tween_callback(_cutin_finish)
+	await _cutin_end
 	_cutin.visible = false
 	Breadcrumb.mark("battaglia")
+
+
+# Chiude il cut-in (a fine animazione o saltato al tocco): il colpo parte subito
+func _cutin_finish() -> void:
+	if not _cutin_on:
+		return
+	_cutin_on = false
+	if _cutin_tw != null and _cutin_tw.is_valid():
+		_cutin_tw.kill()
+	_cutin_tw = null
+	_cutin.modulate.a = 0.0
+	_cutin_end.emit()
 
 
 # ---------------------------------------------------------------- fine
@@ -1151,8 +1291,14 @@ func _build_ui() -> void:
 	_boss_hp.add_child(_boss_hp_txt)
 	Ui.place(_boss_hp_txt, 0, 0, 1, 1)
 	_boss_hp_txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_boss_brk = _bar(Color("#f2f0ea"), 10)
+	_boss_brk = _bar(Color("#f2f0ea"), 14)
 	bp.add_child(_boss_brk)
+	# il nome della barra bianca, piccolo e dentro la barra: quando arriva a zero il boss si rompe
+	var brk_t := Ui.label("Equilibrio", 12, Color("#8a8697"), null, 3)
+	brk_t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_brk.add_child(brk_t)
+	Ui.place(brk_t, 0, 0, 1, 1)
+	brk_t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_tele = Ui.label("", 20, Ui.CREAM, null, 6)
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bp.add_child(_tele)
@@ -1172,8 +1318,42 @@ func _build_ui() -> void:
 	_cmd_box = VBoxContainer.new()
 	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -330, -16, -14)
 	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
+	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
+	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_cmd_box.grow_vertical = Control.GROW_DIRECTION_BEGIN       # con REAZIONE e Ultimate in diretta la colonna cresce verso l'alto
 	_cmd_box.add_theme_constant_override("separation", 8)
 	_root.add_child(_cmd_box)
+	# REAZIONE (contestuale): sta in cima alla colonna, che cresce verso l'alto; nascosta quando non c'e' una finestra
+	_react_box = VBoxContainer.new()
+	_react_box.add_theme_constant_override("separation", 4)
+	_react_box.visible = false
+	_cmd_box.add_child(_react_box)
+	_react_lbl = Ui.label("", 18, Ui.CREAM, null, 5)
+	_react_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_react_box.add_child(_react_lbl)
+	var rrow := HBoxContainer.new()
+	rrow.add_theme_constant_override("separation", 6)
+	_react_box.add_child(rrow)
+	var rcols: Dictionary = {"schivata": Ui.CYAN, "intercettazione": Color("#62f08c"), "interruzione": Ui.PINK, "soccorso": Ui.YELLOW}
+	for rid in ["schivata", "intercettazione", "interruzione", "soccorso"]:
+		var rb: Button = Ui.button(str(REACT_SHORT[rid]), rcols[rid], 17)
+		rb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rb.clip_text = true
+		rb.pressed.connect(_react_cmd.bind(rid))
+		rb.visible = false
+		rrow.add_child(rb)
+		_react_btns[rid] = rb
+	var lrow2 := HBoxContainer.new()
+	lrow2.add_theme_constant_override("separation", 6)
+	_react_box.add_child(lrow2)
+	for k in 3:
+		var lb: Button = Ui.button("", Ui.PINK, 17)
+		lb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lb.clip_text = true
+		lb.visible = false
+		lb.pressed.connect(_live_ult.bind(k))
+		lrow2.add_child(lb)
+		_live_btns.append(lb)
 	_btn_ult = Ui.button("ULTIMATE", Ui.PINK, 26)
 	_btn_ult.pressed.connect(_command.bind("ult"))
 	_cmd_box.add_child(_btn_ult)
@@ -1226,6 +1406,22 @@ func _build_ui() -> void:
 	var pb := Ui.button("II", Ui.CREAM, 24, 70)
 	pb.pressed.connect(_open_pause)
 	tr.add_child(pb)
+
+	# legenda dei colori, sempre visibile sotto i pulsanti in alto a destra: A > B = A batte B (+50% danno)
+	var leg := PanelContainer.new()
+	leg.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.72), Ui.INK, 3, 6, 0))
+	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 88, -16, 88)
+	leg.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	leg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var lrow := HBoxContainer.new()
+	lrow.add_theme_constant_override("separation", 5)
+	lrow.alignment = BoxContainer.ALIGNMENT_CENTER
+	leg.add_child(lrow)
+	_legend_row(lrow, ["rosso", "verde", "blu", "rosso"], ">")
+	var sep := Ui.label("·", 18, Color(1, 1, 1, 0.5))
+	lrow.add_child(sep)
+	_legend_row(lrow, ["giallo", "viola"], "<>")
+	_root.add_child(leg)
 
 	# sequenza dell'ultimate
 	_cutin = Control.new()
@@ -1289,7 +1485,45 @@ func _make_card() -> Dictionary:
 	vb.add_child(en)
 	var ult := _bar(Ui.PINK, 10)
 	vb.add_child(ult)
-	return {"panel": p, "name": name_l, "hp": hp, "hp_t": hp_t, "en": en, "ult": ult}
+	# crepe leggere: si ridisegnano solo quando la card cambia livello (50% / 25% dei PV)
+	var cracks := Control.new()
+	cracks.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cracks.set_meta("tier", 0)
+	cracks.draw.connect(func() -> void: _draw_cracks(cracks))
+	p.add_child(cracks)
+	return {"panel": p, "name": name_l, "hp": hp, "hp_t": hp_t, "en": en, "ult": ult, "cracks": cracks, "tier": 0}
+
+
+const CRACKS_1: Array = [[Vector2(0.78, 0.0), Vector2(0.72, 0.18), Vector2(0.80, 0.34), Vector2(0.74, 0.5)],
+	[Vector2(0.72, 0.18), Vector2(0.6, 0.26)]]
+const CRACKS_2: Array = [[Vector2(0.2, 1.0), Vector2(0.28, 0.82), Vector2(0.22, 0.66), Vector2(0.32, 0.5)],
+	[Vector2(0.28, 0.82), Vector2(0.42, 0.78)], [Vector2(1.0, 0.7), Vector2(0.86, 0.62), Vector2(0.9, 0.46)],
+	[Vector2(0.5, 0.0), Vector2(0.46, 0.14)]]
+
+
+func _draw_cracks(c: Control) -> void:
+	var tr: int = int(c.get_meta("tier", 0))
+	if tr <= 0:
+		return
+	var sz: Vector2 = c.size
+	var lines: Array = CRACKS_1 if tr == 1 else CRACKS_1 + CRACKS_2
+	for ln in lines:
+		var pts := PackedVector2Array()
+		for q in ln:
+			pts.append((q as Vector2) * sz)
+		c.draw_polyline(pts, Color(1, 1, 1, 0.5), 2.0)
+
+
+# Barra PV della card: verde sopra il 50%, gialla sotto, rossa sotto il 25%; le crepe seguono lo stesso livello
+func _card_tier(c: Dictionary, ratio: float) -> void:
+	var tr: int = BrokenCam.tier(ratio)
+	if tr == int(c["tier"]):
+		return
+	c["tier"] = tr
+	var fill: StyleBoxFlat = (c["hp"] as ProgressBar).get_theme_stylebox("fill") as StyleBoxFlat
+	fill.bg_color = [Color("#62f08c"), Color("#ffd23f"), Color("#ff4a5a")][tr]
+	(c["cracks"] as Control).set_meta("tier", tr)
+	(c["cracks"] as Control).queue_redraw()
 
 
 func _show_commands(on: bool) -> void:
@@ -1306,11 +1540,14 @@ func _show_commands(on: bool) -> void:
 	_btn_atk.disabled = not _usable("attack")
 	_btn_guard.disabled = not _usable("guard")
 	_btn_skill.text = "%s  ·  %d ENERGIA" % [str(skm.get("name", "ABILITÀ")).to_upper(), int(skm.get("cost", 0))]
+	_fit_btn(_btn_skill, 24)
 	_btn_skill.disabled = not _usable(sk)
 	var ult_ok: bool = _usable(str(u.get("ult", "")))
 	_btn_ult.disabled = not ult_ok
+	_update_react()
 	var um: Dictionary = BattleContent.MOVES.get(str(u.get("ult", "")), {})
 	_btn_ult.text = ("ULTIMATE · " + str(um.get("name", "")).to_upper()) if ult_ok else "ULTIMATE  %d%%" % int(u.get("gauge", 0))
+	_fit_btn(_btn_ult, 26)
 	# cosa fa l'abilita' e il tratto di chi e' di turno (si gioca capendo, non a memoria)
 	var tr: Dictionary = Kits.TRAITS.get(str(u.get("char", "")), {})
 	var lines: Array = []
@@ -1320,13 +1557,122 @@ func _show_commands(on: bool) -> void:
 		lines.append("%s: %s" % [str(um.get("name", "")), str(um["desc"])])
 	if not tr.is_empty():
 		lines.append("%s: %s" % [str(tr["name"]), str(tr["desc"])])
+	# vantaggio o svantaggio di colore contro il boss (solo se il giocatore sa gia' di che colore e')
+	if _boss_known or not weak.is_empty():
+		var hl: String = ColorHint.line(str(u.get("color", "")), str(BattleState.boss(b).get("color", "")), _bname())
+		if hl == "":
+			hl = ColorHint.second_line(str(u.get("color", "")), BattleState.boss(b))
+		if hl != "":
+			lines.insert(0, hl)
 	_kit_lbl.text = "\n".join(lines)
+
+
+# Una catena della ruota dei colori: quadratini del colore e il segno tra l'uno e l'altro (">" batte, "<>" si battono a vicenda)
+func _legend_row(row: HBoxContainer, colors: Array, sign: String) -> void:
+	for i in colors.size():
+		if i > 0:
+			row.add_child(Ui.label(sign, 18, Color(1, 1, 1, 0.8)))
+		var sq := ColorRect.new()
+		sq.color = Ui.BATTLE_COLORS.get(str(colors[i]), Color.WHITE)
+		sq.custom_minimum_size = Vector2(22, 22)
+		sq.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(sq)
+
+
+# REAZIONE: una finestra c'e' solo se il boss carica un colpo pesante non ancora fermato (o c'e' un caduto da soccorrere) e la
+# Riserva basta. Mostra solo le reazioni che si possono fare adesso, ognuna col suo costo in Riserva. Reagire costa il turno.
+func _update_react() -> void:
+	if _react_box == null:
+		return
+	var usable: Array = []
+	for r in ([] if _quick else BattleResolver.reactions_for(b, cur_pid)):
+		if str(r["err"]) == "":
+			usable.append(str(r["id"]))
+	var lives: Array = [] if _quick else SeqRound.live_ults(b, cur_pid)
+	_react_box.visible = not usable.is_empty() or not lives.is_empty()
+	for k in _live_btns.size():
+		var lb: Button = _live_btns[k]
+		lb.visible = k < lives.size()
+		if lb.visible:
+			lb.text = "ULT\n%s" % str(_unit_of(str(lives[k])).get("name", "")).to_upper()
+			lb.set_meta("pid", str(lives[k]))
+			lb.add_theme_font_size_override("font_size", 15)
+			lb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
+	for rid in _react_btns:
+		var rb: Button = _react_btns[rid]
+		rb.visible = usable.has(rid)
+		if rb.visible:
+			rb.text = "%s\nCOSTA %d" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]
+			rb.add_theme_font_size_override("font_size", 15)
+			rb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
+	# la colonna e' piu' alta con la riga delle Ultimate in diretta: titolo e descrizioni salgono per non essere coperti
+	var up: float = 40.0 if not lives.is_empty() else 0.0
+	Ui.place(_turn_lbl, 1.0, 1.0, 1.0, 1.0, -600, -385 - up, -16, -340 - up)
+	Ui.place(_kit_lbl, 1.0, 1.0, 1.0, 1.0, -620, -392 - up, -16, -392 - up)
+	if _react_box.visible:
+		_react_lbl.text = ("REAZIONE · RISERVA %d (COSTA IL TURNO)" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA · SENZA RISERVA"
+		if not _react_hint_seen and not first_turn and _hint != null and not usable.is_empty():
+			_react_hint_seen = true
+			_hint.text = "CARICA IN ARRIVO · reagisci con la Riserva: SCHIVA, COPRI, FERMA, SOCCORRI"
+
+
+# ULTIMATE IN DIRETTA: un compagno con la barra piena lancia l'Ultimate fuori turno durante una carica. Non costa Riserva ne' il
+# turno di chi sta scegliendo: finita l'Ultimate si torna alla sua scelta.
+func _live_ult(k: int) -> void:
+	if not waiting or ended or _pause != null or k >= _live_btns.size():
+		return
+	var lb: Button = _live_btns[k]
+	if not lb.visible or not lb.has_meta("pid"):
+		return
+	var pid: String = str(lb.get_meta("pid"))
+	_live_back = cur_pid
+	if not SeqRound.live_ults(b, cur_pid).has(pid):
+		Settings.buzz(10)
+		return
+	waiting = false
+	_show_commands(false)
+	_hint.text = ""
+	Settings.buzz(40)
+	var u: Dictionary = _unit_of(pid)
+	await _do_action(pid, {"swap": "", "move": str(u["ult"]), "target": "", "order": "", "push": ""})
+	if not is_inside_tree() or ended:
+		return
+	cur_pid = _live_back
+	_refresh_hud()
+	_cam_actor(str(_unit_of(cur_pid)["id"]))
+	waiting = true
+	_show_commands(true)
+
+
+func _react_cmd(rid: String) -> void:
+	if not waiting or ended or _pause != null or not _usable(rid):
+		Settings.buzz(10)
+		return
+	waiting = false
+	_show_commands(false)
+	_hint.text = ""
+	Settings.buzz(30)
+	await _do_action(cur_pid, _choice_for(rid))
+	if is_inside_tree() and not ended:
+		await _advance()
+
+
+# Rimpicciolisce il testo del pulsante finche' entra nella colonna dei comandi: la colonna resta larga 314 px
+# e non copre le card della squadra (prima un nome lungo la allargava sopra la card di Saul)
+func _fit_btn(btn: Button, base: int) -> void:
+	var f: Font = btn.get_theme_font("font")
+	var size: int = base
+	while size > 16 and f.get_string_size(btn.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > 280.0:
+		size -= 1
+	btn.add_theme_font_size_override("font_size", size)
 
 
 func _refresh_hud() -> void:
 	if _boss_hp == null:
 		return
 	_update_broken_cam()
+	if _cam_hud != null:
+		_cam_hud.set_live(int(Kits.unit_of_char(b, Kits.RIO).get("hype", -1)))      # la diretta di Rio e' la telecamera di Echo
 	var boss: Dictionary = BattleState.boss(b)
 	_boss_hp.max_value = int(boss["max_hp"])
 	_boss_hp.value = int(boss["hp"])
@@ -1350,21 +1696,26 @@ func _refresh_hud() -> void:
 	elif int(boss.get("stun", 0)) > 0:
 		_tele.text = "STORDITO: salterà il prossimo turno"
 	else:
-		_tele.text = "Prossima mossa: %s su %s" % [str(mv.get("name", "?")).to_upper(), who] if not mv.is_empty() else ""
+		var thr: Dictionary = BattleResolver.threat_preview(b)
+		var strong: bool = CombatHud.is_strong(float(mv.get("mult", 0.0)), thr.get("lethal", []))
+		_tele.text = CombatHud.tele_line(str(mv.get("name", "?")), who, str(mv.get("target", "one")) == "all", strong, str(thr.get("chain", "")) != "") if not mv.is_empty() else ""
+	var marked: String = _update_mark(tele, mv, boss)
 	for i in _cards.size():
 		var c: Dictionary = _cards[i]
 		var u: Dictionary = _slot_unit(i)
 		var active: bool = str(slots[i]) == cur_pid
+		var is_marked: bool = marked != "" and str(u.get("id", "")) == marked
 		var alive: bool = BattleState.is_alive(u)
 		var col: Color = _col(u)
 		(c["panel"] as PanelContainer).add_theme_stylebox_override("panel",
-			Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.55), col if active else Ui.INK, 4 if active else 3, 6, 5))
+			Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.55), Color("#ff5a6e") if is_marked else (col if active else Ui.INK), 6 if is_marked else (4 if active else 3), 6, 5))
 		(c["panel"] as Control).modulate.a = 1.0 if alive else 0.45
 		# il colore anche scritto: chi non distingue i colori sa lo stesso chi colpisce le debolezze
 		(c["name"] as Label).text = str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
 		(c["name"] as Label).add_theme_color_override("font_color", col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
+		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])))
 		(c["hp_t"] as Label).text = "PV %d/%d" % [int(u["hp"]), int(u["max_hp"])]
 		var en: int = int(u.get("energy", 0))
 		(c["en"] as Label).text = "ENERGIA %d/%d" % [en, BattleTypes.MAX_ENERGY]
@@ -1387,14 +1738,40 @@ func _refresh_hud() -> void:
 		_order_box.add_child(l)
 	var nxt := Ui.label("   — round %d —" % int(b.get("round", 1)), 18, Color(1, 1, 1, 0.85))
 	_order_box.add_child(nxt)
-	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper()) if cur_pid != "" and not ended else ""
+	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper() + (" · RAPIDO" if _quick else "")) if cur_pid != "" and not ended else ""
 	if waiting:
 		_show_commands(true)
 
 
-func _banner(text: String, col: Color) -> void:
-	var l := Ui.label(text, 30, col, Ui.display(), 10)
-	Ui.place(l, 0.5, 0.2, 0.5, 0.2, -500, 0, 500, 50)
+# Segnalino del bersaglio annunciato: acceso a inizio round, spento quando il boss agisce, per mosse su tutti, da stordito e a fine battaglia.
+# Ritorna l'id dell'unita' segnata ("" = nessuna).
+func _update_mark(tele: Dictionary, mv: Dictionary, boss: Dictionary) -> String:
+	var want: String = ""
+	if not ended and not _boss_acting and BattleState.is_alive(boss) and int(boss.get("stun", 0)) <= 0 \
+			and not mv.is_empty() and not bool(mv.get("camera", false)) and str(mv.get("target", "one")) != "all" \
+			and not bool((b.get("seq", {}) as Dictionary).get("boss_acted", false)):
+		var tu: Dictionary = BattleState.active_unit(b, str(tele.get("target", "")))
+		if not tu.is_empty() and BattleState.is_alive(tu) and home.has(str(tu["id"])):
+			want = str(tu["id"])
+	if want == "":
+		_clear_mark()
+	elif want != _mark_uid or _mark == null or not is_instance_valid(_mark):
+		_clear_mark()
+		_mark = LightFx.mark(self, home[want], Color("#ff5a6e"))
+		_mark_uid = want
+	return want
+
+
+func _clear_mark() -> void:
+	if _mark != null and is_instance_valid(_mark):
+		_mark.stop()
+	_mark = null
+	_mark_uid = ""
+
+
+func _banner(text: String, col: Color, ay: float = 0.2, size: int = 30) -> void:
+	var l := Ui.label(text, size, col, Ui.display(), 10)
+	Ui.place(l, 0.5, ay, 0.5, ay, -500, 0, 500, 50)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_fx_layer.add_child(l)
 	var tw := l.create_tween()
@@ -1407,11 +1784,109 @@ var _toasts: Array = []
 
 
 # I messaggi che arrivano insieme si mettono uno sotto l'altro invece di sovrapporsi
+# Mostra gli eventi; se c'e' un ATTACCO DI SQUADRA (rottura del boss) prima mostra la rottura, poi il fermo immagine di Echo,
+# poi i colpi dei compagni.
+func _show_events_freeze(ev: Array) -> void:
+	var idx: int = -1
+	for i in ev.size():
+		if str(ev[i].get("t", "")) == "team_strike":
+			idx = i
+			break
+	if idx < 0:
+		await _show_events(ev, true)
+		return
+	await _show_events(ev.slice(0, idx), true)
+	await _freeze_frame()
+	if not is_inside_tree() or ended:
+		return
+	var rest: Array = ev.slice(idx)
+	for e in rest:
+		if str(e.get("t", "")) == "team_strike":
+			# i compagni scattano insieme verso il boss: una pennellata di luce dal colore di ognuno
+			for uid in vis:
+				if str(uid) != BattleState.BOSS_ID and str(uid) != str(e.get("unit", "")) and vis[uid] is CharacterVisual and BattleState.is_alive(BattleState.unit(b, str(uid))):
+					var cvv: CharacterVisual = vis[uid]
+					cvv.attack()
+					if not Settings.light_fx:
+						LightFx.stroke(self, cvv.chest_point(), (vis[BattleState.BOSS_ID] as Node).call("chest_point"), _col(BattleState.unit(b, str(uid))), 0.4)
+	_toast("ATTACCO DI SQUADRA", Ui.YELLOW, 1.2)
+	await _show_events(rest, true)
+
+
+# FERMO IMMAGINE (telecamera di Echo): alla rottura la scena si ferma un istante dentro una cornice REC. Si salta con un tocco.
+# Effetti ridotti: niente velo scuro e fermo piu' breve; Lampi a zero: niente lampo.
+func _freeze_frame() -> void:
+	var dur: float = 0.35 if Settings.light_fx else 0.7
+	var box := Control.new()
+	Ui.place(box, 0, 0, 1, 1)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fx_layer.add_child(box)
+	if not Settings.light_fx:
+		var veil := ColorRect.new()
+		veil.color = Color(0.02, 0.0, 0.05, 0.3)
+		Ui.place(veil, 0, 0, 1, 1)
+		veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(veil)
+	var rec: Color = Color("#ff4630")
+	for side in 4:
+		var bar := ColorRect.new()
+		bar.color = rec
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		match side:
+			0: Ui.place(bar, 0, 0, 1, 0, 0, 0, 0, 8)
+			1: Ui.place(bar, 0, 1, 1, 1, 0, -8, 0, 0)
+			2: Ui.place(bar, 0, 0, 0, 1, 0, 0, 8, 0)
+			3: Ui.place(bar, 1, 0, 1, 1, -8, 0, 0, 0)
+		box.add_child(bar)
+	var lbl := Ui.label("●  REC  ·  FERMO IMMAGINE", 30, rec, Ui.display(), 8)
+	Ui.place(lbl, 0.2, 0.2, 0.6, 0.2, 0, 0, 0, 50)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(lbl)
+	_flash(0.4)
+	var prev_scale: float = Engine.time_scale
+	Engine.time_scale = 0.03
+	_freeze_on = true
+	_freeze_skip = false
+	var t0: int = Time.get_ticks_msec()
+	while is_inside_tree() and not ended and not _freeze_skip and float(Time.get_ticks_msec() - t0) / 1000.0 < dur:
+		await get_tree().process_frame
+	_freeze_on = false
+	Engine.time_scale = prev_scale
+	box.queue_free()
+
+
+# Titolo grande "in diretta" (stile di Rio): pallino rosso REC che lampeggia + parola grande + una riga sotto. Non copre le descrizioni:
+# sta nella fascia centrale alta, come i toast.
+func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
+	var box := VBoxContainer.new()
+	Ui.place(box, 0.2, 0.17, 0.6, 0.17, 0, 0, 0, 150)
+	box.add_theme_constant_override("separation", 0)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var live := Ui.label("●  IN DIRETTA", 20, Color("#ff4630"), Ui.display(), 6)
+	live.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(live)
+	var big := Ui.label(title, 64, col, Ui.display(), 12)
+	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(big)
+	var sm := Ui.label(sub, 22, Ui.CREAM, null, 6)
+	sm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(sm)
+	_fx_layer.add_child(box)
+	box.modulate.a = 0.0
+	var tw := box.create_tween()
+	tw.tween_property(box, "modulate:a", 1.0, 0.12)
+	tw.tween_interval(sec)
+	tw.tween_property(box, "modulate:a", 0.0, 0.3)
+	tw.tween_callback(box.queue_free)
+
+
 func _toast(text: String, col: Color, sec: float) -> void:
 	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t) and (t as Label).modulate.a > 0.05)
 	var row: int = _toasts.size()
 	var l := Ui.label(text, 26, col, Ui.display(), 10)
-	Ui.place(l, 0.5, 0.3, 0.5, 0.3, -560, 48 * row, 560, 80 + 48 * row)
+	# resta nella fascia centrale (20%-60% della larghezza): il blocco descrizioni a destra non viene mai coperto, il testo lungo va a capo
+	Ui.place(l, 0.2, 0.3, 0.6, 0.3, 0, 84 * row, 0, 120 + 84 * row)
 	_toasts.append(l)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1430,7 +1905,7 @@ func _toggle_auto() -> void:
 	if auto_on and waiting:
 		waiting = false
 		_show_commands(false)
-		await _do_action(cur_pid, BattleAI.choose(b, cur_pid))
+		await _do_action(cur_pid, BattleAI.choose(b, cur_pid), _quick)
 		if is_inside_tree() and not ended:
 			await _advance()
 
@@ -1444,6 +1919,19 @@ func _toggle_fast() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _freeze_on and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) \
+			or (event is InputEventKey and event.pressed and not event.echo)):
+		_freeze_skip = true
+		get_viewport().set_input_as_handled()
+		return
+	if _cutin_on and _pause == null and not ended:
+		var skip: bool = (event is InputEventScreenTouch and event.pressed) \
+			or (event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT) \
+			or (event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode in [KEY_SPACE, KEY_ENTER])
+		if skip:
+			_cutin_finish()
+			get_viewport().set_input_as_handled()
+			return
 	if _qte_on:
 		var tap: bool = (event is InputEventScreenTouch and event.pressed) \
 			or (event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT) \
@@ -1466,6 +1954,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				_command("skill")
 			KEY_3:
 				_command("ult")
+			KEY_R:
+				for rid in ["interruzione", "schivata", "intercettazione", "soccorso"]:
+					if _usable(rid) and (_react_btns[rid] as Button).visible:
+						_react_cmd(rid)
+						break
 			KEY_4:
 				_command("guard")
 

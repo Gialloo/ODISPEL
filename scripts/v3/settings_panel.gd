@@ -5,31 +5,40 @@ extends PanelContainer
 
 signal closed
 
-var _rows: VBoxContainer
+var _rows: GridContainer
 
 
 func _ready() -> void:
 	add_theme_stylebox_override("panel", Ui.box(Color(0.08, 0.05, 0.14, 0.97), Ui.CREAM, 4, 6, 8))
 	set_anchors_preset(Control.PRESET_CENTER)
-	custom_minimum_size = Vector2(620, 0)
+	# Due colonne: sul telefono l'altezza logica resta 720 e otto righe in colonna uscivano dallo schermo.
+	custom_minimum_size = Vector2(1120, 0)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 10)
 	add_child(vb)
 	var t := Ui.label("IMPOSTAZIONI", 32, Ui.YELLOW, Ui.display())
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(t)
-	_rows = VBoxContainer.new()
-	_rows.add_theme_constant_override("separation", 8)
+	_rows = GridContainer.new()
+	_rows.columns = 2
+	_rows.add_theme_constant_override("h_separation", 28)
+	_rows.add_theme_constant_override("v_separation", 8)
 	vb.add_child(_rows)
 	var ok := Ui.button("CHIUDI", Ui.YELLOW, 24)
+	ok.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	ok.custom_minimum_size.x = 320
 	ok.pressed.connect(func() -> void:
 		Settings.save()
 		closed.emit()
 		queue_free())
 	vb.add_child(ok)
+	var pad := Control.new()
+	pad.custom_minimum_size.y = 6
+	vb.add_child(pad)
 	_build()
 	await get_tree().process_frame
-	position = (get_viewport_rect().size - size) * 0.5
+	var vp := get_viewport_rect().size
+	position = ((vp - size) * 0.5).max(Vector2.ZERO)
 
 
 func _build() -> void:
@@ -48,7 +57,8 @@ func _build() -> void:
 func _row(text: String, value: String, change: Callable) -> void:
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 12)
-	var l := Ui.label(text, 24, Ui.CREAM)
+	hb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var l := Ui.label(text, 22, Ui.CREAM)
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hb.add_child(l)

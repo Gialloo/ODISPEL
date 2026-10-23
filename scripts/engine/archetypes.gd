@@ -17,7 +17,7 @@ const MOMENTUM_MAX: int = 5
 const MOMENTUM_PCT: float = 0.03        # danno in piu' per ogni colpo messo a segno (STR)
 const PSY_POWER: float = 1.20           # cure e scudi (PSY)
 const INT_MARK_EXTRA: float = 1.12      # danno in piu' ai bersagli marchiati (INT)
-const DEX_CRIT_GAUGE: int = 10          # ultimate per ogni critico (DEX)
+const DEX_CRIT_GAUGE: int = 5           # ultimate per ogni critico (DEX)
 const DEX_CRIT_DMG_PM: int = 200        # danno critico in piu' (DEX), per mille
 const DEX_SUPPORT_CRIT: float = 1.5     # cure e scudi critici (DEX): moltiplicatore
 const QCK_START_GAUGE: int = 25         # ultimate di partenza (QCK)
@@ -26,7 +26,7 @@ const QCK_GAUGE_MULT: float = 1.4       # carica dai colpi (QCK)
 const DEFS: Dictionary = {
 	"str": {"tag": "STR", "name": "FORZA", "color": "rosso",
 		"line": "Colpi che crescono",
-		"desc": "+10% ATK. SLANCIO: ogni colpo messo a segno da' +3% di danno, fino a 5 colpi.",
+		"desc": "+10% ATK. CRESCENDO: ogni colpo messo a segno da' +3% di danno, fino a 5 colpi.",
 		"mods": [{"stat": "atk", "pm": 100}]},
 	"psy": {"tag": "PSY", "name": "SINTONIA", "color": "giallo",
 		"line": "Energia e supporto",

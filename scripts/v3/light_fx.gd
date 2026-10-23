@@ -91,6 +91,14 @@ static func glyph(parent: Node, feet: Vector3, c: Color, r: float = 0.75) -> Lig
 	return fx
 
 
+# Segnalino del bersaglio annunciato dal boss: anello pulsante con quattro punte che puntano al centro, finche' non si chiama stop().
+static func mark(parent: Node, feet: Vector3, c: Color, r: float = 1.05) -> LightFx:
+	var fx := _make(parent, "mark", c, 9999.0)
+	fx.a = feet
+	fx.radius = r
+	return fx
+
+
 # Sigillo della possessione sotto un'Anomalia: anello magenta con tacche e scintille che salgono, finche' non si chiama stop().
 static func seal(parent: Node, feet: Vector3, r: float = 1.9) -> LightFx:
 	var fx := _make(parent, "seal", MAGIC, 9999.0)
@@ -133,6 +141,8 @@ func _process(delta: float) -> void:
 			_draw_rise()
 		"glyph":
 			_draw_glyph()
+		"mark":
+			_draw_mark()
 		"seal":
 			_draw_seal()
 	_im.clear_surfaces()
@@ -263,6 +273,18 @@ func _draw_glyph() -> void:
 	_arc(radius, 0.06, rot, rot + TAU * 0.86, col, 0.55 * pulse * _fade, segs)
 	_arc(radius, 0.022, rot, rot + TAU * 0.86, IVORY, 0.55 * pulse * _fade, segs)
 	_arc(radius * 0.72, 0.025, -rot * 1.3, -rot * 1.3 + TAU * 0.4, col, 0.4 * _fade, segs / 2)
+
+
+func _draw_mark() -> void:
+	var pulse: float = 0.7 + 0.3 * sin(t * 7.0)
+	var segs: int = 14 if Settings.light_fx else 24
+	_arc(radius, 0.07, 0.0, TAU, col, 0.6 * pulse * _fade, segs)
+	_arc(radius, 0.025, 0.0, TAU, IVORY, 0.6 * pulse * _fade, segs)
+	# quattro punte che puntano al centro e respirano avanti e indietro
+	var inset: float = 0.12 * sin(t * 7.0)
+	for i in 4:
+		var ang: float = TAU * float(i) / 4.0 + PI * 0.25
+		_arc(radius * 0.7 + inset, 0.09, ang - 0.12, ang + 0.12, col, 0.75 * _fade, 2)
 
 
 func _draw_seal() -> void:

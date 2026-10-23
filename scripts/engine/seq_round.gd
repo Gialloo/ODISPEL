@@ -58,7 +58,7 @@ static func order(state: Dictionary) -> Array:
 
 
 # Azione di un giocatore (slot): `choice` come in BattleResolver.submit_choice. Ritorna gli eventi del solo passo.
-static func player_action(state: Dictionary, pid: String, choice: Dictionary) -> Array:
+static func player_action(state: Dictionary, pid: String, choice: Dictionary, quick: bool = false) -> Array:
 	var events: Array = []
 	if str(state["winner"]) != "":
 		return events
@@ -68,6 +68,8 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary) ->
 		return events
 	if BattleResolver.validate_choice(state, pid, choice) != "":
 		choice = {"swap": "", "move": BattleTypes.ACTION_ATTACK, "target": ""}
+	if quick and not [BattleTypes.ACTION_ATTACK, BattleTypes.ACTION_GUARD].has(str(choice.get("move", ""))):
+		choice = {"swap": "", "move": BattleTypes.ACTION_ATTACK, "target": ""}      # l'azione rapida e' solo Attacco o Guardia
 	p["choice"] = {
 		"swap": str(choice.get("swap", "")),
 		"move": str(choice.get("move", "")),
@@ -90,9 +92,70 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary) ->
 		BattleResolver._summon_upkeep(state, events, false)
 		BattleResolver._check_winner(state, events)
 		Kits.after_events(state, events)
+		_team_strike(state, actor, events)
+		if not quick:
+			_check_slancio(state, actor, events)
 	p["choice"] = null
 	_log(state, events)
 	return events
+
+
+# ULTIMATE IN DIRETTA: durante una carica del boss (stessa finestra delle reazioni) un compagno con la barra piena puo' lanciare
+# la sua Ultimate anche fuori turno, senza costare Riserva. Ritorna gli slot (diversi da `except_pid`) che possono farlo adesso.
+static func live_ults(state: Dictionary, except_pid: String) -> Array:
+	var out: Array = []
+	if str(state["winner"]) != "" or not state.has("seq"):
+		return out
+	var tele: Dictionary = state.get("telegraph", {})
+	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	var boss: Dictionary = BattleState.boss(state)
+	if bm.is_empty() or int(boss.get("stun", 0)) > 0 or not BattleResolver.is_heavy_boss_move(bm) or bool(state["seq"].get("boss_acted", false)):
+		return out
+	for p in BattleState.alive_players(state):
+		var pid: String = str(p["id"])
+		if pid == except_pid:
+			continue
+		var u: Dictionary = BattleState.active_unit(state, pid)
+		if BattleState.is_alive(u) and str(u["ult"]) != "" and int(u["gauge"]) >= BattleTypes.GAUGE_MAX:
+			out.append(pid)
+	return out
+
+
+# ATTACCO DI SQUADRA: alla rottura del boss tutti gli altri eroi in piedi lo colpiscono subito (fuori turno, BREAK_TEAM_MULT).
+# Evento {"t": "team_strike", "unit": chi ha rotto}: battle3d ci mette il fermo immagine di Echo.
+static func _team_strike(state: Dictionary, breaker: Dictionary, events: Array) -> void:
+	var broke: bool = false
+	for e in events:
+		if str(e.get("t", "")) == "break":
+			broke = true
+	var boss: Dictionary = BattleState.boss(state)
+	if not broke or BattleTypes.BREAK_TEAM_MULT <= 0.0 or not BattleState.is_alive(boss) or str(state["winner"]) != "":
+		return
+	events.append({"t": "team_strike", "unit": str(breaker["id"])})
+	for p in BattleState.alive_players(state):
+		var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+		if str(u["id"]) == str(breaker["id"]) or not BattleState.is_alive(u) or not BattleState.is_alive(boss):
+			continue
+		BattleResolver._hit(state, u, boss, BattleTypes.BREAK_TEAM_MULT, events)
+	BattleResolver._check_winner(state, events)
+
+
+# SLANCIO: chi colpisce il boss col colore vincente guadagna mezzo turno: subito dopo agisce ancora, ma solo con Attacco o Guardia.
+# Al massimo una volta per round per tutta la squadra. Evento {"t": "slancio", "unit", "player"}: chi guida i turni (battle3d, sim)
+# inserisce l'azione rapida subito dopo (chiamando player_action con quick = true).
+static func _check_slancio(state: Dictionary, actor: Dictionary, events: Array) -> void:
+	if not BattleTypes.SLANCIO_ON or bool(state["seq"].get("slancio", false)) or str(state["winner"]) != "":
+		return
+	var boss: Dictionary = BattleState.boss(state)
+	if not BattleState.is_alive(boss) or not BattleState.is_alive(actor):
+		return
+	if BattleTypes.color_multiplier(str(actor["color"]), str(boss["color"])) <= 1.0:
+		return
+	for e in events:
+		if str(e.get("t", "")) == "damage" and str(e.get("src", "")) == str(actor["id"]) and str(e.get("dst", "")) == str(boss["id"]) and int(e.get("amount", 0)) > 0:
+			state["seq"]["slancio"] = true
+			events.append({"t": "slancio", "unit": str(actor["id"]), "player": BattleState.slot_of(state, str(actor["id"]))})
+			return
 
 
 # Turno del boss: la mossa e' quella annunciata (telegraph) all'inizio del round.

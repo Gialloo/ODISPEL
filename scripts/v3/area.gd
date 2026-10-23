@@ -893,6 +893,7 @@ func _boss_battle(ingresso: String) -> void:
 
 
 func _go_battle(args: Dictionary) -> void:
+	args["replica"] = Story.replica()
 	Story.save()        # se l'app si chiude in battaglia si riprende davanti al nemico, non dall'inizio dell'area
 	_shake = 0.8
 	Settings.buzz(80)

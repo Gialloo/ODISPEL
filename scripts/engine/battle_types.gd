@@ -50,12 +50,12 @@ const LINK_GAUGE: int = 12         # ultimate caricata a entrambi quando si lega
 
 const BLEED_FRACTION: float = 0.04
 const GUARD_FACTOR: float = 0.5
-const ENRAGE_BONUS: float = 1.25
+const ENRAGE_BONUS: float = 1.5
 const ENRAGE_BELOW: float = 0.5
-const HUNTER_BONUS: float = 1.2
+const HUNTER_BONUS: float = 1.1
 const RHYTHM_BONUS: float = 1.1        # RITMO: danno in piu' se cambi mossa rispetto al round prima
 # EQUILIBRIO del boss (rottura): i colpi lo consumano; a zero il boss e' STORDITO, perde la mossa annunciata e prende piu' danno.
-const BREAK_BASE: float = 8.0
+const BREAK_BASE: float = 22.0
 const BREAK_PER_PLAYER: float = 3.0
 const BREAK_PER_TIER: int = 3
 const BREAK_PER_PHASE: int = 2
@@ -65,6 +65,17 @@ const BREAK_DISADV: int = 1
 const BREAK_MARKED: int = 1            # il boss e' marchiato: ogni colpo rompe di piu' (chi marchia prepara, chi colpisce rompe)
 const BREAK_HEAVY: int = 1             # colpo pesante (moltiplicatore >= 2)
 const BREAK_DAMAGE: float = 1.25       # danno extra sul boss stordito
+# SCALA DEL NEMICO NELLA STORIA (la squadra sale di livello, il nemico cresce con lei): usata da battle3d.gd e da tools/v3_bilancio.gd
+const REPLICA_K: float = 0.15             # Replica della diretta: +15% PV e attacco dei nemici per ogni giro dopo il primo
+const STORY_HP_BOSS: float = 3.0          # PV del boss rispetto al motore
+const STORY_HP_MINOR: float = 1.5         # PV di un nemico minore (frammento)
+const STORY_ATK_K: float = 2.5            # attacco di tutti i nemici della storia
+const STORY_HP_PER_LEVEL: float = 0.14    # +14% PV per livello sopra il primo
+const STORY_ATK_PER_LEVEL: float = 0.24   # +24% attacco per livello sopra il primo
+const SLANCIO_ON: bool = true             # colpo col colore vincente = azione rapida subito dopo (una volta a round, squadra)
+const BREAK_TEAM_MULT: float = 0.6         # attacco di squadra alla rottura: colpo di ogni altro eroe (0 = spento)
+const BREAK_RECOVER: float = 0.75       # frazione della barra con cui il boss si riprende dopo una rottura (1 = piena)
+const BREAK_REGEN: int = 1             # equilibrio recuperato a fine round se non e' stato rotto
 # SINERGIE tra compagni nello stesso round
 const SYN_COVER: float = 1.12         # COPERTURA: un compagno ha scudato/curato/provocato prima, il tuo colpo fa di piu'
 const SYN_TRACE_GAUGE: int = 10       # TRACCIA: colpisci un boss marchiato da un altro: ultimate +10 a te, +5 a chi ha marchiato
@@ -78,6 +89,15 @@ const PHASE_GAUGE: int = 25            # carica ultimate regalata alla squadra a
 
 const ACTION_ATTACK: String = "attack"
 const ACTION_GUARD: String = "guard"
+
+
+# SECONDO PUNTO DEBOLE (boss gialli): la ruota dei colori resta com'e'; in piu' il boss ha un secondo colore che lo ferisce (+25% danno).
+const WEAK2_MULT: float = 1.25
+
+# Il colpo di `attacker` colpisce il secondo punto debole di `defender` (solo boss con "weak2", e solo se la ruota non gia' favorisce)?
+static func hits_weak2(attacker: Dictionary, defender: Dictionary) -> bool:
+	var w2: String = str(defender.get("weak2", ""))
+	return w2 != "" and str(attacker.get("color", "")) == w2 and color_multiplier(str(attacker["color"]), str(defender["color"])) <= 1.0
 
 
 static func color_multiplier(attacker_color: String, defender_color: String) -> float:

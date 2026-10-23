@@ -1,5 +1,14 @@
 # Novità
 
+## 0.34.0 · combattimento con più tensione, Replica della diretta
+- **Il boss gioca davvero**: barra di equilibrio più lunga e recupero dopo la rottura, quindi gioca il doppio dei turni. A metà PV entra in **FASE 2** con una Furia da leggere e fermare.
+- **Reazioni con la Riserva**: quando il boss carica un colpo compaiono SCHIVA, COPRI, FERMA e SOCCORRI. Con la barra piena l'**Ultimate si lancia anche fuori turno**.
+- **SLANCIO**: colpire il boss col colore vincente regala mezzo turno, una volta per round. La ruota dei colori è sempre visibile in alto a destra.
+- **Fermo immagine**: alla rottura la squadra attacca insieme e la telecamera di Echo congela la scena (si salta con un tap).
+- **Ruoli più chiari**: Saul resta il più letale ma non da solo; la Veglia di Nox scatta e il suo caffè dà scudo ed energia a tutti. Impulso dà il nome a combo, rottura e riposo; i boss gialli hanno un secondo punto debole; la diretta di Rio si vede nella telecamera.
+- **Replica della diretta**: a fine atto si rigioca con i legami già stretti, le scelte da rifare e nemici più duri a ogni giro.
+- **Telefono**: le impostazioni (dal menu e dalla pausa) ora stanno intere sullo schermo; avvisi in battaglia più corti.
+
 ## 0.33.2 · kit dei personaggi, battute più secche, aggiornare è più semplice
 - **Ogni personaggio combatte a modo suo** (kit presi da archetipo, oggetto e fazione). Lance protegge: Copertura prende il colpo diretto a un compagno, il Braccio della Legge spezza l'equilibrio. Saul sfrutta l'occasione: Testa o croce (testa critico, croce energia a un compagno) e Il colpo grosso, che ruba lo scudo del nemico. Rio fa spettacolo: Inquadratura e Gran finale crescono con l'Hype. Nox evita la fatica inutile: Pausa caffè cura chi serve o la fa riposare, Rispondo io rialza un compagno KO. Ognuno ha anche un tratto passivo, scritto in battaglia.
 - **Effetti visivi nuovi**: pennellate di luce del colore di chi colpisce su Abilità e Ultimate, scintille d'impatto, un cerchio di luce sotto chi è di turno e due fotogrammi al buio prima dell'Ultimate. La cupola magenta resta in cielo per tutto l'atto, le esplorazioni si vedono dal mirino delle telecamere di Echo (dentro le Anomalie «NESSUN SEGNALE») e la maschera di Rio resta incrinata dal capitolo 3 in poi.

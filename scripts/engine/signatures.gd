@@ -220,10 +220,10 @@ const MOVES: Dictionary = {
 		"bonus": {"stat": "atk", "pct": 20}, "unique": "ferri",
 		"desc": "Via il guanto: colpo pesante che toglie quasi tutto l'equilibrio del nemico."},
 	# Saul sfrutta: la fortuna, l'occasione, quello che hanno gli altri.
-	"u_saul_a": {"name": "Testa o croce", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.4, "kit": "coin",
+	"u_saul_a": {"name": "Testa o croce", "kind": "skill", "cost": 2, "priority": 0, "target": "enemy", "mult": 1.25, "kit": "coin",
 		"bonus": {"stat": "atk", "pct": 15}, "unique": "saul",
 		"desc": "Lancia la moneta. Testa: critico sicuro. Croce: passa 2 energia al compagno che ne ha meno."},
-	"u_saul_ult": {"name": "Il colpo grosso", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 3.8, "pierce": 30, "kit": "heist",
+	"u_saul_ult": {"name": "Il colpo grosso", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 3.4, "pierce": 30, "kit": "heist",
 		"bonus": {"stat": "crit", "pct": 20}, "unique": "saul",
 		"desc": "Ruba lo scudo del nemico e lo divide con la squadra. Se non ha scudi, colpisce più forte."},
 	# Rio spettacolarizza: piu' pubblico ha, piu' fa.
@@ -236,7 +236,7 @@ const MOVES: Dictionary = {
 	# Nox evita il lavoro inutile: cura quando serve, altrimenti si riposa.
 	"u_nox_a": {"name": "Pausa caffè", "kind": "skill", "cost": 2, "priority": 0, "target": "ally", "heal": 1.6, "kit": "coffee",
 		"bonus": {"stat": "max_hp", "pct": 6}, "unique": "nox",
-		"desc": "Cura il compagno più ferito e gli dà 1 energia. Se stanno tutti bene, Nox si riposa e il round dopo agisce due volte."},
+		"desc": "Cura il compagno più ferito e gli dà 1 energia. Se stanno tutti bene, offre il caffè: scudo e 1 energia a tutti, e il round dopo agisce due volte."},
 	"u_nox_ult": {"name": "Rispondo io", "kind": "ult", "cost": 0, "priority": 1, "target": "self", "kit": "answer", "unique": "nox",
 		"desc": "Rimette in piedi un compagno KO. Se sono tutti in piedi, annulla il prossimo colpo del nemico."},
 }

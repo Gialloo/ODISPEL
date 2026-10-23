@@ -23,7 +23,8 @@ func _ready() -> void:
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER
 	Ui.place(vb, 0.1, 0.08, 0.9, 0.92)
 	add_child(vb)
-	vb.add_child(Ui.label("FINE DELL'ATTO 1", 56, Ui.YELLOW, Ui.display(), 10))
+	var rep: int = Story.replica()
+	vb.add_child(Ui.label("FINE DELL'ATTO 1" + (" · REPLICA %d" % rep if rep > 0 else ""), 44 if rep > 0 else 56, Ui.YELLOW, Ui.display(), 10))
 	vb.add_child(Ui.label("Grazie per aver giocato. Dimmi cosa correggere: ritmo, battute, combattimenti, cosa ti ha annoiato.", 22, Ui.CREAM))
 	var bonds: Array = []
 	for bd in Story.active_bonds():
@@ -54,6 +55,12 @@ func _ready() -> void:
 		Story.new_game()
 		get_parent().next_story())
 	hb.add_child(b2)
+	var b3 := Ui.button("REPLICA DELLA DIRETTA", Ui.PINK, 24, 380)
+	b3.pressed.connect(func() -> void:
+		Story.new_replica()
+		get_parent().next_story())
+	hb.add_child(b3)
+	vb.add_child(Ui.label("Rigiochi l'atto coi legami stretti, scelte da rifare, nemici più duri.", 20, Ui.CREAM))
 
 
 func back() -> void:
