@@ -1590,7 +1590,8 @@ func _toast(text: String, col: Color, sec: float) -> void:
 	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t) and (t as Label).modulate.a > 0.05)
 	var row: int = _toasts.size()
 	var l := Ui.label(text, 26, col, Ui.display(), 10)
-	Ui.place(l, 0.5, 0.3, 0.5, 0.3, -560, 48 * row, 560, 80 + 48 * row)
+	# resta nella fascia centrale (20%-60% della larghezza): il blocco descrizioni a destra non viene mai coperto, il testo lungo va a capo
+	Ui.place(l, 0.2, 0.3, 0.6, 0.3, 0, 84 * row, 0, 120 + 84 * row)
 	_toasts.append(l)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
