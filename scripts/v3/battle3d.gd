@@ -1352,7 +1352,45 @@ func _make_card() -> Dictionary:
 	vb.add_child(en)
 	var ult := _bar(Ui.PINK, 10)
 	vb.add_child(ult)
-	return {"panel": p, "name": name_l, "hp": hp, "hp_t": hp_t, "en": en, "ult": ult}
+	# crepe leggere: si ridisegnano solo quando la card cambia livello (50% / 25% dei PV)
+	var cracks := Control.new()
+	cracks.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cracks.set_meta("tier", 0)
+	cracks.draw.connect(func() -> void: _draw_cracks(cracks))
+	p.add_child(cracks)
+	return {"panel": p, "name": name_l, "hp": hp, "hp_t": hp_t, "en": en, "ult": ult, "cracks": cracks, "tier": 0}
+
+
+const CRACKS_1: Array = [[Vector2(0.78, 0.0), Vector2(0.72, 0.18), Vector2(0.80, 0.34), Vector2(0.74, 0.5)],
+	[Vector2(0.72, 0.18), Vector2(0.6, 0.26)]]
+const CRACKS_2: Array = [[Vector2(0.2, 1.0), Vector2(0.28, 0.82), Vector2(0.22, 0.66), Vector2(0.32, 0.5)],
+	[Vector2(0.28, 0.82), Vector2(0.42, 0.78)], [Vector2(1.0, 0.7), Vector2(0.86, 0.62), Vector2(0.9, 0.46)],
+	[Vector2(0.5, 0.0), Vector2(0.46, 0.14)]]
+
+
+func _draw_cracks(c: Control) -> void:
+	var tr: int = int(c.get_meta("tier", 0))
+	if tr <= 0:
+		return
+	var sz: Vector2 = c.size
+	var lines: Array = CRACKS_1 if tr == 1 else CRACKS_1 + CRACKS_2
+	for ln in lines:
+		var pts := PackedVector2Array()
+		for q in ln:
+			pts.append((q as Vector2) * sz)
+		c.draw_polyline(pts, Color(1, 1, 1, 0.5), 2.0)
+
+
+# Barra PV della card: verde sopra il 50%, gialla sotto, rossa sotto il 25%; le crepe seguono lo stesso livello
+func _card_tier(c: Dictionary, ratio: float) -> void:
+	var tr: int = BrokenCam.tier(ratio)
+	if tr == int(c["tier"]):
+		return
+	c["tier"] = tr
+	var fill: StyleBoxFlat = (c["hp"] as ProgressBar).get_theme_stylebox("fill") as StyleBoxFlat
+	fill.bg_color = [Color("#62f08c"), Color("#ffd23f"), Color("#ff4a5a")][tr]
+	(c["cracks"] as Control).set_meta("tier", tr)
+	(c["cracks"] as Control).queue_redraw()
 
 
 func _show_commands(on: bool) -> void:
@@ -1435,6 +1473,7 @@ func _refresh_hud() -> void:
 		(c["name"] as Label).add_theme_color_override("font_color", col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
+		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])))
 		(c["hp_t"] as Label).text = "PV %d/%d" % [int(u["hp"]), int(u["max_hp"])]
 		var en: int = int(u.get("energy", 0))
 		(c["en"] as Label).text = "ENERGIA %d/%d" % [en, BattleTypes.MAX_ENERGY]
