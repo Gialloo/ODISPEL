@@ -114,6 +114,9 @@ var _reticle: Reticle                    # mirino sul nemico quando tocca al gio
 var _pop_key: String = ""               # ultimo turno annunciato con lo scatto (evita di rifarlo a ogni aggiornamento)
 var _pop_tw: Tween
 var _kit_lbl: Label                   # cosa fa l'Abilita' di chi e' di turno e il suo tratto
+var _wheel: CmdWheel                  # ruota dei comandi attorno a chi e' di turno (HUD della V2)
+var _spot: ColorRect                  # riflettore: la scena si scurisce attorno a chi sceglie
+var _picked: String = ""              # comando scelto e non ancora confermato
 var _cutin: Control
 var _cutin_on: bool = false               # cut-in dell'ultimate in corso (si salta con un tocco)
 var _cutin_tw: Tween
@@ -436,6 +439,14 @@ func _cam_actor(uid: String) -> void:
 	_cam_set(p + Vector3(side * 0.55, 2.05, 3.2), ENEMY_POS + Vector3(-side * 0.3, 1.25, 0), 3.2)
 
 
+# Mentre si sceglie: tre quarti alle spalle, chi e' di turno grande a sinistra e il nemico a destra, spazio attorno per la ruota.
+# close = ULTIMATE scelta: la telecamera si stringe sul personaggio.
+func _cam_choose(uid: String, close: bool = false) -> void:
+	var p: Vector3 = home[uid]
+	var k: float = 0.82 if close else 1.0
+	_cam_set(p + Vector3(1.55 * k, 1.5 + 0.15 * k, 2.7 * k), ENEMY_POS + Vector3(1.6, 1.1 if not close else 1.3, 0), 5.0 if not close else 2.6)
+
+
 func _cam_side(a: Vector3, bpos: Vector3) -> void:
 	var mid: Vector3 = (a + bpos) * 0.5
 	var side: float = 1.0 if a.x >= 0.0 else -1.0
@@ -462,6 +473,7 @@ func _process(delta: float) -> void:
 		var bp: Vector3 = (vis[BattleState.BOSS_ID] as Node).call("chest_point")
 		if not cam.is_position_behind(bp):
 			_reticle.position = cam.unproject_position(bp)
+	_update_wheel()
 	_cam_pos = _cam_pos.lerp(_cam_want_pos, minf(1.0, rd * _cam_rate))
 	_cam_look = _cam_look.lerp(_cam_want_look, minf(1.0, rd * _cam_rate))
 	var sh := Vector3.ZERO
@@ -478,6 +490,40 @@ func _process(delta: float) -> void:
 	cam.position = _cam_pos + sh
 	if cam.position.distance_to(_cam_look) > 0.01:
 		cam.look_at(_cam_look, Vector3.UP)
+
+
+# La ruota segue il petto di chi e' di turno (la telecamera si muove); il riflettore lo tiene in luce mentre sceglie
+func _update_wheel() -> void:
+	if _wheel == null or _spot == null:
+		return
+	var e: float = smoothstep(0.0, 1.0, _wheel.sel) if _wheel.visible else 0.0
+	var uid: String = str(_unit_of(cur_pid).get("id", "")) if cur_pid != "" else ""
+	if _wheel.visible and vis.has(uid):
+		var cv: Node3D = vis[uid]
+		var head: Vector3 = cv.call("head_point")
+		var feet: Vector3 = cv.global_position
+		if not cam.is_position_behind(head):
+			var ph: Vector2 = cam.unproject_position(head + Vector3(0, 0.25, 0))
+			var pf: Vector2 = cam.unproject_position(feet)
+			var hgt: float = maxf(120.0, pf.y - ph.y)
+			var vs: Vector2 = _wheel.size if _wheel.size.x > 1.0 else get_viewport().get_visible_rect().size
+			_wheel.ry = clampf(hgt * 0.56, 150.0, 230.0)
+			_wheel.rx = _wheel.ry * 0.9
+			var c: Vector2 = Vector2(ph.x, lerpf(ph.y, pf.y, 0.45))
+			# la ruota resta dentro lo schermo (le etichette escono di lato: margine piu' largo a destra)
+			c.x = clampf(c.x, _wheel.rx + 120.0, vs.x - _wheel.rx - 360.0)
+			c.y = clampf(c.y, _wheel.ry + 60.0, vs.y - _wheel.ry - 40.0)
+			_wheel.center = _wheel.center.lerp(c, 0.35) if _wheel.appear > 0.05 else c
+			var m: ShaderMaterial = _spot.material
+			m.set_shader_parameter("c", Vector2(ph.x, lerpf(ph.y, pf.y, 0.5)) / vs)
+			m.set_shader_parameter("r", Vector2(hgt * 0.42, hgt * 0.62) / vs)
+	_spot.visible = e > 0.01
+	if _spot.visible:
+		var ult: bool = _picked == "ult"
+		var m2: ShaderMaterial = _spot.material
+		m2.set_shader_parameter("k", (0.86 if ult else 0.55) * e)
+		m2.set_shader_parameter("aura", (0.9 if ult else 0.35) * e * (0.85 + 0.15 * sin(Time.get_ticks_msec() * 0.008)))
+		m2.set_shader_parameter("tint", _col(_unit_of(cur_pid)))
 
 
 func _kick(amount: float) -> void:
@@ -584,6 +630,7 @@ func _advance() -> void:
 			if not is_inside_tree() or ended:
 				return
 		waiting = true
+		_cam_choose(uid)
 		_show_commands(true)
 		if first_turn:
 			first_turn = false
@@ -1650,8 +1697,14 @@ func _build_ui() -> void:
 	Ui.place(_fx_layer, 0, 0, 1, 1)
 	_fx_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_fx_layer)
+	_spot = CmdWheel.make_spot()
+	_fx_layer.add_child(_spot)
 	_reticle = Reticle.new()
 	_fx_layer.add_child(_reticle)
+	_wheel = CmdWheel.new()
+	_wheel.visible = false
+	_wheel.tapped.connect(_wheel_tap)
+	_fx_layer.add_child(_wheel)
 
 	# ordine dei turni (sinistra)
 	var ob := PanelContainer.new()
@@ -1697,10 +1750,13 @@ func _build_ui() -> void:
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bp.add_child(_tele)
 
-	# squadra (basso a sinistra)
-	var party := HBoxContainer.new()
-	Ui.place(party, 0, 1.0, 0, 1.0, 16, -150, 760, -14)
-	party.add_theme_constant_override("separation", 8)
+	# squadra (basso a destra, righe compatte come nella V2): il centro e il lato sinistro restano alla scena e alla ruota
+	var party := VBoxContainer.new()
+	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -440, -280, -16, -14)
+	party.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	party.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	party.alignment = BoxContainer.ALIGNMENT_END
+	party.add_theme_constant_override("separation", 5)
 	party.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(party)
 	for i in slots.size():
@@ -1711,7 +1767,7 @@ func _build_ui() -> void:
 
 	# comandi (basso a destra)
 	_cmd_box = VBoxContainer.new()
-	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -330, -16, -14)
+	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -580, -16, -290)
 	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
 	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
 	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -1767,6 +1823,9 @@ func _build_ui() -> void:
 	_btn_atk.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_btn_atk.size_flags_stretch_ratio = 1.6
 	row.add_child(_btn_atk)
+	# i quattro comandi ora stanno sulla ruota attorno al personaggio: i bottoni restano (stato, tastiera) ma non si vedono
+	for bt in [_btn_ult, _btn_skill, _btn_guard, _btn_atk]:
+		(bt as Control).visible = false
 	_show_commands(false)
 
 	_turn_lbl = Ui.label("", 30, Ui.CREAM, Ui.display(), 10)
@@ -1781,8 +1840,9 @@ func _build_ui() -> void:
 	_kit_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_kit_lbl)
 	_hint = Ui.label("", 24, Ui.CREAM, null, 8)
-	Ui.place(_hint, 0.5, 0.62, 0.5, 0.62, -290, 0, 270, 60)
-	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# a sinistra sotto i TURNI: il centro resta alla scena e alla ruota dei comandi
+	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 16, 262, 470, 262)
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(_hint)
 
@@ -1882,22 +1942,33 @@ func _bar(col: Color, h: float) -> ProgressBar:
 
 
 func _make_card() -> Dictionary:
+	# riga compatta: nome e PV a sinistra, barre ed energia a destra
 	var p := PanelContainer.new()
-	p.custom_minimum_size = Vector2(176, 0)
+	p.custom_minimum_size = Vector2(420, 0)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.add_child(row)
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 0)
+	left.custom_minimum_size = Vector2(190, 0)
+	row.add_child(left)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 3)
-	vb.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.add_child(vb)
-	var name_l := Ui.label("", 22, Ui.CREAM, Ui.display(), 6)
-	vb.add_child(name_l)
-	var hp := _bar(Color("#62f08c"), 16)
+	vb.add_theme_constant_override("separation", 2)
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_child(vb)
+	var name_l := Ui.label("", 19, Ui.CREAM, Ui.display(), 6)
+	name_l.clip_text = true
+	left.add_child(name_l)
+	var hp_t := Ui.label("", 18, Ui.CREAM, null, 4)
+	left.add_child(hp_t)
+	var hp := _bar(Color("#62f08c"), 12)
 	vb.add_child(hp)
-	var hp_t := Ui.label("", 20, Ui.CREAM, null, 4)
-	vb.add_child(hp_t)
-	var en := Ui.label("", 21, Ui.CYAN, null, 4)
+	var en := Ui.label("", 16, Ui.CYAN, null, 4)
 	vb.add_child(en)
-	var ult := _bar(Ui.PINK, 10)
+	var ult := _bar(Ui.PINK, 8)
 	vb.add_child(ult)
 	# crepe leggere: si ridisegnano solo quando la card cambia livello (50% / 25% dei PV)
 	var cracks := Control.new()
@@ -2007,8 +2078,13 @@ func _show_commands(on: bool) -> void:
 		return
 	_cmd_box.visible = on
 	if _kit_lbl != null:
-		_kit_lbl.visible = on
+		_kit_lbl.visible = false     # cosa fa ogni comando ora sta nel riquadro della scelta, sulla ruota
+	if _wheel != null:
+		_wheel.visible = on
+	if _turn_lbl != null:
+		_turn_lbl.visible = not on         # il nome di chi e' di turno sta sotto la ruota
 	if not on:
+		_pick("")
 		if _reticle != null and not _confirming:
 			_reticle.visible = false
 		_pop_key = ""
@@ -2045,6 +2121,73 @@ func _show_commands(on: bool) -> void:
 		if hl != "":
 			lines.insert(0, hl)
 	_kit_lbl.text = "\n".join(lines)
+	_fill_wheel(u, sk, skm, um, ult_ok, lines)
+
+
+# Dati della ruota: nome, sottotitolo, costo e descrizione di ogni comando, nel colore di chi e' di turno
+func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult_ok: bool, kit_lines: Array) -> void:
+	if _wheel == null:
+		return
+	var sk_name: String = str(skm.get("name", "Abilità")).to_upper()
+	var letter: String = sk_name.substr(0, 1)
+	if letter in ["A", "U", "G", ""]:
+		letter = "S"
+	var tip: String = ""
+	if not kit_lines.is_empty() and (_boss_known or not weak.is_empty()):
+		tip = "\n" + str(kit_lines[0])
+	var en: int = int(u.get("energy", 0))
+	var items: Array = [
+		{"kind": "attack", "name": "ATTACCO", "sub": "COLPO BASE", "cost": "", "ok": _usable("attack"), "letter": "A",
+			"title": "ATTACCO", "desc": "Colpo al nemico · non costa energia" + tip},
+		{"kind": "skill", "name": sk_name, "sub": "ABILITÀ", "cost": "%d/%d EN" % [int(skm.get("cost", 0)), en], "ok": _usable(sk), "letter": letter,
+			"title": sk_name, "desc": str(skm.get("desc", "")) + tip},
+		{"kind": "ult", "name": "ULTIMATE", "sub": str(um.get("name", "COLPO FINALE")).to_upper() if ult_ok else "COLPO FINALE", "cost": "PRONTA" if ult_ok else "%d%%" % int(u.get("gauge", 0)),
+			"ok": ult_ok, "letter": "U", "title": "ULTIMATE · " + str(um.get("name", "")).to_upper(), "desc": str(um.get("desc", "")) + tip},
+		{"kind": "guard", "name": "GUARDIA", "sub": "DIFESA", "cost": "+1 EN", "ok": _usable("guard"), "letter": "G",
+			"title": "GUARDIA", "desc": "Dimezza il danno e ricarica energia"},
+	]
+	_wheel.setup(str(u.get("name", "")).to_upper() + (" · RAPIDO" if _quick else ""), _col(u), items)
+
+
+# Scegliere un comando non lo lancia: si accende (pennellata in luce, scena scura attorno al personaggio) e mostra cosa fa.
+# Toccarlo di nuovo o CONFERMA lo lancia. "" = nessuna scelta.
+func _pick(kind: String) -> void:
+	if kind != "" and (not waiting or ended or _pause != null):
+		return
+	if kind != "" and _wheel != null:
+		var it: Dictionary = _wheel.item(kind)
+		if not bool(it.get("ok", false)):
+			Settings.buzz(10)
+			return
+	var was: String = _picked
+	_picked = kind
+	if _hint != null:
+		_hint.modulate.a = 0.0 if kind != "" else 1.0      # sotto la scelta si legge solo il suo riquadro
+	if _wheel != null:
+		_wheel.pick(kind)
+	if kind != "" and kind != was:
+		Settings.buzz(30 if kind == "ult" else 12)
+	# ULTIMATE: la telecamera stringe sul personaggio, che resta in luce
+	if cur_pid != "" and waiting:
+		var uid: String = str(_unit_of(cur_pid).get("id", ""))
+		if kind == "ult" and was != "ult":
+			_cam_choose(uid, true)
+		elif kind != "ult" and was == "ult":
+			_cam_choose(uid)
+
+
+func _wheel_tap(kind: String) -> void:
+	match kind:
+		"confirm":
+			if _picked != "":
+				_command(_picked)
+		"cancel":
+			_pick("")
+		_:
+			if kind == _picked:
+				_command(kind)
+			else:
+				_pick(kind)
 
 
 # Una catena della ruota dei colori: quadratini del colore e il segno tra l'uno e l'altro (">" batte, "<>" si battono a vicenda)
@@ -2219,9 +2362,9 @@ func _refresh_hud() -> void:
 		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])))
 		(c["hp_t"] as Label).text = "PV %d/%d" % [int(u["hp"]), int(u["max_hp"])]
 		var en: int = int(u.get("energy", 0))
-		(c["en"] as Label).text = "ENERGIA %d/%d" % [en, BattleTypes.MAX_ENERGY]
+		(c["en"] as Label).text = "EN %d/%d" % [en, BattleTypes.MAX_ENERGY]
 		if Kits.is_char(u, Kits.RIO):
-			(c["en"] as Label).text += "  ·  HYPE %d" % int(u.get("hype", 0))
+			(c["en"] as Label).text += " · HYPE %d" % int(u.get("hype", 0))
 		(c["ult"] as ProgressBar).max_value = BattleTypes.GAUGE_MAX
 		(c["ult"] as ProgressBar).value = int(u.get("gauge", 0))
 	# ordine dei turni rimasti in questo round. PRESTAZIONI: le righe si riusano (prima si buttavano e ricreavano tutte
@@ -2562,19 +2705,21 @@ func _unhandled_input(event: InputEvent) -> void:
 					_close_pause()
 				else:
 					_open_pause()
-			KEY_1, KEY_SPACE, KEY_ENTER:
-				_command("attack")
+			KEY_SPACE, KEY_ENTER:
+				_wheel_tap(_picked if _picked != "" else "attack")
+			KEY_1:
+				_wheel_tap("attack")
 			KEY_2:
-				_command("skill")
+				_wheel_tap("skill")
 			KEY_3:
-				_command("ult")
+				_wheel_tap("ult")
 			KEY_R:
 				for rid in ["interruzione", "schivata", "intercettazione", "soccorso"]:
 					if _usable(rid) and (_react_btns[rid] as Button).visible:
 						_react_cmd(rid)
 						break
 			KEY_4:
-				_command("guard")
+				_wheel_tap("guard")
 
 
 func back() -> void:
