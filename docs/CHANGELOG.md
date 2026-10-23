@@ -1,5 +1,16 @@
 # Novità
 
+## 0.35.0 · tutorial, livelli e menu SQUADRA, reazioni nuove
+- **Tutorial di combattimento**: la prima battaglia in strada (e la voce TUTORIAL nel menu) spiega una cosa alla volta, quando serve: attacco, guardia, abilità, il colpo annunciato, la guardia a tempo, le reazioni, la rottura, l'Ultimate e il resto. Lo raccontano Echo e la squadra, con le loro battute.
+- **Livelli ed esperienza**: ogni scontro, piccolo o boss, dà esperienza. A fine battaglia le barre si riempiono e si sale di livello in automatico, come in Persona 5, con gli sblocchi scritti sotto (abilità, Ultimate, reazioni, tratti e sinergie a coppie).
+- **Menu SQUADRA** nella pausa (Rio si mette al centro): i quattro a sinistra, a destra statistiche e cinque spazi da equipaggiare. Le modifiche fatte in battaglia valgono dal prossimo scontro.
+- **Reazioni con quattro minigiochi**: SCHIVA (tocca il lato della freccia), COPRI (tieni premuto e lascia nella fascia), FERMA (tocca a raffica), SOCCORRI (tocca col battito del cuore). Riuscita vale di più, sbagliata vale meno ma funziona lo stesso.
+- **Attacco di squadra leggibile**: ROTTURA!, poi la cornice REC con i nomi della squadra in basso; ognuno entra e colpisce a turno con il suo numero, e alla fine il totale dei danni. Un tocco lo accorcia.
+- **Saul ladro gentiluomo**: Mano lesta ruba lo scudo del nemico; poi si sbloccano Tasche piene (più esperienza per tutti), Il trucco del mago (ruba una mossa al nemico, per sempre: la può equipaggiare chiunque) e Il colpo del secolo. Più danno di base.
+- **Nox cura davvero**: Pausa caffè cura molto di più e anche il secondo ferito; si sbloccano Camomilla (cura tutti) e Turno doppio.
+- **Correzioni**: l'Ultimate lanciata fuori turno che mandava KO il nemico bloccava la partita (ora arriva la vittoria); nei vicoli stretti la telecamera non finisce più dentro i muri.
+- **Prestazioni**: meno lavoro per ogni fotogramma negli attacchi di squadra (caratteri precaricati, cerchi e pannelli riusati).
+
 ## 0.34.1 · il pulsante di aggiornamento compare davvero
 - **Aggiornamenti**: il gioco legge la nuova versione dal repository pubblico, perché la pagina itch protetta da password non la comunicava. Da questa versione in poi il pulsante verde AGGIORNA compare da solo nel menu.
 

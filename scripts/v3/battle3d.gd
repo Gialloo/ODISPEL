@@ -39,6 +39,10 @@ var _pinched: bool = false                # il FOV e' stretto dalla scossa: va r
 var _boss_known: bool = false             # il giocatore conosce il colore del boss (indizio o primo colpo)
 var ritorno: Dictionary = {}             # dove tornare: area (nemico minore), storia (boss), niente = demo dal menu
 var minore: bool = false
+var tutorial: bool = false            # primo scontro della storia (o TUTORIAL dal menu): Echo e la squadra spiegano ogni meccanica
+var _tut_done: Dictionary = {}        # spiegazioni gia' date
+var _tut_dlg: DialogBox = null        # spiegazione aperta (le prove automatiche la saltano)
+var _tut_turns: int = 0               # turni del giocatore visti nel tutorial
 var _args: Dictionary = {}
 var _round1: bool = true
 var b: Dictionary = {}
@@ -95,6 +99,8 @@ var _react_hint_seen: bool = false
 var _live_btns: Array = []            # ULTIMATE IN DIRETTA: un pulsante per compagno con la barra piena (fuori turno, durante una carica)
 var _freeze_on: bool = false            # fermo immagine di Echo in corso (si salta con un tocco)
 var _freeze_skip: bool = false
+var _team_on: bool = false              # sequenza dell'attacco di squadra in corso (un tocco la accorcia)
+var _team_follow: bool = false          # gli eventi mostrati ora sono seguiti dall'attacco di squadra
 var _live_back: String = ""             # chi stava scegliendo quando e' partita un'Ultimate in diretta
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
@@ -114,6 +120,10 @@ var _mark: LightFx                    # segnalino ai piedi del bersaglio annunci
 var _mark_uid: String = ""
 var _boss_acting: bool = false        # il boss sta agendo: il segnalino resta spento
 var _seal: LightFx                    # sigillo magenta sotto l'Anomalia
+var _syn_msgs: Array = []             # sinergie attive (menu SQUADRA), annunciate all'inizio
+var _exp_report: Array = []           # esperienza e livelli guadagnati (fine scontro)
+var _cam_lim: float = 99.0            # quanto la telecamera puo' allontanarsi di lato (vicoli e caveau: i muri sono vicini)
+var _row_k: float = 1.0               # la fila della squadra si stringe nelle arene strette
 
 
 func configure(args: Dictionary) -> void:
@@ -136,6 +146,11 @@ func configure(args: Dictionary) -> void:
 		weak = weak + ["VIOLA"]
 	ritorno = args.get("ritorno", {})
 	minore = bool(args.get("minore", false))
+	tutorial = bool(args.get("tutorial", false))
+	if tutorial:
+		# TUTORIAL: nemico che picchia piano e dura abbastanza da mostrare tutto (le spiegazioni arrivano quando serve)
+		atk_k *= 0.5
+		pv_k *= 2.2
 
 
 func crumb() -> String:
@@ -167,6 +182,7 @@ func _ready() -> void:
 	cam.current = true
 	_cam_overview(true)
 	_build_ui()
+	_warm_fonts()
 	_refresh_hud()
 	Breadcrumb.mark("battaglia")
 	await get_tree().create_timer(0.6).timeout
@@ -184,12 +200,17 @@ func _ready() -> void:
 		msgs.append(["INDIZIO: %s teme il %s. Fai colpire %s." % [_bn(), str(weak[0]), _who_is(str(weak[0]))], Ui.CYAN])
 	for bd in bonds:
 		msgs.append(["LEGAME · %s: +5%% attacco a entrambi" % str(bd.get("nome", "")), Ui.PINK])
+	for sm in _syn_msgs:
+		msgs.append([str(sm), Ui.YELLOW])
 	var delay: float = 3.4 if ingresso != "normale" else 0.0
 	for m in msgs:
 		get_tree().create_timer(delay).timeout.connect(func() -> void:
 			if is_inside_tree():
 				_toast(str(m[0]), m[1], 2.8))
 		delay += 3.0
+	if tutorial:
+		await _tut("tut_intro")
+		await _tut("tut_telegrafo")
 	_start_round()
 
 
@@ -265,11 +286,20 @@ func _build_arena() -> void:
 		cb.moon(Vector3(24, 40, -110), 8.0)
 		cb.build(self)
 		add_child(SkyDome.new())
+		_cam_lim = 7.2
 		return
 	# arene delle altre aree: stessa scenografia dell'esplorazione (interno Anomalia, vicolo, galleria, caveau)
 	var layout: String = "anomalia" if arena.begins_with("anomalia") or arena in ["rosso", "blu", "verde"] else arena
 	var tema: String = arena.replace("anomalia_", "")
 	var lay: Dictionary = LayoutBuilder.build(layout, 5, tema, self)
+	# arene coi muri vicini (vicolo, caveau, galleria): la telecamera resta dentro e la fila si stringe,
+	# altrimenti le inquadrature di lato finivano dietro i muri e non si vedeva chi attaccava
+	if layout in ["vicolo", "caveau", "galleria"]:
+		var half: float = (lay["bounds"] as Rect2).size.x * 0.5
+		_cam_lim = half - 0.15
+		_row_k = clampf((_cam_lim - 0.7) / 2.55, 0.6, 1.0)
+	else:
+		_cam_lim = 6.6
 	if SkyDome.outdoor(layout):
 		add_child(SkyDome.new())
 	var env: WorldEnvironment = null
@@ -285,7 +315,8 @@ func _build_arena() -> void:
 func _setup_battle() -> void:
 	var team: Array = []
 	for id in PARTY:
-		team.append(BattleContent.default_entry(id, level))
+		# nella storia ognuno ha il suo livello e cio' che ha equipaggiato nel menu SQUADRA; la demo dal menu resta com'era
+		team.append(Progress.entry_for(id) if not ritorno.is_empty() else BattleContent.default_entry(id, level))
 	b = BattleState.create_solo("IO", team, [], boss_id, int(Time.get_ticks_msec()) % 100000 + 7)
 	var bu: Dictionary = BattleState.boss(b)
 	# nella storia la squadra sale di livello e il nemico no: lo si fa crescere insieme (PROVVISORIO, bilanciamento dell'atto 1)
@@ -308,6 +339,8 @@ func _setup_battle() -> void:
 					if str(u.get("char", "")) == str(who):
 						Factions.add_mod(u, "legame", "atk", 50, 999)
 		Factions.refresh(b)
+	if not ritorno.is_empty():
+		_syn_msgs = Progress.apply_to_battle(b)
 	for p in b["players"]:
 		slots.append(str(p["id"]))
 	for uid in b["units"]:
@@ -320,7 +353,7 @@ func _setup_battle() -> void:
 
 
 func _build_units() -> void:
-	var xs: Array = [-2.55, -0.85, 0.85, 2.55]
+	var xs: Array = [-2.55 * _row_k, -0.85 * _row_k, 0.85 * _row_k, 2.55 * _row_k]
 	for i in slots.size():
 		var u: Dictionary = _slot_unit(i)
 		var cv := CharacterVisual.new()
@@ -364,12 +397,26 @@ func _col(u: Dictionary) -> Color:
 # ---------------------------------------------------------------- camera
 
 func _cam_set(pos: Vector3, look: Vector3, rate: float = 3.0, snap: bool = false) -> void:
+	pos = _cam_fit(pos, look)
 	_cam_want_pos = pos
 	_cam_want_look = look
 	_cam_rate = rate
 	if snap:
 		_cam_pos = pos
 		_cam_look = look
+
+
+# Tiene la telecamera dentro l'arena: se un'inquadratura di lato uscirebbe oltre i muri, la si riporta dentro e si
+# recupera la distanza persa arretrando e alzandosi (il soggetto resta in quadro, ripreso un po' piu' dall'alto).
+func _cam_fit(pos: Vector3, look: Vector3) -> Vector3:
+	if absf(pos.x) <= _cam_lim:
+		return pos
+	var lost: float = absf(pos.x) - _cam_lim
+	pos.x = signf(pos.x) * _cam_lim
+	var away: float = signf(pos.z - look.z) if absf(pos.z - look.z) > 0.01 else 1.0
+	pos.z += away * lost * 0.8
+	pos.y += lost * 0.35
+	return pos
 
 
 func _cam_overview(snap: bool = false) -> void:
@@ -386,6 +433,10 @@ func _cam_actor(uid: String) -> void:
 func _cam_side(a: Vector3, bpos: Vector3) -> void:
 	var mid: Vector3 = (a + bpos) * 0.5
 	var side: float = 1.0 if a.x >= 0.0 else -1.0
+	if _cam_lim < 5.0:
+		# vicolo stretto: di lato si finirebbe nel muro, quindi tre quarti alle spalle di chi attacca, verso il centro
+		_cam_set(a + Vector3(-side * 0.9, 2.1, 3.0), mid + Vector3(0, 1.15, 0), 4.0)
+		return
 	_cam_set(mid + Vector3(side * 5.2, 2.0, 0.8), mid + Vector3(0, 1.1, 0), 4.0)
 
 
@@ -454,6 +505,8 @@ func _start_round() -> void:
 		elif ingresso == "agguato":
 			turn_list = boss_e + rest
 	turn_i = -1
+	if tutorial:
+		_tut_round()
 	_refresh_hud()
 	_round_hint()
 	await _advance()
@@ -515,6 +568,10 @@ func _advance() -> void:
 				return
 			await _do_action(pid, BattleAI.choose(b, pid), _quick)
 			continue
+		if tutorial:
+			await _tut_turn(uid)
+			if not is_inside_tree() or ended:
+				return
 		waiting = true
 		_show_commands(true)
 		if first_turn:
@@ -541,6 +598,9 @@ func _choice_for(move_id: String) -> Dictionary:
 
 
 func _skill_of(u: Dictionary) -> String:
+	var eq: String = str(u.get("equip_skill", ""))
+	if eq != "" and (u.get("skills", []) as Array).has(eq):
+		return eq                 # scelta nel menu SQUADRA
 	var def: Dictionary = BattleContent.CHARACTERS.get(str(u["char"]), {})
 	return str(def.get("skill", "attack"))
 
@@ -666,11 +726,30 @@ func _boss_turn() -> void:
 		await _wait(0.25)
 		var all: bool = str(mv.get("target", "one")) == "all"
 		if _guardable(mv):
-			var grade: String = await _timed_guard()
-			if not is_inside_tree() or ended:
-				return
-			if grade == "good" or grade == "perfect":
-				b["timed_guard"] = grade
+			# chi ha scelto SCHIVA o COPRI gioca il suo minigioco; senza reazioni resta la guardia a tempo (il cerchio)
+			var played: bool = false
+			for r in (b.get("reactions", []) as Array):
+				var game: String = {"dodge": "arrow", "intercept": "hold"}.get(str(r["react"]), "")
+				var ru: Dictionary = b["units"].get(str(r["unit"]), {})
+				if game == "" or ru.is_empty() or not BattleState.is_alive(ru):
+					continue
+				if game == "arrow" and not Kits.targeted(b, ru):
+					continue           # schiva solo chi e' nel mirino
+				played = true
+				var g: String = await _react_game(game, ru)
+				if not is_inside_tree() or ended:
+					return
+				if not b.has("react_grade"):
+					b["react_grade"] = {}
+				(b["react_grade"] as Dictionary)[str(ru["id"])] = g
+			if not played:
+				if tutorial:
+					await _tut("tut_qte")
+				var grade: String = await _timed_guard()
+				if not is_inside_tree() or ended:
+					return
+				if grade == "good" or grade == "perfect":
+					b["timed_guard"] = grade
 		var ev: Array = SeqRound.boss_action(b)
 		var tw: Tween = m.slam() if all else m.attack()
 		await _wait(0.3 if all else 0.2)
@@ -687,6 +766,75 @@ func _boss_turn() -> void:
 	_refresh_hud()
 	await _wait(0.15)
 	_cam_overview()
+
+
+# ---------------------------------------------------------------- tutorial
+
+# Una spiegazione (scena di data/dialoghi_atto1.json, chiavi tut_*), una volta sola, a battaglia ferma
+func _tut(key: String) -> void:
+	if not tutorial or auto_on or _tut_done.has(key) or ended or not is_inside_tree():
+		return
+	_tut_done[key] = true
+	var lines: Array = DialogData.lines(key)
+	if lines.is_empty():
+		return
+	var was: bool = waiting
+	waiting = false
+	_show_commands(false)
+	var dlg := DialogBox.new()
+	_tut_dlg = dlg
+	_root.add_child(dlg)
+	await get_tree().process_frame
+	dlg.play(lines, DialogData.recap(key))
+	await dlg.finished
+	if is_instance_valid(dlg):
+		dlg.queue_free()
+	_tut_dlg = null
+	waiting = was
+
+
+# Prima del turno del giocatore: la spiegazione giusta per quello che si puo' fare adesso
+func _tut_turn(uid: String) -> void:
+	_tut_turns += 1
+	var u: Dictionary = b["units"].get(uid, {})
+	var reacts: bool = false
+	for r in BattleResolver.reactions_for(b, cur_pid):
+		reacts = reacts or str(r["err"]) == ""
+	if reacts and not _tut_done.has("tut_reazioni"):
+		await _tut("tut_reazioni")
+	elif _tut_done.has("tut_reazioni") and int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX and not _tut_done.has("tut_ultimate"):
+		await _tut("tut_ultimate")
+	elif not _tut_done.has("tut_attacco"):
+		await _tut("tut_attacco")
+	elif not _tut_done.has("tut_guardia"):
+		await _tut("tut_guardia")
+	elif not _tut_done.has("tut_abilita"):
+		await _tut("tut_abilita")
+	elif _tut_done.has("tut_ultimate") and not _tut_done.has("tut_extra"):
+		await _tut("tut_extra")
+
+
+# A inizio round il tutorial prepara la scena per la prossima spiegazione: una carica (reazioni), la rottura vicina,
+# la barra dell'Ultimate piena. Finche' resta qualcosa da spiegare il nemico non scende sotto un terzo dei PV.
+func _tut_round() -> void:
+	var r: int = int(b.get("round", 1))
+	var boss: Dictionary = BattleState.boss(b)
+	var all_said: bool = _tut_done.has("tut_extra")
+	if not all_said:
+		boss["hp"] = maxi(int(boss["hp"]), int(float(boss["max_hp"]) * 0.34))
+	if r >= 2 and not _tut_done.has("tut_reazioni"):
+		for mid in BattleContent.BOSSES.get(boss_id, {}).get("cycle", []):
+			if BattleResolver.is_heavy_boss_move(BattleContent.BOSS_MOVES.get(str(mid), {})):
+				b["telegraph"]["move"] = str(mid)
+				break
+		b["reserve"] = maxi(int(b.get("reserve", 0)), 4)
+	elif _tut_done.has("tut_reazioni") and not _tut_done.has("tut_rottura"):
+		boss["balance"] = mini(int(boss["balance"]), 1)
+	elif _tut_done.has("tut_rottura") and not _tut_done.has("tut_ultimate"):
+		for uid in b["units"]:
+			var u: Dictionary = b["units"][uid]
+			if str(u.get("side", "")) == "player" and BattleState.is_alive(u):
+				u["gauge"] = BattleTypes.GAUGE_MAX
 
 
 # ---------------------------------------------------------------- guardia a tempo
@@ -739,6 +887,27 @@ func _timed_guard() -> String:
 		"early":
 			_toast("TROPPO PRESTO", Color("#ff7a9c"), 0.7)
 	return _qte_grade
+
+
+var _games_seen: Dictionary = {}
+
+
+# Minigioco di una reazione (ReactGame). La prima volta di ogni tipo c'e' piu' tempo per leggere.
+func _react_game(game: String, u: Dictionary) -> String:
+	var g := ReactGame.new(game, str(u.get("name", "")).to_upper(), _col(u), not _games_seen.has(game))
+	_games_seen[game] = true
+	# sotto il minigioco niente comandi ne' suggerimenti: si legge solo lui
+	var hide: Array = []
+	for n in [_cmd_box, _kit_lbl, _react_box, _turn_lbl, _hint]:
+		if n != null and (n as CanvasItem).visible:
+			(n as CanvasItem).visible = false
+			hide.append(n)
+	_fx_layer.add_child(g)
+	var grade: String = await g.done
+	for n in hide:
+		if is_instance_valid(n):
+			(n as CanvasItem).visible = true
+	return grade
 
 
 # Il colpo annunciato finira' su Lance? (bersaglio lui, oppure copre il bersaglio)
@@ -885,6 +1054,9 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if int(e.get("amount", 0)) > 0:
 					_number(BattleState.BOSS_ID, "Equilibrio -%d" % int(e.get("amount", 0)), Color("#f2f0ea"), 20, delay + 0.2, 76.0)
 			"break":
+				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
+				if _team_follow:
+					continue              # la annuncia la sequenza di squadra
 				_shatter_later("boss", delay, 1.0)        # solo l'animazione: lo schermo poi torna pulito
 				_sparks_later(BattleState.BOSS_ID, delay, true)
 				_toast("IMPULSO · ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
@@ -921,6 +1093,20 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					_toast("IL COLPO GROSSO: scudo rubato e diviso con la squadra", Color("#62f08c"), 1.6)
 				else:
 					_toast("IL COLPO GROSSO: niente scudi da rubare, si prende tutto in danno", Color("#62f08c"), 1.6)
+			"pickpocket":
+				if int(e.get("amount", 0)) > 0:
+					_toast("MANO LESTA · Saul si intasca lo scudo (%d)" % int(e["amount"]), Color("#62f08c"), 1.6)
+				else:
+					_toast("MANO LESTA · niente scudo: Saul sfila equilibrio e si riprende l'energia", Color("#62f08c"), 1.6)
+			"loot_exp":
+				_toast("TASCHE PIENE · +%d%% esperienza a fine scontro" % int(e.get("total", 0)), Color("#62f08c"), 1.6)
+			"steal_move":
+				var smv: String = str(e.get("move", ""))
+				if smv == "":
+					_toast("IL TRUCCO DEL MAGO · niente di nuovo da rubare: Saul prende gli spiccioli (+1 energia)", Color("#62f08c"), 1.8)
+				else:
+					var fresh: bool = Progress.add_stolen(smv, _bn())
+					_live_banner("MOSSA RUBATA", "%s · %s" % [BattleText.move_name(smv).to_upper(), "ora si equipaggia in pausa > SQUADRA" if fresh else "Saul ce l'aveva già"], Color("#62f08c"), 2.2)
 			"finale":
 				_toast("GRAN FINALE · HYPE %d%%" % int(e.get("hype", 0)), Ui.VIOLET.lightened(0.3), 1.4)
 			"hype":
@@ -940,6 +1126,13 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_toast("RISPONDO IO · il prossimo colpo del nemico non passa", Ui.CYAN, 1.8)
 			"nullified":
 				_toast("COLPO ANNULLATO · Nox ha risposto", Ui.CYAN, 1.6)
+			"dodge_half":
+				_number(str(e.get("unit", "")), "DI STRISCIO", Color("#c4c2cf"), 24, delay + 0.1, -26.0)
+			"dodge":
+				_number(str(e.get("unit", "")), "SCHIVATO!", Ui.CYAN, 30, delay + 0.05, -26.0)
+			"react_mod":
+				var rm: Dictionary = Progress.REACT_MODS.get(str(e.get("mod", "")), {})
+				_number(str(e.get("unit", "")), str(rm.get("name", "")).to_upper(), _col_of(str(e.get("unit", ""))).lightened(0.3), 24, delay + 0.3, -52.0)
 			"parry":
 				var pu: String = str(e.get("unit", ""))
 				if vis.has(pu) and vis[pu] is CharacterVisual:
@@ -999,9 +1192,22 @@ func _color_tag(e: Dictionary, dst: String, delay: float) -> void:
 			_number(dst, str(h["testo"]), Color("#c4c2cf"), 26, delay + 0.06, 34.0)
 
 
+# PRESTAZIONI: ogni grandezza nuova di carattere col contorno va disegnata da zero (sul telefono uno scatto nel momento del
+# colpo): le grandezze si arrotondano a pochi gradini, gia' preparati a inizio battaglia (_warm_fonts).
+const NUM_SIZES: Array = [20, 24, 30, 40, 52, 64]
+
+
+static func _snap_size(size: int) -> int:
+	for s in NUM_SIZES:
+		if size <= int(s):
+			return int(s)
+	return int(NUM_SIZES[-1])
+
+
 func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0) -> void:
 	if not vis.has(uid):
 		return
+	size = _snap_size(size)
 	var v: Node3D = vis[uid]
 	var p3: Vector3 = v.call("head_point") if v.has_method("head_point") else v.global_position
 	var l := Ui.label(text, size, col, Ui.display(), 10)
@@ -1026,9 +1232,15 @@ func _number(uid: String, text: String, col: Color, size: int, delay: float, yof
 	tw.tween_callback(l.queue_free)
 
 
+var _ring_meshes: Dictionary = {}           # colore -> disco gia' costruito (prima se ne costruiva uno a ogni colpo)
+
+
 func _ring(at: Vector3, col: Color, radius: float) -> void:
+	var key: String = col.to_html() + ("r" if Settings.light_fx else "")
+	if not _ring_meshes.has(key):
+		_ring_meshes[key] = MeshBatch.disc(1.0, Color(col.r, col.g, col.b, 0.7 if not Settings.light_fx else 0.4), 20, 0.05)
 	var mi := MeshInstance3D.new()
-	mi.mesh = MeshBatch.disc(1.0, Color(col.r, col.g, col.b, 0.7 if not Settings.light_fx else 0.4), 20, 0.05)
+	mi.mesh = _ring_meshes[key]
 	mi.material_override = Toon.glow()
 	mi.position = at
 	mi.scale = Vector3(0.2, 1, 0.2)
@@ -1160,8 +1372,13 @@ func _end_battle() -> void:
 		for uid in vis:
 			if uid != BattleState.BOSS_ID and not (vis[uid] as CharacterVisual).down:
 				(vis[uid] as CharacterVisual).cheer()
+	if tutorial and win:
+		await _tut("tut_fine")
+		Story.set_flag("tutorial_fatto")
+		if not is_inside_tree():
+			return
 	# nella demo dal menu: due battute in stile Persona; nella storia ci pensa la scena dopo
-	if ritorno.is_empty():
+	if ritorno.is_empty() and not tutorial:
 		var dlg := DialogBox.new()
 		_root.add_child(dlg)
 		await get_tree().process_frame
@@ -1171,9 +1388,16 @@ func _end_battle() -> void:
 		if not is_inside_tree():
 			return
 	var ln: Array = []
+	# ESPERIENZA (stile Persona 5): a fine scontro vinto nella storia tutti salgono; si salva subito con la vittoria
+	if win and not ritorno.is_empty() and _exp_report.is_empty():
+		var gain: int = Progress.battle_exp(level, not minore, int(b.get("exp_bonus", 0)))
+		_exp_report = Progress.grant(gain)
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", Ui.box(Color(0.07, 0.04, 0.12, 0.95), Ui.CREAM, 4, 6, 8))
-	Ui.place(panel, 0.5, 0.5, 0.5, 0.5, -340, -170, 340, 170)
+	if _exp_report.is_empty():
+		Ui.place(panel, 0.5, 0.5, 0.5, 0.5, -340, -170, 340, 170)
+	else:
+		Ui.place(panel, 0.5, 0.5, 0.5, 0.5, -470, -300, 470, 300)
 	_root.add_child(panel)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 12)
@@ -1193,6 +1417,8 @@ func _end_battle() -> void:
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 16)
 	vb.add_child(hb)
+	if not _exp_report.is_empty():
+		_exp_rows(vb)
 	if not ritorno.is_empty():
 		if win:
 			_save_win()
@@ -1213,6 +1439,57 @@ func _end_battle() -> void:
 		var m := Ui.button("MENU", Ui.CREAM, 24, 220)
 		m.pressed.connect(func() -> void: _main().go("menu"))
 		hb.add_child(m)
+
+
+# Righe dell'esperienza: nome, livello, barra che si riempie; LIVELLO SU! e gli sblocchi nuovi sotto
+func _exp_rows(vb: VBoxContainer) -> void:
+	var head := Ui.label("+%d ESPERIENZA%s" % [int(_exp_report[0]["gain"]), ("  (Saul: +%d%%)" % int(b.get("exp_bonus", 0))) if int(b.get("exp_bonus", 0)) > 0 else ""], 24, Ui.CYAN, Ui.display(), 6)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(head)
+	var news: Array = []
+	for i in _exp_report.size():
+		var r: Dictionary = _exp_report[i]
+		var c: String = str(r["char"])
+		var col: Color = Ui.BATTLE_COLORS.get(str(BattleContent.CHARACTERS[c].get("color", "")), Ui.CREAM)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		vb.add_child(row)
+		var nm := Ui.label(str(BattleContent.CHARACTERS[c]["name"]).to_upper(), 24, col.lightened(0.3), Ui.display(), 6)
+		nm.custom_minimum_size.x = 120
+		row.add_child(nm)
+		var lv := Ui.label("LV %d" % int(r["lv0"]), 24, Ui.CREAM, Ui.display(), 6)
+		lv.custom_minimum_size.x = 90
+		row.add_child(lv)
+		var bar := _bar(col, 22)
+		bar.custom_minimum_size.x = 400
+		bar.max_value = 1000
+		bar.value = float(r["r0"]) * 1000.0
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(bar)
+		var up := Ui.label("", 24, Ui.YELLOW, Ui.display(), 8)
+		row.add_child(up)
+		var ups: int = int(r["lv"]) - int(r["lv0"])
+		var tw := bar.create_tween()
+		tw.tween_interval(0.3 + 0.15 * i)
+		for k in ups:
+			tw.tween_property(bar, "value", 1000.0, 0.35)
+			tw.tween_callback(func() -> void:
+				bar.value = 0.0
+				lv.text = "LV %d" % (int(lv.text.substr(3)) + 1)
+				up.text = "LIVELLO SU!"
+				Settings.buzz(30))
+		tw.tween_property(bar, "value", float(r["r"]) * 1000.0, 0.35)
+		var left: int = int(ceil(float(Progress.exp_need(int(r["lv"]))) * (1.0 - float(r["r"]))))
+		tw.tween_callback(func() -> void:
+			if up.text == "":
+				up.add_theme_color_override("font_color", Ui.CREAM)
+				up.text = "mancano %d" % left)
+		for nw in r["news"]:
+			news.append("%s · %s %s: %s" % [str(BattleContent.CHARACTERS[c]["name"]).to_upper(), "NUOVO" if str(nw["kind"]) == "trait" else "NUOVA", str(SquadMenu.KIND_NAMES.get(str(nw["kind"]), "")).to_upper(), str(nw["name"])])
+	if not news.is_empty():
+		var nl := Ui.label("\n".join(news.slice(0, 6)) + ("\n…e altro: pausa > SQUADRA" if news.size() > 6 else "\nSi equipaggiano in pausa > SQUADRA"), 20, Ui.YELLOW, null, 6)
+		nl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vb.add_child(nl)
 
 
 # La vittoria si salva subito, non al tocco su CONTINUA: chi chiude l'app sul pannello non deve rifare la battaglia
@@ -1386,7 +1663,7 @@ func _build_ui() -> void:
 	_kit_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_kit_lbl)
 	_hint = Ui.label("", 24, Ui.CREAM, null, 8)
-	Ui.place(_hint, 0.5, 0.62, 0.5, 0.62, -420, 0, 420, 60)
+	Ui.place(_hint, 0.5, 0.62, 0.5, 0.62, -290, 0, 270, 60)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(_hint)
@@ -1447,6 +1724,23 @@ func _build_ui() -> void:
 	ll.name = "Line"
 	Ui.place(ll, 0.05, 0.66, 0.95, 0.66, 0, 70, 0, 110)
 	_cutin.add_child(ll)
+
+
+# Disegna una volta, quasi trasparenti, cifre e lettere in tutte le grandezze dei numeri dei colpi: il telefono prepara
+# subito i caratteri col contorno invece di farlo nel mezzo dell'attacco di squadra.
+func _warm_fonts() -> void:
+	var box := Control.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.modulate.a = 0.01
+	_fx_layer.add_child(box)
+	for sz in NUM_SIZES:
+		var l := Ui.label("0123456789!+-% ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈ·", int(sz), Ui.CREAM, Ui.display(), 10)
+		l.position = Vector2(0, 0)
+		box.add_child(l)
+	for i in 3:
+		await get_tree().process_frame
+	if is_instance_valid(box):
+		box.queue_free()
 
 
 func _bar(col: Color, h: float) -> ProgressBar:
@@ -1613,7 +1907,7 @@ func _update_react() -> void:
 		_react_lbl.text = ("REAZIONE · RISERVA %d (COSTA IL TURNO)" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA · SENZA RISERVA"
 		if not _react_hint_seen and not first_turn and _hint != null and not usable.is_empty():
 			_react_hint_seen = true
-			_hint.text = "CARICA IN ARRIVO · reagisci con la Riserva: SCHIVA, COPRI, FERMA, SOCCORRI"
+			_hint.text = "CARICA IN ARRIVO · REAZIONI con la Riserva: SCHIVA (freccia) · COPRI (tieni e lascia) · FERMA (a raffica) · SOCCORRI (battito)"
 
 
 # ULTIMATE IN DIRETTA: un compagno con la barra piena lancia l'Ultimate fuori turno durante una carica. Non costa Riserva ne' il
@@ -1637,6 +1931,11 @@ func _live_ult(k: int) -> void:
 	await _do_action(pid, {"swap": "", "move": str(u["ult"]), "target": "", "order": "", "push": ""})
 	if not is_inside_tree() or ended:
 		return
+	# l'Ultimate fuori turno puo' chiudere lo scontro: prima qui si tornava alla scelta di chi era di turno e il gioco
+	# restava fermo (nessun comando valido a battaglia finita, niente schermata di vittoria)
+	if str(b["winner"]) != "":
+		await _end_battle()
+		return
 	cur_pid = _live_back
 	_refresh_hud()
 	_cam_actor(str(_unit_of(cur_pid)["id"]))
@@ -1652,6 +1951,16 @@ func _react_cmd(rid: String) -> void:
 	_show_commands(false)
 	_hint.text = ""
 	Settings.buzz(30)
+	# FERMA e SOCCORRI si giocano subito (a raffica / col battito); SCHIVA e COPRI quando il nemico colpisce
+	var game: String = {"interruzione": "mash", "soccorso": "beat"}.get(rid, "")
+	if game != "" and not auto_on:
+		var ru: Dictionary = _unit_of(cur_pid)
+		var grade: String = await _react_game(game, ru)
+		if not is_inside_tree() or ended:
+			return
+		(b["react_grade"] as Dictionary)[str(ru["id"])] = grade
+	elif rid in ["schivata", "intercettazione"]:
+		_toast("%s si gioca quando %s colpisce" % [str(REACT_SHORT[rid]), _bn()], Ui.CYAN, 1.6)
 	await _do_action(cur_pid, _choice_for(rid))
 	if is_inside_tree() and not ended:
 		await _advance()
@@ -1707,8 +2016,11 @@ func _refresh_hud() -> void:
 		var is_marked: bool = marked != "" and str(u.get("id", "")) == marked
 		var alive: bool = BattleState.is_alive(u)
 		var col: Color = _col(u)
-		(c["panel"] as PanelContainer).add_theme_stylebox_override("panel",
-			Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.55), Color("#ff5a6e") if is_marked else (col if active else Ui.INK), 6 if is_marked else (4 if active else 3), 6, 5))
+		var look: String = "%s|%s|%s" % [active, is_marked, col.to_html()]
+		if str(c.get("look", "")) != look:
+			c["look"] = look          # PRESTAZIONI: lo stile della card si rifa' solo quando cambia
+			(c["panel"] as PanelContainer).add_theme_stylebox_override("panel",
+				Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.55), Color("#ff5a6e") if is_marked else (col if active else Ui.INK), 6 if is_marked else (4 if active else 3), 6, 5))
 		(c["panel"] as Control).modulate.a = 1.0 if alive else 0.45
 		# il colore anche scritto: chi non distingue i colori sa lo stesso chi colpisce le debolezze
 		(c["name"] as Label).text = str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
@@ -1723,9 +2035,9 @@ func _refresh_hud() -> void:
 			(c["en"] as Label).text += "  ·  HYPE %d" % int(u.get("hype", 0))
 		(c["ult"] as ProgressBar).max_value = BattleTypes.GAUGE_MAX
 		(c["ult"] as ProgressBar).value = int(u.get("gauge", 0))
-	# ordine dei turni rimasti in questo round
-	for ch in _order_box.get_children():
-		ch.queue_free()
+	# ordine dei turni rimasti in questo round. PRESTAZIONI: le righe si riusano (prima si buttavano e ricreavano tutte
+	# a ogni aggiornamento, piu' volte per azione) e si toccano solo se cambiano.
+	var rows: Array = []
 	var start: int = maxi(0, turn_i)
 	for k in range(start, turn_list.size()):
 		var e: Dictionary = turn_list[k]
@@ -1734,10 +2046,23 @@ func _refresh_hud() -> void:
 			continue
 		var is_boss: bool = bool(e["boss"])
 		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
-		var l := Ui.label(("> " if k == turn_i else "   ") + nm, 20 if k == turn_i else 17, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), Ui.display() if k == turn_i else null, 4)
-		_order_box.add_child(l)
-	var nxt := Ui.label("   — round %d —" % int(b.get("round", 1)), 18, Color(1, 1, 1, 0.85))
-	_order_box.add_child(nxt)
+		rows.append([("> " if k == turn_i else "   ") + nm, 20 if k == turn_i else 17, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
+	rows.append(["   — round %d —" % int(b.get("round", 1)), 18, Color(1, 1, 1, 0.85), false])
+	var sig: String = str(rows)
+	if sig != _order_sig:
+		_order_sig = sig
+		while _order_box.get_child_count() < rows.size():
+			_order_box.add_child(Ui.label("", 17, Ui.CREAM, null, 4))
+		for i in _order_box.get_child_count():
+			var l: Label = _order_box.get_child(i)
+			l.visible = i < rows.size()
+			if not l.visible:
+				continue
+			var r: Array = rows[i]
+			l.text = str(r[0])
+			l.add_theme_font_size_override("font_size", int(r[1]))
+			l.add_theme_color_override("font_color", r[2])
+			l.add_theme_font_override("font", Ui.display() if bool(r[3]) else Ui.body())
 	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper() + (" · RAPIDO" if _quick else "")) if cur_pid != "" and not ended else ""
 	if waiting:
 		_show_commands(true)
@@ -1781,11 +2106,10 @@ func _banner(text: String, col: Color, ay: float = 0.2, size: int = 30) -> void:
 
 
 var _toasts: Array = []
+var _order_sig: String = ""
 
 
-# I messaggi che arrivano insieme si mettono uno sotto l'altro invece di sovrapporsi
-# Mostra gli eventi; se c'e' un ATTACCO DI SQUADRA (rottura del boss) prima mostra la rottura, poi il fermo immagine di Echo,
-# poi i colpi dei compagni.
+# Mostra gli eventi; se c'e' un ATTACCO DI SQUADRA (rottura del boss) prima mostra il colpo che rompe, poi la sequenza di squadra.
 func _show_events_freeze(ev: Array) -> void:
 	var idx: int = -1
 	for i in ev.size():
@@ -1795,38 +2119,126 @@ func _show_events_freeze(ev: Array) -> void:
 	if idx < 0:
 		await _show_events(ev, true)
 		return
+	_team_follow = true             # la rottura la annuncia la sequenza di squadra: niente vetro rotto ne' scritte doppie
 	await _show_events(ev.slice(0, idx), true)
-	await _freeze_frame()
+	_team_follow = false
 	if not is_inside_tree() or ended:
 		return
-	var rest: Array = ev.slice(idx)
-	for e in rest:
-		if str(e.get("t", "")) == "team_strike":
-			# i compagni scattano insieme verso il boss: una pennellata di luce dal colore di ognuno
-			for uid in vis:
-				if str(uid) != BattleState.BOSS_ID and str(uid) != str(e.get("unit", "")) and vis[uid] is CharacterVisual and BattleState.is_alive(BattleState.unit(b, str(uid))):
-					var cvv: CharacterVisual = vis[uid]
-					cvv.attack()
-					if not Settings.light_fx:
-						LightFx.stroke(self, cvv.chest_point(), (vis[BattleState.BOSS_ID] as Node).call("chest_point"), _col(BattleState.unit(b, str(uid))), 0.4)
-	_toast("ATTACCO DI SQUADRA", Ui.YELLOW, 1.2)
-	await _show_events(rest, true)
+	if tutorial:
+		await _tut("tut_rottura")
+	await _team_sequence(ev.slice(idx))
 
 
-# FERMO IMMAGINE (telecamera di Echo): alla rottura la scena si ferma un istante dentro una cornice REC. Si salta con un tocco.
-# Effetti ridotti: niente velo scuro e fermo piu' breve; Lampi a zero: niente lampo.
-func _freeze_frame() -> void:
-	var dur: float = 0.35 if Settings.light_fx else 0.7
+# ATTACCO DI SQUADRA (prima era un fermo immagine con tutti che colpivano nello stesso istante: non si capiva niente).
+# Ora si legge in tre tempi, come una ripresa di Echo:
+#  1. ROTTURA: timbro grande al centro, il nemico barcolla;
+#  2. FERMO IMMAGINE: cornice REC e la striscia con i volti di chi sta per colpire;
+#  3. i compagni colpiscono UNO ALLA VOLTA (scatto, colpo, numero col suo nome e colore) e alla fine il totale.
+# Un tocco accelera tutto. Costa poco: niente velo a schermo intero, niente vetro rotto, niente rallentatore globale.
+func _team_sequence(rest: Array) -> void:
+	_team_on = true
+	_freeze_skip = false
+	var breaker: String = str(rest[0].get("unit", ""))
+	var boss_v: Node3D = vis[BattleState.BOSS_ID]
+	var hits: Array = []                     # [chi, danno, critico]
+	var others: Array = []
+	for e in rest.slice(1):
+		if str(e.get("t", "")) == "damage" and str(e.get("dst", "")) == BattleState.BOSS_ID and str(e.get("src", "")) != BattleState.BOSS_ID:
+			hits.append([str(e["src"]), int(e.get("amount", 0)), bool(e.get("crit", false))])
+		else:
+			others.append(e)
+	(boss_v as VendingVisual).stunned = true
+	_cam_set(Vector3(0.0, 2.4, 6.2), ENEMY_POS + Vector3(0, 1.0, 0), 5.0)
+	# 1. ROTTURA
+	_stamp("ROTTURA!", "%s è %s" % [_cap(_bn()), _g("a terra", "a terra")], Color.WHITE)
+	_flash(0.35)
+	_kick(0.7)
+	await _team_wait(0.75)
+	# 2. FERMO IMMAGINE
+	var box := _rec_frame()
+	var strip := HBoxContainer.new()
+	strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	strip.add_theme_constant_override("separation", 10)
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# i nomi stanno in basso, sopra le schede: in alto restano liberi i numeri dei colpi
+	Ui.place(strip, 0.1, 0.66, 0.9, 0.66, 0, 0, 0, 60)
+	box.add_child(strip)
+	var hint_was: bool = _hint != null and _hint.visible
+	if _hint != null:
+		_hint.visible = false
+	var tags: Dictionary = {}
+	for h in hits:
+		var u: Dictionary = b["units"].get(str(h[0]), {})
+		var tag := PanelContainer.new()
+		tag.add_theme_stylebox_override("panel", Ui.box(_col(u), Ui.INK, 4, 4, 4))
+		tag.add_child(Ui.label(str(u.get("name", "?")).to_upper(), 26, Ui.INK, Ui.display()))
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tag.rotation_degrees = -4.0
+		tag.modulate.a = 0.55
+		strip.add_child(tag)
+		tags[str(h[0])] = tag
+	await _team_wait(0.6)
+	# 3. un colpo alla volta
+	var total: int = 0
+	for h in hits:
+		var uid: String = str(h[0])
+		if not vis.has(uid) or not (vis[uid] is CharacterVisual):
+			continue
+		var cv: CharacterVisual = vis[uid]
+		var col: Color = _col_of(uid)
+		# il nome di chi colpisce si accende, quelli gia' passati restano accesi
+		if tags.has(uid):
+			var tg: Control = tags[uid]
+			tg.modulate.a = 1.0
+			tg.pivot_offset = tg.size * 0.5
+			tg.scale = Vector2(1.25, 1.25)
+			create_tween().tween_property(tg, "scale", Vector2.ONE, 0.2)
+		var strike: Vector3 = ENEMY_POS + (home[uid] - ENEMY_POS).normalized() * 1.6
+		strike.y = 0.14
+		cv.move_speed = 1.0
+		var tw := create_tween()
+		tw.tween_property(cv, "position", strike, 0.14 if not _freeze_skip else 0.05).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		await _tw_done(tw)
+		cv.move_speed = 0.0
+		cv.attack()
+		boss_v.call("hit")
+		LightFx.sparks(self, (boss_v as Node).call("chest_point"), col if not bool(h[2]) else LightFx.IVORY, 8)
+		_kick(0.35)
+		total += int(h[1])
+		_number(BattleState.BOSS_ID, "%s  %d%s" % [str(b["units"][uid].get("name", "")).to_upper(), int(h[1]), "!" if bool(h[2]) else ""], col.lightened(0.35), 40, 0.0)
+		var back := create_tween()
+		back.tween_interval(0.12)
+		back.tween_property(cv, "position", home[uid], 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		back.tween_callback(func() -> void:
+			if is_instance_valid(cv):
+				cv.move_speed = 0.0
+				_face(cv, ENEMY_POS))
+		await _team_wait(0.32)
+	box.queue_free()
+	if _hint != null and hint_was:
+		_hint.visible = true
+	if total > 0:
+		_stamp("ATTACCO DI SQUADRA", "%d danni in tutto" % total, Ui.YELLOW)
+	if breaker != "" and vis.has(breaker):
+		_face(vis[breaker], ENEMY_POS)
+	await _show_events(others, true)
+	await _team_wait(0.5)
+	_team_on = false
+
+
+# Attesa della sequenza di squadra: un tocco la accorcia
+func _team_wait(sec: float) -> void:
+	var t0: int = Time.get_ticks_msec()
+	while is_inside_tree() and not ended and not _freeze_skip and float(Time.get_ticks_msec() - t0) / 1000.0 < sec / maxf(0.1, Engine.time_scale):
+		await get_tree().process_frame
+
+
+# Cornice REC della telecamera di Echo con la scritta FERMO IMMAGINE (si toglie chi la crea)
+func _rec_frame() -> Control:
 	var box := Control.new()
 	Ui.place(box, 0, 0, 1, 1)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fx_layer.add_child(box)
-	if not Settings.light_fx:
-		var veil := ColorRect.new()
-		veil.color = Color(0.02, 0.0, 0.05, 0.3)
-		Ui.place(veil, 0, 0, 1, 1)
-		veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		box.add_child(veil)
 	var rec: Color = Color("#ff4630")
 	for side in 4:
 		var bar := ColorRect.new()
@@ -1838,21 +2250,35 @@ func _freeze_frame() -> void:
 			2: Ui.place(bar, 0, 0, 0, 1, 0, 0, 8, 0)
 			3: Ui.place(bar, 1, 0, 1, 1, -8, 0, 0, 0)
 		box.add_child(bar)
-	var lbl := Ui.label("●  REC  ·  FERMO IMMAGINE", 30, rec, Ui.display(), 8)
-	Ui.place(lbl, 0.2, 0.2, 0.6, 0.2, 0, 0, 0, 50)
+	var lbl := Ui.label("●  REC  ·  FERMO IMMAGINE · TUTTI ADDOSSO", 30, rec, Ui.display(), 8)
+	Ui.place(lbl, 0.1, 0.22, 0.9, 0.22, 0, 0, 0, 50)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(lbl)
-	_flash(0.4)
-	var prev_scale: float = Engine.time_scale
-	Engine.time_scale = 0.03
-	_freeze_on = true
-	_freeze_skip = false
-	var t0: int = Time.get_ticks_msec()
-	while is_inside_tree() and not ended and not _freeze_skip and float(Time.get_ticks_msec() - t0) / 1000.0 < dur:
-		await get_tree().process_frame
-	_freeze_on = false
-	Engine.time_scale = prev_scale
-	box.queue_free()
+	return box
+
+
+# Timbro grande al centro (parola + riga sotto) che entra di scatto e svanisce
+func _stamp(title: String, sub: String, col: Color) -> void:
+	var box := VBoxContainer.new()
+	Ui.place(box, 0.15, 0.3, 0.85, 0.3, 0, 0, 0, 140)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", 0)
+	var big := Ui.label(title, 72, col, Ui.display(), 12)
+	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(big)
+	var sm := Ui.label(sub, 26, Ui.CREAM, Ui.display(), 8)
+	sm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(sm)
+	_fx_layer.add_child(box)
+	box.pivot_offset = Vector2(box.size.x * 0.5, 70)
+	box.scale = Vector2(1.6, 1.6)
+	box.modulate.a = 0.0
+	var tw := box.create_tween()
+	tw.tween_property(box, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(box, "modulate:a", 1.0, 0.1)
+	tw.tween_interval(0.9)
+	tw.tween_property(box, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(box.queue_free)
 
 
 # Titolo grande "in diretta" (stile di Rio): pallino rosso REC che lampeggia + parola grande + una riga sotto. Non copre le descrizioni:
@@ -1919,7 +2345,7 @@ func _toggle_fast() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _freeze_on and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) \
+	if (_freeze_on or _team_on) and ((event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed) \
 			or (event is InputEventKey and event.pressed and not event.echo)):
 		_freeze_skip = true
 		get_viewport().set_input_as_handled()
@@ -1976,7 +2402,7 @@ func _open_pause() -> void:
 	Engine.time_scale = 0.0          # ferma animazioni e timer della battaglia
 	_pause = HuddleMenu.new("ESCI", _close_pause, func() -> void:
 		Engine.time_scale = 1.0
-		_main().go("menu"))
+		_main().go("menu"), "Saul conosce un'uscita", not ritorno.is_empty())
 	_root.add_child(_pause)
 
 

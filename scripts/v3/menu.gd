@@ -81,11 +81,16 @@ func _ready() -> void:
 	var row2 := HBoxContainer.new()
 	row2.add_theme_constant_override("separation", 10)
 	col.add_child(row2)
-	var b3 := Ui.button("IMPOSTAZIONI", Ui.CREAM, 22, 185 if not OS.has_feature("mobile") else 380)
+	var b3 := Ui.button("IMPOSTAZIONI", Ui.CREAM, 22, 185)
 	b3.pressed.connect(_open_settings)
 	row2.add_child(b3)
+	# TUTORIAL: lo scontro guidato da Echo (nella storia parte da solo al primo nemico)
+	var b6 := Ui.button("TUTORIAL", Ui.CYAN, 22, 185)
+	b6.pressed.connect(func() -> void: _main().go("battle", {"from": "menu", "tutorial": true, "boss": "frammento_giallo",
+		"visual": "frammento_giallo", "arena": "strada", "minore": true}))
+	row2.add_child(b6)
 	if not OS.has_feature("mobile"):
-		var b4 := Ui.button("ESCI", Color("#ff7a9c"), 22, 185)
+		var b4 := Ui.button("ESCI", Color("#ff7a9c"), 22, 120)
 		b4.pressed.connect(func() -> void: _main().quit())
 		row2.add_child(b4)
 	for b in col.get_children():

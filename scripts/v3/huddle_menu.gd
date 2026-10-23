@@ -33,10 +33,12 @@ const QUIPS: Array = [
 var _bubbles: Dictionary = {}       # id -> Label del sussurro
 var _talk: Dictionary = {}          # id -> Tween del sussurro in corso (una battuta nuova copre la vecchia)
 var _busy: bool = false
+var _squad_save: bool = true
 
 
 # exit_text: la terza voce (in esplorazione si torna al menu, in battaglia si esce); exit_hint la riga sotto.
-func _init(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint: String = "Saul conosce un'uscita") -> void:
+func _init(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint: String = "Saul conosce un'uscita", squad_save: bool = true) -> void:
+	_squad_save = squad_save
 	color = Color(0.02, 0.01, 0.05, 0.82)
 	Ui.place(self, 0, 0, 1, 1)
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -74,15 +76,19 @@ func _build(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint
 
 	# i foglietti: ogni voce ha il suo padrone
 	var notes := HBoxContainer.new()
-	notes.add_theme_constant_override("separation", 26)
+	notes.add_theme_constant_override("separation", 18)
 	notes.alignment = BoxContainer.ALIGNMENT_CENTER
-	Ui.place(notes, 0.5, 1, 0.5, 1, -520, -122, 520, -30)
+	Ui.place(notes, 0.5, 1, 0.5, 1, -620, -122, 620, -30)
 	add_child(notes)
 	notes.add_child(_note("RIPRENDI", "Lance ha la mappa", -3.0, func() -> void:
 		_say_then("ferri", "Piano deciso. Si va.", on_resume)))
 	notes.add_child(_note("IMPOSTAZIONI", "Nox abbassa il volume", 2.0, func() -> void:
 		_say("nox", "Abbassate. Qualcuno sta cercando di dormire.")
 		add_child(SettingsPanel.new())))
+	# SQUADRA (livelli e cosa equipaggiare): e' la voce di Rio, che finalmente si mette al centro
+	notes.add_child(_note("SQUADRA", "Rio si mette al centro", 3.0, func() -> void:
+		_say("zecca", "Finalmente. Inquadrate me. Poi gli altri.")
+		add_child(SquadMenu.new(Engine.time_scale == 0.0, _squad_save))))
 	notes.add_child(_note(exit_text, exit_hint, -2.0, func() -> void:
 		_say_then("saul", "Conosco un'uscita. Per voi, gratis. Stavolta.", on_exit)))
 

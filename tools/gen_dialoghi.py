@@ -133,6 +133,91 @@ scene("vittoria", "L'Anomalia è chiusa.",
 scene("sconfitta", "La squadra è stata battuta.",
     L("nox/triste", "Battuti da un distributore. Scrivetelo sulla lapide. In piccolo."))
 
+# ===== TUTORIAL DI COMBATTIMENTO
+# Guida il primo scontro (in strada, contro un Frammento giallo, un pezzetto d'Anomalia). Echo spiega con precisione,
+# i quattro commentano. Le parole dei comandi sono scritte come sullo schermo, in MAIUSCOLO.
+scene("tut_intro", "Echo, istruttrice dal cuore delle telecamere, spiega lo schermo del primo scontro.",
+    L("echo/felice", "Istruttrice Echo, telecamera 07. Scontro vero ma piccolo: un Frammento, un pezzetto d'Anomalia."),
+    L("zecca/sfotto", "Raga, io non leggo le istruzioni. Io ho il feeling."),
+    L("saul/neutro", "Io le leggo solo se in fondo c'è il prezzo."),
+    L("echo/serio", "In alto il nemico: i suoi PV e la barra bianca EQUILIBRIO. A sinistra, l'ordine dei turni."),
+    L("echo/serio", "In basso le vostre schede: PV, ENERGIA e la barra dell'ULTIMATE. Sono le 21:04, domande?"),
+    L("nox/neutro", "Una. Posso saltare la lezione?"))
+
+scene("tut_attacco", "Si tocca ATTACCO per colpire; il colore di ognuno conta contro il colore del nemico.",
+    L("echo/neutro", "Primo comando: ATTACCO. Tocchi e colpisci. Semplice."),
+    L("echo/serio", "Ma il colore conta. Lance è ROSSO, Nox BLU, Rio VIOLA, Saul VERDE."),
+    L("echo/serio", "Sul colore giusto esce EFFICACE: più 50 per cento. Su quello sbagliato, DEBOLE."),
+    L("echo/serio", "Il Frammento è GIALLO e teme il ROSSO. Quindi colpisce Lance. Cioè: colpisce lui."),
+    L("ferri/serio", "Lo metto a verbale: sono il rosso utile. Articolo 3."),
+    L("zecca/sfotto", "Io sono viola. Il colore dei grandi artisti incompresi."))
+
+scene("tut_guardia", "GUARDIA riduce i danni e dà +1 ENERGIA, che serve per l'ABILITÀ.",
+    L("echo/neutro", "Secondo comando: GUARDIA. Subisci meno danni e guadagni 1 ENERGIA."),
+    L("echo/serio", "L'ENERGIA serve per l'ABILITÀ, che vediamo adesso. Quindi la GUARDIA non è tempo perso."),
+    L("nox/felice", "La GUARDIA è la mia mossa preferita. Non fare niente, ma con stile."),
+    L("ferri/arrabbiato", "Non è «niente». È una difesa attiva. C'è un articolo."),
+    L("nox/neutro", "Sì. Ed è un articolo che amo."))
+
+scene("tut_abilita", "ABILITÀ costa ENERGIA ed è diversa per ognuno; alternare le mosse dà un piccolo bonus.",
+    L("echo/serio", "Terzo comando: ABILITÀ. Costa ENERGIA, e ognuno ha la sua."),
+    L("echo/serio", "Lance protegge: con Copertura prende lui il colpo al posto di un compagno."),
+    L("nox/neutro", "Io curo. Pausa caffè. Il mio ruolo preferito dopo la GUARDIA."),
+    L("zecca/felice", "Io Inquadratura: marco il nemico e faccio salire l'HYPE. Pubblico, svegliati."),
+    L("saul/neutro", "Mano lesta. Rubo lo scudo del nemico. Se non ce l'ha, gli rubo EQUILIBRIO e mi riprendo energia."),
+    L("echo/felice", "Ultimo trucco: cambiare mossa da un turno all'altro dà un piccolo bonus. Variate, non siate banali."))
+
+scene("tut_telegrafo", "Il nemico annuncia la mossa e il bersaglio: cerchio rosso e bordo rosso sulla scheda.",
+    L("echo/serio", "Il Frammento è onesto: annuncia la prossima mossa nella riga in alto."),
+    L("echo/serio", "E dice su chi cade: cerchio rosso ai piedi del bersaglio, bordo rosso sulla sua scheda."),
+    L("echo/serio", "FORTE significa colpo pesante. SU TUTTI significa che colpisce tutti."),
+    L("saul/neutro", "Un nemico che avvisa. Mia nonna Ines diceva che i migliori affari sono quelli senza sorprese."),
+    L("zecca/sorpreso", "Ma è cortesia! Neanche il distributore ci avvisava."))
+
+scene("tut_qte", "GUARDIA A TEMPO: si tocca quando il cerchio che si stringe tocca quello fermo.",
+    L("echo/serio", "Quando il nemico colpisce, parte la GUARDIA A TEMPO. C'è un cerchio fermo e uno che si stringe."),
+    L("echo/serio", "Tocca lo schermo quando si toccano. Preciso al millisecondo: parata PERFETTA e contrattacco."),
+    L("ferri/serio", "Il cronometro lo porto io. Tolleranza: zero virgola zero."),
+    L("zecca/sfotto", "Raga, la parata perfetta in clip fa numeri. Fatemi prendere il colpo."),
+    L("echo/neutro", "Non è questo il senso. Ma ha un suo fascino."))
+
+scene("tut_reazioni", "Davanti a un colpo pesante in carica compaiono le REAZIONI, che costano RISERVA e il turno.",
+    L("echo/serio", "Se il nemico CARICA un colpo pesante, compaiono le REAZIONI. Costano RISERVA e il turno di chi le usa."),
+    L("echo/serio", "La RISERVA è di squadra: ne ricaricate un po' a ogni round. Ognuna si gioca diversa."),
+    L("echo/serio", "SCHIVA: compare una freccia, tocca quel lato. COPRI: tieni premuto, lascia quando la barra è nella fascia."),
+    L("echo/serio", "FERMA: tocca a raffica finché la barra si riempie. Toglie subito EQUILIBRIO al nemico."),
+    L("echo/serio", "SOCCORRI: tocca a tempo col battito, tre volte. Rialza un compagno KO."),
+    L("echo/felice", "Se sbagli, la reazione funziona lo stesso. Vale meno. Dopotutto siete umani."))
+
+scene("tut_rottura", "A EQUILIBRIO zero il nemico va in ROTTURA e parte l'ATTACCO DI SQUADRA.",
+    L("echo/serio", "Quando la barra bianca EQUILIBRIO arriva a zero, il nemico va in ROTTURA: stordito."),
+    L("echo/felice", "Allora parte l'ATTACCO DI SQUADRA. Io faccio un FERMO IMMAGINE e colpite uno dopo l'altro."),
+    L("zecca/felice", "FERMO IMMAGINE. Ditemi che l'avete registrato. Voglio la clip."),
+    L("echo/neutro", "Telecamera 07 registra tutto. Il mio archivio è già pieno di voi."),
+    L("saul/neutro", "Una clip in cambio di una percentuale. Dico solo questo."))
+
+scene("tut_ultimate", "La barra dell'ULTIMATE si riempie colpendo e prendendo colpi; si può lanciare anche in diretta.",
+    L("echo/serio", "La barra dell'ULTIMATE si riempie colpendo e prendendo colpi. Piena: ULTIMATE, il colpo più forte."),
+    L("ferri/serio", "Quindi anche incassare serve. Lo trovo coerente col regolamento."),
+    L("echo/serio", "Altra cosa: mentre il nemico carica, chi ha la barra piena può lanciarla fuori turno."),
+    L("echo/serio", "Si chiama ULTIMATE IN DIRETTA. Compaiono i pulsanti ULT con il suo nome."),
+    L("zecca/sorpreso", "In diretta. IN. DIRETTA. Echo, adesso ti adoro."))
+
+scene("tut_extra", "SLANCIO, AUTO e x2, più la pausa.",
+    L("echo/neutro", "Tre extra. SLANCIO: colpire col colore vincente a volte regala un mezzo turno in più."),
+    L("echo/serio", "Vale solo con ATTACCO o GUARDIA. Con le altre mosse, niente."),
+    L("echo/neutro", "AUTO combatte da solo. x2 va più veloce. Per i turni noiosi."),
+    L("nox/felice", "AUTO. Qualcuno ha inventato la mia vita ideale."),
+    L("echo/serio", "Pausa: il tasto in alto, oppure Esc. Il tempo si ferma. Io, invece, no."))
+
+scene("tut_fine", "Dopo la vittoria: ESPERIENZA, LIVELLO e SQUADRA.",
+    L("echo/felice", "Vinto. Ogni scontro dà ESPERIENZA a tutti, anche a chi era in panchina."),
+    L("echo/serio", "Con un nuovo LIVELLO si sbloccano mosse, ULTIMATE, reazioni personali, tratti e sinergie tra compagni."),
+    L("echo/serio", "Si equipaggiano nel menu di pausa, alla voce SQUADRA. Provateci con calma."),
+    L("saul/neutro", "Una domanda. Chi paga il tutorial."),
+    L("echo/felice", "Nessuno. È stato un vero... punto di esperienza. Capito? Esperienza."),
+    L("nox/neutro", "Non l'abbiamo capito. Ed è meglio così."))
+
 scene("accordo", "Echo si presenta: è un Kairos, vive nelle telecamere. La cupola è retta da quattro Anomalie: se le chiudono, lei consegna le registrazioni della piazza che li scagionano. E a ognuno promette quello che vuole di più: il grado a Lance, le ferie a Nox, la live dell'anno a Rio, le taglie a Saul.",
     L("echo/neutro", "Bel lavoro. Quel distributore mi doveva dei soldi."),
     L("ferri/arrabbiato", "Chi parla? Nome, grado, reparto."),

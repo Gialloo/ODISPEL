@@ -10,8 +10,10 @@ Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STO
   `story.gd` (passi dell'atto e salvataggio), `banter.gd` (chiacchiere), `dialog_box.gd` (dialoghi stile Persona), `layout_builder.gd` (le aree), `battle3d.gd` (combattimento 3D),
   `character_visual.gd` / `vending_visual.gd` (segnaposto 3D, interfaccia sostituibile coi glTF), `toon.gd` + `mesh_batch.gd` + `city_builder.gd` (grafica),
   `light_fx.gd` (la magia disegnata con la luce), `sky_dome.gd` (la cupola nel cielo), `cam_hud.gd` (il mirino di Echo): vedi `docs/STILE_VISIVO.md`, ultima sezione.
+  Dalla 0.35: `progress.gd` (livelli, esperienza, sblocchi, sinergie, mosse rubate da Saul; si salva in "squadra"), `squad_menu.gd` (menu SQUADRA della pausa), `react_game.gd` (i quattro minigiochi delle reazioni).
 - `data/` — `atto1.json` (capitoli, passi, aree, nemici, boss), `dialoghi_atto1.json` (testi, generati da `tools/gen_dialoghi.py`: si corregge lo script e si rigenera) + `dialoghi.json`, `cast_visual.gd` (colori e proporzioni dei segnaposto).
 - `tests/unit/` — `test_v3_engine.gd` + test del motore portati dalla V2.  `tools/v3_atto1.gd` — gioca da solo l'atto 1 (battaglie in AUTO) e fa gli screenshot.
+  `test_v3_progressione.gd` (livelli, kit di Saul e Nox, esiti dei minigiochi). `tools/v3_novita.gd` — schermate delle novità 0.35 senza giocare. `tools/v3_stress_battaglia.gd` — boss in AUTO con i tempi dei fotogrammi (sotto xvfb i numeri valgono solo come confronto).
 
 ## Rendering (per cercare eventuali crash)
 Shader spatial **unshaded** fatti a mano (toon a due toni e nebbia dentro lo shader), contorni a guscio rovesciato come

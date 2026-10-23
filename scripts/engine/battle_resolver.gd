@@ -830,12 +830,50 @@ static func _rescue(state: Dictionary, actor: Dictionary, move_id: String, event
 	var u: Dictionary = BattleState.unit(state, who)
 	_spend_reserve(state, reaction_cost(state, move_id), "react", events)
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
-	var hp: int = maxi(1, int(round(float(u["max_hp"]) * BattleTypes.RESCUE_HP)))
+	# minigioco del battito (battle3d): a tempo rialza con piu' PV, sbagliato con meno. Nox «Reperibile»: di piu' ancora.
+	var rk: float = BattleTypes.RESCUE_HP + react_bonus(state, actor, "rescue")
+	var hp: int = maxi(1, int(round(float(u["max_hp"]) * rk)))
 	u["hp"] = hp
 	u["rescued"] = true
 	u["statuses"] = {}
 	events.append({"t": "rescue", "unit": actor["id"], "who": who, "hp": hp})
 	return true
+
+
+# ESITO DEI MINIGIOCHI DELLE REAZIONI: battle3d scrive state["react_grade"][id unita'] = "great" (riuscito) o "fail" (sbagliato).
+# Senza voce (AUTO, prove, simulazioni) vale "ok": l'effetto di sempre.
+static func react_grade(state: Dictionary, u: Dictionary) -> String:
+	return str((state.get("react_grade", {}) as Dictionary).get(str(u.get("id", "")), "ok"))
+
+
+# PV in piu' (frazione) del Soccorso: esito del minigioco e reazione personale di Nox
+static func react_bonus(state: Dictionary, actor: Dictionary, kind: String) -> float:
+	var g: String = react_grade(state, actor)
+	var k: float = 0.15 if g == "great" else (-0.1 if g == "fail" else 0.0)
+	if kind == "rescue" and str(actor.get("react_mod", "")) == "reperibile":
+		k += 0.2
+		actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + 1)
+	return k
+
+
+# REAZIONI PERSONALI (si sbloccano coi livelli, si equipaggiano nel menu SQUADRA): cosa aggiungono a una reazione riuscita.
+static func _react_perk(state: Dictionary, boss: Dictionary, u: Dictionary, kind: String, events: Array) -> void:
+	var mod: String = str(u.get("react_mod", ""))
+	match mod:
+		"muro":
+			if kind == "intercept":
+				u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + 15)
+				events.append({"t": "react_mod", "unit": u["id"], "mod": mod})
+		"cambio_scena":
+			if kind == "dodge":
+				Kits.add_hype(u, 20, events, "schivata")
+				u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + 15)
+				events.append({"t": "react_mod", "unit": u["id"], "mod": mod})
+		"sgattaiolare":
+			if kind == "dodge" and BattleState.is_alive(boss):
+				events.append({"t": "react_mod", "unit": u["id"], "mod": mod})
+				u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + 1)
+				_hit(state, u, boss, 0.8, events)
 
 
 # Esegue una reazione. Falso se non e' piu' possibile (Riserva finita per colpa di un compagno, carica gia' fermata).
@@ -855,7 +893,10 @@ static func _react(state: Dictionary, actor: Dictionary, move_id: String, events
 	var boss: Dictionary = BattleState.boss(state)
 	events.append({"t": "react", "unit": actor["id"], "kind": str(move["react"]), "move": str(state["telegraph"]["move"])})
 	if str(move["react"]) == "interrupt":
-		_drain_balance(boss, BattleTypes.INTERRUPT_PTS + (1 if str(state.get("order", "")) == "interrompi" else 0), actor, events)
+		# minigioco a raffica (battle3d): riuscito toglie 2 punti in piu', fallito 2 in meno
+		var g: String = react_grade(state, actor)
+		var extra: int = 2 if g == "great" else (-2 if g == "fail" else 0)
+		_drain_balance(boss, maxi(1, BattleTypes.INTERRUPT_PTS + extra + (1 if str(state.get("order", "")) == "interrompi" else 0)), actor, events)
 		actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + 10)
 	return true
 
@@ -1181,10 +1222,16 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		for r in state.get("reactions", []):
 			if str(r["react"]) == "dodge" and str(r["unit"]) == str(t["id"]):
 				evaded = true
-		if evaded:
-			events.append({"t": "dodge", "unit": t["id"], "react": true})
-			continue
 		var hit_mult: float = float(move["mult"]) * beh_mult
+		if evaded:
+			# minigioco della freccia (battle3d): sbagliato = schivata a meta', il colpo passa di striscio
+			if react_grade(state, t) == "fail":
+				hit_mult *= 0.5
+				events.append({"t": "dodge_half", "unit": t["id"]})
+			else:
+				events.append({"t": "dodge", "unit": t["id"], "react": true})
+				_react_perk(state, boss, t, "dodge", events)
+				continue
 		if intercepted.is_empty() and targets.size() == 1:
 			# Copertura di Lance: si mette davanti al compagno annunciato
 			var cov: Dictionary = Kits.coverer(state, t)
@@ -1194,6 +1241,12 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		if not intercepted.is_empty() and BattleState.is_alive(intercepted) and str(intercepted["id"]) != str(t["id"]) and targets.size() == 1:
 			t = intercepted
 			hit_mult *= BattleTypes.INTERCEPT_FACTOR
+			# minigioco tieni-e-rilascia (battle3d): nella fascia il colpo si prende meglio, fuori un po' peggio
+			var ig: String = react_grade(state, t)
+			hit_mult *= 0.6 if ig == "great" else (1.3 if ig == "fail" else 1.0)
+			_react_perk(state, boss, t, "intercept", events)
+			if str(t.get("react_mod", "")) == "muro":
+				hit_mult *= 0.7
 		if timed == "good" or timed == "perfect":
 			var perfect: bool = timed == "perfect"
 			hit_mult *= BattleTypes.TIMED_PERFECT_FACTOR if perfect else BattleTypes.TIMED_GUARD_FACTOR

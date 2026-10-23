@@ -59,6 +59,7 @@ static func new_game() -> void:
 	step = 0
 	flags = {}
 	area_state = {}
+	Progress.reset()
 	save()
 
 
@@ -104,6 +105,14 @@ static func load_game() -> bool:
 	flags = saved if saved is Dictionary else {}
 	var st: Variant = cfg.get_value("storia", "area", {})
 	area_state = st if st is Dictionary else {}
+	Progress.from_save(cfg.get_value("squadra", "dati", {}))
+	if not cfg.has_section("squadra"):
+		# salvataggio di prima dei livelli: la squadra parte dal livello previsto per il capitolo (1, 3, 5, 7, 9, 11)
+		for c in Progress.CAST:
+			Progress.data["lv"][c] = 1 + 2 * clampi(chapter, 0, 5)
+			for u in Progress.UNLOCKS[c]:
+				if int(u[0]) <= int(Progress.data["lv"][c]):
+					Progress._auto_equip(c, str(u[1]), str(u[2]))
 	return true
 
 
@@ -114,6 +123,8 @@ static func save() -> void:
 	cfg.set_value("storia", "flag", flags)
 	if not area_state.is_empty():
 		cfg.set_value("storia", "area", area_state)
+	Progress.ensure()
+	cfg.set_value("squadra", "dati", Progress.data)
 	cfg.save(save_path)
 
 
