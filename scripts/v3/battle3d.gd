@@ -1172,6 +1172,8 @@ func _build_ui() -> void:
 	_cmd_box = VBoxContainer.new()
 	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -330, -16, -14)
 	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
+	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
+	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_cmd_box.add_theme_constant_override("separation", 8)
 	_root.add_child(_cmd_box)
 	_btn_ult = Ui.button("ULTIMATE", Ui.PINK, 26)
