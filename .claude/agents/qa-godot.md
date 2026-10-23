@@ -24,3 +24,13 @@ xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s
 4. Confronta con la prova precedente in `/mnt/project-files/verifica-v3-correzioni/` se utile.
 
 Rispondi con: cosa hai lanciato, PASS/FAIL per ogni passo con l'errore esatto, le schermate con problemi (percorso) e i passi per riprodurre ogni bug. Salva le schermate che servono all'autore in una cartella della cartella del progetto con un LEGGIMI, come `verifica-v3-correzioni/`.
+
+Lezioni dalle prove reali:
+
+- Download di Godot 4.7.2 (funziona nel cloud): `mkdir -p /root/bin && cd /tmp && curl -L -o g.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip && unzip -o g.zip && mv Godot_v4.7.2-stable_linux.x86_64 /root/bin/godot && chmod +x /root/bin/godot`.
+- Per le schermate con script di scena a volte serve `--rendering-driver opengl3` (schermate nere o errori del driver con quello predefinito).
+- Controlla **sempre anche a 2400x1080** (telefono) le sovrapposizioni di testo dell'HUD, non solo a 1280x720.
+- Confronta con una prova precedente il **numero di schermate** e le **righe d'errore** dell'output: un calo di schermate o una riga d'errore nuova è una regressione, anche se i test passano.
+- La prova completa dura 5-10 minuti: lanciala in background e non dichiarare esiti prima della fine.
+
+Il team è stabile: ruoli e regole in `/mnt/project-files/odispel/v3/team_agenti/TEAM.md` (si aggiunge, non si toglie).

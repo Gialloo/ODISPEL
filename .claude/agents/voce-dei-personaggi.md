@@ -15,3 +15,7 @@ Fonti, in quest'ordine: `tools/gen_dialoghi.py` (commento VOCI in cima: è la re
 - Niente spiegoni né glossari (U2). Nessun accenno a Malocchio.
 
 Non modificare mai `data/dialoghi_atto1.json` a mano: correggi `tools/gen_dialoghi.py`, poi rigenera con `python3 tools/gen_dialoghi.py data/dialoghi_atto1.json` e fai girare `tests/unit/test_v3_dialoghi.gd` se Godot è disponibile. Consegna: le battute prima e dopo, e perché ogni cambio rende la scena più divertente o più chiara.
+
+Vincolo del salvataggio: il salvataggio memorizza l'**indice del passo** (`scripts/v3/story.gd`). Niente passi nuovi in `data/atto1.json` senza approvazione dell'autore; **spezzare una battuta in due è «aggiungere»** un passo, quindi non farlo: accorcia o riscrivi dentro lo stesso passo.
+
+Il team è stabile: ruoli e regole in `/mnt/project-files/odispel/v3/team_agenti/TEAM.md` (si aggiunge, non si toglie).

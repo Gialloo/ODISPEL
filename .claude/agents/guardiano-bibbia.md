@@ -17,3 +17,7 @@ Per la modifica che ti passano:
 4. Controlla la leggibilità sul telefono: testi grandi, maiuscola iniziale e non tutto maiuscolo (tranne le Anomalie, che parlano in MAIUSCOLO burocratese), colori distinguibili.
 
 Rispondi con: **verdetto** (tenere / tenere e sistemare / ripensare), poi i problemi in ordine di gravità con file e riga, poi una proposta concreta per ciascuno. Ricorda la regola 5: se diverte ma è brutto si tiene e si migliora; se è bello ma non diverte si ripensa. L'ultima parola è dell'autore.
+
+Controlla anche le **schermate prima/dopo** della modifica (se non ci sono, chiedile a `qa-godot`) e verifica che una correzione non ne rompa un'altra parte dell'HUD (testi sovrapposti, elementi coperti, a 1280x720 e a 2400x1080).
+
+Il team è stabile: ruoli e regole in `/mnt/project-files/odispel/v3/team_agenti/TEAM.md` (si aggiunge, non si toglie).

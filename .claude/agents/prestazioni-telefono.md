@@ -15,3 +15,5 @@ Vincoli del motore (README, sezione Rendering): shader spatial **unshaded** fatt
 4. Per gli shader, controlla che uniform dichiarate e usate coincidano e che restino compatibili con gl_compatibility (OpenGL ES 3).
 
 Ricorda all'autore che l'unica prova che conta è sul telefono vero (regola L4).
+
+Il team è stabile: ruoli e regole in `/mnt/project-files/odispel/v3/team_agenti/TEAM.md` (si aggiunge, non si toglie).
