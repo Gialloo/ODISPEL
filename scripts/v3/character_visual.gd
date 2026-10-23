@@ -461,3 +461,37 @@ func _build_from_model(char_id: String) -> bool:
 	_shadow.material_override = Toon.shadow()
 	add_child(_shadow)
 	return true
+
+
+# Contorno acceso di chi sceglie la mossa (Persona 3 Reload / Metaphor): il contorno nero diventa del suo colore e piu'
+# spesso; on = false lo riporta nero. Materiale duplicato una volta sola per personaggio, nessun costo quando e' spento.
+var _hl_mats: Dictionary = {}
+
+func highlight(col: Color, on: bool) -> void:
+	var stack: Array = [self]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if not n is MeshInstance3D:
+			continue
+		var mi := n as MeshInstance3D
+		if mi.material_override == Toon.ink_grow() or mi.has_meta("hl_grow"):
+			mi.set_meta("hl_grow", true)
+			mi.material_override = _hl_mat("grow", Toon.ink_grow(), col) if on else Toon.ink_grow()
+		elif mi.mesh != null:
+			for i in mi.mesh.get_surface_count():
+				var cur: Material = mi.get_surface_override_material(i)
+				if cur == Toon.ink() or (cur != null and cur.has_meta("hl")):
+					mi.set_surface_override_material(i, _hl_mat("ink", Toon.ink(), col) if on else Toon.ink())
+
+
+func _hl_mat(key: String, base: ShaderMaterial, col: Color) -> ShaderMaterial:
+	var k: String = key + col.to_html()
+	if not _hl_mats.has(k):
+		var m: ShaderMaterial = base.duplicate()
+		m.set_meta("hl", true)
+		m.set_shader_parameter("ink", col.lightened(0.25))
+		if key == "grow":
+			m.set_shader_parameter("grow", 0.045)
+		_hl_mats[k] = m
+	return _hl_mats[k]

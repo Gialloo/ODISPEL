@@ -443,8 +443,26 @@ func _cam_actor(uid: String) -> void:
 # close = ULTIMATE scelta: la telecamera si stringe sul personaggio.
 func _cam_choose(uid: String, close: bool = false) -> void:
 	var p: Vector3 = home[uid]
-	var k: float = 0.82 if close else 1.0
-	_cam_set(p + Vector3(1.55 * k, 1.5 + 0.15 * k, 2.7 * k), ENEMY_POS + Vector3(1.6, 1.1 if not close else 1.3, 0), 5.0 if not close else 2.6)
+	var k: float = 0.85 if close else 1.0
+	# di tre quarti, di lato e vicino: il personaggio a sinistra, il nemico a destra, il grappolo dei comandi in mezzo
+	var cp: Vector3 = p + Vector3(2.75 * k, 1.35 + 0.1 * k, 1.35 * k)
+	var look: Vector3 = p.lerp(ENEMY_POS, 0.4) + Vector3(0.0, 1.05 if not close else 1.2, 0)
+	_cam_set(cp, look, 5.0 if not close else 2.6)
+	# i compagni tra la telecamera e la scena escono di quadro mentre si sceglie (come in Persona 5)
+	var dme: float = cp.distance_to(p)
+	for id in home:
+		if id == uid or id == BattleState.BOSS_ID or not vis.has(id):
+			continue
+		(vis[id] as Node3D).visible = cp.distance_to(home[id]) > dme + 1.0
+	if vis.has(uid) and vis[uid].has_method("highlight"):
+		vis[uid].call("highlight", _col(_unit_of(cur_pid)), true)
+
+
+func _cam_choose_end() -> void:
+	for id in vis:
+		(vis[id] as Node3D).visible = true
+		if vis[id].has_method("highlight"):
+			vis[id].call("highlight", Color.BLACK, false)
 
 
 func _cam_side(a: Vector3, bpos: Vector3) -> void:
@@ -507,12 +525,13 @@ func _update_wheel() -> void:
 			var pf: Vector2 = cam.unproject_position(feet)
 			var hgt: float = maxf(120.0, pf.y - ph.y)
 			var vs: Vector2 = _wheel.size if _wheel.size.x > 1.0 else get_viewport().get_visible_rect().size
-			_wheel.ry = clampf(hgt * 0.56, 150.0, 230.0)
-			_wheel.rx = _wheel.ry * 0.9
-			var c: Vector2 = Vector2(ph.x, lerpf(ph.y, pf.y, 0.45))
-			# la ruota resta dentro lo schermo (le etichette escono di lato: margine piu' largo a destra)
-			c.x = clampf(c.x, _wheel.rx + 120.0, vs.x - _wheel.rx - 360.0)
-			c.y = clampf(c.y, _wheel.ry + 60.0, vs.y - _wheel.ry - 40.0)
+			_wheel.ry = clampf(hgt * 0.5, 150.0, 230.0)
+			_wheel.rx = _wheel.ry * 0.55
+			var c: Vector2 = Vector2(ph.x, lerpf(ph.y, pf.y, 0.42))
+			# il grappolo dei comandi (a destra del personaggio) resta dentro lo schermo e sopra la squadra
+			var sk: float = _wheel.s()
+			c.x = clampf(c.x, 90.0, vs.x - 470.0 * sk - 420.0)
+			c.y = clampf(c.y, 150.0 + 200.0 * sk, vs.y - 175.0 * sk)
 			_wheel.center = _wheel.center.lerp(c, 0.35) if _wheel.appear > 0.05 else c
 			var m: ShaderMaterial = _spot.material
 			m.set_shader_parameter("c", Vector2(ph.x, lerpf(ph.y, pf.y, 0.5)) / vs)
@@ -1003,6 +1022,55 @@ func _qte_tap() -> void:
 
 
 # Cerchio della guardia a tempo: un anello fisso (il bersaglio) e uno che si stringe fino a toccarlo.
+class EchoBalloon extends Control:
+	# Fumetto di Echo dietro i consigli: lastra scura inclinata con bordo ciano e il suo ritratto, segue il testo
+	var lbl: Label
+	var face: Texture2D
+	var _r: Rect2 = Rect2()
+
+	func _init(p_lbl: Label) -> void:
+		lbl = p_lbl
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		set_anchors_preset(Control.PRESET_FULL_RECT)
+		if ResourceLoader.exists("res://assets/portraits/echo_neutro.png"):
+			face = load("res://assets/portraits/echo_neutro.png")
+
+	func _process(_d: float) -> void:
+		var on: bool = is_instance_valid(lbl) and lbl.visible and lbl.text != ""
+		visible = on
+		if not on:
+			return
+		modulate.a = lbl.modulate.a
+		var r := Rect2(lbl.position, lbl.size)
+		if r != _r:
+			_r = r
+			queue_redraw()
+
+	func _draw() -> void:
+		var r: Rect2 = _r.grow_individual(18, 10, 22, 12)
+		var sk: float = 14.0
+		var cy := Color("#3fe0ff")
+		var pts := PackedVector2Array([r.position + Vector2(sk, 0), Vector2(r.end.x + sk, r.position.y - 4),
+			Vector2(r.end.x - sk * 0.4, r.end.y), Vector2(r.position.x + 30, r.end.y + 2),
+			Vector2(r.position.x + 6, r.end.y + 18), Vector2(r.position.x + 10, r.end.y), Vector2(r.position.x - sk * 0.4, r.end.y)])
+		var sh := PackedVector2Array()
+		for q in pts:
+			sh.append(q + Vector2(6, 6))
+		draw_colored_polygon(sh, Color(cy, 0.35))
+		draw_colored_polygon(pts, Color(0.04, 0.03, 0.09, 0.92))
+		var loop := pts.duplicate()
+		loop.append(pts[0])
+		draw_polyline(loop, cy, 3.0, true)
+		# ritratto di Echo nel tondo a sinistra
+		var c: Vector2 = Vector2(r.position.x - 34, r.position.y + 30)
+		draw_circle(c, 40.0, cy)
+		draw_circle(c, 36.0, Color(0.04, 0.03, 0.09))
+		if face != null:
+			var fs: float = 56.0
+			draw_texture_rect(face, Rect2(c - Vector2(fs, fs) * 0.5, Vector2(fs, fs)), false)
+		draw_string(Ui.display(), Vector2(r.position.x + sk + 6, r.position.y - 6), "ECHO", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, cy)
+
+
 class QteRing extends Control:
 	const R: float = 54.0
 	var progress: float = 0.0
@@ -1752,7 +1820,7 @@ func _build_ui() -> void:
 
 	# squadra (basso a destra, righe compatte come nella V2): il centro e il lato sinistro restano alla scena e alla ruota
 	var party := VBoxContainer.new()
-	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -440, -280, -16, -14)
+	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -470, -280, -16, -14)
 	party.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	party.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	party.alignment = BoxContainer.ALIGNMENT_END
@@ -1839,11 +1907,12 @@ func _build_ui() -> void:
 	_kit_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_kit_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_kit_lbl)
-	_hint = Ui.label("", 24, Ui.CREAM, null, 8)
-	# a sinistra sotto i TURNI: il centro resta alla scena e alla ruota dei comandi
-	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 16, 262, 470, 262)
+	_hint = Ui.label("", 22, Ui.CREAM, null, 6)
+	# a sinistra sotto i TURNI, dentro il fumetto di Echo (come l'alleata che parla in Persona): il centro resta alla scena
+	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 104, 270, 560, 270)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_root.add_child(EchoBalloon.new(_hint))
 	_root.add_child(_hint)
 
 	# in alto a destra: pausa, AUTO, velocita'
@@ -1944,12 +2013,19 @@ func _bar(col: Color, h: float) -> ProgressBar:
 func _make_card() -> Dictionary:
 	# riga compatta: nome e PV a sinistra, barre ed energia a destra
 	var p := PanelContainer.new()
-	p.custom_minimum_size = Vector2(420, 0)
+	p.custom_minimum_size = Vector2(450, 0)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(row)
+	# ritratto del personaggio a sinistra della riga (Persona 3 Reload / Persona 5: la squadra si riconosce dai volti)
+	var face := TextureRect.new()
+	face.custom_minimum_size = Vector2(58, 58)
+	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(face)
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 0)
 	left.custom_minimum_size = Vector2(190, 0)
@@ -1962,7 +2038,7 @@ func _make_card() -> Dictionary:
 	var name_l := Ui.label("", 19, Ui.CREAM, Ui.display(), 6)
 	name_l.clip_text = true
 	left.add_child(name_l)
-	var hp_t := Ui.label("", 18, Ui.CREAM, null, 4)
+	var hp_t := Ui.label("", 22, Ui.CREAM, Ui.display(), 6)
 	left.add_child(hp_t)
 	var hp := _bar(Color("#62f08c"), 12)
 	vb.add_child(hp)
@@ -1976,7 +2052,7 @@ func _make_card() -> Dictionary:
 	cracks.set_meta("tier", 0)
 	cracks.draw.connect(func() -> void: _draw_cracks(cracks))
 	p.add_child(cracks)
-	return {"panel": p, "name": name_l, "hp": hp, "hp_t": hp_t, "en": en, "ult": ult, "cracks": cracks, "tier": 0}
+	return {"panel": p, "face": face, "name": name_l, "hp": hp, "hp_t": hp_t, "en": en, "ult": ult, "cracks": cracks, "tier": 0}
 
 
 const CRACKS_1: Array = [[Vector2(0.78, 0.0), Vector2(0.72, 0.18), Vector2(0.80, 0.34), Vector2(0.74, 0.5)],
@@ -2085,6 +2161,7 @@ func _show_commands(on: bool) -> void:
 		_turn_lbl.visible = not on         # il nome di chi e' di turno sta sotto la ruota
 	if not on:
 		_pick("")
+		_cam_choose_end()
 		if _reticle != null and not _confirming:
 			_reticle.visible = false
 		_pop_key = ""
@@ -2360,7 +2437,13 @@ func _refresh_hud() -> void:
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
 		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])))
-		(c["hp_t"] as Label).text = "PV %d/%d" % [int(u["hp"]), int(u["max_hp"])]
+		(c["hp_t"] as Label).text = "%d" % int(u["hp"])
+		var face: TextureRect = c["face"]
+		if face.texture == null:
+			var fp: String = "res://assets/portraits/%s_neutro.png" % str(u.get("char", ""))
+			if ResourceLoader.exists(fp):
+				face.texture = load(fp)
+		face.modulate = Color.WHITE if alive else Color(0.4, 0.4, 0.45)
 		var en: int = int(u.get("energy", 0))
 		(c["en"] as Label).text = "EN %d/%d" % [en, BattleTypes.MAX_ENERGY]
 		if Kits.is_char(u, Kits.RIO):
