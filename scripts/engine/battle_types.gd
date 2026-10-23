@@ -91,6 +91,15 @@ const ACTION_ATTACK: String = "attack"
 const ACTION_GUARD: String = "guard"
 
 
+# SECONDO PUNTO DEBOLE (boss gialli): la ruota dei colori resta com'e'; in piu' il boss ha un secondo colore che lo ferisce (+25% danno).
+const WEAK2_MULT: float = 1.25
+
+# Il colpo di `attacker` colpisce il secondo punto debole di `defender` (solo boss con "weak2", e solo se la ruota non gia' favorisce)?
+static func hits_weak2(attacker: Dictionary, defender: Dictionary) -> bool:
+	var w2: String = str(defender.get("weak2", ""))
+	return w2 != "" and str(attacker.get("color", "")) == w2 and color_multiplier(str(attacker["color"]), str(defender["color"])) <= 1.0
+
+
 static func color_multiplier(attacker_color: String, defender_color: String) -> float:
 	if BEATS.get(attacker_color, "") == defender_color:
 		return COLOR_ADVANTAGE

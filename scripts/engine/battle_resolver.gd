@@ -598,6 +598,8 @@ static func _do_swap(state: Dictionary, p: Dictionary, new_id: String, events: A
 static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float, pierce: int = 0, flat: float = 0.0, ammo_hit: bool = false) -> int:
 	var dmg: float = float(attacker["atk"]) * Marks.boss_mult(attacker, "atk") * mult + flat
 	dmg *= BattleTypes.color_multiplier(str(attacker["color"]), str(defender["color"]))
+	if BattleTypes.hits_weak2(attacker, defender):
+		dmg *= BattleTypes.WEAK2_MULT
 	dmg *= Marks.bonus_mult(defender, ammo_hit)
 	dmg *= Archetypes.damage_mult(attacker, defender)
 	dmg *= Signatures.damage_mult(attacker, defender)
@@ -746,7 +748,7 @@ static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, e
 	if int(boss.get("stun", 0)) > 0 or bool(boss.get("exposed", false)):
 		return
 	var cm: float = BattleTypes.color_multiplier(str(attacker["color"]), str(boss["color"]))
-	var pts: int = BattleTypes.BREAK_ADV if cm > 1.0 else (BattleTypes.BREAK_DISADV if cm < 1.0 else BattleTypes.BREAK_NEUTRAL)
+	var pts: int = BattleTypes.BREAK_ADV if (cm > 1.0 or BattleTypes.hits_weak2(attacker, boss)) else (BattleTypes.BREAK_DISADV if cm < 1.0 else BattleTypes.BREAK_NEUTRAL)
 	if Marks.count(boss) > 0:
 		pts += BattleTypes.BREAK_MARKED
 	if mult >= 2.0:

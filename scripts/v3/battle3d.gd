@@ -990,6 +990,8 @@ func _color_tag(e: Dictionary, dst: String, delay: float) -> void:
 	if dst == BattleState.BOSS_ID and str(b["units"][src].get("side", "")) != "boss":
 		_boss_known = true
 	var h: Dictionary = ColorHint.eval(str(b["units"][src].get("color", "")), str(b["units"][dst].get("color", "")))
+	if dst == BattleState.BOSS_ID and BattleTypes.hits_weak2(b["units"][src], b["units"][dst]):
+		_number(dst, "PUNTO DEBOLE", Ui.YELLOW, 30, delay + 0.06, 40.0)
 	match str(h["tipo"]):
 		"efficace":
 			_number(dst, str(h["testo"]), Ui.YELLOW, 30, delay + 0.06, 40.0)
@@ -1558,6 +1560,8 @@ func _show_commands(on: bool) -> void:
 	# vantaggio o svantaggio di colore contro il boss (solo se il giocatore sa gia' di che colore e')
 	if _boss_known or not weak.is_empty():
 		var hl: String = ColorHint.line(str(u.get("color", "")), str(BattleState.boss(b).get("color", "")), _bname())
+		if hl == "":
+			hl = ColorHint.second_line(str(u.get("color", "")), BattleState.boss(b))
 		if hl != "":
 			lines.insert(0, hl)
 	_kit_lbl.text = "\n".join(lines)
