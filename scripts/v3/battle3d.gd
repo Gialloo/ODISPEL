@@ -835,6 +835,10 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_number(str(e.get("unit", "")), "POTENZIATO", Color("#ffb04a"), 24, delay + 0.15)
 			"debuff":
 				_number(BattleState.BOSS_ID, "INDEBOLITO", Color("#b0a0ff"), 24, delay + 0.15)
+			"balance":
+				# quanto equilibrio toglie questo colpo (lo stesso numero che scende nella barra bianca)
+				if int(e.get("amount", 0)) > 0:
+					_number(BattleState.BOSS_ID, "Equilibrio -%d" % int(e.get("amount", 0)), Color("#f2f0ea"), 20, delay + 0.2, -30.0)
 			"break":
 				_shatter_later("boss", delay, 1.0)        # solo l'animazione: lo schermo poi torna pulito
 				_sparks_later(BattleState.BOSS_ID, delay, true)
@@ -1212,8 +1216,14 @@ func _build_ui() -> void:
 	_boss_hp.add_child(_boss_hp_txt)
 	Ui.place(_boss_hp_txt, 0, 0, 1, 1)
 	_boss_hp_txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_boss_brk = _bar(Color("#f2f0ea"), 10)
+	_boss_brk = _bar(Color("#f2f0ea"), 14)
 	bp.add_child(_boss_brk)
+	# il nome della barra bianca, piccolo e dentro la barra: quando arriva a zero il boss si rompe
+	var brk_t := Ui.label("Equilibrio", 11, Color("#8a8697"), null, 3)
+	brk_t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_brk.add_child(brk_t)
+	Ui.place(brk_t, 0, 0, 1, 1)
+	brk_t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_tele = Ui.label("", 20, Ui.CREAM, null, 6)
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bp.add_child(_tele)
