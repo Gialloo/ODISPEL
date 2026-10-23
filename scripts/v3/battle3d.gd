@@ -34,6 +34,8 @@ var pv_k: float = 1.0                    # scala PV e attacco del nemico (PROVVI
 var atk_k: float = 1.0
 var arena: String = "strada"
 var weak: Array = []                     # debolezze scoperte con gli indizi
+const FOV_BASE: float = 58.0
+var _pinched: bool = false                # il FOV e' stretto dalla scossa: va riportato a FOV_BASE
 var _boss_known: bool = false             # il giocatore conosce il colore del boss (indizio o primo colpo)
 var ritorno: Dictionary = {}             # dove tornare: area (nemico minore), storia (boss), niente = demo dal menu
 var minore: bool = false
@@ -144,7 +146,7 @@ func _ready() -> void:
 	_setup_battle()
 	_build_units()
 	cam = Camera3D.new()
-	cam.fov = 58.0
+	cam.fov = FOV_BASE
 	cam.near = 0.1
 	cam.far = 120.0
 	add_child(cam)
@@ -391,6 +393,12 @@ func _process(delta: float) -> void:
 		_shake = maxf(0.0, _shake - rd * 3.0)
 		var k: float = _shake * Settings.shake * 0.22
 		sh = Vector3(randf_range(-k, k), randf_range(-k, k), randf_range(-k, k) * 0.5)
+		# colpo forte: il campo visivo si stringe appena e poi si riapre, insieme alla scossa
+		cam.fov = FOV_BASE - _shake * Settings.shake * 3.5
+		_pinched = true
+	elif _pinched:
+		cam.fov = FOV_BASE
+		_pinched = false
 	cam.position = _cam_pos + sh
 	if cam.position.distance_to(_cam_look) > 0.01:
 		cam.look_at(_cam_look, Vector3.UP)
@@ -786,7 +794,13 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					continue
 				var amt: int = int(e.get("amount", 0))
 				var crit: bool = bool(e.get("crit", false))
-				_number(dst, ("%d" % amt) + ("!" if crit else ""), Ui.YELLOW if crit else Ui.CREAM, 46 if crit else 38, delay)
+				# il peso del colpo si legge dalla grandezza del numero (danno / PV massimi del bersaglio); rosso-arancio se tocca uno dei tuoi
+				var dmax: float = maxf(1.0, float(b["units"].get(dst, {}).get("max_hp", 1)))
+				var sz: int = clampi(int(round(lerpf(30.0, 64.0, clampf(float(amt) / dmax / 0.25, 0.0, 1.0)))), 30, 64)
+				var ncol: Color = Ui.YELLOW if crit else Ui.CREAM
+				if dst != BattleState.BOSS_ID:
+					ncol = Color("#ff6a5a")
+				_number(dst, ("%d" % amt) + ("!" if crit else ""), ncol, sz, delay)
 				_color_tag(e, dst, delay)
 				if int(e.get("absorbed", 0)) > 0:
 					_number(dst, "SCUDO -%d" % int(e["absorbed"]), Ui.CYAN, 24, delay + 0.1)
