@@ -84,6 +84,9 @@ var _boss_name: Label
 var _boss_hp: ProgressBar
 var _boss_hp_txt: Label
 var _boss_brk: ProgressBar
+var _brk_lbl: Label
+var _brk_near: bool = false           # equilibrio quasi a zero: la barra si accende e pulsa (il Break e' vicino)
+var _brk_tw: Tween
 var _tele: Label
 var _cards: Array = []
 var _turn_lbl: Label
@@ -1185,6 +1188,25 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 	await _wait(0.22 + delay)
 
 
+# Quando manca poco al BREAK la barra diventa gialla e pulsa piano: il giocatore sa che il prossimo colpo puo' rompere (Star Rail: la barra della
+# tenacia e' il centro del combattimento). Cambia solo quando entra o esce dalla soglia; un solo tween ripetuto e leggero.
+func _brk_pulse(near: bool) -> void:
+	if near == _brk_near:
+		return
+	_brk_near = near
+	if _brk_tw != null and _brk_tw.is_valid():
+		_brk_tw.kill()
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Ui.YELLOW if near else Color("#f2f0ea")
+	fill.set_corner_radius_all(2)
+	_boss_brk.add_theme_stylebox_override("fill", fill)
+	_boss_brk.modulate = Color.WHITE
+	if near:
+		_brk_tw = _boss_brk.create_tween().set_loops()
+		_brk_tw.tween_property(_boss_brk, "modulate", Color(1.35, 1.25, 0.9), 0.35)
+		_brk_tw.tween_property(_boss_brk, "modulate", Color.WHITE, 0.35)
+
+
 func _flash_later(k: float, delay: float) -> void:
 	if delay > 0.01:
 		await get_tree().create_timer(delay).timeout
@@ -1662,10 +1684,11 @@ func _build_ui() -> void:
 	_boss_hp.add_child(_boss_hp_txt)
 	Ui.place(_boss_hp_txt, 0, 0, 1, 1)
 	_boss_hp_txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_boss_brk = _bar(Color("#f2f0ea"), 14)
+	_boss_brk = _bar(Color("#f2f0ea"), 20)
 	bp.add_child(_boss_brk)
-	# il nome della barra bianca, piccolo e dentro la barra: quando arriva a zero il boss si rompe
-	var brk_t := Ui.label("Equilibrio", 12, Color("#8a8697"), null, 3)
+	# il nome della barra bianca dentro la barra, crema col contorno scuro, si legge su barra piena e vuota (prima grigio chiaro da 12: non si leggeva): quando arriva a zero il boss si rompe
+	_brk_lbl = Ui.label("EQUILIBRIO", 16, Ui.CREAM, Ui.display(), 6)
+	var brk_t := _brk_lbl
 	brk_t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_brk.add_child(brk_t)
 	Ui.place(brk_t, 0, 0, 1, 1)
@@ -1684,6 +1707,7 @@ func _build_ui() -> void:
 		var card := _make_card()
 		party.add_child(card["panel"])
 		_cards.append(card)
+	_intro_panels(ob, bp, party)
 
 	# comandi (basso a destra)
 	_cmd_box = VBoxContainer.new()
@@ -1919,6 +1943,20 @@ func _card_tier(c: Dictionary, ratio: float) -> void:
 var _confirming: bool = false
 
 
+# Entrata dei pannelli a inizio battaglia (Persona 5: l'interfaccia non compare, entra): ordine dei turni, nemico e squadra
+# arrivano con dissolvenza e un piccolo scatto, uno dopo l'altro. Solo opacita' e scala (i contenitori non si spostano), 0.3 s ciascuno.
+func _intro_panels(ob: Control, bp: Control, party: Control) -> void:
+	var items: Array = [[bp, Vector2(300, 0)], [ob, Vector2(0, 0)], [party, Vector2(0, 134)]]
+	var tw := create_tween().set_parallel(true)
+	for i in items.size():
+		var c: Control = items[i][0]
+		c.pivot_offset = items[i][1]
+		c.modulate.a = 0.0
+		c.scale = Vector2(0.92, 0.92)
+		tw.tween_property(c, "modulate:a", 1.0, 0.22).set_delay(0.08 * i)
+		tw.tween_property(c, "scale", Vector2.ONE, 0.3).set_delay(0.08 * i).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 # TOCCA A TE: appena un eroe diventa di turno la sua card salta (scatto in scala), "TURNO DI ..." entra grande nel suo colore,
 # la colonna dei comandi si apre e il mirino si aggancia al nemico. Una volta sola per turno, tween brevi (Persona 5: ogni cambio ha uno scatto).
 func _announce_turn() -> void:
@@ -2136,6 +2174,8 @@ func _refresh_hud() -> void:
 	_boss_hp_txt.text = "%d / %d" % [int(boss["hp"]), int(boss["max_hp"])]
 	_boss_brk.max_value = maxi(1, int(boss.get("balance_max", 1)))
 	_boss_brk.value = int(boss.get("balance", 0))
+	_brk_lbl.text = "EQUILIBRIO  %d" % int(boss.get("balance", 0))
+	_brk_pulse(float(_boss_brk.value) / float(_boss_brk.max_value) <= 0.34 and int(boss.get("balance", 0)) > 0 and not ended)
 	var tele: Dictionary = b.get("telegraph", {})
 	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	var who: String = "TUTTI"
