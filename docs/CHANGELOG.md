@@ -1,5 +1,8 @@
 # Novità
 
+## 0.34.1 · il pulsante di aggiornamento compare davvero
+- **Aggiornamenti**: il gioco legge la nuova versione dal repository pubblico, perché la pagina itch protetta da password non la comunicava. Da questa versione in poi il pulsante verde AGGIORNA compare da solo nel menu.
+
 ## 0.34.0 · combattimento con più tensione, Replica della diretta
 - **Il boss gioca davvero**: barra di equilibrio più lunga e recupero dopo la rottura, quindi gioca il doppio dei turni. A metà PV entra in **FASE 2** con una Furia da leggere e fermare.
 - **Reazioni con la Riserva**: quando il boss carica un colpo compaiono SCHIVA, COPRI, FERMA e SOCCORRI. Con la barra piena l'**Ultimate si lancia anche fuori turno**.
