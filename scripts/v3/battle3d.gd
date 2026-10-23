@@ -91,6 +91,10 @@ var _btn_fast: Button
 var _hint: Label
 var _kit_lbl: Label                   # cosa fa l'Abilita' di chi e' di turno e il suo tratto
 var _cutin: Control
+var _cutin_on: bool = false               # cut-in dell'ultimate in corso (si salta con un tocco)
+var _cutin_tw: Tween
+var _cutin_seen: Dictionary = {}          # personaggi di cui hai gia' visto il cut-in: dalla seconda volta e' piu' breve
+signal _cutin_end
 var _pause: Control
 var _cam_hud: CamHud                  # lo sguardo di Echo: mirino, REC, numero della telecamera
 var _glyph: LightFx                   # cerchio di luce sotto chi e' di turno
@@ -986,14 +990,32 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	line_l.text = "«" + DialogData.ult_line(str(u["char"])) + "»"
 	_cutin.modulate.a = 0.0
 	band.position.x = -_root.size.x
+	var ch: String = str(u["char"])
+	var hold: float = 0.45 if _cutin_seen.has(ch) else 1.1
+	_cutin_seen[ch] = true
+	_cutin_on = true
 	var tw := create_tween()
+	_cutin_tw = tw
 	tw.tween_property(_cutin, "modulate:a", 1.0, 0.12)
 	tw.parallel().tween_property(band, "position:x", 0.0, 0.25).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
-	tw.tween_interval(1.1)
+	tw.tween_interval(hold)
 	tw.tween_property(_cutin, "modulate:a", 0.0, 0.18)
-	await tw.finished
+	tw.tween_callback(_cutin_finish)
+	await _cutin_end
 	_cutin.visible = false
 	Breadcrumb.mark("battaglia")
+
+
+# Chiude il cut-in (a fine animazione o saltato al tocco): il colpo parte subito
+func _cutin_finish() -> void:
+	if not _cutin_on:
+		return
+	_cutin_on = false
+	if _cutin_tw != null and _cutin_tw.is_valid():
+		_cutin_tw.kill()
+	_cutin_tw = null
+	_cutin.modulate.a = 0.0
+	_cutin_end.emit()
 
 
 # ---------------------------------------------------------------- fine
@@ -1471,6 +1493,14 @@ func _toggle_fast() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _cutin_on and _pause == null and not ended:
+		var skip: bool = (event is InputEventScreenTouch and event.pressed) \
+			or (event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT) \
+			or (event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode in [KEY_SPACE, KEY_ENTER])
+		if skip:
+			_cutin_finish()
+			get_viewport().set_input_as_handled()
+			return
 	if _qte_on:
 		var tap: bool = (event is InputEventScreenTouch and event.pressed) \
 			or (event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT) \
