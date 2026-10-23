@@ -15,7 +15,7 @@ const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
 # (boss, livello, pv, atk, minore)
 const ENC: Array = [
 	["frammento_giallo", 1, 1.0, 1.0, true], ["frammento_rosso", 3, 1.0, 1.0, true], ["frammento_blu", 5, 1.0, 1.0, true], ["frammento_verde", 7, 1.0, 1.0, true],
-	["distributore", 1, 1.0, 1.0, false], ["semaforo", 3, 0.9, 0.9, false], ["cabina", 5, 0.8, 0.9, false],
+	["distributore", 1, 1.0, 0.8, false], ["semaforo", 3, 0.9, 0.9, false], ["cabina", 5, 0.8, 0.9, false],
 	["manichino", 7, 0.8, 0.85, false], ["cassaforte", 9, 0.6, 0.75, false], ["autovelox", 11, 0.65, 0.8, false]]
 
 
@@ -72,6 +72,7 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 	for sd in range(1, seeds + 1):
 		var b: Dictionary = _setup(boss, lvl, pv, atk, minore, sd)
 		var guard: int = 0
+		var minhp: float = 1.0
 		st["runs"] = float(st.get("runs", 0.0)) + 1.0
 		while str(b["winner"]) == "" and guard < 80:
 			guard += 1
@@ -103,7 +104,11 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 							st["slancio"] = float(st.get("slancio", 0.0)) + 1.0
 							order.insert(oi, {"unit": x["unit"], "player": x["player"], "boss": false, "spd": -1, "extra": true, "quick": true})
 			_scan(SeqRound.finish(b), st)
+			for uid in b["units"]:
+				if str(uid) != "boss":
+					minhp = minf(minhp, float(b["units"][uid]["hp"]) / float(maxi(1, int(b["units"][uid]["max_hp"]))))
 		st["rounds"] = float(st.get("rounds", 0.0)) + float(guard)
+		st["minhp"] = float(st.get("minhp", 0.0)) + minhp
 		if str(b["winner"]) == "players":
 			st["wins"] = float(st.get("wins", 0.0)) + 1.0
 		for uid in b["units"]:
@@ -147,6 +152,7 @@ func _init() -> void:
 			var parts: String = "     quota danno sul boss:"
 			for c in PARTY:
 				parts += "  %s %.0f%%" % [c, 100.0 * float(st.get("dmg_" + c, 0.0)) / tot_dmg]
+			parts += "   | PV minimo raggiunto (media) %.0f%%" % (100.0 * float(st.get("minhp", 0.0)) / r)
 			print(parts)
 		if not bool(enc[4]):
 			n_boss += 1

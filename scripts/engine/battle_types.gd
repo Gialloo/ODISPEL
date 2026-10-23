@@ -50,7 +50,7 @@ const LINK_GAUGE: int = 12         # ultimate caricata a entrambi quando si lega
 
 const BLEED_FRACTION: float = 0.04
 const GUARD_FACTOR: float = 0.5
-const ENRAGE_BONUS: float = 1.25
+const ENRAGE_BONUS: float = 1.5
 const ENRAGE_BELOW: float = 0.5
 const HUNTER_BONUS: float = 1.1
 const RHYTHM_BONUS: float = 1.1        # RITMO: danno in piu' se cambi mossa rispetto al round prima
@@ -68,9 +68,9 @@ const BREAK_DAMAGE: float = 1.25       # danno extra sul boss stordito
 # SCALA DEL NEMICO NELLA STORIA (la squadra sale di livello, il nemico cresce con lei): usata da battle3d.gd e da tools/v3_bilancio.gd
 const STORY_HP_BOSS: float = 3.0          # PV del boss rispetto al motore
 const STORY_HP_MINOR: float = 1.5         # PV di un nemico minore (frammento)
-const STORY_ATK_K: float = 1.0            # attacco di tutti i nemici della storia
+const STORY_ATK_K: float = 2.5            # attacco di tutti i nemici della storia
 const STORY_HP_PER_LEVEL: float = 0.14    # +14% PV per livello sopra il primo
-const STORY_ATK_PER_LEVEL: float = 0.09   # +9% attacco per livello sopra il primo
+const STORY_ATK_PER_LEVEL: float = 0.24   # +24% attacco per livello sopra il primo
 const SLANCIO_ON: bool = true             # colpo col colore vincente = azione rapida subito dopo (una volta a round, squadra)
 const BREAK_TEAM_MULT: float = 0.6         # attacco di squadra alla rottura: colpo di ogni altro eroe (0 = spento)
 const BREAK_RECOVER: float = 0.75       # frazione della barra con cui il boss si riprende dopo una rottura (1 = piena)

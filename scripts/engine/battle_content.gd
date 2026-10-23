@@ -284,7 +284,7 @@ const BOSS_MOVES: Dictionary = {
 	"riflesso": {"name": "Riflesso", "target": "one", "mult": 2.1},
 	"frantumi": {"name": "Frantumi", "target": "all", "mult": 0.95, "status": {"bleed": 3}},
 	"doppio": {"name": "Doppio", "target": "weakest", "mult": 0.85, "drain": 0.5, "self_shield": 0.05},
-	"furia": {"name": "Furia", "target": "all", "mult": 0.95, "status": {"bleed": 2}},
+	"furia": {"name": "Furia", "target": "all", "mult": 1.5, "status": {"bleed": 2}},
 	"ultimo_respiro": {"name": "Ultimo respiro", "target": "all", "mult": 0.9, "status": {"mark": 3}, "self_shield": 0.04},
 	"simmetria": {"name": "Simmetria", "target": "all", "mult": 0.7, "status": {"mark": 3}, "self_shield": 0.06},
 	"ululato": {"name": "Ululato", "target": "all", "mult": 0.6, "status": {"mark": 2}},
