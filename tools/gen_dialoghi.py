@@ -191,7 +191,8 @@ scene("rifugio_arrivo", "Echo porta la squadra in un deposito della metro abband
     L("nox/neutro", "Ci guardi anche mentre dormiamo?"),
     L("echo/neutro", "Io ne tengo aperti centoquarantadue."),
     L("echo/serio", "Domani tocca a un semaforo. In un quartiere che uno di voi conosce bene."),
-    L("ferri/serio", "...L'Incrocio Nove."))
+    L("ferri/serio", "...L'Incrocio Nove."),
+    L("ferri/serio", "Siamo già in ritardo, seguitemi. E niente colpi di testa."))
 # ================================================================== CAPITOLO 1 · ROSSO FISSO (Lance)
 # Dalla diffidenza al primo segreto custodito: gli altri vedono il braccio di Lance e tacciono.
 
@@ -215,7 +216,7 @@ scene("c1_radio", "Alla radio, la Comandante Astrid di LibraCorp dà la caccia a
     L("ferri/triste", "La Comandante Astrid. Mi ha insegnato a rifare la branda. E tutto il resto."),
     L("zecca/serio", "Però ti vuole vivo. È buono, no?"),
     L("ferri/serio", "Con Astrid «vivo» è la parte brutta."),
-    L("saul/neutro", "Se ti ha insegnato tutto, sa dove scappi. Andiamo dove non ti ha insegnato."),
+    L("saul/neutro", "Ti ha insegnato tutto, quindi sa anche dove scappi. Ci penso io per stavolta, poi ricambi il favore."),
     L("ferri/serio", "...Non è un brutto ragionamento."))
 
 scene("c1_multa", "Indizio: il semaforo teme il blu dei lampeggianti.",
@@ -249,7 +250,10 @@ scene("c1_braccio", "Nella lotta il guanto di Lance si strappa: il suo braccio �
     L("zecca/sorpreso", "Lance... il tuo braccio. Brilla. Perché brilla?"),
     L("ferri/arrabbiato", "Non avete visto niente."),
     L("nox/serio", "Magia sequestrata. LibraCorp la confisca, poi la monta ai suoi."),
-    L("saul/neutro", "Il soldatino che odia la magia ha la magia attaccata alla spalla."),
+    L("saul/neutro", "Wow, quindi questo fa di te... uno sbirro magico?"),
+    L("zecca/felice", "SBIRRO MAGICO. Raga, no. AHAHAH."),
+    L("nox/felice", "Pff..."),
+    L("ferri/arrabbiato", "Smettetela."),
     L("ferri/triste", "Se lo scoprono mi contengono. Come un'Anomalia. Fine."),
     L("saul/neutro", "Rilassati, capo. Con me il segreto è al sicuro. Il prezzo lo decidiamo con calma."),
     L("nox/neutro", "Saul."),
@@ -806,7 +810,8 @@ CH["incrocio"] = [
       L("ferri/serio", "No."), L("saul/neutro", "La seconda si paga."),
       L("nox/neutro", "E io ci passo davanti.")),
     B("i_inizio", Z(5.0), L("ferri/serio", "Qui ho fermato un ladro di biciclette."),
-      L("saul/neutro", "Mio cugino. Ti saluta."), L("ferri/serio", "Aveva sessant'anni.")),
+      L("saul/neutro", "Mio cugino. Ti saluta."), L("ferri/serio", "Tuo cugino aveva sessant'anni."),
+      L("saul/neutro", "E ne dimostra almeno trenta.")),
     B("i_echo", Z(-2.0), L("echo/neutro", "Lance. Telecamera ventisei. Un tuo collega al chiosco. Sta mangiando un panino."),
       L("ferri/serio", "Marino. Mangia in servizio. Lo segnalavo ogni settimana."),
       L("echo/felice", "Ha la maionese sul mento. Stavolta lo segnalo io.")),
@@ -815,7 +820,7 @@ CH["incrocio"] = [
     B("i_barriera", V("barriera"), L("ferri/sorpreso", "Una barriera LibraCorp. Montata male. Chi l'ha montata verrà richiamato."),
       L("nox/neutro", "Sei ricercato."), L("ferri/serio", "Lui di più.")),
     B("i_radio", E("radio"), L("saul/neutro", "Con me «vivo» è un buon inizio di trattativa."),
-      L("ferri/serio", "Con Astrid non si tratta. Si rifà la branda.")),
+      L("ferri/serio", "Con Astrid non si tratta.")),
     B("i_multa", E("multa"), L("zecca/felice", "Nox è un lampeggiante! Nox, fai «niinoo»."), L("nox/neutro", "No."),
       L("zecca/felice", "Una volta!"), L("nox/neutro", "...niinoo."),
       L("echo/felice", "Registrato.")),
