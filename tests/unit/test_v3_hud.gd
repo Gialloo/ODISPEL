@@ -34,6 +34,12 @@ func _init() -> void:
 	_chk(ColorHint.line("rosso", "verde", "FRAMMENTO") == "Colore vincente: +50% su Frammento", "riga vantaggio: " + ColorHint.line("rosso", "verde", "FRAMMENTO"))
 	_chk(ColorHint.line("verde", "rosso", "FRAMMENTO") == "Colore debole: -33% su Frammento", "riga svantaggio: " + ColorHint.line("verde", "rosso", "FRAMMENTO"))
 	_chk(ColorHint.line("rosso", "giallo", "X") == "", "riga neutra vuota")
+	_chk(CombatHud.is_strong(1.6, []), "scarica e' forte")
+	_chk(not CombatHud.is_strong(0.7, []), "raffica non e' forte")
+	_chk(CombatHud.is_strong(0.7, ["p1"]), "letale e' forte")
+	_chk(CombatHud.tele_line("Scarica", "LANCE", false, true, false) == "Prossima mossa: SCARICA (FORTE) su LANCE", "riga forte: " + CombatHud.tele_line("Scarica", "LANCE", false, true, false))
+	_chk(CombatHud.tele_line("Raffica", "", true, false, false) == "Prossima mossa: RAFFICA · SU TUTTI", "riga su tutti")
+	_chk(CombatHud.tele_line("Verbale", "ECHO", false, true, true).ends_with(" · CATENA"), "riga catena")
 	if fails == 0:
 		print("test_v3_hud: OK")
 	quit(0 if fails == 0 else 1)

@@ -1468,7 +1468,9 @@ func _refresh_hud() -> void:
 	elif int(boss.get("stun", 0)) > 0:
 		_tele.text = "STORDITO: salterà il prossimo turno"
 	else:
-		_tele.text = "Prossima mossa: %s su %s" % [str(mv.get("name", "?")).to_upper(), who] if not mv.is_empty() else ""
+		var thr: Dictionary = BattleResolver.threat_preview(b)
+		var strong: bool = CombatHud.is_strong(float(mv.get("mult", 0.0)), thr.get("lethal", []))
+		_tele.text = CombatHud.tele_line(str(mv.get("name", "?")), who, str(mv.get("target", "one")) == "all", strong, str(thr.get("chain", "")) != "") if not mv.is_empty() else ""
 	var marked: String = _update_mark(tele, mv, boss)
 	for i in _cards.size():
 		var c: Dictionary = _cards[i]
