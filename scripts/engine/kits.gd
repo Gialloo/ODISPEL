@@ -20,7 +20,7 @@ const COVER_GUARD_TURNS: int = 1        # Copertura senza nessuno da coprire: La
 const ARM_BALANCE: int = 8              # Braccio della Legge: equilibrio tolto (la barra e' ~20 con quattro in squadra)
 const PARRY_ARM_MULT: float = 1.4       # Al secondo: contrattacco della parata perfetta di Lance (invece di 0.9)
 const PARRY_ARM_BALANCE: int = 3
-const SHADOW_MULT: float = 1.15         # Fuori dalla luce: Saul colpisce di piu' se il boss guarda un altro
+const SHADOW_MULT: float = 1.2          # Fuori dalla luce: Saul colpisce di piu' se il boss guarda un altro
 const COIN_HEADS_MULT: float = 1.1      # Testa: critico sicuro e un po' di danno in piu'
 const COIN_TAILS_ENERGY: int = 2        # Croce: energia passata al compagno che ne ha meno
 const HEIST_NO_SHIELD_MULT: float = 1.4 # Il colpo grosso senza scudi da rubare: si prende tutto in danno
@@ -33,6 +33,13 @@ const COFFEE_REST_ABOVE: float = 0.7    # Pausa caffe': se tutti stanno sopra il
 const COFFEE_SHIELD: float = 0.08       # Pausa caffe' a riposo: scudo a tutti (in % dei loro PV massimi) e 1 energia
 const VIGIL_HURT_BELOW: float = 0.5     # Veglia: scatta anche se un compagno e' sotto il 50% PV (o c'e' una carica in arrivo)
 const ANSWER_HP: float = 0.4            # Rispondo io: un compagno KO torna con il 40% dei PV
+const COFFEE_SPLASH: float = 0.6        # Pausa caffe': cura anche il secondo piu' ferito (frazione dell'ATK di Nox)
+const PICK_BALANCE: int = 2             # Mano lesta senza scudo da rubare: equilibrio sfilato
+const LOOT_EXP: int = 25                # Tasche piene: esperienza in piu' (%) a fine scontro ...
+const LOOT_EXP_MAX: int = 50            # ... fino a
+const HEIST2_EXP: int = 50              # Il colpo del secolo
+const ARM2_BALANCE: int = 14            # Mani in alto
+const ZOOM_HYPE: int = 15
 
 const HYPE_GAIN: Dictionary = {
 	"perfect": 15, "good": 8, "break": 20, "rhythm": 4, "synergy": 5, "crit": 4, "rio_hit": 10, "frame": 10,
@@ -144,7 +151,18 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 				out["mult"] = maxf(float(out["mult"]), COIN_HEADS_MULT)
 				out["crit_pm"] = 1000
 			events.append({"t": "coin", "unit": actor["id"], "side": actor["coin"]})
-		"heist":
+		"pickpocket":
+			# Mano lesta: lo scudo del nemico passa a Saul
+			var bs: Dictionary = BattleState.boss(state)
+			var got: int = int(bs.get("shield", 0))
+			if got > 0:
+				bs["shield"] = 0
+				actor["shield"] = int(actor["shield"]) + got
+				events.append({"t": "pickpocket", "unit": actor["id"], "amount": got})
+				events.append({"t": "shield", "src": actor["id"], "dst": actor["id"], "amount": got})
+			else:
+				actor["pick_balance"] = true
+		"heist", "heist2":
 			var boss: Dictionary = BattleState.boss(state)
 			var loot: int = int(boss.get("shield", 0))
 			if loot > 0:
@@ -221,6 +239,43 @@ static func after_act(state: Dictionary, actor: Dictionary, move_id: String, mov
 			actor.erase("coin")
 		"frame":
 			add_hype(actor, int(HYPE_GAIN["frame"]), events, "frame")
+		"zoom":
+			add_hype(actor, ZOOM_HYPE, events, "zoom")
+		"arm2":
+			var boss2: Dictionary = BattleState.boss(state)
+			if BattleState.is_alive(boss2):
+				BattleResolver._drain_balance(boss2, ARM2_BALANCE, actor, events)
+		"pickpocket":
+			if bool(actor.get("pick_balance", false)):
+				actor.erase("pick_balance")
+				var boss3: Dictionary = BattleState.boss(state)
+				if BattleState.is_alive(boss3):
+					BattleResolver._drain_balance(boss3, PICK_BALANCE, actor, events)
+				actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + int(move.get("cost", 0)))
+				events.append({"t": "pickpocket", "unit": actor["id"], "amount": 0})
+		"loot_exp", "heist2":
+			var add: int = LOOT_EXP if str(move.get("kit", "")) == "loot_exp" else HEIST2_EXP
+			var cap: int = LOOT_EXP_MAX if str(move.get("kit", "")) == "loot_exp" else LOOT_EXP_MAX + HEIST2_EXP
+			var before: int = int(state.get("exp_bonus", 0))
+			state["exp_bonus"] = maxi(before, mini(cap, before + add))
+			events.append({"t": "loot_exp", "unit": actor["id"], "total": int(state["exp_bonus"])})
+		"steal_move":
+			# Il trucco del mago: la mossa piu' forte del nemico che Saul non ha ancora rubato (battle3d la salva per sempre)
+			var bu: Dictionary = BattleState.boss(state)
+			var known: Array = state.get("stolen_known", [])
+			var best: String = ""
+			var best_m: float = -1.0
+			for mid in BattleContent.BOSSES.get(str(bu.get("char", "")), {}).get("cycle", []):
+				var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(mid), {})
+				if float(bm.get("mult", 0.0)) > best_m and not known.has(str(mid)) and not bool(bm.get("camera", false)):
+					best_m = float(bm.get("mult", 0.0))
+					best = str(mid)
+			if best != "":
+				known.append(best)
+				state["stolen_known"] = known
+			else:
+				actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + 1)
+			events.append({"t": "steal_move", "unit": actor["id"], "move": best})
 		"coffee":
 			# (col riposo l'azione si ferma prima e after_act non arriva qui)
 			var t: Dictionary = BattleState.active_unit(state, target_pid)
@@ -228,6 +283,18 @@ static func after_act(state: Dictionary, actor: Dictionary, move_id: String, mov
 				t = actor
 			t["energy"] = mini(BattleTypes.MAX_ENERGY, int(t["energy"]) + 1)
 			events.append({"t": "energy_gift", "unit": actor["id"], "dst": t["id"], "amount": 1})
+			# un sorso anche al secondo piu' ferito
+			var second: Dictionary = {}
+			for p in BattleState.alive_players(state):
+				var q: Dictionary = BattleState.active_unit(state, str(p["id"]))
+				if str(q["id"]) == str(t["id"]) or not BattleState.is_alive(q) or int(q["hp"]) >= int(q["max_hp"]):
+					continue
+				if second.is_empty() or float(q["hp"]) / float(q["max_hp"]) < float(second["hp"]) / float(second["max_hp"]):
+					second = q
+			if not second.is_empty():
+				var before_hp: int = int(second["hp"])
+				second["hp"] = mini(int(second["max_hp"]), before_hp + int(round(float(actor["atk"]) * COFFEE_SPLASH)))
+				events.append({"t": "heal", "src": actor["id"], "dst": second["id"], "amount": int(second["hp"]) - before_hp})
 		"answer":
 			var fallen: Dictionary = {}
 			for p in state["players"]:
@@ -330,8 +397,10 @@ static func ai_wants(state: Dictionary, u: Dictionary, move_id: String, move: Di
 				return 0
 			var heavy: bool = float(BattleContent.BOSS_MOVES.get(str(state["telegraph"].get("move", "")), {}).get("mult", 0.0)) >= 1.2
 			return 1 if heavy or float(ally["hp"]) / float(ally["max_hp"]) < 0.6 else 0
-		"coin":
+		"coin", "pickpocket", "steal_move", "zoom":
 			return 1
+		"loot_exp":
+			return 1 if int(state.get("exp_bonus", 0)) < LOOT_EXP_MAX else 0
 		"answer":
 			for p in state["players"]:
 				var q: Dictionary = BattleState.active_unit(state, str(p["id"]))

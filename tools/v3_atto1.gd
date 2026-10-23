@@ -146,6 +146,8 @@ func _play_area(sc: Node, tag: String, fight: bool) -> void:
 	if not is_instance_valid(sc):
 		return
 	await _shot(tag + "_area")
+	if not is_instance_valid(sc):          # sul telefono la scena puo' gia' essere cambiata durante la foto
+		return
 	var cfg: Dictionary = sc.get("cfg")
 	var clues: Array = sc.get("clues")
 	var k: int = 0
@@ -190,7 +192,20 @@ func _play_area(sc: Node, tag: String, fight: bool) -> void:
 func _play_battle(sc: Node, tag: String) -> void:
 	await _secs(2.5)
 	await _shot(tag + "_battaglia_" + str(sc.get("boss_id")))
+	# tutorial del primo scontro: si fotografa la prima spiegazione e si salta (con AUTO acceso non ne partono altre)
+	var td: Variant = sc.get("_tut_dlg")
+	if td != null and is_instance_valid(td) and bool(td.call("is_open")):
+		await _shot(tag + "_tutorial")
+		td.call("skip")
+		await _secs(0.6)
 	sc.call("_toggle_auto")
+	td = sc.get("_tut_dlg")
+	while td != null and is_instance_valid(td):
+		td.call("skip")
+		await _secs(0.6)
+		td = sc.get("_tut_dlg")
+	if not bool(sc.get("auto_on")):
+		sc.call("_toggle_auto")
 	var t: float = 0.0
 	Engine.time_scale = 4.0
 	var shot_mid: bool = false

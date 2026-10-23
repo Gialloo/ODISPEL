@@ -98,6 +98,121 @@
 			{"chi": "nox", "espr": "triste", "testo": "Battuti da un distributore. Scrivetelo sulla lapide. In piccolo."}
 		]
 	},
+	"tut_intro": {
+		"riassunto": "Echo, istruttrice dal cuore delle telecamere, spiega lo schermo del primo scontro.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Istruttrice Echo, telecamera 07. Scontro vero ma piccolo: un Frammento, un pezzetto d'Anomalia."},
+			{"chi": "zecca", "espr": "sfotto", "testo": "Raga, io non leggo le istruzioni. Io ho il feeling."},
+			{"chi": "saul", "espr": "neutro", "testo": "Io le leggo solo se in fondo c'è il prezzo."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "In alto il nemico: i suoi PV e la barra bianca EQUILIBRIO. A sinistra, l'ordine dei turni."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "In basso le vostre schede: PV, ENERGIA e la barra dell'ULTIMATE. Sono le 21:04, domande?"},
+			{"chi": "nox", "espr": "neutro", "testo": "Una. Posso saltare la lezione?"}
+		]
+	},
+	"tut_attacco": {
+		"riassunto": "Si tocca ATTACCO per colpire; il colore di ognuno conta contro il colore del nemico.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Primo comando: ATTACCO. Tocchi e colpisci. Semplice."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Ma il colore conta. Lance è ROSSO, Nox BLU, Rio VIOLA, Saul VERDE."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Sul colore giusto esce EFFICACE: più 50 per cento. Su quello sbagliato, DEBOLE."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Il Frammento è GIALLO e teme il ROSSO. Quindi colpisce Lance. Cioè: colpisce lui."},
+			{"chi": "ferri", "espr": "serio", "testo": "Lo metto a verbale: sono il rosso utile. Articolo 3."},
+			{"chi": "zecca", "espr": "sfotto", "testo": "Io sono viola. Il colore dei grandi artisti incompresi."}
+		]
+	},
+	"tut_guardia": {
+		"riassunto": "GUARDIA riduce i danni e dà +1 ENERGIA, che serve per l'ABILITÀ.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Secondo comando: GUARDIA. Subisci meno danni e guadagni 1 ENERGIA."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "L'ENERGIA serve per l'ABILITÀ, che vediamo adesso. Quindi la GUARDIA non è tempo perso."},
+			{"chi": "nox", "espr": "felice", "testo": "La GUARDIA è la mia mossa preferita. Non fare niente, ma con stile."},
+			{"chi": "ferri", "espr": "arrabbiato", "testo": "Non è «niente». È una difesa attiva. C'è un articolo."},
+			{"chi": "nox", "espr": "neutro", "testo": "Sì. Ed è un articolo che amo."}
+		]
+	},
+	"tut_abilita": {
+		"riassunto": "ABILITÀ costa ENERGIA ed è diversa per ognuno; alternare le mosse dà un piccolo bonus.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Terzo comando: ABILITÀ. Costa ENERGIA, e ognuno ha la sua."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Lance protegge: con Copertura prende lui il colpo al posto di un compagno."},
+			{"chi": "nox", "espr": "neutro", "testo": "Io curo. Pausa caffè. Il mio ruolo preferito dopo la GUARDIA."},
+			{"chi": "zecca", "espr": "felice", "testo": "Io Inquadratura: marco il nemico e faccio salire l'HYPE. Pubblico, svegliati."},
+			{"chi": "saul", "espr": "neutro", "testo": "Mano lesta. Rubo lo scudo del nemico. Se non ce l'ha, gli rubo EQUILIBRIO e mi riprendo energia."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Ultimo trucco: cambiare mossa da un turno all'altro dà un piccolo bonus. Variate, non siate banali."}
+		]
+	},
+	"tut_telegrafo": {
+		"riassunto": "Il nemico annuncia la mossa e il bersaglio: cerchio rosso e bordo rosso sulla scheda.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Il Frammento è onesto: annuncia la prossima mossa nella riga in alto."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "E dice su chi cade: cerchio rosso ai piedi del bersaglio, bordo rosso sulla sua scheda."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "FORTE significa colpo pesante. SU TUTTI significa che colpisce tutti."},
+			{"chi": "saul", "espr": "neutro", "testo": "Un nemico che avvisa. Mia nonna Ines diceva che i migliori affari sono quelli senza sorprese."},
+			{"chi": "zecca", "espr": "sorpreso", "testo": "Ma è cortesia! Neanche il distributore ci avvisava."}
+		]
+	},
+	"tut_qte": {
+		"riassunto": "GUARDIA A TEMPO: si tocca quando il cerchio che si stringe tocca quello fermo.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Quando il nemico colpisce, parte la GUARDIA A TEMPO. C'è un cerchio fermo e uno che si stringe."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Tocca lo schermo quando si toccano. Preciso al millisecondo: parata PERFETTA e contrattacco."},
+			{"chi": "ferri", "espr": "serio", "testo": "Il cronometro lo porto io. Tolleranza: zero virgola zero."},
+			{"chi": "zecca", "espr": "sfotto", "testo": "Raga, la parata perfetta in clip fa numeri. Fatemi prendere il colpo."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Non è questo il senso. Ma ha un suo fascino."}
+		]
+	},
+	"tut_reazioni": {
+		"riassunto": "Davanti a un colpo pesante in carica compaiono le REAZIONI, che costano RISERVA e il turno.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Se il nemico CARICA un colpo pesante, compaiono le REAZIONI. Costano RISERVA e il turno di chi le usa."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "La RISERVA è di squadra: ne ricaricate un po' a ogni round. Ognuna si gioca diversa."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "SCHIVA: compare una freccia, tocca quel lato. COPRI: tieni premuto, lascia quando la barra è nella fascia."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "FERMA: tocca a raffica finché la barra si riempie. Toglie subito EQUILIBRIO al nemico."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "SOCCORRI: tocca a tempo col battito, tre volte. Rialza un compagno KO."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Se sbagli, la reazione funziona lo stesso. Vale meno. Dopotutto siete umani."}
+		]
+	},
+	"tut_rottura": {
+		"riassunto": "A EQUILIBRIO zero il nemico va in ROTTURA e parte l'ATTACCO DI SQUADRA.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Quando la barra bianca EQUILIBRIO arriva a zero, il nemico va in ROTTURA: stordito."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Allora parte l'ATTACCO DI SQUADRA. Io faccio un FERMO IMMAGINE e colpite uno dopo l'altro."},
+			{"chi": "zecca", "espr": "felice", "testo": "FERMO IMMAGINE. Ditemi che l'avete registrato. Voglio la clip."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Telecamera 07 registra tutto. Il mio archivio è già pieno di voi."},
+			{"chi": "saul", "espr": "neutro", "testo": "Una clip in cambio di una percentuale. Dico solo questo."}
+		]
+	},
+	"tut_ultimate": {
+		"riassunto": "La barra dell'ULTIMATE si riempie colpendo e prendendo colpi; si può lanciare anche in diretta.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "La barra dell'ULTIMATE si riempie colpendo e prendendo colpi. Piena: ULTIMATE, il colpo più forte."},
+			{"chi": "ferri", "espr": "serio", "testo": "Quindi anche incassare serve. Lo trovo coerente col regolamento."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Altra cosa: mentre il nemico carica, chi ha la barra piena può lanciarla fuori turno."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Si chiama ULTIMATE IN DIRETTA. Compaiono i pulsanti ULT con il suo nome."},
+			{"chi": "zecca", "espr": "sorpreso", "testo": "In diretta. IN. DIRETTA. Echo, adesso ti adoro."}
+		]
+	},
+	"tut_extra": {
+		"riassunto": "SLANCIO, AUTO e x2, più la pausa.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Tre extra. SLANCIO: colpire col colore vincente a volte regala un mezzo turno in più."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Vale solo con ATTACCO o GUARDIA. Con le altre mosse, niente."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "AUTO combatte da solo. x2 va più veloce. Per i turni noiosi."},
+			{"chi": "nox", "espr": "felice", "testo": "AUTO. Qualcuno ha inventato la mia vita ideale."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Pausa: il tasto in alto, oppure Esc. Il tempo si ferma. Io, invece, no."}
+		]
+	},
+	"tut_fine": {
+		"riassunto": "Dopo la vittoria: ESPERIENZA, LIVELLO e SQUADRA.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Vinto. Ogni scontro dà ESPERIENZA a tutti, anche a chi era in panchina."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Con un nuovo LIVELLO si sbloccano mosse, ULTIMATE, reazioni personali, tratti e sinergie tra compagni."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Si equipaggiano nel menu di pausa, alla voce SQUADRA. Provateci con calma."},
+			{"chi": "saul", "espr": "neutro", "testo": "Una domanda. Chi paga il tutorial."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Nessuno. È stato un vero... punto di esperienza. Capito? Esperienza."},
+			{"chi": "nox", "espr": "neutro", "testo": "Non l'abbiamo capito. Ed è meglio così."}
+		]
+	},
 	"accordo": {
 		"riassunto": "Echo si presenta: è un Kairos, vive nelle telecamere. La cupola è retta da quattro Anomalie: se le chiudono, lei consegna le registrazioni della piazza che li scagionano. E a ognuno promette quello che vuole di più: il grado a Lance, le ferie a Nox, la live dell'anno a Rio, le taglie a Saul.",
 		"righe": [

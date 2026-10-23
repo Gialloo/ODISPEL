@@ -21,6 +21,7 @@ static func begin(state: Dictionary) -> void:
 	state["combo_n"] = 0
 	state["combo_used"] = []
 	state["reactions"] = []
+	state["react_grade"] = {}
 	state["combo_reserve"] = false
 	state["acts"] = {}
 	var ev: Array = []

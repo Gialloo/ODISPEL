@@ -116,6 +116,11 @@ const PASSIVES: Dictionary = {
 	"p_hp": {"name": "Tempra", "rarity": 0, "hp_mult": 1.10},
 	"p_swap": {"name": "Entrata scudata", "rarity": 1, "on_enter_shield": 0.6},
 	"p_hunter": {"name": "Cacciatore", "rarity": 2, "hunter": true},
+	# V3: tratti che si sbloccano coi livelli (Progress, menu SQUADRA)
+	"t_pelle_dura": {"name": "Pelle dura", "rarity": 0, "hp_mult": 1.12},
+	"t_sonno_leggero": {"name": "Sonno leggero", "rarity": 0, "hp_mult": 1.06, "atk_mult": 1.06},
+	"t_follower": {"name": "Follower veri", "rarity": 0, "atk_mult": 1.1},
+	"t_guanti_velluto": {"name": "Guanti di velluto", "rarity": 0, "atk_mult": 1.12},
 }
 
 # Statistiche base per classe: hp, atk, def, spd.
@@ -201,7 +206,7 @@ const V3_CAST: Dictionary = {
 	"zecca": {"name": "Rio", "color": "viola", "cls": "striker", "rarity": 0, "skill": "u_zecca_a", "ult": "u_zecca_ult", "passive": "p_atk", "faction": "masca",
 		"role": "Masca in diretta", "stat_mult": {"atk": 0.9, "spd": 1.1}},
 	"saul": {"name": "Saul", "color": "verde", "cls": "striker", "rarity": 0, "skill": "u_saul_a", "ult": "u_saul_ult", "passive": "p_hunter", "faction": "magabondi",
-		"role": "Contrabbandiere veterano", "stat_mult": {"atk": 1.1}},
+		"role": "Contrabbandiere veterano", "stat_mult": {"atk": 1.15}},
 }
 
 
