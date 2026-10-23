@@ -31,7 +31,8 @@ func _init() -> void:
 	_chk(is_equal_approx(float(ColorHint.eval("rosso", "verde")["mult"]), BattleTypes.COLOR_ADVANTAGE), "mult vantaggio")
 	_chk(str(ColorHint.eval("rosso", "verde")["testo"]) == "EFFICACE", "testo efficace")
 	_chk(str(ColorHint.eval("verde", "rosso")["testo"]) == "DEBOLE", "testo debole")
-	_chk(ColorHint.line("rosso", "verde", "FRAMMENTO") == "VANTAGGIO ×1.5 sul FRAMMENTO", "riga vantaggio: " + ColorHint.line("rosso", "verde", "FRAMMENTO"))
+	_chk(ColorHint.line("rosso", "verde", "FRAMMENTO") == "Colore vincente: +50% su Frammento", "riga vantaggio: " + ColorHint.line("rosso", "verde", "FRAMMENTO"))
+	_chk(ColorHint.line("verde", "rosso", "FRAMMENTO") == "Colore debole: -33% su Frammento", "riga svantaggio: " + ColorHint.line("verde", "rosso", "FRAMMENTO"))
 	_chk(ColorHint.line("rosso", "giallo", "X") == "", "riga neutra vuota")
 	if fails == 0:
 		print("test_v3_hud: OK")

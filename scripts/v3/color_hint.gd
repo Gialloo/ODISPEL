@@ -19,10 +19,21 @@ static func line(attacker_color: String, boss_color: String, boss_name: String) 
 	var h: Dictionary = eval(attacker_color, boss_color)
 	match str(h["tipo"]):
 		"efficace":
-			return "VANTAGGIO ×%s sul %s" % [_fmt(float(h["mult"])), boss_name]
+			return "Colore vincente: +%d%% su %s" % [_pct(float(h["mult"])), _nome(boss_name)]
 		"debole":
-			return "SVANTAGGIO ×%s sul %s" % [_fmt(float(h["mult"])), boss_name]
+			return "Colore debole: %d%% su %s" % [_pct(float(h["mult"])), _nome(boss_name)]
 	return ""
+
+
+# percentuale leggibile invece del moltiplicatore (x1.5 -> +50, x0.67 -> -33)
+static func _pct(m: float) -> int:
+	return int(round((m - 1.0) * 100.0))
+
+
+# "DISTRIBUTORE" -> "Distributore": maiuscola iniziale, non tutto maiuscolo (regola 11)
+static func _nome(n: String) -> String:
+	var s: String = n.strip_edges().to_lower()
+	return s.left(1).to_upper() + s.substr(1)
 
 
 static func _fmt(m: float) -> String:

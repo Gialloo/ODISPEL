@@ -917,7 +917,7 @@ func _color_tag(e: Dictionary, dst: String, delay: float) -> void:
 		"efficace":
 			_number(dst, str(h["testo"]), Ui.YELLOW, 30, delay + 0.06, 40.0)
 		"debole":
-			_number(dst, str(h["testo"]), Color("#9a98a6"), 22, delay + 0.06, 34.0)
+			_number(dst, str(h["testo"]), Color("#c4c2cf"), 26, delay + 0.06, 34.0)
 
 
 func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0) -> void:
@@ -1407,11 +1407,13 @@ func _show_commands(on: bool) -> void:
 	_btn_atk.disabled = not _usable("attack")
 	_btn_guard.disabled = not _usable("guard")
 	_btn_skill.text = "%s  ·  %d ENERGIA" % [str(skm.get("name", "ABILITÀ")).to_upper(), int(skm.get("cost", 0))]
+	_fit_btn(_btn_skill, 24)
 	_btn_skill.disabled = not _usable(sk)
 	var ult_ok: bool = _usable(str(u.get("ult", "")))
 	_btn_ult.disabled = not ult_ok
 	var um: Dictionary = BattleContent.MOVES.get(str(u.get("ult", "")), {})
 	_btn_ult.text = ("ULTIMATE · " + str(um.get("name", "")).to_upper()) if ult_ok else "ULTIMATE  %d%%" % int(u.get("gauge", 0))
+	_fit_btn(_btn_ult, 26)
 	# cosa fa l'abilita' e il tratto di chi e' di turno (si gioca capendo, non a memoria)
 	var tr: Dictionary = Kits.TRAITS.get(str(u.get("char", "")), {})
 	var lines: Array = []
@@ -1427,6 +1429,16 @@ func _show_commands(on: bool) -> void:
 		if hl != "":
 			lines.insert(0, hl)
 	_kit_lbl.text = "\n".join(lines)
+
+
+# Rimpicciolisce il testo del pulsante finche' entra nella colonna dei comandi: la colonna resta larga 314 px
+# e non copre le card della squadra (prima un nome lungo la allargava sopra la card di Saul)
+func _fit_btn(btn: Button, base: int) -> void:
+	var f: Font = btn.get_theme_font("font")
+	var size: int = base
+	while size > 16 and f.get_string_size(btn.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x > 280.0:
+		size -= 1
+	btn.add_theme_font_size_override("font_size", size)
 
 
 func _refresh_hud() -> void:
@@ -1469,7 +1481,7 @@ func _refresh_hud() -> void:
 			Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.55), Color("#ff5a6e") if is_marked else (col if active else Ui.INK), 6 if is_marked else (4 if active else 3), 6, 5))
 		(c["panel"] as Control).modulate.a = 1.0 if alive else 0.45
 		# il colore anche scritto: chi non distingue i colori sa lo stesso chi colpisce le debolezze
-		(c["name"] as Label).text = ("! " if is_marked else "") + str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
+		(c["name"] as Label).text = str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
 		(c["name"] as Label).add_theme_color_override("font_color", col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
