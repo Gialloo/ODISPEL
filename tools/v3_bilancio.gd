@@ -2,8 +2,9 @@ extends SceneTree
 
 # BILANCIO DELLA BATTAGLIA: simula gli scontri dell'atto 1 con l'IA automatica (BattleAI) e stampa le metriche del piano combat.
 # Serve a tarare le costanti del motore (equilibrio, Riserva, ...) senza giocare: ripetibile, deterministica (semi fissi).
-# Uso: godot --headless --path . --script tools/v3_bilancio.gd -- [semi=40] [minori] [dettaglio] [solo=distributore]
+# Uso: godot --headless --path . --script tools/v3_bilancio.gd -- [semi=40] [minori] [dettaglio] [replica=N] [solo=distributore]
 #   semi=N      quanti semi per scontro (default 40)
+#   replica=N   Replica della diretta: nemici +15% PV e attacco per giro
 #   dettaglio   sotto ogni scontro la quota di danno di tutti e quattro
 #   minori      include anche i frammenti (nemici minori)
 #   solo=ID     un solo scontro
@@ -19,6 +20,9 @@ const ENC: Array = [
 	["manichino", 7, 0.8, 0.85, false], ["cassaforte", 9, 0.6, 0.75, false], ["autovelox", 11, 0.65, 0.8, false]]
 
 
+var replica: int = 0
+
+
 func _setup(boss: String, lvl: int, pv: float, atk: float, minore: bool, seed_value: int) -> Dictionary:
 	var team: Array = []
 	for id in PARTY:
@@ -26,6 +30,9 @@ func _setup(boss: String, lvl: int, pv: float, atk: float, minore: bool, seed_va
 	var b: Dictionary = BattleState.create_solo("IO", team, [], boss, seed_value)
 	var bu: Dictionary = BattleState.boss(b)
 	var grow: float = 1.0 + BattleTypes.STORY_HP_PER_LEVEL * float(lvl - 1)
+	var rk: float = 1.0 + BattleTypes.REPLICA_K * float(replica)
+	pv *= rk
+	atk *= rk
 	var pk: float = pv * (BattleTypes.STORY_HP_MINOR if minore else BattleTypes.STORY_HP_BOSS) * grow
 	var ak: float = atk * BattleTypes.STORY_ATK_K * (1.0 + BattleTypes.STORY_ATK_PER_LEVEL * float(lvl - 1))
 	bu["max_hp"] = maxi(1, int(round(float(bu["max_hp"]) * pk)))
@@ -125,6 +132,8 @@ func _init() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("semi="):
 			seeds = int(a.substr(5))
+		elif a.begins_with("replica="):
+			replica = int(a.substr(8))
 		elif a == "dettaglio":
 			dettaglio = true
 		elif a == "minori":

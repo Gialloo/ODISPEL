@@ -126,6 +126,10 @@ func configure(args: Dictionary) -> void:
 	level = int(args.get("livello", 1))
 	pv_k = float(args.get("pv", 1.0))
 	atk_k = float(args.get("atk", 1.0))
+	# REPLICA DELLA DIRETTA (nuovo giro): i nemici sono piu' duri a ogni giro, PV e attacco x(1 + REPLICA_K * giro)
+	var replica_k: float = 1.0 + BattleTypes.REPLICA_K * float(maxi(0, int(args.get("replica", 0))))
+	pv_k *= replica_k
+	atk_k *= replica_k
 	arena = str(args.get("arena", "strada"))
 	weak = args.get("debolezze", [])
 	if indizi.has("scontrino") and not weak.has("VIOLA"):

@@ -66,6 +66,7 @@ const BREAK_MARKED: int = 1            # il boss e' marchiato: ogni colpo rompe 
 const BREAK_HEAVY: int = 1             # colpo pesante (moltiplicatore >= 2)
 const BREAK_DAMAGE: float = 1.25       # danno extra sul boss stordito
 # SCALA DEL NEMICO NELLA STORIA (la squadra sale di livello, il nemico cresce con lei): usata da battle3d.gd e da tools/v3_bilancio.gd
+const REPLICA_K: float = 0.15             # Replica della diretta: +15% PV e attacco dei nemici per ogni giro dopo il primo
 const STORY_HP_BOSS: float = 3.0          # PV del boss rispetto al motore
 const STORY_HP_MINOR: float = 1.5         # PV di un nemico minore (frammento)
 const STORY_ATK_K: float = 2.5            # attacco di tutti i nemici della storia
