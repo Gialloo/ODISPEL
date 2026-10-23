@@ -1671,6 +1671,8 @@ func _refresh_hud() -> void:
 	if _boss_hp == null:
 		return
 	_update_broken_cam()
+	if _cam_hud != null:
+		_cam_hud.set_live(int(Kits.unit_of_char(b, Kits.RIO).get("hype", -1)))      # la diretta di Rio e' la telecamera di Echo
 	var boss: Dictionary = BattleState.boss(b)
 	_boss_hp.max_value = int(boss["max_hp"])
 	_boss_hp.value = int(boss["hp"])

@@ -15,6 +15,7 @@ var anomaly: bool = false            # dentro un'Anomalia: nessun segnale
 var tag_right: bool = false          # etichetta a destra (esplorazione, sotto la pausa) o a sinistra (battaglia)
 var tag_y: float = -204.0            # posizione verticale dell'etichetta (dal basso se negativa)
 var _cam_no: int = 1
+var live: int = -1                   # Hype di Rio (battaglia): da 25 in su la telecamera va «in diretta» e lo scrive
 var _who: String = ""
 var _who_col: Color = Ui.CREAM
 var _t: float = 0.0
@@ -83,8 +84,15 @@ func _refresh() -> void:
 	var name_txt: String = ""
 	if _who != "":
 		name_txt = "  ·  " + _who.to_upper()
-	_tag.text = "REC   CAM %02d%s" % [_cam_no, name_txt]
+	_tag.text = "REC   CAM %02d%s%s" % [_cam_no, name_txt, ("  ·  IN DIRETTA %d" % live) if live >= 25 else ""]
 	_tag.add_theme_color_override("font_color", Ui.CREAM.lerp(_who_col, 0.35) if _who != "" else Ui.CREAM)
+
+
+# Hype di Rio: la diretta si vede nella telecamera di Echo
+func set_live(hype: int) -> void:
+	if hype != live:
+		live = hype
+		_refresh()
 
 
 # Ora della notte: il prologo comincia alle tre, ogni capitolo porta la citta' piu' vicina all'alba.
