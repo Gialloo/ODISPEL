@@ -1057,12 +1057,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				if _team_follow:
 					continue              # la annuncia la sequenza di squadra
-				_shatter_later("boss", delay, 1.0)        # solo l'animazione: lo schermo poi torna pulito
-				_sparks_later(BattleState.BOSS_ID, delay, true)
-				_toast("IMPULSO · ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
-				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
-				_flash(0.5)
-				_kick(0.8)
+				_break_moment(delay)
 			"tenacity":
 				# il colpo era mortale: resta in piedi con 1 PV e l'ultimate piena
 				var tn: String = str(e.get("unit", ""))
@@ -1330,13 +1325,73 @@ func _cutin_finish() -> void:
 
 # ---------------------------------------------------------------- fine
 
-func _shatter_later(key: String, delay: float, strength: float) -> void:
+func _shatter_later(key: String, delay: float, strength: float, big: bool = false) -> void:
 	if _broken == null:
 		return
 	if delay > 0.01:
 		await get_tree().create_timer(delay).timeout
 	if is_inside_tree():
-		_broken.shatter(key, strength)
+		var imp := Vector2(-1, -1)
+		if big and vis.has(BattleState.BOSS_ID) and cam != null:
+			# le crepe partono dal petto del nemico (dove e' arrivato il colpo), non da un punto a caso
+			var p3: Vector3 = (vis[BattleState.BOSS_ID] as Node).call("chest_point")
+			if not cam.is_position_behind(p3):
+				var sz: Vector2 = get_viewport().get_visible_rect().size
+				var u: Vector2 = cam.unproject_position(p3)
+				imp = Vector2(clampf(u.x / maxf(1.0, sz.x), 0.15, 0.85), clampf(u.y / maxf(1.0, sz.y), 0.15, 0.8))
+		_broken.shatter(key, strength, imp, big)
+
+
+# IL MOMENTO DEL BREAK (Star Rail / Persona): fermo immagine breve + lampo + vetro che esplode dal nemico + scritta BREAK + scossa.
+# Si usa sia per il colpo che rompe sia, in versione piu' corta, dall'attacco di squadra.
+func _break_moment(delay: float, short: bool = false) -> void:
+	_shatter_later("boss", delay, 0.8 if short else 1.0, true)
+	_sparks_later(BattleState.BOSS_ID, delay, true)
+	_break_stamp(delay)
+	_flash(0.4 if short else 0.6)
+	_kick(0.6 if short else 0.9)
+	if not short:
+		_toast("IMPULSO · ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
+
+
+const BREAK_SIZE: int = 112
+
+
+# Scritta BREAK: lastra bianca storta con ombra rossa e testo scuro (alto contrasto alla Persona), entra con uno scatto grande
+# e si ferma al centro-alto, lontana da comandi e descrizioni. Costa 4 nodi e un tween breve.
+func _break_stamp(delay: float) -> void:
+	var root := Control.new()
+	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	Ui.place(root, 0.5, 0.3, 0.5, 0.3, -290, -75, 290, 75)
+	root.pivot_offset = Vector2(290, 75)
+	root.modulate.a = 0.0
+	var red := ColorRect.new()
+	red.color = Color("#ff3d5a")
+	red.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	Ui.place(red, 0, 0, 1, 1, 16, 12, 16, 12)
+	root.add_child(red)
+	var slab := ColorRect.new()
+	slab.color = Color("#fff8ee")
+	slab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	Ui.place(slab, 0, 0, 1, 1)
+	root.add_child(slab)
+	var txt := Ui.label("BREAK", BREAK_SIZE, Ui.INK, Ui.display(), 0)
+	txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	Ui.place(txt, 0, 0, 1, 1)
+	root.add_child(txt)
+	_fx_layer.add_child(root)
+	root.scale = Vector2(2.4, 2.4)
+	root.rotation_degrees = -16.0
+	var tw := root.create_tween()
+	tw.tween_interval(delay)
+	tw.tween_property(root, "modulate:a", 1.0, 0.04)
+	tw.parallel().tween_property(root, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(root, "rotation_degrees", -5.0, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(0.85)
+	tw.tween_property(root, "modulate:a", 0.0, 0.25)
+	tw.parallel().tween_property(root, "scale", Vector2(1.08, 1.08), 0.25)
+	tw.tween_callback(root.queue_free)
 
 
 # Telecamera rotta: conta solo chi e' di turno (turno del nemico e fine battaglia = telecamera pulita)
@@ -1737,6 +1792,8 @@ func _warm_fonts() -> void:
 		var l := Ui.label("0123456789!+-% ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈ·", int(sz), Ui.CREAM, Ui.display(), 10)
 		l.position = Vector2(0, 0)
 		box.add_child(l)
+	var lb := Ui.label("BREAK", BREAK_SIZE, Ui.INK, Ui.display(), 0)       # la scritta del BREAK compare nel momento piu' forte: niente scatto
+	box.add_child(lb)
 	for i in 3:
 		await get_tree().process_frame
 	if is_instance_valid(box):
@@ -2150,10 +2207,10 @@ func _team_sequence(rest: Array) -> void:
 	(boss_v as VendingVisual).stunned = true
 	_cam_set(Vector3(0.0, 2.4, 6.2), ENEMY_POS + Vector3(0, 1.0, 0), 5.0)
 	# 1. ROTTURA
-	_stamp("ROTTURA!", "%s è %s" % [_cap(_bn()), _g("a terra", "a terra")], Color.WHITE)
-	_flash(0.35)
-	_kick(0.7)
-	await _team_wait(0.75)
+	# versione corta del BREAK (vetro + scritta, senza il fermo immagine lungo): la sequenza di squadra ha gia' il suo ritmo
+	_break_moment(0.0, true)
+	_toast("%s è a terra" % _cap(_bn()), Color.WHITE, 1.2)
+	await _team_wait(0.95)
 	# 2. FERMO IMMAGINE
 	var box := _rec_frame()
 	var strip := HBoxContainer.new()
@@ -2258,9 +2315,9 @@ func _rec_frame() -> Control:
 
 
 # Timbro grande al centro (parola + riga sotto) che entra di scatto e svanisce
-func _stamp(title: String, sub: String, col: Color) -> void:
+func _stamp(title: String, sub: String, col: Color, ay: float = 0.3) -> void:
 	var box := VBoxContainer.new()
-	Ui.place(box, 0.15, 0.3, 0.85, 0.3, 0, 0, 0, 140)
+	Ui.place(box, 0.15, ay, 0.85, ay, 0, 0, 0, 140)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_theme_constant_override("separation", 0)
 	var big := Ui.label(title, 72, col, Ui.display(), 12)
