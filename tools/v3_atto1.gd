@@ -89,6 +89,9 @@ func _run() -> void:
 			fought_minor = true
 		elif path == "battle3d.gd":
 			await _play_battle(sc, tag)
+		elif path == "menu.gd" and guard < 15:
+			# il menu riscalda gli shader all'avvio: il primo cambio di schermata puo' arrivare dopo 0,9 s
+			await _wait_change(sc, 10.0)
 		else:
 			print("SCHERMATA INATTESA ", path)
 			break
