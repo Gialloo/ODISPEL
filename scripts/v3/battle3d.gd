@@ -92,6 +92,7 @@ var _react_box: VBoxContainer        # REAZIONE: compare solo quando il boss car
 var _react_lbl: Label
 var _react_btns: Dictionary = {}      # id reazione -> pulsante
 var _react_hint_seen: bool = false
+var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
 var _btn_fast: Button
@@ -472,6 +473,7 @@ func _advance() -> void:
 		if pl.is_empty() or not BattleState.player_alive(b, pl):
 			continue
 		cur_pid = pid
+		_quick = bool(e.get("quick", false))
 		var uid: String = str(_unit_of(pid)["id"])
 		_cam_actor(uid)
 		_fx_turn(uid)
@@ -480,7 +482,7 @@ func _advance() -> void:
 			await _wait(0.2)
 			if not is_inside_tree() or ended:
 				return
-			await _do_action(pid, BattleAI.choose(b, pid))
+			await _do_action(pid, BattleAI.choose(b, pid), _quick)
 			continue
 		waiting = true
 		_show_commands(true)
@@ -515,6 +517,8 @@ func _skill_of(u: Dictionary) -> String:
 func _usable(move_id: String) -> bool:
 	if cur_pid == "" or move_id == "" or not BattleContent.MOVES.has(move_id):
 		return false
+	if _quick and str(BattleContent.MOVES[move_id].get("kind", "")) != "basic":
+		return false
 	return BattleResolver.validate_choice(b, cur_pid, _choice_for(move_id)) == ""
 
 
@@ -538,19 +542,23 @@ func _command(kind: String) -> void:
 	_show_commands(false)
 	_hint.text = ""
 	Settings.buzz(40 if kind == "ult" else 18)
-	await _do_action(cur_pid, _choice_for(mv))
+	await _do_action(cur_pid, _choice_for(mv), _quick)
 	if is_inside_tree() and not ended:
 		await _advance()
 
 
-func _do_action(pid: String, choice: Dictionary) -> void:
+func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 	var u: Dictionary = _unit_of(pid)
 	var uid: String = str(u["id"])
 	var mv: String = str(choice.get("move", "attack"))
 	var move: Dictionary = BattleContent.MOVES.get(mv, {})
 	var kind: String = str(move.get("kind", "basic"))
 	var tgt: String = str(move.get("target", "enemy"))
-	var ev: Array = SeqRound.player_action(b, pid, choice)
+	var ev: Array = SeqRound.player_action(b, pid, choice, quick)
+	for x in ev:
+		if str(x.get("t", "")) == "slancio":
+			# SLANCIO: subito dopo agisce ancora lo stesso eroe, ma solo con Attacco o Guardia
+			turn_list.insert(turn_i + 1, {"unit": str(x["unit"]), "player": str(x["player"]), "boss": false, "spd": -1, "extra": true, "quick": true})
 	var cv: CharacterVisual = vis[uid]
 	var col: Color = _col(u)
 	if kind == "ult":
@@ -606,6 +614,7 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 
 func _boss_turn() -> void:
 	cur_pid = ""
+	_quick = false
 	_boss_acting = true
 	_fx_turn("")
 	_refresh_hud()
@@ -906,6 +915,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					(vis[pu] as CharacterVisual).attack()
 				_kick(0.5)
 				delay += 0.15
+			"slancio":
+				_toast("SLANCIO · %s agisce ancora (Attacco o Guardia)" % _uname(str(e.get("unit", ""))), Ui.YELLOW, 1.4)
 			"phase":
 				_live_banner("FASE %d" % int(e.get("phase", 2)), "%s si arrabbia · guarda la prossima mossa" % _cap(_bn()), Ui.PINK, 2.2)
 				_kick(0.8)
@@ -1523,7 +1534,7 @@ func _update_react() -> void:
 	if _react_box == null:
 		return
 	var usable: Array = []
-	for r in BattleResolver.reactions_for(b, cur_pid):
+	for r in ([] if _quick else BattleResolver.reactions_for(b, cur_pid)):
 		if str(r["err"]) == "":
 			usable.append(str(r["id"]))
 	_react_box.visible = not usable.is_empty()
@@ -1633,7 +1644,7 @@ func _refresh_hud() -> void:
 		_order_box.add_child(l)
 	var nxt := Ui.label("   — round %d —" % int(b.get("round", 1)), 18, Color(1, 1, 1, 0.85))
 	_order_box.add_child(nxt)
-	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper()) if cur_pid != "" and not ended else ""
+	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper() + (" · RAPIDO" if _quick else "")) if cur_pid != "" and not ended else ""
 	if waiting:
 		_show_commands(true)
 
@@ -1729,7 +1740,7 @@ func _toggle_auto() -> void:
 	if auto_on and waiting:
 		waiting = false
 		_show_commands(false)
-		await _do_action(cur_pid, BattleAI.choose(b, cur_pid))
+		await _do_action(cur_pid, BattleAI.choose(b, cur_pid), _quick)
 		if is_inside_tree() and not ended:
 			await _advance()
 

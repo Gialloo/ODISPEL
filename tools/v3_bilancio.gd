@@ -81,7 +81,11 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 			var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 			if not bm.is_empty() and int(BattleState.boss(b).get("stun", 0)) == 0 and BattleResolver.is_heavy_boss_move(bm) and int(b.get("reserve", 0)) >= 1:
 				st["occasioni"] = float(st.get("occasioni", 0.0)) + 1.0
-			for e in SeqRound.order(b):
+			var order: Array = SeqRound.order(b)
+			var oi: int = 0
+			while oi < order.size():
+				var e: Dictionary = order[oi]
+				oi += 1
 				if str(b["winner"]) != "":
 					break
 				if bool(e["boss"]):
@@ -92,7 +96,12 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 					_scan(SeqRound.boss_action(b), st)
 				else:
 					var pid: String = str(e["player"])
-					_scan(SeqRound.player_action(b, pid, BattleAI.choose(b, pid)), st)
+					var evp: Array = SeqRound.player_action(b, pid, BattleAI.choose(b, pid), bool(e.get("quick", false)))
+					_scan(evp, st)
+					for x in evp:
+						if str(x.get("t", "")) == "slancio":
+							st["slancio"] = float(st.get("slancio", 0.0)) + 1.0
+							order.insert(oi, {"unit": x["unit"], "player": x["player"], "boss": false, "spd": -1, "extra": true, "quick": true})
 			_scan(SeqRound.finish(b), st)
 		st["rounds"] = float(st.get("rounds", 0.0)) + float(guard)
 		if str(b["winner"]) == "players":
@@ -117,7 +126,7 @@ func _init() -> void:
 			minori = true
 		elif a.begins_with("solo="):
 			solo = a.substr(5)
-	print("%-18s %3s %5s %5s %5s %6s %6s %5s %6s %6s %6s %5s %6s %5s" % ["scontro", "liv", "vitt%", "KO", "round", "bossG", "bossP", "ross", "Saul%", "Nox%", "NoxCP", "vegl", "occas", "reaz"])
+	print("%-18s %3s %5s %5s %5s %6s %6s %5s %5s %6s %6s %6s %5s %6s %5s" % ["scontro", "liv", "vitt%", "KO", "round", "bossG", "bossP", "ross", "slan", "Saul%", "Nox%", "NoxCP", "vegl", "occas", "reaz"])
 	var tot: Dictionary = {}
 	var n_boss: int = 0
 	for enc in ENC:
@@ -128,9 +137,9 @@ func _init() -> void:
 		var st: Dictionary = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds)
 		var r: float = float(st["runs"])
 		var tot_dmg: float = maxf(1.0, float(st.get("dmg_tot", 0.0)))
-		print("%-18s %3d %5.0f %5.2f %5.1f %6.2f %6.2f %5.2f %6.0f %6.0f %6.2f %5.2f %6.2f %5.2f" % [
+		print("%-18s %3d %5.0f %5.2f %5.1f %6.2f %6.2f %5.2f %5.2f %6.0f %6.0f %6.2f %5.2f %6.2f %5.2f" % [
 			enc[0], enc[1], 100.0 * float(st.get("wins", 0.0)) / r, float(st.get("ko", 0.0)) / r, float(st.get("rounds", 0.0)) / r,
-			float(st.get("boss_giocati", 0.0)) / r, float(st.get("boss_persi", 0.0)) / r, float(st.get("break", 0.0)) / r,
+			float(st.get("boss_giocati", 0.0)) / r, float(st.get("boss_persi", 0.0)) / r, float(st.get("break", 0.0)) / r, float(st.get("slancio", 0.0)) / r,
 			100.0 * float(st.get("dmg_saul", 0.0)) / tot_dmg, 100.0 * float(st.get("dmg_nox", 0.0)) / tot_dmg,
 			float(st.get("heal_nox", 0.0)) / r, float(st.get("veglia", 0.0)) / r,
 			float(st.get("occasioni", 0.0)) / r, float(st.get("react", 0.0)) / r])
@@ -146,9 +155,9 @@ func _init() -> void:
 	if n_boss > 0:
 		var r2: float = float(tot["runs"])
 		var d2: float = maxf(1.0, float(tot.get("dmg_tot", 0.0)))
-		print("%-18s %3s %5.0f %5.2f %5.1f %6.2f %6.2f %5.2f %6.0f %6.0f %6.2f %5.2f %6.2f %5.2f" % [
+		print("%-18s %3s %5.0f %5.2f %5.1f %6.2f %6.2f %5.2f %5.2f %6.0f %6.0f %6.2f %5.2f %6.2f %5.2f" % [
 			"MEDIA BOSS", "", 100.0 * float(tot.get("wins", 0.0)) / r2, float(tot.get("ko", 0.0)) / r2, float(tot.get("rounds", 0.0)) / r2,
-			float(tot.get("boss_giocati", 0.0)) / r2, float(tot.get("boss_persi", 0.0)) / r2, float(tot.get("break", 0.0)) / r2,
+			float(tot.get("boss_giocati", 0.0)) / r2, float(tot.get("boss_persi", 0.0)) / r2, float(tot.get("break", 0.0)) / r2, float(tot.get("slancio", 0.0)) / r2,
 			100.0 * float(tot.get("dmg_saul", 0.0)) / d2, 100.0 * float(tot.get("dmg_nox", 0.0)) / d2,
 			float(tot.get("heal_nox", 0.0)) / r2, float(tot.get("veglia", 0.0)) / r2,
 			float(tot.get("occasioni", 0.0)) / r2, float(tot.get("react", 0.0)) / r2])
