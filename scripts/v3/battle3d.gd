@@ -98,6 +98,9 @@ signal _cutin_end
 var _pause: Control
 var _cam_hud: CamHud                  # lo sguardo di Echo: mirino, REC, numero della telecamera
 var _glyph: LightFx                   # cerchio di luce sotto chi e' di turno
+var _mark: LightFx                    # segnalino ai piedi del bersaglio annunciato dal boss
+var _mark_uid: String = ""
+var _boss_acting: bool = false        # il boss sta agendo: il segnalino resta spento
 var _seal: LightFx                    # sigillo magenta sotto l'Anomalia
 
 
@@ -590,6 +593,7 @@ func _do_action(pid: String, choice: Dictionary) -> void:
 
 func _boss_turn() -> void:
 	cur_pid = ""
+	_boss_acting = true
 	_fx_turn("")
 	_refresh_hud()
 	var tele: Dictionary = b["telegraph"]
@@ -626,6 +630,7 @@ func _boss_turn() -> void:
 		await _show_events(ev, true)
 		await _tw_done(tw)
 	m.stunned = int(BattleState.boss(b).get("stun", 0)) > 0
+	_boss_acting = false
 	_refresh_hud()
 	await _wait(0.15)
 	_cam_overview()
@@ -1400,17 +1405,19 @@ func _refresh_hud() -> void:
 		_tele.text = "STORDITO: salterà il prossimo turno"
 	else:
 		_tele.text = "Prossima mossa: %s su %s" % [str(mv.get("name", "?")).to_upper(), who] if not mv.is_empty() else ""
+	var marked: String = _update_mark(tele, mv, boss)
 	for i in _cards.size():
 		var c: Dictionary = _cards[i]
 		var u: Dictionary = _slot_unit(i)
 		var active: bool = str(slots[i]) == cur_pid
+		var is_marked: bool = marked != "" and str(u.get("id", "")) == marked
 		var alive: bool = BattleState.is_alive(u)
 		var col: Color = _col(u)
 		(c["panel"] as PanelContainer).add_theme_stylebox_override("panel",
-			Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.55), col if active else Ui.INK, 4 if active else 3, 6, 5))
+			Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.55), Color("#ff5a6e") if is_marked else (col if active else Ui.INK), 6 if is_marked else (4 if active else 3), 6, 5))
 		(c["panel"] as Control).modulate.a = 1.0 if alive else 0.45
 		# il colore anche scritto: chi non distingue i colori sa lo stesso chi colpisce le debolezze
-		(c["name"] as Label).text = str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
+		(c["name"] as Label).text = ("! " if is_marked else "") + str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
 		(c["name"] as Label).add_theme_color_override("font_color", col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
@@ -1439,6 +1446,32 @@ func _refresh_hud() -> void:
 	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper()) if cur_pid != "" and not ended else ""
 	if waiting:
 		_show_commands(true)
+
+
+# Segnalino del bersaglio annunciato: acceso a inizio round, spento quando il boss agisce, per mosse su tutti, da stordito e a fine battaglia.
+# Ritorna l'id dell'unita' segnata ("" = nessuna).
+func _update_mark(tele: Dictionary, mv: Dictionary, boss: Dictionary) -> String:
+	var want: String = ""
+	if not ended and not _boss_acting and BattleState.is_alive(boss) and int(boss.get("stun", 0)) <= 0 \
+			and not mv.is_empty() and not bool(mv.get("camera", false)) and str(mv.get("target", "one")) != "all" \
+			and not bool((b.get("seq", {}) as Dictionary).get("boss_acted", false)):
+		var tu: Dictionary = BattleState.active_unit(b, str(tele.get("target", "")))
+		if not tu.is_empty() and BattleState.is_alive(tu) and home.has(str(tu["id"])):
+			want = str(tu["id"])
+	if want == "":
+		_clear_mark()
+	elif want != _mark_uid or _mark == null or not is_instance_valid(_mark):
+		_clear_mark()
+		_mark = LightFx.mark(self, home[want], Color("#ff5a6e"))
+		_mark_uid = want
+	return want
+
+
+func _clear_mark() -> void:
+	if _mark != null and is_instance_valid(_mark):
+		_mark.stop()
+	_mark = null
+	_mark_uid = ""
 
 
 func _banner(text: String, col: Color) -> void:
