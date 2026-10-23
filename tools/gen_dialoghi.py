@@ -189,8 +189,8 @@ scene("tut_reazioni", "Davanti a un colpo pesante in carica compaiono le REAZION
     L("echo/serio", "SOCCORRI: tocca a tempo col battito, tre volte. Rialza un compagno KO."),
     L("echo/felice", "Se sbagli, la reazione funziona lo stesso. Vale meno. Dopotutto siete umani."))
 
-scene("tut_rottura", "A EQUILIBRIO zero il nemico va in ROTTURA e parte l'ATTACCO DI SQUADRA.",
-    L("echo/serio", "Quando la barra bianca EQUILIBRIO arriva a zero, il nemico va in ROTTURA: stordito."),
+scene("tut_rottura", "A EQUILIBRIO zero il nemico va in BREAK e parte l'ATTACCO DI SQUADRA.",
+    L("echo/serio", "Quando la barra bianca EQUILIBRIO arriva a zero, il nemico va in BREAK: stordito."),
     L("echo/felice", "Allora parte l'ATTACCO DI SQUADRA. Io faccio un FERMO IMMAGINE e colpite uno dopo l'altro."),
     L("zecca/felice", "FERMO IMMAGINE. Ditemi che l'avete registrato. Voglio la clip."),
     L("echo/neutro", "Telecamera 07 registra tutto. Il mio archivio è già pieno di voi."),

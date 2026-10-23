@@ -48,7 +48,7 @@ const RESOLVE_TURNS: int = 2
 # ---------- Sfide facoltative ----------
 const CHALLENGES: Dictionary = {
 	"nessun_caduto": {"name": "NESSUNO CADE", "desc": "Vinci senza che nessun operatore vada a terra"},
-	"rottura_veloce": {"name": "ROTTURA LAMPO", "desc": "Rompi l'equilibrio del boss entro il round 4"},
+	"rottura_veloce": {"name": "BREAK LAMPO", "desc": "Rompi l'equilibrio del boss entro il round 4"},
 	"senza_cariche": {"name": "TUTTO SOTTO CONTROLLO", "desc": "Vinci senza cariche non gestite"},
 	"riserva_viva": {"name": "RISERVA VIVA", "desc": "Vinci con almeno 3 di Riserva rimasti"},
 }

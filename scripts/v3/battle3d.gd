@@ -196,7 +196,7 @@ func _ready() -> void:
 		return
 	match ingresso:
 		"vantaggio":
-			_toast("ATTACCO A SORPRESA! %s è già %s alla rottura e agite per primi" % [_cap(_bn()), _g("vicino", "vicina")], Ui.YELLOW, 3.0)
+			_toast("ATTACCO A SORPRESA! %s è già %s al BREAK e agite per primi" % [_cap(_bn()), _g("vicino", "vicina")], Ui.YELLOW, 3.0)
 		"agguato":
 			_toast("AGGUATO! %s attacca per %s" % [_cap(_bn()), _g("primo", "prima")], Color("#ff7a9c"), 3.0)
 	await get_tree().create_timer(0.4).timeout
@@ -1429,7 +1429,7 @@ func _break_stamp(delay: float, sub: String = "", hold: float = 0.85) -> void:
 	slab.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	Ui.place(slab, 0, 0, 1, 0, 0, 0, 0, 140)
 	root.add_child(slab)
-	var txt := Ui.label("BREAK", BREAK_SIZE, Ui.INK, Ui.display(), 0)
+	var txt := Ui.label("BREAK!", BREAK_SIZE, Ui.INK, Ui.display(), 0)
 	txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	Ui.place(txt, 0, 0, 1, 0, 0, 0, 0, 140)
@@ -1855,7 +1855,7 @@ func _warm_fonts() -> void:
 		var l := Ui.label("0123456789!+-% ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈ·", int(sz), Ui.CREAM, Ui.display(), 10)
 		l.position = Vector2(0, 0)
 		box.add_child(l)
-	var lb := Ui.label("BREAK", BREAK_SIZE, Ui.INK, Ui.display(), 0)       # la scritta del BREAK compare nel momento piu' forte: niente scatto
+	var lb := Ui.label("BREAK!", BREAK_SIZE, Ui.INK, Ui.display(), 0)       # la scritta del BREAK compare nel momento piu' forte: niente scatto
 	box.add_child(lb)
 	for i in 3:
 		await get_tree().process_frame
