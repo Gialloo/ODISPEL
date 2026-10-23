@@ -896,6 +896,10 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if du == BattleState.BOSS_ID and _seal != null and is_instance_valid(_seal):
 					_seal.stop()              # la magia lascia l'oggetto: torna un oggetto qualsiasi
 					LightFx.rise(self, ENEMY_POS, LightFx.MAGIC, 1.1, 1.3)
+	# legami e combo muti prima: UN solo banner per azione, il piu' forte, sotto quello della mossa
+	var lb: Dictionary = CombatHud.link_banner(ev)
+	if not lb.is_empty():
+		_banner(str(lb["text"]), lb["col"], 0.25, 24)
 	_refresh_hud()
 	await _wait(0.22 + delay)
 
@@ -1551,9 +1555,9 @@ func _clear_mark() -> void:
 	_mark_uid = ""
 
 
-func _banner(text: String, col: Color) -> void:
-	var l := Ui.label(text, 30, col, Ui.display(), 10)
-	Ui.place(l, 0.5, 0.2, 0.5, 0.2, -500, 0, 500, 50)
+func _banner(text: String, col: Color, ay: float = 0.2, size: int = 30) -> void:
+	var l := Ui.label(text, size, col, Ui.display(), 10)
+	Ui.place(l, 0.5, ay, 0.5, ay, -500, 0, 500, 50)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_fx_layer.add_child(l)
 	var tw := l.create_tween()

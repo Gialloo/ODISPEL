@@ -40,6 +40,13 @@ func _init() -> void:
 	_chk(CombatHud.tele_line("Scarica", "LANCE", false, true, false) == "Prossima mossa: SCARICA (FORTE) su LANCE", "riga forte: " + CombatHud.tele_line("Scarica", "LANCE", false, true, false))
 	_chk(CombatHud.tele_line("Raffica", "", true, false, false) == "Prossima mossa: RAFFICA · SU TUTTI", "riga su tutti")
 	_chk(CombatHud.tele_line("Verbale", "ECHO", false, true, true).ends_with(" · CATENA"), "riga catena")
+	_chk(CombatHud.link_banner([]).is_empty(), "nessun legame, nessun banner")
+	var lk: Dictionary = CombatHud.link_banner([{"t": "link", "n": 1, "kind": "cross"}, {"t": "link", "n": 2, "kind": "unison"}])
+	_chk(str(lk.get("text", "")) == "LEGAME +30% DANNO", "legame piu' forte vince: " + str(lk))
+	var cx: Dictionary = CombatHud.link_banner([{"t": "link", "n": 1, "kind": "cross"}])
+	_chk(str(cx.get("text", "")) == "LEGAME +15% DANNO · +ULTIMATE", "legame cross: " + str(cx))
+	var sy: Dictionary = CombatHud.link_banner([{"t": "link", "n": 4, "kind": "unison"}, {"t": "synergy", "id": "traccia", "name": "Traccia", "tier": 1, "col": "#ffd25f"}])
+	_chk(str(sy.get("text", "")) == "COMBO · TRACCIA · +ULTIMATE", "combo batte legame: " + str(sy))
 	if fails == 0:
 		print("test_v3_hud: OK")
 	quit(0 if fails == 0 else 1)
