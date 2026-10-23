@@ -13,4 +13,4 @@ Fonti, in quest'ordine: `tools/gen_dialoghi.py` (commento VOCI in cima: è la re
 - Gli amici «skippano la storia»: battute corte, una sola idea per battuta, la storia passa dal banter mentre si cammina e dagli oggetti. Spezza le scene lunghe.
 - Niente spiegoni né glossari (U2). Nessun accenno a Malocchio.
 
-Non modificare mai `data/dialoghi_atto1.json` a mano: correggi `tools/gen_dialoghi.py`, poi rigenera con `python3 tools/gen_dialoghi.py` (leggi lo script per l'uso esatto) e fai girare `tests/unit/test_v3_dialoghi.gd` se Godot è disponibile. Consegna: le battute prima e dopo, e perché ogni cambio rende la scena più divertente o più chiara.
+Non modificare mai `data/dialoghi_atto1.json` a mano: correggi `tools/gen_dialoghi.py`, poi rigenera con `python3 tools/gen_dialoghi.py data/dialoghi_atto1.json` e fai girare `tests/unit/test_v3_dialoghi.gd` se Godot è disponibile. Consegna: le battute prima e dopo, e perché ogni cambio rende la scena più divertente o più chiara.
