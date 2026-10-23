@@ -182,6 +182,8 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 		"boss_stunned":
 			return {"text": "BOSS STORDITO: %s ANNULLATA" % move_name(str(e.get("move", ""))), "kind": "link"}
 		"recover":
+			if bool(e.get("soft", false)):
+				return {"text": "", "kind": "info"}
 			return {"text": "IL BOSS SI RIPRENDE", "kind": "info"}
 		"synergy":
 			return {"text": "SINERGIA %s · %s + %s" % [str(e["name"]), unit_name(state, str(e["with"])), unit_name(state, str(e["unit"]))], "kind": "link"}
@@ -224,8 +226,9 @@ static func apply_to_display(state: Dictionary, e: Dictionary) -> void:
 			BattleState.boss(state)["stun"] = 0
 		"recover":
 			var bs: Dictionary = BattleState.boss(state)
-			bs["exposed"] = false
-			bs["balance"] = int(bs.get("balance_max", 1))
+			if not bool(e.get("soft", false)):
+				bs["exposed"] = false
+			bs["balance"] = int(e.get("left", bs.get("balance_max", 1)))
 		"tenacity":
 			var tu: Dictionary = BattleState.unit(state, str(e["unit"]))
 			if not tu.is_empty():

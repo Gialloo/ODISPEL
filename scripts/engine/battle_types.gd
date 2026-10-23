@@ -55,7 +55,7 @@ const ENRAGE_BELOW: float = 0.5
 const HUNTER_BONUS: float = 1.2
 const RHYTHM_BONUS: float = 1.1        # RITMO: danno in piu' se cambi mossa rispetto al round prima
 # EQUILIBRIO del boss (rottura): i colpi lo consumano; a zero il boss e' STORDITO, perde la mossa annunciata e prende piu' danno.
-const BREAK_BASE: float = 8.0
+const BREAK_BASE: float = 22.0
 const BREAK_PER_PLAYER: float = 3.0
 const BREAK_PER_TIER: int = 3
 const BREAK_PER_PHASE: int = 2
@@ -65,6 +65,8 @@ const BREAK_DISADV: int = 1
 const BREAK_MARKED: int = 1            # il boss e' marchiato: ogni colpo rompe di piu' (chi marchia prepara, chi colpisce rompe)
 const BREAK_HEAVY: int = 1             # colpo pesante (moltiplicatore >= 2)
 const BREAK_DAMAGE: float = 1.25       # danno extra sul boss stordito
+const BREAK_RECOVER: float = 0.75       # frazione della barra con cui il boss si riprende dopo una rottura (1 = piena)
+const BREAK_REGEN: int = 1             # equilibrio recuperato a fine round se non e' stato rotto
 # SINERGIE tra compagni nello stesso round
 const SYN_COVER: float = 1.12         # COPERTURA: un compagno ha scudato/curato/provocato prima, il tuo colpo fa di piu'
 const SYN_TRACE_GAUGE: int = 10       # TRACCIA: colpisci un boss marchiato da un altro: ultimate +10 a te, +5 a chi ha marchiato

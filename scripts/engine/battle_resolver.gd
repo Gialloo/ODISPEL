@@ -493,8 +493,13 @@ static func _recover_balance(state: Dictionary, events: Array) -> void:
 	var boss: Dictionary = BattleState.boss(state)
 	if bool(boss.get("exposed", false)) and int(boss.get("stun", 0)) == 0:
 		boss["exposed"] = false
-		boss["balance"] = int(boss["balance_max"])
-		events.append({"t": "recover"})
+		# recupero PARZIALE: dopo una rottura il boss torna a BREAK_RECOVER della barra (non sempre piena)
+		boss["balance"] = clampi(int(round(float(boss["balance_max"]) * BattleTypes.BREAK_RECOVER)), 1, int(boss["balance_max"]))
+		events.append({"t": "recover", "left": int(boss["balance"])})
+	elif not bool(boss.get("exposed", false)) and int(boss.get("balance", 0)) < int(boss.get("balance_max", 0)) and BattleTypes.BREAK_REGEN > 0:
+		# nei round senza rottura il boss recupera un po' di equilibrio da solo: chi non insiste non lo rompe
+		boss["balance"] = mini(int(boss["balance_max"]), int(boss["balance"]) + BattleTypes.BREAK_REGEN)
+		events.append({"t": "recover", "left": int(boss["balance"]), "soft": true})
 
 
 # FASI DEL BOSS: a meta' e a un quarto dei PV cambia ciclo, si copre con uno scudo e toglie 1 energia alla squadra,
