@@ -864,7 +864,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 			"break":
 				_shatter_later("boss", delay, 1.0)        # solo l'animazione: lo schermo poi torna pulito
 				_sparks_later(BattleState.BOSS_ID, delay, true)
-				_toast("ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
+				_toast("IMPULSO · ROTTURA! %s è %s" % [_cap(_bn()), _g("stordito", "stordita")], Color.WHITE, 1.6)
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				_flash(0.5)
 				_kick(0.8)
@@ -907,7 +907,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				var tr_name: String = "FUORI DALLA LUCE" if str(e.get("trait", "")) == "luce" else "VEGLIA"
 				_number(str(e.get("unit", "")), tr_name, _col_of(str(e.get("unit", ""))).lightened(0.3), 22, delay)
 			"rest":
-				_toast("NOX OFFRE IL CAFFÈ · scudo e energia a tutti, il prossimo round agisce due volte", Color("#39b7ff"), 1.8)
+				_toast("IMPULSO · NOX OFFRE IL CAFFÈ · scudo e energia a tutti, il prossimo round agisce due volte", Color("#39b7ff"), 1.8)
 			"revive":
 				var rw: String = str(e.get("who", ""))
 				if vis.has(rw) and vis[rw] is CharacterVisual:

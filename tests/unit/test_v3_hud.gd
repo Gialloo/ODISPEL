@@ -46,7 +46,7 @@ func _init() -> void:
 	var cx: Dictionary = CombatHud.link_banner([{"t": "link", "n": 1, "kind": "cross"}])
 	_chk(str(cx.get("text", "")) == "LEGAME +15% DANNO · +ULTIMATE", "legame cross: " + str(cx))
 	var sy: Dictionary = CombatHud.link_banner([{"t": "link", "n": 4, "kind": "unison"}, {"t": "synergy", "id": "traccia", "name": "Traccia", "tier": 1, "col": "#ffd25f"}])
-	_chk(str(sy.get("text", "")) == "COMBO · TRACCIA · +ULTIMATE", "combo batte legame: " + str(sy))
+	_chk(str(sy.get("text", "")) == "IMPULSO · TRACCIA · +ULTIMATE", "combo (ora chiamata Impulso, scelta voluta del giro 2) batte legame: " + str(sy))
 	if fails == 0:
 		print("test_v3_hud: OK")
 	quit(0 if fails == 0 else 1)

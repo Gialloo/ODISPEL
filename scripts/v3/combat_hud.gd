@@ -34,7 +34,7 @@ static func link_banner(events: Array) -> Dictionary:
 				for r in Combos.RULES:
 					if str(r["id"]) == str(e.get("id", "")):
 						rule = r
-				var txt: String = "COMBO · " + str(e.get("name", "")).to_upper()
+				var txt: String = "IMPULSO · " + str(e.get("name", "")).to_upper()      # la combo e' un Impulso: nome dato a cio' che esiste, nessuna barra nuova
 				if int(rule.get("gauge", 0)) > 0:
 					txt += " · +ULTIMATE"
 				best_score = score
