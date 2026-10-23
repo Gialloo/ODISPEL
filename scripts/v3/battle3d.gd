@@ -846,6 +846,22 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				_flash(0.5)
 				_kick(0.8)
+			"tenacity":
+				# il colpo era mortale: resta in piedi con 1 PV e l'ultimate piena
+				var tn: String = str(e.get("unit", ""))
+				_number(tn, "TENACIA", Ui.CYAN, 30, delay + 0.3, -26.0)
+				_banner("TENACIA · %s RESISTE CON 1 PV" % _uname(tn), Ui.CYAN, 0.25, 24)
+			"resolve":
+				_number(str(e.get("unit", "")), "DETERMINAZIONE", Color("#ffb04a"), 26, delay + 0.3, -26.0)
+			"counter":
+				_number(str(e.get("unit", "")), "CONTRATTACCO", Ui.YELLOW, 26, delay + 0.2, -26.0)
+			"act":
+				# ARDORE: sotto il 30% dei PV chi attacca colpisce piu' forte (il motore non emette un evento: si legge dallo stato)
+				var au: Dictionary = b["units"].get(str(e.get("unit", "")), {})
+				var amv: Dictionary = BattleContent.MOVES.get(str(e.get("move", "")), {})
+				if not au.is_empty() and str(au.get("side", "")) == "player" and BattleState.is_alive(au) and amv.has("mult") \
+						and str(amv.get("target", "")) == "enemy" and float(au["hp"]) < float(au["max_hp"]) * BattleTypes.ARDOR_BELOW:
+					_number(str(au["id"]), "ARDORE", Color("#ff6a5a"), 26, delay + 0.05, -26.0)
 			"cover":
 				_number(str(e.get("unit", "")), "COPRE " + _uname(str(e.get("who", ""))), _col_of(str(e.get("unit", ""))), 24, delay + 0.1)
 			"cover_hit":
