@@ -17,7 +17,7 @@ static func eval(attacker_color: String, defender_color: String) -> Dictionary:
 # Secondo punto debole (boss gialli): "" se non c'e' o non vale per questo colore
 static func second_line(attacker_color: String, boss: Dictionary) -> String:
 	if BattleTypes.hits_weak2({"color": attacker_color}, boss):
-		return "Punto debole di %s: +%d%% col %s" % [str(boss.get("name", "")), int(round((BattleTypes.WEAK2_MULT - 1.0) * 100.0)), attacker_color.to_upper()]
+		return "Punto debole di %s: +%d%% col %s" % [str(boss.get("name", "")), int(round((BattleTypes.WEAK2_MULT - 1.0) * 100.0)), attacker_color]
 	return ""
 
 

@@ -930,7 +930,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				var tr_name: String = "FUORI DALLA LUCE" if str(e.get("trait", "")) == "luce" else "VEGLIA"
 				_number(str(e.get("unit", "")), tr_name, _col_of(str(e.get("unit", ""))).lightened(0.3), 22, delay)
 			"rest":
-				_toast("IMPULSO · NOX OFFRE IL CAFFÈ · scudo e energia a tutti, il prossimo round agisce due volte", Color("#39b7ff"), 1.8)
+				_toast("IMPULSO · CAFFÈ DI NOX · scudo e +1 energia a tutti", Color("#39b7ff"), 1.8)
 			"revive":
 				var rw: String = str(e.get("who", ""))
 				if vis.has(rw) and vis[rw] is CharacterVisual:
@@ -951,9 +951,9 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if str(dsc.get("text", "")) != "":
 					_toast(str(dsc["text"]), Ui.PINK if str(dsc.get("kind", "")) == "boss" else (Ui.YELLOW if str(dsc.get("kind", "")) == "link" else Ui.CREAM), 1.6)
 			"slancio":
-				_toast("SLANCIO · %s agisce ancora (Attacco o Guardia)" % _uname(str(e.get("unit", ""))), Ui.YELLOW, 1.4)
+				_toast("SLANCIO · agisce ancora %s" % _uname(str(e.get("unit", ""))), Ui.YELLOW, 1.4)
 			"phase":
-				_live_banner("FASE %d" % int(e.get("phase", 2)), "%s si arrabbia · guarda la prossima mossa" % _cap(_bn()), Ui.PINK, 2.2)
+				_live_banner("FASE %d" % int(e.get("phase", 2)), "%s passa al piano B · guarda la prossima mossa" % _cap(_bn()), Ui.PINK, 2.2)
 				_kick(0.8)
 				_flash(0.3)
 			"down":
@@ -1610,10 +1610,10 @@ func _update_react() -> void:
 	Ui.place(_turn_lbl, 1.0, 1.0, 1.0, 1.0, -600, -385 - up, -16, -340 - up)
 	Ui.place(_kit_lbl, 1.0, 1.0, 1.0, 1.0, -620, -392 - up, -16, -392 - up)
 	if _react_box.visible:
-		_react_lbl.text = ("REAZIONE · RISERVA %d  (COSTA IL TURNO)" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA · SENZA RISERVA"
+		_react_lbl.text = ("REAZIONE · RISERVA %d (COSTA IL TURNO)" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA · SENZA RISERVA"
 		if not _react_hint_seen and not first_turn and _hint != null and not usable.is_empty():
 			_react_hint_seen = true
-			_hint.text = "CARICA IN ARRIVO: puoi reagire con la Riserva di squadra. SCHIVA evita il colpo, COPRI lo prende al posto di un compagno, FERMA toglie equilibrio al boss"
+			_hint.text = "CARICA IN ARRIVO · reagisci con la Riserva: SCHIVA, COPRI, FERMA, SOCCORRI"
 
 
 # ULTIMATE IN DIRETTA: un compagno con la barra piena lancia l'Ultimate fuori turno durante una carica. Non costa Riserva ne' il

@@ -26,7 +26,7 @@ const QCK_GAUGE_MULT: float = 1.4       # carica dai colpi (QCK)
 const DEFS: Dictionary = {
 	"str": {"tag": "STR", "name": "FORZA", "color": "rosso",
 		"line": "Colpi che crescono",
-		"desc": "+10% ATK. SLANCIO: ogni colpo messo a segno da' +3% di danno, fino a 5 colpi.",
+		"desc": "+10% ATK. CRESCENDO: ogni colpo messo a segno da' +3% di danno, fino a 5 colpi.",
 		"mods": [{"stat": "atk", "pm": 100}]},
 	"psy": {"tag": "PSY", "name": "SINTONIA", "color": "giallo",
 		"line": "Energia e supporto",
