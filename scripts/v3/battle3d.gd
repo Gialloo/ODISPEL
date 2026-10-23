@@ -481,7 +481,7 @@ func _advance() -> void:
 		_show_commands(true)
 		if first_turn:
 			first_turn = false
-			_hint.text = "GUARDIA ricarica energia (+1 anche a ogni round) · ABILITÀ la spende · ULTIMATE quando la barra è piena"
+			_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
 		return
 
 
@@ -838,7 +838,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 			"balance":
 				# quanto equilibrio toglie questo colpo (lo stesso numero che scende nella barra bianca)
 				if int(e.get("amount", 0)) > 0:
-					_number(BattleState.BOSS_ID, "Equilibrio -%d" % int(e.get("amount", 0)), Color("#f2f0ea"), 20, delay + 0.2, -30.0)
+					_number(BattleState.BOSS_ID, "Equilibrio -%d" % int(e.get("amount", 0)), Color("#f2f0ea"), 20, delay + 0.2, 76.0)
 			"break":
 				_shatter_later("boss", delay, 1.0)        # solo l'animazione: lo schermo poi torna pulito
 				_sparks_later(BattleState.BOSS_ID, delay, true)
@@ -1239,7 +1239,7 @@ func _build_ui() -> void:
 	_boss_brk = _bar(Color("#f2f0ea"), 14)
 	bp.add_child(_boss_brk)
 	# il nome della barra bianca, piccolo e dentro la barra: quando arriva a zero il boss si rompe
-	var brk_t := Ui.label("Equilibrio", 11, Color("#8a8697"), null, 3)
+	var brk_t := Ui.label("Equilibrio", 12, Color("#8a8697"), null, 3)
 	brk_t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_brk.add_child(brk_t)
 	Ui.place(brk_t, 0, 0, 1, 1)
