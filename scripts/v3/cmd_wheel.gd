@@ -38,6 +38,8 @@ var _rays: _Layer                          # raggi di luce dal tasto scelto (add
 var _front: _Layer                         # tasti e parole
 var _flow: CPUParticles2D                  # scintille che corrono lungo il filo d'energia
 var _look: String = ""
+var _front_at: Vector2 = Vector2.ZERO
+var _under_was: bool = false              # serve un ultimo ridisegno per pulire bande e lampo
 
 
 func _init() -> void:
@@ -169,9 +171,16 @@ func _process(delta: float) -> void:
 	else:
 		_flow.emitting = false
 	_front.position = center
-	if appear < 1.0 or (sel > 0.0 and sel < 1.0) or picked != "":
+	# i tasti non dipendono dal tempo: si ridisegnano solo durante l'entrata o il passaggio di scelta (telefono: meno lavoro)
+	# (il riquadro e CONFERMA sono fissi sullo schermo: se il petto si sposta con la camera vanno ridisegnati)
+	var moved: bool = picked != "" and center.distance_squared_to(_front_at) > 0.25
+	if appear < 1.0 or (sel > 0.0 and sel < 1.0) or moved:
 		_front.queue_redraw()
-	queue_redraw()
+		_front_at = center
+	var under: bool = flash > 0.0 or (ult and sel > 0.0)
+	if under or _under_was:
+		queue_redraw()
+	_under_was = under
 
 
 # Filo d'energia: curva dal petto al tasto, che si gonfia verso l'alto (sembra uscire dal personaggio)
