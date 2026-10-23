@@ -57,15 +57,30 @@ func _init(m: String, name_txt: String, c: Color, first_time: bool = false) -> v
 			limit = 0.5 + BEAT_GAP * float(BEATS) + 0.3
 			for i in BEATS:
 				_beat_done.append(false)
-	_title = Ui.label("%s · %s" % [str(TITLES.get(mode, "")), who], 40, col.lightened(0.3), Ui.display(), 10)
+	# titolo grande (56): e' la prima cosa che il giocatore legge quando la finestra si apre; entra con uno scatto (Persona 5)
+	_title = Ui.label("%s · %s" % [str(TITLES.get(mode, "")), who], 56, col.lightened(0.3), Ui.display(), 12)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	Ui.place(_title, 0.1, 0.2, 0.9, 0.2, 0, 0, 0, 60)
+	Ui.place(_title, 0.1, 0.2, 0.9, 0.2, 0, 0, 0, 80)
 	add_child(_title)
-	_sub = Ui.label(_how(), 26, Ui.CREAM, null, 8)
+	_sub = Ui.label(_how(), 30, Ui.CREAM, null, 10)
 	_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	Ui.place(_sub, 0.15, 0.62, 0.85, 0.62, 0, 0, 0, 80)
+	Ui.place(_sub, 0.15, 0.68, 0.85, 0.68, 0, 0, 0, 90)
 	add_child(_sub)
+
+
+func _ready() -> void:
+	_title.pivot_offset = Vector2(size.x * 0.4, 40)
+	_title.scale = Vector2(1.5, 1.5)
+	var tw := create_tween().set_ignore_time_scale(true)
+	tw.tween_property(_title, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+# Scritta grande nel disegno (con contorno scuro): il comando da dare in questo istante, leggibile da lontano
+func _cue(text: String, at: Vector2, size_px: int, c: Color) -> void:
+	var f: Font = Ui.display()
+	draw_string_outline(f, at, text, HORIZONTAL_ALIGNMENT_CENTER, 600.0, size_px, 14, Ui.INK)
+	draw_string(f, at, text, HORIZONTAL_ALIGNMENT_CENTER, 600.0, size_px, c)
 
 
 func _how() -> String:
@@ -176,6 +191,8 @@ func _finish(grade: String) -> void:
 	_over = true
 	Settings.buzz(40 if grade == "great" else 12)
 	_title.text = "PERFETTO!" if grade == "great" else "QUASI..."
+	_title.scale = Vector2(1.3, 1.3)          # esito con scatto: la conferma arriva subito
+	create_tween().set_ignore_time_scale(true).tween_property(_title, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_title.add_theme_color_override("font_color", Ui.YELLOW if grade == "great" else Color("#c4c2cf"))
 	_sub.text = "" if grade == "great" else "La reazione vale meno"
 	queue_redraw()
@@ -193,8 +210,9 @@ func _draw() -> void:
 	var left: float = clampf(1.0 - t / maxf(0.01, limit), 0.0, 1.0)
 	# barra del tempo che resta, sotto il titolo
 	var tw: float = sz.x * 0.4
-	draw_rect(Rect2(c.x - tw * 0.5, sz.y * 0.2 + 66, tw, 8), Color(0, 0, 0, 0.6))
-	draw_rect(Rect2(c.x - tw * 0.5, sz.y * 0.2 + 66, tw * left, 8), col)
+	# barra del tempo piu' spessa; negli ultimi istanti diventa rossa (urgenza leggibile senza numeri)
+	draw_rect(Rect2(c.x - tw * 0.5, sz.y * 0.2 + 90, tw, 14), Color(0, 0, 0, 0.6))
+	draw_rect(Rect2(c.x - tw * 0.5, sz.y * 0.2 + 90, tw * left, 14), col if left > 0.3 or _over else Color("#ff4a5a"))
 	match mode:
 		"arrow":
 			# freccia grande verso il lato giusto, e il lato giusto dello schermo illuminato
@@ -209,20 +227,27 @@ func _draw() -> void:
 			for p in pts:
 				inner.append(c + (p - c) * 0.88)
 			draw_colored_polygon(inner, col.lightened(0.2))
+			_cue("TOCCA QUI", Vector2(side_x + sz.x * 0.25 - 300.0, sz.y * 0.74), 48, Ui.YELLOW)
 		"hold":
 			var w: float = 70.0
-			var h: float = 260.0
-			var r := Rect2(c.x - w * 0.5, c.y - h * 0.5, w, h)
+			var h: float = 220.0          # piu' bassa di prima (260): non tocca piu' il titolo e la barra del tempo
+			var r := Rect2(c.x - w * 0.5, c.y - h * 0.5 + 34.0, w, h)
 			draw_rect(r.grow(6), Color(0, 0, 0, 0.6))
 			draw_rect(Rect2(r.position.x, r.end.y - h * ZONE.y, w, h * (ZONE.y - ZONE.x)), Color(Ui.YELLOW.r, Ui.YELLOW.g, Ui.YELLOW.b, 0.45))
 			draw_rect(Rect2(r.position.x, r.end.y - h * _fill, w, h * _fill), col.lightened(0.15))
 			draw_rect(r, Ui.CREAM, false, 4.0)
+			# cosa fare adesso: TIENI finche' sale, LASCIA! quando la barra e' nella fascia gialla (la fascia lampeggia)
+			var in_zone: bool = _holding and _fill >= ZONE.x and _fill <= ZONE.y
+			if in_zone:
+				draw_rect(Rect2(r.position.x, r.end.y - h * ZONE.y, w, h * (ZONE.y - ZONE.x)), Color(1, 1, 1, 0.55))
+			_cue("LASCIA!" if in_zone else ("TIENI..." if _holding else "TIENI PREMUTO"), Vector2(c.x + 60.0, c.y + 40.0), 44, Ui.YELLOW if in_zone else Ui.CREAM)
 		"mash":
 			var w2: float = 420.0
 			var r2 := Rect2(c.x - w2 * 0.5, c.y - 30, w2, 60)
 			draw_rect(r2.grow(6), Color(0, 0, 0, 0.6))
 			draw_rect(Rect2(r2.position, Vector2(w2 * float(_taps) / float(MASH_TAPS), 60)), col.lightened(0.15))
 			draw_rect(r2, Ui.CREAM, false, 4.0)
+			_cue("TOCCA TOCCA!   %d/%d" % [_taps, MASH_TAPS], Vector2(c.x - 300.0, r2.end.y + 70.0), 44, Ui.YELLOW)
 		"beat":
 			# il cuore: si gonfia su ogni battito; i tre pallini dicono quanti battiti hai preso
 			var pulse: float = 0.0
@@ -233,6 +258,10 @@ func _draw() -> void:
 			draw_circle(c + Vector2(rr * 0.45, 0), rr * 0.62, Color("#ff5a6e"))
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-rr * 1.02, rr * 0.18), c + Vector2(rr * 1.02, rr * 0.18), c + Vector2(0, rr * 1.25)]), Color("#ff5a6e"))
 			draw_arc(c, 120, 0, TAU, 48, Color(1, 1, 1, 0.25 + 0.5 * pulse), 4.0)
+			# ORA! mentre il battito da prendere e' nella finestra giusta
+			for i in BEATS:
+				if not bool(_beat_done[i]) and absf(t - _beat_t(i)) <= BEAT_OK:
+					_cue("ORA!", Vector2(c.x - 460.0, c.y + 10.0), 56, Ui.YELLOW)
 			for i in BEATS:
 				var on: bool = bool(_beat_done[i]) and i < _beat_hits + (BEATS - _beat_hits)
 				draw_circle(c + Vector2(-40 + 40 * i, 150), 12, Ui.YELLOW if (bool(_beat_done[i]) and i < _beat_hits) else Color(1, 1, 1, 0.3 if not on else 0.5))

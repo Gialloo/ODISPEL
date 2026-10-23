@@ -121,6 +121,17 @@ func _run() -> void:
 	LightFx.rise(stage, hero.position, CastVisual.col("nox", "accent"))
 	await create_timer(0.3).timeout
 	await _shot("effetti_spirale")
+	# BREAK: vetro rotto dal petto del nemico, a tre istanti (appena colpito, sospeso, ricaduta). Il vetro e' lo stesso della battaglia.
+	var bc := BrokenCam.new()
+	root.add_child(bc)
+	await process_frame
+	var sz: Vector2 = root.get_visible_rect().size
+	var u: Vector2 = cam.unproject_position(boss.chest_point())
+	bc.shatter("boss", 1.0, Vector2(u.x / sz.x, u.y / sz.y), true)
+	for ph in [["break_1_impatto", 0.05], ["break_2_sospeso", 0.35], ["break_3_ricaduta", 0.6]]:
+		await create_timer(float(ph[1])).timeout
+		await _shot(str(ph[0]))
+	bc.queue_free()
 	cam.position = Vector3(0, 1.6, 8.0)
 	cam.look_at(Vector3(0, 12.0, -40.0))
 	await _shot("cielo_cupola")

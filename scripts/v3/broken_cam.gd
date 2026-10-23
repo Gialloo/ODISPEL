@@ -14,6 +14,7 @@ extends CanvasLayer
 
 const SEEDS: int = 14
 const BURST_TIME: float = 0.7
+const BREAK_TIME: float = 1.15
 
 const SHADER: String = """
 shader_type canvas_item;
@@ -23,6 +24,8 @@ uniform sampler2D screen_tex : hint_screen_texture, filter_linear, repeat_disabl
 uniform float crack = 0.0;       // crepe che restano (0..1)
 uniform float burst = 0.0;       // rottura in corso (1 = appena colpito, poi scende a 0)
 uniform float glow = 0.0;        // lampo bianco della rottura (0 se i lampi sono spenti)
+uniform float prog = 1.0;        // tempo della rottura 0..1 (onda d'urto, raggi, schegge che volano verso di noi)
+uniform float big = 0.0;         // 1 = rottura del nemico (BREAK): piu' schegge in volo, bordi luminosi, aberrazione
 uniform vec2 impact = vec2(0.6, 0.45);
 uniform float aspect = 1.7778;
 uniform vec2 pts[14];
@@ -48,27 +51,60 @@ void fragment() {
 	float move = crack * 0.22 * edge_w + burst;
 	vec2 dir = normalize(pts[id] - impact + vec2(0.0001));
 	vec2 off = (vec2(h1(fi + 3.0), h1(fi + 5.0)) - 0.5) * vec2(0.05, 0.04) * move + dir * 0.05 * burst;
-	float ang = (h1(fi + 7.0) - 0.5) * 0.12 * move;
+	// BREAK: le schegge volano verso la camera (si ingrandiscono e si allontanano dal punto d'impatto), ognuna con la sua spinta (profondita')
+	float depth = 0.4 + 0.6 * h1(fi + 11.0);
+	float zoom = 1.0 + big * burst * 0.22 * depth;
+	off += dir * big * burst * 0.07 * depth;
+	float ang = (h1(fi + 7.0) - 0.5) * (0.12 + 0.2 * big) * move;
 	vec2 p = uv - pts[id];
 	p.x *= aspect;
 	p = mat2(vec2(cos(ang), sin(ang)), vec2(-sin(ang), cos(ang))) * p;
 	p.x /= aspect;
+	p /= zoom;
 	vec2 suv = clamp(pts[id] + p + off, vec2(0.001), vec2(0.999));
 	vec3 col = texture(screen_tex, suv).rgb;
-	col *= 1.0 + (h1(fi + 17.0) - 0.5) * 0.12 * move;
+	// aberrazione cromatica solo nei primi istanti del BREAK (rosso e blu leggermente separati)
+	if (big > 0.5) {
+		vec2 ab = dir * 0.012 * burst;
+		col.r = texture(screen_tex, clamp(suv + ab, vec2(0.001), vec2(0.999))).r;
+		col.b = texture(screen_tex, clamp(suv - ab, vec2(0.001), vec2(0.999))).b;
+	}
+	col *= 1.0 + (h1(fi + 17.0) - 0.5) * (0.12 + 0.3 * big) * move;
 	// crepe: linea chiara sottile con un filo d'ombra
 	float vis = max(crack, burst);
 	float edge = d2 - d1;
-	float w = 0.0018 + 0.0012 * vis;
+	float w = 0.0018 + 0.0012 * vis + 0.0016 * big * burst;
 	float line = (1.0 - smoothstep(0.0, w, edge)) * smoothstep(0.0, 0.15, vis);
 	float shade = (1.0 - smoothstep(w, w * 2.5, edge)) * 0.25 * smoothstep(0.0, 0.15, vis);
 	col = mix(col, col * 0.55, shade);
 	col = mix(col, vec3(0.96, 0.95, 1.0), line * (0.55 + 0.35 * burst));
+	// BREAK: fessura scura tra le schegge con bordo luminoso ghiaccio (le schegge sembrano vetro vero, con spessore)
+	float gap = (1.0 - smoothstep(w * 1.5, w * 4.5, edge)) * big * burst;
+	col = mix(col, col * 0.3, gap * 0.8);
+	float rim = (1.0 - smoothstep(0.0, w * 1.6, edge)) * big * smoothstep(0.0, 0.2, burst);
+	col += vec3(0.55, 0.9, 1.0) * rim * 0.9;
+	// riflesso sulla faccia della scheggia: ogni scheggia prende la luce da un lato diverso
+	float facet = dot(normalize(p + vec2(0.0001)), vec2(cos(fi * 2.4), sin(fi * 2.4)));
+	col += vec3(0.8, 0.95, 1.0) * max(0.0, facet) * 0.22 * big * burst * depth;
 	// punto d'impatto e lampo della rottura
 	vec2 q2 = uv - impact; q2.x *= aspect;
-	float star = (1.0 - smoothstep(0.0, 0.04 + 0.05 * burst, length(q2))) * vis;
+	float rq = length(q2);
+	float star = (1.0 - smoothstep(0.0, 0.04 + 0.05 * burst, rq)) * vis;
 	col = mix(col, vec3(0.95), star * 0.35);
-	col = mix(col, vec3(1.0), glow * 0.35);
+	// BREAK: raggi netti dal punto d'impatto (crepe che partono dal colpo) e onda d'urto che si allarga
+	if (big > 0.5) {
+		float a = atan(q2.y, q2.x);
+		float k = a * 9.0 / 6.2831853;
+		float sid = floor(k + 0.5);
+		float sp = abs(k - sid) / 9.0 * 6.2831853 * rq;   // distanza dal raggio in unita' dello schermo
+		float reach = (0.18 + 0.75 * h1(sid * 3.7 + 1.0)) * smoothstep(0.0, 0.25, prog);
+		float spoke = (1.0 - smoothstep(0.0012, 0.0034, sp)) * (1.0 - smoothstep(reach * 0.8, reach, rq)) * burst * 3.0;
+		col = mix(col, vec3(1.0), clamp(spoke, 0.0, 1.0) * 0.9);
+		float shock = abs(rq - prog * 0.9);
+		float wave = (1.0 - smoothstep(0.0, 0.02 + 0.03 * prog, shock)) * (1.0 - prog) * burst;
+		col += vec3(0.6, 0.9, 1.0) * wave * 0.8;
+	}
+	col = mix(col, vec3(1.0), glow * (0.35 + 0.35 * big));
 	COLOR = vec4(col, 1.0);
 }
 """
@@ -79,6 +115,11 @@ var _crack: float = 0.0
 var _target: float = 0.0
 var _burst: float = 0.0
 var _burst_t: float = 99.0
+var _burst_dur: float = 0.7           # durata della rottura in corso (il BREAK dura di piu': e' il momento da godersi)
+var _big: float = 0.0                 # 1 se la rottura in corso e' il BREAK del nemico
+var _rel: PackedVector2Array = PackedVector2Array()   # schegge relative al punto d'impatto (si puo' spostare sul nemico)
+var _imp: Vector2 = Vector2(0.6, 0.45)
+var _stop_gen: int = 0
 var _who: String = ""
 var _pattern: String = ""
 
@@ -139,15 +180,44 @@ func show_for(char_id: String, ratio: float) -> void:
 
 
 # Animazione di rottura nel momento del colpo. key = di chi e' la telecamera (personaggio) o "boss".
-func shatter(key: String, strength: float = 1.0) -> void:
+# impact = punto dello schermo (0..1) da cui partono le crepe; (-1,-1) = quello suo. big = BREAK del nemico: dura di piu',
+# fermo immagine brevissimo, schegge che volano verso di noi (Star Rail: il vetro rotto e' il premio del Break).
+func shatter(key: String, strength: float = 1.0, impact: Vector2 = Vector2(-1, -1), big: bool = false) -> void:
 	if not Settings.broken_cam:
 		return
 	if key != _pattern:
 		_use_pattern(key)
 		_crack = 0.0
-	_burst = clampf(strength, 0.3, 1.0) * (0.6 if Settings.light_fx else 1.0)
+	if impact.x >= 0.0:
+		_place_pattern(impact)
+	var k: float = 0.6 if Settings.light_fx else 1.0
+	_burst = clampf(strength, 0.3, 1.0) * k
 	_burst_t = 0.0
-	Settings.buzz(60)
+	_big = 1.0 if big else 0.0
+	_burst_dur = BREAK_TIME if big else BURST_TIME
+	Settings.buzz(120 if big else 60)
+	if big:
+		_hit_stop()
+
+
+# Fermo immagine di ~0.09 s (tempo reale) sul colpo che rompe: Persona/Star Rail, il colpo "pesa". Solo se il gioco corre normale
+# (non in pausa, non quando il tempo e' gia' rallentato) e si rimette a posto da solo.
+func _hit_stop() -> void:
+	if Engine.time_scale < 0.5 or Engine.time_scale > 2.0:
+		return
+	var prev: float = Engine.time_scale
+	_stop_gen += 1
+	var gen: int = _stop_gen
+	Engine.time_scale = 0.06
+	await get_tree().create_timer(0.09, true, false, true).timeout
+	if gen == _stop_gen and is_equal_approx(Engine.time_scale, 0.06):
+		Engine.time_scale = prev
+
+
+func _exit_tree() -> void:
+	# se la battaglia chiude durante il fermo immagine il tempo non deve restare lento
+	if is_equal_approx(Engine.time_scale, 0.06):
+		Engine.time_scale = 1.0
 
 
 func _use_pattern(key: String) -> void:
@@ -155,11 +225,19 @@ func _use_pattern(key: String) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(key) & 0x7fffffff
 	var imp := Vector2(rng.randf_range(0.3, 0.7), rng.randf_range(0.3, 0.6))
-	var pts := PackedVector2Array()
+	_rel = PackedVector2Array()
 	for i in SEEDS:
 		var a: float = TAU * float(i) / float(SEEDS) + rng.randf_range(-0.25, 0.25)
 		var r: float = (0.08 + 0.85 * pow(rng.randf(), 0.8)) * (0.6 if i % 3 == 0 else 1.0)
-		pts.append(imp + Vector2(cos(a) * r / 1.7778, sin(a) * r))
+		_rel.append(Vector2(cos(a) * r / 1.7778, sin(a) * r))
+	_place_pattern(imp)
+
+
+func _place_pattern(imp: Vector2) -> void:
+	_imp = imp
+	var pts := PackedVector2Array()
+	for r2 in _rel:
+		pts.append(imp + r2)
 	_mat.set_shader_parameter("pts", pts)
 	_mat.set_shader_parameter("impact", imp)
 
@@ -167,10 +245,12 @@ func _use_pattern(key: String) -> void:
 func _process(delta: float) -> void:
 	_crack = move_toward(_crack, _target, delta * 3.0)
 	var b: float = 0.0
-	if _burst_t < BURST_TIME:
+	var k: float = 1.0
+	if _burst_t < _burst_dur:
 		_burst_t += delta
-		var k: float = clampf(_burst_t / BURST_TIME, 0.0, 1.0)
-		b = _burst * (1.0 - k) * (1.0 - k)          # salta subito, poi ricade
+		k = clampf(_burst_t / _burst_dur, 0.0, 1.0)
+		# il BREAK resta teso un attimo (le schegge sospese) e poi ricade; il colpo normale salta subito e ricade
+		b = _burst * (1.0 - k) * (1.0 - k) if _big < 0.5 else _burst * (1.0 - smoothstep(0.35, 1.0, k))
 	_rect.visible = _crack > 0.005 or b > 0.005
 	if not _rect.visible:
 		return
@@ -178,4 +258,7 @@ func _process(delta: float) -> void:
 	_mat.set_shader_parameter("aspect", sz.x / maxf(1.0, sz.y))
 	_mat.set_shader_parameter("crack", _crack)
 	_mat.set_shader_parameter("burst", b)
+	_mat.set_shader_parameter("prog", k)
+	_mat.set_shader_parameter("big", _big)
+	# lampo bianco nei primi 0.15 s, solo se i lampi sono accesi nelle impostazioni
 	_mat.set_shader_parameter("glow", Settings.flash * maxf(0.0, 1.0 - _burst_t / 0.15) * _burst if _burst_t < 0.15 else 0.0)

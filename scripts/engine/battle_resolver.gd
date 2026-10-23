@@ -475,11 +475,11 @@ static func plan_hints(state: Dictionary, slot_id: String) -> Array:
 				hints.append("%s PRONTA con %s: %s" % [str(r["name"]), str(BattleState.unit(state, str(m["with"])).get("name", "")).to_upper(), str(r["desc"])])
 	hints.append_array(Arena.hint_lines(state))
 	if not bool(boss.get("exposed", false)) and int(boss.get("balance", 99)) <= 6:
-		hints.append("ROTTURA VICINA: equilibrio %d, colpisci col colore vantaggioso" % int(boss["balance"]))
+		hints.append("BREAK VICINO: equilibrio %d, colpisci col colore vantaggioso" % int(boss["balance"]))
 	var tele: Dictionary = state.get("telegraph", {})
 	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	if not bm.is_empty() and int(boss.get("stun", 0)) == 0 and is_heavy_boss_move(bm):
-		hints.append("CARICA IN CORSO: la ROTTURA la interrompe (equilibrio %d)" % int(boss.get("balance", 0)))
+		hints.append("CARICA IN CORSO: il BREAK la interrompe (equilibrio %d)" % int(boss.get("balance", 0)))
 	if float(me["hp"]) < float(me["max_hp"]) * BattleTypes.ARDOR_BELOW:
 		hints.append("ARDORE: sotto il %d%% PV colpisci +%d%%" % [int(BattleTypes.ARDOR_BELOW * 100.0), int(round((BattleTypes.ARDOR_BONUS - 1.0) * 100.0))])
 	var lm: String = str(me.get("last_move", ""))

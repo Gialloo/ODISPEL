@@ -178,7 +178,7 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 		"balance":
 			return {"text": "EQUILIBRIO DEL BOSS -%d  (RESTANO %d)" % [int(e["amount"]), int(e["left"])], "kind": "info"}
 		"break":
-			return {"text": "ROTTURA! IL BOSS E' STORDITO", "kind": "link"}
+			return {"text": "BREAK! IL BOSS E' STORDITO", "kind": "link"}
 		"boss_stunned":
 			return {"text": "BOSS STORDITO: %s ANNULLATA" % move_name(str(e.get("move", ""))), "kind": "link"}
 		"recover":

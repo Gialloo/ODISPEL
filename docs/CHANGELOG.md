@@ -1,5 +1,13 @@
 # Novità
 
+## 0.36.0 · grafica rifinita: Break col vetro rotto e feedback di ogni azione
+- **BREAK col vetro rotto**: quando l'equilibrio del nemico va a zero il gioco si ferma un istante, lo schermo si crepa partendo dal nemico e le schegge con il bordo luminoso volano verso di te. Poi la scritta BREAK su una lastra storta, con sotto cosa succede al nemico. Anche l'attacco di squadra ha la sua versione corta.
+- **Sai sempre cosa fare**: a ogni turno la card di chi agisce scatta e prende la freccia ▶, TURNO DI entra grande nel colore del personaggio, il mirino si aggancia al nemico e il comando che scegli scatta prima di partire.
+- **Sai sempre cosa hai fatto**: EFFICACE e DEBOLE con freccia e numero grande, anello verde sulle cure, K.O. grande su chi cade.
+- **Reazioni più chiare**: titolo grande e scritte TOCCA QUI, LASCIA!, TOCCA TOCCA!, ORA!, e la barra del tempo diventa rossa alla fine.
+- **HUD**: barra dell'equilibrio più alta e leggibile, gialla e pulsante quando il BREAK è vicino; i pannelli entrano con uno scatto a inizio battaglia.
+- **Prestazioni**: gli effetti nuovi restano accesi solo durante il loro momento (vetro circa 1 s), niente effetti a schermo intero sempre attivi.
+
 ## 0.35.0 · tutorial, livelli e menu SQUADRA, reazioni nuove
 - **Tutorial di combattimento**: la prima battaglia in strada (e la voce TUTORIAL nel menu) spiega una cosa alla volta, quando serve: attacco, guardia, abilità, il colpo annunciato, la guardia a tempo, le reazioni, la rottura, l'Ultimate e il resto. Lo raccontano Echo e la squadra, con le loro battute.
 - **Livelli ed esperienza**: ogni scontro, piccolo o boss, dà esperienza. A fine battaglia le barre si riempiono e si sale di livello in automatico, come in Persona 5, con gli sblocchi scritti sotto (abilità, Ultimate, reazioni, tratti e sinergie a coppie).
