@@ -1345,6 +1345,22 @@ func _build_ui() -> void:
 	pb.pressed.connect(_open_pause)
 	tr.add_child(pb)
 
+	# legenda dei colori, sempre visibile sotto i pulsanti in alto a destra: A > B = A batte B (+50% danno)
+	var leg := PanelContainer.new()
+	leg.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.72), Ui.INK, 3, 6, 0))
+	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 88, -16, 88)
+	leg.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	leg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var lrow := HBoxContainer.new()
+	lrow.add_theme_constant_override("separation", 5)
+	lrow.alignment = BoxContainer.ALIGNMENT_CENTER
+	leg.add_child(lrow)
+	_legend_row(lrow, ["rosso", "verde", "blu", "rosso"], ">")
+	var sep := Ui.label("·", 18, Color(1, 1, 1, 0.5))
+	lrow.add_child(sep)
+	_legend_row(lrow, ["giallo", "viola"], "<>")
+	_root.add_child(leg)
+
 	# sequenza dell'ultimate
 	_cutin = Control.new()
 	Ui.place(_cutin, 0, 0, 1, 1)
@@ -1487,6 +1503,18 @@ func _show_commands(on: bool) -> void:
 	_kit_lbl.text = "\n".join(lines)
 
 
+# Una catena della ruota dei colori: quadratini del colore e il segno tra l'uno e l'altro (">" batte, "<>" si battono a vicenda)
+func _legend_row(row: HBoxContainer, colors: Array, sign: String) -> void:
+	for i in colors.size():
+		if i > 0:
+			row.add_child(Ui.label(sign, 18, Color(1, 1, 1, 0.8)))
+		var sq := ColorRect.new()
+		sq.color = Ui.BATTLE_COLORS.get(str(colors[i]), Color.WHITE)
+		sq.custom_minimum_size = Vector2(22, 22)
+		sq.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(sq)
+
+
 # REAZIONE: una finestra c'e' solo se il boss carica un colpo pesante non ancora fermato (o c'e' un caduto da soccorrere) e la
 # Riserva basta. Mostra solo le reazioni che si possono fare adesso, ognuna col suo costo in Riserva. Reagire costa il turno.
 func _update_react() -> void:
@@ -1501,7 +1529,7 @@ func _update_react() -> void:
 		var rb: Button = _react_btns[rid]
 		rb.visible = usable.has(rid)
 		if rb.visible:
-			rb.text = "%s\n%d RISERVA" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]
+			rb.text = "%s\nCOSTA %d" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]
 			rb.add_theme_font_size_override("font_size", 17)
 			rb.custom_minimum_size.y = 64.0 if Ui.is_touch() else 52.0
 	if _react_box.visible:
