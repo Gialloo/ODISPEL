@@ -455,7 +455,30 @@ func _start_round() -> void:
 			turn_list = boss_e + rest
 	turn_i = -1
 	_refresh_hud()
+	_round_hint()
 	await _advance()
+
+
+# INDIZIO DI INIZIO ROUND: una riga breve su cio' che cambia questo round (evento dell'arena, catena del boss). Va nella fascia del
+# suggerimento (al centro), sparisce da sola e non scavalca altri suggerimenti.
+func _round_hint() -> void:
+	if _hint == null or _hint.text != "" or ended:
+		return
+	var line: String = ""
+	var al: Array = Arena.hint_lines(b)
+	if not al.is_empty():
+		line = str(al[0])
+	var chain: String = str(b.get("telegraph", {}).get("chain", ""))
+	if chain != "":
+		line = "CATENA: se nessuno reagisce, subito dopo segue %s" % BattleText.move_name(chain).to_upper()
+	if line == "":
+		return
+	_hint.text = line
+	var tw := create_tween()
+	tw.tween_interval(3.2)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(_hint) and _hint.text == line:
+			_hint.text = "")
 
 
 func _advance() -> void:
@@ -923,6 +946,10 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					(vis[pu] as CharacterVisual).attack()
 				_kick(0.5)
 				delay += 0.15
+			"arena", "behavior", "chain":
+				var dsc: Dictionary = BattleText.describe(b, e)
+				if str(dsc.get("text", "")) != "":
+					_toast(str(dsc["text"]), Ui.PINK if str(dsc.get("kind", "")) == "boss" else (Ui.YELLOW if str(dsc.get("kind", "")) == "link" else Ui.CREAM), 1.6)
 			"slancio":
 				_toast("SLANCIO · %s agisce ancora (Attacco o Guardia)" % _uname(str(e.get("unit", ""))), Ui.YELLOW, 1.4)
 			"phase":
