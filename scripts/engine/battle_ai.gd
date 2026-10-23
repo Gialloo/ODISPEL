@@ -88,11 +88,14 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 	var ult: String = str(u["ult"])
 	if ult != "" and int(u["gauge"]) >= BattleTypes.GAUGE_MAX:
 		var umove: Dictionary = BattleContent.MOVES[ult]
-		if umove.has("mult"):
+		var kit_ult: int = Kits.ai_wants(state, u, ult, umove)
+		if kit_ult == 1:
 			return ult
-		if umove.has("heal") and not lowest.is_empty() and _ratio(lowest) < 0.6:
+		if kit_ult == -1 and umove.has("mult"):
 			return ult
-		if umove.has("shield") and heavy:
+		if kit_ult == -1 and umove.has("heal") and not lowest.is_empty() and _ratio(lowest) < 0.6:
+			return ult
+		if kit_ult == -1 and umove.has("shield") and heavy:
 			return ult
 
 	var skills: Array = u["skills"]
@@ -102,6 +105,13 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 			continue
 		if energy < int(m["cost"]):
 			continue
+		var kit_say: int = Kits.ai_wants(state, u, str(sid), m)
+		if kit_say == 0:
+			continue
+		if kit_say == 1:
+			if str(m["target"]) == "ally" and not lowest.is_empty():
+				choice["target"] = BattleState.slot_of(state, str(lowest["id"]))
+			return str(sid)
 		# i supporti tengono acceso il bonus di attacco della squadra (dura 2 turni: lo rinnovano quando scade)
 		if m.has("ally_buff") and not _team_buffed(state, "atk") and not lowest.is_empty():
 			if str(m["target"]) == "ally":

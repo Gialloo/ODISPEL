@@ -89,11 +89,11 @@ static func button(text: String, bg: Color = YELLOW, size: int = 26, min_w: floa
 	b.add_theme_color_override("font_color", INK)
 	b.add_theme_color_override("font_hover_color", INK)
 	b.add_theme_color_override("font_pressed_color", INK)
-	b.add_theme_color_override("font_disabled_color", Color(INK.r, INK.g, INK.b, 0.45))
+	b.add_theme_color_override("font_disabled_color", Color(CREAM.r, CREAM.g, CREAM.b, 0.85))   # leggibile anche spento
 	b.add_theme_stylebox_override("normal", box(bg))
 	b.add_theme_stylebox_override("hover", box(bg.lightened(0.15)))
 	b.add_theme_stylebox_override("pressed", box(bg.darkened(0.12), INK, 4, 6, 2))
-	b.add_theme_stylebox_override("disabled", box(bg.darkened(0.45).lerp(Color(0.4, 0.4, 0.45), 0.5), INK, 4, 6, 3))
+	b.add_theme_stylebox_override("disabled", box(bg.darkened(0.62), INK, 4, 6, 3))
 	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	b.custom_minimum_size = Vector2(min_w, 64.0 if is_touch() else 52.0)
 	return b

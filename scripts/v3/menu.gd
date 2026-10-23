@@ -4,6 +4,13 @@ extends Control
 
 var _t: float = 0.0
 var _bg: Control
+var _upd: Button
+var _overlay: Control = null       # CAPITOLI o IMPOSTAZIONI aperti sopra il menu
+
+
+func show_update(version: String) -> void:
+	_upd.text = "AGGIORNA ALLA %s" % version
+	_upd.visible = true
 
 
 func crumb() -> String:
@@ -34,6 +41,15 @@ func _ready() -> void:
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 6)
 	col.add_child(gap)
+	# pulsante "aggiorna", nascosto finche' itch non dice che c'e' una versione nuova
+	_upd = Ui.button("", Color("#46e07a"), 22, 380)
+	_upd.visible = false
+	_upd.pressed.connect(func() -> void: OS.shell_open(UpdateCheck.PAGE))
+	col.add_child(_upd)
+	if DisplayServer.get_name() != "headless":
+		var chk := UpdateCheck.new()
+		chk.found.connect(show_update)
+		add_child(chk)
 
 	var note: String = Breadcrumb.crash_note()
 	if note != "":
@@ -98,6 +114,7 @@ func _main() -> Node:
 # Salta a un capitolo (per provare e correggere senza rigiocare tutto)
 func _open_chapters() -> void:
 	var shade := ColorRect.new()
+	_overlay = shade
 	shade.color = Color(0.02, 0.01, 0.05, 0.85)
 	Ui.place(shade, 0, 0, 1, 1)
 	add_child(shade)
@@ -145,10 +162,19 @@ func _progress_saved() -> bool:
 
 func _open_settings() -> void:
 	var p := SettingsPanel.new()
+	_overlay = p
 	add_child(p)
 
 
+# Il tasto indietro di Android chiude prima CAPITOLI o IMPOSTAZIONI, se aperti; solo dal menu nudo esce dal gioco
 func back() -> void:
+	if is_instance_valid(_overlay):
+		if _overlay is SettingsPanel:
+			Settings.save()
+			(_overlay as SettingsPanel).closed.emit()
+		_overlay.queue_free()
+		_overlay = null
+		return
 	_main().quit()
 
 

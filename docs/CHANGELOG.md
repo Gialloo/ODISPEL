@@ -1,5 +1,19 @@
 # Novità
 
+## 0.33.2 · kit dei personaggi, battute più secche, aggiornare è più semplice
+- **Ogni personaggio combatte a modo suo** (kit presi da archetipo, oggetto e fazione). Lance protegge: Copertura prende il colpo diretto a un compagno, il Braccio della Legge spezza l'equilibrio. Saul sfrutta l'occasione: Testa o croce (testa critico, croce energia a un compagno) e Il colpo grosso, che ruba lo scudo del nemico. Rio fa spettacolo: Inquadratura e Gran finale crescono con l'Hype. Nox evita la fatica inutile: Pausa caffè cura chi serve o la fa riposare, Rispondo io rialza un compagno KO. Ognuno ha anche un tratto passivo, scritto in battaglia.
+- **Effetti visivi nuovi**: pennellate di luce del colore di chi colpisce su Abilità e Ultimate, scintille d'impatto, un cerchio di luce sotto chi è di turno e due fotogrammi al buio prima dell'Ultimate. La cupola magenta resta in cielo per tutto l'atto, le esplorazioni si vedono dal mirino delle telecamere di Echo (dentro le Anomalie «NESSUN SEGNALE») e la maschera di Rio resta incrinata dal capitolo 3 in poi.
+- Battute delle Ultimate di Saul e Nox scelte dall'autore, e nuove battute dell'autore nei dialoghi (lo «sbirro magico», Saul e la radio di Astrid, il rifugio).
+- Tutti i dialoghi e le chiacchiere riscritti con le regole dell'autore: niente spiegazioni, botta e risposta secchi, ogni battuta fedele al personaggio. Esempi: «C'è una cupola sopra la città e tu pensi ancora alle strisce pedonali?» «Sì.»; «Ma sul pacco c'era scritto "Documenti!".» «Ma che razza di documenti porti in giro?!»
+- Indizi più asciutti («Uno scontrino per terra. Prezzo: un'anima. Non dà resto VIOLA.»).
+- **Avviso di aggiornamento**: all'avvio il menu controlla su itch.io se c'è una versione nuova. Se c'è, compare il pulsante verde «AGGIORNA ALLA …» che apre la pagina del gioco. Su Android la nuova versione si installa sopra la vecchia, senza disinstallare.
+- Le scelte nei dialoghi non si sommano più rigiocando una scena (prima, alla seconda volta, partivano entrambi i rami).
+- La vittoria si salva appena compare il pannello: chiudere il gioco lì non fa più rigiocare la battaglia.
+- Il tasto indietro chiude prima Capitoli e Impostazioni, poi esce.
+- Dissolvenze e lampi non rallentano più quando la battaglia è a velocità diversa.
+- Esplorazione: la pausa si apre anche con un dito già sul joystick, e la telecamera non resta «agganciata» dopo un dialogo.
+- Leggibilità sul telefono: testi di battaglia, pausa, riassunti e titoli più grandi; pulsanti spenti leggibili; sulle carte c'è scritto il colore di ognuno (RIO · VIOLA); i compagni troppo vicini alla telecamera si nascondono invece di coprire la scena; schermata finale centrata.
+
 ## 0.33.1 · Guardia a tempo e battaglie più veloci
 - **Guardia a tempo** (idea approvata dall'autore, da Expedition 33): quando parte il colpo annunciato del nemico compare un cerchio. Tocca lo schermo al momento giusto per incassare meno danno e caricare l'Ultimate; con il tocco perfetto contrattacchi.
 - Pause più brevi tra un'azione e l'altra: si guarda meno e si agisce di più.

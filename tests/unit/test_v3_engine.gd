@@ -81,6 +81,8 @@ func _init() -> void:
 	Story.load_game()
 	check(Story.area_state.is_empty(), "passando al passo dopo lo stato dell'area si azzera")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(Story.save_path))
+	check(UpdateCheck.newer("0.33.2", "0.33.1") and UpdateCheck.newer("0.34.0", "0.33.9") and not UpdateCheck.newer("0.33.1", "0.33.1")
+		and not UpdateCheck.newer("0.32.9", "0.33.0") and UpdateCheck.newer("1.0", "0.99.9"), "confronto delle versioni per l'aggiornamento")
 	check(BrokenCam.level_for(0.9) == 0.0 and BrokenCam.level_for(0.5) > 0.0 and BrokenCam.level_for(0.25) >= 0.99, "livelli della telecamera rotta")
 	# articoli dei nemici nei messaggi di battaglia
 	var b3: GDScript = load("res://scripts/v3/battle3d.gd")
@@ -88,6 +90,7 @@ func _init() -> void:
 			["L'Osservatore", "l'Osservatore"], ["Sirena", "la Sirena"], ["Scala mobile", "la Scala mobile"]]:
 		check(b3.article(str(pair[0])) == str(pair[1]), "articolo: %s -> %s (non %s)" % [pair[0], pair[1], b3.article(str(pair[0]))])
 	_timed_guard(team)
+	_kits(team)
 	print("test_v3_engine: " + ("OK" if fails == 0 else "%d errori" % fails))
 	quit(1 if fails > 0 else 0)
 
@@ -126,3 +129,159 @@ func _timed_guard(team: Array) -> void:
 	check(perf["parry"] and perf["boss_lost"] > 0, "la parata perfetta contrattacca")
 	check(not good["parry"] and perf["boss_lost"] > none["boss_lost"], "solo la parata perfetta aggiunge un contrattacco")
 	check(not good["left"] and not perf["left"], "il segnale della guardia vale per un solo colpo")
+
+
+# ---------------------------------------------------------------- kit dei quattro (Kits)
+
+func _pid(s: Dictionary, char_id: String) -> String:
+	for p in s["players"]:
+		if str(BattleState.active_unit(s, str(p["id"]))["char"]) == char_id:
+			return str(p["id"])
+	return ""
+
+
+func _u(s: Dictionary, char_id: String) -> Dictionary:
+	return BattleState.active_unit(s, _pid(s, char_id))
+
+
+func _fresh(team: Array, seed_value: int = 5) -> Dictionary:
+	var s: Dictionary = BattleState.create_solo("IO", team, [], "distributore", seed_value)
+	SeqRound.begin(s)
+	return s
+
+
+func _has(ev: Array, t: String) -> bool:
+	for e in ev:
+		if str(e.get("t", "")) == t:
+			return true
+	return false
+
+
+func _dmg_to(ev: Array, uid: String) -> int:
+	var n: int = 0
+	for e in ev:
+		if str(e.get("t", "")) == "damage" and str(e.get("dst", "")) == uid and not bool(e.get("cost", false)):
+			n += int(e["amount"])
+	return n
+
+
+func _kits(team: Array) -> void:
+	# Lance · Copertura: prende lui il colpo annunciato su Nox
+	var s: Dictionary = _fresh(team)
+	s["telegraph"] = {"move": "scarica", "target": _pid(s, "nox")}
+	_u(s, "ferri")["energy"] = 6
+	SeqRound.player_action(s, _pid(s, "ferri"), {"swap": "", "move": "u_ferri_a", "target": ""})
+	var ev: Array = SeqRound.boss_action(s)
+	check(_has(ev, "cover_hit"), "Copertura: Lance si mette davanti")
+	check(_dmg_to(ev, str(_u(s, "nox")["id"])) == 0 and _dmg_to(ev, str(_u(s, "ferri")["id"])) > 0, "Copertura: il colpo su Nox lo prende Lance")
+	check(not _u(s, "ferri").has("cover"), "Copertura: vale un solo colpo")
+	# Lance · Copertura quando il colpo e' per lui: guardia
+	s = _fresh(team)
+	s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
+	_u(s, "ferri")["energy"] = 6
+	SeqRound.player_action(s, _pid(s, "ferri"), {"swap": "", "move": "u_ferri_a", "target": ""})
+	check(_u(s, "ferri")["statuses"].has("guard"), "Copertura su di se': Lance in guardia")
+	# Lance · Braccio della Legge toglie molto equilibrio
+	s = _fresh(team)
+	var boss: Dictionary = BattleState.boss(s)
+	var bal: int = int(boss["balance"])
+	_u(s, "ferri")["gauge"] = 100
+	SeqRound.player_action(s, _pid(s, "ferri"), {"swap": "", "move": "u_ferri_ult", "target": ""})
+	check(bal - int(boss["balance"]) >= Kits.ARM_BALANCE or int(boss.get("stun", 0)) > 0, "Braccio della Legge: equilibrio -%d" % (bal - int(boss["balance"])))
+	# Saul · Testa o croce: escono tutte e due, con il loro effetto
+	var heads: int = 0
+	var tails: int = 0
+	for sd in range(1, 30):
+		s = _fresh(team, sd)
+		_u(s, "saul")["energy"] = 6
+		s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
+		ev = SeqRound.player_action(s, _pid(s, "saul"), {"swap": "", "move": "u_saul_a", "target": ""})
+		for e in ev:
+			if str(e.get("t", "")) == "coin":
+				if str(e["side"]) == "testa":
+					heads += 1
+					var crit: bool = false
+					for e2 in ev:
+						crit = crit or (str(e2.get("t", "")) == "damage" and bool(e2.get("crit", false)))
+					check(crit, "Testa: critico sicuro")
+				else:
+					tails += 1
+					check(_has(ev, "energy_gift"), "Croce: energia a un compagno")
+	check(heads > 3 and tails > 3, "la moneta esce da tutte e due le parti (%d testa, %d croce)" % [heads, tails])
+	# Saul · Fuori dalla luce
+	s = _fresh(team)
+	s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
+	ev = SeqRound.player_action(s, _pid(s, "saul"), {"swap": "", "move": "attack", "target": ""})
+	check(_has(ev, "kit_trait"), "Fuori dalla luce quando il boss guarda Lance")
+	# Saul · Il colpo grosso ruba lo scudo
+	s = _fresh(team)
+	boss = BattleState.boss(s)
+	boss["shield"] = 400
+	_u(s, "saul")["gauge"] = 100
+	SeqRound.player_action(s, _pid(s, "saul"), {"swap": "", "move": "u_saul_ult", "target": ""})
+	check(int(boss["shield"]) == 0 and int(_u(s, "nox")["shield"]) >= 100, "Il colpo grosso: scudo rubato e diviso")
+	# Rio · Gran finale: l'Hype conta
+	var dmg: Array = []
+	for hype in [0, 100]:
+		s = _fresh(team)
+		_u(s, "zecca")["gauge"] = 100
+		_u(s, "zecca")["hype"] = hype
+		ev = SeqRound.player_action(s, _pid(s, "zecca"), {"swap": "", "move": "u_zecca_ult", "target": ""})
+		dmg.append(_dmg_to(ev, BattleState.BOSS_ID))
+		check(int(_u(s, "zecca").get("hype", 0)) < hype or hype == 0, "Gran finale consuma l'Hype")
+	check(dmg[1] > dmg[0] * 3, "Gran finale con Hype pieno fa molto di piu' (%d contro %d)" % [dmg[1], dmg[0]])
+	# Rio · Hype dalla parata perfetta di un compagno
+	s = _fresh(team)
+	s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
+	s["timed_guard"] = "perfect"
+	SeqRound.boss_action(s)
+	check(int(_u(s, "zecca").get("hype", 0)) >= Kits.HYPE_GAIN["perfect"], "Hype dalla parata perfetta")
+	# Rio · con la maschera attira i colpi singoli
+	var on_rio: int = 0
+	var n: int = 0
+	for sd in range(1, 80):
+		s = BattleState.create_solo("IO", team, [], "distributore", sd)
+		var mv: Dictionary = BattleContent.BOSS_MOVES[str(s["telegraph"]["move"])]
+		if str(mv["target"]) == "one":
+			n += 1
+			if str(s["telegraph"]["target"]) == _pid(s, "zecca"):
+				on_rio += 1
+	check(n > 10 and float(on_rio) / float(n) > 0.35, "la maschera attira i colpi su Rio (%d su %d)" % [on_rio, n])
+	# Nox · Pausa caffe' con tutti in salute: riposo e doppio turno
+	s = _fresh(team)
+	_u(s, "nox")["energy"] = 4
+	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "u_nox_a", "target": _pid(s, "ferri")})
+	check(_has(ev, "rest") and int(_u(s, "nox")["energy"]) == 4, "Pausa caffe': Nox si riposa senza spendere")
+	SeqRound.finish(s)
+	SeqRound.begin(s)
+	var turns: int = 0
+	for e in SeqRound.order(s):
+		if str(e["unit"]) == str(_u(s, "nox")["id"]):
+			turns += 1
+	check(turns == 2, "dopo il riposo Nox agisce due volte (%d)" % turns)
+	# Nox · Pausa caffe' su un ferito: cura ed energia
+	s = _fresh(team)
+	_u(s, "nox")["energy"] = 4
+	_u(s, "saul")["hp"] = 100
+	var en_before: int = int(_u(s, "saul")["energy"])
+	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "u_nox_a", "target": _pid(s, "saul")})
+	check(_has(ev, "heal") and int(_u(s, "saul")["energy"]) > en_before, "Pausa caffe': cura e da' energia")
+	# Nox · Veglia per ultima
+	s = _fresh(team)
+	for c in ["ferri", "zecca", "saul"]:
+		SeqRound.player_action(s, _pid(s, c), {"swap": "", "move": "attack", "target": ""})
+	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "attack", "target": ""})
+	check(_has(ev, "kit_trait"), "Veglia: Nox ultima del round")
+	# Nox · Rispondo io: rianima, altrimenti annulla il prossimo colpo
+	s = _fresh(team)
+	var saul: Dictionary = _u(s, "saul")
+	saul["hp"] = 0
+	_u(s, "nox")["gauge"] = 100
+	SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "u_nox_ult", "target": ""})
+	check(int(saul["hp"]) > 0, "Rispondo io rianima chi e' KO")
+	s = _fresh(team)
+	_u(s, "nox")["gauge"] = 100
+	s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
+	SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "u_nox_ult", "target": ""})
+	ev = SeqRound.boss_action(s)
+	check(_has(ev, "nullified") and _dmg_to(ev, str(_u(s, "ferri")["id"])) == 0, "Rispondo io annulla il colpo")

@@ -52,6 +52,8 @@ static func order(state: Dictionary) -> Array:
 		if int(a["spd"]) != int(b["spd"]):
 			return int(a["spd"]) > int(b["spd"])
 		return str(a["unit"]) < str(b["unit"]))
+	# il riposo di Nox: un secondo turno, l'ultimo del round (Kits)
+	list.append_array(Kits.extra_turns(state))
 	return list
 
 
@@ -87,6 +89,7 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary) ->
 		BattleResolver._player_act(state, actor, str(p["choice"]["move"]), str(p["choice"]["target"]), events)
 		BattleResolver._summon_upkeep(state, events, false)
 		BattleResolver._check_winner(state, events)
+		Kits.after_events(state, events)
 	p["choice"] = null
 	_log(state, events)
 	return events
@@ -110,6 +113,7 @@ static func boss_action(state: Dictionary) -> Array:
 			BattleResolver._boss_act(state, boss, str(tele["move"]), str(tele["target"]), rng, events)
 			BattleResolver._save_rng(state, rng)
 		BattleResolver._check_winner(state, events)
+		Kits.after_events(state, events)
 	state["seq"]["boss_acted"] = true
 	state["seq"]["snap"] = _snapshot(state)
 	_log(state, events)

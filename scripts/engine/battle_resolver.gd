@@ -37,6 +37,7 @@ static func begin_round(state: Dictionary) -> void:
 		else:
 			var rng: RNGState = _load_rng(state)
 			target = str(alive[rng.random_index(alive.size())]["id"])
+			target = Kits.mask_target(state, target, rng)
 			_save_rng(state, rng)
 	state["telegraph"] = {"move": move_id, "target": target}
 	Tactics.roll_chain(state, cycle)
@@ -901,6 +902,11 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		awake_mult *= BattleTypes.ADAPT_MULT
 		events.append({"t": "adapt", "unit": actor["id"], "move": move_id})
 	actor["last_move"] = move_id
+	# KIT V3: tratti e mosse speciali dei quattro (Kits)
+	var kit_fx: Dictionary = Kits.before_act(state, actor, move_id, move, events)
+	if bool(kit_fx["skip"]):
+		return
+	awake_mult *= float(kit_fx["mult"])
 	if move_id == "attack":
 		awake_mult *= BattleContent.basic_factor(actor)
 	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
@@ -961,7 +967,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 				boost = mini(int(move.get("crit_dmg_cap", 650)), int(move["crit_dmg_per_mark"]) * Marks.count(t))
 			for _i in int(move.get("hits", 1)):
 				if BattleState.is_alive(t):
-					_hit(state, actor, t, m_total, events, int(move.get("pierce", 0)), bonus, ammo_hit, int(move.get("crit_pm", 0)) + emp_crit, boost)
+					_hit(state, actor, t, m_total, events, int(move.get("pierce", 0)), bonus, ammo_hit, int(move.get("crit_pm", 0)) + emp_crit + int(kit_fx["crit_pm"]), boost)
 			if move.has("consume_marks"):
 				Marks.consume(t, events)
 		if move.has("heal"):
@@ -1023,6 +1029,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		events.append({"t": "buff", "unit": actor["id"]})
 	if move.has("summon"):
 		_summon(state, actor, str(move["summon"]), events)
+	Kits.after_act(state, actor, move_id, move, target_pid, events)
 
 
 # EVOCAZIONI: torretta e drone seguono chi li ha evocati, sparano da soli a fine round (1 munizione a colpo)
@@ -1124,6 +1131,9 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 	if bool(move.get("camera", false)):
 		_camera_cut(state, boss, events)
 		return
+	if Kits.nullify(state, events):
+		Kits.boss_resolved(state)
+		return
 	var targets: Array = []
 	if str(move["target"]) == "all":
 		for p in BattleState.alive_players(state):
@@ -1168,6 +1178,12 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 			events.append({"t": "dodge", "unit": t["id"], "react": true})
 			continue
 		var hit_mult: float = float(move["mult"]) * beh_mult
+		if intercepted.is_empty() and targets.size() == 1:
+			# Copertura di Lance: si mette davanti al compagno annunciato
+			var cov: Dictionary = Kits.coverer(state, t)
+			if not cov.is_empty():
+				intercepted = cov
+				events.append({"t": "cover_hit", "unit": cov["id"], "who": t["id"]})
 		if not intercepted.is_empty() and BattleState.is_alive(intercepted) and str(intercepted["id"]) != str(t["id"]) and targets.size() == 1:
 			t = intercepted
 			hit_mult *= BattleTypes.INTERCEPT_FACTOR
@@ -1184,7 +1200,10 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 			# parata perfetta: chi ha parato risponde subito (un solo contrattacco anche contro i colpi a tutti)
 			countered = true
 			events.append({"t": "parry", "unit": t["id"]})
-			_hit(state, t, boss, BattleTypes.TIMED_COUNTER_MULT, events)
+			var lance: bool = Kits.is_char(t, Kits.LANCE)
+			_hit(state, t, boss, Kits.PARRY_ARM_MULT if lance else BattleTypes.TIMED_COUNTER_MULT, events)
+			if lance and BattleState.is_alive(boss):
+				_drain_balance(boss, Kits.PARRY_ARM_BALANCE, t, events)      # Al secondo: il braccio spezza la guardia
 		var drain: float = float(move.get("drain", 0.0)) + float(state.get("boss_drain", 0.0))
 		if drain > 0.0:
 			var dealt: int = hp_before - int(t["hp"])
@@ -1195,6 +1214,7 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		if move.has("status") and BattleState.is_alive(t):
 			for s in move["status"]:
 				_add_status(t, str(s), int(move["status"][s]), events)
+	Kits.boss_resolved(state)
 	if heavy:
 		# resoconto: una carica e' "gestita" se qualcuno ha reagito o non ha fatto danno
 		events.append({"t": "threat", "move": move_id, "handled": reacted or lost_total <= 0, "could": reserve_then >= 1, "lost": lost_total})

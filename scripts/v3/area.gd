@@ -87,6 +87,8 @@ func _ready() -> void:
 	env.environment = _env
 	add_child(env)
 	_lay = LayoutBuilder.build(str(cfg.get("layout", "strada")), int(cfg.get("seme", 29)), str(cfg.get("tema", "")), self)
+	if SkyDome.outdoor(str(cfg.get("layout", "strada"))):
+		add_child(SkyDome.new())         # la cupola magenta resta nel cielo per tutto l'atto
 	_env.background_color = _lay["bg"]
 	var fog: Array = _lay["fog"]
 	Toon.set_fog(fog[0], fog[1], fog[2])
@@ -239,6 +241,13 @@ func _build_ui() -> void:
 	Ui.place(_root, 0, 0, 1, 1)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ui.add_child(_root)
+	# lo sguardo di Echo: mirino, REC e ora della notte (sotto a tutto il resto dell'interfaccia)
+	var hud := CamHud.new()
+	hud.anomaly = str(cfg.get("layout", "strada")) == "anomalia"
+	hud.tag_right = true
+	hud.tag_y = 94.0
+	_root.add_child(hud)
+	hud.watch("", Ui.CREAM, 1 + absi(hash(area_id)) % 24)
 	_touch = TouchControls.new()
 	_root.add_child(_touch)
 	_touch.action_pressed.connect(_interact)
@@ -282,6 +291,13 @@ func _main() -> Node:
 
 func _input(event: InputEvent) -> void:
 	if mode != "walk" or _pause != null:
+		_mouse_drag = false      # il tasto rilasciato durante un dialogo non arriva qui: niente camera che gira da sola dopo
+		return
+	# pausa anche col secondo dito (pollice sullo stick): Godot trasforma in clic solo il primo dito
+	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed \
+			and _pause_btn.visible and _pause_btn.get_global_rect().grow(12).has_point((event as InputEventScreenTouch).position):
+		get_viewport().set_input_as_handled()
+		_open_pause()
 		return
 	if _touch.handle(event):
 		get_viewport().set_input_as_handled()
@@ -400,7 +416,7 @@ func _follow(delta: float) -> void:
 		var f: CharacterVisual = followers[i]
 		var idx: int = mini(_trail.size() - 1, 4 + 4 * i)
 		var target: Vector3 = _trail[idx]
-		target.x += (0.5 if i % 2 == 0 else -0.5)
+		target.x += (0.8 if i % 2 == 0 else -0.8)
 		var d: Vector3 = target - f.position
 		d.y = 0.0
 		var len: float = d.length()
@@ -414,6 +430,10 @@ func _follow(delta: float) -> void:
 			if mode == "dialog" or mode == "leaving":
 				var to: Vector3 = _focus - f.position
 				f.rotation.y = lerp_angle(f.rotation.y, atan2(-to.x, -to.z), minf(1.0, delta * 4.0))
+		# un compagno troppo vicino alla telecamera copre la scena: si nasconde finche' non si allontana
+		if cam != null:
+			var dc: Vector3 = f.position + Vector3(0, 1.0, 0) - cam.position
+			f.visible = dc.length() > 2.0 and dc.dot(-cam.global_transform.basis.z) > 0.6
 
 
 func _animate_world(delta: float) -> void:

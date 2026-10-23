@@ -19,8 +19,9 @@ func _ready() -> void:
 	Ui.place(bg, 0, 0, 1, 1)
 	add_child(bg)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 14)
-	Ui.place(vb, 0.1, 0.08, 0.9, 0.95)
+	vb.add_theme_constant_override("separation", 24)
+	vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	Ui.place(vb, 0.1, 0.08, 0.9, 0.92)
 	add_child(vb)
 	vb.add_child(Ui.label("FINE DELL'ATTO 1", 56, Ui.YELLOW, Ui.display(), 10))
 	vb.add_child(Ui.label("Grazie per aver giocato. Dimmi cosa correggere: ritmo, battute, combattimenti, cosa ti ha annoiato.", 22, Ui.CREAM))

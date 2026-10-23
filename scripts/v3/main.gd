@@ -82,7 +82,8 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	_going = [screen, args]
 	# durante la dissolvenza i tocchi non arrivano alle schermate (ne' alla vecchia ne' alla nuova)
 	_fade.mouse_filter = Control.MOUSE_FILTER_STOP
-	var tw := create_tween()
+	# le dissolvenze ignorano la pausa (time_scale 0): una pausa durante il cambio non deve bloccarle a meta'
+	var tw := create_tween().set_ignore_time_scale(true)
 	tw.tween_property(_fade, "color:a", 1.0, 0.25)
 	await tw.finished
 	if current != null:
@@ -99,7 +100,7 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	add_child(current)
 	move_child(current, 0)
 	await get_tree().process_frame
-	var tw2 := create_tween()
+	var tw2 := create_tween().set_ignore_time_scale(true)
 	tw2.tween_property(_fade, "color:a", 0.0, 0.3)
 	await tw2.finished
 	_busy = false
@@ -136,7 +137,7 @@ func flash(strength: float = 1.0) -> void:
 	Ui.place(f, 0, 0, 1, 1)
 	f.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_overlay.add_child(f)
-	var tw := f.create_tween()
+	var tw := f.create_tween().set_ignore_time_scale(true)
 	tw.tween_property(f, "color:a", 0.0, 0.25)
 	tw.tween_callback(f.queue_free)
 

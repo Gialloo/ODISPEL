@@ -251,7 +251,7 @@ static func head(sp: Dictionary) -> MeshBatch:
 	if bool(sp.get("faceless", false)):
 		pass                              # manichino: niente occhi ne' bocca
 	elif extra == "mask" and not bool(sp.get("nomask", false)):
-		_mask(mb, accent)
+		_mask(mb, accent, bool(sp.get("mask_crack", false)))
 	else:
 		_eyes(mb, sp)
 	_hair(mb, style, hair, accent, sp)
@@ -323,7 +323,7 @@ static func face_col_of(sp: Dictionary) -> Color:
 	return _a(Color(str(sp["skin"])), 0.6)
 
 
-static func _mask(mb: MeshBatch, accent: Color) -> void:
+static func _mask(mb: MeshBatch, accent: Color, cracked: bool = false) -> void:
 	# maschera dei Masca: guscio bianco sul viso, occhi a fessura viola luminosi, bocca a fessura gialla
 	var white := Color(0.96, 0.95, 0.93, 0.6)
 	var cols: int = 12
@@ -348,6 +348,26 @@ static func _mask(mb: MeshBatch, accent: Color) -> void:
 		var slit: Array = [Vector2(0.018 * s, 0.1), Vector2(0.07 * s, 0.118), Vector2(0.066 * s, 0.103), Vector2(0.02 * s, 0.09)]
 		_decal(mb, slit, 0.016, Color(0.8, 0.35, 1.0, 0.0))
 	_decal(mb, [Vector2(-0.03, 0.045), Vector2(0.03, 0.045), Vector2(0.026, 0.037), Vector2(-0.026, 0.037)], 0.016, Color(accent.r, accent.g, accent.b, 0.0))
+	if cracked:
+		_mask_crack(mb)
+
+
+# Dopo il capitolo 3 (Vetrina) la maschera di Rio si incrina invece di cadere: una crepa dalla fronte all'occhio destro
+# e, dentro, un occhio vero («Da qui si vede... un occhio. Il mio.»). Toglierla resta il climax del suo arco (U18).
+static func _mask_crack(mb: MeshBatch) -> void:
+	var ink := Color(0.12, 0.07, 0.16, 0.6)
+	var line: Array = [Vector2(0.018, 0.19), Vector2(0.036, 0.165), Vector2(0.026, 0.145), Vector2(0.05, 0.128), Vector2(0.043, 0.112)]
+	for i in line.size() - 1:
+		var a: Vector2 = line[i]
+		var b: Vector2 = line[i + 1]
+		var n: Vector2 = Vector2(-(b - a).y, (b - a).x).normalized() * 0.0028
+		_decal(mb, [a + n, b + n, b - n, a - n], 0.0175, ink)
+	_decal(mb, [Vector2(0.036, 0.165), Vector2(0.02, 0.158), Vector2(0.021, 0.155), Vector2(0.036, 0.161)], 0.0175, ink)
+	# l'occhio che si vede dalla crepa: bianco, iride viola (il suo colore), pupilla e riflesso
+	_decal(mb, _ellipse(Vector2(0.05, 0.104), 0.019, 0.011), 0.018, Color(0.98, 0.97, 1.0, 0.6))
+	_decal(mb, _ellipse(Vector2(0.049, 0.104), 0.009, 0.0102), 0.0185, Color(0.62, 0.3, 0.95, 0.6))
+	_decal(mb, _ellipse(Vector2(0.049, 0.104), 0.0042, 0.0054), 0.019, Color(0.1, 0.05, 0.15, 0.6))
+	_decal(mb, _ellipse(Vector2(0.046, 0.108), 0.002, 0.002, 6), 0.0195, Color(1.0, 1.0, 1.0, 0.0))
 
 
 # Calotta di capelli: dalla linea dell'attaccatura (alta davanti, bassa dietro) fino alla cima

@@ -8,7 +8,8 @@ Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STO
   Modifiche rispetto alla V2: niente Spedizione/Titoli in `compute_stats`, `FRONT_SIZE = 4`, cast V3 in `BattleContent.V3_CAST` (provvisorio).
 - `scripts/v3/` — gioco: `main.gd` (una schermata alla volta), `menu.gd`, `area.gd` (esplorazione di un'area qualsiasi), `scene_screen.gd` / `card_screen.gd` / `ending_screen.gd` (scene, cartelli, fine),
   `story.gd` (passi dell'atto e salvataggio), `banter.gd` (chiacchiere), `dialog_box.gd` (dialoghi stile Persona), `layout_builder.gd` (le aree), `battle3d.gd` (combattimento 3D),
-  `character_visual.gd` / `vending_visual.gd` (segnaposto 3D, interfaccia sostituibile coi glTF), `toon.gd` + `mesh_batch.gd` + `city_builder.gd` (grafica).
+  `character_visual.gd` / `vending_visual.gd` (segnaposto 3D, interfaccia sostituibile coi glTF), `toon.gd` + `mesh_batch.gd` + `city_builder.gd` (grafica),
+  `light_fx.gd` (la magia disegnata con la luce), `sky_dome.gd` (la cupola nel cielo), `cam_hud.gd` (il mirino di Echo): vedi `docs/STILE_VISIVO.md`, ultima sezione.
 - `data/` — `atto1.json` (capitoli, passi, aree, nemici, boss), `dialoghi_atto1.json` (testi, generati da `tools/gen_dialoghi.py`: si corregge lo script e si rigenera) + `dialoghi.json`, `cast_visual.gd` (colori e proporzioni dei segnaposto).
 - `tests/unit/` — `test_v3_engine.gd` + test del motore portati dalla V2.  `tools/v3_atto1.gd` — gioca da solo l'atto 1 (battaglie in AUTO) e fa gli screenshot.
 
@@ -26,6 +27,7 @@ godot --headless --path . -s tests/unit/test_v3_engine.gd
 godot --headless --path . -s tests/unit/test_v3_dialoghi.gd
 xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_atto1.gd -- /tmp/atto1 [tutte] [capitolo=N]
 xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_atto1.gd -- /tmp/atto1_t touch
+xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_vetrina.gd -- /tmp/vetrina      # personaggi, nemici ed effetti senza giocare
 ```
 
 ## Rilascio

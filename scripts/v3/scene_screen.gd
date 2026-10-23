@@ -41,10 +41,10 @@ func _ready() -> void:
 	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bg.draw.connect(_draw_bg)
 	add_child(_bg)
-	var place := Ui.label(str(_style["luogo"]).replace("%s", GameConfig.CITY), 22, Color(1, 1, 1, 0.75), Ui.display(), 6)
+	var place := Ui.label(str(_style["luogo"]).replace("%s", GameConfig.CITY), 26, Ui.CREAM, Ui.display(), 6)
 	place.position = Vector2(28, 22)
 	add_child(place)
-	var chap := Ui.label(Story.chapter_title(), 18, Ui.YELLOW, null, 5)
+	var chap := Ui.label(Story.chapter_title(), 22, Ui.YELLOW, null, 5)
 	chap.position = Vector2(28, 54)
 	add_child(chap)
 	_dialog = DialogBox.new()
