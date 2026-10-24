@@ -1,5 +1,12 @@
 # Novità
 
+## In arrivo (dopo la 0.41.3)
+- Telefono: il menu ABILITÀ si apre davvero (il tocco arrivava due volte, come tocco e come clic, e la seconda volta lo richiudeva).
+- In pausa spariscono mirino, comandi e menu ABILITÀ; tornano alla ripresa.
+- Comandi più puliti: via i puntini di vernice e l'arco bianco attorno al personaggio.
+- Boss alti (Semaforo e simili): il cartellino con vita ed equilibrio va di fianco alla figura invece di coprirla.
+- ABILITÀ FIRMA: in battaglia si usano tutte le abilità sbloccate; quella equipaggiata in pausa > SQUADRA è la firma del personaggio e rende di più a seconda della mossa: costa 1 EN in meno (mosse da 2 EN o più), fa +25% di danno (mosse d'attacco economiche) oppure dà uno scudo del 10% dei PV (mosse di supporto economiche). Nel menu ABILITÀ è segnata con FIRMA.
+
 ## 0.41.3 · HUD alla Persona: scena libera, menu ABILITÀ, limite FPS
 - FPS: si sceglie il limite nelle impostazioni (30, 60, 120, 240); su PC parte da 120, sul telefono da 60.
 - Battaglia, HUD più pulito ispirato a Metaphor e Persona 5: CONFERMA e la descrizione della mossa in basso a sinistra (su PC il clic finiva sulle reazioni), reazioni in alto a destra, barra rapida più piccola, squadra più compatta.

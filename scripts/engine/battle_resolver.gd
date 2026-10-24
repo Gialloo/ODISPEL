@@ -109,7 +109,7 @@ static func validate_choice(state: Dictionary, pid: String, choice: Dictionary) 
 		"skill":
 			if not u["skills"].has(move_id):
 				return "mossa non equipaggiata"
-			if int(u["energy"]) < int(move["cost"]):
+			if int(u["energy"]) < BattleContent.move_cost(u, move_id):
 				return "energia insufficiente"
 			if int(u["ammo"]) < int(move.get("ammo", 0)):
 				return "munizioni insufficienti"
@@ -925,7 +925,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		move_id = BattleTypes.ACTION_ATTACK
 		move = BattleContent.MOVES[move_id]
 		kind = "basic"
-	elif kind == "skill" and (int(actor["energy"]) < int(move["cost"]) or int(actor["ammo"]) < int(move.get("ammo", 0))):
+	elif kind == "skill" and (int(actor["energy"]) < BattleContent.move_cost(actor, move_id) or int(actor["ammo"]) < int(move.get("ammo", 0))):
 		move_id = BattleTypes.ACTION_ATTACK
 		move = BattleContent.MOVES[move_id]
 		kind = "basic"
@@ -933,7 +933,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	if kind == "ult":
 		actor["gauge"] = 0
 	elif kind == "skill":
-		actor["energy"] = int(actor["energy"]) - int(move["cost"])
+		actor["energy"] = int(actor["energy"]) - BattleContent.move_cost(actor, move_id)
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
 	var acts: Dictionary = state.get("acts", {})
 	acts[str(actor["id"])] = move_id
@@ -966,6 +966,15 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	awake_mult *= float(kit_fx["mult"])
 	if move_id == "attack":
 		awake_mult *= BattleContent.basic_factor(actor)
+	# ABILITA' FIRMA: piu' danno, oppure uno scudo per chi la usa (vedi BattleContent.signature_kind)
+	if kind == "skill" and BattleContent.is_signature(actor, move_id):
+		match BattleContent.signature_kind(move_id):
+			"dmg":
+				awake_mult *= BattleContent.SIGNATURE_DMG
+			"shield":
+				var sig_sh: int = int(round(float(actor["max_hp"]) * BattleContent.SIGNATURE_SHIELD))
+				actor["shield"] = int(actor["shield"]) + sig_sh
+				events.append({"t": "shield", "src": actor["id"], "dst": actor["id"], "amount": sig_sh})
 	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
 
 	var gsh: float = Signatures.value(actor, "guard_shield")

@@ -299,6 +299,10 @@ static func apply_to_battle(b: Dictionary) -> Array:
 			by_char[str(u["char"])] = u
 			u["react_mod"] = equipped(str(u["char"]), "react")
 			u["equip_skill"] = equipped(str(u["char"]), "skill")
+			# tutte le abilita' sbloccate si usano dal menu ABILITA' (oltre i 4 posti del kit); quella equipaggiata e' la FIRMA
+			for o in options(str(u["char"]), "skill"):
+				if bool(o[1]) and BattleContent.MOVES.has(str(o[0])) and not (u["skills"] as Array).has(str(o[0])):
+					(u["skills"] as Array).append(str(o[0]))
 	var done: Dictionary = {}
 	for c in by_char:
 		var syn: String = equipped(c, "syn")

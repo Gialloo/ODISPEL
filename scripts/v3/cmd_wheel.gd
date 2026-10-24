@@ -462,11 +462,7 @@ class _Layer extends Control:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
 		var cc: Vector2 = Vector2(150, 0) * s
-		# alone di spruzzo: puntini chiari attorno alla macchia
-		for k in 60:
-			var a: float = rng.randf() * TAU
-			var q: Vector2 = cc + Vector2(cos(a) * 110.0, sin(a) * 175.0).rotated(-0.45) * s * rng.randf_range(1.0, 1.35)
-			m.draw_circle(q, rng.randf_range(1.0, 2.8) * s, Color(c0.lightened(0.2), rng.randf_range(0.25, 0.6)))
+		# niente puntini di spruzzo ne' schizzi: finivano sui personaggi e distraevano (decisione dell'autore, 24/10/2026)
 		# pennellate spray diagonali (non un ovale pieno): tre colpi sovrapposti che lasciano passare la scena
 		CmdWheel.brush(m, cc + Vector2(-60, 175) * s, cc + Vector2(70, -185) * s, 120.0 * s, 70.0 * s, Color(c0, 0.85), 11, 30.0 * s, 0.3, 18)
 		CmdWheel.brush(m, cc + Vector2(-10, 150) * s, cc + Vector2(150, -60) * s, 70.0 * s, 26.0 * s, Color(c0.darkened(0.3), 0.75), 13, -20.0 * s, 0.35, 14)
@@ -479,18 +475,7 @@ class _Layer extends Control:
 			var wd: float = rng.randf_range(4.0, 8.0) * s
 			m.draw_colored_polygon(PackedVector2Array([Vector2(x - wd * 0.5, y0 - 16.0 * s), Vector2(x + wd * 0.5, y0 - 16.0 * s), Vector2(x + wd * 0.35, y0 + len), Vector2(x - wd * 0.35, y0 + len)]), Color(c0, 0.85))
 			m.draw_circle(Vector2(x, y0 + len), wd * 0.55, Color(c0, 0.85))
-		# schizzi
-		for k in 16:
-			var a: float = rng.randf() * TAU
-			var q: Vector2 = cc + Vector2(cos(a) * 130.0, sin(a) * 200.0).rotated(-0.45) * s * rng.randf_range(1.0, 1.3)
-			m.draw_circle(q, rng.randf_range(2.5, 7.0) * s, Color(c0 if k % 3 else CmdWheel.ECHO, 0.85))
-		# arco sottile attorno al personaggio (il cerchio di Metaphor)
-		var pts := PackedVector2Array()
-		for k in 40:
-			var a: float = deg_to_rad(lerpf(110.0, 250.0, float(k) / 39.0))
-			pts.append(Vector2(cos(a) * w.rx * 1.6, sin(a) * w.ry * 1.2))
-		for k in 39:
-			m.draw_line(pts[k], pts[k + 1], Color(CmdWheel.CREAM, 0.4), 2.0 * s)
+		# niente arco bianco attorno al personaggio (decisione dell'autore, 24/10/2026)
 
 	# filo d'energia: dal petto al tasto scelto, alone largo + nucleo quasi bianco, trasparente ai due capi
 	func _beam(m) -> void:

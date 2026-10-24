@@ -22,6 +22,8 @@ var idx: int = 0
 var appear: float = 0.0
 var _rows: Array = []           # Rect2 di ogni riga (per il tocco)
 var _back: Rect2 = Rect2()
+var _opened_ms: int = 0         # sul telefono il tocco che apre il menu arriva anche come clic finto: lo si ignora
+var _touch_ms: int = -1000      # ultimo tocco vero, per non contare due volte il clic emulato che lo segue
 
 
 func _init() -> void:
@@ -35,6 +37,7 @@ func open(p_items: Array, p_who: String, p_col: Color, start: int) -> void:
 	col = p_col
 	idx = clampi(start, 0, maxi(0, items.size() - 1))
 	appear = 0.0
+	_opened_ms = Time.get_ticks_msec()
 	queue_redraw()
 
 
@@ -75,6 +78,15 @@ func _gui_input(ev: InputEvent) -> void:
 		return
 	if not pressed:
 		return
+	var now: int = Time.get_ticks_msec()
+	if ev is InputEventScreenTouch:
+		_touch_ms = now
+	elif now - _touch_ms < 400:
+		accept_event()
+		return             # clic emulato dallo stesso tocco: gia' gestito
+	if now - _opened_ms < 250:
+		accept_event()
+		return             # e' ancora il tocco su ABILITA' che ha aperto il menu: prima lo chiudeva subito
 	var p: Vector2 = (ev as InputEventScreenTouch).position if ev is InputEventScreenTouch else (ev as InputEventMouseButton).position
 	accept_event()
 	if _back.has_point(p):
@@ -143,6 +155,13 @@ func _draw() -> void:
 		CmdWheel.glyph(self, str(it["icon"]), ib.get_center(), 13.0, Color((CmdWheel.HOT if on else col.lightened(0.35)), a * (1.0 if ok else 0.45)))
 		var tc: Color = CmdWheel.INK if on else (CmdWheel.CREAM if ok else Color("#8f8a9c"))
 		draw_string(fd, r.position + Vector2(76.0, 31.0), str(it["name"]), HORIZONTAL_ALIGNMENT_LEFT, WIDTH - 200.0, 22, Color(tc, a))
+		if bool(it.get("sig", false)):
+			# la FIRMA del personaggio (equipaggiata in pausa > SQUADRA): stellina e scritta accanto al nome
+			var nw: float = minf(fd.get_string_size(str(it["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x, WIDTH - 200.0)
+			var sp := r.position + Vector2(76.0 + nw + 14.0, 8.0)
+			var tag := Rect2(sp, Vector2(74.0, 26.0))
+			draw_colored_polygon(CmdWheel.slant(tag, 6.0), Color(CmdWheel.INK if on else Color("#ffd23f"), a))
+			draw_string(fb, sp + Vector2(12.0, 19.0), "FIRMA", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(Color("#ffd23f") if on else CmdWheel.INK, a))
 		# costo a destra: rosso se non basta l'energia
 		var cost: String = str(it["cost"])
 		var cw: float = fd.get_string_size(cost, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x

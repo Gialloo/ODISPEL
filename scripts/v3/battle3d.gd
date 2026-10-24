@@ -157,6 +157,7 @@ var _cutin_tw: Tween
 var _cutin_seen: Dictionary = {}          # personaggi di cui hai gia' visto il cut-in: dalla seconda volta e' piu' breve
 signal _cutin_end
 var _pause: Control
+var _pause_hid: Array = []             # cio' che la pausa ha nascosto
 var _cam_hud: CamHud                  # lo sguardo di Echo: mirino, REC, numero della telecamera
 var _glyph: LightFx                   # cerchio di luce sotto chi e' di turno
 var _mark: LightFx                    # segnalino ai piedi del bersaglio annunciato dal boss
@@ -638,6 +639,14 @@ func _place_boss_tag() -> void:
 	var sz: Vector2 = _boss_panel.get_combined_minimum_size()
 	sz.x = maxf(sz.x, 300.0)
 	var want := Vector2(hp.x - sz.x * 0.5, hp.y - sz.y - 18.0)
+	if want.y < 64.0:
+		# boss alto: sopra la testa non c'e' posto e il cartellino gli finirebbe addosso. Va di fianco alla figura,
+		# dal lato con piu' spazio (decisione dell'autore, 24/10/2026: le barre non devono coprire il boss)
+		var fp: Vector2 = cam.unproject_position(bv.global_position)
+		var half: float = maxf(60.0, absf(fp.y - hp.y) * 0.4)
+		var cx: float = (hp.x + fp.x) * 0.5
+		want.y = maxf(64.0, hp.y)
+		want.x = cx + half + 24.0 if cx + half + 24.0 + sz.x <= vs.x - 16.0 else cx - half - 24.0 - sz.x
 	want.x = clampf(want.x, 16.0, vs.x - sz.x - 16.0)
 	want.y = clampf(want.y, 64.0, vs.y * 0.5)
 	_boss_panel.position = _boss_panel.position.lerp(want, 0.3) if _boss_panel.position.y > 1.0 else want
@@ -2798,7 +2807,7 @@ func _show_commands(on: bool) -> void:
 	var skm: Dictionary = BattleContent.MOVES.get(sk, {})
 	_btn_atk.disabled = not _usable("attack")
 	_btn_guard.disabled = not _usable("guard")
-	_btn_skill.text = "%s  ·  %d ENERGIA" % [str(skm.get("name", "ABILITÀ")).to_upper(), int(skm.get("cost", 0))]
+	_btn_skill.text = "%s  ·  %d ENERGIA" % [str(skm.get("name", "ABILITÀ")).to_upper(), BattleContent.move_cost(u, sk)]
 	_fit_btn(_btn_skill, 24)
 	_btn_skill.disabled = not _usable(sk)
 	var ult_ok: bool = _usable(str(u.get("ult", "")))
@@ -2918,11 +2927,12 @@ func _open_skills() -> void:
 		var ok: bool = _usable(id)
 		var why: String = ""
 		if not ok:
-			why = "Energia insufficiente" if int(mv.get("cost", 0)) > en else ("Non in un turno RAPIDO" if _quick else "Non si può usare adesso")
+			why = "Energia insufficiente" if BattleContent.move_cost(u, id) > en else ("Non in un turno RAPIDO" if _quick else "Non si può usare adesso")
 		if id == cur:
 			start = items.size()
-		items.append({"id": id, "name": str(mv.get("name", id)).to_upper(), "cost": "%d EN" % int(mv.get("cost", 0)),
-			"desc": str(mv.get("desc", "")), "ok": ok, "why": why, "icon": SkillMenu.icon_for(mv)})
+		var sig: bool = BattleContent.is_signature(u, id)
+		items.append({"id": id, "name": str(mv.get("name", id)).to_upper(), "cost": "%d EN" % BattleContent.move_cost(u, id), "sig": sig,
+			"desc": (BattleContent.signature_text(id) + " · " if sig else "") + str(mv.get("desc", "")), "ok": ok, "why": why, "icon": SkillMenu.icon_for(mv)})
 	_wheel_hover("")
 	_wheel.visible = false
 	if _hint != null:
@@ -3662,6 +3672,12 @@ func _open_pause() -> void:
 		Engine.time_scale = 1.0
 		_main().go("menu"), "Saul conosce un'uscita", not ritorno.is_empty())
 	_root.add_child(_pause)
+	# in pausa non si vedono mirino, comandi e menu ABILITA' (decisione dell'autore, 24/10/2026): si rimettono alla chiusura
+	_pause_hid.clear()
+	for n in [_wheel, _reticle, _skill_menu, _hint]:
+		if n != null and is_instance_valid(n) and (n as CanvasItem).visible:
+			(n as CanvasItem).visible = false
+			_pause_hid.append(n)
 
 
 func _close_pause() -> void:
@@ -3669,4 +3685,8 @@ func _close_pause() -> void:
 		_pause.queue_free()
 		_pause = null
 		HuddleMenu.quip(_root)
+		for n in _pause_hid:
+			if is_instance_valid(n):
+				(n as CanvasItem).visible = true
+		_pause_hid.clear()
 	Engine.time_scale = 1.8 if fast else 1.0
