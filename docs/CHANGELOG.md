@@ -1,5 +1,8 @@
 # Novità
 
+## 0.41.2 · Ultimate fluida
+- **L'Ultimate si muove fluida come il resto del gioco**: particelle, fiamme, sfondo, posa e camera a ogni fotogramma (prima 12 al secondo, si vedevano a scatti). La camera fa una lenta spinta in avanti. Per non pesare sul telefono il personaggio stilizzato si ridisegna solo durante la posa e le fiamme si calcolano solo vicino alla sagoma.
+
 ## 0.41.1 · notte urbana e neon
 - **Nuovo stile grafico**: città e arene di notte, quasi al buio, accese da pochi neon verdi, ciano, blu e rossi, con riflessi sul pavimento bagnato e pioggia fine. I personaggi hanno un controluce forte e staccano dal buio. La Cupola magenta resta, lontana.
 - **Onomatopee a fumetto**: TAP, BAM, CLANG, KRAK, SWISH, PLING... piccole, scritte a mano con il contorno ciano-magenta, vicino al colpo.
