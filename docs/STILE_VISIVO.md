@@ -39,6 +39,9 @@ Riferimenti: Metaphor ReFantazio e Persona 5 (in `/mnt/project-files/odispel/v3/
 - Reazioni in alto a destra sotto la barra rapida (x1, AUTO, COLORI, pausa: lastre scure e piccole). Squadra compatta in basso a destra.
 - Avvisi in un posto solo (a sinistra sotto i turni), al massimo due, con un'icona (catena per legami e impulsi) e poche parole.
 - Chi è di turno resta in luce: la scena si scurisce appena attorno a lui mentre sceglie.
+- Aggiornamento (24/10/2026, sera): sotto ogni comando una parola che dice cosa fa (COLPISCI, MOSSE, SCATENA, DIFENDITI). ABILITÀ apre un menu a parte alla Persona 5 (icona, nome, costo in EN a destra, spiegazione sotto); il clic sulla mossa la lancia. **Niente tasto CONFERMA.**
+- Durante le mosse l'HUD si svuota: restano il nome della mossa, gli effetti e le vite della squadra. Il cartellino del nemico (vita ed equilibrio) sta sopra la sua testa.
+- La camera del turno guarda il nemico da dietro le spalle del personaggio: i comandi non coprono mai il bersaglio, che resta in risalto.
 
 ## (Superato) La versione del pomeriggio del 18 ottobre
 

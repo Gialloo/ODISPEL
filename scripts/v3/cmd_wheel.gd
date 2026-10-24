@@ -5,11 +5,12 @@ extends Control
 # parole grandi inclinate con l'iniziale enorme, una macchia di vernice spray (graffito, identita' ODISPEL) del colore del
 # personaggio dietro, e un filo d'energia che dal personaggio arriva al comando scelto.
 # Toccare un comando lo SCEGLIE: la parola cresce su una lastra nera, dal tasto escono raggi di luce interi (non tagliati),
-# la scena si scurisce attorno al personaggio. Toccarlo di nuovo, o CONFERMA, lo lancia. L'ULTIMATE spinge tutto di piu'.
+# la scena si scurisce attorno al personaggio. Un tocco lo lancia (ABILITA' apre il menu delle mosse); su PC il mouse sopra lo accende.
 # PRESTAZIONI: vernice, raggi ed energia sono maglie di triangoli (una chiamata di disegno ciascuna) rifatte solo quando cambia
 # il personaggio o la scelta; a ogni fotogramma si muovono solo trasformazioni.
 
-signal tapped(kind: String)      # "attack" | "skill" | "ult" | "guard" | "confirm" | "cancel"
+signal tapped(kind: String)      # "attack" | "skill" | "ult" | "guard": un tocco lancia il comando (ABILITA' apre il suo menu)
+signal hovered(kind: String)     # PC: il mouse sopra un comando lo accende e ne mostra la spiegazione ("" = nessuno)
 
 const KINDS: Array = ["attack", "skill", "ult", "guard"]
 # posto di ogni comando rispetto al petto del personaggio (a zig-zag verso il nemico, come in Persona 5), in unita' "s"
@@ -221,7 +222,19 @@ func _has_point(p: Vector2) -> bool:
 	return false
 
 
+var _hover: String = ""
+
+
 func _gui_input(ev: InputEvent) -> void:
+	if ev is InputEventMouseMotion:
+		var hk: String = ""
+		for k in KINDS:
+			if hits.has(k) and (hits[k] as Rect2).has_point((ev as InputEventMouseMotion).position - center):
+				hk = k
+		if hk != _hover:
+			_hover = hk
+			hovered.emit(hk)
+		return
 	var pressed: bool = (ev is InputEventScreenTouch and (ev as InputEventScreenTouch).pressed) \
 		or (ev is InputEventMouseButton and (ev as InputEventMouseButton).pressed and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT)
 	if not pressed:
@@ -609,15 +622,12 @@ class _Layer extends Control:
 		if w.picked == "":
 			return
 		# La scelta si legge in basso a sinistra, come una didascalia (Metaphor: angolo libero, lontano dalla squadra e dalle REAZIONI
-		# in alto a destra): nome e cosa fa sulla lastra, CONFERMA e ANNULLA subito accanto. Prima stava in alto a destra e CONFERMA
-		# finiva sotto i tasti delle REAZIONI, che si prendevano il clic su PC.
+		# in alto a destra): nome e cosa fa sulla lastra. Su PC compare quando il mouse e' sopra un comando.
 		var it2: Dictionary = w.item(w.picked)
 		var title: String = str(it2.get("title", ""))
 		var vw: float = w.size.x if w.size.x > 1.0 else 1280.0
 		var vh: float = w.size.y if w.size.y > 1.0 else 720.0
-		var cw: float = 214.0
-		var aw: float = 128.0
-		var pw: float = clampf(vw - 400.0 - 24.0 - cw - aw - 30.0, 300.0, 560.0)
+		var pw: float = clampf(vw - 420.0 - 24.0, 300.0, 560.0)
 		var lines: Array = []
 		for para in str(it2.get("desc", "")).split("\n"):
 			lines.append_array(CmdWheel.wrap(fb, para, 17, pw - 40.0))
@@ -633,17 +643,7 @@ class _Layer extends Control:
 		for line2 in lines:
 			draw_string(fb, Vector2(pr.position.x + 26.0, ly), str(line2), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(CmdWheel.CREAM, 0.92 * e))
 			ly += 22.0
-		var crr := Rect2(Vector2(pr.end.x + 14.0, pr.position.y + (ph - 58.0) * 0.5), Vector2(cw, 58.0))
-		draw_colored_polygon(CmdWheel.slant(crr.grow(4.0), 12.0), Color(0.03, 0.02, 0.06, 0.9 * e))
-		draw_colored_polygon(CmdWheel.slant(crr, 10.0), Color(CmdWheel.HOT, e))
-		var cwid: float = fd.get_string_size("CONFERMA", HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
-		CmdWheel.skew_text(self, crr.position + Vector2((crr.size.x - cwid) * 0.5, 40.0), "CONFERMA", 28, Color(CmdWheel.INK, e), Color(0, 0, 0, 0), fd, 0)
-		var arr := Rect2(crr.position + Vector2(cw + 10.0, 11.0), Vector2(aw, 36.0))
-		draw_colored_polygon(CmdWheel.slant(arr, 8.0), Color(0.03, 0.02, 0.06, 0.85 * e))
-		var awid: float = fb.get_string_size("ANNULLA", HORIZONTAL_ALIGNMENT_LEFT, -1, 19).x
-		draw_string(fb, arr.position + Vector2((arr.size.x - awid) * 0.5, 25.0), "ANNULLA", HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color(CmdWheel.CREAM, e))
-		w.hits["confirm"] = crr.grow(6.0)
-		w.hits["cancel"] = arr.grow(4.0)
+		# niente CONFERMA (decisione dell'autore, 24/10/2026): il tocco sul comando lo lancia, qui resta solo la spiegazione
 
 
 # Riflettore: la scena si scurisce attorno a chi sceglie e lui resta in luce, con un'aura del suo colore (piu' forte per l'ULTIMATE).

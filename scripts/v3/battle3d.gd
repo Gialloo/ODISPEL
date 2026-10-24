@@ -129,6 +129,8 @@ var _live_back: String = ""             # chi stava scegliendo quando e' partita
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
+var _skill_menu: SkillMenu = null     # menu ABILITA' aperto (Persona 5)
+var _skill_pick: Dictionary = {}       # id unita' -> abilita' scelta nel menu (resta per la battaglia, come il cursore di Persona)
 var _order_panel: Control              # ordine dei turni (si vede solo mentre si sceglie)
 var _boss_panel: Control               # nome e barre del nemico (in alto a sinistra)
 var _choice_hud: bool = false          # true: HUD della scelta; false: durante le mosse resta solo il necessario
@@ -800,11 +802,28 @@ func _choice_for(move_id: String) -> Dictionary:
 
 
 func _skill_of(u: Dictionary) -> String:
+	var sp: String = str(_skill_pick.get(str(u.get("id", "")), ""))
+	if sp != "" and _skill_ids(u).has(sp):
+		return sp                 # scelta nel menu ABILITA' di questa battaglia
 	var eq: String = str(u.get("equip_skill", ""))
 	if eq != "" and (u.get("skills", []) as Array).has(eq):
 		return eq                 # scelta nel menu SQUADRA
 	var def: Dictionary = BattleContent.CHARACTERS.get(str(u["char"]), {})
 	return str(def.get("skill", "attack"))
+
+
+# Le abilita' che il personaggio ha: quella di base e quelle sbloccate (menu ABILITA')
+func _skill_ids(u: Dictionary) -> Array:
+	var out: Array = []
+	var def: Dictionary = BattleContent.CHARACTERS.get(str(u.get("char", "")), {})
+	var base: String = str(def.get("skill", ""))
+	if base != "" and BattleContent.MOVES.has(base):
+		out.append(base)
+	for m in (u.get("skills", []) as Array):
+		var ms: String = str(m)
+		if not out.has(ms) and BattleContent.MOVES.has(ms) and str(BattleContent.MOVES[ms].get("kind", "")) == "skill":
+			out.append(ms)
+	return out
 
 
 func _usable(move_id: String) -> bool:
@@ -2090,6 +2109,7 @@ func _build_ui() -> void:
 	_wheel = CmdWheel.new()
 	_wheel.visible = false
 	_wheel.tapped.connect(_wheel_tap)
+	_wheel.hovered.connect(_wheel_hover)
 	_fx_layer.add_child(_wheel)
 
 	# ordine dei turni: una riga di lastrine in alto, accanto al nemico (Metaphor: i turni in alto al centro). Si vede solo
@@ -2765,6 +2785,7 @@ func _show_commands(on: bool) -> void:
 	if _turn_lbl != null:
 		_turn_lbl.visible = false          # chi e' di turno lo dicono la luce, la ruota e la lastra della squadra (Persona 5: niente scritte in piu')
 	if not on:
+		_close_skills()
 		_pick("")
 		_cam_choose_end()
 		if _reticle != null and not _confirming:
@@ -2819,14 +2840,14 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 		tip = "\n" + str(kit_lines[0])
 	var en: int = int(u.get("energy", 0))
 	var items: Array = [
-		{"kind": "attack", "name": "ATTACCO", "sub": "COLPO BASE", "cost": "", "ok": _usable("attack"), "letter": "A",
+		# sotto ogni comando UNA parola breve che dice cosa fa (Persona 5: "Use a Skill"); i nomi delle mosse stanno nel menu ABILITA'
+		{"kind": "attack", "name": "ATTACCO", "sub": "COLPISCI", "cost": "", "ok": _usable("attack"), "letter": "A",
 			"title": "ATTACCO", "desc": "Colpo al nemico · non costa energia" + tip},
-		# la parola grande dice il TIPO di comando (come Metaphor: SKILL, MELEE, GUARD), il nome della mossa va sotto in piccolo
-		{"kind": "skill", "name": "ABILITÀ", "sub": sk_name, "cost": "%d/%d EN" % [int(skm.get("cost", 0)), en], "ok": _usable(sk), "letter": letter,
-			"title": sk_name, "desc": str(skm.get("desc", "")) + tip},
-		{"kind": "ult", "name": "ULTIMATE", "sub": str(um.get("name", "COLPO FINALE")).to_upper() if ult_ok else "COLPO FINALE", "cost": "PRONTA" if ult_ok else "%d%%" % int(u.get("gauge", 0)),
+		{"kind": "skill", "name": "ABILITÀ", "sub": "MOSSE", "cost": "%d EN" % en, "ok": true, "letter": letter,
+			"title": "ABILITÀ", "desc": "Apre le mosse speciali: ognuna costa energia" + tip},
+		{"kind": "ult", "name": "ULTIMATE", "sub": "SCATENA", "cost": "PRONTA" if ult_ok else "%d%%" % int(u.get("gauge", 0)),
 			"ok": ult_ok, "charge": float(u.get("gauge", 0)) / float(BattleTypes.GAUGE_MAX), "letter": "U", "title": "ULTIMATE · " + str(um.get("name", "")).to_upper(), "desc": str(um.get("desc", "")) + tip},
-		{"kind": "guard", "name": "GUARDIA", "sub": "DIFESA", "cost": "+1 EN", "ok": _usable("guard"), "letter": "G",
+		{"kind": "guard", "name": "GUARDIA", "sub": "DIFENDITI", "cost": "+1 EN", "ok": _usable("guard"), "letter": "G",
 			"title": "GUARDIA", "desc": "Dimezza il danno e ricarica energia"},
 	]
 	_wheel.setup(str(u.get("name", "")).to_upper() + (" · RAPIDO" if _quick else ""), _col(u), items)
@@ -2859,18 +2880,72 @@ func _pick(kind: String) -> void:
 			_cam_choose(uid)
 
 
+# Un tocco sul comando lo LANCIA (Persona 5; niente CONFERMA, decisione dell'autore 24/10/2026). ABILITA' apre il suo menu.
 func _wheel_tap(kind: String) -> void:
+	if not waiting or ended or _pause != null or _skill_menu != null:
+		return
 	match kind:
-		"confirm":
-			if _picked != "":
-				_command(_picked)
-		"cancel":
-			_pick("")
-		_:
-			if kind == _picked:
-				_command(kind)
-			else:
-				_pick(kind)
+		"skill":
+			_open_skills()
+		"attack", "guard", "ult":
+			if _wheel != null and not bool(_wheel.item(kind).get("ok", false)):
+				Settings.buzz(10)
+				return
+			_command(kind)
+
+
+# PC: il mouse sopra un comando lo accende e mostra cosa fa (senza muovere la telecamera)
+func _wheel_hover(kind: String) -> void:
+	if not waiting or ended or _skill_menu != null:
+		return
+	if kind != "" and _wheel != null and not bool(_wheel.item(kind).get("ok", false)):
+		kind = ""                 # un comando spento non si accende (l'ULTIMATE non carica non fa partire le bande nere)
+	_picked = kind
+	if _hint != null:
+		_hint.modulate.a = 0.0 if kind != "" else 1.0
+	if _wheel != null:
+		_wheel.pick(kind)
+
+
+func _open_skills() -> void:
+	var u: Dictionary = _unit_of(cur_pid)
+	var en: int = int(u.get("energy", 0))
+	var items: Array = []
+	var start: int = 0
+	var cur: String = _skill_of(u)
+	for id in _skill_ids(u):
+		var mv: Dictionary = BattleContent.MOVES[id]
+		var ok: bool = _usable(id)
+		var why: String = ""
+		if not ok:
+			why = "Energia insufficiente" if int(mv.get("cost", 0)) > en else ("Non in un turno RAPIDO" if _quick else "Non si può usare adesso")
+		if id == cur:
+			start = items.size()
+		items.append({"id": id, "name": str(mv.get("name", id)).to_upper(), "cost": "%d EN" % int(mv.get("cost", 0)),
+			"desc": str(mv.get("desc", "")), "ok": ok, "why": why, "icon": SkillMenu.icon_for(mv)})
+	_wheel_hover("")
+	_wheel.visible = false
+	if _hint != null:
+		_hint.visible = false     # nel menu si legge solo il menu
+	_skill_menu = SkillMenu.new()
+	_skill_menu.open(items, str(u.get("name", "")).to_upper(), _col(u), start)
+	_skill_menu.chosen.connect(func(id: String) -> void:
+		_skill_pick[str(u.get("id", ""))] = id
+		_close_skills()
+		_command("skill"))
+	_skill_menu.closed.connect(_close_skills)
+	_fx_layer.add_child(_skill_menu)
+	Settings.buzz(12)
+
+
+func _close_skills() -> void:
+	if _skill_menu != null:
+		_skill_menu.queue_free()
+		_skill_menu = null
+	if _wheel != null and waiting and not ended:
+		_wheel.visible = true
+		if _hint != null:
+			_hint.visible = true
 
 
 # Una catena della ruota dei colori: quadratini del colore e il segno tra l'uno e l'altro (">" batte, "<>" si battono a vicenda)
@@ -3535,6 +3610,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			_qte_tap()
 			get_viewport().set_input_as_handled()
 			return
+	if _skill_menu != null and event is InputEventKey and event.pressed:
+		match (event as InputEventKey).physical_keycode:
+			KEY_UP, KEY_W:
+				_skill_menu.move(-1)
+			KEY_DOWN, KEY_S:
+				_skill_menu.move(1)
+			KEY_ENTER, KEY_SPACE, KEY_KP_ENTER:
+				_skill_menu.accept()
+			KEY_ESCAPE, KEY_BACKSPACE:
+				_close_skills()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var k: int = (event as InputEventKey).physical_keycode
 		match k:

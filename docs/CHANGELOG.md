@@ -4,6 +4,10 @@
 - FPS: si sceglie il limite nelle impostazioni (30, 60, 120, 240); su PC parte da 120, sul telefono da 60.
 - Battaglia, HUD più pulito ispirato a Metaphor e Persona 5: CONFERMA e la descrizione della mossa in basso a sinistra (su PC il clic finiva sulle reazioni), reazioni in alto a destra, barra rapida più piccola, squadra più compatta.
 - Comandi più chiari: ABILITÀ come parola grande col nome della mossa sotto, stella per l'Ultimate con l'arco di carica.
+- Menu ABILITÀ alla Persona 5: si apre dal comando, elenca le mosse sbloccate con icona, costo e spiegazione; il clic sulla mossa la lancia. Tolto il tasto CONFERMA.
+- Sotto ogni comando una parola che spiega cosa fa: COLPISCI, MOSSE, SCATENA, DIFENDITI.
+- Camera alla Persona: squadra più larga e più lontana dal boss, comandi a sinistra del personaggio, il nemico resta libero e in luce.
+- Durante le mosse l'HUD sparisce: restano nome della mossa, effetti e vite. Il cartellino del nemico sta sopra la sua testa.
 - Avvisi in un posto solo con icone (catena per legami e impulsi) e meno testo; chi è di turno resta in luce.
 
 ## 0.41.2 · Ultimate fluida
