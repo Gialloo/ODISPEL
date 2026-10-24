@@ -49,20 +49,9 @@ const PAL_SAUL: Dictionary = {
 const PALETTES: Dictionary = {"nox": PAL_NOX, "ferri": PAL_LANCE, "zecca": PAL_RIO, "saul": PAL_SAUL}
 
 
-# PARTICELLE PER PERSONAGGIO (perche': ognuno deve "buttare fuori" il proprio carattere, non lo stesso scoppio ricolorato).
-# mode: fan = ventaglio dal basso verso l'alto (Lance: pugno, forza); swirl = vortice calmo (Nox: controllo);
-#       rain = coriandoli dall'alto e dai lati (Rio: show da idol); stream = fiotto diagonale di monete (Saul: soldi lanciati).
-# o = punto di partenza (in unita' di meta' schermo, x -1..1, y -1..1), g = gravita', spin = rotazione del getto, rmul = gittata.
-const SOLIDS_STYLE: Dictionary = {
-	"ferri": {"mode": "fan", "o": Vector2(-0.05, -0.55), "g": 3.0, "spin": 0.0, "rmul": 1.0, "grow0": 0.25},
-	"nox": {"mode": "swirl", "o": Vector2(0.06, 0.0), "g": 0.0, "spin": 1.5, "rmul": 0.85, "grow0": 0.25},
-	"zecca": {"mode": "rain", "o": Vector2(0.0, 1.1), "g": 4.5, "spin": 0.0, "rmul": 1.0, "grow0": 0.85},
-	"saul": {"mode": "stream", "o": Vector2(0.8, -0.85), "g": 5.0, "spin": 0.0, "rmul": 1.0, "grow0": 0.6},
-}
-
-
 static func pal_for(char_id: String) -> Dictionary:
 	return PALETTES.get(char_id, PAL_NOX)
+
 
 var _pal: Dictionary = PAL_NOX
 var _char: String = ""
@@ -87,7 +76,6 @@ var _flash: ColorRect
 var _mmis: Array = []
 var _pieces: Array = []                  # un dizionario per pezzo: mesh, indice, direzione, raggio, rotazione, scala
 var _origin: Vector3 = Vector3.ZERO
-var _style: Dictionary = SOLIDS_STYLE["nox"]
 var _last_pose: float = -1.0
 var _comp_pending: int = 0               # fotogrammi da aspettare prima di ridisegnare la composizione
 var _mat_p: ShaderMaterial
@@ -319,7 +307,6 @@ func start(char_id: String, pal: Dictionary = PAL_NOX) -> void:
 	_char = char_id
 	_pal = pal
 	_light = Settings.light_fx
-	_style = SOLIDS_STYLE.get(char_id, SOLIDS_STYLE["nox"])
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	Ui.place(self, 0, 0, 1, 1)
 	var vs: Vector2 = get_viewport().get_visible_rect().size
@@ -413,7 +400,7 @@ func _build_solids_vp() -> void:
 	cam.position = Vector3(0, 0, 9)
 	cam.current = true
 	var half_h: float = tan(deg_to_rad(27.5)) * 9.0
-	_origin = Vector3.ZERO                  # ogni stile ha la sua partenza (SOLIDS_STYLE.o)
+	_origin = Vector3(0.06 * 2.0 * half_h * float(_w) / float(_h), 0.0, 0.0)
 	var sh := Shader.new()
 	sh.code = SH_SOLID
 	var mat := ShaderMaterial.new()
@@ -422,7 +409,7 @@ func _build_solids_vp() -> void:
 	var meshes: Array = _solid_meshes()
 	var cols: Array = _pal["solids"]
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 2077 + _char.hash() % 1000
+	rng.seed = 2077                        # stesse posizioni e stesso numero di pezzi per tutti (scelta dell'autore)
 	for k in meshes.size():
 		var n: int = total / meshes.size() + (1 if k < total % meshes.size() else 0)
 		var mm := MultiMesh.new()
@@ -437,65 +424,20 @@ func _build_solids_vp() -> void:
 		_vp_solids.add_child(mi)
 		_mmis.append(mm)
 		for i in n:
+			var az: float = rng.randf() * TAU
+			var el: float = rng.randf_range(-0.9, 0.9)
+			var dir := Vector3(cos(az) * cos(el), sin(el) * 0.75, clampf(sin(az) * cos(el), -0.8, 0.45)).normalized()
 			var big: bool = rng.randf() < 0.07
-			var pc: Dictionary = _make_piece(rng, half_h, half_h * float(_w) / float(_h), big, k)
 			mm.set_instance_color(i, cols[rng.randi() % cols.size()])
-			pc["mm"] = mm
-			pc["i"] = i
-			pc["axis"] = Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(0.1, 1)).normalized()
-			pc["w"] = rng.randf_range(2.0, 7.0) * (2.2 if _style["mode"] == "stream" else 1.0)
-			pc["a0"] = rng.randf() * TAU
-			_pieces.append(pc)
+			_pieces.append({
+				"mm": mm, "i": i, "dir": dir,
+				"r": rng.randf_range(2.6, 14.0),
+				"s": rng.randf_range(1.1, 1.9) if big else rng.randf_range(0.14, 0.62),
+				"axis": Vector3(rng.randf_range(-1, 1), rng.randf_range(-1, 1), rng.randf_range(0.1, 1)).normalized(),
+				"w": rng.randf_range(2.0, 7.0), "a0": rng.randf() * TAU,
+				"d": rng.randf_range(0.0, 0.12),
+			})
 	_vp_solids.render_target_update_mode = SubViewport.UPDATE_DISABLED
-
-
-# Un pezzo: partenza p0, direzione dir, gittata r, scala s, ritardo d, gravita' g, ondeggio sw
-func _make_piece(rng: RandomNumberGenerator, hh: float, hw: float, big: bool, kind: int) -> Dictionary:
-	var mode: String = _style["mode"]
-	var o: Vector2 = _style["o"]
-	var pc: Dictionary = {"p0": Vector3(o.x * hw, o.y * hh, 0.0), "g": float(_style["g"]), "sw": 0.0,
-		"spin": float(_style["spin"]), "grow0": float(_style["grow0"]), "d": rng.randf_range(0.0, 0.12)}
-	var r: float = rng.randf_range(2.6, 14.0) * float(_style["rmul"])
-	var s: float = rng.randf_range(1.1, 1.9) if big else rng.randf_range(0.14, 0.62)
-	var dir: Vector3
-	match mode:
-		"fan":
-			# ventaglio stretto verso l'alto, un po' piu' largo ai lati
-			var an: float = rng.randf_range(-1.25, 1.25)
-			dir = Vector3(sin(an), cos(an) * 1.15, rng.randf_range(-0.5, 0.35)).normalized()
-			r = rng.randf_range(3.5, 13.0)
-		"swirl":
-			# tre bracci a spirale: l'angolo cresce con la distanza (vedi _update_solids)
-			var arm: float = float(rng.randi() % 3) * TAU / 3.0 + rng.randf_range(-0.35, 0.35)
-			dir = Vector3(cos(arm), sin(arm) * 0.8, rng.randf_range(-0.6, 0.3)).normalized()
-			pc["d"] = rng.randf_range(0.0, 0.2)
-			r = rng.randf_range(2.0, 11.0) * float(_style["rmul"])
-			s *= 0.8
-		"rain":
-			# 65% dall'alto su tutta la larghezza, 35% dai lati verso l'interno (come i cannoncini di un palco)
-			s = rng.randf_range(0.12, 0.42) if not big else rng.randf_range(0.7, 1.1)
-			if rng.randf() < 0.65:
-				pc["p0"] = Vector3(rng.randf_range(-1.0, 1.0) * hw, hh * rng.randf_range(1.05, 1.3), rng.randf_range(-3.0, 1.5))
-				dir = Vector3(rng.randf_range(-0.25, 0.25), -1.0, rng.randf_range(-0.1, 0.1)).normalized()
-				r = rng.randf_range(3.0, 9.0)
-			else:
-				var side: float = -1.0 if rng.randf() < 0.5 else 1.0
-				pc["p0"] = Vector3(side * hw * 1.05, hh * rng.randf_range(-0.2, 0.7), rng.randf_range(-3.0, 1.0))
-				dir = Vector3(-side * rng.randf_range(0.7, 1.0), rng.randf_range(0.1, 0.6), 0.0).normalized()
-				r = rng.randf_range(5.0, 13.0)
-			pc["d"] = rng.randf_range(0.0, 0.4)
-			pc["sw"] = rng.randf_range(0.2, 0.7)
-		_:
-			# fiotto stretto in diagonale in alto a sinistra, a raffica nel tempo; le monete sono le "lastre" e i cubi piccoli
-			var an2: float = deg_to_rad(138.0) + rng.randf_range(-0.22, 0.22)
-			dir = Vector3(cos(an2), sin(an2), rng.randf_range(-0.15, 0.15)).normalized()
-			r = rng.randf_range(5.0, 15.0)
-			s = rng.randf_range(0.25, 0.6) if not big else rng.randf_range(0.8, 1.2)
-			pc["d"] = rng.randf_range(0.0, 0.5)
-	pc["dir"] = dir
-	pc["r"] = r
-	pc["s"] = s
-	return pc
 
 
 func _build_comp() -> void:
@@ -638,22 +580,10 @@ func _update_solids(tq: float) -> void:
 		var k: float = clampf(tt / 0.55, 0.0, 1.0)
 		var e: float = 1.0 - pow(1.0 - k, 3.0)
 		var dist: float = float(p["r"]) * (e + 0.25 * tt)
-		var dir: Vector3 = p["dir"]
-		var sp: float = float(p["spin"])
-		if sp != 0.0:
-			# vortice: la direzione ruota col tempo e con la distanza
-			var an: float = sp * tt + 0.11 * dist
-			var ca: float = cos(an)
-			var sa: float = sin(an)
-			dir = Vector3(dir.x * ca - dir.y * sa, dir.x * sa + dir.y * ca, dir.z)
-		var pos: Vector3 = _origin + (p["p0"] as Vector3) + dir * dist
-		pos.y -= float(p["g"]) * tt * tt
-		pos.x += float(p["sw"]) * sin(tt * 6.0 + float(p["a0"])) * 1.5
-		var g0: float = float(p["grow0"])
 		var b := Basis(p["axis"], float(p["a0"]) + float(p["w"]) * tt)
-		var s: float = float(p["s"]) * (g0 + (1.0 - g0) * e) if tq >= float(p["d"]) else 0.0001
+		var s: float = float(p["s"]) * (0.25 + 0.75 * e) if tq >= float(p["d"]) else 0.0001
 		b = b.scaled(Vector3.ONE * s)
-		(p["mm"] as MultiMesh).set_instance_transform(int(p["i"]), Transform3D(b, pos))
+		(p["mm"] as MultiMesh).set_instance_transform(int(p["i"]), Transform3D(b, _origin + (p["dir"] as Vector3) * dist))
 
 
 # ------------------------------------------------------------------ solidi low-poly
