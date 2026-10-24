@@ -66,6 +66,12 @@ var _tick: int = -1
 var _vp_person: SubViewport
 var _vp_solids: SubViewport
 var _vp_comp: SubViewport
+var _vp_style: Array = []               # persona gia' stilizzata (Kuwahara + gradiente), senza e con glitch: si ridisegna solo mentre cambia la posa
+var _vp_near: SubViewport               # sagoma allargata a 1/8 di risoluzione per le fiamme
+var _person_show: TextureRect            # nella composizione: mostra una delle due persone stilizzate
+var _mat_p2: ShaderMaterial              # copia del materiale persona con il glitch acceso
+var _show: TextureRect                   # l'immagine finale: la spinta della camera e' uno zoom 2D (costa zero)
+var _style_live: int = 0                 # fotogrammi ancora da ridisegnare per la persona
 var _cv: CharacterVisual
 var _cam_p: Camera3D
 var _bg: ColorRect
@@ -76,8 +82,6 @@ var _flash: ColorRect
 var _mmis: Array = []
 var _pieces: Array = []                  # un dizionario per pezzo: mesh, indice, direzione, raggio, rotazione, scala
 var _origin: Vector3 = Vector3.ZERO
-var _last_pose: float = -1.0
-var _comp_pending: int = 0               # fotogrammi da aspettare prima di ridisegnare la composizione
 var _mat_p: ShaderMaterial
 var _mat_bg: ShaderMaterial
 var _mat_fl: ShaderMaterial
@@ -232,6 +236,23 @@ void fragment() {
 }
 """
 
+const SH_NEAR: String = """
+shader_type canvas_item;
+render_mode unshaded;
+uniform sampler2D mask : filter_linear;
+uniform float R = 0.2;
+uniform float aspect = 1.78;
+void fragment() {
+	float a = 0.0;
+	for (int y = -6; y <= 6; y++) {
+		for (int x = -6; x <= 6; x++) {
+			a = max(a, textureLod(mask, UV + vec2(float(x) / aspect, float(y)) * R / 6.0, 0.0).a);
+		}
+	}
+	COLOR = vec4(1.0, 1.0, 1.0, a);
+}
+"""
+
 const SH_FLAME: String = """
 shader_type canvas_item;
 render_mode unshaded;
@@ -244,6 +265,7 @@ uniform float r2 = 0.08;
 uniform float r3 = 0.12;
 uniform float tq = 0.0;
 uniform float aspect = 1.78;
+uniform sampler2D near : filter_linear;   // sagoma gia' allargata a bassa risoluzione: lontano dalla persona non si calcola niente
 
 float h2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vn(vec2 p) {
@@ -268,16 +290,20 @@ float fl(vec2 uv, float R, float seed) {
 }
 
 void fragment() {
-	// strati interni solo dove lo strato esterno c'e' (fuori dalla fiamma, che e' quasi tutto lo schermo, 8 letture invece di 24)
-	float f3 = fl(UV, r3, 1.0);
-	vec3 c = c3;
-	if (f3 > 0.5) {
-		float f2 = fl(UV, r2, 4.0);
-		if (f2 > 0.5) {
-			c = (fl(UV, r1, 7.0) > 0.5) ? c1 : c2;
+	// lontano dalla sagoma (quasi tutto lo schermo) una sola lettura; vicino, strati interni solo dove c'e' quello esterno
+	vec4 outc = vec4(0.0);
+	if (textureLod(near, UV, 0.0).a > 0.004) {
+		float f3 = fl(UV, r3, 1.0);
+		vec3 c = c3;
+		if (f3 > 0.5) {
+			float f2 = fl(UV, r2, 4.0);
+			if (f2 > 0.5) {
+				c = (fl(UV, r1, 7.0) > 0.5) ? c1 : c2;
+			}
 		}
+		outc = vec4(c, f3);
 	}
-	COLOR = vec4(c, f3);
+	COLOR = outc;
 }
 """
 
@@ -317,7 +343,21 @@ func start(char_id: String, pal: Dictionary = PAL_NOX) -> void:
 	_build_person_vp()
 	_build_solids_vp()
 	_build_comp()
+	if not _warm:
+		# fondo, solidi e fiamme a ogni fotogramma, fluidi come il gioco (l'autore sul telefono: «le particelle si vedono a scatti»)
+		_vp_solids.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		_vp_comp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+		_set_person_live(true)
 	apply_time(0.0)
+
+
+# La persona (3D + Kuwahara, la parte piu' cara) si ridisegna a ogni fotogramma solo mentre si muove la posa; poi resta in cache
+func _set_person_live(on: bool) -> void:
+	var m: int = SubViewport.UPDATE_ALWAYS if on else SubViewport.UPDATE_ONCE
+	_vp_person.render_target_update_mode = m
+	for v in _vp_style + [_vp_near]:
+		(v as SubViewport).render_target_update_mode = m
+	_style_live = 1 if on else 0
 
 
 # RISCALDAMENTO (telefono: shader e mesh si compilano al primo disegno = scatto proprio quando parte l'ultimate).
@@ -339,6 +379,8 @@ static func warm(host: Node, char_ids: Array) -> void:
 		e._vp_person.render_target_update_mode = SubViewport.UPDATE_ONCE
 		e._vp_solids.render_target_update_mode = SubViewport.UPDATE_ONCE
 		e._vp_comp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		for v in e._vp_style + [e._vp_near]:
+			(v as SubViewport).render_target_update_mode = SubViewport.UPDATE_ONCE
 		var tree: SceneTree = host.get_tree()
 		for i in 3:
 			await tree.process_frame
@@ -353,7 +395,7 @@ func _vp(w: int, h: int, three_d: bool) -> SubViewport:
 	v.transparent_bg = three_d
 	v.own_world_3d = three_d
 	v.disable_3d = not three_d
-	v.render_target_update_mode = SubViewport.UPDATE_DISABLED     # si ridisegna solo a scatti (12 al secondo), vedi apply_time
+	v.render_target_update_mode = SubViewport.UPDATE_DISABLED     # parte ferma; start() accende quelle che si muovono
 	v.msaa_3d = Viewport.MSAA_DISABLED
 	v.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_LINEAR
 	add_child(v)
@@ -440,7 +482,6 @@ func _build_solids_vp() -> void:
 				"w": rng.randf_range(2.0, 7.0), "a0": rng.randf() * TAU,
 				"d": rng.randf_range(0.0, 0.12),
 			})
-	_vp_solids.render_target_update_mode = SubViewport.UPDATE_DISABLED
 
 
 func _build_comp() -> void:
@@ -475,11 +516,23 @@ func _build_comp() -> void:
 	_mat_fl.set_shader_parameter("c2", fc[1])
 	_mat_fl.set_shader_parameter("c3", fc[2])
 	_mat_fl.set_shader_parameter("aspect", float(_w) / float(_h))
+	var vn: SubViewport = _vp(maxi(8, _w / 8), maxi(8, _h / 8), false)
+	vn.transparent_bg = true
+	var nr := ColorRect.new()
+	nr.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var mn: ShaderMaterial = _mat(SH_NEAR)
+	mn.set_shader_parameter("mask", _vp_person.get_texture())
+	mn.set_shader_parameter("R", 0.32)          # piu' della fiamma piu' grande (0.115 x 1.35 x 1.8 verso l'alto)
+	mn.set_shader_parameter("aspect", float(_w) / float(_h))
+	nr.material = mn
+	vn.add_child(nr)
+	_vp_near = vn                        # si ridisegna con la persona (solo mentre cambia la posa)
+	_mat_fl.set_shader_parameter("near", vn.get_texture())
 	_flames = ColorRect.new()
 	_flames.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_flames.material = _mat_fl
 	root.add_child(_flames)
-	# 3. persona: bianco e nero piatto (Kuwahara), poi gradiente + linee + bordo
+	# 3. persona: bianco e nero piatto (Kuwahara), poi gradiente + linee + bordo; disegnata in due viewport (senza e con glitch)
 	_mat_p = _mat(SH_PERSON)
 	for k in ["sky", "mid", "navy"]:
 		_mat_p.set_shader_parameter(k, _pal[k])
@@ -488,22 +541,37 @@ func _build_comp() -> void:
 	_mat_p.set_shader_parameter("line_c", _pal["line"])
 	_mat_p.set_shader_parameter("kuw", not _light)
 	_mat_p.set_shader_parameter("src", _vp_person.get_texture())
-	_person = TextureRect.new()
-	_person.texture = _vp_person.get_texture()
-	_person.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_person.stretch_mode = TextureRect.STRETCH_SCALE
-	_person.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_person.material = _mat_p
-	root.add_child(_person)
-	var show := TextureRect.new()
-	show.texture = _vp_comp.get_texture()
-	show.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	show.stretch_mode = TextureRect.STRETCH_SCALE
-	show.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	show.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	show.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(show)
-	# il lampo bianco sta sopra la composizione (che si ridisegna a 12 fps): cosi' resta fluido a 60
+	_mat_p.set_shader_parameter("tq", 0.3)
+	_mat_p2 = _mat_p.duplicate() as ShaderMaterial
+	_mat_p2.set_shader_parameter("glitch", 1.0)
+	for i in 2:
+		var vs: SubViewport = _vp(_w, _h, false)
+		vs.transparent_bg = true
+		var pr := TextureRect.new()
+		pr.texture = _vp_person.get_texture()
+		pr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		pr.stretch_mode = TextureRect.STRETCH_SCALE
+		pr.set_anchors_preset(Control.PRESET_FULL_RECT)
+		pr.material = _mat_p if i == 0 else _mat_p2
+		vs.add_child(pr)
+		_vp_style.append(vs)
+		if i == 0:
+			_person = pr
+	_person_show = TextureRect.new()
+	_person_show.texture = (_vp_style[0] as SubViewport).get_texture()
+	_person_show.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_person_show.stretch_mode = TextureRect.STRETCH_SCALE
+	_person_show.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(_person_show)
+	_show = TextureRect.new()
+	_show.texture = _vp_comp.get_texture()
+	_show.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_show.stretch_mode = TextureRect.STRETCH_SCALE
+	_show.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_show.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_show.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_show)
+	# il lampo bianco sta sopra la composizione
 	_flash = ColorRect.new()
 	_flash.color = Color(1, 1, 1, 0)
 	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -525,56 +593,50 @@ func set_layers(halftone: bool, rays: bool, solids: bool, flames: bool, person: 
 	_mat_bg.set_shader_parameter("rays_on", 1.0 if rays else 0.0)
 	_solids_rect.visible = solids
 	_flames.visible = flames
-	_person.visible = person >= 0
+	_person_show.visible = person >= 0
 	_tick = -1                      # le prove cambiano i livelli: ridisegna tutto al prossimo apply_time
-	_last_pose = -1.0
 	if person >= 0:
 		_mat_p.set_shader_parameter("mode", person)
+		_mat_p2.set_shader_parameter("mode", person)
+	_set_person_live(true)
 
 
 func _process(delta: float) -> void:
-	# persona e solidi si disegnano nel fotogramma del tick, la composizione in quello dopo: il costo si divide su due frame
-	if _comp_pending > 0:
-		_comp_pending -= 1
-		if _comp_pending == 0:
-			_vp_comp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	if manual:
 		return
 	_t += delta
 	apply_time(_t)
 
 
-# Il tempo del cut-in: mani e fiamme crescono, i solidi esplodono, shader a 12 fotogrammi al secondo
+# Il tempo del cut-in: posa, camera, fondo, fiamme e solidi a ogni fotogramma (fluidi come il gioco);
+# solo il lampeggio del glitch resta a scatti (12 al secondo): e' un effetto, non un movimento
 func apply_time(t: float) -> void:
 	_t = t
 	var tick: int = int(t * 12.0)
-	var tq: float = float(tick) / 12.0
 	_flash.color.a = clampf(1.0 - t / 0.12, 0.0, 1.0) * 0.9
-	if tick == _tick:
-		return
-	_tick = tick
-	var pop: float = clampf(tq / 0.22, 0.0, 1.0)
+	var pop: float = clampf(t / 0.22, 0.0, 1.0)
 	var ease_o: float = 1.0 - pow(1.0 - pop, 3.0)
 	_cv.arm_r_x = lerpf(-0.6, -2.7, ease_o)
 	_cv.arm_l_x = lerpf(-0.2, -0.9, ease_o)
 	_cv.scale = Vector3.ONE * (1.0 + 0.12 * (1.0 - ease_o))
-	# la persona cambia solo nei primi ~0,25 s (la posa): dopo non serve ridisegnarla
-	if ease_o != _last_pose:
-		_last_pose = ease_o
-		_vp_person.render_target_update_mode = SubViewport.UPDATE_ONCE
-	_vp_solids.render_target_update_mode = SubViewport.UPDATE_ONCE
-	_comp_pending = 2
-	var gl: float = 1.0 if fposmod(sin(float(tick) * 12.9898) * 43758.5453, 1.0) > 0.55 else 0.0
-	_mat_p.set_shader_parameter("tq", tq)
-	_mat_p.set_shader_parameter("glitch", gl)
-	_mat_bg.set_shader_parameter("tq", tq)
-	_mat_bg.set_shader_parameter("grow", clampf(0.3 + tq / 0.3, 0.3, 1.0))
-	var ramp: float = smoothstep(0.0, 0.4, tq) * (1.0 + 0.1 * sin(float(tick) * 2.3))
-	_mat_fl.set_shader_parameter("tq", tq)
+	if pop >= 1.0 and _style_live > 0:
+		_set_person_live(false)          # posa finita: un ultimo disegno e poi la persona resta in cache
+	# camera: spinta in avanti continua come zoom 2D dell'immagine finale (nessun costo di disegno in piu')
+	var push: float = 1.0 - pow(1.0 - clampf(t / DURATA, 0.0, 1.0), 2.0)
+	_show.pivot_offset = _show.size * Vector2(0.55, 0.45)
+	_show.scale = Vector2.ONE * lerpf(1.0, 1.07, push)
+	if tick != _tick:
+		_tick = tick
+		var gl: bool = fposmod(sin(float(tick) * 12.9898) * 43758.5453, 1.0) > 0.55
+		_person_show.texture = (_vp_style[1 if gl else 0] as SubViewport).get_texture()
+	_mat_bg.set_shader_parameter("tq", t)
+	_mat_bg.set_shader_parameter("grow", clampf(0.3 + t / 0.3, 0.3, 1.0))
+	var ramp: float = smoothstep(0.0, 0.4, t) * (1.0 + 0.1 * sin(t * 27.6))
+	_mat_fl.set_shader_parameter("tq", t)
 	_mat_fl.set_shader_parameter("r1", 0.035 * ramp)
 	_mat_fl.set_shader_parameter("r2", 0.07 * ramp)
 	_mat_fl.set_shader_parameter("r3", 0.115 * ramp)
-	_update_solids(tq)
+	_update_solids(t)
 
 
 func _update_solids(tq: float) -> void:
