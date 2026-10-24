@@ -88,6 +88,14 @@ var _brk_lbl: Label
 var _brk_near: bool = false           # equilibrio quasi a zero: la barra si accende e pulsa (il Break e' vicino)
 var _brk_tw: Tween
 var _tele: Label
+var _tele_state: String = ""           # come e' vestita la minaccia ora: normale | forte | stordito (la lastra si cambia solo se cambia)
+var _weak_row: HBoxContainer           # DEBOLE A: sotto le barre del nemico, come l'analisi di Persona (??? finche' non si sa)
+var _weak_k: Label
+var _weak_v: Label
+var _weak_sig: String = ""
+var _boss_ghost: ProgressBar           # scia chiara dietro la barra PV: si vede quanto ha tolto il colpo, poi si svuota
+var _statics: Dictionary = {}          # unit id -> StaticFx: disturbo a scatti su chi e' rotto (BREAK del nemico, compagno KO)
+var _order_chips: Dictionary = {}      # lastre dell'ordine dei turni gia' costruite (colore|di turno -> StyleBox)
 var _cards: Array = []
 var _turn_lbl: Label
 var _cmd_box: VBoxContainer
@@ -1860,7 +1868,7 @@ func _build_ui() -> void:
 	_order_title = Ui.label("TURNO 1", 20, Ui.YELLOW, Ui.display(), 6)
 	ov.add_child(_order_title)
 	_order_box = VBoxContainer.new()
-	_order_box.add_theme_constant_override("separation", 0)
+	_order_box.add_theme_constant_override("separation", 3)
 	ov.add_child(_order_box)
 
 	# nemico (alto al centro)
@@ -1874,6 +1882,7 @@ func _build_ui() -> void:
 	bp.add_child(_boss_name)
 	_boss_hp = _bar(Color("#ff4b6e"), 22)
 	bp.add_child(_boss_hp)
+	_boss_ghost = _ghost_bar(_boss_hp)
 	_boss_hp_txt = Ui.label("", 22, Ui.CREAM, null, 5)
 	_boss_hp_txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_hp.add_child(_boss_hp_txt)
@@ -1888,8 +1897,20 @@ func _build_ui() -> void:
 	_boss_brk.add_child(brk_t)
 	Ui.place(brk_t, 0, 0, 1, 1)
 	brk_t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_tele = Ui.label("", 20, Ui.CREAM, null, 6)
+	# DEBOLE A ... : chi deve colpire si legge sotto il nemico, non solo nella legenda in alto a destra (Persona 5: l'analisi del nemico)
+	_weak_row = HBoxContainer.new()
+	_weak_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_weak_row.add_theme_constant_override("separation", 2)
+	_weak_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bp.add_child(_weak_row)
+	_weak_k = Ui.plate_label("DEBOLE A", 17, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
+	_weak_row.add_child(_weak_k)
+	_weak_v = Ui.plate_label("???", 17, Ui.INK, Color("#9a94a8"), Ui.INK)
+	_weak_row.add_child(_weak_v)
+	# la minaccia su una lastra scura col bordo rosso: si legge su cielo chiaro e su insegne (prima testo bianco nudo da 20)
+	_tele = Ui.label("", 20, Ui.CREAM, Ui.display(), 0)
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tele.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	bp.add_child(_tele)
 
 	_party_back = Control.new()
@@ -1989,7 +2010,7 @@ func _build_ui() -> void:
 	_root.add_child(_kit_lbl)
 	_hint = Ui.label("", 18, Ui.CREAM, null, 5)
 	# a sinistra sotto i TURNI, dentro il fumetto di Echo (come l'alleata che parla in Persona): il centro resta alla scena
-	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 96, 292, 456, 292)
+	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 96, 330, 456, 330)      # piu' in basso: l'ordine dei turni a lastre e' piu' alto
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(EchoBalloon.new(_hint))
@@ -2102,6 +2123,111 @@ func _bar(col: Color, h: float) -> ProgressBar:
 	return pb
 
 
+# Scia della barra PV (picchiaduro, Persona): una barra chiara dietro, che resta dov'era e scende poco dopo il colpo.
+# Il fondo passa alla scia, la barra vera disegna solo il pieno sopra.
+func _ghost_bar(pb: ProgressBar) -> ProgressBar:
+	var g := _bar(Ui.CREAM, pb.custom_minimum_size.y)
+	g.show_behind_parent = true
+	pb.add_child(g)
+	pb.move_child(g, 0)
+	Ui.place(g, 0, 0, 1, 1)
+	pb.add_theme_stylebox_override("background", StyleBoxEmpty.new())
+	return g
+
+
+func _ghost_to(g: ProgressBar, v: float, mx: float) -> void:
+	if g == null:
+		return
+	g.max_value = mx
+	if v >= g.value:
+		if g.has_meta("tw"):
+			(g.get_meta("tw") as Tween).kill()
+			g.remove_meta("tw")
+		g.value = v
+		g.set_meta("to", v)
+		return
+	if float(g.get_meta("to", -1.0)) == v:
+		return
+	g.set_meta("to", v)
+	if g.has_meta("tw"):
+		(g.get_meta("tw") as Tween).kill()
+	var tw := g.create_tween()
+	tw.tween_interval(0.35)
+	tw.tween_property(g, "value", v, 0.45).set_ease(Tween.EASE_IN)
+	g.set_meta("tw", tw)
+
+
+func _static_set(uid: String, on: bool, tint: Color) -> void:
+	if not _statics.has(uid):
+		if not on or not vis.has(uid):
+			return
+		var fx := StaticFx.new(tint)
+		(vis[uid] as Node).add_child(fx)
+		_statics[uid] = fx
+	var f: StaticFx = _statics[uid]
+	if is_instance_valid(f):
+		f.set_on(on)
+
+
+# Il colore di chi colpisce batte quello del nemico, e il giocatore lo sa gia' (indizio o primo colpo)
+func _beats_boss(col: String, boss: Dictionary) -> bool:
+	if not (_boss_known or not weak.is_empty()):
+		return false
+	return col != "" and BattleTypes.color_multiplier(col, str(boss.get("color", ""))) > 1.0
+
+
+func _order_chip(col: Color, now: bool) -> StyleBoxFlat:
+	var key: String = col.to_html() + ("|1" if now else "|0")
+	if not _order_chips.has(key):
+		_order_chips[key] = Ui.plate(col, Ui.INK, -0.18, 6) if now else Ui.plate(Color(0.05, 0.03, 0.08, 0.82), col, -0.18, 5)
+	return _order_chips[key]
+
+
+# Minaccia: lastra scura col bordo rosso; colpo FORTE su lastra rossa piena; nemico stordito in giallo
+func _tele_dress(state: String) -> void:
+	if state == _tele_state:
+		return
+	_tele_state = state
+	match state:
+		"forte":
+			_tele.add_theme_stylebox_override("normal", Ui.plate(Color("#d0122f"), Ui.INK))
+			_tele.add_theme_color_override("font_color", Ui.CREAM)
+		"stordito":
+			_tele.add_theme_stylebox_override("normal", Ui.plate(Color(0.05, 0.03, 0.08, 0.9), Ui.YELLOW))
+			_tele.add_theme_color_override("font_color", Ui.YELLOW)
+		_:
+			_tele.add_theme_stylebox_override("normal", Ui.plate(Color(0.05, 0.03, 0.08, 0.9), Color("#ff3b4e")))
+			_tele.add_theme_color_override("font_color", Ui.CREAM)
+
+
+# DEBOLE A: ??? finche' il giocatore non conosce il colore del nemico, poi il colore che lo batte e chi ce l'ha
+func _weak_refresh(boss: Dictionary) -> void:
+	var bc: String = str(boss.get("color", ""))
+	var beater: String = ""
+	for k in BattleTypes.BEATS:
+		if str(BattleTypes.BEATS[k]) == bc:
+			beater = str(k)
+	if not weak.is_empty():
+		beater = str(weak[0]).to_lower()
+	var known: bool = _boss_known or not weak.is_empty()
+	var sig: String = "%s|%s|%s" % [beater, known, ended]
+	if sig == _weak_sig:
+		return
+	_weak_sig = sig
+	_weak_row.visible = beater != "" and not ended
+	if not known:
+		_weak_v.text = "???"
+		_weak_v.add_theme_stylebox_override("normal", Ui.plate(Color("#9a94a8"), Ui.INK))
+		return
+	var who: String = _who_is(beater.to_upper())
+	_weak_v.text = beater.to_upper() + (" · " + who.to_upper() if who != "chi ha quel colore" else "")
+	_weak_v.add_theme_stylebox_override("normal", Ui.plate(Ui.BATTLE_COLORS.get(beater, Ui.CREAM), Ui.INK))
+	_weak_v.pivot_offset = _weak_v.size * 0.5
+	var tw := _weak_v.create_tween()
+	_weak_v.scale = Vector2(1.35, 1.35)
+	tw.tween_property(_weak_v, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 func _make_card() -> Dictionary:
 	# P5/JSR: niente pannello. Volto in cornice storta + numero PV grande + EN piccola + barretta sottile; chi e' di turno ha una lastra di colore piena
 	var p := PanelContainer.new()
@@ -2137,14 +2263,15 @@ func _make_card() -> Dictionary:
 	line.add_child(en)
 	var hp := _bar(Color("#62f08c"), 6)
 	vb.add_child(hp)
-	var ult := _bar(Ui.PINK, 4)
+	var ghost := _ghost_bar(hp)
+	var ult := _bar(Ui.PINK, 5)
 	vb.add_child(ult)
 	var cracks := Control.new()
 	cracks.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cracks.set_meta("tier", 0)
 	cracks.draw.connect(func() -> void: _draw_cracks(cracks))
 	p.add_child(cracks)
-	return {"panel": p, "face": face, "name": name_l, "hp": hp, "hp_t": hp_t, "en": en, "ult": ult, "cracks": cracks, "tier": 0}
+	return {"panel": p, "face": face, "name": name_l, "hp": hp, "ghost": ghost, "hp_t": hp_t, "en": en, "ult": ult, "cracks": cracks, "tier": 0}
 
 
 func _draw_party_back() -> void:
@@ -2582,14 +2709,22 @@ func _refresh_hud() -> void:
 	elif str(mv.get("target", "one")) != "all":
 		var tu: Dictionary = BattleState.active_unit(b, str(tele.get("target", "")))
 		who = str(tu.get("name", "?")).to_upper()
+	var tstate: String = "normale"
 	if ended or not BattleState.is_alive(boss):
 		_tele.text = ""
 	elif int(boss.get("stun", 0)) > 0:
 		_tele.text = "STORDITO: salterà il prossimo turno"
+		tstate = "stordito"
 	else:
 		var thr: Dictionary = BattleResolver.threat_preview(b)
 		var strong: bool = CombatHud.is_strong(float(mv.get("mult", 0.0)), thr.get("lethal", []))
 		_tele.text = CombatHud.tele_line(str(mv.get("name", "?")), who, str(mv.get("target", "one")) == "all", strong, str(thr.get("chain", "")) != "") if not mv.is_empty() else ""
+		tstate = "forte" if strong else "normale"
+	_tele.visible = _tele.text != ""
+	_tele_dress(tstate)
+	_weak_refresh(boss)
+	_ghost_to(_boss_ghost, float(shown_hp), float(boss["max_hp"]))
+	_static_set(BattleState.BOSS_ID, not ended and BattleState.is_alive(boss) and int(boss.get("stun", 0)) > 0, Color(1.0, 0.85, 0.45))
 	var marked: String = _update_mark(tele, mv, boss)
 	for i in _cards.size():
 		var c: Dictionary = _cards[i]
@@ -2611,10 +2746,13 @@ func _refresh_hud() -> void:
 			_party_back.queue_redraw()
 		# il colore anche scritto: chi non distingue i colori sa lo stesso chi colpisce le debolezze
 		# ▶ davanti al nome di chi e' di turno: si legge anche senza distinguere i colori
-		(c["name"] as Label).text = ("▶ " if active and alive else "") + str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
+		(c["name"] as Label).text = ("▶ " if active and alive else "") + str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "") \
+				+ (" ▲" if alive and _beats_boss(str(u.get("color", "")), boss) else "")      # ▲ = colpisce la debolezza, lo stesso segno di "▲ EFFICACE!"
 		(c["name"] as Label).add_theme_color_override("font_color", Color.WHITE if active else col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
+		_ghost_to(c["ghost"], float(u["hp"]), float(u["max_hp"]))
+		_static_set(str(u.get("id", "")), not ended and not alive, col.lightened(0.35))
 		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])), not alive, col)
 		(c["hp_t"] as Label).text = "%d" % int(u["hp"])
 		var face: TextureRect = c["face"]
@@ -2629,6 +2767,14 @@ func _refresh_hud() -> void:
 			(c["en"] as Label).text += " · HYPE %d" % int(u.get("hype", 0))
 		(c["ult"] as ProgressBar).max_value = BattleTypes.GAUGE_MAX
 		(c["ult"] as ProgressBar).value = int(u.get("gauge", 0))
+		# ULTIMATE pronta: la barretta diventa gialla (prima restava rosa uguale a quando era a meta')
+		var full: bool = int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX
+		if bool(c.get("ult_full", false)) != full:
+			c["ult_full"] = full
+			var fs := StyleBoxFlat.new()
+			fs.bg_color = Ui.YELLOW if full else Ui.PINK
+			fs.set_corner_radius_all(2)
+			(c["ult"] as ProgressBar).add_theme_stylebox_override("fill", fs)
 	# ordine dei turni rimasti in questo round. PRESTAZIONI: le righe si riusano (prima si buttavano e ricreavano tutte
 	# a ogni aggiornamento, piu' volte per azione) e si toccano solo se cambiano.
 	var rows: Array = []
@@ -2640,7 +2786,7 @@ func _refresh_hud() -> void:
 			continue
 		var is_boss: bool = bool(e["boss"])
 		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
-		rows.append([("> " if k == turn_i else "   ") + nm, 19 if k == turn_i else 15, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
+		rows.append([("▶ " if k == turn_i else "") + nm, 21 if k == turn_i else 16, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
 	if _order_title != null:
 		_order_title.text = "TURNO %d" % int(b.get("round", 1))
 	var sig: String = str(rows)
@@ -2656,8 +2802,13 @@ func _refresh_hud() -> void:
 			var r: Array = rows[i]
 			l.text = str(r[0])
 			l.add_theme_font_size_override("font_size", int(r[1]))
-			l.add_theme_color_override("font_color", r[2])
-			l.add_theme_font_override("font", Ui.display() if bool(r[3]) else Ui.body())
+			# ogni turno e' una lastra storta (Persona 5 / Star Rail): chi agisce ora e' piena del suo colore con la scritta scura,
+			# gli altri scuri col bordo del loro colore. Prima erano righe di testo piccole, chi era di turno si capiva dal ">"
+			var now: bool = bool(r[3])
+			l.add_theme_stylebox_override("normal", _order_chip(r[2], now))
+			l.add_theme_color_override("font_color", Ui.INK if now else r[2])
+			l.add_theme_constant_override("outline_size", 0 if now else 5)
+			l.add_theme_font_override("font", Ui.display())
 	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper() + (" · RAPIDO" if _quick else "")) if cur_pid != "" and not ended else ""
 	if waiting:
 		_show_commands(true)
@@ -2962,9 +3113,11 @@ func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
 func _toast(text: String, col: Color, sec: float) -> void:
 	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t) and (t as Label).modulate.a > 0.05)
 	var row: int = _toasts.size()
-	var l := Ui.label(text, 26, col, Ui.display(), 10)
+	var l := Ui.label(text, 26, col, Ui.display(), 8)
+	l.add_theme_stylebox_override("normal", Ui.plate(Color(0.05, 0.03, 0.08, 0.86), col))     # lastra scura: si legge sopra insegne e ruota
 	# resta nella fascia centrale (20%-60% della larghezza): il blocco descrizioni a destra non viene mai coperto, il testo lungo va a capo
-	Ui.place(l, 0.2, 0.3, 0.6, 0.3, 0, 84 * row, 0, 120 + 84 * row)
+	# subito sotto la minaccia (prima a meta' schermo, finiva sotto la ruota dei comandi)
+	Ui.place(l, 0.2, 0.235, 0.6, 0.235, 0, 56 * row, 0, 50 + 56 * row)
 	_toasts.append(l)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

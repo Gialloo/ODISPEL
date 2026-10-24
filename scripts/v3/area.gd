@@ -253,6 +253,7 @@ func _build_ui() -> void:
 	_touch.action_pressed.connect(_interact)
 	_touch.action2_pressed.connect(_strike)
 	_goal = Ui.label("", 21, Ui.CREAM, null, 6)
+	_goal.add_theme_stylebox_override("normal", Ui.plate(Color(0.05, 0.03, 0.08, 0.78), Ui.YELLOW, -0.12, 6))     # l'obiettivo su lastra: si legge anche sul cielo chiaro
 	_goal.position = Vector2(24, 50 if Settings.show_fps else 16)
 	_goal.text = "%s\n%s" % [Story.chapter_title(), str(cfg.get("obiettivo", ""))]
 	_root.add_child(_goal)
@@ -262,7 +263,11 @@ func _build_ui() -> void:
 	if resume.has("banter_used"):
 		_banter.set("_used", (resume["banter_used"] as Dictionary).duplicate())
 	_prompt = Ui.label("", 26, Ui.YELLOW, Ui.display(), 8)
-	Ui.place(_prompt, 0.5, 0.72, 0.5, 0.72, -460, 0, 460, 50)
+	# cosa si puo' fare qui, su una lastra stretta attorno al testo (Persona 5: l'azione vicina e' un cartellino che scatta)
+	_prompt.add_theme_stylebox_override("normal", Ui.plate(Color(0.05, 0.03, 0.08, 0.88), Ui.YELLOW))
+	Ui.place(_prompt, 0.5, 0.72, 0.5, 0.72, 0, 0, 0, 0)
+	_prompt.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_prompt.visible = false
 	_prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_root.add_child(_prompt)
 	_toast_lbl = Ui.label("", 26, Ui.CYAN, Ui.display(), 8)
@@ -539,11 +544,28 @@ func _near_points() -> Array:
 	return out
 
 
+# La lastra dell'azione vicina compare con uno scatto quando cambia (si nota senza guardarla)
+var _prompt_last: String = ""
+
+
+func _prompt_show() -> void:
+	_prompt.visible = _prompt.text != ""
+	if _prompt.text == _prompt_last:
+		return
+	_prompt_last = _prompt.text
+	if _prompt.visible:
+		_prompt.pivot_offset = _prompt.get_combined_minimum_size() * 0.5
+		_prompt.scale = Vector2(1.25, 1.25)
+		_prompt.create_tween().tween_property(_prompt, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 # Cosa c'e' vicino: il piu' importante vince (boss/uscita, poi nemici, poi indizi)
 func _update_target() -> void:
 	near = false
 	if mode != "walk":
 		_prompt.text = ""
+		_prompt.visible = false
+		_prompt_last = ""
 		_touch.act_label = ""
 		_touch.act2_label = ""
 		return
@@ -594,6 +616,7 @@ func _update_target() -> void:
 		_prompt.text = label if touch else "[E]  " + label
 	else:
 		_prompt.text = ""
+	_prompt_show()
 	_touch.act_label = key
 	_touch.act_live = key != ""
 	_touch.act2_label = "ATTACCA" if can_strike else ""

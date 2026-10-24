@@ -80,6 +80,32 @@ static func box(bg: Color, border: Color = INK, bw: int = 4, radius: int = 6, sh
 	return s
 
 
+# Lastra storta alla Persona 5: fondo pieno, bordo spesso del colore a sinistra e sotto, ombra nera sfalsata. Per le scritte
+# che devono leggersi su qualsiasi sfondo (minaccia del nemico, avvisi, ordine dei turni, indicazioni in esplorazione).
+static func plate(bg: Color, edge: Color, skew: float = -0.18, edge_w: int = 6) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = edge
+	s.border_width_left = edge_w
+	s.border_width_bottom = maxi(2, edge_w - 3)
+	s.skew = Vector2(skew, 0.0)
+	s.shadow_color = Color(INK.r, INK.g, INK.b, 0.85)
+	s.shadow_size = 1
+	s.shadow_offset = Vector2(5, 5)
+	s.content_margin_left = 18
+	s.content_margin_right = 18
+	s.content_margin_top = 3
+	s.content_margin_bottom = 5
+	return s
+
+
+# Scritta su lastra (vedi plate): la lastra si stringe attorno al testo
+static func plate_label(text: String, size: int, col: Color, bg: Color, edge: Color, font: Font = null) -> Label:
+	var l := label(text, size, col, font if font != null else display(), 0)
+	l.add_theme_stylebox_override("normal", plate(bg, edge))
+	return l
+
+
 static func button(text: String, bg: Color = YELLOW, size: int = 26, min_w: float = 0.0) -> Button:
 	var b := Button.new()
 	b.text = text
