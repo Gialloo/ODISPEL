@@ -228,6 +228,13 @@ func _ready() -> void:
 	await get_tree().create_timer(0.6).timeout
 	if not is_inside_tree():
 		return
+	if not Settings.skip_cutin:
+		var chs: Array = []
+		for i in 4:
+			var wu: Dictionary = _slot_unit(i)
+			if not wu.is_empty() and not chs.has(str(wu["char"])):
+				chs.append(str(wu["char"]))
+		EdgeCutin.warm(_root, chs)          # riscalda shader e mesh del cut-in senza bloccare l'ingresso (scatto sul telefono)
 	match ingresso:
 		"vantaggio":
 			_toast("ATTACCO A SORPRESA! %s è già %s al BREAK e agite per primi" % [_cap(_bn()), _g("vicino", "vicina")], Ui.YELLOW, 3.0)
