@@ -21,7 +21,7 @@ const LEZIONI: Array = [["tut_intro", "tut_attacco"], ["tut_guardia", "tut_abili
 	["tut_reazioni", "tut_rottura"], ["tut_ultimate", "tut_extra"]]
 const LEZIONI_MAX: int = 2
 const TOAST_MAX: int = 2              # avvisi sulla lastra scura visibili insieme
-const NOTICE_Y: float = 250.0         # gli avvisi stanno a sinistra sotto i TURNI: il centro alto e' dei numeri sopra il nemico
+const NOTICE_Y: float = 64.0          # avvisi in alto a sinistra (Persona 5: nome della mossa e "Attacco su!"), sotto l'etichetta REC
 const QTE_LEAD: float = 0.9          # dall'apparire del cerchio all'impatto
 const QTE_GOOD: float = 0.3          # quanto prima dell'impatto vale gia' come guardia
 const QTE_LATE: float = 0.12         # tolleranza dopo l'impatto
@@ -91,7 +91,7 @@ var _root: Control
 var _fx_layer: Control
 var _broken: BrokenCam
 var _glitch: GlitchFx
-var _order_box: VBoxContainer
+var _order_box: BoxContainer
 var _boss_name: Label
 var _boss_hp: ProgressBar
 var _boss_hp_txt: Label
@@ -129,6 +129,9 @@ var _live_back: String = ""             # chi stava scegliendo quando e' partita
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
+var _order_panel: Control              # ordine dei turni (si vede solo mentre si sceglie)
+var _boss_panel: Control               # nome e barre del nemico (in alto a sinistra)
+var _choice_hud: bool = false          # true: HUD della scelta; false: durante le mosse resta solo il necessario
 var _top_bar: Control                   # x1 / AUTO / pausa: si nasconde mentre parla Echo (il SALTA del dialogo sta li')
 var _legend: Control                    # ruota dei colori spiegata: si apre col tasto COLORI
 var _btn_fast: Button
@@ -559,6 +562,7 @@ func _process(delta: float) -> void:
 		if not cam.is_position_behind(bp):
 			_reticle.position = cam.unproject_position(bp)
 	_update_wheel()
+	_place_boss_tag()
 	_cam_pos = _cam_pos.lerp(_cam_want_pos, minf(1.0, rd * _cam_rate))
 	_cam_look = _cam_look.lerp(_cam_want_look, minf(1.0, rd * _cam_rate))
 	var sh := Vector3.ZERO
@@ -618,6 +622,26 @@ func _update_wheel() -> void:
 
 
 # Il nemico preso di mira dall'attacco scelto brilla piano (alone caldo che pulsa) e resta in luce anche con lo schermo scuro dell'ULTIMATE
+# Cartellino del nemico (Persona 5 / Metaphor: il nome sta SUL nemico): sopra la sua testa, segue la telecamera, resta nello
+# schermo. Si vede solo mentre si sceglie (_hud_focus).
+func _place_boss_tag() -> void:
+	if _boss_panel == null or not _boss_panel.visible or not vis.has(BattleState.BOSS_ID):
+		return
+	var bv: Node3D = vis[BattleState.BOSS_ID]
+	var h3: Vector3 = bv.call("head_point") if bv.has_method("head_point") else bv.global_position + Vector3(0, 2.2, 0)
+	if cam.is_position_behind(h3):
+		return
+	var hp: Vector2 = cam.unproject_position(h3 + Vector3(0, 0.35, 0))
+	var vs: Vector2 = get_viewport().get_visible_rect().size
+	var sz: Vector2 = _boss_panel.get_combined_minimum_size()
+	sz.x = maxf(sz.x, 300.0)
+	var want := Vector2(hp.x - sz.x * 0.5, hp.y - sz.y - 18.0)
+	want.x = clampf(want.x, 16.0, vs.x - sz.x - 16.0)
+	want.y = clampf(want.y, 64.0, vs.y * 0.5)
+	_boss_panel.position = _boss_panel.position.lerp(want, 0.3) if _boss_panel.position.y > 1.0 else want
+	_boss_panel.size = sz
+
+
 func _spot_boss(m: ShaderMaterial, e: float, ult: bool, base: float = 0.0) -> void:
 	# il bersaglio resta in risalto anche prima di scegliere (Persona 5: il nemico si stacca dalla scena scura)
 	e = maxf(e, 0.7 * base) if _picked in ["", "attack", "skill", "ult"] else e
@@ -2068,42 +2092,50 @@ func _build_ui() -> void:
 	_wheel.tapped.connect(_wheel_tap)
 	_fx_layer.add_child(_wheel)
 
-	# ordine dei turni (sinistra)
+	# ordine dei turni: una riga di lastrine in alto, accanto al nemico (Metaphor: i turni in alto al centro). Si vede solo
+	# mentre si sceglie: durante le mosse l'HUD si svuota (Persona 5)
 	var ob := PanelContainer.new()
-	ob.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.38), Color(0, 0, 0, 0), 0, 6, 0))
-	ob.position = Vector2(16, 126 if Settings.show_fps else 70)
+	ob.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	Ui.place(ob, 0.5, 0.0, 0.5, 0.0, 0, 12, 0, 12)      # al centro in alto: l'etichetta REC a sinistra cambia lunghezza
+	ob.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	ob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(ob)
-	var ov := VBoxContainer.new()
-	ov.add_theme_constant_override("separation", 4)
+	_order_panel = ob
+	var ov := HBoxContainer.new()
+	ov.add_theme_constant_override("separation", 6)
+	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ob.add_child(ov)
-	_order_title = Ui.label("TURNO 1", 20, Ui.YELLOW, Ui.display(), 6)
+	_order_title = Ui.label("TURNO 1", 16, Ui.YELLOW, Ui.display(), 6)
 	ov.add_child(_order_title)
-	_order_box = VBoxContainer.new()
-	_order_box.add_theme_constant_override("separation", 3)
+	_order_box = HBoxContainer.new()
+	_order_box.add_theme_constant_override("separation", 4)
+	_order_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ov.add_child(_order_box)
 
-	# nemico (alto al centro)
+	# nemico: lastra nera storta in alto a sinistra (Persona 5: il nome del nemico in alto a sinistra), vita ed equilibrio
+	# come due barre sottili sotto il nome; DEBOLE A e la prossima mossa solo mentre si sceglie
 	var bp := VBoxContainer.new()
-	Ui.place(bp, 0.5, 0, 0.5, 0, -300, 14, 300, 140)
+	Ui.place(bp, 0, 0, 0, 0, 24, 60, 324, 60)      # la posizione vera la decide _place_boss_tag (sopra il nemico)
+	_boss_panel = bp
 	bp.add_theme_constant_override("separation", 4)
 	bp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(bp)
-	_boss_name = Ui.label(_bname(), 28, Ui.YELLOW, Ui.display(), 8)
-	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_name = Ui.label(_bname(), 22, Ui.CREAM, Ui.display(), 0)
+	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_boss_name.add_theme_stylebox_override("normal", Ui.plate(Color(0.02, 0.01, 0.03, 0.92), Color("#ff2340"), -0.18, 5))
 	bp.add_child(_boss_name)
-	_boss_hp = _bar(Color("#ff4b6e"), 22)
+	_boss_hp = _bar(Color("#ff4b6e"), 16)
 	bp.add_child(_boss_hp)
 	_boss_ghost = _ghost_bar(_boss_hp)
-	_boss_hp_txt = Ui.label("", 22, Ui.CREAM, null, 5)
+	_boss_hp_txt = Ui.label("", 14, Ui.CREAM, null, 4)
 	_boss_hp_txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_hp.add_child(_boss_hp_txt)
 	Ui.place(_boss_hp_txt, 0, 0, 1, 1)
 	_boss_hp_txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_boss_brk = _bar(Color("#f2f0ea"), 20)
+	_boss_brk = _bar(Color("#f2f0ea"), 14)
 	bp.add_child(_boss_brk)
 	# il nome della barra bianca dentro la barra, crema col contorno scuro, si legge su barra piena e vuota (prima grigio chiaro da 12: non si leggeva): quando arriva a zero il boss si rompe
-	_brk_lbl = Ui.label("EQUILIBRIO", 16, Ui.CREAM, Ui.display(), 6)
+	_brk_lbl = Ui.label("EQUILIBRIO", 12, Ui.CREAM, Ui.display(), 4)
 	var brk_t := _brk_lbl
 	brk_t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_brk.add_child(brk_t)
@@ -2111,18 +2143,18 @@ func _build_ui() -> void:
 	brk_t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# DEBOLE A ... : chi deve colpire si legge sotto il nemico, non solo nella legenda in alto a destra (Persona 5: l'analisi del nemico)
 	_weak_row = HBoxContainer.new()
-	_weak_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_weak_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_weak_row.add_theme_constant_override("separation", 2)
 	_weak_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bp.add_child(_weak_row)
-	_weak_k = Ui.plate_label("DEBOLE A", 17, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
+	_weak_k = Ui.plate_label("DEBOLE A", 15, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
 	_weak_row.add_child(_weak_k)
-	_weak_v = Ui.plate_label("???", 17, Ui.INK, Color("#9a94a8"), Ui.INK)
+	_weak_v = Ui.plate_label("???", 15, Ui.INK, Color("#9a94a8"), Ui.INK)
 	_weak_row.add_child(_weak_v)
 	# la minaccia su una lastra scura col bordo rosso: si legge su cielo chiaro e su insegne (prima testo bianco nudo da 20)
-	_tele = Ui.label("", 17, Ui.CREAM, Ui.display(), 0)
-	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_tele.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_tele = Ui.label("", 15, Ui.CREAM, Ui.display(), 0)
+	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_tele.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bp.add_child(_tele)
 
 	_party_back = Control.new()
@@ -2136,7 +2168,7 @@ func _build_ui() -> void:
 	party.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	party.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	party.alignment = BoxContainer.ALIGNMENT_END
-	party.add_theme_constant_override("separation", 6)
+	party.add_theme_constant_override("separation", 4)
 	party.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(party)
 	for i in slots.size():
@@ -2150,12 +2182,12 @@ func _build_ui() -> void:
 	_cmd_box = VBoxContainer.new()
 	# REAZIONE in alto a destra, sotto la barra rapida: lontana dalla squadra e da CONFERMA (in basso a sinistra), cosi' un clic
 	# sbagliato non fa partire una reazione. La colonna non prende clic: solo i suoi tasti.
-	Ui.place(_cmd_box, 1.0, 0.0, 1.0, 0.0, -400, 70, -16, 70)
+	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -480, -262, -16, -262)      # sopra la squadra; compare solo quando si puo' reagire
 	_cmd_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_cmd_box.alignment = BoxContainer.ALIGNMENT_BEGIN
+	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
 	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
 	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_cmd_box.grow_vertical = Control.GROW_DIRECTION_END         # con REAZIONE e Ultimate in diretta la colonna cresce verso il basso
+	_cmd_box.grow_vertical = Control.GROW_DIRECTION_BEGIN       # con REAZIONE e Ultimate in diretta la colonna cresce verso l'alto
 	_cmd_box.add_theme_constant_override("separation", 8)
 	_root.add_child(_cmd_box)
 	# REAZIONE (contestuale): sta in cima alla colonna, che cresce verso l'alto; nascosta quando non c'e' una finestra
@@ -2172,10 +2204,17 @@ func _build_ui() -> void:
 	rrow.add_theme_constant_override("separation", 6)
 	rrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_react_box.add_child(rrow)
+	# una riga sola: la scritta piccola a sinistra dei tasti (prima una riga sopra: la colonna saliva fin sul nemico)
+	_react_box.remove_child(_react_lbl)
+	_react_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_react_lbl.add_theme_font_size_override("font_size", 13)
+	_react_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	rrow.add_child(_react_lbl)
 	var rcols: Dictionary = {"schivata": Ui.CYAN, "intercettazione": Color("#62f08c"), "interruzione": Ui.PINK, "soccorso": Ui.YELLOW}
 	for rid in ["schivata", "intercettazione", "interruzione", "soccorso"]:
 		var rb: Button = Ui.button(str(REACT_SHORT[rid]), rcols[rid], 15)
 		rb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rb.custom_minimum_size.y = 52.0 if Ui.is_touch() else 40.0
 		rb.pressed.connect(_react_cmd.bind(rid))
 		rb.visible = false
 		rrow.add_child(rb)
@@ -2322,15 +2361,31 @@ func _build_ui() -> void:
 	_cutin.add_child(_say_lbl)
 
 
+# Persona 5: mentre qualcuno fa la mossa l'HUD si svuota. Restano le vite (squadra e nemico) e il nome della mossa;
+# turni, DEBOLE A, prossima mossa, consigli di Echo e tasti rapidi tornano quando tocca di nuovo scegliere.
+# (Con AUTO acceso i tasti rapidi restano: servono per spegnerlo.)
+func _hud_focus(choice: bool) -> void:
+	_choice_hud = choice
+	# durante la mossa restano: nome della mossa, effetti (gli avvisi) e vite della squadra. Il nemico torna quando si sceglie.
+	for c in [_order_panel, _boss_panel, _weak_row, _tele, _hint]:
+		if c != null:
+			(c as Control).visible = choice
+	if _top_bar != null:
+		_top_bar.visible = choice or auto_on
+	if _legend != null and not choice:
+		_legend.visible = false
+	_stack_notices()
+
+
 # Tasto della barra rapida in alto a destra: lastra scura, scritta crema, piccolo (resta grande abbastanza per il dito)
 func _quick_btn(text: String, w: float) -> Button:
-	var b: Button = Ui.button(text, Color(0.05, 0.03, 0.08, 0.78), 17, w)
+	var b: Button = Ui.button(text, Color(0.05, 0.03, 0.08, 0.78), 14, w * 0.8)
 	for k in ["font_color", "font_hover_color", "font_pressed_color"]:
 		b.add_theme_color_override(k, Ui.CREAM)
 	b.add_theme_stylebox_override("normal", Ui.box(Color(0.05, 0.03, 0.08, 0.72), Color(Ui.CREAM, 0.55), 2, 4, 0))
 	b.add_theme_stylebox_override("hover", Ui.box(Color(0.12, 0.08, 0.18, 0.85), Ui.CREAM, 2, 4, 0))
 	b.add_theme_stylebox_override("pressed", Ui.box(Color(0.2, 0.14, 0.28, 0.9), Ui.CREAM, 2, 4, 0))
-	b.custom_minimum_size.y = 52.0 if Ui.is_touch() else 40.0
+	b.custom_minimum_size.y = 48.0 if Ui.is_touch() else 34.0
 	return b
 
 
@@ -2488,7 +2543,7 @@ func _make_card() -> Dictionary:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(row)
 	var face := TextureRect.new()
-	face.custom_minimum_size = Vector2(54, 48)
+	face.custom_minimum_size = Vector2(48, 42)
 	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2505,7 +2560,7 @@ func _make_card() -> Dictionary:
 	line.add_theme_constant_override("separation", 10)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vb.add_child(line)
-	var hp_t := Ui.label("", 28, Ui.CREAM, Ui.display(), 8)      # squadra piu' compatta (Metaphor): la scena resta libera
+	var hp_t := Ui.label("", 24, Ui.CREAM, Ui.display(), 7)      # squadra piu' compatta (Metaphor): la scena resta libera
 	line.add_child(hp_t)
 	var en := Ui.label("", 18, Ui.CYAN, Ui.display(), 5)
 	en.size_flags_vertical = Control.SIZE_SHRINK_END
@@ -2701,13 +2756,14 @@ func _confirm_button(kind: String) -> void:
 func _show_commands(on: bool) -> void:
 	if _cmd_box == null:
 		return
+	_hud_focus(on)
 	_cmd_box.visible = on
 	if _kit_lbl != null:
 		_kit_lbl.visible = false     # cosa fa ogni comando ora sta nel riquadro della scelta, sulla ruota
 	if _wheel != null:
 		_wheel.visible = on
 	if _turn_lbl != null:
-		_turn_lbl.visible = not on         # il nome di chi e' di turno sta sotto la ruota
+		_turn_lbl.visible = false          # chi e' di turno lo dicono la luce, la ruota e la lastra della squadra (Persona 5: niente scritte in piu')
 	if not on:
 		_pick("")
 		_cam_choose_end()
@@ -2860,7 +2916,7 @@ func _update_react() -> void:
 	Ui.place(_turn_lbl, 1.0, 1.0, 1.0, 1.0, -600, -385 - up, -16, -340 - up)
 	Ui.place(_kit_lbl, 1.0, 1.0, 1.0, 1.0, -620, -392 - up, -16, -392 - up)
 	if _react_box.visible:
-		_react_lbl.text = ("REAZIONE · RISERVA %d (COSTA IL TURNO)" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA · SENZA RISERVA"
+		_react_lbl.text = ("REAZIONE\nRISERVA %d · USA IL TURNO" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA\nSENZA RISERVA"
 		if not _react_hint_seen and not first_turn and _hint != null and not usable.is_empty():
 			_react_hint_seen = true
 			_hint.text = "CARICA IN ARRIVO · REAZIONI con la Riserva: SCHIVA (freccia) · COPRI (tieni e lascia) · FERMA (a raffica) · SOCCORRI (battito)"
@@ -3036,7 +3092,11 @@ func _refresh_hud() -> void:
 			continue
 		var is_boss: bool = bool(e["boss"])
 		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
-		rows.append([("▶ " if k == turn_i else "") + nm, 21 if k == turn_i else 16, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
+		if nm.length() > 10:
+			nm = nm.substr(0, 9) + "."      # una riga sola in alto: i nomi lunghi (DISTRIBUTORE) si accorciano
+		rows.append([("▶ " if k == turn_i else "") + nm, 17 if k == turn_i else 14, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
+		if rows.size() >= 4:
+			break
 	if _order_title != null:
 		_order_title.text = "TURNO %d" % int(b.get("round", 1))
 	var sig: String = str(rows)
@@ -3368,7 +3428,9 @@ func _notice(text: String, col: Color, sec: float, icon: String) -> void:
 	var parts: Array = CombatHud.notice_parts(text)
 	var pc := PanelContainer.new()
 	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pc.add_theme_stylebox_override("panel", Ui.plate(Color(0.05, 0.03, 0.08, 0.86), col))
+	var mv: bool = icon == "move"
+	# il nome della mossa come in Persona 5: lastra nera storta, scritta bianca, bordo rosso
+	pc.add_theme_stylebox_override("panel", Ui.plate(Color(0.02, 0.01, 0.03, 0.94), Color("#ff2340") if mv else col, -0.18, 6 if mv else 5))
 	var hb := HBoxContainer.new()
 	hb.add_theme_constant_override("separation", 8)
 	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -3378,10 +3440,13 @@ func _notice(text: String, col: Color, sec: float, icon: String) -> void:
 	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ic.draw.connect(func() -> void: _notice_icon(ic, icon, col))
 	hb.add_child(ic)
-	var big := Ui.label(str(parts[0]), 20, col, Ui.display(), 6)
+	# mossa: grande il NOME della mossa, piccolo chi la fa ("RIO · ATTACCO" -> ATTACCO grande, RIO piccolo)
+	var head: String = str(parts[1]) if mv and str(parts[1]) != "" else str(parts[0])
+	var tail: String = str(parts[0]) if mv and str(parts[1]) != "" else str(parts[1])
+	var big := Ui.label(head, 24 if mv else 20, Ui.CREAM if mv else col, Ui.display(), 6)
 	hb.add_child(big)
-	if str(parts[1]) != "":
-		var sm := Ui.label(str(parts[1]), 16, Color(Ui.CREAM, 0.9), null, 4)
+	if tail != "":
+		var sm := Ui.label(tail, 16, Color(Ui.CREAM, 0.9) if not mv else col.lightened(0.2), null, 4)
 		hb.add_child(sm)
 	_fx_layer.add_child(pc)
 	_toasts.append(pc)
@@ -3401,7 +3466,10 @@ func _stack_notices() -> void:
 		var c: Control = _toasts[i]
 		Ui.place(c, 0.0, 0.0, 0.0, 0.0, 24, 0, 24, 0)
 		c.grow_horizontal = Control.GROW_DIRECTION_END
-		c.offset_top = NOTICE_Y + 46.0 * float(_toasts.size() - 1 - i)
+		var y0: float = NOTICE_Y
+		if _boss_panel != null and _boss_panel.visible and _boss_panel.size.y > 1.0:
+			y0 = _boss_panel.position.y + _boss_panel.get_combined_minimum_size().y + 12.0      # subito sotto il nemico
+		c.offset_top = y0 + 46.0 * float(_toasts.size() - 1 - i)
 
 
 # Icone degli avvisi, disegnate a mano: catena (legami e impulsi), triangolo (il nemico), lampo (effetti), freccia (mossa)
