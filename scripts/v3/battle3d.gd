@@ -104,6 +104,7 @@ var _freeze_on: bool = false            # fermo immagine di Echo in corso (si sa
 var _freeze_skip: bool = false
 var _team_on: bool = false              # sequenza dell'attacco di squadra in corso (un tocco la accorcia)
 var _team_follow: bool = false          # gli eventi mostrati ora sono seguiti dall'attacco di squadra
+var _team_hold: int = 0                  # danni di squadra non ancora mostrati: la barra del nemico scende colpo per colpo
 var _live_back: String = ""             # chi stava scegliendo quando e' partita un'Ultimate in diretta
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
@@ -2435,8 +2436,9 @@ func _refresh_hud() -> void:
 		_cam_hud.set_live(int(Kits.unit_of_char(b, Kits.RIO).get("hype", -1)))      # la diretta di Rio e' la telecamera di Echo
 	var boss: Dictionary = BattleState.boss(b)
 	_boss_hp.max_value = int(boss["max_hp"])
-	_boss_hp.value = int(boss["hp"])
-	_boss_hp_txt.text = "%d / %d" % [int(boss["hp"]), int(boss["max_hp"])]
+	var shown_hp: int = mini(int(boss["max_hp"]), int(boss["hp"]) + _team_hold)
+	_boss_hp.value = shown_hp
+	_boss_hp_txt.text = "%d / %d" % [shown_hp, int(boss["max_hp"])]
 	_boss_brk.max_value = maxi(1, int(boss.get("balance_max", 1)))
 	_boss_brk.value = int(boss.get("balance", 0))
 	_brk_lbl.text = "EQUILIBRIO  %d" % int(boss.get("balance", 0))
@@ -2585,6 +2587,12 @@ func _show_events_freeze(ev: Array) -> void:
 		await _show_events(ev, true)
 		return
 	_team_follow = true             # la rottura la annuncia la sequenza di squadra: niente vetro rotto ne' scritte doppie
+	# i danni di squadra si vedono sulla barra solo quando arrivano i colpi
+	_team_hold = 0
+	for e in ev.slice(idx + 1):
+		if str(e.get("t", "")) == "damage" and str(e.get("dst", "")) == BattleState.BOSS_ID and str(e.get("src", "")) != BattleState.BOSS_ID:
+			_team_hold += int(e.get("amount", 0))
+	_refresh_hud()
 	await _show_events(ev.slice(0, idx), true)
 	_team_follow = false
 	if not is_inside_tree() or ended:
@@ -2612,6 +2620,11 @@ func _team_sequence(rest: Array) -> void:
 			hits.append([str(e["src"]), int(e.get("amount", 0)), bool(e.get("crit", false))])
 		else:
 			others.append(e)
+	# la barra del nemico torna ai PV di prima dell'assalto e scende a ogni colpo (prima calava tutta subito: sembrava che non facesse niente)
+	_team_hold = 0
+	for h in hits:
+		_team_hold += int(h[1])
+	_refresh_hud()
 	(boss_v as VendingVisual).stunned = true
 	_cam_set(Vector3(0.0, 2.4, 6.2), ENEMY_POS + Vector3(0, 1.0, 0), 5.0)
 	# 1. ROTTURA
@@ -2669,7 +2682,9 @@ func _team_sequence(rest: Array) -> void:
 		LightFx.sparks(self, (boss_v as Node).call("chest_point"), col if not bool(h[2]) else LightFx.IVORY, 8)
 		_kick(0.35)
 		total += int(h[1])
-		_number(BattleState.BOSS_ID, "%s  %d%s" % [str(b["units"][uid].get("name", "")).to_upper(), int(h[1]), "!" if bool(h[2]) else ""], col.lightened(0.35), 40, 0.0)
+		_team_hold = maxi(0, _team_hold - int(h[1]))
+		_refresh_hud()
+		_number(BattleState.BOSS_ID, "%s  %d%s" % [str(b["units"][uid].get("name", "")).to_upper(), int(h[1]), "!" if bool(h[2]) else ""], col.lightened(0.35), 56, 0.0)
 		var back := create_tween()
 		back.tween_interval(0.12)
 		back.tween_property(cv, "position", home[uid], 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -2678,6 +2693,8 @@ func _team_sequence(rest: Array) -> void:
 				cv.move_speed = 0.0
 				_face(cv, ENEMY_POS))
 		await _team_wait(0.32)
+	_team_hold = 0
+	_refresh_hud()
 	box.queue_free()
 	if _hint != null and hint_was:
 		_hint.visible = true
@@ -2685,8 +2702,10 @@ func _team_sequence(rest: Array) -> void:
 		_stamp("ATTACCO DI SQUADRA", "%d danni in tutto" % total, Ui.YELLOW)
 	if breaker != "" and vis.has(breaker):
 		_face(vis[breaker], ENEMY_POS)
+	# il totale resta a schermo da solo prima che tornino i comandi (prima la ruota ci finiva sopra)
+	await _team_wait(1.1)
 	await _show_events(others, true)
-	await _team_wait(0.5)
+	await _team_wait(0.3)
 	_team_on = false
 
 
