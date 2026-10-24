@@ -10,6 +10,7 @@ extends Node3D
 const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
 const START_GAUGE: int = 60          # PROVVISORIO (test): ultimate gia' a buon punto, cosi' si vede nel mini combattimento
 const ENEMY_POS := Vector3(0, 0.14, -3.4)
+const PARTY_Z: float = 4.3                 # fila della squadra: piu' indietro (prima 3.0) per dare respiro tra squadra e nemico
 
 # GUARDIA A TEMPO: quando parte il colpo annunciato un cerchio si chiude sul bersaglio; toccare quando si chiude
 # riduce il danno e carica l'ultimate, toccare proprio all'impatto e' una parata perfetta con contrattacco.
@@ -347,7 +348,7 @@ func _build_arena() -> void:
 	if layout in ["vicolo", "caveau", "galleria"]:
 		var half: float = (lay["bounds"] as Rect2).size.x * 0.5
 		_cam_lim = half - 0.15
-		_row_k = clampf((_cam_lim - 0.7) / 2.55, 0.6, 1.0)
+		_row_k = clampf((_cam_lim - 0.7) / 3.3, 0.5, 1.0)
 	else:
 		_cam_lim = 6.6
 	if SkyDome.outdoor(layout):
@@ -423,13 +424,14 @@ func _setup_battle() -> void:
 
 
 func _build_units() -> void:
-	var xs: Array = [-2.55 * _row_k, -0.85 * _row_k, 0.85 * _row_k, 2.55 * _row_k]
+	# squadra larga e lontana dal nemico (Persona 5: tra i compagni c'e' aria, il nemico e' "di fronte", non addosso)
+	var xs: Array = [-3.3 * _row_k, -1.1 * _row_k, 1.1 * _row_k, 3.3 * _row_k]
 	for i in slots.size():
 		var u: Dictionary = _slot_unit(i)
 		var cv := CharacterVisual.new()
 		cv.setup(str(u["char"]))
 		add_child(cv)
-		var pos := Vector3(xs[i], 0.14, 3.0 + absf(xs[i]) * 0.18)
+		var pos := Vector3(xs[i], 0.14, PARTY_Z + absf(xs[i]) * 0.12)
 		cv.position = pos
 		cv.stance = true
 		_face(cv, ENEMY_POS)
@@ -490,7 +492,7 @@ func _cam_fit(pos: Vector3, look: Vector3) -> Vector3:
 
 
 func _cam_overview(snap: bool = false) -> void:
-	_cam_set(Vector3(0.6, 3.3, 9.8), Vector3(0, 1.2, -1.6), 2.5, snap)
+	_cam_set(Vector3(0.6, 3.5, 11.4), Vector3(0, 1.2, -1.2), 2.5, snap)
 
 
 func _cam_actor(uid: String) -> void:
@@ -505,9 +507,13 @@ func _cam_actor(uid: String) -> void:
 func _cam_choose(uid: String, close: bool = false) -> void:
 	var p: Vector3 = home[uid]
 	var k: float = 0.85 if close else 1.0
-	# di tre quarti, di lato e vicino: il personaggio a sinistra, il nemico a destra, il grappolo dei comandi in mezzo
-	var cp: Vector3 = p + Vector3(2.75 * k, 1.35 + 0.1 * k, 1.35 * k)
-	var look: Vector3 = p.lerp(ENEMY_POS, 0.4) + Vector3(0.0, 1.05 if not close else 1.2, 0)
+	# alla Persona 5: alle spalle e un po' a destra di chi sceglie, lui a sinistra del centro e il nemico libero a destra
+	# (i comandi stanno alla SUA sinistra, non tra lui e il nemico). Stessa inquadratura per ogni posto della fila: la si
+	# calcola lungo la linea personaggio-nemico (d avanti, l a sinistra), numeri cercati sulle proiezioni dei quattro posti.
+	var d: Vector3 = Vector3(ENEMY_POS.x - p.x, 0.0, ENEMY_POS.z - p.z).normalized()
+	var l: Vector3 = Vector3(d.z, 0.0, -d.x)
+	var cp: Vector3 = p - d * 2.8 * k - l * 2.4 * k + Vector3(0, 1.3 + 0.1 * (1.0 - k), 0)
+	var look: Vector3 = p + d * 1.5 + l * 0.8 + Vector3(0, 1.0 if not close else 1.15, 0)
 	_cam_set(cp, look, 5.0 if not close else 2.6)
 	# i compagni tra la telecamera e la scena escono di quadro mentre si sceglie (come in Persona 5)
 	var dme: float = cp.distance_to(p)
@@ -591,8 +597,8 @@ func _update_wheel() -> void:
 			var c: Vector2 = Vector2(ph.x, lerpf(ph.y, pf.y, 0.42))
 			# il grappolo dei comandi (a destra del personaggio) resta dentro lo schermo e sopra la squadra
 			var sk: float = _wheel.s()
-			c.x = clampf(c.x, 90.0, vs.x - 470.0 * sk - 420.0)
-			c.y = clampf(c.y, 150.0 + 200.0 * sk, vs.y - 175.0 * sk)
+			c.x = clampf(c.x, 500.0 * sk, vs.x - 420.0)      # i comandi stanno a sinistra del personaggio
+			c.y = clampf(c.y, 170.0 + 250.0 * sk, vs.y - 175.0 * sk)      # ULTIMATE non sale sui TURNI
 			_wheel.center = _wheel.center.lerp(c, 0.35) if _wheel.appear > 0.05 else c
 			var m: ShaderMaterial = _spot.material
 			m.set_shader_parameter("c", Vector2(ph.x, lerpf(ph.y, pf.y, 0.5)) / vs)
@@ -604,7 +610,7 @@ func _update_wheel() -> void:
 	if _spot.visible:
 		var ult: bool = _picked == "ult"
 		var m2: ShaderMaterial = _spot.material
-		_spot_boss(m2, e, ult)
+		_spot_boss(m2, e, ult, base)
 		var pulse: float = 0.85 + 0.15 * sin(Time.get_ticks_msec() * 0.008)
 		m2.set_shader_parameter("k", maxf((0.86 if ult else 0.55) * e, 0.32 * base))
 		m2.set_shader_parameter("aura", maxf((0.9 if ult else 0.35) * e, 0.3 * base) * pulse)
@@ -612,8 +618,10 @@ func _update_wheel() -> void:
 
 
 # Il nemico preso di mira dall'attacco scelto brilla piano (alone caldo che pulsa) e resta in luce anche con lo schermo scuro dell'ULTIMATE
-func _spot_boss(m: ShaderMaterial, e: float, ult: bool) -> void:
-	var on: bool = _picked in ["attack", "skill", "ult"] and vis.has(BattleState.BOSS_ID) and BattleState.is_alive(BattleState.boss(b))
+func _spot_boss(m: ShaderMaterial, e: float, ult: bool, base: float = 0.0) -> void:
+	# il bersaglio resta in risalto anche prima di scegliere (Persona 5: il nemico si stacca dalla scena scura)
+	e = maxf(e, 0.7 * base) if _picked in ["", "attack", "skill", "ult"] else e
+	var on: bool = (_picked in ["attack", "skill", "ult"] or (_picked == "" and base > 0.0)) and vis.has(BattleState.BOSS_ID) and BattleState.is_alive(BattleState.boss(b))
 	var k2: float = 0.0
 	if on:
 		var bv: Node3D = vis[BattleState.BOSS_ID]
@@ -3182,7 +3190,7 @@ func _team_sequence(rest: Array) -> void:
 		_team_hold += int(h[1])
 	_refresh_hud()
 	(boss_v as VendingVisual).stunned = true
-	_cam_set(Vector3(0.0, 2.4, 6.2), ENEMY_POS + Vector3(0, 1.0, 0), 5.0)
+	_cam_set(Vector3(0.0, 2.6, 7.6), ENEMY_POS + Vector3(0, 1.0, 0), 5.0)
 	# 1. ROTTURA
 	# versione corta del BREAK (vetro + scritta, senza il fermo immagine lungo): la sequenza di squadra ha gia' il suo ritmo
 	_break_moment(0.0, true)

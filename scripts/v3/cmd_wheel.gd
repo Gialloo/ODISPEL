@@ -13,7 +13,8 @@ signal tapped(kind: String)      # "attack" | "skill" | "ult" | "guard" | "confi
 
 const KINDS: Array = ["attack", "skill", "ult", "guard"]
 # posto di ogni comando rispetto al petto del personaggio (a zig-zag verso il nemico, come in Persona 5), in unita' "s"
-const POS: Array = [Vector2(118, 118), Vector2(92, -38), Vector2(132, -116), Vector2(150, 40)]
+# A SINISTRA del personaggio (come Persona 5 e Metaphor): il lato verso il nemico resta libero, la parola finisce sul tasto
+const POS: Array = [Vector2(-150, 118), Vector2(-128, -38), Vector2(-165, -116), Vector2(-185, 40)]
 const SIZE: Array = [1.25, 1.0, 1.08, 0.92]      # ATTACCO e' il piu' grande, come in tutti i riferimenti
 const INK: Color = Color("#120a1c")
 const CREAM: Color = Color("#fff4dc")
@@ -140,10 +141,11 @@ func _process(delta: float) -> void:
 	var ult: bool = picked == "ult"
 	var pr: float = _ease3(appear * 1.3)
 	# la vernice entra "spruzzata": cresce dal centro del grappolo con un piccolo rimbalzo, poi respira appena
-	var pc: Vector2 = Vector2(150, 0) * s()
+	# la macchia e' disegnata verso destra: specchiata (scala x negativa) finisce a sinistra, dove ora stanno i comandi
+	var pc: Vector2 = Vector2(-150, 0) * s()
 	var sc: float = (0.2 + 0.8 * _back(pr)) * (1.0 + 0.01 * sin(t * 1.6))
 	_paint.position = center + pc - pc * sc
-	_paint.scale = Vector2(sc, sc)
+	_paint.scale = Vector2(-sc, sc)
 	_paint.modulate = Color(1, 1, 1, pr * (0.75 if ult else 1.0))
 	var k: int = KINDS.find(picked)
 	_beam.visible = k >= 0 and e > 0.01
@@ -185,8 +187,8 @@ func _process(delta: float) -> void:
 
 # Filo d'energia: curva dal petto al tasto, che si gonfia verso l'alto (sembra uscire dal personaggio)
 func _curve(dst: Vector2, u: float) -> Vector2:
-	var mid: Vector2 = dst * 0.5 + Vector2(-20, -60) * s()
-	return (1.0 - u) * (1.0 - u) * Vector2(30, -10) * s() + 2.0 * (1.0 - u) * u * mid + u * u * dst
+	var mid: Vector2 = dst * 0.5 + Vector2(20, -60) * s()
+	return (1.0 - u) * (1.0 - u) * Vector2(-30, -10) * s() + 2.0 * (1.0 - u) * u * mid + u * u * dst
 
 
 func _ease3(x: float) -> float:
@@ -493,7 +495,7 @@ class _Layer extends Control:
 		m.band(pts, 34.0 * s * g, 18.0 * s * g, Color(w.col.lightened(0.25), 0.4))
 		m.band(pts, 12.0 * s * g, 7.0 * s * g, Color(w.col.lightened(0.7), 0.85))
 		m.band(pts, 4.0 * s, 3.0 * s, Color(1, 1, 1, 0.95))
-		m.glow(Vector2(30, -10) * s, 60.0 * s * g, Color(w.col.lightened(0.3), 0.5))
+		m.glow(Vector2(-30, -10) * s, 60.0 * s * g, Color(w.col.lightened(0.3), 0.5))
 
 	# raggi di luce dal tasto scelto: interi, sfumati verso la punta, con alone morbido e nucleo bianco
 	func _rays(m) -> void:
@@ -551,7 +553,7 @@ class _Layer extends Control:
 			var dimmed: bool = (w.picked != "" and not on) or not ok
 			var pe: float = w._ease3(w.appear * 1.6 - float(k) * 0.1)
 			var p_rest: Vector2 = w.at(k)
-			var p: Vector2 = p_rest.lerp(p_rest + Vector2(-60, 0) * s, 1.0 - pe)
+			var p: Vector2 = p_rest.lerp(p_rest + Vector2(60, 0) * s, 1.0 - pe)
 			var fa: float = clampf(pe * 1.5, 0.0, 1.0)
 			var sz: float = float(CmdWheel.SIZE[k]) * s * (1.0 + 0.16 * e * (1.0 if on else 0.0))
 			var rad: float = 25.0 * sz
@@ -560,7 +562,7 @@ class _Layer extends Control:
 			var small: int = int(29.0 * sz)
 			var nm: String = str(it["name"])
 			var tw: float = fd.get_string_size(nm.substr(0, 1), HORIZONTAL_ALIGNMENT_LEFT, -1, big).x + fd.get_string_size(nm.substr(1), HORIZONTAL_ALIGNMENT_LEFT, -1, small).x
-			var x0: float = p.x + rad + 10.0
+			var x0: float = p.x - rad - 14.0 - tw      # la parola sta a sinistra del tasto
 			var by: float = p.y + small * 0.42
 			if on:
 				# inversione alla Persona 5: lastra piena del colore del personaggio (ombra nera sfalsata) e parola nera
