@@ -1,5 +1,13 @@
 # Novità
 
+## 0.38.0 · HUD essenziale street/pop, Break che si sente, minaccia del nemico a terra
+- **HUD più essenziale** (Persona 5 + Jet Set Radio): il comando scelto diventa una lastra piena del colore del personaggio con la parola in nero; la squadra senza pannelli grandi, volto in cornice storta e numeri grandi su un fondo nero leggero; REC CAM in alto a sinistra sopra TURNO n, che conta i turni.
+- **Attacco di squadra al BREAK**: ogni compagno colpisce più forte (più del doppio) e la barra del nemico scende a ogni colpo, col nome e il danno; poi il totale.
+- **Minaccia del nemico a terra**: cerchio luminoso sotto chi dichiara; contro tutti un semicerchio che passa sotto i cerchi della squadra, contro uno un cono che si ferma sul cerchio del bersaglio.
+- **Chi parla ha il suo fumetto**, come Echo, con ritratto e bordo del suo colore.
+- **Vetro rotto sulle card**: sotto un quarto dei PV o al KO la card si crepa come la telecamera di Echo.
+- **Il nemico preso di mira brilla**, anche quando la scena si scurisce per l'ULTIMATE.
+
 ## 0.37.0 · comandi alla Persona 5 / Metaphor
 - **Comandi accanto a chi è di turno**: la camera mette il personaggio a sinistra e il nemico a destra; ATTACCO, ABILITÀ, ULTIMATE e GUARDIA sono parole grandi inclinate con l'iniziale enorme, su una macchia di vernice spray del colore del personaggio. Si tocca una volta per scegliere e una seconda (o CONFERMA) per lanciare.
 - **Luce ed energia**: dal tasto scelto escono raggi di luce interi, un filo d'energia parte dal petto del personaggio; con l'ULTIMATE la scena si scurisce attorno a lui, arrivano le bande nere e il personaggio si accende col suo colore.
