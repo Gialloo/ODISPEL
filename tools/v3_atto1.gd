@@ -13,6 +13,9 @@ var report: Array = []
 var start_ch: int = -1
 
 
+var ng: int = 0
+
+
 func _init() -> void:
 	Story.save_path = "user://salvataggio_prova.cfg"     # mai il salvataggio vero
 	var args: PackedStringArray = OS.get_cmdline_user_args()
@@ -24,6 +27,8 @@ func _init() -> void:
 	for a in args:
 		if a.begins_with("capitolo="):
 			start_ch = int(a.substr(9))
+		elif a.begins_with("ng="):
+			ng = int(a.substr(3))          # New Game+: replica N, squadra al livello dei nemici (sblocchi migliori equipaggiati)
 	Settings.ensure_loaded()
 	Settings.surprise = true
 	DirAccess.make_dir_recursive_absolute(out)
@@ -51,6 +56,15 @@ func _run() -> void:
 	await _secs(1.0)
 	await _shot("menu")
 	Story.new_game()
+	if ng > 0:
+		for _i in ng:
+			Story.new_replica()
+		for c in Progress.CAST:
+			Progress.data["lv"][c] = BattleTypes.replica_level(1, ng) + 2
+			for u in Progress.UNLOCKS[c]:
+				if int(u[0]) <= int(Progress.data["lv"][c]):
+					Progress.equip(c, str(u[1]), str(u[2]))
+		Story.save()
 	if start_ch >= 0:
 		Story.start_chapter(start_ch)
 	main.next_story()

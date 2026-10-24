@@ -67,11 +67,24 @@ const BREAK_HEAVY: int = 1             # colpo pesante (moltiplicatore >= 2)
 const BREAK_DAMAGE: float = 1.25       # danno extra sul boss stordito
 # SCALA DEL NEMICO NELLA STORIA (la squadra sale di livello, il nemico cresce con lei): usata da battle3d.gd e da tools/v3_bilancio.gd
 const REPLICA_K: float = 0.15             # Replica della diretta: +15% PV e attacco dei nemici per ogni giro dopo il primo
+const REPLICA_K_GIRI: int = 4             # ... fino al quarto giro: dopo la durezza la portano i livelli (con 10 giri gli scontri duravano il doppio)
 const STORY_HP_BOSS: float = 3.0          # PV del boss rispetto al motore
 const STORY_HP_MINOR: float = 1.5         # PV di un nemico minore (frammento)
 const STORY_ATK_K: float = 2.5            # attacco di tutti i nemici della storia
 const STORY_HP_PER_LEVEL: float = 0.14    # +14% PV per livello sopra il primo
 const STORY_ATK_PER_LEVEL: float = 0.24   # +24% attacco per livello sopra il primo
+# OLTRE L'ATTO 1 (Replica della diretta = New Game+, livelli fino a 100): fino a STORY_KNEE valgono le due righe sopra, tarate
+# sull'atto 1; dopo, il nemico cresce come la squadra (stesso +8% a livello di LEVEL_BONUS) piu' un poco, perche' la squadra
+# ha mosse, tratti e sinergie piu' forti (la retta di prima a livello 100 dava un attacco x24 contro PV x9: ingiocabile)
+const STORY_KNEE: int = 12
+const STORY_HP_EXTRA: float = 0.0         # PV: +1,2% a livello oltre il ginocchio, sopra la crescita della squadra
+const STORY_ATK_EXTRA: float = 0.0        # attacco: idem (compensa la difesa della squadra, che a livelli alti ripara molto di piu')
+const REPLICA_MAX: int = 10               # New Game+ fino a NG+10 (la decima si puo' rigiocare quanto si vuole)
+const REPLICA_LEVEL_FIRST: int = 13       # NG+1: i nemici del capitolo 1 (livello 1) sono tarati sul livello 14
+const REPLICA_LEVEL_STEP: int = 9         # ogni giro dopo il primo: +9 livelli (NG+10: dal 95 al 100)
+const ENEMY_MAX_LEVEL: int = 100
+const REPLICA_EXP_FIRST: float = 2.0      # NG+1: esperienza x2 ...
+const REPLICA_EXP_STEP: float = 0.25      # ... e +25% a ogni giro dopo (NG+10: x4,25)
 const SLANCIO_ON: bool = true             # colpo col colore vincente = azione rapida subito dopo (una volta a round, squadra)
 const BREAK_TEAM_MULT: float = 1.3         # attacco di squadra alla rottura: colpo di ogni altro eroe (0 = spento). 1.3: deve pesare, e' il premio del BREAK (prima 0.6, non si notava)
 const BREAK_RECOVER: float = 0.75       # frazione della barra con cui il boss si riprende dopo una rottura (1 = piena)
@@ -125,3 +138,48 @@ const TIMED_PERFECT_FACTOR: float = 0.25  # danno preso con la parata perfetta
 const TIMED_GUARD_GAUGE: int = 8          # ultimate caricata a chi para in tempo
 const TIMED_PERFECT_GAUGE: int = 18       # ultimate caricata a chi para perfetto
 const TIMED_COUNTER_MULT: float = 0.9     # contrattacco della parata perfetta (scalfisce anche l'equilibrio)
+
+
+# ---------------------------------------------------------------- scala dei nemici della storia (atto 1 e New Game+)
+
+# Livello di un nemico nella Replica numero `replica` (0 = prima partita): l'atto 1 va da 1 a 11, NG+1 da 14 a 24, ...
+static func replica_level(base_level: int, replica: int) -> int:
+	if replica <= 0:
+		return base_level
+	var r: int = mini(replica, REPLICA_MAX)
+	return mini(ENEMY_MAX_LEVEL, base_level + REPLICA_LEVEL_FIRST + REPLICA_LEVEL_STEP * (r - 1))
+
+
+# PV e attacco in piu' della Replica (moltiplicatore, sopra la scala per livello)
+static func replica_hard(replica: int) -> float:
+	return 1.0 + REPLICA_K * float(clampi(replica, 0, REPLICA_K_GIRI))
+
+
+# Esperienza in piu' nella Replica (moltiplicatore)
+static func replica_exp(replica: int) -> float:
+	if replica <= 0:
+		return 1.0
+	return REPLICA_EXP_FIRST + REPLICA_EXP_STEP * float(mini(replica, REPLICA_MAX) - 1)
+
+
+static func _party_growth(level: int) -> float:
+	return 1.0 + 0.08 * float(level - 1)      # = BattleContent.LEVEL_BONUS (qui per non legare i tipi ai contenuti)
+
+
+# Moltiplicatore dei PV del nemico per livello (1.0 al livello 1)
+static func story_hp_grow(level: int) -> float:
+	var k: int = mini(level, STORY_KNEE)
+	var g: float = 1.0 + STORY_HP_PER_LEVEL * float(k - 1)
+	if level > STORY_KNEE:
+		g *= _party_growth(level) / _party_growth(STORY_KNEE) * (1.0 + STORY_HP_EXTRA * float(level - STORY_KNEE))
+	return g
+
+
+# Moltiplicatore dell'attacco del nemico per livello (1.0 al livello 1)
+static func story_atk_grow(level: int) -> float:
+	var k: int = mini(level, STORY_KNEE)
+	var g: float = 1.0 + STORY_ATK_PER_LEVEL * float(k - 1)
+	if level > STORY_KNEE:
+		g *= _party_growth(level) / _party_growth(STORY_KNEE) * (1.0 + STORY_ATK_EXTRA * float(level - STORY_KNEE))
+	return g
+

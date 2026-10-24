@@ -918,6 +918,8 @@ func _boss_battle(ingresso: String) -> void:
 
 func _go_battle(args: Dictionary) -> void:
 	args["replica"] = Story.replica()
+	# New Game+: i nemici salgono di livello a ogni giro (NG+1 tarato sul 14, poi +9 a giro fino al 100)
+	args["livello"] = BattleTypes.replica_level(int(args.get("livello", 1)), Story.replica())
 	Story.save()        # se l'app si chiude in battaglia si riprende davanti al nemico, non dall'inizio dell'area
 	_shake = 0.8
 	Settings.buzz(80)

@@ -55,12 +55,16 @@ func _ready() -> void:
 		Story.new_game()
 		get_parent().next_story())
 	hb.add_child(b2)
-	var b3 := Ui.button("REPLICA DELLA DIRETTA", Ui.PINK, 24, 380)
+	# NEW GAME+: si riparte con la squadra com'e' (livelli, sblocchi, mosse rubate); dalla decima si rigioca la decima
+	var nxt: int = mini(rep + 1, BattleTypes.REPLICA_MAX)
+	var b3 := Ui.button(("REPLICA %d · NG+%d" % [nxt, nxt]) if rep < BattleTypes.REPLICA_MAX else "RIGIOCA LA REPLICA 10", Ui.PINK, 24, 380)
 	b3.pressed.connect(func() -> void:
 		Story.new_replica()
 		get_parent().next_story())
 	hb.add_child(b3)
 	vb.add_child(Ui.label("Rigiochi l'atto coi legami stretti, scelte da rifare, nemici più duri.", 20, Ui.CREAM))
+	vb.add_child(Ui.label("Tieni la squadra com'è: livelli, mosse e sblocchi. Nemici al livello %d-%d, esperienza x%s." % [
+		BattleTypes.replica_level(1, nxt), BattleTypes.replica_level(11, nxt), str(snappedf(BattleTypes.replica_exp(nxt), 0.01)).replace(".", ",")], 20, Ui.CREAM))
 
 
 func back() -> void:

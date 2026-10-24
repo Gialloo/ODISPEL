@@ -837,6 +837,9 @@ static func _rescue(state: Dictionary, actor: Dictionary, move_id: String, event
 	u["rescued"] = true
 	u["statuses"] = {}
 	events.append({"t": "rescue", "unit": actor["id"], "who": who, "hp": hp})
+	# reazioni personali di Nox oltre l'atto 1: energia, Ultimate, energia alla squadra (i PV in piu' sono gia' in react_bonus)
+	if Kits.react_perk(state, BattleState.boss(state), actor, "rescue", events):
+		events.append({"t": "react_mod", "unit": actor["id"], "mod": str(actor.get("react_mod", ""))})
 	return true
 
 
@@ -853,12 +856,18 @@ static func react_bonus(state: Dictionary, actor: Dictionary, kind: String) -> f
 	if kind == "rescue" and str(actor.get("react_mod", "")) == "reperibile":
 		k += 0.2
 		actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + 1)
+	if kind == "rescue":
+		k += Kits.react_rescue_hp(actor)        # reazioni personali oltre l'atto 1 (Reperibile H24, ...)
 	return k
 
 
 # REAZIONI PERSONALI (si sbloccano coi livelli, si equipaggiano nel menu SQUADRA): cosa aggiungono a una reazione riuscita.
 static func _react_perk(state: Dictionary, boss: Dictionary, u: Dictionary, kind: String, events: Array) -> void:
 	var mod: String = str(u.get("react_mod", ""))
+	# quelle oltre l'atto 1 sono dati (Kits.REACT_PERKS)
+	if Kits.react_perk(state, boss, u, kind, events):
+		events.append({"t": "react_mod", "unit": u["id"], "mod": mod})
+		return
 	match mod:
 		"muro":
 			if kind == "intercept":
@@ -1247,6 +1256,7 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 			_react_perk(state, boss, t, "intercept", events)
 			if str(t.get("react_mod", "")) == "muro":
 				hit_mult *= 0.7
+			hit_mult *= Kits.react_dmg_k(t)
 		if timed == "good" or timed == "perfect":
 			var perfect: bool = timed == "perfect"
 			hit_mult *= BattleTypes.TIMED_PERFECT_FACTOR if perfect else BattleTypes.TIMED_GUARD_FACTOR

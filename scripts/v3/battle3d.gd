@@ -160,8 +160,8 @@ func configure(args: Dictionary) -> void:
 	level = int(args.get("livello", 1))
 	pv_k = float(args.get("pv", 1.0))
 	atk_k = float(args.get("atk", 1.0))
-	# REPLICA DELLA DIRETTA (nuovo giro): i nemici sono piu' duri a ogni giro, PV e attacco x(1 + REPLICA_K * giro)
-	var replica_k: float = 1.0 + BattleTypes.REPLICA_K * float(maxi(0, int(args.get("replica", 0))))
+	# REPLICA DELLA DIRETTA (nuovo giro): i nemici sono piu' duri a ogni giro, PV e attacco x(1 + REPLICA_K * giro) fino al giro REPLICA_K_GIRI
+	var replica_k: float = BattleTypes.replica_hard(int(args.get("replica", 0)))
 	pv_k *= replica_k
 	atk_k *= replica_k
 	arena = str(args.get("arena", "strada"))
@@ -346,9 +346,10 @@ func _setup_battle() -> void:
 	# nella storia la squadra sale di livello e il nemico no: lo si fa crescere insieme (PROVVISORIO, bilanciamento dell'atto 1)
 	# obiettivo: boss in 4-6 round, frammenti in 1-2
 	if not ritorno.is_empty():
-		var grow: float = 1.0 + BattleTypes.STORY_HP_PER_LEVEL * float(level - 1)
+		# fino al livello 12 e' la retta di sempre (atto 1); oltre, per il New Game+, la curva di BattleTypes.story_*_grow
+		var grow: float = BattleTypes.story_hp_grow(level)
 		pv_k *= (BattleTypes.STORY_HP_MINOR if minore else BattleTypes.STORY_HP_BOSS) * grow
-		atk_k *= BattleTypes.STORY_ATK_K * (1.0 + BattleTypes.STORY_ATK_PER_LEVEL * float(level - 1))
+		atk_k *= BattleTypes.STORY_ATK_K * BattleTypes.story_atk_grow(level)
 	if pv_k != 1.0:
 		bu["max_hp"] = maxi(1, int(round(float(bu["max_hp"]) * pv_k)))
 		bu["hp"] = bu["max_hp"]
@@ -369,7 +370,8 @@ func _setup_battle() -> void:
 		slots.append(str(p["id"]))
 	for uid in b["units"]:
 		if str(uid) != BattleState.BOSS_ID:
-			b["units"][uid]["gauge"] = START_GAUGE
+			# le sinergie piu' forti (terzetti, tutti e quattro) fanno partire l'Ultimate un po' piu' carica
+			b["units"][uid]["gauge"] = mini(BattleTypes.GAUGE_MAX, START_GAUGE + int(b["units"][uid].get("syn_gauge", 0)))
 	if ingresso == "vantaggio":
 		# PROVVISORIO: l'attacco a sorpresa toglie due terzi dell'equilibrio (rottura vicina)
 		var boss: Dictionary = BattleState.boss(b)
@@ -1700,7 +1702,7 @@ func _end_battle() -> void:
 	var ln: Array = []
 	# ESPERIENZA (stile Persona 5): a fine scontro vinto nella storia tutti salgono; si salva subito con la vittoria
 	if win and not ritorno.is_empty() and _exp_report.is_empty():
-		var gain: int = Progress.battle_exp(level, not minore, int(b.get("exp_bonus", 0)))
+		var gain: int = Progress.battle_exp(level, not minore, int(b.get("exp_bonus", 0)), int(_args.get("replica", 0)))
 		_exp_report = Progress.grant(gain)
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", Ui.box(Color(0.07, 0.04, 0.12, 0.95), Ui.CREAM, 4, 6, 8))
@@ -1793,7 +1795,7 @@ func _exp_rows(vb: VBoxContainer) -> void:
 		tw.tween_callback(func() -> void:
 			if up.text == "":
 				up.add_theme_color_override("font_color", Ui.CREAM)
-				up.text = "mancano %d" % left)
+				up.text = "LIVELLO MASSIMO" if int(r["lv"]) >= Progress.MAX_LEVEL else "mancano %d" % left)
 		for nw in r["news"]:
 			news.append("%s · %s %s: %s" % [str(BattleContent.CHARACTERS[c]["name"]).to_upper(), "NUOVO" if str(nw["kind"]) == "trait" else "NUOVA", str(SquadMenu.KIND_NAMES.get(str(nw["kind"]), "")).to_upper(), str(nw["name"])])
 	if not news.is_empty():

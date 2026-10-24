@@ -74,7 +74,8 @@ static func new_replica() -> void:
 	for k in data().get("legami", {}):
 		if has_flag(str(k)):
 			keep[str(k)] = true
-	keep["replica"] = replica() + 1
+	# New Game+ fino a NG+10: dalla decima si rigioca la decima (la squadra puo' continuare a salire fino al livello 100)
+	keep["replica"] = mini(replica() + 1, BattleTypes.REPLICA_MAX)
 	chapter = 0
 	step = 0
 	flags = keep
