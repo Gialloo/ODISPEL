@@ -2852,7 +2852,8 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 		# sotto ogni comando UNA parola breve che dice cosa fa (Persona 5: "Use a Skill"); i nomi delle mosse stanno nel menu ABILITA'
 		{"kind": "attack", "name": "ATTACCO", "sub": "COLPISCI", "cost": "", "ok": _usable("attack"), "letter": "A",
 			"title": "ATTACCO", "desc": "Colpo al nemico · non costa energia" + tip},
-		{"kind": "skill", "name": "ABILITÀ", "sub": "MOSSE", "cost": "%d EN" % en, "ok": true, "letter": letter,
+		{"kind": "skill", "name": "ABILITÀ", "sub": "MOSSE", "cost": "",   # niente EN: non si sa ancora quale mossa (decisione dell autore, 24/10/2026)
+			 "ok": true, "letter": letter,
 			"title": "ABILITÀ", "desc": "Apre le mosse speciali: ognuna costa energia" + tip},
 		{"kind": "ult", "name": "ULTIMATE", "sub": "SCATENA", "cost": "PRONTA" if ult_ok else "%d%%" % int(u.get("gauge", 0)),
 			"ok": ult_ok, "charge": float(u.get("gauge", 0)) / float(BattleTypes.GAUGE_MAX), "letter": "U", "title": "ULTIMATE · " + str(um.get("name", "")).to_upper(), "desc": str(um.get("desc", "")) + tip},

@@ -1,6 +1,7 @@
 # Novità
 
-## In arrivo (dopo la 0.41.3)
+## 0.41.4 · Correzioni dal telefono e ABILITÀ FIRMA
+- Sotto ABILITÀ nella ruota resta solo «MOSSE»: niente EN, perché la mossa si sceglie dopo.
 - Telefono: il menu ABILITÀ si apre davvero (il tocco arrivava due volte, come tocco e come clic, e la seconda volta lo richiudeva).
 - In pausa spariscono mirino, comandi e menu ABILITÀ; tornano alla ripresa.
 - Comandi più puliti: via i puntini di vernice e l'arco bianco attorno al personaggio.
