@@ -630,12 +630,21 @@ uniform vec2 r = vec2(0.12, 0.3);
 uniform float k = 0.0;
 uniform float aura = 0.0;
 uniform vec3 tint : source_color = vec3(0.55, 0.25, 1.0);
+// secondo cerchio di luce: il nemico preso di mira resta visibile anche quando lo schermo si scurisce (ULTIMATE) e ha un alone caldo che pulsa
+uniform vec2 c2 = vec2(0.5, 0.4);
+uniform vec2 r2 = vec2(0.15, 0.3);
+uniform float k2 = 0.0;
+uniform vec3 tint2 : source_color = vec3(1.0, 0.72, 0.2);
 void fragment() {
 	float q = length((UV - c) / r);
 	float dark = k * mix(0.12, 1.0, smoothstep(0.7, 1.45, q));
 	float glow = aura * exp(-pow((q - 0.95) * 2.6, 2.0));
+	float q2 = length((UV - c2) / r2);
+	dark *= 1.0 - k2 * 0.92 * (1.0 - smoothstep(0.75, 1.3, q2));
+	float glow2 = k2 * exp(-pow((q2 - 0.92) * 2.8, 2.0));
 	vec3 col = mix(vec3(0.015, 0.0, 0.05), tint, clamp(glow * 1.4, 0.0, 1.0));
-	COLOR = vec4(col, clamp(max(dark, glow * 0.55), 0.0, 1.0));
+	col = mix(col, tint2, clamp(glow2 * 1.5, 0.0, 1.0));
+	COLOR = vec4(col, clamp(max(max(dark, glow * 0.55), glow2 * 0.6), 0.0, 1.0));
 }"""
 	var m := ShaderMaterial.new()
 	m.shader = sh

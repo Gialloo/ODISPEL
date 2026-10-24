@@ -111,6 +111,9 @@ const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI
 var _btn_auto: Button
 var _btn_fast: Button
 var _hint: Label
+var _say_lbl: Label                   # battute dei personaggi in battaglia
+var _say_balloon: EchoBalloon
+var _say_seq: int = 0
 var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
 var _party_back: Control
 var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
@@ -1051,9 +1054,21 @@ func _qte_tap() -> void:
 # Cerchio della guardia a tempo: un anello fisso (il bersaglio) e uno che si stringe fino a toccarlo.
 class EchoBalloon extends Control:
 	# Fumetto di Echo dietro i consigli: lastra scura inclinata con bordo ciano e il suo ritratto, segue il testo
+	# Generalizzato: lo stesso fumetto serve a chiunque parli in battaglia (speaker(): ritratto, nome e colore del personaggio)
 	var lbl: Label
 	var face: Texture2D
+	var who: String = "ECHO"
+	var col: Color = Color("#3fe0ff")
+	var fit: bool = false          # true: il fumetto si stringe al testo invece di seguire tutta la larghezza dell'etichetta
 	var _r: Rect2 = Rect2()
+
+	func speaker(id: String, nm: String, c: Color) -> void:
+		who = nm
+		col = c
+		var fp: String = "res://assets/portraits/%s_neutro.png" % id
+		face = load(fp) if ResourceLoader.exists(fp) else null
+		_r = Rect2()
+		queue_redraw()
 
 	func _init(p_lbl: Label) -> void:
 		lbl = p_lbl
@@ -1069,6 +1084,9 @@ class EchoBalloon extends Control:
 			return
 		modulate.a = lbl.modulate.a
 		var r := Rect2(lbl.position, lbl.size)
+		if fit:
+			var f: Font = lbl.get_theme_font("font")
+			r.size.x = minf(r.size.x, f.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, lbl.get_theme_font_size("font_size")).x + 4.0)
 		if r != _r:
 			_r = r
 			queue_redraw()
@@ -1076,7 +1094,7 @@ class EchoBalloon extends Control:
 	func _draw() -> void:
 		var r: Rect2 = _r.grow_individual(18, 10, 22, 12)
 		var sk: float = 14.0
-		var cy := Color("#3fe0ff")
+		var cy: Color = col
 		var pts := PackedVector2Array([r.position + Vector2(sk, 0), Vector2(r.end.x + sk, r.position.y - 4),
 			Vector2(r.end.x - sk * 0.4, r.end.y), Vector2(r.position.x + 30, r.end.y + 2),
 			Vector2(r.position.x + 6, r.end.y + 18), Vector2(r.position.x + 10, r.end.y), Vector2(r.position.x - sk * 0.4, r.end.y)])
@@ -1095,7 +1113,7 @@ class EchoBalloon extends Control:
 		if face != null:
 			var fs: float = 44.0
 			draw_texture_rect(face, Rect2(c - Vector2(fs, fs) * 0.5, Vector2(fs, fs)), false)
-		draw_string(Ui.display(), Vector2(r.position.x + sk + 6, r.position.y - 6), "ECHO", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, cy)
+		draw_string(Ui.display(), Vector2(r.position.x + sk + 6, r.position.y - 6), who, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, cy)
 
 
 class QteRing extends Control:
@@ -1472,6 +1490,31 @@ func _fx_turn(uid: String) -> void:
 		_cam_hud.watch(str(u.get("name", "")), col, 2 + maxi(0, slots.find(cur_pid)))
 
 
+# Battuta di un personaggio in battaglia: stesso fumetto di Echo (lastra storta, bordo e ritratto del personaggio).
+# Il testo non si modifica: arriva dai dialoghi. sec <= 0: resta finche' non si chiama _say_off().
+func _say(u: Dictionary, text: String, sec: float = 0.0) -> void:
+	if _say_lbl == null or _say_balloon == null:
+		return
+	var col: Color = _col(u)
+	_say_balloon.speaker(str(u.get("char", "")), str(u.get("name", "")).to_upper(), col)
+	_say_lbl.text = text
+	_say_lbl.add_theme_color_override("font_color", Ui.CREAM)
+	_say_lbl.modulate.a = 1.0
+	_say_lbl.visible = true
+	_say_seq += 1
+	if sec > 0.0:
+		var mine: int = _say_seq
+		get_tree().create_timer(sec).timeout.connect(func() -> void:
+			if mine == _say_seq:
+				_say_off())
+
+
+func _say_off() -> void:
+	if _say_lbl != null:
+		_say_lbl.text = ""
+		_say_lbl.visible = false
+
+
 # Sequenza dell'ultimate: primo piano, fascia colorata, nome e battuta. Si salta con l'impostazione.
 func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	Breadcrumb.mark("ultimate")
@@ -1489,7 +1532,8 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	var line_l: Label = _cutin.get_node("Line")
 	band.color = Color(col.r, col.g, col.b, 0.85)
 	name_l.text = str(u["name"]).to_upper() + " · " + ult_name.to_upper()
-	line_l.text = "«" + DialogData.ult_line(str(u["char"])) + "»"
+	line_l.text = ""
+	_say(u, "«" + DialogData.ult_line(str(u["char"])) + "»")      # la battuta sta nel fumetto del personaggio
 	_cutin.modulate.a = 0.0
 	band.position.x = -_root.size.x
 	var ch: String = str(u["char"])
@@ -1504,6 +1548,7 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	tw.tween_property(_cutin, "modulate:a", 0.0, 0.18)
 	tw.tween_callback(_cutin_finish)
 	await _cutin_end
+	_say_off()
 	_cutin.visible = false
 	Breadcrumb.mark("battaglia")
 
@@ -1517,6 +1562,7 @@ func _cutin_finish() -> void:
 		_cutin_tw.kill()
 	_cutin_tw = null
 	_cutin.modulate.a = 0.0
+	_say_off()
 	_cutin_end.emit()
 
 
@@ -1869,7 +1915,7 @@ func _build_ui() -> void:
 
 	# comandi (basso a destra)
 	_cmd_box = VBoxContainer.new()
-	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -580, -16, -290)
+	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -650, -16, -350)      # REAZIONE sopra la squadra, senza toccare la card in alto
 	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
 	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
 	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -2005,6 +2051,18 @@ func _build_ui() -> void:
 	ll.name = "Line"
 	Ui.place(ll, 0.05, 0.66, 0.95, 0.66, 0, 70, 0, 110)
 	_cutin.add_child(ll)
+	# fumetto della battuta (sopra la fascia, a sinistra): il ritratto sporge a sinistra del testo
+	_say_lbl = Ui.label("", 26, Ui.CREAM, null, 7)
+	_say_lbl.name = "Say"
+	Ui.place(_say_lbl, 0.0, 0.66, 0.0, 0.66, 190, -118, 1010, -118)
+	_say_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_say_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_say_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_say_lbl.visible = false
+	_say_balloon = EchoBalloon.new(_say_lbl)
+	_say_balloon.fit = true
+	_cutin.add_child(_say_balloon)
+	_cutin.add_child(_say_lbl)
 
 
 # Disegna una volta, quasi trasparenti, cifre e lettere in tutte le grandezze dei numeri dei colpi: il telefono prepara
@@ -2103,6 +2161,8 @@ func _draw_party_back() -> void:
 		var al: float = float(c.get("alpha", 1.0))
 		var x: float = r.position.x
 		var y: float = r.position.y
+		# contenitore scuro dietro la card (nero a opacita' leggera): la squadra spicca sul combattimento, stessa maglia
+		m.draw_colored_polygon(PackedVector2Array([Vector2(x - 16, y - 4), Vector2(x + r.size.x + 10, y - 10), Vector2(x + r.size.x + 4, y + r.size.y + 8), Vector2(x - 20, y + r.size.y + 6)]), Color(0.0, 0.0, 0.02, 0.46 * al))
 		var fr := PackedVector2Array([Vector2(x - 4, y + 4), Vector2(x + 72, y - 2), Vector2(x + 66, y + r.size.y + 2), Vector2(x - 8, y + r.size.y - 2)])
 		if on:
 			var slab := PackedVector2Array([Vector2(x - 10, y + 6), Vector2(x + r.size.x + 6, y - 4), Vector2(x + r.size.x - 8, y + r.size.y + 4), Vector2(x - 14, y + r.size.y - 2)])
@@ -2133,25 +2193,67 @@ const CRACKS_2: Array = [[Vector2(0.2, 1.0), Vector2(0.28, 0.82), Vector2(0.22, 
 	[Vector2(0.5, 0.0), Vector2(0.46, 0.14)]]
 
 
+const CRACKS_KO: Array = [[Vector2(0.0, 0.3), Vector2(0.14, 0.4), Vector2(0.1, 0.55)], [Vector2(0.62, 1.0), Vector2(0.58, 0.8), Vector2(0.7, 0.66)]]
+
+
 func _draw_cracks(c: Control) -> void:
+	# VETRO ROTTO sulla card: crepe nette con bordo luminoso del colore del personaggio, schegge chiare, leggero spostamento RGB;
+	# a KO anche righe di scansione e velo scuro. Tutto in questa card, niente a schermo intero.
 	var tr: int = int(c.get_meta("tier", 0))
 	if tr <= 0:
 		return
+	var ko: bool = bool(c.get_meta("ko", false))
+	var cc: Color = c.get_meta("col", Color.WHITE)
 	var sz: Vector2 = c.size
 	var lines: Array = CRACKS_1 if tr == 1 else CRACKS_1 + CRACKS_2
+	if ko:
+		lines = lines + CRACKS_KO
+		c.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.0, 0.0, 0.03, 0.3))
+		var yy: float = 2.0
+		while yy < sz.y:
+			c.draw_line(Vector2(0, yy), Vector2(sz.x, yy), Color(1, 1, 1, 0.06), 1.0)
+			yy += 5.0
+	var sh: float = 2.5 if tr >= 2 else 1.2
 	for ln in lines:
 		var pts := PackedVector2Array()
+		var pr := PackedVector2Array()
+		var pb := PackedVector2Array()
 		for q in ln:
-			pts.append((q as Vector2) * sz)
-		c.draw_polyline(pts, Color(1, 1, 1, 0.5), 2.0)
+			var v: Vector2 = (q as Vector2) * sz
+			pts.append(v)
+			pr.append(v + Vector2(-sh, 0))
+			pb.append(v + Vector2(sh, 0))
+		if tr >= 2:
+			c.draw_polyline(pts, Color(cc.r, cc.g, cc.b, 0.28), 7.0)       # alone
+			c.draw_polyline(pr, Color(1.0, 0.2, 0.35, 0.55), 2.0)         # RGB: rosso a sinistra, ciano a destra
+			c.draw_polyline(pb, Color(0.2, 0.9, 1.0, 0.55), 2.0)
+		else:
+			c.draw_polyline(pts, Color(cc.r, cc.g, cc.b, 0.22), 5.0)
+		c.draw_polyline(pts, Color(1, 1, 1, 0.92 if tr >= 2 else 0.6), 2.0 if tr >= 2 else 1.5)
+	if tr >= 2:
+		# schegge: piccoli triangoli chiari sui nodi delle crepe, un po' staccati dal vetro
+		for ln in lines:
+			var q0: Vector2 = (ln[1] as Vector2) * sz
+			c.draw_colored_polygon(PackedVector2Array([q0 + Vector2(3, -4), q0 + Vector2(15, 2), q0 + Vector2(5, 9)]), Color(1, 1, 1, 0.3))
+			c.draw_polyline(PackedVector2Array([q0 + Vector2(3, -4), q0 + Vector2(15, 2), q0 + Vector2(5, 9), q0 + Vector2(3, -4)]), Color(cc.r, cc.g, cc.b, 0.8), 1.2)
 
 
 # Barra PV della card: verde sopra il 50%, gialla sotto, rossa sotto il 25%; le crepe seguono lo stesso livello
-func _card_tier(c: Dictionary, ratio: float) -> void:
+func _card_tier(c: Dictionary, ratio: float, ko: bool = false, col: Color = Color.WHITE) -> void:
 	var tr: int = BrokenCam.tier(ratio)
-	if tr == int(c["tier"]):
+	var kk: bool = ko and tr > 0
+	var key: String = "%d|%s|%s" % [tr, kk, col.to_html()]
+	if key == str(c.get("tier_key", "")):
 		return
+	c["tier_key"] = key
+	var rose: bool = tr > int(c["tier"])
 	c["tier"] = tr
+	(c["cracks"] as Control).set_meta("ko", kk)
+	(c["cracks"] as Control).set_meta("col", col)
+	if rose and tr > 0:
+		var cr: Control = c["cracks"]
+		cr.modulate = Color(2.2, 2.2, 2.2, 1.0)       # lampo del vetro che si rompe
+		create_tween().tween_property(cr, "modulate", Color.WHITE, 0.35)
 	var fill: StyleBoxFlat = (c["hp"] as ProgressBar).get_theme_stylebox("fill") as StyleBoxFlat
 	fill.bg_color = [Color("#62f08c"), Color("#ffd23f"), Color("#ff4a5a")][tr]
 	(c["cracks"] as Control).set_meta("tier", tr)
@@ -2513,7 +2615,7 @@ func _refresh_hud() -> void:
 		(c["name"] as Label).add_theme_color_override("font_color", Color.WHITE if active else col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
-		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])))
+		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])), not alive, col)
 		(c["hp_t"] as Label).text = "%d" % int(u["hp"])
 		var face: TextureRect = c["face"]
 		if face.texture == null:
