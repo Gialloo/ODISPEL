@@ -1,5 +1,11 @@
 # Novità
 
+## In arrivo (dopo la 0.41.2)
+- FPS: si sceglie il limite nelle impostazioni (30, 60, 120, 240); su PC parte da 120, sul telefono da 60.
+- Battaglia, HUD più pulito ispirato a Metaphor e Persona 5: CONFERMA e la descrizione della mossa in basso a sinistra (su PC il clic finiva sulle reazioni), reazioni in alto a destra, barra rapida più piccola, squadra più compatta.
+- Comandi più chiari: ABILITÀ come parola grande col nome della mossa sotto, stella per l'Ultimate con l'arco di carica.
+- Avvisi in un posto solo con icone (catena per legami e impulsi) e meno testo; chi è di turno resta in luce.
+
 ## 0.41.2 · Ultimate fluida
 - **L'Ultimate si muove fluida come il resto del gioco**: particelle, fiamme, sfondo, posa e camera a ogni fotogramma (prima 12 al secondo, si vedevano a scatti). La camera fa una lenta spinta in avanti. Per non pesare sul telefono il personaggio stilizzato si ridisegna solo durante la posa e le fiamme si calcolano solo vicino alla sagoma.
 

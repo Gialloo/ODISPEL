@@ -26,7 +26,7 @@ func _ready() -> void:
 	Breadcrumb.read_previous()
 	Breadcrumb.mark("avvio")
 	Settings.ensure_loaded()
-	Engine.max_fps = GameConfig.MAX_FPS
+	Settings.apply_fps()
 	_fit_3d_resolution()
 	get_viewport().size_changed.connect(_fit_3d_resolution)
 	get_tree().set_auto_accept_quit(false)

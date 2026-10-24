@@ -9,4 +9,4 @@ const SUBTITLE: String = "OFFICIAL DEMO · ATTO 1"
 const CITY: String = "[CITTÀ]"          # PROVVISORIO: nome non ancora deciso
 
 # Sul telefono e sul PC il test resta a 60 fotogrammi: meno calore e batteria, ed e' quello che misuriamo.
-const MAX_FPS: int = 60
+const MAX_FPS: int = 60  # solo per le prove; nel gioco il limite lo sceglie il giocatore (Settings.fps_cap)

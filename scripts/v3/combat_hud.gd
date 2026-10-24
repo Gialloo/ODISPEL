@@ -21,6 +21,7 @@ static func tele_line(move_name: String, who: String, on_all: bool, strong: bool
 
 
 # Link e combo di un'azione: ne mostra UNO solo, il piu' forte. Ritorna {} se non c'e' niente, altrimenti {"text", "col": Color}.
+# "short" e' la versione corta per l'avviso con l'icona della catena (meno testo sullo schermo).
 # Gli eventi sono quelli gia' emessi dal motore: "synergy" (id, name, tier, col) e "link" (n anelli, kind cross|unison).
 static func link_banner(events: Array) -> Dictionary:
 	var best: Dictionary = {}
@@ -38,7 +39,8 @@ static func link_banner(events: Array) -> Dictionary:
 				if int(rule.get("gauge", 0)) > 0:
 					txt += " · +ULTIMATE"
 				best_score = score
-				best = {"text": txt, "col": Color(str(e.get("col", "#ffd25f")))}
+				best = {"text": txt, "col": Color(str(e.get("col", "#ffd25f"))),
+					"short": str(e.get("name", "")).to_upper() + (" · +ULT" if int(rule.get("gauge", 0)) > 0 else "")}
 		elif t == "link":
 			var unison: bool = str(e.get("kind", "")) == "unison"
 			var score2: int = int(e.get("n", 1)) + (1 if unison else 0)
@@ -48,5 +50,20 @@ static func link_banner(events: Array) -> Dictionary:
 				if not unison:
 					txt2 += " · +ULTIMATE"
 				best_score = score2
-				best = {"text": txt2, "col": Color("#ffd25f") if unison else Color("#7cf0ff")}
+				best = {"text": txt2, "col": Color("#ffd25f") if unison else Color("#7cf0ff"),
+					"short": "+%d%%" % pct + ("" if unison else " · +ULT")}
 	return best
+
+
+# Avviso corto: titolo (prima di " · " o ":") e, se breve, il resto in piccolo. Il resto lungo si lascia: c'e' gia' nelle descrizioni.
+static func notice_parts(text: String, max_sub: int = 34) -> Array:
+	var cut: int = -1
+	for sep in [" · ", ": "]:
+		var i: int = text.find(sep)
+		if i > 0 and (cut < 0 or i < cut):
+			cut = i
+	if cut < 0:
+		return [text, ""]
+	var head: String = text.substr(0, cut)
+	var rest: String = text.substr(cut + (3 if text.substr(cut, 3) == " · " else 2)).strip_edges()
+	return [head, rest if rest.length() <= max_sub else ""]

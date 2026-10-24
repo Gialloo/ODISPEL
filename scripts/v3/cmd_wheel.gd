@@ -253,6 +253,22 @@ static func skew_text(c: CanvasItem, p: Vector2, s: String, sz: int, fill: Color
 	c.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
+# Va a capo a parole entro la larghezza data (testi delle didascalie disegnati a mano)
+static func wrap(f: Font, text: String, sz: int, width: float) -> Array:
+	var out: Array = []
+	var cur: String = ""
+	for word in text.split(" ", false):
+		var tryl: String = word if cur == "" else cur + " " + word
+		if cur != "" and f.get_string_size(tryl, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x > width:
+			out.append(cur)
+			cur = word
+		else:
+			cur = tryl
+	if cur != "":
+		out.append(cur)
+	return out
+
+
 static func slant(r: Rect2, sl: float) -> PackedVector2Array:
 	return PackedVector2Array([Vector2(r.position.x + sl, r.position.y), Vector2(r.end.x, r.position.y), Vector2(r.end.x - sl, r.end.y), Vector2(r.position.x, r.end.y)])
 
@@ -308,10 +324,11 @@ static func glyph(c: CanvasItem, kind: String, p: Vector2, r: float, fill: Color
 			c.draw_colored_polygon(PackedVector2Array([p + Vector2(r * 0.15, -r * 0.8), p + Vector2(-r * 0.5, r * 0.1), p + Vector2(-r * 0.02, r * 0.1),
 				p + Vector2(-r * 0.2, r * 0.8), p + Vector2(r * 0.5, -r * 0.12), p + Vector2(r * 0.02, -r * 0.12)]), fill)
 		"ult":
+			# stella piena a cinque punte (prima un'esplosione a 8 raggi, si confondeva con l'attacco): il "colpo speciale" dei giochi
 			var pts := PackedVector2Array()
-			for k in 16:
-				var a: float = -PI / 2.0 + TAU * float(k) / 16.0
-				pts.append(p + Vector2(cos(a), sin(a)) * (r * 0.82 if k % 2 == 0 else r * 0.36))
+			for k in 10:
+				var a: float = -PI / 2.0 + TAU * float(k) / 10.0
+				pts.append(p + Vector2(cos(a), sin(a)) * (r * 0.95 if k % 2 == 0 else r * 0.42))
 			c.draw_colored_polygon(pts, fill)
 		"guard":
 			c.draw_colored_polygon(PackedVector2Array([p + Vector2(-r * 0.6, -r * 0.62), p + Vector2(r * 0.6, -r * 0.62), p + Vector2(r * 0.56, r * 0.05),
@@ -560,6 +577,9 @@ class _Layer extends Control:
 			draw_circle(p + Vector2(3, 4), rad, Color(0, 0, 0, 0.55 * fa))
 			draw_circle(p, rad, Color(CmdWheel.CREAM, fa) if on else Color(0.04, 0.03, 0.08, fa))
 			draw_arc(p, rad, 0.0, TAU, 40, Color(ring, (0.5 if dimmed else 1.0) * fa), 4.0, true)
+			# ULTIMATE non pronta: la carica si vede come un arco attorno al tasto
+			if ult and not ok and it.has("charge"):
+				draw_arc(p, rad + 6.0, -PI / 2.0, -PI / 2.0 + TAU * clampf(float(it["charge"]), 0.0, 1.0), 40, Color(w.col.lightened(0.4), fa), 5.0, true)
 			CmdWheel.glyph(self, kind, p, rad * 0.62, Color(CmdWheel.INK, fa) if on else Color(ring, (0.5 if dimmed else 1.0) * fa))
 			var kp: Vector2 = p + Vector2(-rad * 0.75, -rad * 0.75)
 			draw_circle(kp, 10.0, Color(w.col, fa))
@@ -586,31 +606,37 @@ class _Layer extends Control:
 			w.hits[kind] = hit
 		if w.picked == "":
 			return
-		# riquadro della scelta in alto a destra: nome della mossa e cosa fa
+		# La scelta si legge in basso a sinistra, come una didascalia (Metaphor: angolo libero, lontano dalla squadra e dalle REAZIONI
+		# in alto a destra): nome e cosa fa sulla lastra, CONFERMA e ANNULLA subito accanto. Prima stava in alto a destra e CONFERMA
+		# finiva sotto i tasti delle REAZIONI, che si prendevano il clic su PC.
 		var it2: Dictionary = w.item(w.picked)
 		var title: String = str(it2.get("title", ""))
-		var desc: String = str(it2.get("desc", ""))
-		var right: float = w.size.x - origin.x - 24.0
-		var ttw: float = fd.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
-		var bx: float = right - ttw - 70.0 + (1.0 - e) * 120.0
-		var by2: float = 196.0 - origin.y
-		draw_colored_polygon(CmdWheel.slant(Rect2(bx - 20.0, by2 - 32.0, ttw + 90.0, 42.0), 14.0), Color(0.03, 0.02, 0.06, 0.92 * e))
-		draw_colored_polygon(CmdWheel.slant(Rect2(bx - 26.0, by2 + 10.0, ttw + 96.0, 4.0), 3.0), Color(w.col.lightened(0.2), e))
-		CmdWheel.glyph(self, w.picked, Vector2(bx + 6.0, by2 - 11.0), 13.0, Color(w.col.lightened(0.4), e))
-		CmdWheel.skew_text(self, Vector2(bx + 34.0, by2), title, 28, Color(CmdWheel.CREAM, e), Color(0, 0, 0, 0), fd, 0)
-		var ly: float = by2 + 36.0
-		for line2 in desc.split("\n"):
-			var lw: float = fb.get_string_size(line2, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
-			CmdWheel.skew_text(self, Vector2(right - lw - 10.0 + (1.0 - e) * 120.0, ly), line2, 18, Color(CmdWheel.CREAM, e), Color(0.03, 0.02, 0.06, 0.95 * e), fb, 7, -0.12)
-			ly += 24.0
-		# CONFERMA e ANNULLA: a destra sotto il riquadro, sulla stessa riga, sopra la squadra
-		var cp: Vector2 = Vector2(w.size.x - origin.x - 230.0, 290.0 - origin.y)
-		var crr := Rect2(cp + Vector2((1.0 - e) * 90.0, 0.0), Vector2(200.0, 52.0))
+		var vw: float = w.size.x if w.size.x > 1.0 else 1280.0
+		var vh: float = w.size.y if w.size.y > 1.0 else 720.0
+		var cw: float = 214.0
+		var aw: float = 128.0
+		var pw: float = clampf(vw - 400.0 - 24.0 - cw - aw - 30.0, 300.0, 560.0)
+		var lines: Array = []
+		for para in str(it2.get("desc", "")).split("\n"):
+			lines.append_array(CmdWheel.wrap(fb, para, 17, pw - 40.0))
+		lines = lines.slice(0, 3)
+		var ph: float = 48.0 + 22.0 * float(lines.size())
+		var slide: float = (1.0 - e) * -90.0
+		var pr := Rect2(Vector2(24.0 + slide, vh - 22.0 - ph) - origin, Vector2(pw, ph))
+		draw_colored_polygon(CmdWheel.slant(pr.grow(3.0), 14.0), Color(w.col.lightened(0.2), 0.9 * e))
+		draw_colored_polygon(CmdWheel.slant(pr, 12.0), Color(0.03, 0.02, 0.06, 0.94 * e))
+		CmdWheel.glyph(self, w.picked, pr.position + Vector2(30.0, 25.0), 13.0, Color(w.col.lightened(0.45), e))
+		CmdWheel.skew_text(self, pr.position + Vector2(52.0, 35.0), title, 26, Color(CmdWheel.CREAM, e), Color(0, 0, 0, 0), fd, 0)
+		var ly: float = pr.position.y + 60.0
+		for line2 in lines:
+			draw_string(fb, Vector2(pr.position.x + 26.0, ly), str(line2), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(CmdWheel.CREAM, 0.92 * e))
+			ly += 22.0
+		var crr := Rect2(Vector2(pr.end.x + 14.0, pr.position.y + (ph - 58.0) * 0.5), Vector2(cw, 58.0))
 		draw_colored_polygon(CmdWheel.slant(crr.grow(4.0), 12.0), Color(0.03, 0.02, 0.06, 0.9 * e))
 		draw_colored_polygon(CmdWheel.slant(crr, 10.0), Color(CmdWheel.HOT, e))
 		var cwid: float = fd.get_string_size("CONFERMA", HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
-		CmdWheel.skew_text(self, crr.position + Vector2((crr.size.x - cwid) * 0.5, 38.0), "CONFERMA", 28, Color(CmdWheel.INK, e), Color(0, 0, 0, 0), fd, 0)
-		var arr := Rect2(crr.position + Vector2(-176.0, 8.0), Vector2(160.0, 36.0))
+		CmdWheel.skew_text(self, crr.position + Vector2((crr.size.x - cwid) * 0.5, 40.0), "CONFERMA", 28, Color(CmdWheel.INK, e), Color(0, 0, 0, 0), fd, 0)
+		var arr := Rect2(crr.position + Vector2(cw + 10.0, 11.0), Vector2(aw, 36.0))
 		draw_colored_polygon(CmdWheel.slant(arr, 8.0), Color(0.03, 0.02, 0.06, 0.85 * e))
 		var awid: float = fb.get_string_size("ANNULLA", HORIZONTAL_ALIGNMENT_LEFT, -1, 19).x
 		draw_string(fb, arr.position + Vector2((arr.size.x - awid) * 0.5, 25.0), "ANNULLA", HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color(CmdWheel.CREAM, e))

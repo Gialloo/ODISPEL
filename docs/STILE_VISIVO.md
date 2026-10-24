@@ -30,6 +30,16 @@
 > - Restano utili di sotto: la pipeline gratuita (TRELLIS.2 + Mixamo), i vincoli del motore, il modo di lavorare con l'autore.
 >   Le regole «Silhouette», «Vocabolario degli oggetti», «Armi» e i design dei quattro qui sotto sono **superati**.
 
+
+## HUD DELLA BATTAGLIA: «SCENA LIBERA» (decisione dell'autore, 24 ottobre 2026)
+
+Riferimenti: Metaphor ReFantazio e Persona 5 (in `/mnt/project-files/odispel/v3/hud_riferimenti/`). Il centro dello schermo è della scena.
+- I comandi stanno attorno al personaggio di turno; la parola grande dice il TIPO (ATTACCO, ABILITÀ, ULTIMATE, GUARDIA), il nome della mossa va sotto in piccolo.
+- La descrizione della mossa scelta, CONFERMA e ANNULLA stanno in basso a sinistra; il fumetto di Echo usa lo stesso angolo.
+- Reazioni in alto a destra sotto la barra rapida (x1, AUTO, COLORI, pausa: lastre scure e piccole). Squadra compatta in basso a destra.
+- Avvisi in un posto solo (a sinistra sotto i turni), al massimo due, con un'icona (catena per legami e impulsi) e poche parole.
+- Chi è di turno resta in luce: la scena si scurisce appena attorno a lui mentre sceglie.
+
 ## (Superato) La versione del pomeriggio del 18 ottobre
 
 Fonte: «ODISPEL — Handoff stile visivo dei personaggi», Gianluca, 18 ottobre 2026 (PDF di 8 pagine).

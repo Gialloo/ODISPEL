@@ -20,6 +20,7 @@ const LEZIONI: Array = [["tut_intro", "tut_attacco"], ["tut_guardia", "tut_abili
 	["tut_reazioni", "tut_rottura"], ["tut_ultimate", "tut_extra"]]
 const LEZIONI_MAX: int = 2
 const TOAST_MAX: int = 2              # avvisi sulla lastra scura visibili insieme
+const NOTICE_Y: float = 250.0         # gli avvisi stanno a sinistra sotto i TURNI: il centro alto e' dei numeri sopra il nemico
 const QTE_LEAD: float = 0.9          # dall'apparire del cerchio all'impatto
 const QTE_GOOD: float = 0.3          # quanto prima dell'impatto vale gia' come guardia
 const QTE_LATE: float = 0.12         # tolleranza dopo l'impatto
@@ -596,13 +597,17 @@ func _update_wheel() -> void:
 			var m: ShaderMaterial = _spot.material
 			m.set_shader_parameter("c", Vector2(ph.x, lerpf(ph.y, pf.y, 0.5)) / vs)
 			m.set_shader_parameter("r", Vector2(hgt * 0.42, hgt * 0.62) / vs)
-	_spot.visible = e > 0.01
+	# di chi e' il turno si vede subito: mentre la ruota e' aperta la scena e' appena piu' scura attorno a lui e lui ha un alone
+	# del suo colore (anche prima di scegliere); scegliendo, lo scuro cresce come prima
+	var base: float = clampf(_wheel.appear * 1.5, 0.0, 1.0) if _wheel.visible and waiting else 0.0
+	_spot.visible = e > 0.01 or base > 0.01
 	if _spot.visible:
 		var ult: bool = _picked == "ult"
 		var m2: ShaderMaterial = _spot.material
 		_spot_boss(m2, e, ult)
-		m2.set_shader_parameter("k", (0.86 if ult else 0.55) * e)
-		m2.set_shader_parameter("aura", (0.9 if ult else 0.35) * e * (0.85 + 0.15 * sin(Time.get_ticks_msec() * 0.008)))
+		var pulse: float = 0.85 + 0.15 * sin(Time.get_ticks_msec() * 0.008)
+		m2.set_shader_parameter("k", maxf((0.86 if ult else 0.55) * e, 0.32 * base))
+		m2.set_shader_parameter("aura", maxf((0.9 if ult else 0.35) * e, 0.3 * base) * pulse)
 		m2.set_shader_parameter("tint", _col(_unit_of(cur_pid)))
 
 
@@ -1499,7 +1504,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 	# legami e combo muti prima: UN solo banner per azione, il piu' forte, sotto quello della mossa
 	var lb: Dictionary = CombatHud.link_banner(ev)
 	if not lb.is_empty():
-		_banner(str(lb["text"]), lb["col"], 0.25, 24)
+		_notice(str(lb.get("short", lb["text"])), lb["col"], 1.6, "chain")      # catena + poche parole
 	_refresh_hud()
 	await _wait(0.22 + delay)
 
@@ -1600,7 +1605,7 @@ static func _snap_size(size: int) -> int:
 func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0) -> void:
 	if not vis.has(uid):
 		return
-	size = _snap_size(size)
+	size = _snap_size(maxi(18, int(round(float(size) * 0.85))) if size < 60 else size)      # numeri piu' piccoli: la scena resta libera
 	var v: Node3D = vis[uid]
 	var p3: Vector3 = v.call("head_point") if v.has_method("head_point") else v.global_position
 	var l := Ui.label(text, size, col, Ui.display(), 10)
@@ -2107,7 +2112,7 @@ func _build_ui() -> void:
 	_weak_v = Ui.plate_label("???", 17, Ui.INK, Color("#9a94a8"), Ui.INK)
 	_weak_row.add_child(_weak_v)
 	# la minaccia su una lastra scura col bordo rosso: si legge su cielo chiaro e su insegne (prima testo bianco nudo da 20)
-	_tele = Ui.label("", 20, Ui.CREAM, Ui.display(), 0)
+	_tele = Ui.label("", 17, Ui.CREAM, Ui.display(), 0)
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tele.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	bp.add_child(_tele)
@@ -2119,11 +2124,11 @@ func _build_ui() -> void:
 	_root.add_child(_party_back)
 	# squadra (basso a destra, righe compatte come nella V2): il centro e il lato sinistro restano alla scena e alla ruota
 	var party := VBoxContainer.new()
-	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -370, -300, -30, -18)
+	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -340, -300, -24, -16)
 	party.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	party.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	party.alignment = BoxContainer.ALIGNMENT_END
-	party.add_theme_constant_override("separation", 10)
+	party.add_theme_constant_override("separation", 6)
 	party.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(party)
 	for i in slots.size():
@@ -2135,35 +2140,41 @@ func _build_ui() -> void:
 
 	# comandi (basso a destra)
 	_cmd_box = VBoxContainer.new()
-	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -650, -16, -350)      # REAZIONE sopra la squadra, senza toccare la card in alto
-	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
+	# REAZIONE in alto a destra, sotto la barra rapida: lontana dalla squadra e da CONFERMA (in basso a sinistra), cosi' un clic
+	# sbagliato non fa partire una reazione. La colonna non prende clic: solo i suoi tasti.
+	Ui.place(_cmd_box, 1.0, 0.0, 1.0, 0.0, -400, 70, -16, 70)
+	_cmd_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cmd_box.alignment = BoxContainer.ALIGNMENT_BEGIN
 	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
 	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_cmd_box.grow_vertical = Control.GROW_DIRECTION_BEGIN       # con REAZIONE e Ultimate in diretta la colonna cresce verso l'alto
+	_cmd_box.grow_vertical = Control.GROW_DIRECTION_END         # con REAZIONE e Ultimate in diretta la colonna cresce verso il basso
 	_cmd_box.add_theme_constant_override("separation", 8)
 	_root.add_child(_cmd_box)
 	# REAZIONE (contestuale): sta in cima alla colonna, che cresce verso l'alto; nascosta quando non c'e' una finestra
 	_react_box = VBoxContainer.new()
 	_react_box.add_theme_constant_override("separation", 4)
 	_react_box.visible = false
+	_react_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cmd_box.add_child(_react_box)
-	_react_lbl = Ui.label("", 18, Ui.CREAM, null, 5)
+	_react_lbl = Ui.label("", 16, Ui.CREAM, null, 5)
 	_react_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_react_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART      # resta nella colonna, non sconfina sulla barra del nemico
 	_react_box.add_child(_react_lbl)
 	var rrow := HBoxContainer.new()
 	rrow.add_theme_constant_override("separation", 6)
+	rrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_react_box.add_child(rrow)
 	var rcols: Dictionary = {"schivata": Ui.CYAN, "intercettazione": Color("#62f08c"), "interruzione": Ui.PINK, "soccorso": Ui.YELLOW}
 	for rid in ["schivata", "intercettazione", "interruzione", "soccorso"]:
-		var rb: Button = Ui.button(str(REACT_SHORT[rid]), rcols[rid], 17)
+		var rb: Button = Ui.button(str(REACT_SHORT[rid]), rcols[rid], 15)
 		rb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		rb.clip_text = true
 		rb.pressed.connect(_react_cmd.bind(rid))
 		rb.visible = false
 		rrow.add_child(rb)
 		_react_btns[rid] = rb
 	var lrow2 := HBoxContainer.new()
 	lrow2.add_theme_constant_override("separation", 6)
+	lrow2.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_react_box.add_child(lrow2)
 	for k in 3:
 		var lb: Button = Ui.button("", Ui.PINK, 17)
@@ -2181,6 +2192,7 @@ func _build_ui() -> void:
 	_cmd_box.add_child(_btn_skill)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cmd_box.add_child(row)
 	_btn_guard = Ui.button("GUARDIA", Ui.CREAM, 20)
 	_btn_guard.pressed.connect(_command.bind("guard"))
@@ -2209,7 +2221,10 @@ func _build_ui() -> void:
 	_root.add_child(_kit_lbl)
 	_hint = Ui.label("", 18, Ui.CREAM, null, 5)
 	# a sinistra sotto i TURNI, dentro il fumetto di Echo (come l'alleata che parla in Persona): il centro resta alla scena
-	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 96, 330, 456, 330)      # piu' in basso: l'ordine dei turni a lastre e' piu' alto
+	# in basso a sinistra, nello stesso angolo della didascalia della scelta (che lo sostituisce quando scegli): la ruota attorno al
+	# personaggio resta libera (prima il fumetto le stava sopra quando il personaggio era a sinistra)
+	Ui.place(_hint, 0.0, 1.0, 0.0, 1.0, 96, -40, 520, -40)
+	_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(EchoBalloon.new(_hint))
@@ -2218,31 +2233,30 @@ func _build_ui() -> void:
 	# in alto a destra: pausa, AUTO, velocita'
 	var tr := HBoxContainer.new()
 	_top_bar = tr
-	Ui.place(tr, 1.0, 0, 1.0, 0, -400, 14, -16, 80)
+	Ui.place(tr, 1.0, 0, 1.0, 0, -480, 12, -16, 56)      # una sola riga di lastre scure e piccole (Metaphor: i tasti rapidi non rubano la scena)
 	tr.alignment = BoxContainer.ALIGNMENT_END
 	tr.add_theme_constant_override("separation", 8)
 	_root.add_child(tr)
-	_btn_fast = Ui.button("x1", Ui.CREAM, 20, 70)
+	_btn_fast = _quick_btn("x1", 58)
 	_btn_fast.pressed.connect(_toggle_fast)
 	tr.add_child(_btn_fast)
-	_btn_auto = Ui.button("AUTO", Ui.CREAM, 20, 100)
+	_btn_auto = _quick_btn("AUTO", 92)
 	_btn_auto.pressed.connect(_toggle_auto)
 	tr.add_child(_btn_auto)
-	var pb := Ui.button("II", Ui.CREAM, 24, 70)
+	var pb := _quick_btn("II", 58)
 	pb.pressed.connect(_open_pause)
-	tr.add_child(pb)
 
 	# legenda dei colori: chiusa, un tasto COLORI sotto i pulsanti in alto a destra (chi colpire lo dice gia' DEBOLE A sotto
 	# il nemico: una cosa per volta). Aperta: le due catene con le parole, A > B = A batte B (+50% danno)
-	var lbtn := Ui.button("COLORI", Ui.CREAM, 18, 110)
-	Ui.place(lbtn, 1.0, 0, 1.0, 0, -126, 88, -16, 128)
+	var lbtn := _quick_btn("COLORI", 100)
 	lbtn.pressed.connect(func() -> void:
 		_legend.visible = not _legend.visible)
-	tr.get_parent().add_child(lbtn)
+	tr.add_child(lbtn)
+	tr.add_child(pb)
 	var leg := PanelContainer.new()
 	_legend = leg
 	leg.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.9), Ui.INK, 3, 6, 0))
-	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 136, -16, 136)
+	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 66, -16, 66)
 	leg.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	leg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	leg.visible = false
@@ -2298,6 +2312,18 @@ func _build_ui() -> void:
 	_say_balloon.fit = true
 	_cutin.add_child(_say_balloon)
 	_cutin.add_child(_say_lbl)
+
+
+# Tasto della barra rapida in alto a destra: lastra scura, scritta crema, piccolo (resta grande abbastanza per il dito)
+func _quick_btn(text: String, w: float) -> Button:
+	var b: Button = Ui.button(text, Color(0.05, 0.03, 0.08, 0.78), 17, w)
+	for k in ["font_color", "font_hover_color", "font_pressed_color"]:
+		b.add_theme_color_override(k, Ui.CREAM)
+	b.add_theme_stylebox_override("normal", Ui.box(Color(0.05, 0.03, 0.08, 0.72), Color(Ui.CREAM, 0.55), 2, 4, 0))
+	b.add_theme_stylebox_override("hover", Ui.box(Color(0.12, 0.08, 0.18, 0.85), Ui.CREAM, 2, 4, 0))
+	b.add_theme_stylebox_override("pressed", Ui.box(Color(0.2, 0.14, 0.28, 0.9), Ui.CREAM, 2, 4, 0))
+	b.custom_minimum_size.y = 52.0 if Ui.is_touch() else 40.0
+	return b
 
 
 # Disegna una volta, quasi trasparenti, cifre e lettere in tutte le grandezze dei numeri dei colpi: il telefono prepara
@@ -2446,7 +2472,7 @@ func _weak_refresh(boss: Dictionary) -> void:
 func _make_card() -> Dictionary:
 	# P5/JSR: niente pannello. Volto in cornice storta + numero PV grande + EN piccola + barretta sottile; chi e' di turno ha una lastra di colore piena
 	var p := PanelContainer.new()
-	p.custom_minimum_size = Vector2(330, 0)
+	p.custom_minimum_size = Vector2(300, 0)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	var row := HBoxContainer.new()
@@ -2454,7 +2480,7 @@ func _make_card() -> Dictionary:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(row)
 	var face := TextureRect.new()
-	face.custom_minimum_size = Vector2(62, 56)
+	face.custom_minimum_size = Vector2(54, 48)
 	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2471,7 +2497,7 @@ func _make_card() -> Dictionary:
 	line.add_theme_constant_override("separation", 10)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vb.add_child(line)
-	var hp_t := Ui.label("", 36, Ui.CREAM, Ui.display(), 9)
+	var hp_t := Ui.label("", 28, Ui.CREAM, Ui.display(), 8)      # squadra piu' compatta (Metaphor): la scena resta libera
 	line.add_child(hp_t)
 	var en := Ui.label("", 18, Ui.CYAN, Ui.display(), 5)
 	en.size_flags_vertical = Control.SIZE_SHRINK_END
@@ -2731,10 +2757,11 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 	var items: Array = [
 		{"kind": "attack", "name": "ATTACCO", "sub": "COLPO BASE", "cost": "", "ok": _usable("attack"), "letter": "A",
 			"title": "ATTACCO", "desc": "Colpo al nemico · non costa energia" + tip},
-		{"kind": "skill", "name": sk_name, "sub": "ABILITÀ", "cost": "%d/%d EN" % [int(skm.get("cost", 0)), en], "ok": _usable(sk), "letter": letter,
+		# la parola grande dice il TIPO di comando (come Metaphor: SKILL, MELEE, GUARD), il nome della mossa va sotto in piccolo
+		{"kind": "skill", "name": "ABILITÀ", "sub": sk_name, "cost": "%d/%d EN" % [int(skm.get("cost", 0)), en], "ok": _usable(sk), "letter": letter,
 			"title": sk_name, "desc": str(skm.get("desc", "")) + tip},
 		{"kind": "ult", "name": "ULTIMATE", "sub": str(um.get("name", "COLPO FINALE")).to_upper() if ult_ok else "COLPO FINALE", "cost": "PRONTA" if ult_ok else "%d%%" % int(u.get("gauge", 0)),
-			"ok": ult_ok, "letter": "U", "title": "ULTIMATE · " + str(um.get("name", "")).to_upper(), "desc": str(um.get("desc", "")) + tip},
+			"ok": ult_ok, "charge": float(u.get("gauge", 0)) / float(BattleTypes.GAUGE_MAX), "letter": "U", "title": "ULTIMATE · " + str(um.get("name", "")).to_upper(), "desc": str(um.get("desc", "")) + tip},
 		{"kind": "guard", "name": "GUARDIA", "sub": "DIFESA", "cost": "+1 EN", "ok": _usable("guard"), "letter": "G",
 			"title": "GUARDIA", "desc": "Dimezza il danno e ricarica energia"},
 	]
@@ -2817,7 +2844,7 @@ func _update_react() -> void:
 		var rb: Button = _react_btns[rid]
 		rb.visible = usable.has(rid)
 		if rb.visible:
-			rb.text = "%s\nCOSTA %d" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]
+			rb.text = "%s · %d" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]      # il numero e' la Riserva che costa
 			rb.add_theme_font_size_override("font_size", 15)
 			rb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
 	# la colonna e' piu' alta con la riga delle Ultimate in diretta: titolo e descrizioni salgono per non essere coperti
@@ -3096,15 +3123,9 @@ func _clear_mark() -> void:
 	_mark_uid = ""
 
 
-func _banner(text: String, col: Color, ay: float = 0.2, size: int = 30) -> void:
-	var l := Ui.label(text, size, col, Ui.display(), 10)
-	Ui.place(l, 0.5, ay, 0.5, ay, -500, 0, 500, 50)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_fx_layer.add_child(l)
-	var tw := l.create_tween()
-	tw.tween_interval(1.0)
-	tw.tween_property(l, "modulate:a", 0.0, 0.3)
-	tw.tween_callback(l.queue_free)
+# Nome della mossa e annunci brevi: ora vanno nella stessa pila degli avvisi (un posto solo, niente scritte sovrapposte)
+func _banner(text: String, col: Color, _ay: float = 0.2, _size: int = 30) -> void:
+	_notice(text, col, 1.3, "move")
 
 
 var _toasts: Array = []
@@ -3303,16 +3324,16 @@ func _stamp(title: String, sub: String, col: Color, ay: float = 0.3) -> void:
 # sta nella fascia centrale alta, come i toast.
 func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
 	var box := VBoxContainer.new()
-	Ui.place(box, 0.2, 0.17, 0.6, 0.17, 0, 0, 0, 150)
+	Ui.place(box, 0.2, 0.3, 0.6, 0.3, 0, 0, 0, 130)       # sotto gli avvisi, non sopra la barra del nemico
 	box.add_theme_constant_override("separation", 0)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var live := Ui.label("●  IN DIRETTA", 20, Color("#ff4630"), Ui.display(), 6)
 	live.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(live)
-	var big := Ui.label(title, 64, col, Ui.display(), 12)
+	var big := Ui.label(title, 48, col, Ui.display(), 10)
 	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(big)
-	var sm := Ui.label(sub, 22, Ui.CREAM, null, 6)
+	var sm := Ui.label(sub, 20, Ui.CREAM, null, 6)
 	sm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(sm)
@@ -3326,27 +3347,73 @@ func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
 
 
 func _toast(text: String, col: Color, sec: float) -> void:
-	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t) and (t as Label).modulate.a > 0.05)
-	# al massimo due avvisi insieme: il piu' vecchio lascia il posto (una cosa per volta)
+	_notice(text, col, sec, "boss" if col == Ui.PINK or col == Color("#ff7a9c") else "fx")
+
+
+# UN posto per tutti gli avvisi: a sinistra, sotto l'ordine dei turni (in alto al centro si scontravano coi numeri dei colpi). Lastre piccole con un'icona e poche
+# parole (titolo grande, il resto piccolo solo se e' corto); al massimo due insieme, il nuovo scaccia il piu' vecchio.
+func _notice(text: String, col: Color, sec: float, icon: String) -> void:
+	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t))
 	while _toasts.size() >= TOAST_MAX:
-		var old: Label = _toasts.pop_front()
+		var old: Control = _toasts.pop_front()
 		old.queue_free()
-	for i in _toasts.size():
-		Ui.place(_toasts[i], 0.2, 0.235, 0.6, 0.235, 0, 56 * i, 0, 50 + 56 * i)
-	var row: int = _toasts.size()
-	var l := Ui.label(text, 26, col, Ui.display(), 8)
-	l.add_theme_stylebox_override("normal", Ui.plate(Color(0.05, 0.03, 0.08, 0.86), col))     # lastra scura: si legge sopra insegne e ruota
-	# resta nella fascia centrale (20%-60% della larghezza): il blocco descrizioni a destra non viene mai coperto, il testo lungo va a capo
-	# subito sotto la minaccia (prima a meta' schermo, finiva sotto la ruota dei comandi)
-	Ui.place(l, 0.2, 0.235, 0.6, 0.235, 0, 56 * row, 0, 50 + 56 * row)
-	_toasts.append(l)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_fx_layer.add_child(l)
-	var tw := l.create_tween()
+	var parts: Array = CombatHud.notice_parts(text)
+	var pc := PanelContainer.new()
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pc.add_theme_stylebox_override("panel", Ui.plate(Color(0.05, 0.03, 0.08, 0.86), col))
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 8)
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pc.add_child(hb)
+	var ic := Control.new()
+	ic.custom_minimum_size = Vector2(26, 26)
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ic.draw.connect(func() -> void: _notice_icon(ic, icon, col))
+	hb.add_child(ic)
+	var big := Ui.label(str(parts[0]), 20, col, Ui.display(), 6)
+	hb.add_child(big)
+	if str(parts[1]) != "":
+		var sm := Ui.label(str(parts[1]), 16, Color(Ui.CREAM, 0.9), null, 4)
+		hb.add_child(sm)
+	_fx_layer.add_child(pc)
+	_toasts.append(pc)
+	_stack_notices()
+	pc.modulate.a = 0.0
+	var tw := pc.create_tween()
+	tw.tween_property(pc, "modulate:a", 1.0, 0.08)
 	tw.tween_interval(sec)
-	tw.tween_property(l, "modulate:a", 0.0, 0.3)
-	tw.tween_callback(l.queue_free)
+	tw.tween_property(pc, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(func() -> void:
+		pc.queue_free()
+		_toasts.erase(pc))
+
+
+func _stack_notices() -> void:
+	for i in _toasts.size():
+		var c: Control = _toasts[i]
+		Ui.place(c, 0.0, 0.0, 0.0, 0.0, 24, 0, 24, 0)
+		c.grow_horizontal = Control.GROW_DIRECTION_END
+		c.offset_top = NOTICE_Y + 46.0 * float(_toasts.size() - 1 - i)
+
+
+# Icone degli avvisi, disegnate a mano: catena (legami e impulsi), triangolo (il nemico), lampo (effetti), freccia (mossa)
+func _notice_icon(c: Control, icon: String, col: Color) -> void:
+	var p: Vector2 = c.size * 0.5
+	match icon:
+		"chain":
+			for k in 2:
+				var o: Vector2 = Vector2(-5.0 + 10.0 * k, 3.0 - 6.0 * k)
+				c.draw_set_transform(p + o, -0.6, Vector2(1.0, 0.6))
+				c.draw_arc(Vector2.ZERO, 8.0, 0.0, TAU, 24, col, 3.0, true)
+				c.draw_set_transform(Vector2.ZERO)
+		"boss":
+			c.draw_colored_polygon(PackedVector2Array([p + Vector2(0, -10), p + Vector2(10, 9), p + Vector2(-10, 9)]), col)
+			c.draw_line(p + Vector2(0, -3), p + Vector2(0, 3), Ui.INK, 2.5)
+			c.draw_circle(p + Vector2(0, 6), 1.5, Ui.INK)
+		"move":
+			c.draw_colored_polygon(PackedVector2Array([p + Vector2(-8, -9), p + Vector2(9, 0), p + Vector2(-8, 9), p + Vector2(-3, 0)]), col)
+		_:
+			CmdWheel.glyph(c, "skill", p, 12.0, col)
 
 
 func _toggle_auto() -> void:
