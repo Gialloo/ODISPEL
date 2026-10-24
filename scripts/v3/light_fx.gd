@@ -99,6 +99,29 @@ static func mark(parent: Node, feet: Vector3, c: Color, r: float = 1.05) -> Ligh
 	return fx
 
 
+# MINACCIA DEL NEMICO (telegraph a terra, alla Final Fantasy XIV / Xenoblade): cerchio luminoso sotto il nemico che dichiara;
+# contro TUTTI un semicerchio che passa sotto i cerchi di tutta la squadra, contro UNO un cono che si ferma sul cerchio del bersaglio.
+# Resta acceso finche' non si chiama stop(); retarget() lo sposta quando cambia il bersaglio.
+var targets: Array = []                    # piedi dei bersagli
+var all_targets: bool = false
+
+
+static func threat(parent: Node, boss_feet: Vector3, tgts: Array, all: bool, c: Color, r: float = 1.6) -> LightFx:
+	var fx := _make(parent, "threat", c, 9999.0)
+	fx.a = boss_feet
+	fx.radius = r
+	fx.targets = tgts
+	fx.all_targets = all
+	return fx
+
+
+func retarget(tgts: Array, all: bool) -> void:
+	targets = tgts
+	all_targets = all
+	_stopping = false
+	_fade = minf(_fade, 0.2)
+
+
 # Sigillo della possessione sotto un'Anomalia: anello magenta con tacche e scintille che salgono, finche' non si chiama stop().
 static func seal(parent: Node, feet: Vector3, r: float = 1.9) -> LightFx:
 	var fx := _make(parent, "seal", MAGIC, 9999.0)
@@ -145,6 +168,8 @@ func _process(delta: float) -> void:
 			_draw_mark()
 		"seal":
 			_draw_seal()
+		"threat":
+			_draw_threat()
 	_im.clear_surfaces()
 	if _vv.is_empty():
 		return
@@ -285,6 +310,84 @@ func _draw_mark() -> void:
 	for i in 4:
 		var ang: float = TAU * float(i) / 4.0 + PI * 0.25
 		_arc(radius * 0.7 + inset, 0.09, ang - 0.12, ang + 0.12, col, 0.75 * _fade, 2)
+
+
+func _draw_threat() -> void:
+	var pulse: float = 0.75 + 0.25 * sin(t * 6.0)
+	var segs: int = 18 if Settings.light_fx else 32
+	var y: float = a.y + 0.035
+	var o := Vector3(a.x, y, a.z)
+	# cerchio sotto il nemico: bordo colorato + nucleo bianco, e un secondo anello che si allarga (il nemico "carica")
+	_arc(radius, 0.1, 0.0, TAU, col, 0.75 * pulse * _fade, segs)
+	_arc(radius, 0.035, 0.0, TAU, IVORY, 0.8 * pulse * _fade, segs)
+	var grow: float = fmod(t * 0.9, 1.0)
+	_arc(radius * (1.0 + 0.35 * grow), 0.05, 0.0, TAU, col, 0.5 * (1.0 - grow) * _fade, segs)
+	if targets.is_empty():
+		return
+	if all_targets:
+		# semicerchio che passa sotto i cerchi di tutti: raggio medio delle distanze, angoli dal primo all'ultimo bersaglio
+		var rr: float = 0.0
+		var amin: float = INF
+		var amax: float = -INF
+		for q in targets:
+			var d: Vector3 = (q as Vector3) - a
+			rr += Vector2(d.x, d.z).length()
+			var ang: float = atan2(d.z, d.x)
+			amin = minf(amin, ang)
+			amax = maxf(amax, ang)
+		rr /= float(targets.size())
+		var pad: float = 1.2 / maxf(1.0, rr)
+		_arc(rr, 0.16, amin - pad, amax + pad, col, 0.7 * pulse * _fade, segs)
+		_arc(rr, 0.05, amin - pad, amax + pad, IVORY, 0.75 * pulse * _fade, segs)
+		# dal cerchio del nemico al semicerchio: un ventaglio tenue che scorre verso la squadra
+		var fan: int = 10 if Settings.light_fx else 18
+		for i in fan:
+			var b0: float = lerpf(amin - pad, amax + pad, float(i) / float(fan))
+			var b1: float = lerpf(amin - pad, amax + pad, float(i + 1) / float(fan))
+			var d0 := Vector3(cos(b0), 0, sin(b0))
+			var d1 := Vector3(cos(b1), 0, sin(b1))
+			_quad(o + d0 * radius, o + d1 * radius, o + d1 * rr, o + d0 * rr, _a(col, 0.05 * _fade), _a(col, 0.22 * _fade))
+		for q in targets:
+			var qq := Vector3((q as Vector3).x, y, (q as Vector3).z)
+			_ring_at(qq, 1.05, 0.07, col, 0.65 * pulse * _fade, segs)
+	else:
+		# cono dal cerchio del nemico al cerchio del bersaglio: largo quanto il cerchio, si ferma sul suo bordo
+		var q: Vector3 = targets[0]
+		var qq := Vector3(q.x, y, q.z)
+		var dir: Vector3 = (qq - o)
+		dir.y = 0.0
+		var dist: float = dir.length()
+		dir = dir.normalized()
+		var side: Vector3 = Vector3.UP.cross(dir).normalized()
+		var p0: Vector3 = o + dir * radius
+		var tip: Vector3 = qq - dir * 0.95
+		var w0: float = 0.22
+		var w1: float = 1.0
+		_quad(p0 - side * w0, tip - side * w1, tip + side * w1, p0 + side * w0, _a(col, 0.12 * _fade), _a(col, 0.45 * pulse * _fade))
+		# bordi luminosi del cono
+		for sgn in [-1.0, 1.0]:
+			var e0: Vector3 = p0 + side * w0 * sgn
+			var e1: Vector3 = tip + side * w1 * sgn
+			var n: Vector3 = Vector3.UP.cross((e1 - e0).normalized()).normalized() * 0.08
+			_quad(e0 - n, e1 - n, e1 + n, e0 + n, _a(IVORY, 0.5 * _fade), _a(col, 0.85 * pulse * _fade))
+		# frecce che corrono verso il bersaglio
+		var ln: float = maxf(0.1, dist - radius - 0.95)
+		for i in 3:
+			var u: float = fmod(t * 0.8 + float(i) / 3.0, 1.0)
+			var c0: Vector3 = p0 + dir * ln * u
+			var hw: float = lerpf(w0, w1, u) * 0.75
+			var k: float = sin(PI * u) * 0.7 * _fade
+			_quad(c0 - side * hw, c0 + dir * 0.28, c0 + dir * 0.4, c0 - side * hw + dir * 0.12, _a(col, k), _a(IVORY, k))
+			_quad(c0 + dir * 0.28, c0 + side * hw, c0 + side * hw + dir * 0.12, c0 + dir * 0.4, _a(IVORY, k), _a(col, k))
+
+
+func _ring_at(c: Vector3, r: float, th: float, cl: Color, k: float, segs: int) -> void:
+	for i in segs:
+		var b0: float = TAU * float(i) / float(segs)
+		var b1: float = TAU * float(i + 1) / float(segs)
+		var d0 := Vector3(cos(b0), 0, sin(b0))
+		var d1 := Vector3(cos(b1), 0, sin(b1))
+		_quad(c + d0 * (r - th), c + d1 * (r - th), c + d1 * (r + th), c + d0 * (r + th), _a(cl, k), _a(cl, k))
 
 
 func _draw_seal() -> void:

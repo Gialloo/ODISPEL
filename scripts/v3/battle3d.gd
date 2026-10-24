@@ -111,6 +111,7 @@ const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI
 var _btn_auto: Button
 var _btn_fast: Button
 var _hint: Label
+var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
 var _party_back: Control
 var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
 var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
@@ -543,9 +544,32 @@ func _update_wheel() -> void:
 	if _spot.visible:
 		var ult: bool = _picked == "ult"
 		var m2: ShaderMaterial = _spot.material
+		_spot_boss(m2, e, ult)
 		m2.set_shader_parameter("k", (0.86 if ult else 0.55) * e)
 		m2.set_shader_parameter("aura", (0.9 if ult else 0.35) * e * (0.85 + 0.15 * sin(Time.get_ticks_msec() * 0.008)))
 		m2.set_shader_parameter("tint", _col(_unit_of(cur_pid)))
+
+
+# Il nemico preso di mira dall'attacco scelto brilla piano (alone caldo che pulsa) e resta in luce anche con lo schermo scuro dell'ULTIMATE
+func _spot_boss(m: ShaderMaterial, e: float, ult: bool) -> void:
+	var on: bool = _picked in ["attack", "skill", "ult"] and vis.has(BattleState.BOSS_ID) and BattleState.is_alive(BattleState.boss(b))
+	var k2: float = 0.0
+	if on:
+		var bv: Node3D = vis[BattleState.BOSS_ID]
+		var hp3: Vector3 = bv.call("head_point") if bv.has_method("head_point") else bv.global_position + Vector3(0, 2, 0)
+		var f3: Vector3 = bv.global_position
+		if not cam.is_position_behind(hp3):
+			var vs: Vector2 = _wheel.size if _wheel.size.x > 1.0 else get_viewport().get_visible_rect().size
+			var a: Vector2 = cam.unproject_position(hp3)
+			var z: Vector2 = cam.unproject_position(f3)
+			var hh: float = maxf(120.0, absf(z.y - a.y))
+			m.set_shader_parameter("c2", Vector2(a.x, (a.y + z.y) * 0.5) / vs)
+			m.set_shader_parameter("r2", Vector2(hh * 0.5, hh * 0.62) / vs)
+			var pulse: float = 0.78 + 0.22 * sin(Time.get_ticks_msec() * 0.006)
+			k2 = e * pulse * (1.0 if ult else 0.55)
+	m.set_shader_parameter("k2", k2)
+	if k2 > 0.0 and not _spot.visible:
+		_spot.visible = true
 
 
 func _kick(amount: float) -> void:
@@ -1763,6 +1787,7 @@ func _build_ui() -> void:
 	# lo sguardo di Echo sotto a tutto; dentro le Anomalie le telecamere non arrivano
 	_cam_hud = CamHud.new()
 	_cam_hud.anomaly = arena.begins_with("anomalia") or arena in ["rosso", "blu", "verde"]
+	_cam_hud.tag_y = 70.0 if Settings.show_fps else 14.0      # REC CAM in alto a sinistra, SOPRA il riquadro dei turni
 	_root.add_child(_cam_hud)
 	_fx_layer = Control.new()
 	Ui.place(_fx_layer, 0, 0, 1, 1)
@@ -1780,14 +1805,14 @@ func _build_ui() -> void:
 	# ordine dei turni (sinistra)
 	var ob := PanelContainer.new()
 	ob.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.38), Color(0, 0, 0, 0), 0, 6, 0))
-	ob.position = Vector2(16, 70 if Settings.show_fps else 16)
+	ob.position = Vector2(16, 126 if Settings.show_fps else 70)
 	ob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(ob)
 	var ov := VBoxContainer.new()
 	ov.add_theme_constant_override("separation", 4)
 	ob.add_child(ov)
-	var ot := Ui.label("TURNI", 14, Color(1, 1, 1, 0.8), Ui.display(), 4)
-	ov.add_child(ot)
+	_order_title = Ui.label("TURNO 1", 20, Ui.YELLOW, Ui.display(), 6)
+	ov.add_child(_order_title)
 	_order_box = VBoxContainer.new()
 	_order_box.add_theme_constant_override("separation", 0)
 	ov.add_child(_order_box)
@@ -1918,7 +1943,7 @@ func _build_ui() -> void:
 	_root.add_child(_kit_lbl)
 	_hint = Ui.label("", 18, Ui.CREAM, null, 5)
 	# a sinistra sotto i TURNI, dentro il fumetto di Echo (come l'alleata che parla in Persona): il centro resta alla scena
-	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 96, 236, 456, 236)
+	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 96, 292, 456, 292)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(EchoBalloon.new(_hint))
@@ -2514,7 +2539,8 @@ func _refresh_hud() -> void:
 		var is_boss: bool = bool(e["boss"])
 		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
 		rows.append([("> " if k == turn_i else "   ") + nm, 19 if k == turn_i else 15, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
-	rows.append(["   ROUND %d" % int(b.get("round", 1)), 14, Color(1, 1, 1, 0.7), false])
+	if _order_title != null:
+		_order_title.text = "TURNO %d" % int(b.get("round", 1))
 	var sig: String = str(rows)
 	if sig != _order_sig:
 		_order_sig = sig
@@ -2551,7 +2577,48 @@ func _update_mark(tele: Dictionary, mv: Dictionary, boss: Dictionary) -> String:
 		_clear_mark()
 		_mark = LightFx.mark(self, home[want], Color("#ff5a6e"))
 		_mark_uid = want
+	_update_threat(tele, mv, boss, want)
 	return want
+
+
+# Minaccia a terra: cerchio sotto il nemico che dichiara, semicerchio sotto tutti o cono fino al bersaglio (la scritta da sola non bastava)
+var _threat: LightFx = null
+var _threat_key: String = ""
+
+
+func _update_threat(tele: Dictionary, mv: Dictionary, boss: Dictionary, one: String) -> void:
+	var tgts: Array = []
+	var all: bool = false
+	var show: bool = not ended and not _boss_acting and BattleState.is_alive(boss) and int(boss.get("stun", 0)) <= 0 and not mv.is_empty() \
+			and not bool((b.get("seq", {}) as Dictionary).get("boss_acted", false))
+	if show:
+		if one != "":
+			tgts.append(home[one])
+		elif bool(mv.get("camera", false)):
+			# la telecamera colpisce chi ha meno PV in quel momento: i suoi bersagli di ora
+			for pk in BattleResolver.camera_targets(b):
+				var cu: String = str((pk["unit"] as Dictionary).get("id", ""))
+				if home.has(cu):
+					tgts.append(home[cu])
+			all = tgts.size() > 1
+		else:
+			all = true
+			for p in BattleState.alive_players(b):
+				var u: Dictionary = BattleState.active_unit(b, str(p["id"]))
+				if BattleState.is_alive(u) and home.has(str(u["id"])):
+					tgts.append(home[str(u["id"])])
+	if tgts.is_empty():
+		if _threat != null and is_instance_valid(_threat):
+			_threat.stop()
+		_threat = null
+		_threat_key = ""
+		return
+	var key: String = "%s|%s" % [str(all), str(tgts)]
+	if _threat == null or not is_instance_valid(_threat):
+		_threat = LightFx.threat(self, ENEMY_POS, tgts, all, Color("#ff3b4e"))
+	elif key != _threat_key:
+		_threat.retarget(tgts, all)
+	_threat_key = key
 
 
 func _clear_mark() -> void:
