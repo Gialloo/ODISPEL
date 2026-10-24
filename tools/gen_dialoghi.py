@@ -172,7 +172,7 @@ scene("tut_telegrafo", "Il nemico annuncia la mossa e il bersaglio: cerchio ross
     L("echo/serio", "E dice su chi cade: cerchio rosso ai piedi del bersaglio, bordo rosso sulla sua scheda."),
     L("echo/serio", "FORTE significa colpo pesante. SU TUTTI significa che colpisce tutti."),
     L("saul/neutro", "Un nemico che avvisa. Mia nonna Ines diceva che i migliori affari sono quelli senza sorprese."),
-    L("zecca/sorpreso", "Ma è cortesia! Neanche il distributore ci avvisava."))
+    L("zecca/sorpreso", "Raga, quindi la riga rossa in alto non era pubblicità?"))
 
 scene("tut_qte", "GUARDIA A TEMPO: si tocca quando il cerchio che si stringe tocca quello fermo.",
     L("echo/serio", "Quando il nemico colpisce, parte la GUARDIA A TEMPO. C'è un cerchio fermo e uno che si stringe."),

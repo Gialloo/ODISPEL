@@ -1,5 +1,9 @@
 # Novità
 
+## In preparazione (non ancora rilasciata) · demo più leggera
+- **Tutorial spezzato**: nella storia le spiegazioni non arrivano più tutte nel primo scontro (erano dieci). Arrivano due alla volta, quando servono: schermo e ATTACCO nel primo, GUARDIA e ABILITÀ col Distributore (e a vittoria esperienza e SQUADRA), mossa annunciata e guardia a tempo nel primo scontro del capitolo 1, poi reazioni e rottura, poi ULTIMATE ed extra. Il primo scontro picchia piano ed è più corto. Il TUTORIAL dal menu resta completo. Chi aveva già fatto il vecchio tutorial non rivede niente; nella Replica le spiegazioni non tornano.
+- Dialoghi: Rio davanti alla mossa annunciata («Raga, quindi la riga rossa in alto non era pubblicità?»), perché ora la spiegazione arriva dopo il Distributore.
+
 ## 0.40.0 · sblocchi fino al livello 100 e New Game+ fino a NG+10
 - **Si sale fino al livello 100** (prima il tetto era 30 e l'ultimo sblocco all'11). Tra il 14 e il 100 ognuno dei quattro sblocca 15 cose nuove, a turno: 3 abilità (14, 35, 65), 3 Ultimate (25, 55, 100), 3 reazioni personali più forti (20, 45, 80), 3 tratti (18, 40, 75) e 3 sinergie (coppie nuove al 30, terzetti al 50, tutti e quattro al 90 con «Il rituale della notte»).
 - **New Game+ (Replica della diretta) fino a NG+10**: si ricomincia l'atto con la squadra com'è (livelli, mosse, sblocchi, mosse rubate). Nella NG+1 i nemici vanno dal livello 14 al 24, poi +9 livelli a giro; nella NG+10 dal 95 al 100. La decima si può rigiocare quanto si vuole.

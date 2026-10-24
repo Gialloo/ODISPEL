@@ -14,6 +14,11 @@ const ENEMY_POS := Vector3(0, 0.14, -3.4)
 # GUARDIA A TEMPO: quando parte il colpo annunciato un cerchio si chiude sul bersaglio; toccare quando si chiude
 # riduce il danno e carica l'ultimate, toccare proprio all'impatto e' una parata perfetta con contrattacco.
 # Tempi in secondi REALI (non cambiano con x2): la finestra deve restare leggibile anche accelerando.
+# Spiegazioni della storia a gruppi, nell'ordine: un gruppo si apre quando i precedenti sono visti.
+# Dieci spiegazioni nel primo scontro erano troppe (analisi del 24/10): cosi' arrivano due alla volta, quando servono.
+const LEZIONI: Array = [["tut_intro", "tut_attacco"], ["tut_guardia", "tut_abilita"], ["tut_telegrafo", "tut_qte"],
+	["tut_reazioni", "tut_rottura"], ["tut_ultimate", "tut_extra"]]
+const LEZIONI_MAX: int = 2
 const QTE_LEAD: float = 0.9          # dall'apparire del cerchio all'impatto
 const QTE_GOOD: float = 0.3          # quanto prima dell'impatto vale gia' come guardia
 const QTE_LATE: float = 0.12         # tolleranza dopo l'impatto
@@ -39,7 +44,10 @@ var _pinched: bool = false                # il FOV e' stretto dalla scossa: va r
 var _boss_known: bool = false             # il giocatore conosce il colore del boss (indizio o primo colpo)
 var ritorno: Dictionary = {}             # dove tornare: area (nemico minore), storia (boss), niente = demo dal menu
 var minore: bool = false
-var tutorial: bool = false            # primo scontro della storia (o TUTORIAL dal menu): Echo e la squadra spiegano ogni meccanica
+var tutorial: bool = false            # TUTORIAL dal menu: Echo e la squadra spiegano ogni meccanica in un solo scontro
+var primo: bool = false               # primo scontro della storia: nemico che picchia piano
+var lezioni: bool = false             # storia: le stesse spiegazioni a rate, al massimo LEZIONI_MAX per scontro
+var _lez_ora: int = 0                 # spiegazioni date in questo scontro
 var _tut_done: Dictionary = {}        # spiegazioni gia' date
 var _tut_dlg: DialogBox = null        # spiegazione aperta (le prove automatiche la saltano)
 var _tut_turns: int = 0               # turni del giocatore visti nel tutorial
@@ -170,11 +178,16 @@ func configure(args: Dictionary) -> void:
 		weak = weak + ["VIOLA"]
 	ritorno = args.get("ritorno", {})
 	minore = bool(args.get("minore", false))
-	tutorial = bool(args.get("tutorial", false))
+	# la storia chiede "tutorial" per il primo scontro; il tutorial completo e' solo quello del menu
+	primo = bool(args.get("tutorial", false)) and str(args.get("from", "")) != "menu"
+	tutorial = bool(args.get("tutorial", false)) and not primo
+	lezioni = not tutorial and not ritorno.is_empty() and _lezioni_attive()
 	if tutorial:
 		# TUTORIAL: nemico che picchia piano e dura abbastanza da mostrare tutto (le spiegazioni arrivano quando serve)
 		atk_k *= 0.5
 		pv_k *= 2.2
+	elif primo:
+		atk_k *= 0.5       # primo scontro della storia: piano, ma corto (spiega solo schermo e ATTACCO)
 
 
 func crumb() -> String:
@@ -232,7 +245,7 @@ func _ready() -> void:
 			if is_inside_tree():
 				_toast(str(m[0]), m[1], 2.8))
 		delay += 3.0
-	if tutorial:
+	if tutorial or lezioni:
 		await _tut("tut_intro")
 		await _tut("tut_telegrafo")
 	_start_round()
@@ -684,10 +697,14 @@ func _advance() -> void:
 				return
 			await _do_action(pid, BattleAI.choose(b, pid), _quick)
 			continue
-		if tutorial:
+		if tutorial or lezioni:
 			await _tut_turn(uid)
 			if not is_inside_tree() or ended:
 				return
+			if auto_on:
+				# AUTO acceso mentre parlava Echo: il turno lo gioca l'IA, come sopra
+				await _do_action(pid, BattleAI.choose(b, pid), _quick)
+				continue
 		waiting = true
 		_cam_choose(uid)
 		_show_commands(true)
@@ -868,7 +885,7 @@ func _boss_turn() -> void:
 					b["react_grade"] = {}
 				(b["react_grade"] as Dictionary)[str(ru["id"])] = g
 			if not played:
-				if tutorial:
+				if tutorial or lezioni:
 					await _tut("tut_qte")
 				var grade: String = await _timed_guard()
 				if not is_inside_tree() or ended:
@@ -895,14 +912,29 @@ func _boss_turn() -> void:
 
 # ---------------------------------------------------------------- tutorial
 
-# Una spiegazione (scena di data/dialoghi_atto1.json, chiavi tut_*), una volta sola, a battaglia ferma
-func _tut(key: String) -> void:
-	if not tutorial or auto_on or _tut_done.has(key) or ended or not is_inside_tree():
-		return
-	_tut_done[key] = true
+# Una spiegazione (scena di data/dialoghi_atto1.json, chiavi tut_*), una volta sola, a battaglia ferma.
+# Ritorna true se e' partita.
+func _tut(key: String) -> bool:
+	if auto_on or ended or not is_inside_tree():
+		return false
+	if tutorial:
+		if _tut_done.has(key):
+			return false
+		_tut_done[key] = true
+	elif lezioni:
+		if not _lezione_ok(key):
+			return false
+		Story.set_flag("lez_" + key)
+		Story.set_flag("lezioni_iniziate")
+		if key != "tut_fine":
+			_lez_ora += 1        # tut_fine arriva a scontro finito: non conta
+		if _lezioni_viste():
+			Story.set_flag("lezioni_fatte")
+	else:
+		return false
 	var lines: Array = DialogData.lines(key)
 	if lines.is_empty():
-		return
+		return false
 	var was: bool = waiting
 	waiting = false
 	_show_commands(false)
@@ -916,6 +948,48 @@ func _tut(key: String) -> void:
 		dlg.queue_free()
 	_tut_dlg = null
 	waiting = was
+	return true
+
+
+# Le spiegazioni a rate valgono nella prima partita della storia finche' non sono state viste tutte.
+# Un salvataggio che aveva gia' fatto il vecchio tutorial (tutto nel primo scontro) non le rivede.
+func _lezioni_attive() -> bool:
+	if Story.has_flag("lezioni_fatte") or Story.replica() > 0:   # nella Replica le regole si conoscono gia'
+		return false
+	if Story.has_flag("lezioni_fatte"):
+		return false
+	return not (Story.has_flag("tutorial_fatto") and not Story.has_flag("lezioni_iniziate"))
+
+
+func _lezioni_viste() -> bool:
+	for g in LEZIONI:
+		for k in g:
+			if not Story.has_flag("lez_" + str(k)):
+				return false
+	return true
+
+
+# Una spiegazione parte se non e' gia' vista, se in questo scontro ce ne sono state meno di LEZIONI_MAX
+# e se i gruppi prima del suo sono gia' visti. tut_fine (esperienza e SQUADRA) dopo il secondo gruppo.
+func _lezione_ok(key: String) -> bool:
+	if Story.has_flag("lez_" + key):
+		return false
+	var gi: int = 2 if key == "tut_fine" else -1
+	if gi < 0:
+		if _lez_ora >= LEZIONI_MAX:
+			return false
+		for i in LEZIONI.size():
+			if (LEZIONI[i] as Array).has(key):
+				gi = i
+		if gi < 0:
+			return false
+	for i in mini(gi, LEZIONI.size()):
+		for k in LEZIONI[i]:
+			if not Story.has_flag("lez_" + str(k)):
+				return false
+	if key == "tut_extra" and not Story.has_flag("lez_tut_ultimate"):
+		return false
+	return true
 
 
 # Prima del turno del giocatore: la spiegazione giusta per quello che si puo' fare adesso
@@ -925,6 +999,18 @@ func _tut_turn(uid: String) -> void:
 	var reacts: bool = false
 	for r in BattleResolver.reactions_for(b, cur_pid):
 		reacts = reacts or str(r["err"]) == ""
+	if lezioni:
+		# a rate: la prima spiegazione utile adesso tra quelle aperte (al massimo una per turno)
+		var cand: Array = []
+		if reacts:
+			cand.append("tut_reazioni")
+		if int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
+			cand.append("tut_ultimate")
+		cand.append_array(["tut_attacco", "tut_guardia", "tut_abilita", "tut_extra"])
+		for k in cand:
+			if await _tut(str(k)):
+				return
+		return
 	if reacts and not _tut_done.has("tut_reazioni"):
 		await _tut("tut_reazioni")
 	elif _tut_done.has("tut_reazioni") and int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX and not _tut_done.has("tut_ultimate"):
@@ -1689,6 +1775,12 @@ func _end_battle() -> void:
 		Story.set_flag("tutorial_fatto")
 		if not is_inside_tree():
 			return
+	elif lezioni and win:
+		await _tut("tut_fine")
+		if not is_inside_tree():
+			return
+	if primo and win:
+		Story.set_flag("tutorial_fatto")
 	# nella demo dal menu: due battute in stile Persona; nella storia ci pensa la scena dopo
 	if ritorno.is_empty() and not tutorial:
 		var dlg := DialogBox.new()
@@ -2919,7 +3011,7 @@ func _show_events_freeze(ev: Array) -> void:
 	_team_follow = false
 	if not is_inside_tree() or ended:
 		return
-	if tutorial:
+	if tutorial or lezioni:
 		await _tut("tut_rottura")
 	await _team_sequence(ev.slice(idx))
 
