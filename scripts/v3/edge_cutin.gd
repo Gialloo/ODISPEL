@@ -21,6 +21,37 @@ const PAL_NOX: Dictionary = {
 	"solids": [Color("#ff2d4f"), Color("#ffd51f"), Color("#27b9ff"), Color("#8a3fe0"), Color("#ff5aa8"), Color("#2fdc8a")],
 }
 
+# Gli altri tre: stessa ricetta e stesso giallo (raggi, fiamme, bordo caldo), cambia solo il colore del personaggio
+const PAL_LANCE: Dictionary = {
+	"sky": Color("#ffb4a0"), "mid": Color("#ff3b3b"), "navy": Color("#4a0614"),
+	"rim": Color("#ff9d1f"), "coral": Color("#ff5f80"), "line": Color("#1c0408"),
+	"top": Color("#ff7a3d"), "bottom": Color("#8a1040"), "dark": Color("#0d0505"),
+	"ray": Color("#ffe21f"),
+	"flames": [Color("#ffe21f"), Color("#ff8a1a"), Color("#ff3d9e")],
+	"solids": PAL_NOX["solids"],
+}
+const PAL_RIO: Dictionary = {
+	"sky": Color("#e4b8ff"), "mid": Color("#9a3fff"), "navy": Color("#24085a"),
+	"rim": Color("#ff9d1f"), "coral": Color("#ff5f80"), "line": Color("#0e0624"),
+	"top": Color("#d46cff"), "bottom": Color("#3a1aa0"), "dark": Color("#08050d"),
+	"ray": Color("#ffe21f"),
+	"flames": [Color("#ffe21f"), Color("#ff8a1a"), Color("#ff3d9e")],
+	"solids": PAL_NOX["solids"],
+}
+const PAL_SAUL: Dictionary = {
+	"sky": Color("#b4ffd2"), "mid": Color("#1fc463"), "navy": Color("#053826"),
+	"rim": Color("#ff9d1f"), "coral": Color("#ff5f80"), "line": Color("#03140c"),
+	"top": Color("#4dffa8"), "bottom": Color("#0a5a6a"), "dark": Color("#050d08"),
+	"ray": Color("#ffe21f"),
+	"flames": [Color("#ffe21f"), Color("#ff8a1a"), Color("#ff3d9e")],
+	"solids": PAL_NOX["solids"],
+}
+const PALETTES: Dictionary = {"nox": PAL_NOX, "ferri": PAL_LANCE, "zecca": PAL_RIO, "saul": PAL_SAUL}
+
+
+static func pal_for(char_id: String) -> Dictionary:
+	return PALETTES.get(char_id, PAL_NOX)
+
 var _pal: Dictionary = PAL_NOX
 var _char: String = ""
 var _light: bool = false

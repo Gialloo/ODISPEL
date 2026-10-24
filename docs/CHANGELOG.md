@@ -1,8 +1,10 @@
 # Novità
 
-## In preparazione (non ancora rilasciata) · demo più leggera
+## 0.41.0 · demo più leggera: tutorial a rate, HUD una cosa per volta, Ultimate in stile Edgerunners
 - **Tutorial spezzato**: nella storia le spiegazioni non arrivano più tutte nel primo scontro (erano dieci). Arrivano due alla volta, quando servono: schermo e ATTACCO nel primo, GUARDIA e ABILITÀ col Distributore (e a vittoria esperienza e SQUADRA), mossa annunciata e guardia a tempo nel primo scontro del capitolo 1, poi reazioni e rottura, poi ULTIMATE ed extra. Il primo scontro picchia piano ed è più corto. Il TUTORIAL dal menu resta completo. Chi aveva già fatto il vecchio tutorial non rivede niente; nella Replica le spiegazioni non tornano.
 - **HUD una cosa per volta**: la ruota dei colori è chiusa in un tasto COLORI (chi colpire lo dice già DEBOLE A sotto il nemico) e, aperta, spiega a parole chi batte chi; mentre parla Echo spariscono x1, AUTO e pausa (non si sovrappongono più al SALTA); il consiglio del primo turno compare solo quando non ci sono le spiegazioni; HYPE sulla scheda di Rio compare quando sale; al massimo due avvisi insieme.
+- **Ultimate di Nox in stile Edgerunners**: nel cut-in Nox diventa un ritaglio a toni piatti in gradiente azzurro-blu notte con bordo caldo e contorno corallo, su retino ciano-viola, raggi gialli, solidi colorati che esplodono a scatti e fiamme a tre colori. Si salta al tocco; con gli effetti ridotti è più leggera.
+- **Lo stesso cut-in per tutta la squadra**: Lance in rosso, Rio in viola, Saul in verde, Nox in blu; raggi gialli, fiamme e bordo caldo uguali per tutti.
 - Dialoghi: Rio davanti alla mossa annunciata («Raga, quindi la riga rossa in alto non era pubblicità?»), perché ora la spiegazione arriva dopo il Distributore.
 
 ## 0.40.0 · sblocchi fino al livello 100 e New Game+ fino a NG+10

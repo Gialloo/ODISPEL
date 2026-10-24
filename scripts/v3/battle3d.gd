@@ -1644,14 +1644,14 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	var seen: bool = _cutin_seen.has(ch)
 	var hold: float = 0.45 if seen else 1.1
 	_cutin_seen[ch] = true
-	# Nox: scena "alla Edgerunners" (EdgeCutin); un poco piu' lunga per far leggere i livelli (max ~1,6 s con le dissolvenze)
+	# I quattro della squadra: scena "alla Edgerunners" (EdgeCutin), ognuno col suo colore; un poco piu' lunga per far leggere i livelli (max ~1,6 s con le dissolvenze)
 	var edge: EdgeCutin = null
 	var dark: Node = _cutin.get_node("Dark")
-	if ch == "nox":
+	if EdgeCutin.PALETTES.has(ch):
 		edge = EdgeCutin.new()
 		_cutin.add_child(edge)
 		_cutin.move_child(edge, 0)
-		edge.start(ch)
+		edge.start(ch, EdgeCutin.pal_for(ch))
 		dark.visible = false
 		hold = 0.8 if seen else 1.2
 	_cutin_on = true

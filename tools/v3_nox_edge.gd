@@ -1,9 +1,10 @@
 extends SceneTree
 
 # Prova del cut-in "alla Edgerunners" di Nox: una schermata per ogni passo della ricetta e tre momenti dell'animazione.
-# Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_nox_edge.gd -- <cartella> [touch]
+# Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_nox_edge.gd -- <cartella> [touch|-] [ferri|nox|zecca|saul]
 
 var out: String = "/tmp/v3noxedge"
+var who: String = "nox"                  # quale dei quattro (stessa ricetta, colore suo)
 
 
 func _init() -> void:
@@ -12,6 +13,8 @@ func _init() -> void:
 		out = a[0]
 	if a.size() > 1 and a[1] == "touch":
 		TouchUi.force = true
+	if a.size() > 2:
+		who = a[2]
 	DirAccess.make_dir_recursive_absolute(out)
 	Settings.ensure_loaded()
 	_run()
@@ -37,10 +40,10 @@ func _run() -> void:
 	var u: Dictionary = {}
 	for i in 4:
 		var cand: Dictionary = bt.call("_slot_unit", i)
-		if str(cand["char"]) == "nox":
+		if str(cand["char"]) == who:
 			u = cand
 	if u.is_empty():
-		print("ESITO: FALLITO (Nox non e' in squadra)")
+		print("ESITO: FALLITO (" + who + " non e' in squadra)")
 		quit(1)
 		return
 	var cin: Control = bt.get("_cutin")
@@ -57,7 +60,7 @@ func _run() -> void:
 	var e := EdgeCutin.new()
 	cin.add_child(e)
 	cin.move_child(e, 0)
-	e.start("nox")
+	e.start(who, EdgeCutin.pal_for(who))
 	e.manual = true
 	var steps: Array = [
 		["1_persona_maschera", false, false, false, false, 0],
