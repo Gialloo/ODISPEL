@@ -310,4 +310,4 @@ static func _anomalia(cb: CityBuilder, out: Dictionary, tema: String) -> void:
 # quindi i materiali si mettono direttamente sulla mesh.
 static func _dress_multi(mmi: MultiMeshInstance3D, mesh: ArrayMesh) -> void:
 	for si in mesh.get_surface_count():
-		mesh.surface_set_material(si, Toon.body() if si == 0 else Toon.ink())
+		mesh.surface_set_material(si, Toon.body_world() if si == 0 else Toon.ink())

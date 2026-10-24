@@ -70,6 +70,26 @@ func crumb() -> String:
 	return "strada"
 
 
+# Notte «Ghost Stride» dell'esplorazione: buio, nebbia verde-acqua, neon con riflessi a terra, pioggia (night_fx.gd).
+# Le Anomalie restano con i loro colori (sono un altro mondo).
+func _night_dress(layout: String, fog: Array) -> void:
+	var half: float = (_lay["bounds"] as Rect2).size.x * 0.5
+	var o: Dictionary = {"seed": int(cfg.get("seme", 29)), "z0": 10.0, "z1": -42.0, "count": 4 if Settings.light_fx else 6}
+	match layout:
+		"strada", "incrocio", "":
+			o.merge({"wall_x": 7.0, "road_half": 4.0, "side_y": 0.16})
+		"vicolo":
+			o.merge({"wall_x": 3.4, "road_half": 2.0, "side_y": 0.16})
+		"galleria", "caveau":
+			o.merge({"wall_x": half + 0.3, "road_half": 99.0, "side_y": 0.03, "rain": false, "count": 4})
+		"tangenziale":
+			o.merge({"wall_x": half + 1.2, "road_half": 99.0, "side_y": 0.03})
+		_:
+			return
+	NightFx.darken_env(_env, float(fog[1]) * 0.6, float(fog[2]) * 0.75)
+	NightFx.apply(self, o)
+
+
 static func _v3(a: Variant, y: float = 0.14) -> Vector3:
 	var arr: Array = a
 	return Vector3(float(arr[0]), y, float(arr[1]))
@@ -92,6 +112,7 @@ func _ready() -> void:
 	_env.background_color = _lay["bg"]
 	var fog: Array = _lay["fog"]
 	Toon.set_fog(fog[0], fog[1], fog[2])
+	_night_dress(str(cfg.get("layout", "strada")), fog)
 	_colliders = _lay["colliders"]
 	_points = (_lay.get("points", {}) as Dictionary).duplicate()
 	for p in cfg.get("punti", []):

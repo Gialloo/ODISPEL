@@ -5,9 +5,9 @@ extends RefCounted
 # Tutto da codice e deterministico (stesso seme = stessa strada). Niente luci vere: finestre e insegne hanno "luce propria".
 
 const WALLS: Array = ["#3b2f57", "#2c3a55", "#4a2f46", "#2f4a4d", "#45384f", "#33284a", "#523a3a"]
-const LIT: Array = [Color(1.0, 0.82, 0.45, 0.0), Color(0.5, 0.9, 1.0, 0.0), Color(1.0, 0.45, 0.75, 0.0), Color(1.0, 0.92, 0.7, 0.0)]
+const LIT: Array = [Color(0.55, 0.95, 0.75, 0.0), Color(0.45, 0.85, 1.0, 0.0), Color(0.95, 0.85, 0.55, 0.0), Color(0.6, 0.75, 1.0, 0.0)]   # luci di casa fredde (verde-acqua, ciano) e qualche giallo: palette Ghost Stride
 const DARK_WIN: Color = Color(0.09, 0.08, 0.16)
-const NEON: Array = [Color(1.0, 0.24, 0.55, 0.0), Color(0.25, 0.88, 1.0, 0.0), Color(1.0, 0.82, 0.25, 0.0), Color(0.62, 0.35, 1.0, 0.0)]
+const NEON: Array = [Color(0.24, 1.0, 0.54, 0.0), Color(0.18, 0.95, 1.0, 0.0), Color(1.0, 0.14, 0.25, 0.0), Color(0.16, 0.36, 1.0, 0.0)]   # neon verde, ciano, rosso, blu (le foto dell'autore)
 
 var solid := MeshBatch.new()
 var glow_v := PackedVector3Array()
@@ -20,6 +20,7 @@ var colliders: Array = []          # [{"c": Vector2(x,z), "r": raggio}] oppure [
 func _init(seed_value: int = 29) -> void:
 	rng.seed = seed_value
 	solid.ink_w = 0.04
+	solid.world = true
 
 
 func _c(hex: String) -> Color:
@@ -70,15 +71,15 @@ func building(side: float, z_front: float, length: float, depth: float, height: 
 		shop = force_shop == 1
 	if shop:
 		var sc: Color = LIT[rng.randi() % LIT.size()]
-		sc = Color(sc.r * 0.85, sc.g * 0.85, sc.b * 0.85, 0.0)
+		sc = Color(sc.r * 0.42, sc.g * 0.42, sc.b * 0.42, 0.0)      # vetrine piu' basse: pochi neon forti, non tutto acceso (Ghost Stride)
 		_face_quad(fx, zc, length * 0.7, 0.6, 2.4, n, sc)
 		solid.box(Transform3D(Basis(), Vector3(side * (x_face - 0.6), 2.75, zc)), Vector3(1.2, 0.12, length * 0.75), NEON[rng.randi() % NEON.size()].darkened(0.2) * Color(1, 1, 1, 0) + Color(0, 0, 0, 1))
 		_glow_rect(Vector3(side * (x_face - 1.2), 0.03, zc), 2.2, length * 0.8, Color(sc.r, sc.g, sc.b, 0.22))
 	else:
-		_face_quad(fx, zc, length * 0.7, 0.3, 2.4, n, _c("#5b5670"))
+		_face_quad(fx, zc, length * 0.7, 0.3, 2.4, n, _c("#2c3a3e"))
 		var y: float = 0.45
 		while y < 2.4:
-			_face_quad(fx - side * 0.01, zc, length * 0.7, y, y + 0.04, n, _c("#3a3550"))
+			_face_quad(fx - side * 0.01, zc, length * 0.7, y, y + 0.04, n, _c("#1a2428"))
 			y += 0.25
 	# finestre
 	var cols: int = maxi(1, int(length / 2.2))
@@ -87,8 +88,8 @@ func building(side: float, z_front: float, length: float, depth: float, height: 
 		for c in cols:
 			var wz: float = z_front - (float(c) + 0.5) * (length / float(cols))
 			var wy: float = 3.6 + 2.9 * f
-			var lit: bool = rng.randf() < 0.42
-			var wc: Color = LIT[rng.randi() % LIT.size()] if lit else DARK_WIN
+			var lit: bool = rng.randf() < 0.22                 # poche finestre accese: il buio fa risaltare i neon
+			var wc: Color = LIT[rng.randi() % LIT.size()] * Color(0.45, 0.45, 0.45, 1.0) if lit else DARK_WIN
 			_face_quad(fx, wz, 0.9, wy, wy + 1.35, n, wc)
 	# insegna verticale al neon
 	if rng.randf() < 0.55 and height > 8.0:

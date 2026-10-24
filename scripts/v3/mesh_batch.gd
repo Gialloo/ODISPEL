@@ -11,6 +11,7 @@ var _c: PackedColorArray = PackedColorArray()
 var _ov: PackedVector3Array = PackedVector3Array()
 var _on: PackedVector3Array = PackedVector3Array()
 var _oc: PackedColorArray = PackedColorArray()
+var world: bool = false            # scenografia di notte: materiale buio (Toon.body_world)
 var ink_w: float = 0.025           # spessore del contorno (metri)
 
 # Godot considera "davanti" il triangolo in senso orario visto da fuori: _tri mette in ordine i vertici da solo.
@@ -280,7 +281,7 @@ func make_instance(node_name: String = "Batch") -> MeshInstance3D:
 	mi.name = node_name
 	mi.mesh = build()
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	Toon.dress(mi)
+	Toon.dress(mi, world)
 	return mi
 
 

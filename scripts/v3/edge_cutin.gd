@@ -324,7 +324,9 @@ func start(char_id: String, pal: Dictionary = PAL_NOX) -> void:
 # A inizio battaglia si costruisce un cut-in minuscolo per ogni membro della squadra, lo si disegna 3 fotogrammi e lo si libera.
 static func warm(host: Node, char_ids: Array) -> void:
 	for ch in char_ids:
-		if not PALETTES.has(ch) or not host.is_inside_tree():
+		if not is_instance_valid(host) or not host.is_inside_tree():
+			return                       # la battaglia e' gia' chiusa (uscita veloce)
+		if not PALETTES.has(ch):
 			continue
 		var e := EdgeCutin.new()
 		e._warm = true
@@ -337,11 +339,12 @@ static func warm(host: Node, char_ids: Array) -> void:
 		e._vp_person.render_target_update_mode = SubViewport.UPDATE_ONCE
 		e._vp_solids.render_target_update_mode = SubViewport.UPDATE_ONCE
 		e._vp_comp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		var tree: SceneTree = host.get_tree()
 		for i in 3:
-			await host.get_tree().process_frame
+			await tree.process_frame
 		if is_instance_valid(e):
 			e.queue_free()
-		await host.get_tree().process_frame
+		await tree.process_frame
 
 
 func _vp(w: int, h: int, three_d: bool) -> SubViewport:

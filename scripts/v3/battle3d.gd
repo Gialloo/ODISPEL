@@ -88,6 +88,7 @@ var _ui: CanvasLayer
 var _root: Control
 var _fx_layer: Control
 var _broken: BrokenCam
+var _glitch: GlitchFx
 var _order_box: VBoxContainer
 var _boss_name: Label
 var _boss_hp: ProgressBar
@@ -334,6 +335,7 @@ func _build_arena() -> void:
 		cb.build(self)
 		add_child(SkyDome.new())
 		_cam_lim = 7.2
+		_night_dress("strada", {"wall_x": 7.0, "z0": 10.0, "z1": -22.0, "seed": 41, "count": 3, "road_half": 4.0, "side_y": 0.16})
 		return
 	# arene delle altre aree: stessa scenografia dell'esplorazione (interno Anomalia, vicolo, galleria, caveau)
 	var layout: String = "anomalia" if arena.begins_with("anomalia") or arena in ["rosso", "blu", "verde"] else arena
@@ -357,6 +359,24 @@ func _build_arena() -> void:
 		env.environment.background_color = lay["bg"]
 	var fog: Array = lay["fog"]
 	Toon.set_fog(fog[0], fog[1] * 0.8, fog[2] * 0.8)
+	var half: float = (lay["bounds"] as Rect2).size.x * 0.5
+	match layout:
+		"vicolo":
+			_night_dress(layout, {"wall_x": 3.4, "z0": 7.0, "z1": -16.0, "seed": 5, "count": 3, "road_half": 2.0, "side_y": 0.16}, env)
+		"galleria", "caveau":
+			_night_dress(layout, {"wall_x": half + 0.3, "z0": 7.0, "z1": -14.0, "seed": 9, "count": 3, "road_half": 99.0, "side_y": 0.03, "rain": false}, env)
+		"tangenziale":
+			_night_dress(layout, {"wall_x": half + 1.2, "z0": 7.0, "z1": -18.0, "seed": 13, "count": 3, "road_half": 99.0, "side_y": 0.03}, env)
+
+
+# Notte «Ghost Stride»: buio, nebbia verde-acqua, 2-4 neon con riflessi a terra e pioggia fine (night_fx.gd)
+func _night_dress(_layout: String, o: Dictionary, env: WorldEnvironment = null) -> void:
+	if env == null:
+		for c in get_children():
+			if c is WorldEnvironment:
+				env = c
+	NightFx.darken_env(env.environment if env != null else null, 9.0, 42.0)
+	NightFx.apply(self, o)
 
 
 func _setup_battle() -> void:
@@ -1259,6 +1279,9 @@ class QteRing extends Control:
 	# esito: il cerchio diventa la parola e svanisce
 	func finish(grade: String) -> void:
 		progress = 1.0
+		# guardia a tempo: onomatopea sopra l'anello (CLANG la perfetta, TAP la buona)
+		if grade == "perfect" or grade == "good":
+			Onomato.pop(get_parent() as Control, position + size * 0.5 + Vector2(0, -150), "CLANG" if grade == "perfect" else "TAP", Ui.CYAN, grade == "perfect")
 		match grade:
 			"perfect":
 				_label.text = "PERFETTA!"
@@ -1306,6 +1329,23 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					ncol = Color("#ff6a5a")
 				_number(dst, ("%d" % amt) + ("!" if crit else ""), ncol, sz, delay)
 				_color_tag(e, dst, delay)
+				# onomatopea sul bersaglio: scudo = CLANG, critico = BAM (+ glitch), colpo grosso = ZAP, normale = TAP, ai tuoi = THUD
+				var ow: String = "TAP"
+				var ocol: Color = Ui.CYAN
+				if int(e.get("absorbed", 0)) > 0:
+					ow = "CLANG"
+				elif crit:
+					ow = "BAM"
+					ocol = Ui.YELLOW
+				elif dst != BattleState.BOSS_ID:
+					ow = "THUD"
+					ocol = Color("#ff6a5a")
+				elif sz >= 46:
+					ow = "ZAP"
+					ocol = Color("#3dff8a")
+				_ono(dst, ow, ocol, delay + 0.03, crit or sz >= 52)
+				if crit:
+					_glitch_later(0.7, delay)
 				if int(e.get("absorbed", 0)) > 0:
 					_number(dst, "SCUDO -%d" % int(e["absorbed"]), Ui.CYAN, 24, delay + 0.1)
 				if hit_anims and vis.has(dst):
@@ -1325,6 +1365,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				delay += 0.12
 			"heal":
 				_number(str(e.get("dst", "")), "+%d" % int(e.get("amount", 0)), Color("#62f08c"), 40, delay)
+				_ono(str(e.get("dst", "")), "PLING", Color("#62f08c"), delay + 0.05, false)
 				# la cura si vede: anello e spirale verdi sul curato (prima c'era solo il numero)
 				var hd: String = str(e.get("dst", ""))
 				if hit_anims and home.has(hd):
@@ -1363,6 +1404,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 			"counter":
 				_number(str(e.get("unit", "")), "CONTRATTACCO", Ui.YELLOW, 26, delay + 0.2, -26.0)
 			"act":
+				if str(e.get("unit", "")) == BattleState.BOSS_ID and BattleResolver.is_heavy_boss_move(BattleContent.BOSS_MOVES.get(str(e.get("move", "")), {})):
+					_glitch_later(0.8, delay)
 				# ARDORE: sotto il 30% dei PV chi attacca colpisce piu' forte (il motore non emette un evento: si legge dallo stato)
 				var au: Dictionary = b["units"].get(str(e.get("unit", "")), {})
 				var amv: Dictionary = BattleContent.MOVES.get(str(e.get("move", "")), {})
@@ -1420,6 +1463,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_number(str(e.get("unit", "")), "DI STRISCIO", Color("#c4c2cf"), 24, delay + 0.1, -26.0)
 			"dodge":
 				_number(str(e.get("unit", "")), "SCHIVATO!", Ui.CYAN, 30, delay + 0.05, -26.0)
+				_ono(str(e.get("unit", "")), "SWISH", Ui.CYAN, delay + 0.05, false)
 			"react_mod":
 				var rm: Dictionary = Progress.REACT_MODS.get(str(e.get("mod", "")), {})
 				_number(str(e.get("unit", "")), str(rm.get("name", "")).to_upper(), _col_of(str(e.get("unit", ""))).lightened(0.3), 24, delay + 0.3, -52.0)
@@ -1428,6 +1472,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if vis.has(pu) and vis[pu] is CharacterVisual:
 					(vis[pu] as CharacterVisual).attack()
 				_kick(0.5)
+				_ono(pu, "CLANG", Ui.CYAN, delay + 0.05, true)
 				delay += 0.15
 			"arena", "behavior", "chain":
 				var dsc: Dictionary = BattleText.describe(b, e)
@@ -1476,6 +1521,31 @@ func _brk_pulse(near: bool) -> void:
 		_brk_tw = _boss_brk.create_tween().set_loops()
 		_brk_tw.tween_property(_boss_brk, "modulate", Color(1.35, 1.25, 0.9), 0.35)
 		_brk_tw.tween_property(_boss_brk, "modulate", Color.WHITE, 0.35)
+
+
+# Onomatopea a fumetto vicino al bersaglio (onomato.gd): al petto, spostata di lato cosi' non copre il numero del danno
+func _ono(uid: String, word: String, col: Color, delay: float, big: bool) -> void:
+	if not vis.has(uid) or _fx_layer == null:
+		return
+	if delay > 0.01:
+		await get_tree().create_timer(delay).timeout
+	if not is_inside_tree() or not vis.has(uid) or cam == null:
+		return
+	var v: Node3D = vis[uid]
+	var p3: Vector3 = v.call("chest_point") if v.has_method("chest_point") else v.global_position + Vector3(0, 1, 0)
+	if cam.is_position_behind(p3):
+		return
+	var sz: Vector2 = get_viewport().get_visible_rect().size
+	var at: Vector2 = cam.unproject_position(p3) + Vector2(randf_range(70.0, 130.0) * (1.0 if randi() % 2 == 0 else -1.0), randf_range(-50.0, 20.0))
+	at = Vector2(clampf(at.x, 150.0, sz.x - 150.0), clampf(at.y, 160.0, sz.y - 260.0))
+	Onomato.pop(_fx_layer, at, word, col, big)
+
+
+func _glitch_later(k: float, delay: float) -> void:
+	if delay > 0.01:
+		await get_tree().create_timer(delay).timeout
+	if is_inside_tree() and _glitch != null:
+		_glitch.pulse(k)
 
 
 func _flash_later(k: float, delay: float) -> void:
@@ -1713,6 +1783,8 @@ func _shatter_later(key: String, delay: float, strength: float, big: bool = fals
 # IL MOMENTO DEL BREAK (Star Rail / Persona): fermo immagine breve + lampo + vetro che esplode dal nemico + scritta BREAK + scossa.
 # Si usa sia per il colpo che rompe sia, in versione piu' corta, dall'attacco di squadra.
 func _break_moment(delay: float, short: bool = false) -> void:
+	_ono(BattleState.BOSS_ID, "KRAK", Color("#ff2340"), delay + 0.02, true)
+	_glitch_later(1.0, delay)
 	_shatter_later("boss", delay, 0.8 if short else 1.0, true)
 	_sparks_later(BattleState.BOSS_ID, delay, true)
 	# la riga sotto la scritta sostituisce il toast di prima, che finiva proprio sopra al BREAK
@@ -1954,6 +2026,8 @@ func _continue_story() -> void:
 func _build_ui() -> void:
 	_broken = BrokenCam.new()
 	add_child(_broken)
+	_glitch = GlitchFx.new()
+	add_child(_glitch)
 	_ui = CanvasLayer.new()
 	_ui.layer = 10
 	add_child(_ui)
@@ -2235,6 +2309,7 @@ func _warm_fonts() -> void:
 		var l := Ui.label("0123456789!+-% ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈ·", int(sz), Ui.CREAM, Ui.display(), 10)
 		l.position = Vector2(0, 0)
 		box.add_child(l)
+	Onomato.warm(_fx_layer)
 	var lb := Ui.label("BREAK!", BREAK_SIZE, Ui.INK, Ui.display(), 0)       # la scritta del BREAK compare nel momento piu' forte: niente scatto
 	box.add_child(lb)
 	for i in 3:
