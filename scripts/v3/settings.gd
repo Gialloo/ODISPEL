@@ -12,9 +12,11 @@ static var vibration: bool = true
 static var show_fps: bool = false
 static var surprise: bool = true        # prova A/B: si puo' attaccare il nemico in strada (vantaggio) e farsi sorprendere (agguato)
 static var broken_cam: bool = true      # telecamera rotta quando tocca a chi ha pochi PV
+static var fps_cap: int = 0             # limite degli fps scelto dal giocatore (0 = predefinito: 60 sul telefono, 120 su PC)
 static var _loaded: bool = false
 
 const LEVELS: Array = [1.0, 0.5, 0.0]
+const FPS_CAPS: Array = [30, 60, 120, 240]
 
 
 static func ensure_loaded() -> void:
@@ -35,6 +37,7 @@ static func load_settings() -> void:
 	show_fps = bool(cfg.get_value("video", "show_fps", show_fps))
 	surprise = bool(cfg.get_value("game", "surprise", surprise))
 	broken_cam = bool(cfg.get_value("video", "broken_cam", broken_cam))
+	fps_cap = int(cfg.get_value("video", "fps_cap", fps_cap))
 
 
 static func save() -> void:
@@ -47,6 +50,7 @@ static func save() -> void:
 	cfg.set_value("video", "show_fps", show_fps)
 	cfg.set_value("game", "surprise", surprise)
 	cfg.set_value("video", "broken_cam", broken_cam)
+	cfg.set_value("video", "fps_cap", fps_cap)
 	cfg.save(path)
 
 
@@ -61,6 +65,28 @@ static func level_text(value: float) -> String:
 	if value <= 0.01:
 		return "SPENTE"
 	return "RIDOTTE"
+
+
+static func fps_value() -> int:
+	if FPS_CAPS.has(fps_cap):
+		return fps_cap
+	return 60 if OS.has_feature("mobile") else 120
+
+
+static func next_fps() -> void:
+	fps_cap = int(FPS_CAPS[(FPS_CAPS.find(fps_value()) + 1) % FPS_CAPS.size()])
+
+
+# Limite degli fps e vsync: il vsync resta acceso finche' il limite non supera lo schermo,
+# cosi' a 120/240 su un monitor veloce non si strappa l'immagine e su uno lento si va oltre i 60 se richiesto.
+static func apply_fps() -> void:
+	var cap: int = fps_value()
+	Engine.max_fps = cap
+	if DisplayServer.get_name() == "headless":
+		return
+	var hz: float = DisplayServer.screen_get_refresh_rate()
+	var over: bool = hz > 1.0 and float(cap) > hz + 1.0
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED if over else DisplayServer.VSYNC_ENABLED)
 
 
 static func buzz(ms: int) -> void:

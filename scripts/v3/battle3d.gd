@@ -10,6 +10,7 @@ extends Node3D
 const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
 const START_GAUGE: int = 60          # PROVVISORIO (test): ultimate gia' a buon punto, cosi' si vede nel mini combattimento
 const ENEMY_POS := Vector3(0, 0.14, -3.4)
+const PARTY_Z: float = 4.3                 # fila della squadra: piu' indietro (prima 3.0) per dare respiro tra squadra e nemico
 
 # GUARDIA A TEMPO: quando parte il colpo annunciato un cerchio si chiude sul bersaglio; toccare quando si chiude
 # riduce il danno e carica l'ultimate, toccare proprio all'impatto e' una parata perfetta con contrattacco.
@@ -20,6 +21,7 @@ const LEZIONI: Array = [["tut_intro", "tut_attacco"], ["tut_guardia", "tut_abili
 	["tut_reazioni", "tut_rottura"], ["tut_ultimate", "tut_extra"]]
 const LEZIONI_MAX: int = 2
 const TOAST_MAX: int = 2              # avvisi sulla lastra scura visibili insieme
+const NOTICE_Y: float = 64.0          # avvisi in alto a sinistra (Persona 5: nome della mossa e "Attacco su!"), sotto l'etichetta REC
 const QTE_LEAD: float = 0.9          # dall'apparire del cerchio all'impatto
 const QTE_GOOD: float = 0.3          # quanto prima dell'impatto vale gia' come guardia
 const QTE_LATE: float = 0.12         # tolleranza dopo l'impatto
@@ -89,7 +91,7 @@ var _root: Control
 var _fx_layer: Control
 var _broken: BrokenCam
 var _glitch: GlitchFx
-var _order_box: VBoxContainer
+var _order_box: BoxContainer
 var _boss_name: Label
 var _boss_hp: ProgressBar
 var _boss_hp_txt: Label
@@ -127,6 +129,11 @@ var _live_back: String = ""             # chi stava scegliendo quando e' partita
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
+var _skill_menu: SkillMenu = null     # menu ABILITA' aperto (Persona 5)
+var _skill_pick: Dictionary = {}       # id unita' -> abilita' scelta nel menu (resta per la battaglia, come il cursore di Persona)
+var _order_panel: Control              # ordine dei turni (si vede solo mentre si sceglie)
+var _boss_panel: Control               # nome e barre del nemico (in alto a sinistra)
+var _choice_hud: bool = false          # true: HUD della scelta; false: durante le mosse resta solo il necessario
 var _top_bar: Control                   # x1 / AUTO / pausa: si nasconde mentre parla Echo (il SALTA del dialogo sta li')
 var _legend: Control                    # ruota dei colori spiegata: si apre col tasto COLORI
 var _btn_fast: Button
@@ -346,7 +353,7 @@ func _build_arena() -> void:
 	if layout in ["vicolo", "caveau", "galleria"]:
 		var half: float = (lay["bounds"] as Rect2).size.x * 0.5
 		_cam_lim = half - 0.15
-		_row_k = clampf((_cam_lim - 0.7) / 2.55, 0.6, 1.0)
+		_row_k = clampf((_cam_lim - 0.7) / 3.3, 0.5, 1.0)
 	else:
 		_cam_lim = 6.6
 	if SkyDome.outdoor(layout):
@@ -422,13 +429,14 @@ func _setup_battle() -> void:
 
 
 func _build_units() -> void:
-	var xs: Array = [-2.55 * _row_k, -0.85 * _row_k, 0.85 * _row_k, 2.55 * _row_k]
+	# squadra larga e lontana dal nemico (Persona 5: tra i compagni c'e' aria, il nemico e' "di fronte", non addosso)
+	var xs: Array = [-3.3 * _row_k, -1.1 * _row_k, 1.1 * _row_k, 3.3 * _row_k]
 	for i in slots.size():
 		var u: Dictionary = _slot_unit(i)
 		var cv := CharacterVisual.new()
 		cv.setup(str(u["char"]))
 		add_child(cv)
-		var pos := Vector3(xs[i], 0.14, 3.0 + absf(xs[i]) * 0.18)
+		var pos := Vector3(xs[i], 0.14, PARTY_Z + absf(xs[i]) * 0.12)
 		cv.position = pos
 		cv.stance = true
 		_face(cv, ENEMY_POS)
@@ -489,7 +497,7 @@ func _cam_fit(pos: Vector3, look: Vector3) -> Vector3:
 
 
 func _cam_overview(snap: bool = false) -> void:
-	_cam_set(Vector3(0.6, 3.3, 9.8), Vector3(0, 1.2, -1.6), 2.5, snap)
+	_cam_set(Vector3(0.6, 3.5, 11.4), Vector3(0, 1.2, -1.2), 2.5, snap)
 
 
 func _cam_actor(uid: String) -> void:
@@ -504,9 +512,13 @@ func _cam_actor(uid: String) -> void:
 func _cam_choose(uid: String, close: bool = false) -> void:
 	var p: Vector3 = home[uid]
 	var k: float = 0.85 if close else 1.0
-	# di tre quarti, di lato e vicino: il personaggio a sinistra, il nemico a destra, il grappolo dei comandi in mezzo
-	var cp: Vector3 = p + Vector3(2.75 * k, 1.35 + 0.1 * k, 1.35 * k)
-	var look: Vector3 = p.lerp(ENEMY_POS, 0.4) + Vector3(0.0, 1.05 if not close else 1.2, 0)
+	# alla Persona 5: alle spalle e un po' a destra di chi sceglie, lui a sinistra del centro e il nemico libero a destra
+	# (i comandi stanno alla SUA sinistra, non tra lui e il nemico). Stessa inquadratura per ogni posto della fila: la si
+	# calcola lungo la linea personaggio-nemico (d avanti, l a sinistra), numeri cercati sulle proiezioni dei quattro posti.
+	var d: Vector3 = Vector3(ENEMY_POS.x - p.x, 0.0, ENEMY_POS.z - p.z).normalized()
+	var l: Vector3 = Vector3(d.z, 0.0, -d.x)
+	var cp: Vector3 = p - d * 2.8 * k - l * 2.4 * k + Vector3(0, 1.3 + 0.1 * (1.0 - k), 0)
+	var look: Vector3 = p + d * 1.5 + l * 0.8 + Vector3(0, 1.0 if not close else 1.15, 0)
 	_cam_set(cp, look, 5.0 if not close else 2.6)
 	# i compagni tra la telecamera e la scena escono di quadro mentre si sceglie (come in Persona 5)
 	var dme: float = cp.distance_to(p)
@@ -552,6 +564,7 @@ func _process(delta: float) -> void:
 		if not cam.is_position_behind(bp):
 			_reticle.position = cam.unproject_position(bp)
 	_update_wheel()
+	_place_boss_tag()
 	_cam_pos = _cam_pos.lerp(_cam_want_pos, minf(1.0, rd * _cam_rate))
 	_cam_look = _cam_look.lerp(_cam_want_look, minf(1.0, rd * _cam_rate))
 	var sh := Vector3.ZERO
@@ -590,25 +603,51 @@ func _update_wheel() -> void:
 			var c: Vector2 = Vector2(ph.x, lerpf(ph.y, pf.y, 0.42))
 			# il grappolo dei comandi (a destra del personaggio) resta dentro lo schermo e sopra la squadra
 			var sk: float = _wheel.s()
-			c.x = clampf(c.x, 90.0, vs.x - 470.0 * sk - 420.0)
-			c.y = clampf(c.y, 150.0 + 200.0 * sk, vs.y - 175.0 * sk)
+			c.x = clampf(c.x, 500.0 * sk, vs.x - 420.0)      # i comandi stanno a sinistra del personaggio
+			c.y = clampf(c.y, 170.0 + 250.0 * sk, vs.y - 175.0 * sk)      # ULTIMATE non sale sui TURNI
 			_wheel.center = _wheel.center.lerp(c, 0.35) if _wheel.appear > 0.05 else c
 			var m: ShaderMaterial = _spot.material
 			m.set_shader_parameter("c", Vector2(ph.x, lerpf(ph.y, pf.y, 0.5)) / vs)
 			m.set_shader_parameter("r", Vector2(hgt * 0.42, hgt * 0.62) / vs)
-	_spot.visible = e > 0.01
+	# di chi e' il turno si vede subito: mentre la ruota e' aperta la scena e' appena piu' scura attorno a lui e lui ha un alone
+	# del suo colore (anche prima di scegliere); scegliendo, lo scuro cresce come prima
+	var base: float = clampf(_wheel.appear * 1.5, 0.0, 1.0) if _wheel.visible and waiting else 0.0
+	_spot.visible = e > 0.01 or base > 0.01
 	if _spot.visible:
 		var ult: bool = _picked == "ult"
 		var m2: ShaderMaterial = _spot.material
-		_spot_boss(m2, e, ult)
-		m2.set_shader_parameter("k", (0.86 if ult else 0.55) * e)
-		m2.set_shader_parameter("aura", (0.9 if ult else 0.35) * e * (0.85 + 0.15 * sin(Time.get_ticks_msec() * 0.008)))
+		_spot_boss(m2, e, ult, base)
+		var pulse: float = 0.85 + 0.15 * sin(Time.get_ticks_msec() * 0.008)
+		m2.set_shader_parameter("k", maxf((0.86 if ult else 0.55) * e, 0.32 * base))
+		m2.set_shader_parameter("aura", maxf((0.9 if ult else 0.35) * e, 0.3 * base) * pulse)
 		m2.set_shader_parameter("tint", _col(_unit_of(cur_pid)))
 
 
 # Il nemico preso di mira dall'attacco scelto brilla piano (alone caldo che pulsa) e resta in luce anche con lo schermo scuro dell'ULTIMATE
-func _spot_boss(m: ShaderMaterial, e: float, ult: bool) -> void:
-	var on: bool = _picked in ["attack", "skill", "ult"] and vis.has(BattleState.BOSS_ID) and BattleState.is_alive(BattleState.boss(b))
+# Cartellino del nemico (Persona 5 / Metaphor: il nome sta SUL nemico): sopra la sua testa, segue la telecamera, resta nello
+# schermo. Si vede solo mentre si sceglie (_hud_focus).
+func _place_boss_tag() -> void:
+	if _boss_panel == null or not _boss_panel.visible or not vis.has(BattleState.BOSS_ID):
+		return
+	var bv: Node3D = vis[BattleState.BOSS_ID]
+	var h3: Vector3 = bv.call("head_point") if bv.has_method("head_point") else bv.global_position + Vector3(0, 2.2, 0)
+	if cam.is_position_behind(h3):
+		return
+	var hp: Vector2 = cam.unproject_position(h3 + Vector3(0, 0.35, 0))
+	var vs: Vector2 = get_viewport().get_visible_rect().size
+	var sz: Vector2 = _boss_panel.get_combined_minimum_size()
+	sz.x = maxf(sz.x, 300.0)
+	var want := Vector2(hp.x - sz.x * 0.5, hp.y - sz.y - 18.0)
+	want.x = clampf(want.x, 16.0, vs.x - sz.x - 16.0)
+	want.y = clampf(want.y, 64.0, vs.y * 0.5)
+	_boss_panel.position = _boss_panel.position.lerp(want, 0.3) if _boss_panel.position.y > 1.0 else want
+	_boss_panel.size = sz
+
+
+func _spot_boss(m: ShaderMaterial, e: float, ult: bool, base: float = 0.0) -> void:
+	# il bersaglio resta in risalto anche prima di scegliere (Persona 5: il nemico si stacca dalla scena scura)
+	e = maxf(e, 0.7 * base) if _picked in ["", "attack", "skill", "ult"] else e
+	var on: bool = (_picked in ["attack", "skill", "ult"] or (_picked == "" and base > 0.0)) and vis.has(BattleState.BOSS_ID) and BattleState.is_alive(BattleState.boss(b))
 	var k2: float = 0.0
 	if on:
 		var bv: Node3D = vis[BattleState.BOSS_ID]
@@ -763,11 +802,28 @@ func _choice_for(move_id: String) -> Dictionary:
 
 
 func _skill_of(u: Dictionary) -> String:
+	var sp: String = str(_skill_pick.get(str(u.get("id", "")), ""))
+	if sp != "" and _skill_ids(u).has(sp):
+		return sp                 # scelta nel menu ABILITA' di questa battaglia
 	var eq: String = str(u.get("equip_skill", ""))
 	if eq != "" and (u.get("skills", []) as Array).has(eq):
 		return eq                 # scelta nel menu SQUADRA
 	var def: Dictionary = BattleContent.CHARACTERS.get(str(u["char"]), {})
 	return str(def.get("skill", "attack"))
+
+
+# Le abilita' che il personaggio ha: quella di base e quelle sbloccate (menu ABILITA')
+func _skill_ids(u: Dictionary) -> Array:
+	var out: Array = []
+	var def: Dictionary = BattleContent.CHARACTERS.get(str(u.get("char", "")), {})
+	var base: String = str(def.get("skill", ""))
+	if base != "" and BattleContent.MOVES.has(base):
+		out.append(base)
+	for m in (u.get("skills", []) as Array):
+		var ms: String = str(m)
+		if not out.has(ms) and BattleContent.MOVES.has(ms) and str(BattleContent.MOVES[ms].get("kind", "")) == "skill":
+			out.append(ms)
+	return out
 
 
 func _usable(move_id: String) -> bool:
@@ -1499,7 +1555,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 	# legami e combo muti prima: UN solo banner per azione, il piu' forte, sotto quello della mossa
 	var lb: Dictionary = CombatHud.link_banner(ev)
 	if not lb.is_empty():
-		_banner(str(lb["text"]), lb["col"], 0.25, 24)
+		_notice(str(lb.get("short", lb["text"])), lb["col"], 1.6, "chain")      # catena + poche parole
 	_refresh_hud()
 	await _wait(0.22 + delay)
 
@@ -1600,7 +1656,7 @@ static func _snap_size(size: int) -> int:
 func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0) -> void:
 	if not vis.has(uid):
 		return
-	size = _snap_size(size)
+	size = _snap_size(maxi(18, int(round(float(size) * 0.85))) if size < 60 else size)      # numeri piu' piccoli: la scena resta libera
 	var v: Node3D = vis[uid]
 	var p3: Vector3 = v.call("head_point") if v.has_method("head_point") else v.global_position
 	var l := Ui.label(text, size, col, Ui.display(), 10)
@@ -2053,44 +2109,53 @@ func _build_ui() -> void:
 	_wheel = CmdWheel.new()
 	_wheel.visible = false
 	_wheel.tapped.connect(_wheel_tap)
+	_wheel.hovered.connect(_wheel_hover)
 	_fx_layer.add_child(_wheel)
 
-	# ordine dei turni (sinistra)
+	# ordine dei turni: una riga di lastrine in alto, accanto al nemico (Metaphor: i turni in alto al centro). Si vede solo
+	# mentre si sceglie: durante le mosse l'HUD si svuota (Persona 5)
 	var ob := PanelContainer.new()
-	ob.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.38), Color(0, 0, 0, 0), 0, 6, 0))
-	ob.position = Vector2(16, 126 if Settings.show_fps else 70)
+	ob.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	Ui.place(ob, 0.5, 0.0, 0.5, 0.0, 0, 12, 0, 12)      # al centro in alto: l'etichetta REC a sinistra cambia lunghezza
+	ob.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	ob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(ob)
-	var ov := VBoxContainer.new()
-	ov.add_theme_constant_override("separation", 4)
+	_order_panel = ob
+	var ov := HBoxContainer.new()
+	ov.add_theme_constant_override("separation", 6)
+	ov.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ob.add_child(ov)
-	_order_title = Ui.label("TURNO 1", 20, Ui.YELLOW, Ui.display(), 6)
+	_order_title = Ui.label("TURNO 1", 16, Ui.YELLOW, Ui.display(), 6)
 	ov.add_child(_order_title)
-	_order_box = VBoxContainer.new()
-	_order_box.add_theme_constant_override("separation", 3)
+	_order_box = HBoxContainer.new()
+	_order_box.add_theme_constant_override("separation", 4)
+	_order_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ov.add_child(_order_box)
 
-	# nemico (alto al centro)
+	# nemico: lastra nera storta in alto a sinistra (Persona 5: il nome del nemico in alto a sinistra), vita ed equilibrio
+	# come due barre sottili sotto il nome; DEBOLE A e la prossima mossa solo mentre si sceglie
 	var bp := VBoxContainer.new()
-	Ui.place(bp, 0.5, 0, 0.5, 0, -300, 14, 300, 140)
+	Ui.place(bp, 0, 0, 0, 0, 24, 60, 324, 60)      # la posizione vera la decide _place_boss_tag (sopra il nemico)
+	_boss_panel = bp
 	bp.add_theme_constant_override("separation", 4)
 	bp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(bp)
-	_boss_name = Ui.label(_bname(), 28, Ui.YELLOW, Ui.display(), 8)
-	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_name = Ui.label(_bname(), 22, Ui.CREAM, Ui.display(), 0)
+	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_boss_name.add_theme_stylebox_override("normal", Ui.plate(Color(0.02, 0.01, 0.03, 0.92), Color("#ff2340"), -0.18, 5))
 	bp.add_child(_boss_name)
-	_boss_hp = _bar(Color("#ff4b6e"), 22)
+	_boss_hp = _bar(Color("#ff4b6e"), 16)
 	bp.add_child(_boss_hp)
 	_boss_ghost = _ghost_bar(_boss_hp)
-	_boss_hp_txt = Ui.label("", 22, Ui.CREAM, null, 5)
+	_boss_hp_txt = Ui.label("", 14, Ui.CREAM, null, 4)
 	_boss_hp_txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_hp.add_child(_boss_hp_txt)
 	Ui.place(_boss_hp_txt, 0, 0, 1, 1)
 	_boss_hp_txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_boss_brk = _bar(Color("#f2f0ea"), 20)
+	_boss_brk = _bar(Color("#f2f0ea"), 14)
 	bp.add_child(_boss_brk)
 	# il nome della barra bianca dentro la barra, crema col contorno scuro, si legge su barra piena e vuota (prima grigio chiaro da 12: non si leggeva): quando arriva a zero il boss si rompe
-	_brk_lbl = Ui.label("EQUILIBRIO", 16, Ui.CREAM, Ui.display(), 6)
+	_brk_lbl = Ui.label("EQUILIBRIO", 12, Ui.CREAM, Ui.display(), 4)
 	var brk_t := _brk_lbl
 	brk_t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_brk.add_child(brk_t)
@@ -2098,18 +2163,18 @@ func _build_ui() -> void:
 	brk_t.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	# DEBOLE A ... : chi deve colpire si legge sotto il nemico, non solo nella legenda in alto a destra (Persona 5: l'analisi del nemico)
 	_weak_row = HBoxContainer.new()
-	_weak_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_weak_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_weak_row.add_theme_constant_override("separation", 2)
 	_weak_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bp.add_child(_weak_row)
-	_weak_k = Ui.plate_label("DEBOLE A", 17, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
+	_weak_k = Ui.plate_label("DEBOLE A", 15, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
 	_weak_row.add_child(_weak_k)
-	_weak_v = Ui.plate_label("???", 17, Ui.INK, Color("#9a94a8"), Ui.INK)
+	_weak_v = Ui.plate_label("???", 15, Ui.INK, Color("#9a94a8"), Ui.INK)
 	_weak_row.add_child(_weak_v)
 	# la minaccia su una lastra scura col bordo rosso: si legge su cielo chiaro e su insegne (prima testo bianco nudo da 20)
-	_tele = Ui.label("", 20, Ui.CREAM, Ui.display(), 0)
-	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_tele.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_tele = Ui.label("", 15, Ui.CREAM, Ui.display(), 0)
+	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_tele.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bp.add_child(_tele)
 
 	_party_back = Control.new()
@@ -2119,11 +2184,11 @@ func _build_ui() -> void:
 	_root.add_child(_party_back)
 	# squadra (basso a destra, righe compatte come nella V2): il centro e il lato sinistro restano alla scena e alla ruota
 	var party := VBoxContainer.new()
-	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -370, -300, -30, -18)
+	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -340, -300, -24, -16)
 	party.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	party.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	party.alignment = BoxContainer.ALIGNMENT_END
-	party.add_theme_constant_override("separation", 10)
+	party.add_theme_constant_override("separation", 4)
 	party.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(party)
 	for i in slots.size():
@@ -2135,7 +2200,10 @@ func _build_ui() -> void:
 
 	# comandi (basso a destra)
 	_cmd_box = VBoxContainer.new()
-	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -650, -16, -350)      # REAZIONE sopra la squadra, senza toccare la card in alto
+	# REAZIONE in alto a destra, sotto la barra rapida: lontana dalla squadra e da CONFERMA (in basso a sinistra), cosi' un clic
+	# sbagliato non fa partire una reazione. La colonna non prende clic: solo i suoi tasti.
+	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -480, -262, -16, -262)      # sopra la squadra; compare solo quando si puo' reagire
+	_cmd_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
 	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
 	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -2146,24 +2214,34 @@ func _build_ui() -> void:
 	_react_box = VBoxContainer.new()
 	_react_box.add_theme_constant_override("separation", 4)
 	_react_box.visible = false
+	_react_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cmd_box.add_child(_react_box)
-	_react_lbl = Ui.label("", 18, Ui.CREAM, null, 5)
+	_react_lbl = Ui.label("", 16, Ui.CREAM, null, 5)
 	_react_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_react_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART      # resta nella colonna, non sconfina sulla barra del nemico
 	_react_box.add_child(_react_lbl)
 	var rrow := HBoxContainer.new()
 	rrow.add_theme_constant_override("separation", 6)
+	rrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_react_box.add_child(rrow)
+	# una riga sola: la scritta piccola a sinistra dei tasti (prima una riga sopra: la colonna saliva fin sul nemico)
+	_react_box.remove_child(_react_lbl)
+	_react_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_react_lbl.add_theme_font_size_override("font_size", 13)
+	_react_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	rrow.add_child(_react_lbl)
 	var rcols: Dictionary = {"schivata": Ui.CYAN, "intercettazione": Color("#62f08c"), "interruzione": Ui.PINK, "soccorso": Ui.YELLOW}
 	for rid in ["schivata", "intercettazione", "interruzione", "soccorso"]:
-		var rb: Button = Ui.button(str(REACT_SHORT[rid]), rcols[rid], 17)
+		var rb: Button = Ui.button(str(REACT_SHORT[rid]), rcols[rid], 15)
 		rb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		rb.clip_text = true
+		rb.custom_minimum_size.y = 52.0 if Ui.is_touch() else 40.0
 		rb.pressed.connect(_react_cmd.bind(rid))
 		rb.visible = false
 		rrow.add_child(rb)
 		_react_btns[rid] = rb
 	var lrow2 := HBoxContainer.new()
 	lrow2.add_theme_constant_override("separation", 6)
+	lrow2.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_react_box.add_child(lrow2)
 	for k in 3:
 		var lb: Button = Ui.button("", Ui.PINK, 17)
@@ -2181,6 +2259,7 @@ func _build_ui() -> void:
 	_cmd_box.add_child(_btn_skill)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cmd_box.add_child(row)
 	_btn_guard = Ui.button("GUARDIA", Ui.CREAM, 20)
 	_btn_guard.pressed.connect(_command.bind("guard"))
@@ -2209,7 +2288,10 @@ func _build_ui() -> void:
 	_root.add_child(_kit_lbl)
 	_hint = Ui.label("", 18, Ui.CREAM, null, 5)
 	# a sinistra sotto i TURNI, dentro il fumetto di Echo (come l'alleata che parla in Persona): il centro resta alla scena
-	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 96, 330, 456, 330)      # piu' in basso: l'ordine dei turni a lastre e' piu' alto
+	# in basso a sinistra, nello stesso angolo della didascalia della scelta (che lo sostituisce quando scegli): la ruota attorno al
+	# personaggio resta libera (prima il fumetto le stava sopra quando il personaggio era a sinistra)
+	Ui.place(_hint, 0.0, 1.0, 0.0, 1.0, 96, -40, 520, -40)
+	_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(EchoBalloon.new(_hint))
@@ -2218,31 +2300,30 @@ func _build_ui() -> void:
 	# in alto a destra: pausa, AUTO, velocita'
 	var tr := HBoxContainer.new()
 	_top_bar = tr
-	Ui.place(tr, 1.0, 0, 1.0, 0, -400, 14, -16, 80)
+	Ui.place(tr, 1.0, 0, 1.0, 0, -480, 12, -16, 56)      # una sola riga di lastre scure e piccole (Metaphor: i tasti rapidi non rubano la scena)
 	tr.alignment = BoxContainer.ALIGNMENT_END
 	tr.add_theme_constant_override("separation", 8)
 	_root.add_child(tr)
-	_btn_fast = Ui.button("x1", Ui.CREAM, 20, 70)
+	_btn_fast = _quick_btn("x1", 58)
 	_btn_fast.pressed.connect(_toggle_fast)
 	tr.add_child(_btn_fast)
-	_btn_auto = Ui.button("AUTO", Ui.CREAM, 20, 100)
+	_btn_auto = _quick_btn("AUTO", 92)
 	_btn_auto.pressed.connect(_toggle_auto)
 	tr.add_child(_btn_auto)
-	var pb := Ui.button("II", Ui.CREAM, 24, 70)
+	var pb := _quick_btn("II", 58)
 	pb.pressed.connect(_open_pause)
-	tr.add_child(pb)
 
 	# legenda dei colori: chiusa, un tasto COLORI sotto i pulsanti in alto a destra (chi colpire lo dice gia' DEBOLE A sotto
 	# il nemico: una cosa per volta). Aperta: le due catene con le parole, A > B = A batte B (+50% danno)
-	var lbtn := Ui.button("COLORI", Ui.CREAM, 18, 110)
-	Ui.place(lbtn, 1.0, 0, 1.0, 0, -126, 88, -16, 128)
+	var lbtn := _quick_btn("COLORI", 100)
 	lbtn.pressed.connect(func() -> void:
 		_legend.visible = not _legend.visible)
-	tr.get_parent().add_child(lbtn)
+	tr.add_child(lbtn)
+	tr.add_child(pb)
 	var leg := PanelContainer.new()
 	_legend = leg
 	leg.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.9), Ui.INK, 3, 6, 0))
-	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 136, -16, 136)
+	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 66, -16, 66)
 	leg.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	leg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	leg.visible = false
@@ -2298,6 +2379,34 @@ func _build_ui() -> void:
 	_say_balloon.fit = true
 	_cutin.add_child(_say_balloon)
 	_cutin.add_child(_say_lbl)
+
+
+# Persona 5: mentre qualcuno fa la mossa l'HUD si svuota. Restano le vite (squadra e nemico) e il nome della mossa;
+# turni, DEBOLE A, prossima mossa, consigli di Echo e tasti rapidi tornano quando tocca di nuovo scegliere.
+# (Con AUTO acceso i tasti rapidi restano: servono per spegnerlo.)
+func _hud_focus(choice: bool) -> void:
+	_choice_hud = choice
+	# durante la mossa restano: nome della mossa, effetti (gli avvisi) e vite della squadra. Il nemico torna quando si sceglie.
+	for c in [_order_panel, _boss_panel, _weak_row, _tele, _hint]:
+		if c != null:
+			(c as Control).visible = choice
+	if _top_bar != null:
+		_top_bar.visible = choice or auto_on
+	if _legend != null and not choice:
+		_legend.visible = false
+	_stack_notices()
+
+
+# Tasto della barra rapida in alto a destra: lastra scura, scritta crema, piccolo (resta grande abbastanza per il dito)
+func _quick_btn(text: String, w: float) -> Button:
+	var b: Button = Ui.button(text, Color(0.05, 0.03, 0.08, 0.78), 14, w * 0.8)
+	for k in ["font_color", "font_hover_color", "font_pressed_color"]:
+		b.add_theme_color_override(k, Ui.CREAM)
+	b.add_theme_stylebox_override("normal", Ui.box(Color(0.05, 0.03, 0.08, 0.72), Color(Ui.CREAM, 0.55), 2, 4, 0))
+	b.add_theme_stylebox_override("hover", Ui.box(Color(0.12, 0.08, 0.18, 0.85), Ui.CREAM, 2, 4, 0))
+	b.add_theme_stylebox_override("pressed", Ui.box(Color(0.2, 0.14, 0.28, 0.9), Ui.CREAM, 2, 4, 0))
+	b.custom_minimum_size.y = 48.0 if Ui.is_touch() else 34.0
+	return b
 
 
 # Disegna una volta, quasi trasparenti, cifre e lettere in tutte le grandezze dei numeri dei colpi: il telefono prepara
@@ -2446,7 +2555,7 @@ func _weak_refresh(boss: Dictionary) -> void:
 func _make_card() -> Dictionary:
 	# P5/JSR: niente pannello. Volto in cornice storta + numero PV grande + EN piccola + barretta sottile; chi e' di turno ha una lastra di colore piena
 	var p := PanelContainer.new()
-	p.custom_minimum_size = Vector2(330, 0)
+	p.custom_minimum_size = Vector2(300, 0)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	var row := HBoxContainer.new()
@@ -2454,7 +2563,7 @@ func _make_card() -> Dictionary:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(row)
 	var face := TextureRect.new()
-	face.custom_minimum_size = Vector2(62, 56)
+	face.custom_minimum_size = Vector2(48, 42)
 	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2471,7 +2580,7 @@ func _make_card() -> Dictionary:
 	line.add_theme_constant_override("separation", 10)
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vb.add_child(line)
-	var hp_t := Ui.label("", 36, Ui.CREAM, Ui.display(), 9)
+	var hp_t := Ui.label("", 24, Ui.CREAM, Ui.display(), 7)      # squadra piu' compatta (Metaphor): la scena resta libera
 	line.add_child(hp_t)
 	var en := Ui.label("", 18, Ui.CYAN, Ui.display(), 5)
 	en.size_flags_vertical = Control.SIZE_SHRINK_END
@@ -2667,14 +2776,16 @@ func _confirm_button(kind: String) -> void:
 func _show_commands(on: bool) -> void:
 	if _cmd_box == null:
 		return
+	_hud_focus(on)
 	_cmd_box.visible = on
 	if _kit_lbl != null:
 		_kit_lbl.visible = false     # cosa fa ogni comando ora sta nel riquadro della scelta, sulla ruota
 	if _wheel != null:
 		_wheel.visible = on
 	if _turn_lbl != null:
-		_turn_lbl.visible = not on         # il nome di chi e' di turno sta sotto la ruota
+		_turn_lbl.visible = false          # chi e' di turno lo dicono la luce, la ruota e la lastra della squadra (Persona 5: niente scritte in piu')
 	if not on:
+		_close_skills()
 		_pick("")
 		_cam_choose_end()
 		if _reticle != null and not _confirming:
@@ -2729,13 +2840,14 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 		tip = "\n" + str(kit_lines[0])
 	var en: int = int(u.get("energy", 0))
 	var items: Array = [
-		{"kind": "attack", "name": "ATTACCO", "sub": "COLPO BASE", "cost": "", "ok": _usable("attack"), "letter": "A",
+		# sotto ogni comando UNA parola breve che dice cosa fa (Persona 5: "Use a Skill"); i nomi delle mosse stanno nel menu ABILITA'
+		{"kind": "attack", "name": "ATTACCO", "sub": "COLPISCI", "cost": "", "ok": _usable("attack"), "letter": "A",
 			"title": "ATTACCO", "desc": "Colpo al nemico · non costa energia" + tip},
-		{"kind": "skill", "name": sk_name, "sub": "ABILITÀ", "cost": "%d/%d EN" % [int(skm.get("cost", 0)), en], "ok": _usable(sk), "letter": letter,
-			"title": sk_name, "desc": str(skm.get("desc", "")) + tip},
-		{"kind": "ult", "name": "ULTIMATE", "sub": str(um.get("name", "COLPO FINALE")).to_upper() if ult_ok else "COLPO FINALE", "cost": "PRONTA" if ult_ok else "%d%%" % int(u.get("gauge", 0)),
-			"ok": ult_ok, "letter": "U", "title": "ULTIMATE · " + str(um.get("name", "")).to_upper(), "desc": str(um.get("desc", "")) + tip},
-		{"kind": "guard", "name": "GUARDIA", "sub": "DIFESA", "cost": "+1 EN", "ok": _usable("guard"), "letter": "G",
+		{"kind": "skill", "name": "ABILITÀ", "sub": "MOSSE", "cost": "%d EN" % en, "ok": true, "letter": letter,
+			"title": "ABILITÀ", "desc": "Apre le mosse speciali: ognuna costa energia" + tip},
+		{"kind": "ult", "name": "ULTIMATE", "sub": "SCATENA", "cost": "PRONTA" if ult_ok else "%d%%" % int(u.get("gauge", 0)),
+			"ok": ult_ok, "charge": float(u.get("gauge", 0)) / float(BattleTypes.GAUGE_MAX), "letter": "U", "title": "ULTIMATE · " + str(um.get("name", "")).to_upper(), "desc": str(um.get("desc", "")) + tip},
+		{"kind": "guard", "name": "GUARDIA", "sub": "DIFENDITI", "cost": "+1 EN", "ok": _usable("guard"), "letter": "G",
 			"title": "GUARDIA", "desc": "Dimezza il danno e ricarica energia"},
 	]
 	_wheel.setup(str(u.get("name", "")).to_upper() + (" · RAPIDO" if _quick else ""), _col(u), items)
@@ -2768,18 +2880,72 @@ func _pick(kind: String) -> void:
 			_cam_choose(uid)
 
 
+# Un tocco sul comando lo LANCIA (Persona 5; niente CONFERMA, decisione dell'autore 24/10/2026). ABILITA' apre il suo menu.
 func _wheel_tap(kind: String) -> void:
+	if not waiting or ended or _pause != null or _skill_menu != null:
+		return
 	match kind:
-		"confirm":
-			if _picked != "":
-				_command(_picked)
-		"cancel":
-			_pick("")
-		_:
-			if kind == _picked:
-				_command(kind)
-			else:
-				_pick(kind)
+		"skill":
+			_open_skills()
+		"attack", "guard", "ult":
+			if _wheel != null and not bool(_wheel.item(kind).get("ok", false)):
+				Settings.buzz(10)
+				return
+			_command(kind)
+
+
+# PC: il mouse sopra un comando lo accende e mostra cosa fa (senza muovere la telecamera)
+func _wheel_hover(kind: String) -> void:
+	if not waiting or ended or _skill_menu != null:
+		return
+	if kind != "" and _wheel != null and not bool(_wheel.item(kind).get("ok", false)):
+		kind = ""                 # un comando spento non si accende (l'ULTIMATE non carica non fa partire le bande nere)
+	_picked = kind
+	if _hint != null:
+		_hint.modulate.a = 0.0 if kind != "" else 1.0
+	if _wheel != null:
+		_wheel.pick(kind)
+
+
+func _open_skills() -> void:
+	var u: Dictionary = _unit_of(cur_pid)
+	var en: int = int(u.get("energy", 0))
+	var items: Array = []
+	var start: int = 0
+	var cur: String = _skill_of(u)
+	for id in _skill_ids(u):
+		var mv: Dictionary = BattleContent.MOVES[id]
+		var ok: bool = _usable(id)
+		var why: String = ""
+		if not ok:
+			why = "Energia insufficiente" if int(mv.get("cost", 0)) > en else ("Non in un turno RAPIDO" if _quick else "Non si può usare adesso")
+		if id == cur:
+			start = items.size()
+		items.append({"id": id, "name": str(mv.get("name", id)).to_upper(), "cost": "%d EN" % int(mv.get("cost", 0)),
+			"desc": str(mv.get("desc", "")), "ok": ok, "why": why, "icon": SkillMenu.icon_for(mv)})
+	_wheel_hover("")
+	_wheel.visible = false
+	if _hint != null:
+		_hint.visible = false     # nel menu si legge solo il menu
+	_skill_menu = SkillMenu.new()
+	_skill_menu.open(items, str(u.get("name", "")).to_upper(), _col(u), start)
+	_skill_menu.chosen.connect(func(id: String) -> void:
+		_skill_pick[str(u.get("id", ""))] = id
+		_close_skills()
+		_command("skill"))
+	_skill_menu.closed.connect(_close_skills)
+	_fx_layer.add_child(_skill_menu)
+	Settings.buzz(12)
+
+
+func _close_skills() -> void:
+	if _skill_menu != null:
+		_skill_menu.queue_free()
+		_skill_menu = null
+	if _wheel != null and waiting and not ended:
+		_wheel.visible = true
+		if _hint != null:
+			_hint.visible = true
 
 
 # Una catena della ruota dei colori: quadratini del colore e il segno tra l'uno e l'altro (">" batte, "<>" si battono a vicenda)
@@ -2817,7 +2983,7 @@ func _update_react() -> void:
 		var rb: Button = _react_btns[rid]
 		rb.visible = usable.has(rid)
 		if rb.visible:
-			rb.text = "%s\nCOSTA %d" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]
+			rb.text = "%s · %d" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]      # il numero e' la Riserva che costa
 			rb.add_theme_font_size_override("font_size", 15)
 			rb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
 	# la colonna e' piu' alta con la riga delle Ultimate in diretta: titolo e descrizioni salgono per non essere coperti
@@ -2825,7 +2991,7 @@ func _update_react() -> void:
 	Ui.place(_turn_lbl, 1.0, 1.0, 1.0, 1.0, -600, -385 - up, -16, -340 - up)
 	Ui.place(_kit_lbl, 1.0, 1.0, 1.0, 1.0, -620, -392 - up, -16, -392 - up)
 	if _react_box.visible:
-		_react_lbl.text = ("REAZIONE · RISERVA %d (COSTA IL TURNO)" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA · SENZA RISERVA"
+		_react_lbl.text = ("REAZIONE\nRISERVA %d · USA IL TURNO" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA\nSENZA RISERVA"
 		if not _react_hint_seen and not first_turn and _hint != null and not usable.is_empty():
 			_react_hint_seen = true
 			_hint.text = "CARICA IN ARRIVO · REAZIONI con la Riserva: SCHIVA (freccia) · COPRI (tieni e lascia) · FERMA (a raffica) · SOCCORRI (battito)"
@@ -3001,7 +3167,11 @@ func _refresh_hud() -> void:
 			continue
 		var is_boss: bool = bool(e["boss"])
 		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
-		rows.append([("▶ " if k == turn_i else "") + nm, 21 if k == turn_i else 16, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
+		if nm.length() > 10:
+			nm = nm.substr(0, 9) + "."      # una riga sola in alto: i nomi lunghi (DISTRIBUTORE) si accorciano
+		rows.append([("▶ " if k == turn_i else "") + nm, 17 if k == turn_i else 14, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
+		if rows.size() >= 4:
+			break
 	if _order_title != null:
 		_order_title.text = "TURNO %d" % int(b.get("round", 1))
 	var sig: String = str(rows)
@@ -3096,15 +3266,9 @@ func _clear_mark() -> void:
 	_mark_uid = ""
 
 
-func _banner(text: String, col: Color, ay: float = 0.2, size: int = 30) -> void:
-	var l := Ui.label(text, size, col, Ui.display(), 10)
-	Ui.place(l, 0.5, ay, 0.5, ay, -500, 0, 500, 50)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_fx_layer.add_child(l)
-	var tw := l.create_tween()
-	tw.tween_interval(1.0)
-	tw.tween_property(l, "modulate:a", 0.0, 0.3)
-	tw.tween_callback(l.queue_free)
+# Nome della mossa e annunci brevi: ora vanno nella stessa pila degli avvisi (un posto solo, niente scritte sovrapposte)
+func _banner(text: String, col: Color, _ay: float = 0.2, _size: int = 30) -> void:
+	_notice(text, col, 1.3, "move")
 
 
 var _toasts: Array = []
@@ -3161,7 +3325,7 @@ func _team_sequence(rest: Array) -> void:
 		_team_hold += int(h[1])
 	_refresh_hud()
 	(boss_v as VendingVisual).stunned = true
-	_cam_set(Vector3(0.0, 2.4, 6.2), ENEMY_POS + Vector3(0, 1.0, 0), 5.0)
+	_cam_set(Vector3(0.0, 2.6, 7.6), ENEMY_POS + Vector3(0, 1.0, 0), 5.0)
 	# 1. ROTTURA
 	# versione corta del BREAK (vetro + scritta, senza il fermo immagine lungo): la sequenza di squadra ha gia' il suo ritmo
 	_break_moment(0.0, true)
@@ -3303,16 +3467,16 @@ func _stamp(title: String, sub: String, col: Color, ay: float = 0.3) -> void:
 # sta nella fascia centrale alta, come i toast.
 func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
 	var box := VBoxContainer.new()
-	Ui.place(box, 0.2, 0.17, 0.6, 0.17, 0, 0, 0, 150)
+	Ui.place(box, 0.2, 0.3, 0.6, 0.3, 0, 0, 0, 130)       # sotto gli avvisi, non sopra la barra del nemico
 	box.add_theme_constant_override("separation", 0)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var live := Ui.label("●  IN DIRETTA", 20, Color("#ff4630"), Ui.display(), 6)
 	live.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(live)
-	var big := Ui.label(title, 64, col, Ui.display(), 12)
+	var big := Ui.label(title, 48, col, Ui.display(), 10)
 	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(big)
-	var sm := Ui.label(sub, 22, Ui.CREAM, null, 6)
+	var sm := Ui.label(sub, 20, Ui.CREAM, null, 6)
 	sm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(sm)
@@ -3326,27 +3490,81 @@ func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
 
 
 func _toast(text: String, col: Color, sec: float) -> void:
-	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t) and (t as Label).modulate.a > 0.05)
-	# al massimo due avvisi insieme: il piu' vecchio lascia il posto (una cosa per volta)
+	_notice(text, col, sec, "boss" if col == Ui.PINK or col == Color("#ff7a9c") else "fx")
+
+
+# UN posto per tutti gli avvisi: a sinistra, sotto l'ordine dei turni (in alto al centro si scontravano coi numeri dei colpi). Lastre piccole con un'icona e poche
+# parole (titolo grande, il resto piccolo solo se e' corto); al massimo due insieme, il nuovo scaccia il piu' vecchio.
+func _notice(text: String, col: Color, sec: float, icon: String) -> void:
+	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t))
 	while _toasts.size() >= TOAST_MAX:
-		var old: Label = _toasts.pop_front()
+		var old: Control = _toasts.pop_front()
 		old.queue_free()
-	for i in _toasts.size():
-		Ui.place(_toasts[i], 0.2, 0.235, 0.6, 0.235, 0, 56 * i, 0, 50 + 56 * i)
-	var row: int = _toasts.size()
-	var l := Ui.label(text, 26, col, Ui.display(), 8)
-	l.add_theme_stylebox_override("normal", Ui.plate(Color(0.05, 0.03, 0.08, 0.86), col))     # lastra scura: si legge sopra insegne e ruota
-	# resta nella fascia centrale (20%-60% della larghezza): il blocco descrizioni a destra non viene mai coperto, il testo lungo va a capo
-	# subito sotto la minaccia (prima a meta' schermo, finiva sotto la ruota dei comandi)
-	Ui.place(l, 0.2, 0.235, 0.6, 0.235, 0, 56 * row, 0, 50 + 56 * row)
-	_toasts.append(l)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_fx_layer.add_child(l)
-	var tw := l.create_tween()
+	var parts: Array = CombatHud.notice_parts(text)
+	var pc := PanelContainer.new()
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mv: bool = icon == "move"
+	# il nome della mossa come in Persona 5: lastra nera storta, scritta bianca, bordo rosso
+	pc.add_theme_stylebox_override("panel", Ui.plate(Color(0.02, 0.01, 0.03, 0.94), Color("#ff2340") if mv else col, -0.18, 6 if mv else 5))
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 8)
+	hb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pc.add_child(hb)
+	var ic := Control.new()
+	ic.custom_minimum_size = Vector2(26, 26)
+	ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ic.draw.connect(func() -> void: _notice_icon(ic, icon, col))
+	hb.add_child(ic)
+	# mossa: grande il NOME della mossa, piccolo chi la fa ("RIO · ATTACCO" -> ATTACCO grande, RIO piccolo)
+	var head: String = str(parts[1]) if mv and str(parts[1]) != "" else str(parts[0])
+	var tail: String = str(parts[0]) if mv and str(parts[1]) != "" else str(parts[1])
+	var big := Ui.label(head, 24 if mv else 20, Ui.CREAM if mv else col, Ui.display(), 6)
+	hb.add_child(big)
+	if tail != "":
+		var sm := Ui.label(tail, 16, Color(Ui.CREAM, 0.9) if not mv else col.lightened(0.2), null, 4)
+		hb.add_child(sm)
+	_fx_layer.add_child(pc)
+	_toasts.append(pc)
+	_stack_notices()
+	pc.modulate.a = 0.0
+	var tw := pc.create_tween()
+	tw.tween_property(pc, "modulate:a", 1.0, 0.08)
 	tw.tween_interval(sec)
-	tw.tween_property(l, "modulate:a", 0.0, 0.3)
-	tw.tween_callback(l.queue_free)
+	tw.tween_property(pc, "modulate:a", 0.0, 0.25)
+	tw.tween_callback(func() -> void:
+		pc.queue_free()
+		_toasts.erase(pc))
+
+
+func _stack_notices() -> void:
+	for i in _toasts.size():
+		var c: Control = _toasts[i]
+		Ui.place(c, 0.0, 0.0, 0.0, 0.0, 24, 0, 24, 0)
+		c.grow_horizontal = Control.GROW_DIRECTION_END
+		var y0: float = NOTICE_Y
+		if _boss_panel != null and _boss_panel.visible and _boss_panel.size.y > 1.0:
+			y0 = _boss_panel.position.y + _boss_panel.get_combined_minimum_size().y + 12.0      # subito sotto il nemico
+		c.offset_top = y0 + 46.0 * float(_toasts.size() - 1 - i)
+
+
+# Icone degli avvisi, disegnate a mano: catena (legami e impulsi), triangolo (il nemico), lampo (effetti), freccia (mossa)
+func _notice_icon(c: Control, icon: String, col: Color) -> void:
+	var p: Vector2 = c.size * 0.5
+	match icon:
+		"chain":
+			for k in 2:
+				var o: Vector2 = Vector2(-5.0 + 10.0 * k, 3.0 - 6.0 * k)
+				c.draw_set_transform(p + o, -0.6, Vector2(1.0, 0.6))
+				c.draw_arc(Vector2.ZERO, 8.0, 0.0, TAU, 24, col, 3.0, true)
+				c.draw_set_transform(Vector2.ZERO)
+		"boss":
+			c.draw_colored_polygon(PackedVector2Array([p + Vector2(0, -10), p + Vector2(10, 9), p + Vector2(-10, 9)]), col)
+			c.draw_line(p + Vector2(0, -3), p + Vector2(0, 3), Ui.INK, 2.5)
+			c.draw_circle(p + Vector2(0, 6), 1.5, Ui.INK)
+		"move":
+			c.draw_colored_polygon(PackedVector2Array([p + Vector2(-8, -9), p + Vector2(9, 0), p + Vector2(-8, 9), p + Vector2(-3, 0)]), col)
+		_:
+			CmdWheel.glyph(c, "skill", p, 12.0, col)
 
 
 func _toggle_auto() -> void:
@@ -3392,6 +3610,18 @@ func _unhandled_input(event: InputEvent) -> void:
 			_qte_tap()
 			get_viewport().set_input_as_handled()
 			return
+	if _skill_menu != null and event is InputEventKey and event.pressed:
+		match (event as InputEventKey).physical_keycode:
+			KEY_UP, KEY_W:
+				_skill_menu.move(-1)
+			KEY_DOWN, KEY_S:
+				_skill_menu.move(1)
+			KEY_ENTER, KEY_SPACE, KEY_KP_ENTER:
+				_skill_menu.accept()
+			KEY_ESCAPE, KEY_BACKSPACE:
+				_close_skills()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var k: int = (event as InputEventKey).physical_keycode
 		match k:
