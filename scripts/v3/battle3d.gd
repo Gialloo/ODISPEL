@@ -110,6 +110,8 @@ const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI
 var _btn_auto: Button
 var _btn_fast: Button
 var _hint: Label
+var _party_back: Control
+var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
 var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
 var _pop_key: String = ""               # ultimo turno annunciato con lo scatto (evita di rifarlo a ogni aggiornamento)
 var _pop_tw: Tween
@@ -1062,11 +1064,11 @@ class EchoBalloon extends Control:
 		loop.append(pts[0])
 		draw_polyline(loop, cy, 3.0, true)
 		# ritratto di Echo nel tondo a sinistra
-		var c: Vector2 = Vector2(r.position.x - 34, r.position.y + 30)
-		draw_circle(c, 40.0, cy)
-		draw_circle(c, 36.0, Color(0.04, 0.03, 0.09))
+		var c: Vector2 = Vector2(r.position.x - 28, r.position.y + 24)
+		draw_circle(c, 32.0, cy)
+		draw_circle(c, 28.0, Color(0.04, 0.03, 0.09))
 		if face != null:
-			var fs: float = 56.0
+			var fs: float = 44.0
 			draw_texture_rect(face, Rect2(c - Vector2(fs, fs) * 0.5, Vector2(fs, fs)), false)
 		draw_string(Ui.display(), Vector2(r.position.x + sk + 6, r.position.y - 6), "ECHO", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, cy)
 
@@ -1776,17 +1778,17 @@ func _build_ui() -> void:
 
 	# ordine dei turni (sinistra)
 	var ob := PanelContainer.new()
-	ob.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.72), Ui.INK, 3, 6, 0))
+	ob.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.38), Color(0, 0, 0, 0), 0, 6, 0))
 	ob.position = Vector2(16, 70 if Settings.show_fps else 16)
 	ob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(ob)
 	var ov := VBoxContainer.new()
 	ov.add_theme_constant_override("separation", 4)
 	ob.add_child(ov)
-	var ot := Ui.label("TURNI", 18, Color(1, 1, 1, 0.85), Ui.display())
+	var ot := Ui.label("TURNI", 14, Color(1, 1, 1, 0.8), Ui.display(), 4)
 	ov.add_child(ot)
 	_order_box = VBoxContainer.new()
-	_order_box.add_theme_constant_override("separation", 4)
+	_order_box.add_theme_constant_override("separation", 0)
 	ov.add_child(_order_box)
 
 	# nemico (alto al centro)
@@ -1818,19 +1820,25 @@ func _build_ui() -> void:
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bp.add_child(_tele)
 
+	_party_back = Control.new()
+	Ui.place(_party_back, 0, 0, 1, 1)
+	_party_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_party_back.draw.connect(_draw_party_back)
+	_root.add_child(_party_back)
 	# squadra (basso a destra, righe compatte come nella V2): il centro e il lato sinistro restano alla scena e alla ruota
 	var party := VBoxContainer.new()
-	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -470, -280, -16, -14)
+	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -370, -300, -30, -18)
 	party.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	party.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	party.alignment = BoxContainer.ALIGNMENT_END
-	party.add_theme_constant_override("separation", 5)
+	party.add_theme_constant_override("separation", 10)
 	party.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(party)
 	for i in slots.size():
 		var card := _make_card()
 		party.add_child(card["panel"])
 		_cards.append(card)
+	party.sort_children.connect(_party_back.queue_redraw)
 	_intro_panels(ob, bp, party)
 
 	# comandi (basso a destra)
@@ -1907,9 +1915,9 @@ func _build_ui() -> void:
 	_kit_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_kit_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_kit_lbl)
-	_hint = Ui.label("", 22, Ui.CREAM, null, 6)
+	_hint = Ui.label("", 18, Ui.CREAM, null, 5)
 	# a sinistra sotto i TURNI, dentro il fumetto di Echo (come l'alleata che parla in Persona): il centro resta alla scena
-	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 104, 270, 560, 270)
+	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 96, 236, 456, 236)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(EchoBalloon.new(_hint))
@@ -2011,48 +2019,85 @@ func _bar(col: Color, h: float) -> ProgressBar:
 
 
 func _make_card() -> Dictionary:
-	# riga compatta: nome e PV a sinistra, barre ed energia a destra
+	# P5/JSR: niente pannello. Volto in cornice storta + numero PV grande + EN piccola + barretta sottile; chi e' di turno ha una lastra di colore piena
 	var p := PanelContainer.new()
-	p.custom_minimum_size = Vector2(450, 0)
+	p.custom_minimum_size = Vector2(330, 0)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 20)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(row)
-	# ritratto del personaggio a sinistra della riga (Persona 3 Reload / Persona 5: la squadra si riconosce dai volti)
 	var face := TextureRect.new()
-	face.custom_minimum_size = Vector2(58, 58)
+	face.custom_minimum_size = Vector2(62, 56)
 	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(face)
-	var left := VBoxContainer.new()
-	left.add_theme_constant_override("separation", 0)
-	left.custom_minimum_size = Vector2(190, 0)
-	row.add_child(left)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 2)
+	vb.add_theme_constant_override("separation", 0)
 	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(vb)
-	var name_l := Ui.label("", 19, Ui.CREAM, Ui.display(), 6)
+	var name_l := Ui.label("", 16, Ui.CREAM, Ui.display(), 5)
 	name_l.clip_text = true
-	left.add_child(name_l)
-	var hp_t := Ui.label("", 22, Ui.CREAM, Ui.display(), 6)
-	left.add_child(hp_t)
-	var hp := _bar(Color("#62f08c"), 12)
+	vb.add_child(name_l)
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 10)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.add_child(line)
+	var hp_t := Ui.label("", 36, Ui.CREAM, Ui.display(), 9)
+	line.add_child(hp_t)
+	var en := Ui.label("", 18, Ui.CYAN, Ui.display(), 5)
+	en.size_flags_vertical = Control.SIZE_SHRINK_END
+	line.add_child(en)
+	var hp := _bar(Color("#62f08c"), 6)
 	vb.add_child(hp)
-	var en := Ui.label("", 16, Ui.CYAN, null, 4)
-	vb.add_child(en)
-	var ult := _bar(Ui.PINK, 8)
+	var ult := _bar(Ui.PINK, 4)
 	vb.add_child(ult)
-	# crepe leggere: si ridisegnano solo quando la card cambia livello (50% / 25% dei PV)
 	var cracks := Control.new()
 	cracks.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cracks.set_meta("tier", 0)
 	cracks.draw.connect(func() -> void: _draw_cracks(cracks))
 	p.add_child(cracks)
 	return {"panel": p, "face": face, "name": name_l, "hp": hp, "hp_t": hp_t, "en": en, "ult": ult, "cracks": cracks, "tier": 0}
+
+
+func _draw_party_back() -> void:
+	# lastre e cornici dei volti di TUTTA la squadra in una sola maglia: una draw call (prima una per card)
+	var m := CmdWheel._Mesh.new()
+	var o: Vector2 = _party_back.get_global_rect().position
+	for c in _cards:
+		var pn: Control = c["panel"]
+		var r: Rect2 = pn.get_global_rect()
+		r.position -= o
+		var col: Color = c.get("col", Color.WHITE)
+		var on: bool = bool(c.get("active", false))
+		var mk: bool = bool(c.get("marked", false))
+		var al: float = float(c.get("alpha", 1.0))
+		var x: float = r.position.x
+		var y: float = r.position.y
+		var fr := PackedVector2Array([Vector2(x - 4, y + 4), Vector2(x + 72, y - 2), Vector2(x + 66, y + r.size.y + 2), Vector2(x - 8, y + r.size.y - 2)])
+		if on:
+			var slab := PackedVector2Array([Vector2(x - 10, y + 6), Vector2(x + r.size.x + 6, y - 4), Vector2(x + r.size.x - 8, y + r.size.y + 4), Vector2(x - 14, y + r.size.y - 2)])
+			var sh := PackedVector2Array()
+			for q in slab:
+				sh.append(q + Vector2(6, 6))
+			m.draw_colored_polygon(sh, Color(Ui.INK, al))
+			m.draw_colored_polygon(slab, Color(col.darkened(0.15), al))
+		var cen: Vector2 = (fr[0] + fr[1] + fr[2] + fr[3]) * 0.25
+		var fo := PackedVector2Array()       # contorno nero spesso = la cornice ingrandita di 3 px, con ombra sfalsata
+		var fs := PackedVector2Array()
+		for q in fr:
+			var big: Vector2 = q + (q - cen).normalized() * 4.0
+			fo.append(big)
+			fs.append(big + Vector2(5, 5))
+		m.draw_colored_polygon(fs, Color(Ui.INK, al))
+		m.draw_colored_polygon(fo, Color(Ui.INK, al))
+		m.draw_colored_polygon(fr, Color(Color("#ff5a6e") if mk else (Color.WHITE if on else Ui.CREAM), al))
+		if not on:
+			m.draw_line(Vector2(x - 6, y + r.size.y + 6), Vector2(x + 66, y + r.size.y + 4), Color(col, al), 5.0)
+	_party_mesh = m.commit(_party_back)
 
 
 const CRACKS_1: Array = [[Vector2(0.78, 0.0), Vector2(0.72, 0.18), Vector2(0.80, 0.34), Vector2(0.74, 0.5)],
@@ -2426,14 +2471,19 @@ func _refresh_hud() -> void:
 		var col: Color = _col(u)
 		var look: String = "%s|%s|%s" % [active, is_marked, col.to_html()]
 		if str(c.get("look", "")) != look:
-			c["look"] = look          # PRESTAZIONI: lo stile della card si rifa' solo quando cambia
-			(c["panel"] as PanelContainer).add_theme_stylebox_override("panel",
-				Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.42), Color("#ff5a6e") if is_marked else (col.lightened(0.25) if active else Ui.INK), 6 if (is_marked or active) else 3, 6, 9 if active else 5))
+			c["look"] = look          # PRESTAZIONI: la lastra si rifa' solo quando cambia
+			c["col"] = col
+			c["active"] = active
+			c["marked"] = is_marked
+			_party_back.queue_redraw()
 		(c["panel"] as Control).modulate.a = 1.0 if alive else 0.45
+		if float(c.get("alpha", 1.0)) != (1.0 if alive else 0.45):
+			c["alpha"] = 1.0 if alive else 0.45
+			_party_back.queue_redraw()
 		# il colore anche scritto: chi non distingue i colori sa lo stesso chi colpisce le debolezze
 		# ▶ davanti al nome di chi e' di turno: si legge anche senza distinguere i colori
 		(c["name"] as Label).text = ("▶ " if active and alive else "") + str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
-		(c["name"] as Label).add_theme_color_override("font_color", col.lightened(0.3))
+		(c["name"] as Label).add_theme_color_override("font_color", Color.WHITE if active else col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
 		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])))
@@ -2445,7 +2495,7 @@ func _refresh_hud() -> void:
 				face.texture = load(fp)
 		face.modulate = Color.WHITE if alive else Color(0.4, 0.4, 0.45)
 		var en: int = int(u.get("energy", 0))
-		(c["en"] as Label).text = "EN %d/%d" % [en, BattleTypes.MAX_ENERGY]
+		(c["en"] as Label).text = "EN %d" % en
 		if Kits.is_char(u, Kits.RIO):
 			(c["en"] as Label).text += " · HYPE %d" % int(u.get("hype", 0))
 		(c["ult"] as ProgressBar).max_value = BattleTypes.GAUGE_MAX
@@ -2461,13 +2511,13 @@ func _refresh_hud() -> void:
 			continue
 		var is_boss: bool = bool(e["boss"])
 		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
-		rows.append([("> " if k == turn_i else "   ") + nm, 20 if k == turn_i else 17, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
-	rows.append(["   — round %d —" % int(b.get("round", 1)), 18, Color(1, 1, 1, 0.85), false])
+		rows.append([("> " if k == turn_i else "   ") + nm, 19 if k == turn_i else 15, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
+	rows.append(["   ROUND %d" % int(b.get("round", 1)), 14, Color(1, 1, 1, 0.7), false])
 	var sig: String = str(rows)
 	if sig != _order_sig:
 		_order_sig = sig
 		while _order_box.get_child_count() < rows.size():
-			_order_box.add_child(Ui.label("", 17, Ui.CREAM, null, 4))
+			_order_box.add_child(Ui.label("", 15, Ui.CREAM, null, 5))
 		for i in _order_box.get_child_count():
 			var l: Label = _order_box.get_child(i)
 			l.visible = i < rows.size()
