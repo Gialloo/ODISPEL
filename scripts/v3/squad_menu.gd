@@ -9,7 +9,7 @@ extends ColorRect
 signal closed
 
 const KINDS: Array = ["skill", "ult", "react", "trait", "syn"]
-const KIND_NAMES: Dictionary = {"skill": "Abilità", "ult": "Ultimate", "react": "Reazione", "trait": "Tratto", "syn": "Sinergia"}
+const KIND_NAMES: Dictionary = {"skill": "Abilità firma", "ult": "Ultimate", "react": "Reazione", "trait": "Tratto", "syn": "Sinergia"}
 const PORTRAIT_DIR: String = "res://assets/portraits/"
 
 var _sel: String = "ferri"
@@ -213,8 +213,11 @@ func _open_picker(c: String, kind: String) -> void:
 	panel.add_child(vb)
 	var t := Ui.label("%s · %s" % [str(BattleContent.CHARACTERS[c]["name"]).to_upper(), str(KIND_NAMES[kind]).to_upper()], 30, Ui.CREAM, Ui.display(), 6)
 	vb.add_child(t)
+	if kind == "skill":
+		# in battaglia si usano tutte dal menu ABILITA': quella scelta qui e' la preferita e rende di piu'
+		vb.add_child(Ui.label("Tutte le abilità sbloccate si usano in battaglia. Quella scelta è la sua FIRMA: costa 1 EN in meno, fa più danno o dà uno scudo.", 17, Ui.YELLOW, null, 4))
 	var sc := ScrollContainer.new()
-	sc.custom_minimum_size = Vector2(840, 430)
+	sc.custom_minimum_size = Vector2(840, 400 if kind == "skill" else 430)
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	vb.add_child(sc)
 	var list := VBoxContainer.new()
@@ -237,7 +240,7 @@ func _open_picker(c: String, kind: String) -> void:
 		var nm := Ui.label(Progress.item_name(kind, id) + ("  ✓" if on else "") + ("" if open else "   · LV %d" % int(o[2])), 24, Ui.CREAM if open else Color(1, 1, 1, 0.45), Ui.display(), 4)
 		nm.position = Vector2(12, 4)
 		ob.add_child(nm)
-		var ds := Ui.label(Progress.item_desc(kind, id), 18, Color(1, 1, 1, 0.85 if open else 0.4))
+		var ds := Ui.label(Progress.item_desc(kind, id) + ("  ·  " + BattleContent.signature_text(id) if kind == "skill" and BattleContent.MOVES.has(id) else ""), 18, Color(1, 1, 1, 0.85 if open else 0.4))
 		ds.position = Vector2(12, 38)
 		ds.size = Vector2(796, 54)
 		ds.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART      # due righe: la descrizione e il costo si leggono interi

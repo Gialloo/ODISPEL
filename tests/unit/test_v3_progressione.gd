@@ -119,6 +119,27 @@ func _init() -> void:
 		else:
 			check(int(tu["hp"]) == hp0, "schivata riuscita: nessun danno")
 
+	# ABILITA' FIRMA: tutte le abilita' sbloccate in battaglia, quella equipaggiata rende di piu'
+	var sk2: Dictionary = {"cost": "", "dmg": "", "shield": ""}
+	for id in BattleContent.MOVES:
+		if str(BattleContent.MOVES[id].get("kind", "")) == "skill":
+			var sk_kind: String = BattleContent.signature_kind(str(id))
+			if str(sk2[sk_kind]) == "":
+				sk2[sk_kind] = str(id)
+	for sk_kind in sk2:
+		var mid: String = str(sk2[sk_kind])
+		check(mid != "", "esiste un'abilita' firma di tipo " + sk_kind)
+		var fu: Dictionary = {"equip_skill": mid}
+		var c0: int = int(BattleContent.MOVES[mid]["cost"])
+		check(BattleContent.move_cost(fu, mid) == (c0 - 1 if sk_kind == "cost" else c0), "costo della firma " + mid)
+		check(BattleContent.move_cost({}, mid) == c0, "senza firma costa il solito " + mid)
+	var b4: Dictionary = _battle()
+	for p in b4["players"]:
+		var pu: Dictionary = BattleState.active_unit(b4, str(p["id"]))
+		for o in Progress.options(str(pu["char"]), "skill"):
+			if bool(o[1]) and BattleContent.MOVES.has(str(o[0])):
+				check((pu["skills"] as Array).has(str(o[0])), "abilita' sbloccata usabile in battaglia: " + str(o[0]))
+
 	if fails == 0:
 		print("test_v3_progressione: OK")
 	quit(1 if fails > 0 else 0)

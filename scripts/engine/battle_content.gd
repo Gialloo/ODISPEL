@@ -151,6 +151,45 @@ static func basic_factor(unit: Dictionary) -> float:
 	if not CHARACTERS.has(str(unit.get("char", ""))):
 		return 1.0
 	return float(CLASS_BASIC.get(str(unit.get("cls", "")), 1.0))
+
+# ABILITA' FIRMA (decisione dell'autore, 24/10/2026): tutte le abilita' sbloccate si usano dal menu ABILITA';
+# quella equipaggiata in pausa > SQUADRA e' la preferita del personaggio e rende di piu', a seconda della mossa:
+#   costa 2 EN o piu'        -> 1 EN in meno
+#   costa poco e fa danno    -> +25% di danno
+#   costa poco e non colpisce -> effetto nuovo: chi la usa prende uno scudo del 10% dei PV massimi
+const SIGNATURE_DMG: float = 1.25
+const SIGNATURE_SHIELD: float = 0.10
+
+
+static func is_signature(unit: Dictionary, move_id: String) -> bool:
+	return move_id != "" and str(unit.get("equip_skill", "")) == move_id and MOVES.has(move_id) \
+		and str(MOVES[move_id].get("kind", "")) == "skill"
+
+
+static func signature_kind(move_id: String) -> String:
+	var m: Dictionary = MOVES.get(move_id, {})
+	if int(m.get("cost", 0)) >= 2:
+		return "cost"
+	return "dmg" if float(m.get("mult", 0.0)) > 0.0 else "shield"
+
+
+static func signature_text(move_id: String) -> String:
+	match signature_kind(move_id):
+		"cost":
+			return "FIRMA: 1 EN in meno"
+		"dmg":
+			return "FIRMA: +25% di danno"
+	return "FIRMA: anche uno scudo"
+
+
+# Costo vero della mossa per questo personaggio (la firma che costa 2 o piu' costa 1 EN in meno)
+static func move_cost(unit: Dictionary, move_id: String) -> int:
+	var c: int = int(MOVES.get(move_id, {}).get("cost", 0))
+	if c >= 2 and is_signature(unit, move_id):
+		c -= 1
+	return c
+
+
 # Bonus statistico per rank, per rarita' (comune, rara, epica, leggendaria): piu' raro = piu' forte.
 const RANK_BONUS_BY_RARITY: Array = [0.04, 0.05, 0.06, 0.08]
 

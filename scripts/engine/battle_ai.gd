@@ -142,7 +142,7 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 		var m: Dictionary = BattleContent.MOVES[str(sid)]
 		if str(m["kind"]) == "basic":
 			continue
-		if energy < int(m["cost"]):
+		if energy < BattleContent.move_cost(u, str(sid)):
 			continue
 		var kit_say: int = Kits.ai_wants(state, u, str(sid), m)
 		if kit_say == 0:
@@ -172,7 +172,7 @@ static func _pick_move(state: Dictionary, p: Dictionary, u: Dictionary, tele_mov
 			return str(sid)
 		if m.has("status") and m["status"].has("mark") and Marks.count(boss) < 3:
 			return str(sid)
-		if m.has("mult") and float(m["mult"]) >= 2.0 and energy >= int(m["cost"]) + 1:
+		if m.has("mult") and float(m["mult"]) >= 2.0 and energy >= BattleContent.move_cost(u, str(sid)) + 1:
 			return str(sid)
 
 	if _ratio(u) < 0.3 and tele_target == pid and str(tele_move.get("target", "")) == "one" and skills.has(BattleTypes.ACTION_GUARD):
