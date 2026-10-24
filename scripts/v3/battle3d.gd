@@ -19,6 +19,7 @@ const ENEMY_POS := Vector3(0, 0.14, -3.4)
 const LEZIONI: Array = [["tut_intro", "tut_attacco"], ["tut_guardia", "tut_abilita"], ["tut_telegrafo", "tut_qte"],
 	["tut_reazioni", "tut_rottura"], ["tut_ultimate", "tut_extra"]]
 const LEZIONI_MAX: int = 2
+const TOAST_MAX: int = 2              # avvisi sulla lastra scura visibili insieme
 const QTE_LEAD: float = 0.9          # dall'apparire del cerchio all'impatto
 const QTE_GOOD: float = 0.3          # quanto prima dell'impatto vale gia' come guardia
 const QTE_LATE: float = 0.12         # tolleranza dopo l'impatto
@@ -125,6 +126,8 @@ var _live_back: String = ""             # chi stava scegliendo quando e' partita
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
+var _top_bar: Control                   # x1 / AUTO / pausa: si nasconde mentre parla Echo (il SALTA del dialogo sta li')
+var _legend: Control                    # ruota dei colori spiegata: si apre col tasto COLORI
 var _btn_fast: Button
 var _hint: Label
 var _say_lbl: Label                   # battute dei personaggi in battaglia
@@ -710,7 +713,8 @@ func _advance() -> void:
 		_show_commands(true)
 		if first_turn:
 			first_turn = false
-			_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
+			if not (tutorial or lezioni):       # con le spiegazioni lo dice gia' Echo: una cosa per volta
+				_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
 		return
 
 
@@ -938,6 +942,8 @@ func _tut(key: String) -> bool:
 	var was: bool = waiting
 	waiting = false
 	_show_commands(false)
+	if _top_bar != null:
+		_top_bar.visible = false
 	var dlg := DialogBox.new()
 	_tut_dlg = dlg
 	_root.add_child(dlg)
@@ -947,6 +953,8 @@ func _tut(key: String) -> bool:
 	if is_instance_valid(dlg):
 		dlg.queue_free()
 	_tut_dlg = null
+	if _top_bar != null:
+		_top_bar.visible = true
 	waiting = was
 	return true
 
@@ -2112,6 +2120,7 @@ func _build_ui() -> void:
 
 	# in alto a destra: pausa, AUTO, velocita'
 	var tr := HBoxContainer.new()
+	_top_bar = tr
 	Ui.place(tr, 1.0, 0, 1.0, 0, -400, 14, -16, 80)
 	tr.alignment = BoxContainer.ALIGNMENT_END
 	tr.add_theme_constant_override("separation", 8)
@@ -2126,20 +2135,33 @@ func _build_ui() -> void:
 	pb.pressed.connect(_open_pause)
 	tr.add_child(pb)
 
-	# legenda dei colori, sempre visibile sotto i pulsanti in alto a destra: A > B = A batte B (+50% danno)
+	# legenda dei colori: chiusa, un tasto COLORI sotto i pulsanti in alto a destra (chi colpire lo dice gia' DEBOLE A sotto
+	# il nemico: una cosa per volta). Aperta: le due catene con le parole, A > B = A batte B (+50% danno)
+	var lbtn := Ui.button("COLORI", Ui.CREAM, 18, 110)
+	Ui.place(lbtn, 1.0, 0, 1.0, 0, -126, 88, -16, 128)
+	lbtn.pressed.connect(func() -> void:
+		_legend.visible = not _legend.visible)
+	tr.get_parent().add_child(lbtn)
 	var leg := PanelContainer.new()
-	leg.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.72), Ui.INK, 3, 6, 0))
-	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 88, -16, 88)
+	_legend = leg
+	leg.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.9), Ui.INK, 3, 6, 0))
+	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 136, -16, 136)
 	leg.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	leg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	leg.visible = false
+	var lcol := VBoxContainer.new()
+	lcol.add_theme_constant_override("separation", 6)
+	leg.add_child(lcol)
 	var lrow := HBoxContainer.new()
 	lrow.add_theme_constant_override("separation", 5)
-	lrow.alignment = BoxContainer.ALIGNMENT_CENTER
-	leg.add_child(lrow)
+	lcol.add_child(lrow)
 	_legend_row(lrow, ["rosso", "verde", "blu", "rosso"], ">")
-	var sep := Ui.label("·", 18, Color(1, 1, 1, 0.5))
-	lrow.add_child(sep)
-	_legend_row(lrow, ["giallo", "viola"], "<>")
+	lcol.add_child(Ui.label("ROSSO batte VERDE, VERDE batte BLU, BLU batte ROSSO", 16, Ui.CREAM))
+	var lchain2 := HBoxContainer.new()
+	lchain2.add_theme_constant_override("separation", 5)
+	lcol.add_child(lchain2)
+	_legend_row(lchain2, ["giallo", "viola"], "<>")
+	lcol.add_child(Ui.label("GIALLO e VIOLA si battono a vicenda · +50% col colore vincente", 16, Ui.CREAM))
 	_root.add_child(leg)
 
 	# sequenza dell'ultimate
@@ -2857,7 +2879,7 @@ func _refresh_hud() -> void:
 		face.modulate = Color.WHITE if alive else Color(0.4, 0.4, 0.45)
 		var en: int = int(u.get("energy", 0))
 		(c["en"] as Label).text = "EN %d" % en
-		if Kits.is_char(u, Kits.RIO):
+		if Kits.is_char(u, Kits.RIO) and int(u.get("hype", 0)) > 0:      # HYPE a zero non dice niente: compare quando sale
 			(c["en"] as Label).text += " · HYPE %d" % int(u.get("hype", 0))
 		(c["ult"] as ProgressBar).max_value = BattleTypes.GAUGE_MAX
 		(c["ult"] as ProgressBar).value = int(u.get("gauge", 0))
@@ -3206,6 +3228,12 @@ func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
 
 func _toast(text: String, col: Color, sec: float) -> void:
 	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t) and (t as Label).modulate.a > 0.05)
+	# al massimo due avvisi insieme: il piu' vecchio lascia il posto (una cosa per volta)
+	while _toasts.size() >= TOAST_MAX:
+		var old: Label = _toasts.pop_front()
+		old.queue_free()
+	for i in _toasts.size():
+		Ui.place(_toasts[i], 0.2, 0.235, 0.6, 0.235, 0, 56 * i, 0, 50 + 56 * i)
 	var row: int = _toasts.size()
 	var l := Ui.label(text, 26, col, Ui.display(), 8)
 	l.add_theme_stylebox_override("normal", Ui.plate(Color(0.05, 0.03, 0.08, 0.86), col))     # lastra scura: si legge sopra insegne e ruota
