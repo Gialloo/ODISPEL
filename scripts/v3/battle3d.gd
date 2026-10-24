@@ -104,12 +104,19 @@ var _freeze_on: bool = false            # fermo immagine di Echo in corso (si sa
 var _freeze_skip: bool = false
 var _team_on: bool = false              # sequenza dell'attacco di squadra in corso (un tocco la accorcia)
 var _team_follow: bool = false          # gli eventi mostrati ora sono seguiti dall'attacco di squadra
+var _team_hold: int = 0                  # danni di squadra non ancora mostrati: la barra del nemico scende colpo per colpo
 var _live_back: String = ""             # chi stava scegliendo quando e' partita un'Ultimate in diretta
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
 var _btn_fast: Button
 var _hint: Label
+var _say_lbl: Label                   # battute dei personaggi in battaglia
+var _say_balloon: EchoBalloon
+var _say_seq: int = 0
+var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
+var _party_back: Control
+var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
 var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
 var _pop_key: String = ""               # ultimo turno annunciato con lo scatto (evita di rifarlo a ogni aggiornamento)
 var _pop_tw: Tween
@@ -540,9 +547,32 @@ func _update_wheel() -> void:
 	if _spot.visible:
 		var ult: bool = _picked == "ult"
 		var m2: ShaderMaterial = _spot.material
+		_spot_boss(m2, e, ult)
 		m2.set_shader_parameter("k", (0.86 if ult else 0.55) * e)
 		m2.set_shader_parameter("aura", (0.9 if ult else 0.35) * e * (0.85 + 0.15 * sin(Time.get_ticks_msec() * 0.008)))
 		m2.set_shader_parameter("tint", _col(_unit_of(cur_pid)))
+
+
+# Il nemico preso di mira dall'attacco scelto brilla piano (alone caldo che pulsa) e resta in luce anche con lo schermo scuro dell'ULTIMATE
+func _spot_boss(m: ShaderMaterial, e: float, ult: bool) -> void:
+	var on: bool = _picked in ["attack", "skill", "ult"] and vis.has(BattleState.BOSS_ID) and BattleState.is_alive(BattleState.boss(b))
+	var k2: float = 0.0
+	if on:
+		var bv: Node3D = vis[BattleState.BOSS_ID]
+		var hp3: Vector3 = bv.call("head_point") if bv.has_method("head_point") else bv.global_position + Vector3(0, 2, 0)
+		var f3: Vector3 = bv.global_position
+		if not cam.is_position_behind(hp3):
+			var vs: Vector2 = _wheel.size if _wheel.size.x > 1.0 else get_viewport().get_visible_rect().size
+			var a: Vector2 = cam.unproject_position(hp3)
+			var z: Vector2 = cam.unproject_position(f3)
+			var hh: float = maxf(120.0, absf(z.y - a.y))
+			m.set_shader_parameter("c2", Vector2(a.x, (a.y + z.y) * 0.5) / vs)
+			m.set_shader_parameter("r2", Vector2(hh * 0.5, hh * 0.62) / vs)
+			var pulse: float = 0.78 + 0.22 * sin(Time.get_ticks_msec() * 0.006)
+			k2 = e * pulse * (1.0 if ult else 0.55)
+	m.set_shader_parameter("k2", k2)
+	if k2 > 0.0 and not _spot.visible:
+		_spot.visible = true
 
 
 func _kick(amount: float) -> void:
@@ -1024,9 +1054,21 @@ func _qte_tap() -> void:
 # Cerchio della guardia a tempo: un anello fisso (il bersaglio) e uno che si stringe fino a toccarlo.
 class EchoBalloon extends Control:
 	# Fumetto di Echo dietro i consigli: lastra scura inclinata con bordo ciano e il suo ritratto, segue il testo
+	# Generalizzato: lo stesso fumetto serve a chiunque parli in battaglia (speaker(): ritratto, nome e colore del personaggio)
 	var lbl: Label
 	var face: Texture2D
+	var who: String = "ECHO"
+	var col: Color = Color("#3fe0ff")
+	var fit: bool = false          # true: il fumetto si stringe al testo invece di seguire tutta la larghezza dell'etichetta
 	var _r: Rect2 = Rect2()
+
+	func speaker(id: String, nm: String, c: Color) -> void:
+		who = nm
+		col = c
+		var fp: String = "res://assets/portraits/%s_neutro.png" % id
+		face = load(fp) if ResourceLoader.exists(fp) else null
+		_r = Rect2()
+		queue_redraw()
 
 	func _init(p_lbl: Label) -> void:
 		lbl = p_lbl
@@ -1042,6 +1084,9 @@ class EchoBalloon extends Control:
 			return
 		modulate.a = lbl.modulate.a
 		var r := Rect2(lbl.position, lbl.size)
+		if fit:
+			var f: Font = lbl.get_theme_font("font")
+			r.size.x = minf(r.size.x, f.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, lbl.get_theme_font_size("font_size")).x + 4.0)
 		if r != _r:
 			_r = r
 			queue_redraw()
@@ -1049,7 +1094,7 @@ class EchoBalloon extends Control:
 	func _draw() -> void:
 		var r: Rect2 = _r.grow_individual(18, 10, 22, 12)
 		var sk: float = 14.0
-		var cy := Color("#3fe0ff")
+		var cy: Color = col
 		var pts := PackedVector2Array([r.position + Vector2(sk, 0), Vector2(r.end.x + sk, r.position.y - 4),
 			Vector2(r.end.x - sk * 0.4, r.end.y), Vector2(r.position.x + 30, r.end.y + 2),
 			Vector2(r.position.x + 6, r.end.y + 18), Vector2(r.position.x + 10, r.end.y), Vector2(r.position.x - sk * 0.4, r.end.y)])
@@ -1062,13 +1107,13 @@ class EchoBalloon extends Control:
 		loop.append(pts[0])
 		draw_polyline(loop, cy, 3.0, true)
 		# ritratto di Echo nel tondo a sinistra
-		var c: Vector2 = Vector2(r.position.x - 34, r.position.y + 30)
-		draw_circle(c, 40.0, cy)
-		draw_circle(c, 36.0, Color(0.04, 0.03, 0.09))
+		var c: Vector2 = Vector2(r.position.x - 28, r.position.y + 24)
+		draw_circle(c, 32.0, cy)
+		draw_circle(c, 28.0, Color(0.04, 0.03, 0.09))
 		if face != null:
-			var fs: float = 56.0
+			var fs: float = 44.0
 			draw_texture_rect(face, Rect2(c - Vector2(fs, fs) * 0.5, Vector2(fs, fs)), false)
-		draw_string(Ui.display(), Vector2(r.position.x + sk + 6, r.position.y - 6), "ECHO", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, cy)
+		draw_string(Ui.display(), Vector2(r.position.x + sk + 6, r.position.y - 6), who, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, cy)
 
 
 class QteRing extends Control:
@@ -1445,6 +1490,31 @@ func _fx_turn(uid: String) -> void:
 		_cam_hud.watch(str(u.get("name", "")), col, 2 + maxi(0, slots.find(cur_pid)))
 
 
+# Battuta di un personaggio in battaglia: stesso fumetto di Echo (lastra storta, bordo e ritratto del personaggio).
+# Il testo non si modifica: arriva dai dialoghi. sec <= 0: resta finche' non si chiama _say_off().
+func _say(u: Dictionary, text: String, sec: float = 0.0) -> void:
+	if _say_lbl == null or _say_balloon == null:
+		return
+	var col: Color = _col(u)
+	_say_balloon.speaker(str(u.get("char", "")), str(u.get("name", "")).to_upper(), col)
+	_say_lbl.text = text
+	_say_lbl.add_theme_color_override("font_color", Ui.CREAM)
+	_say_lbl.modulate.a = 1.0
+	_say_lbl.visible = true
+	_say_seq += 1
+	if sec > 0.0:
+		var mine: int = _say_seq
+		get_tree().create_timer(sec).timeout.connect(func() -> void:
+			if mine == _say_seq:
+				_say_off())
+
+
+func _say_off() -> void:
+	if _say_lbl != null:
+		_say_lbl.text = ""
+		_say_lbl.visible = false
+
+
 # Sequenza dell'ultimate: primo piano, fascia colorata, nome e battuta. Si salta con l'impostazione.
 func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	Breadcrumb.mark("ultimate")
@@ -1462,7 +1532,8 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	var line_l: Label = _cutin.get_node("Line")
 	band.color = Color(col.r, col.g, col.b, 0.85)
 	name_l.text = str(u["name"]).to_upper() + " · " + ult_name.to_upper()
-	line_l.text = "«" + DialogData.ult_line(str(u["char"])) + "»"
+	line_l.text = ""
+	_say(u, "«" + DialogData.ult_line(str(u["char"])) + "»")      # la battuta sta nel fumetto del personaggio
 	_cutin.modulate.a = 0.0
 	band.position.x = -_root.size.x
 	var ch: String = str(u["char"])
@@ -1477,6 +1548,7 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	tw.tween_property(_cutin, "modulate:a", 0.0, 0.18)
 	tw.tween_callback(_cutin_finish)
 	await _cutin_end
+	_say_off()
 	_cutin.visible = false
 	Breadcrumb.mark("battaglia")
 
@@ -1490,6 +1562,7 @@ func _cutin_finish() -> void:
 		_cutin_tw.kill()
 	_cutin_tw = null
 	_cutin.modulate.a = 0.0
+	_say_off()
 	_cutin_end.emit()
 
 
@@ -1760,6 +1833,7 @@ func _build_ui() -> void:
 	# lo sguardo di Echo sotto a tutto; dentro le Anomalie le telecamere non arrivano
 	_cam_hud = CamHud.new()
 	_cam_hud.anomaly = arena.begins_with("anomalia") or arena in ["rosso", "blu", "verde"]
+	_cam_hud.tag_y = 70.0 if Settings.show_fps else 14.0      # REC CAM in alto a sinistra, SOPRA il riquadro dei turni
 	_root.add_child(_cam_hud)
 	_fx_layer = Control.new()
 	Ui.place(_fx_layer, 0, 0, 1, 1)
@@ -1776,17 +1850,17 @@ func _build_ui() -> void:
 
 	# ordine dei turni (sinistra)
 	var ob := PanelContainer.new()
-	ob.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.72), Ui.INK, 3, 6, 0))
-	ob.position = Vector2(16, 70 if Settings.show_fps else 16)
+	ob.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.38), Color(0, 0, 0, 0), 0, 6, 0))
+	ob.position = Vector2(16, 126 if Settings.show_fps else 70)
 	ob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(ob)
 	var ov := VBoxContainer.new()
 	ov.add_theme_constant_override("separation", 4)
 	ob.add_child(ov)
-	var ot := Ui.label("TURNI", 18, Color(1, 1, 1, 0.85), Ui.display())
-	ov.add_child(ot)
+	_order_title = Ui.label("TURNO 1", 20, Ui.YELLOW, Ui.display(), 6)
+	ov.add_child(_order_title)
 	_order_box = VBoxContainer.new()
-	_order_box.add_theme_constant_override("separation", 4)
+	_order_box.add_theme_constant_override("separation", 0)
 	ov.add_child(_order_box)
 
 	# nemico (alto al centro)
@@ -1818,24 +1892,30 @@ func _build_ui() -> void:
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bp.add_child(_tele)
 
+	_party_back = Control.new()
+	Ui.place(_party_back, 0, 0, 1, 1)
+	_party_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_party_back.draw.connect(_draw_party_back)
+	_root.add_child(_party_back)
 	# squadra (basso a destra, righe compatte come nella V2): il centro e il lato sinistro restano alla scena e alla ruota
 	var party := VBoxContainer.new()
-	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -470, -280, -16, -14)
+	Ui.place(party, 1.0, 1.0, 1.0, 1.0, -370, -300, -30, -18)
 	party.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	party.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	party.alignment = BoxContainer.ALIGNMENT_END
-	party.add_theme_constant_override("separation", 5)
+	party.add_theme_constant_override("separation", 10)
 	party.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(party)
 	for i in slots.size():
 		var card := _make_card()
 		party.add_child(card["panel"])
 		_cards.append(card)
+	party.sort_children.connect(_party_back.queue_redraw)
 	_intro_panels(ob, bp, party)
 
 	# comandi (basso a destra)
 	_cmd_box = VBoxContainer.new()
-	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -580, -16, -290)
+	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -330, -650, -16, -350)      # REAZIONE sopra la squadra, senza toccare la card in alto
 	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
 	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
 	_cmd_box.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -1907,9 +1987,9 @@ func _build_ui() -> void:
 	_kit_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_kit_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_kit_lbl)
-	_hint = Ui.label("", 22, Ui.CREAM, null, 6)
+	_hint = Ui.label("", 18, Ui.CREAM, null, 5)
 	# a sinistra sotto i TURNI, dentro il fumetto di Echo (come l'alleata che parla in Persona): il centro resta alla scena
-	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 104, 270, 560, 270)
+	Ui.place(_hint, 0.0, 0.0, 0.0, 0.0, 96, 292, 456, 292)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_root.add_child(EchoBalloon.new(_hint))
@@ -1971,6 +2051,18 @@ func _build_ui() -> void:
 	ll.name = "Line"
 	Ui.place(ll, 0.05, 0.66, 0.95, 0.66, 0, 70, 0, 110)
 	_cutin.add_child(ll)
+	# fumetto della battuta (sopra la fascia, a sinistra): il ritratto sporge a sinistra del testo
+	_say_lbl = Ui.label("", 26, Ui.CREAM, null, 7)
+	_say_lbl.name = "Say"
+	Ui.place(_say_lbl, 0.0, 0.66, 0.0, 0.66, 190, -118, 1010, -118)
+	_say_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_say_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_say_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_say_lbl.visible = false
+	_say_balloon = EchoBalloon.new(_say_lbl)
+	_say_balloon.fit = true
+	_cutin.add_child(_say_balloon)
+	_cutin.add_child(_say_lbl)
 
 
 # Disegna una volta, quasi trasparenti, cifre e lettere in tutte le grandezze dei numeri dei colpi: il telefono prepara
@@ -2011,48 +2103,87 @@ func _bar(col: Color, h: float) -> ProgressBar:
 
 
 func _make_card() -> Dictionary:
-	# riga compatta: nome e PV a sinistra, barre ed energia a destra
+	# P5/JSR: niente pannello. Volto in cornice storta + numero PV grande + EN piccola + barretta sottile; chi e' di turno ha una lastra di colore piena
 	var p := PanelContainer.new()
-	p.custom_minimum_size = Vector2(450, 0)
+	p.custom_minimum_size = Vector2(330, 0)
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 20)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(row)
-	# ritratto del personaggio a sinistra della riga (Persona 3 Reload / Persona 5: la squadra si riconosce dai volti)
 	var face := TextureRect.new()
-	face.custom_minimum_size = Vector2(58, 58)
+	face.custom_minimum_size = Vector2(62, 56)
 	face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(face)
-	var left := VBoxContainer.new()
-	left.add_theme_constant_override("separation", 0)
-	left.custom_minimum_size = Vector2(190, 0)
-	row.add_child(left)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 2)
+	vb.add_theme_constant_override("separation", 0)
 	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(vb)
-	var name_l := Ui.label("", 19, Ui.CREAM, Ui.display(), 6)
+	var name_l := Ui.label("", 16, Ui.CREAM, Ui.display(), 5)
 	name_l.clip_text = true
-	left.add_child(name_l)
-	var hp_t := Ui.label("", 22, Ui.CREAM, Ui.display(), 6)
-	left.add_child(hp_t)
-	var hp := _bar(Color("#62f08c"), 12)
+	vb.add_child(name_l)
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 10)
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vb.add_child(line)
+	var hp_t := Ui.label("", 36, Ui.CREAM, Ui.display(), 9)
+	line.add_child(hp_t)
+	var en := Ui.label("", 18, Ui.CYAN, Ui.display(), 5)
+	en.size_flags_vertical = Control.SIZE_SHRINK_END
+	line.add_child(en)
+	var hp := _bar(Color("#62f08c"), 6)
 	vb.add_child(hp)
-	var en := Ui.label("", 16, Ui.CYAN, null, 4)
-	vb.add_child(en)
-	var ult := _bar(Ui.PINK, 8)
+	var ult := _bar(Ui.PINK, 4)
 	vb.add_child(ult)
-	# crepe leggere: si ridisegnano solo quando la card cambia livello (50% / 25% dei PV)
 	var cracks := Control.new()
 	cracks.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cracks.set_meta("tier", 0)
 	cracks.draw.connect(func() -> void: _draw_cracks(cracks))
 	p.add_child(cracks)
 	return {"panel": p, "face": face, "name": name_l, "hp": hp, "hp_t": hp_t, "en": en, "ult": ult, "cracks": cracks, "tier": 0}
+
+
+func _draw_party_back() -> void:
+	# lastre e cornici dei volti di TUTTA la squadra in una sola maglia: una draw call (prima una per card)
+	var m := CmdWheel._Mesh.new()
+	var o: Vector2 = _party_back.get_global_rect().position
+	for c in _cards:
+		var pn: Control = c["panel"]
+		var r: Rect2 = pn.get_global_rect()
+		r.position -= o
+		var col: Color = c.get("col", Color.WHITE)
+		var on: bool = bool(c.get("active", false))
+		var mk: bool = bool(c.get("marked", false))
+		var al: float = float(c.get("alpha", 1.0))
+		var x: float = r.position.x
+		var y: float = r.position.y
+		# contenitore scuro dietro la card (nero a opacita' leggera): la squadra spicca sul combattimento, stessa maglia
+		m.draw_colored_polygon(PackedVector2Array([Vector2(x - 16, y - 4), Vector2(x + r.size.x + 10, y - 10), Vector2(x + r.size.x + 4, y + r.size.y + 8), Vector2(x - 20, y + r.size.y + 6)]), Color(0.0, 0.0, 0.02, 0.46 * al))
+		var fr := PackedVector2Array([Vector2(x - 4, y + 4), Vector2(x + 72, y - 2), Vector2(x + 66, y + r.size.y + 2), Vector2(x - 8, y + r.size.y - 2)])
+		if on:
+			var slab := PackedVector2Array([Vector2(x - 10, y + 6), Vector2(x + r.size.x + 6, y - 4), Vector2(x + r.size.x - 8, y + r.size.y + 4), Vector2(x - 14, y + r.size.y - 2)])
+			var sh := PackedVector2Array()
+			for q in slab:
+				sh.append(q + Vector2(6, 6))
+			m.draw_colored_polygon(sh, Color(Ui.INK, al))
+			m.draw_colored_polygon(slab, Color(col.darkened(0.15), al))
+		var cen: Vector2 = (fr[0] + fr[1] + fr[2] + fr[3]) * 0.25
+		var fo := PackedVector2Array()       # contorno nero spesso = la cornice ingrandita di 3 px, con ombra sfalsata
+		var fs := PackedVector2Array()
+		for q in fr:
+			var big: Vector2 = q + (q - cen).normalized() * 4.0
+			fo.append(big)
+			fs.append(big + Vector2(5, 5))
+		m.draw_colored_polygon(fs, Color(Ui.INK, al))
+		m.draw_colored_polygon(fo, Color(Ui.INK, al))
+		m.draw_colored_polygon(fr, Color(Color("#ff5a6e") if mk else (Color.WHITE if on else Ui.CREAM), al))
+		if not on:
+			m.draw_line(Vector2(x - 6, y + r.size.y + 6), Vector2(x + 66, y + r.size.y + 4), Color(col, al), 5.0)
+	_party_mesh = m.commit(_party_back)
 
 
 const CRACKS_1: Array = [[Vector2(0.78, 0.0), Vector2(0.72, 0.18), Vector2(0.80, 0.34), Vector2(0.74, 0.5)],
@@ -2062,25 +2193,67 @@ const CRACKS_2: Array = [[Vector2(0.2, 1.0), Vector2(0.28, 0.82), Vector2(0.22, 
 	[Vector2(0.5, 0.0), Vector2(0.46, 0.14)]]
 
 
+const CRACKS_KO: Array = [[Vector2(0.0, 0.3), Vector2(0.14, 0.4), Vector2(0.1, 0.55)], [Vector2(0.62, 1.0), Vector2(0.58, 0.8), Vector2(0.7, 0.66)]]
+
+
 func _draw_cracks(c: Control) -> void:
+	# VETRO ROTTO sulla card: crepe nette con bordo luminoso del colore del personaggio, schegge chiare, leggero spostamento RGB;
+	# a KO anche righe di scansione e velo scuro. Tutto in questa card, niente a schermo intero.
 	var tr: int = int(c.get_meta("tier", 0))
 	if tr <= 0:
 		return
+	var ko: bool = bool(c.get_meta("ko", false))
+	var cc: Color = c.get_meta("col", Color.WHITE)
 	var sz: Vector2 = c.size
 	var lines: Array = CRACKS_1 if tr == 1 else CRACKS_1 + CRACKS_2
+	if ko:
+		lines = lines + CRACKS_KO
+		c.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.0, 0.0, 0.03, 0.3))
+		var yy: float = 2.0
+		while yy < sz.y:
+			c.draw_line(Vector2(0, yy), Vector2(sz.x, yy), Color(1, 1, 1, 0.06), 1.0)
+			yy += 5.0
+	var sh: float = 2.5 if tr >= 2 else 1.2
 	for ln in lines:
 		var pts := PackedVector2Array()
+		var pr := PackedVector2Array()
+		var pb := PackedVector2Array()
 		for q in ln:
-			pts.append((q as Vector2) * sz)
-		c.draw_polyline(pts, Color(1, 1, 1, 0.5), 2.0)
+			var v: Vector2 = (q as Vector2) * sz
+			pts.append(v)
+			pr.append(v + Vector2(-sh, 0))
+			pb.append(v + Vector2(sh, 0))
+		if tr >= 2:
+			c.draw_polyline(pts, Color(cc.r, cc.g, cc.b, 0.28), 7.0)       # alone
+			c.draw_polyline(pr, Color(1.0, 0.2, 0.35, 0.55), 2.0)         # RGB: rosso a sinistra, ciano a destra
+			c.draw_polyline(pb, Color(0.2, 0.9, 1.0, 0.55), 2.0)
+		else:
+			c.draw_polyline(pts, Color(cc.r, cc.g, cc.b, 0.22), 5.0)
+		c.draw_polyline(pts, Color(1, 1, 1, 0.92 if tr >= 2 else 0.6), 2.0 if tr >= 2 else 1.5)
+	if tr >= 2:
+		# schegge: piccoli triangoli chiari sui nodi delle crepe, un po' staccati dal vetro
+		for ln in lines:
+			var q0: Vector2 = (ln[1] as Vector2) * sz
+			c.draw_colored_polygon(PackedVector2Array([q0 + Vector2(3, -4), q0 + Vector2(15, 2), q0 + Vector2(5, 9)]), Color(1, 1, 1, 0.3))
+			c.draw_polyline(PackedVector2Array([q0 + Vector2(3, -4), q0 + Vector2(15, 2), q0 + Vector2(5, 9), q0 + Vector2(3, -4)]), Color(cc.r, cc.g, cc.b, 0.8), 1.2)
 
 
 # Barra PV della card: verde sopra il 50%, gialla sotto, rossa sotto il 25%; le crepe seguono lo stesso livello
-func _card_tier(c: Dictionary, ratio: float) -> void:
+func _card_tier(c: Dictionary, ratio: float, ko: bool = false, col: Color = Color.WHITE) -> void:
 	var tr: int = BrokenCam.tier(ratio)
-	if tr == int(c["tier"]):
+	var kk: bool = ko and tr > 0
+	var key: String = "%d|%s|%s" % [tr, kk, col.to_html()]
+	if key == str(c.get("tier_key", "")):
 		return
+	c["tier_key"] = key
+	var rose: bool = tr > int(c["tier"])
 	c["tier"] = tr
+	(c["cracks"] as Control).set_meta("ko", kk)
+	(c["cracks"] as Control).set_meta("col", col)
+	if rose and tr > 0:
+		var cr: Control = c["cracks"]
+		cr.modulate = Color(2.2, 2.2, 2.2, 1.0)       # lampo del vetro che si rompe
+		create_tween().tween_property(cr, "modulate", Color.WHITE, 0.35)
 	var fill: StyleBoxFlat = (c["hp"] as ProgressBar).get_theme_stylebox("fill") as StyleBoxFlat
 	fill.bg_color = [Color("#62f08c"), Color("#ffd23f"), Color("#ff4a5a")][tr]
 	(c["cracks"] as Control).set_meta("tier", tr)
@@ -2390,8 +2563,9 @@ func _refresh_hud() -> void:
 		_cam_hud.set_live(int(Kits.unit_of_char(b, Kits.RIO).get("hype", -1)))      # la diretta di Rio e' la telecamera di Echo
 	var boss: Dictionary = BattleState.boss(b)
 	_boss_hp.max_value = int(boss["max_hp"])
-	_boss_hp.value = int(boss["hp"])
-	_boss_hp_txt.text = "%d / %d" % [int(boss["hp"]), int(boss["max_hp"])]
+	var shown_hp: int = mini(int(boss["max_hp"]), int(boss["hp"]) + _team_hold)
+	_boss_hp.value = shown_hp
+	_boss_hp_txt.text = "%d / %d" % [shown_hp, int(boss["max_hp"])]
 	_boss_brk.max_value = maxi(1, int(boss.get("balance_max", 1)))
 	_boss_brk.value = int(boss.get("balance", 0))
 	_brk_lbl.text = "EQUILIBRIO  %d" % int(boss.get("balance", 0))
@@ -2426,17 +2600,22 @@ func _refresh_hud() -> void:
 		var col: Color = _col(u)
 		var look: String = "%s|%s|%s" % [active, is_marked, col.to_html()]
 		if str(c.get("look", "")) != look:
-			c["look"] = look          # PRESTAZIONI: lo stile della card si rifa' solo quando cambia
-			(c["panel"] as PanelContainer).add_theme_stylebox_override("panel",
-				Ui.box(Color(0.08, 0.05, 0.14, 0.9) if not active else col.darkened(0.42), Color("#ff5a6e") if is_marked else (col.lightened(0.25) if active else Ui.INK), 6 if (is_marked or active) else 3, 6, 9 if active else 5))
+			c["look"] = look          # PRESTAZIONI: la lastra si rifa' solo quando cambia
+			c["col"] = col
+			c["active"] = active
+			c["marked"] = is_marked
+			_party_back.queue_redraw()
 		(c["panel"] as Control).modulate.a = 1.0 if alive else 0.45
+		if float(c.get("alpha", 1.0)) != (1.0 if alive else 0.45):
+			c["alpha"] = 1.0 if alive else 0.45
+			_party_back.queue_redraw()
 		# il colore anche scritto: chi non distingue i colori sa lo stesso chi colpisce le debolezze
 		# ▶ davanti al nome di chi e' di turno: si legge anche senza distinguere i colori
 		(c["name"] as Label).text = ("▶ " if active and alive else "") + str(u["name"]).to_upper() + (" · " + str(u.get("color", "")).to_upper() if str(u.get("color", "")) != "" else "") + ("  KO" if not alive else "")
-		(c["name"] as Label).add_theme_color_override("font_color", col.lightened(0.3))
+		(c["name"] as Label).add_theme_color_override("font_color", Color.WHITE if active else col.lightened(0.3))
 		(c["hp"] as ProgressBar).max_value = int(u["max_hp"])
 		(c["hp"] as ProgressBar).value = int(u["hp"])
-		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])))
+		_card_tier(c, float(u["hp"]) / maxf(1.0, float(u["max_hp"])), not alive, col)
 		(c["hp_t"] as Label).text = "%d" % int(u["hp"])
 		var face: TextureRect = c["face"]
 		if face.texture == null:
@@ -2445,7 +2624,7 @@ func _refresh_hud() -> void:
 				face.texture = load(fp)
 		face.modulate = Color.WHITE if alive else Color(0.4, 0.4, 0.45)
 		var en: int = int(u.get("energy", 0))
-		(c["en"] as Label).text = "EN %d/%d" % [en, BattleTypes.MAX_ENERGY]
+		(c["en"] as Label).text = "EN %d" % en
 		if Kits.is_char(u, Kits.RIO):
 			(c["en"] as Label).text += " · HYPE %d" % int(u.get("hype", 0))
 		(c["ult"] as ProgressBar).max_value = BattleTypes.GAUGE_MAX
@@ -2461,13 +2640,14 @@ func _refresh_hud() -> void:
 			continue
 		var is_boss: bool = bool(e["boss"])
 		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
-		rows.append([("> " if k == turn_i else "   ") + nm, 20 if k == turn_i else 17, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
-	rows.append(["   — round %d —" % int(b.get("round", 1)), 18, Color(1, 1, 1, 0.85), false])
+		rows.append([("> " if k == turn_i else "   ") + nm, 19 if k == turn_i else 15, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
+	if _order_title != null:
+		_order_title.text = "TURNO %d" % int(b.get("round", 1))
 	var sig: String = str(rows)
 	if sig != _order_sig:
 		_order_sig = sig
 		while _order_box.get_child_count() < rows.size():
-			_order_box.add_child(Ui.label("", 17, Ui.CREAM, null, 4))
+			_order_box.add_child(Ui.label("", 15, Ui.CREAM, null, 5))
 		for i in _order_box.get_child_count():
 			var l: Label = _order_box.get_child(i)
 			l.visible = i < rows.size()
@@ -2499,7 +2679,48 @@ func _update_mark(tele: Dictionary, mv: Dictionary, boss: Dictionary) -> String:
 		_clear_mark()
 		_mark = LightFx.mark(self, home[want], Color("#ff5a6e"))
 		_mark_uid = want
+	_update_threat(tele, mv, boss, want)
 	return want
+
+
+# Minaccia a terra: cerchio sotto il nemico che dichiara, semicerchio sotto tutti o cono fino al bersaglio (la scritta da sola non bastava)
+var _threat: LightFx = null
+var _threat_key: String = ""
+
+
+func _update_threat(tele: Dictionary, mv: Dictionary, boss: Dictionary, one: String) -> void:
+	var tgts: Array = []
+	var all: bool = false
+	var show: bool = not ended and not _boss_acting and BattleState.is_alive(boss) and int(boss.get("stun", 0)) <= 0 and not mv.is_empty() \
+			and not bool((b.get("seq", {}) as Dictionary).get("boss_acted", false))
+	if show:
+		if one != "":
+			tgts.append(home[one])
+		elif bool(mv.get("camera", false)):
+			# la telecamera colpisce chi ha meno PV in quel momento: i suoi bersagli di ora
+			for pk in BattleResolver.camera_targets(b):
+				var cu: String = str((pk["unit"] as Dictionary).get("id", ""))
+				if home.has(cu):
+					tgts.append(home[cu])
+			all = tgts.size() > 1
+		else:
+			all = true
+			for p in BattleState.alive_players(b):
+				var u: Dictionary = BattleState.active_unit(b, str(p["id"]))
+				if BattleState.is_alive(u) and home.has(str(u["id"])):
+					tgts.append(home[str(u["id"])])
+	if tgts.is_empty():
+		if _threat != null and is_instance_valid(_threat):
+			_threat.stop()
+		_threat = null
+		_threat_key = ""
+		return
+	var key: String = "%s|%s" % [str(all), str(tgts)]
+	if _threat == null or not is_instance_valid(_threat):
+		_threat = LightFx.threat(self, ENEMY_POS, tgts, all, Color("#ff3b4e"))
+	elif key != _threat_key:
+		_threat.retarget(tgts, all)
+	_threat_key = key
 
 
 func _clear_mark() -> void:
@@ -2535,6 +2756,12 @@ func _show_events_freeze(ev: Array) -> void:
 		await _show_events(ev, true)
 		return
 	_team_follow = true             # la rottura la annuncia la sequenza di squadra: niente vetro rotto ne' scritte doppie
+	# i danni di squadra si vedono sulla barra solo quando arrivano i colpi
+	_team_hold = 0
+	for e in ev.slice(idx + 1):
+		if str(e.get("t", "")) == "damage" and str(e.get("dst", "")) == BattleState.BOSS_ID and str(e.get("src", "")) != BattleState.BOSS_ID:
+			_team_hold += int(e.get("amount", 0))
+	_refresh_hud()
 	await _show_events(ev.slice(0, idx), true)
 	_team_follow = false
 	if not is_inside_tree() or ended:
@@ -2562,6 +2789,11 @@ func _team_sequence(rest: Array) -> void:
 			hits.append([str(e["src"]), int(e.get("amount", 0)), bool(e.get("crit", false))])
 		else:
 			others.append(e)
+	# la barra del nemico torna ai PV di prima dell'assalto e scende a ogni colpo (prima calava tutta subito: sembrava che non facesse niente)
+	_team_hold = 0
+	for h in hits:
+		_team_hold += int(h[1])
+	_refresh_hud()
 	(boss_v as VendingVisual).stunned = true
 	_cam_set(Vector3(0.0, 2.4, 6.2), ENEMY_POS + Vector3(0, 1.0, 0), 5.0)
 	# 1. ROTTURA
@@ -2619,7 +2851,9 @@ func _team_sequence(rest: Array) -> void:
 		LightFx.sparks(self, (boss_v as Node).call("chest_point"), col if not bool(h[2]) else LightFx.IVORY, 8)
 		_kick(0.35)
 		total += int(h[1])
-		_number(BattleState.BOSS_ID, "%s  %d%s" % [str(b["units"][uid].get("name", "")).to_upper(), int(h[1]), "!" if bool(h[2]) else ""], col.lightened(0.35), 40, 0.0)
+		_team_hold = maxi(0, _team_hold - int(h[1]))
+		_refresh_hud()
+		_number(BattleState.BOSS_ID, "%s  %d%s" % [str(b["units"][uid].get("name", "")).to_upper(), int(h[1]), "!" if bool(h[2]) else ""], col.lightened(0.35), 56, 0.0)
 		var back := create_tween()
 		back.tween_interval(0.12)
 		back.tween_property(cv, "position", home[uid], 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -2628,6 +2862,8 @@ func _team_sequence(rest: Array) -> void:
 				cv.move_speed = 0.0
 				_face(cv, ENEMY_POS))
 		await _team_wait(0.32)
+	_team_hold = 0
+	_refresh_hud()
 	box.queue_free()
 	if _hint != null and hint_was:
 		_hint.visible = true
@@ -2635,8 +2871,10 @@ func _team_sequence(rest: Array) -> void:
 		_stamp("ATTACCO DI SQUADRA", "%d danni in tutto" % total, Ui.YELLOW)
 	if breaker != "" and vis.has(breaker):
 		_face(vis[breaker], ENEMY_POS)
+	# il totale resta a schermo da solo prima che tornino i comandi (prima la ruota ci finiva sopra)
+	await _team_wait(1.1)
 	await _show_events(others, true)
-	await _team_wait(0.5)
+	await _team_wait(0.3)
 	_team_on = false
 
 

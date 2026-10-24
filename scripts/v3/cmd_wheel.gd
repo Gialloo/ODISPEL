@@ -546,10 +546,13 @@ class _Layer extends Control:
 			var x0: float = p.x + rad + 10.0
 			var by: float = p.y + small * 0.42
 			if on:
+				# inversione alla Persona 5: lastra piena del colore del personaggio (ombra nera sfalsata) e parola nera
 				var pl := PackedVector2Array([Vector2(x0 - 24.0, by - big * 0.8), Vector2(x0 + tw + 40.0, by - big * 0.95), Vector2(x0 + tw + 22.0, by + 14.0), Vector2(x0 - 40.0, by + 22.0)])
-				draw_colored_polygon(pl, Color(0.02, 0.01, 0.04, 0.92 * e))
-				var edge := PackedVector2Array([pl[2], pl[3], pl[3] + Vector2(-6, 7), pl[2] + Vector2(-6, 7)])
-				draw_colored_polygon(edge, Color(w.col.lightened(0.2), e))
+				var psh := PackedVector2Array()
+				for q in pl:
+					psh.append(q + Vector2(7, 7))
+				draw_colored_polygon(psh, Color(0.02, 0.01, 0.04, 0.95 * e))
+				draw_colored_polygon(pl, Color(w.col.lightened(0.12), e))
 			# tasto rotondo con l'icona e il numero (tastiera 1-4)
 			var ring: Color = CmdWheel.HOT if on else (w.col.lightened(0.45) if ult and ok else CmdWheel.CREAM)
 			if ult and ok and not on:
@@ -563,8 +566,8 @@ class _Layer extends Control:
 			draw_arc(kp, 10.0, 0.0, TAU, 20, Color(CmdWheel.INK, fa), 2.0, true)
 			draw_string(fb, kp + Vector2(-4.5, 5.5), str(k + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(CmdWheel.CREAM, fa))
 			# la parola: crema col contorno nero, gialla se scelta, spenta se non si puo' usare
-			var fill: Color = CmdWheel.HOT if on else Color(CmdWheel.CREAM, 0.5 if dimmed else 1.0)
-			var shade: Color = Color(w.col.darkened(0.25), (0.45 if dimmed else 1.0))
+			var fill: Color = CmdWheel.INK if on else Color(CmdWheel.CREAM, 0.5 if dimmed else 1.0)
+			var shade: Color = Color(w.col.lightened(0.3), 1.0) if on else Color(w.col.darkened(0.25), (0.45 if dimmed else 1.0))
 			_word(Vector2(x0, by), nm, big, small, Color(fill, fill.a * fa), Color(shade, shade.a * fa), -0.1)
 			# sottotitolo e costo, piccoli e corsivi sotto la parola (come "Use a Skill" in Persona 5)
 			var sub: String = str(it["sub"])
@@ -586,20 +589,20 @@ class _Layer extends Control:
 		var title: String = str(it2.get("title", ""))
 		var desc: String = str(it2.get("desc", ""))
 		var right: float = w.size.x - origin.x - 24.0
-		var ttw: float = fd.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 36).x
+		var ttw: float = fd.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
 		var bx: float = right - ttw - 70.0 + (1.0 - e) * 120.0
 		var by2: float = 196.0 - origin.y
-		draw_colored_polygon(CmdWheel.slant(Rect2(bx - 20.0, by2 - 40.0, ttw + 90.0, 52.0), 14.0), Color(0.03, 0.02, 0.06, 0.92 * e))
-		draw_colored_polygon(CmdWheel.slant(Rect2(bx - 26.0, by2 + 14.0, ttw + 96.0, 5.0), 3.0), Color(w.col.lightened(0.2), e))
-		CmdWheel.glyph(self, w.picked, Vector2(bx + 6.0, by2 - 14.0), 16.0, Color(w.col.lightened(0.4), e))
-		CmdWheel.skew_text(self, Vector2(bx + 34.0, by2), title, 36, Color(CmdWheel.CREAM, e), Color(0, 0, 0, 0), fd, 0)
-		var ly: float = by2 + 48.0
+		draw_colored_polygon(CmdWheel.slant(Rect2(bx - 20.0, by2 - 32.0, ttw + 90.0, 42.0), 14.0), Color(0.03, 0.02, 0.06, 0.92 * e))
+		draw_colored_polygon(CmdWheel.slant(Rect2(bx - 26.0, by2 + 10.0, ttw + 96.0, 4.0), 3.0), Color(w.col.lightened(0.2), e))
+		CmdWheel.glyph(self, w.picked, Vector2(bx + 6.0, by2 - 11.0), 13.0, Color(w.col.lightened(0.4), e))
+		CmdWheel.skew_text(self, Vector2(bx + 34.0, by2), title, 28, Color(CmdWheel.CREAM, e), Color(0, 0, 0, 0), fd, 0)
+		var ly: float = by2 + 36.0
 		for line2 in desc.split("\n"):
-			var lw: float = fb.get_string_size(line2, HORIZONTAL_ALIGNMENT_LEFT, -1, 21).x
-			CmdWheel.skew_text(self, Vector2(right - lw - 10.0 + (1.0 - e) * 120.0, ly), line2, 21, Color(CmdWheel.CREAM, e), Color(0.03, 0.02, 0.06, 0.95 * e), fb, 7, -0.12)
-			ly += 28.0
+			var lw: float = fb.get_string_size(line2, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+			CmdWheel.skew_text(self, Vector2(right - lw - 10.0 + (1.0 - e) * 120.0, ly), line2, 18, Color(CmdWheel.CREAM, e), Color(0.03, 0.02, 0.06, 0.95 * e), fb, 7, -0.12)
+			ly += 24.0
 		# CONFERMA e ANNULLA: a destra sotto il riquadro, sulla stessa riga, sopra la squadra
-		var cp: Vector2 = Vector2(w.size.x - origin.x - 230.0, 326.0 - origin.y)
+		var cp: Vector2 = Vector2(w.size.x - origin.x - 230.0, 290.0 - origin.y)
 		var crr := Rect2(cp + Vector2((1.0 - e) * 90.0, 0.0), Vector2(200.0, 52.0))
 		draw_colored_polygon(CmdWheel.slant(crr.grow(4.0), 12.0), Color(0.03, 0.02, 0.06, 0.9 * e))
 		draw_colored_polygon(CmdWheel.slant(crr, 10.0), Color(CmdWheel.HOT, e))
@@ -627,12 +630,21 @@ uniform vec2 r = vec2(0.12, 0.3);
 uniform float k = 0.0;
 uniform float aura = 0.0;
 uniform vec3 tint : source_color = vec3(0.55, 0.25, 1.0);
+// secondo cerchio di luce: il nemico preso di mira resta visibile anche quando lo schermo si scurisce (ULTIMATE) e ha un alone caldo che pulsa
+uniform vec2 c2 = vec2(0.5, 0.4);
+uniform vec2 r2 = vec2(0.15, 0.3);
+uniform float k2 = 0.0;
+uniform vec3 tint2 : source_color = vec3(1.0, 0.72, 0.2);
 void fragment() {
 	float q = length((UV - c) / r);
 	float dark = k * mix(0.12, 1.0, smoothstep(0.7, 1.45, q));
 	float glow = aura * exp(-pow((q - 0.95) * 2.6, 2.0));
+	float q2 = length((UV - c2) / r2);
+	dark *= 1.0 - k2 * 0.92 * (1.0 - smoothstep(0.75, 1.3, q2));
+	float glow2 = k2 * exp(-pow((q2 - 0.92) * 2.8, 2.0));
 	vec3 col = mix(vec3(0.015, 0.0, 0.05), tint, clamp(glow * 1.4, 0.0, 1.0));
-	COLOR = vec4(col, clamp(max(dark, glow * 0.55), 0.0, 1.0));
+	col = mix(col, tint2, clamp(glow2 * 1.5, 0.0, 1.0));
+	COLOR = vec4(col, clamp(max(max(dark, glow * 0.55), glow2 * 0.6), 0.0, 1.0));
 }"""
 	var m := ShaderMaterial.new()
 	m.shader = sh
