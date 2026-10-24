@@ -1,5 +1,12 @@
 # Novità
 
+## Prossima versione · sblocchi fino al livello 100 e New Game+ fino a NG+10
+- **Si sale fino al livello 100** (prima il tetto era 30 e l'ultimo sblocco all'11). Tra il 14 e il 100 ognuno dei quattro sblocca 15 cose nuove, a turno: 3 abilità (14, 35, 65), 3 Ultimate (25, 55, 100), 3 reazioni personali più forti (20, 45, 80), 3 tratti (18, 40, 75) e 3 sinergie (coppie nuove al 30, terzetti al 50, tutti e quattro al 90 con «Il rituale della notte»).
+- **New Game+ (Replica della diretta) fino a NG+10**: si ricomincia l'atto con la squadra com'è (livelli, mosse, sblocchi, mosse rubate). Nella NG+1 i nemici vanno dal livello 14 al 24, poi +9 livelli a giro; nella NG+10 dal 95 al 100. La decima si può rigiocare quanto si vuole.
+- **Molta più esperienza nella Replica**: x2 nella NG+1 e +25% a ogni giro (x4,25 nella NG+10), finché la squadra non è tre livelli sopra i nemici. Simulato: il 100 arriva verso la fine della NG+9.
+- **Nemici tarati per i livelli alti**: fino al 12 non cambia niente; oltre, crescono come la squadra. Il +15% a giro della Replica si ferma al quarto giro (dopo la durezza la portano i livelli).
+- Menu SQUADRA: al 100 la barra dice LIVELLO MASSIMO; la lista delle scelte si apre su quello equipaggiato.
+
 ## 0.38.0 · HUD essenziale street/pop, Break che si sente, minaccia del nemico a terra
 - **HUD più essenziale** (Persona 5 + Jet Set Radio): il comando scelto diventa una lastra piena del colore del personaggio con la parola in nero; la squadra senza pannelli grandi, volto in cornice storta e numeri grandi su un fondo nero leggero; REC CAM in alto a sinistra sopra TURNO n, che conta i turni.
 - **Attacco di squadra al BREAK**: ogni compagno colpisce più forte (più del doppio) e la barra del nemico scende a ogni colpo, col nome e il danno; poi il totale.

@@ -116,7 +116,7 @@ func _member_card(c: String) -> Control:
 	bar.add_theme_stylebox_override("fill", fg)
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.add_child(bar)
-	var ex := Ui.label("EXP · mancano %d" % (Progress.exp_need(Progress.level(c)) - int(Progress.data["exp"].get(c, 0))), 18, Color(1, 1, 1, 0.85))
+	var ex := Ui.label("LIVELLO MASSIMO" if Progress.level(c) >= Progress.MAX_LEVEL else "EXP · mancano %d" % (Progress.exp_need(Progress.level(c)) - int(Progress.data["exp"].get(c, 0))), 18, Color(1, 1, 1, 0.85))
 	ex.position = Vector2(108, 72)
 	b.add_child(ex)
 	for ch in b.get_children():
@@ -252,6 +252,9 @@ func _open_picker(c: String, kind: String) -> void:
 			_picker = null
 			_refresh())
 		list.add_child(ob)
+		if on:
+			# con gli sblocchi fino al 100 la lista e' lunga: si apre su quello equipaggiato
+			sc.ensure_control_visible.call_deferred(ob)
 	var x := Ui.button("CHIUDI", Ui.CREAM, 22, 200)
 	x.pressed.connect(func() -> void:
 		_picker.queue_free()

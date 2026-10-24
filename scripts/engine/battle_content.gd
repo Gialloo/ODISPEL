@@ -121,6 +121,19 @@ const PASSIVES: Dictionary = {
 	"t_sonno_leggero": {"name": "Sonno leggero", "rarity": 0, "hp_mult": 1.06, "atk_mult": 1.06},
 	"t_follower": {"name": "Follower veri", "rarity": 0, "atk_mult": 1.1},
 	"t_guanti_velluto": {"name": "Guanti di velluto", "rarity": 0, "atk_mult": 1.12},
+	# oltre l'atto 1 (livelli 18, 40, 75): presi dagli oggetti e dalle gag dei quattro. def_mult / spd_mult valgono come gli altri.
+	"t_ora_esatta": {"name": "Ora esatta", "rarity": 0, "hp_mult": 1.08, "def_mult": 1.1},
+	"t_manuale": {"name": "Ha letto il manuale", "rarity": 0, "atk_mult": 1.12, "def_mult": 1.08},
+	"t_veterano": {"name": "Veterano LibraCorp", "rarity": 0, "hp_mult": 1.18, "def_mult": 1.12, "atk_mult": 1.08},
+	"t_thermos_pieno": {"name": "Thermos pieno", "rarity": 0, "hp_mult": 1.1, "spd_mult": 1.06},
+	"t_divano_migliore": {"name": "Il divano migliore", "rarity": 0, "hp_mult": 1.14, "def_mult": 1.08},
+	"t_civetta": {"name": "Civetta di lungo corso", "rarity": 0, "hp_mult": 1.15, "atk_mult": 1.1, "spd_mult": 1.08},
+	"t_specchietto": {"name": "Lo specchietto", "rarity": 0, "atk_mult": 1.08, "spd_mult": 1.08},
+	"t_kit_professionale": {"name": "Kit professionale", "rarity": 0, "atk_mult": 1.14},
+	"t_ospite_fisso": {"name": "Ospite fisso", "rarity": 0, "atk_mult": 1.2, "hp_mult": 1.08},
+	"t_accendino": {"name": "L'accendino scadente", "rarity": 0, "atk_mult": 1.1, "spd_mult": 1.06},
+	"t_metodo_saul": {"name": "Il metodo Saul", "rarity": 0, "atk_mult": 1.14, "hp_mult": 1.06},
+	"t_nonna_diceva": {"name": "Come diceva mia nonna", "rarity": 0, "atk_mult": 1.2, "hp_mult": 1.1},
 }
 
 # Statistiche base per classe: hp, atk, def, spd.
@@ -646,6 +659,8 @@ static func compute_stats(entry: Dictionary) -> Dictionary:
 		var p: Dictionary = PASSIVES.get(str(pid), {})
 		hp *= float(p.get("hp_mult", 1.0))
 		atk *= float(p.get("atk_mult", 1.0))
+		dfn *= float(p.get("def_mult", 1.0))
+		spd *= float(p.get("spd_mult", 1.0))
 
 	return {"hp": int(round(hp)), "atk": int(round(atk)), "def": int(round(dfn)), "spd": int(round(spd))}
 

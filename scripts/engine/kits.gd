@@ -41,6 +41,26 @@ const HEIST2_EXP: int = 50              # Il colpo del secolo
 const ARM2_BALANCE: int = 14            # Mani in alto
 const ZOOM_HYPE: int = 15
 
+# REAZIONI PERSONALI oltre l'atto 1 (livelli 20, 45, 80; nomi e testi in Progress.REACT_MODS). Valgono quando la reazione riesce.
+#   on: dodge (SCHIVA) | intercept (COPRI) | rescue (SOCCORSO)
+#   dmg_k: danno preso coprendo · gauge / energy: a chi reagisce · hype · counter: colpo di risposta (moltiplicatore)
+#   drain: equilibrio tolto al nemico · team_gauge / team_energy: a tutta la squadra · rescue_hp: PV in piu' del Soccorso
+#   steal_shield: chi reagisce si prende lo scudo del nemico
+const REACT_PERKS: Dictionary = {
+	"scorta": {"on": "intercept", "dmg_k": 0.6, "gauge": 20, "energy": 1},
+	"al_secondo_netto": {"on": "intercept", "dmg_k": 0.5, "gauge": 25, "drain": 4},
+	"muro_libracorp": {"on": "intercept", "dmg_k": 0.4, "gauge": 30, "energy": 1, "drain": 6},
+	"reperibile_h24": {"on": "rescue", "rescue_hp": 0.3, "energy": 1, "gauge": 15},
+	"ci_penso_io": {"on": "rescue", "rescue_hp": 0.4, "energy": 2, "gauge": 20},
+	"sveglia_per_tutti": {"on": "rescue", "rescue_hp": 0.45, "energy": 1, "team_energy": 1, "gauge": 20},
+	"controcampo": {"on": "dodge", "hype": 30, "gauge": 20},
+	"ralenti": {"on": "dodge", "hype": 35, "gauge": 20, "counter": 0.8},
+	"standing_ovation": {"on": "dodge", "hype": 50, "gauge": 25, "counter": 1.2, "team_gauge": 10},
+	"porta_sul_retro": {"on": "dodge", "energy": 1, "counter": 1.1},
+	"tre_carte": {"on": "dodge", "energy": 2, "counter": 1.3, "steal_shield": true},
+	"il_conto_prego": {"on": "dodge", "energy": 2, "counter": 1.8, "gauge": 15},
+}
+
 const HYPE_GAIN: Dictionary = {
 	"perfect": 15, "good": 8, "break": 20, "rhythm": 4, "synergy": 5, "crit": 4, "rio_hit": 10, "frame": 10,
 }
@@ -214,6 +234,7 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 
 
 static func after_act(state: Dictionary, actor: Dictionary, move_id: String, move: Dictionary, target_pid: String, events: Array) -> void:
+	extras(state, actor, move, events)
 	match str(move.get("kit", "")):
 		"cover":
 			var ally: Dictionary = _single_target_ally(state, actor)
@@ -309,6 +330,70 @@ static func after_act(state: Dictionary, actor: Dictionary, move_id: String, mov
 			else:
 				state["nullify"] = true
 				events.append({"t": "answer", "unit": actor["id"]})
+
+
+# Effetti in piu' scritti nella mossa (quelle sbloccate oltre l'atto 1): equilibrio tolto, Hype, esperienza, energia e Ultimate a tutti.
+static func extras(state: Dictionary, actor: Dictionary, move: Dictionary, events: Array) -> void:
+	if move.has("drain"):
+		var boss: Dictionary = BattleState.boss(state)
+		if BattleState.is_alive(boss):
+			BattleResolver._drain_balance(boss, int(move["drain"]), actor, events)
+	if move.has("hype_gain"):
+		add_hype(actor, int(move["hype_gain"]), events, "mossa")
+	if move.has("loot"):
+		var before: int = int(state.get("exp_bonus", 0))
+		state["exp_bonus"] = maxi(before, mini(int(move.get("loot_cap", LOOT_EXP_MAX)), before + int(move["loot"])))
+		events.append({"t": "loot_exp", "unit": actor["id"], "total": int(state["exp_bonus"])})
+	team_boost(state, actor, int(move.get("team_energy", 0)), int(move.get("team_gauge", 0)), events)
+
+
+# Energia e Ultimate a tutta la squadra in piedi
+static func team_boost(state: Dictionary, src: Dictionary, energy: int, gauge: int, events: Array) -> void:
+	if energy <= 0 and gauge <= 0:
+		return
+	for p in BattleState.alive_players(state):
+		var m: Dictionary = BattleState.active_unit(state, str(p["id"]))
+		if m.is_empty() or not BattleState.is_alive(m):
+			continue
+		if energy > 0:
+			m["energy"] = mini(BattleTypes.MAX_ENERGY, int(m["energy"]) + energy)
+			events.append({"t": "energy_gift", "unit": src["id"], "dst": m["id"], "amount": energy})
+		if gauge > 0:
+			m["gauge"] = mini(BattleTypes.GAUGE_MAX, int(m["gauge"]) + gauge)
+
+
+# Reazione personale riuscita (REACT_PERKS). Ritorna vero se ha fatto qualcosa.
+static func react_perk(state: Dictionary, boss: Dictionary, u: Dictionary, kind: String, events: Array) -> bool:
+	var pk: Dictionary = REACT_PERKS.get(str(u.get("react_mod", "")), {})
+	if pk.is_empty() or str(pk["on"]) != kind:
+		return false
+	u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + int(pk.get("gauge", 0)))
+	u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + int(pk.get("energy", 0)))
+	if pk.has("hype"):
+		add_hype(u, int(pk["hype"]), events, "schivata")
+	if bool(pk.get("steal_shield", false)) and int(boss.get("shield", 0)) > 0:
+		var got: int = int(boss["shield"])
+		boss["shield"] = 0
+		u["shield"] = int(u["shield"]) + got
+		events.append({"t": "shield", "src": u["id"], "dst": u["id"], "amount": got})
+	if pk.has("drain") and BattleState.is_alive(boss):
+		BattleResolver._drain_balance(boss, int(pk["drain"]), u, events)
+	team_boost(state, u, int(pk.get("team_energy", 0)), int(pk.get("team_gauge", 0)), events)
+	if pk.has("counter") and BattleState.is_alive(boss):
+		BattleResolver._hit(state, u, boss, float(pk["counter"]), events)
+	return true
+
+
+# Danno preso coprendo con una reazione personale (1.0 = nessun cambio)
+static func react_dmg_k(u: Dictionary) -> float:
+	var pk: Dictionary = REACT_PERKS.get(str(u.get("react_mod", "")), {})
+	return float(pk.get("dmg_k", 1.0)) if str(pk.get("on", "")) == "intercept" else 1.0
+
+
+# PV in piu' del Soccorso con una reazione personale
+static func react_rescue_hp(u: Dictionary) -> float:
+	var pk: Dictionary = REACT_PERKS.get(str(u.get("react_mod", "")), {})
+	return float(pk.get("rescue_hp", 0.0)) if str(pk.get("on", "")) == "rescue" else 0.0
 
 
 # ---------------------------------------------------------------- turno del boss

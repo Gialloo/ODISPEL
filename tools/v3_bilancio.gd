@@ -8,6 +8,9 @@ extends SceneTree
 #   dettaglio   sotto ogni scontro la quota di danno di tutti e quattro
 #   minori      include anche i frammenti (nemici minori)
 #   solo=ID     un solo scontro
+#   ng=N        New Game+ N: nemici al livello di BattleTypes.replica_level, squadra da Progress (sblocchi migliori equipaggiati)
+#   scarto=K    con ng: la squadra ha K livelli in meno del nemico (default 0; negativo = piu' alta)
+#   kit         anche senza ng, la squadra usa Progress (sblocchi del livello) invece del kit base
 # Gli scontri e le scale PV/attacco replicano battle3d.gd (pv_k, atk_k, livello); la squadra e' quella dell'atto 1 con ultimate al 60%.
 # Metriche: vittorie, KO, round, turni del boss giocati/persi, quota di danno di Saul e di Nox, uso di cure/scudi/Veglia di Nox,
 # occasioni di reazione (carica annunciata + Riserva disponibile) e reazioni fatte.
@@ -21,26 +24,49 @@ const ENC: Array = [
 
 
 var replica: int = 0
+var ng: int = -1
+var scarto: int = 0
+var use_kit: bool = false
+
+
+# Squadra di Progress al livello dato, con l'ultimo sblocco di ogni tipo equipaggiato
+func _kit_team(lvl: int) -> Array:
+	Progress.reset()
+	var team: Array = []
+	for c in PARTY:
+		Progress.data["lv"][c] = clampi(lvl, 1, Progress.MAX_LEVEL)
+		for u in Progress.UNLOCKS[c]:
+			if int(u[0]) <= int(Progress.data["lv"][c]):
+				Progress.equip(c, str(u[1]), str(u[2]))
+		team.append(Progress.entry_for(c))
+	return team
 
 
 func _setup(boss: String, lvl: int, pv: float, atk: float, minore: bool, seed_value: int) -> Dictionary:
 	var team: Array = []
-	for id in PARTY:
-		team.append(BattleContent.default_entry(id, lvl))
+	if ng >= 0:
+		lvl = BattleTypes.replica_level(lvl, ng)
+	if ng >= 0 or use_kit:
+		team = _kit_team(lvl - scarto)
+	else:
+		for id in PARTY:
+			team.append(BattleContent.default_entry(id, lvl))
 	var b: Dictionary = BattleState.create_solo("IO", team, [], boss, seed_value)
 	var bu: Dictionary = BattleState.boss(b)
-	var grow: float = 1.0 + BattleTypes.STORY_HP_PER_LEVEL * float(lvl - 1)
-	var rk: float = 1.0 + BattleTypes.REPLICA_K * float(replica)
+	var grow: float = BattleTypes.story_hp_grow(lvl)
+	var rk: float = BattleTypes.replica_hard(replica)
 	pv *= rk
 	atk *= rk
 	var pk: float = pv * (BattleTypes.STORY_HP_MINOR if minore else BattleTypes.STORY_HP_BOSS) * grow
-	var ak: float = atk * BattleTypes.STORY_ATK_K * (1.0 + BattleTypes.STORY_ATK_PER_LEVEL * float(lvl - 1))
+	var ak: float = atk * BattleTypes.STORY_ATK_K * BattleTypes.story_atk_grow(lvl)
 	bu["max_hp"] = maxi(1, int(round(float(bu["max_hp"]) * pk)))
 	bu["hp"] = bu["max_hp"]
 	bu["atk"] = maxi(1, int(round(float(bu["atk"]) * ak)))
+	if ng >= 0 or use_kit:
+		Progress.apply_to_battle(b)
 	for uid in b["units"]:
 		if str(uid) != "boss":
-			b["units"][uid]["gauge"] = 60
+			b["units"][uid]["gauge"] = mini(BattleTypes.GAUGE_MAX, 60 + int(b["units"][uid].get("syn_gauge", 0)))
 	return b
 
 
@@ -134,6 +160,13 @@ func _init() -> void:
 			seeds = int(a.substr(5))
 		elif a.begins_with("replica="):
 			replica = int(a.substr(8))
+		elif a.begins_with("ng="):
+			ng = int(a.substr(3))
+			replica = ng
+		elif a.begins_with("scarto="):
+			scarto = int(a.substr(7))
+		elif a == "kit":
+			use_kit = true
 		elif a == "dettaglio":
 			dettaglio = true
 		elif a == "minori":
@@ -152,7 +185,7 @@ func _init() -> void:
 		var r: float = float(st["runs"])
 		var tot_dmg: float = maxf(1.0, float(st.get("dmg_tot", 0.0)))
 		print("%-18s %3d %5.0f %5.2f %5.1f %6.2f %6.2f %5.2f %5.2f %6.0f %6.0f %6.2f %5.2f %6.2f %5.2f" % [
-			enc[0], enc[1], 100.0 * float(st.get("wins", 0.0)) / r, float(st.get("ko", 0.0)) / r, float(st.get("rounds", 0.0)) / r,
+			enc[0], BattleTypes.replica_level(int(enc[1]), ng) if ng >= 0 else int(enc[1]), 100.0 * float(st.get("wins", 0.0)) / r, float(st.get("ko", 0.0)) / r, float(st.get("rounds", 0.0)) / r,
 			float(st.get("boss_giocati", 0.0)) / r, float(st.get("boss_persi", 0.0)) / r, float(st.get("break", 0.0)) / r, float(st.get("slancio", 0.0)) / r,
 			100.0 * float(st.get("dmg_saul", 0.0)) / tot_dmg, 100.0 * float(st.get("dmg_nox", 0.0)) / tot_dmg,
 			float(st.get("heal_nox", 0.0)) / r, float(st.get("veglia", 0.0)) / r,
