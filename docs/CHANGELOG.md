@@ -1,5 +1,11 @@
 # Novità
 
+## 0.37.0 · comandi alla Persona 5 / Metaphor
+- **Comandi accanto a chi è di turno**: la camera mette il personaggio a sinistra e il nemico a destra; ATTACCO, ABILITÀ, ULTIMATE e GUARDIA sono parole grandi inclinate con l'iniziale enorme, su una macchia di vernice spray del colore del personaggio. Si tocca una volta per scegliere e una seconda (o CONFERMA) per lanciare.
+- **Luce ed energia**: dal tasto scelto escono raggi di luce interi, un filo d'energia parte dal petto del personaggio; con l'ULTIMATE la scena si scurisce attorno a lui, arrivano le bande nere e il personaggio si accende col suo colore.
+- **HUD**: i consigli li dà Echo in un fumetto in alto a sinistra; la squadra in basso a destra ha i ritratti e i numeri grandi.
+- **Prestazioni**: vernice, raggi ed energia sono disegnati in un colpo solo e ridisegnati solo quando cambiano.
+
 ## 0.36.0 · grafica rifinita: Break col vetro rotto e feedback di ogni azione
 - **BREAK col vetro rotto**: quando l'equilibrio del nemico va a zero il gioco si ferma un istante, lo schermo si crepa partendo dal nemico e le schegge con il bordo luminoso volano verso di te. Poi la scritta BREAK su una lastra storta, con sotto cosa succede al nemico. Anche l'attacco di squadra ha la sua versione corta.
 - **Sai sempre cosa fare**: a ogni turno la card di chi agisce scatta e prende la freccia ▶, TURNO DI entra grande nel colore del personaggio, il mirino si aggancia al nemico e il comando che scegli scatta prima di partire.
