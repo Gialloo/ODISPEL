@@ -1,6 +1,6 @@
 # Novità
 
-## In arrivo (dopo la 0.41.2)
+## 0.41.3 · HUD alla Persona: scena libera, menu ABILITÀ, limite FPS
 - FPS: si sceglie il limite nelle impostazioni (30, 60, 120, 240); su PC parte da 120, sul telefono da 60.
 - Battaglia, HUD più pulito ispirato a Metaphor e Persona 5: CONFERMA e la descrizione della mossa in basso a sinistra (su PC il clic finiva sulle reazioni), reazioni in alto a destra, barra rapida più piccola, squadra più compatta.
 - Comandi più chiari: ABILITÀ come parola grande col nome della mossa sotto, stella per l'Ultimate con l'arco di carica.
