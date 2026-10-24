@@ -14,6 +14,12 @@ const ENEMY_POS := Vector3(0, 0.14, -3.4)
 # GUARDIA A TEMPO: quando parte il colpo annunciato un cerchio si chiude sul bersaglio; toccare quando si chiude
 # riduce il danno e carica l'ultimate, toccare proprio all'impatto e' una parata perfetta con contrattacco.
 # Tempi in secondi REALI (non cambiano con x2): la finestra deve restare leggibile anche accelerando.
+# Spiegazioni della storia a gruppi, nell'ordine: un gruppo si apre quando i precedenti sono visti.
+# Dieci spiegazioni nel primo scontro erano troppe (analisi del 24/10): cosi' arrivano due alla volta, quando servono.
+const LEZIONI: Array = [["tut_intro", "tut_attacco"], ["tut_guardia", "tut_abilita"], ["tut_telegrafo", "tut_qte"],
+	["tut_reazioni", "tut_rottura"], ["tut_ultimate", "tut_extra"]]
+const LEZIONI_MAX: int = 2
+const TOAST_MAX: int = 2              # avvisi sulla lastra scura visibili insieme
 const QTE_LEAD: float = 0.9          # dall'apparire del cerchio all'impatto
 const QTE_GOOD: float = 0.3          # quanto prima dell'impatto vale gia' come guardia
 const QTE_LATE: float = 0.12         # tolleranza dopo l'impatto
@@ -39,7 +45,10 @@ var _pinched: bool = false                # il FOV e' stretto dalla scossa: va r
 var _boss_known: bool = false             # il giocatore conosce il colore del boss (indizio o primo colpo)
 var ritorno: Dictionary = {}             # dove tornare: area (nemico minore), storia (boss), niente = demo dal menu
 var minore: bool = false
-var tutorial: bool = false            # primo scontro della storia (o TUTORIAL dal menu): Echo e la squadra spiegano ogni meccanica
+var tutorial: bool = false            # TUTORIAL dal menu: Echo e la squadra spiegano ogni meccanica in un solo scontro
+var primo: bool = false               # primo scontro della storia: nemico che picchia piano
+var lezioni: bool = false             # storia: le stesse spiegazioni a rate, al massimo LEZIONI_MAX per scontro
+var _lez_ora: int = 0                 # spiegazioni date in questo scontro
 var _tut_done: Dictionary = {}        # spiegazioni gia' date
 var _tut_dlg: DialogBox = null        # spiegazione aperta (le prove automatiche la saltano)
 var _tut_turns: int = 0               # turni del giocatore visti nel tutorial
@@ -117,6 +126,8 @@ var _live_back: String = ""             # chi stava scegliendo quando e' partita
 var _quick: bool = false              # turno rapido (SLANCIO): solo ATTACCO o GUARDIA
 const REACT_SHORT: Dictionary = {"schivata": "SCHIVA", "intercettazione": "COPRI", "interruzione": "FERMA", "soccorso": "SOCCORRI"}
 var _btn_auto: Button
+var _top_bar: Control                   # x1 / AUTO / pausa: si nasconde mentre parla Echo (il SALTA del dialogo sta li')
+var _legend: Control                    # ruota dei colori spiegata: si apre col tasto COLORI
 var _btn_fast: Button
 var _hint: Label
 var _say_lbl: Label                   # battute dei personaggi in battaglia
@@ -170,11 +181,16 @@ func configure(args: Dictionary) -> void:
 		weak = weak + ["VIOLA"]
 	ritorno = args.get("ritorno", {})
 	minore = bool(args.get("minore", false))
-	tutorial = bool(args.get("tutorial", false))
+	# la storia chiede "tutorial" per il primo scontro; il tutorial completo e' solo quello del menu
+	primo = bool(args.get("tutorial", false)) and str(args.get("from", "")) != "menu"
+	tutorial = bool(args.get("tutorial", false)) and not primo
+	lezioni = not tutorial and not ritorno.is_empty() and _lezioni_attive()
 	if tutorial:
 		# TUTORIAL: nemico che picchia piano e dura abbastanza da mostrare tutto (le spiegazioni arrivano quando serve)
 		atk_k *= 0.5
 		pv_k *= 2.2
+	elif primo:
+		atk_k *= 0.5       # primo scontro della storia: piano, ma corto (spiega solo schermo e ATTACCO)
 
 
 func crumb() -> String:
@@ -232,7 +248,7 @@ func _ready() -> void:
 			if is_inside_tree():
 				_toast(str(m[0]), m[1], 2.8))
 		delay += 3.0
-	if tutorial:
+	if tutorial or lezioni:
 		await _tut("tut_intro")
 		await _tut("tut_telegrafo")
 	_start_round()
@@ -684,16 +700,21 @@ func _advance() -> void:
 				return
 			await _do_action(pid, BattleAI.choose(b, pid), _quick)
 			continue
-		if tutorial:
+		if tutorial or lezioni:
 			await _tut_turn(uid)
 			if not is_inside_tree() or ended:
 				return
+			if auto_on:
+				# AUTO acceso mentre parlava Echo: il turno lo gioca l'IA, come sopra
+				await _do_action(pid, BattleAI.choose(b, pid), _quick)
+				continue
 		waiting = true
 		_cam_choose(uid)
 		_show_commands(true)
 		if first_turn:
 			first_turn = false
-			_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
+			if not (tutorial or lezioni):       # con le spiegazioni lo dice gia' Echo: una cosa per volta
+				_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
 		return
 
 
@@ -868,7 +889,7 @@ func _boss_turn() -> void:
 					b["react_grade"] = {}
 				(b["react_grade"] as Dictionary)[str(ru["id"])] = g
 			if not played:
-				if tutorial:
+				if tutorial or lezioni:
 					await _tut("tut_qte")
 				var grade: String = await _timed_guard()
 				if not is_inside_tree() or ended:
@@ -895,17 +916,34 @@ func _boss_turn() -> void:
 
 # ---------------------------------------------------------------- tutorial
 
-# Una spiegazione (scena di data/dialoghi_atto1.json, chiavi tut_*), una volta sola, a battaglia ferma
-func _tut(key: String) -> void:
-	if not tutorial or auto_on or _tut_done.has(key) or ended or not is_inside_tree():
-		return
-	_tut_done[key] = true
+# Una spiegazione (scena di data/dialoghi_atto1.json, chiavi tut_*), una volta sola, a battaglia ferma.
+# Ritorna true se e' partita.
+func _tut(key: String) -> bool:
+	if auto_on or ended or not is_inside_tree():
+		return false
+	if tutorial:
+		if _tut_done.has(key):
+			return false
+		_tut_done[key] = true
+	elif lezioni:
+		if not _lezione_ok(key):
+			return false
+		Story.set_flag("lez_" + key)
+		Story.set_flag("lezioni_iniziate")
+		if key != "tut_fine":
+			_lez_ora += 1        # tut_fine arriva a scontro finito: non conta
+		if _lezioni_viste():
+			Story.set_flag("lezioni_fatte")
+	else:
+		return false
 	var lines: Array = DialogData.lines(key)
 	if lines.is_empty():
-		return
+		return false
 	var was: bool = waiting
 	waiting = false
 	_show_commands(false)
+	if _top_bar != null:
+		_top_bar.visible = false
 	var dlg := DialogBox.new()
 	_tut_dlg = dlg
 	_root.add_child(dlg)
@@ -915,7 +953,51 @@ func _tut(key: String) -> void:
 	if is_instance_valid(dlg):
 		dlg.queue_free()
 	_tut_dlg = null
+	if _top_bar != null:
+		_top_bar.visible = true
 	waiting = was
+	return true
+
+
+# Le spiegazioni a rate valgono nella prima partita della storia finche' non sono state viste tutte.
+# Un salvataggio che aveva gia' fatto il vecchio tutorial (tutto nel primo scontro) non le rivede.
+func _lezioni_attive() -> bool:
+	if Story.has_flag("lezioni_fatte") or Story.replica() > 0:   # nella Replica le regole si conoscono gia'
+		return false
+	if Story.has_flag("lezioni_fatte"):
+		return false
+	return not (Story.has_flag("tutorial_fatto") and not Story.has_flag("lezioni_iniziate"))
+
+
+func _lezioni_viste() -> bool:
+	for g in LEZIONI:
+		for k in g:
+			if not Story.has_flag("lez_" + str(k)):
+				return false
+	return true
+
+
+# Una spiegazione parte se non e' gia' vista, se in questo scontro ce ne sono state meno di LEZIONI_MAX
+# e se i gruppi prima del suo sono gia' visti. tut_fine (esperienza e SQUADRA) dopo il secondo gruppo.
+func _lezione_ok(key: String) -> bool:
+	if Story.has_flag("lez_" + key):
+		return false
+	var gi: int = 2 if key == "tut_fine" else -1
+	if gi < 0:
+		if _lez_ora >= LEZIONI_MAX:
+			return false
+		for i in LEZIONI.size():
+			if (LEZIONI[i] as Array).has(key):
+				gi = i
+		if gi < 0:
+			return false
+	for i in mini(gi, LEZIONI.size()):
+		for k in LEZIONI[i]:
+			if not Story.has_flag("lez_" + str(k)):
+				return false
+	if key == "tut_extra" and not Story.has_flag("lez_tut_ultimate"):
+		return false
+	return true
 
 
 # Prima del turno del giocatore: la spiegazione giusta per quello che si puo' fare adesso
@@ -925,6 +1007,18 @@ func _tut_turn(uid: String) -> void:
 	var reacts: bool = false
 	for r in BattleResolver.reactions_for(b, cur_pid):
 		reacts = reacts or str(r["err"]) == ""
+	if lezioni:
+		# a rate: la prima spiegazione utile adesso tra quelle aperte (al massimo una per turno)
+		var cand: Array = []
+		if reacts:
+			cand.append("tut_reazioni")
+		if int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX:
+			cand.append("tut_ultimate")
+		cand.append_array(["tut_attacco", "tut_guardia", "tut_abilita", "tut_extra"])
+		for k in cand:
+			if await _tut(str(k)):
+				return
+		return
 	if reacts and not _tut_done.has("tut_reazioni"):
 		await _tut("tut_reazioni")
 	elif _tut_done.has("tut_reazioni") and int(u.get("gauge", 0)) >= BattleTypes.GAUGE_MAX and not _tut_done.has("tut_ultimate"):
@@ -1547,8 +1641,19 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	_cutin.modulate.a = 0.0
 	band.position.x = -_root.size.x
 	var ch: String = str(u["char"])
-	var hold: float = 0.45 if _cutin_seen.has(ch) else 1.1
+	var seen: bool = _cutin_seen.has(ch)
+	var hold: float = 0.45 if seen else 1.1
 	_cutin_seen[ch] = true
+	# I quattro della squadra: scena "alla Edgerunners" (EdgeCutin), ognuno col suo colore; un poco piu' lunga per far leggere i livelli (max ~1,6 s con le dissolvenze)
+	var edge: EdgeCutin = null
+	var dark: Node = _cutin.get_node("Dark")
+	if EdgeCutin.PALETTES.has(ch):
+		edge = EdgeCutin.new()
+		_cutin.add_child(edge)
+		_cutin.move_child(edge, 0)
+		edge.start(ch, EdgeCutin.pal_for(ch))
+		dark.visible = false
+		hold = 0.8 if seen else 1.2
 	_cutin_on = true
 	var tw := create_tween()
 	_cutin_tw = tw
@@ -1558,6 +1663,9 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	tw.tween_property(_cutin, "modulate:a", 0.0, 0.18)
 	tw.tween_callback(_cutin_finish)
 	await _cutin_end
+	if edge != null:
+		edge.queue_free()                # le viewport a bassa risoluzione si liberano subito
+		dark.visible = true
 	_say_off()
 	_cutin.visible = false
 	Breadcrumb.mark("battaglia")
@@ -1689,6 +1797,12 @@ func _end_battle() -> void:
 		Story.set_flag("tutorial_fatto")
 		if not is_inside_tree():
 			return
+	elif lezioni and win:
+		await _tut("tut_fine")
+		if not is_inside_tree():
+			return
+	if primo and win:
+		Story.set_flag("tutorial_fatto")
 	# nella demo dal menu: due battute in stile Persona; nella storia ci pensa la scena dopo
 	if ritorno.is_empty() and not tutorial:
 		var dlg := DialogBox.new()
@@ -2020,6 +2134,7 @@ func _build_ui() -> void:
 
 	# in alto a destra: pausa, AUTO, velocita'
 	var tr := HBoxContainer.new()
+	_top_bar = tr
 	Ui.place(tr, 1.0, 0, 1.0, 0, -400, 14, -16, 80)
 	tr.alignment = BoxContainer.ALIGNMENT_END
 	tr.add_theme_constant_override("separation", 8)
@@ -2034,20 +2149,33 @@ func _build_ui() -> void:
 	pb.pressed.connect(_open_pause)
 	tr.add_child(pb)
 
-	# legenda dei colori, sempre visibile sotto i pulsanti in alto a destra: A > B = A batte B (+50% danno)
+	# legenda dei colori: chiusa, un tasto COLORI sotto i pulsanti in alto a destra (chi colpire lo dice gia' DEBOLE A sotto
+	# il nemico: una cosa per volta). Aperta: le due catene con le parole, A > B = A batte B (+50% danno)
+	var lbtn := Ui.button("COLORI", Ui.CREAM, 18, 110)
+	Ui.place(lbtn, 1.0, 0, 1.0, 0, -126, 88, -16, 128)
+	lbtn.pressed.connect(func() -> void:
+		_legend.visible = not _legend.visible)
+	tr.get_parent().add_child(lbtn)
 	var leg := PanelContainer.new()
-	leg.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.72), Ui.INK, 3, 6, 0))
-	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 88, -16, 88)
+	_legend = leg
+	leg.add_theme_stylebox_override("panel", Ui.box(Color(0.06, 0.03, 0.1, 0.9), Ui.INK, 3, 6, 0))
+	Ui.place(leg, 1.0, 0, 1.0, 0, -16, 136, -16, 136)
 	leg.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	leg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	leg.visible = false
+	var lcol := VBoxContainer.new()
+	lcol.add_theme_constant_override("separation", 6)
+	leg.add_child(lcol)
 	var lrow := HBoxContainer.new()
 	lrow.add_theme_constant_override("separation", 5)
-	lrow.alignment = BoxContainer.ALIGNMENT_CENTER
-	leg.add_child(lrow)
+	lcol.add_child(lrow)
 	_legend_row(lrow, ["rosso", "verde", "blu", "rosso"], ">")
-	var sep := Ui.label("·", 18, Color(1, 1, 1, 0.5))
-	lrow.add_child(sep)
-	_legend_row(lrow, ["giallo", "viola"], "<>")
+	lcol.add_child(Ui.label("ROSSO batte VERDE, VERDE batte BLU, BLU batte ROSSO", 16, Ui.CREAM))
+	var lchain2 := HBoxContainer.new()
+	lchain2.add_theme_constant_override("separation", 5)
+	lcol.add_child(lchain2)
+	_legend_row(lchain2, ["giallo", "viola"], "<>")
+	lcol.add_child(Ui.label("GIALLO e VIOLA si battono a vicenda · +50% col colore vincente", 16, Ui.CREAM))
 	_root.add_child(leg)
 
 	# sequenza dell'ultimate
@@ -2057,6 +2185,7 @@ func _build_ui() -> void:
 	_cutin.visible = false
 	_root.add_child(_cutin)
 	var dark := ColorRect.new()
+	dark.name = "Dark"
 	dark.color = Color(0.02, 0.0, 0.05, 0.35)
 	Ui.place(dark, 0, 0, 1, 1)
 	dark.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2765,7 +2894,7 @@ func _refresh_hud() -> void:
 		face.modulate = Color.WHITE if alive else Color(0.4, 0.4, 0.45)
 		var en: int = int(u.get("energy", 0))
 		(c["en"] as Label).text = "EN %d" % en
-		if Kits.is_char(u, Kits.RIO):
+		if Kits.is_char(u, Kits.RIO) and int(u.get("hype", 0)) > 0:      # HYPE a zero non dice niente: compare quando sale
 			(c["en"] as Label).text += " · HYPE %d" % int(u.get("hype", 0))
 		(c["ult"] as ProgressBar).max_value = BattleTypes.GAUGE_MAX
 		(c["ult"] as ProgressBar).value = int(u.get("gauge", 0))
@@ -2919,7 +3048,7 @@ func _show_events_freeze(ev: Array) -> void:
 	_team_follow = false
 	if not is_inside_tree() or ended:
 		return
-	if tutorial:
+	if tutorial or lezioni:
 		await _tut("tut_rottura")
 	await _team_sequence(ev.slice(idx))
 
@@ -3114,6 +3243,12 @@ func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
 
 func _toast(text: String, col: Color, sec: float) -> void:
 	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t) and (t as Label).modulate.a > 0.05)
+	# al massimo due avvisi insieme: il piu' vecchio lascia il posto (una cosa per volta)
+	while _toasts.size() >= TOAST_MAX:
+		var old: Label = _toasts.pop_front()
+		old.queue_free()
+	for i in _toasts.size():
+		Ui.place(_toasts[i], 0.2, 0.235, 0.6, 0.235, 0, 56 * i, 0, 50 + 56 * i)
 	var row: int = _toasts.size()
 	var l := Ui.label(text, 26, col, Ui.display(), 8)
 	l.add_theme_stylebox_override("normal", Ui.plate(Color(0.05, 0.03, 0.08, 0.86), col))     # lastra scura: si legge sopra insegne e ruota

@@ -148,7 +148,7 @@
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "E dice su chi cade: cerchio rosso ai piedi del bersaglio, bordo rosso sulla sua scheda."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "FORTE significa colpo pesante. SU TUTTI significa che colpisce tutti."},
 			{"chi": "saul", "espr": "neutro", "testo": "Un nemico che avvisa. Mia nonna Ines diceva che i migliori affari sono quelli senza sorprese."},
-			{"chi": "zecca", "espr": "sorpreso", "testo": "Ma è cortesia! Neanche il distributore ci avvisava."}
+			{"chi": "zecca", "espr": "sorpreso", "testo": "Raga, quindi la riga rossa in alto non era pubblicità?"}
 		]
 	},
 	"tut_qte": {

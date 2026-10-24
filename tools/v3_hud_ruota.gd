@@ -35,6 +35,12 @@ func _run() -> void:
 	await create_timer(1.2).timeout
 	print("TURNO ", bt.get("cur_pid"))
 	await _shot("1_libera")
+	# ruota dei colori aperta col tasto COLORI (chiusa di solito: una cosa per volta)
+	var leg: Control = bt.get("_legend")
+	if leg != null:
+		leg.visible = true
+		await _shot("1b_colori")
+		leg.visible = false
 	if bt.has_method("_pick"):
 		bt.call("_pick", "attack")
 		await create_timer(0.6).timeout
