@@ -1641,8 +1641,19 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	_cutin.modulate.a = 0.0
 	band.position.x = -_root.size.x
 	var ch: String = str(u["char"])
-	var hold: float = 0.45 if _cutin_seen.has(ch) else 1.1
+	var seen: bool = _cutin_seen.has(ch)
+	var hold: float = 0.45 if seen else 1.1
 	_cutin_seen[ch] = true
+	# Nox: scena "alla Edgerunners" (EdgeCutin); un poco piu' lunga per far leggere i livelli (max ~1,6 s con le dissolvenze)
+	var edge: EdgeCutin = null
+	var dark: Node = _cutin.get_node("Dark")
+	if ch == "nox":
+		edge = EdgeCutin.new()
+		_cutin.add_child(edge)
+		_cutin.move_child(edge, 0)
+		edge.start(ch)
+		dark.visible = false
+		hold = 0.8 if seen else 1.2
 	_cutin_on = true
 	var tw := create_tween()
 	_cutin_tw = tw
@@ -1652,6 +1663,9 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	tw.tween_property(_cutin, "modulate:a", 0.0, 0.18)
 	tw.tween_callback(_cutin_finish)
 	await _cutin_end
+	if edge != null:
+		edge.queue_free()                # le viewport a bassa risoluzione si liberano subito
+		dark.visible = true
 	_say_off()
 	_cutin.visible = false
 	Breadcrumb.mark("battaglia")
@@ -2171,6 +2185,7 @@ func _build_ui() -> void:
 	_cutin.visible = false
 	_root.add_child(_cutin)
 	var dark := ColorRect.new()
+	dark.name = "Dark"
 	dark.color = Color(0.02, 0.0, 0.05, 0.35)
 	Ui.place(dark, 0, 0, 1, 1)
 	dark.mouse_filter = Control.MOUSE_FILTER_IGNORE
