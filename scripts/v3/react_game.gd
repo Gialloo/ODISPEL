@@ -60,7 +60,7 @@ func _init(m: String, name_txt: String, c: Color, first_time: bool = false) -> v
 	# titolo grande (56): e' la prima cosa che il giocatore legge quando la finestra si apre; entra con uno scatto (Persona 5)
 	_title = Ui.label("%s · %s" % [str(TITLES.get(mode, "")), who], 56, col.lightened(0.3), Ui.display(), 12)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	Ui.place(_title, 0.1, 0.2, 0.9, 0.2, 0, 0, 0, 80)
+	Ui.place(_title, 0.1, 0.2, 0.9, 0.2, 0, 28, 0, 108)      # 28 px piu' giu': sopra c'e' la riga DEBOLE A del nemico
 	add_child(_title)
 	_sub = Ui.label(_how(), 30, Ui.CREAM, null, 10)
 	_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -211,8 +211,8 @@ func _draw() -> void:
 	# barra del tempo che resta, sotto il titolo
 	var tw: float = sz.x * 0.4
 	# barra del tempo piu' spessa; negli ultimi istanti diventa rossa (urgenza leggibile senza numeri)
-	draw_rect(Rect2(c.x - tw * 0.5, sz.y * 0.2 + 90, tw, 14), Color(0, 0, 0, 0.6))
-	draw_rect(Rect2(c.x - tw * 0.5, sz.y * 0.2 + 90, tw * left, 14), col if left > 0.3 or _over else Color("#ff4a5a"))
+	draw_rect(Rect2(c.x - tw * 0.5, sz.y * 0.2 + 118, tw, 14), Color(0, 0, 0, 0.6))
+	draw_rect(Rect2(c.x - tw * 0.5, sz.y * 0.2 + 118, tw * left, 14), col if left > 0.3 or _over else Color("#ff4a5a"))
 	match mode:
 		"arrow":
 			# freccia grande verso il lato giusto, e il lato giusto dello schermo illuminato
@@ -227,7 +227,10 @@ func _draw() -> void:
 			for p in pts:
 				inner.append(c + (p - c) * 0.88)
 			draw_colored_polygon(inner, col.lightened(0.2))
-			_cue("TOCCA QUI", Vector2(side_x + sz.x * 0.25 - 300.0, sz.y * 0.74), 48, Ui.YELLOW)
+			# al centro della meta' libera: a destra le card della squadra (circa 400 px) coprivano "TOCCA QUI" a meta'
+			var free_c: float = sz.x * 0.25 if _dir < 0 else sz.x * 0.5 + (sz.x * 0.5 - 400.0) * 0.5
+			draw_rect(Rect2(side_x if _dir < 0 else sz.x - 12.0, 0, 12.0, sz.y), Color(col, 0.7))      # bordo acceso sul lato da toccare
+			_cue("TOCCA QUI", Vector2(free_c - 300.0, sz.y * 0.66), 48, Ui.YELLOW)
 		"hold":
 			var w: float = 70.0
 			var h: float = 220.0          # piu' bassa di prima (260): non tocca piu' il titolo e la barra del tempo

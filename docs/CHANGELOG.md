@@ -1,5 +1,14 @@
 # Novità
 
+## 0.39.0 · feedback visivo più chiaro (stile Persona) e disturbo sul Break
+- **Disturbo del segnale**: il nemico in BREAK e i compagni KO si riempiono a lampi di rumore statico a quadretti, che appare e sparisce come la telecamera di Echo che perde il segnale.
+- **DEBOLE A**: sotto il nemico, ??? finché non lo scopri, poi il colore e chi ce l'ha; sulla card di quel personaggio compare ▲.
+- **Minaccia leggibile**: la prossima mossa del nemico sta su una lastra storta, rossa piena se il colpo è FORTE, gialla quando è stordito.
+- **Ordine dei turni a lastre**: chi agisce ha la lastra piena del suo colore.
+- **Scia sulle barre PV**: si vede quanto ha tolto il colpo; la barretta ULTIMATE diventa gialla quando è pronta.
+- **Avvisi e comandi**: gli avvisi su lastra scura non finiscono più sotto la ruota; i comandi non disponibili restano leggibili e dicono in rosso perché.
+- **Minigiochi ed esplorazione**: TOCCA QUI non è più tagliato dalle card; obiettivo e azione vicina su lastra, l'azione scatta quando cambia.
+
 ## 0.38.0 · HUD essenziale street/pop, Break che si sente, minaccia del nemico a terra
 - **HUD più essenziale** (Persona 5 + Jet Set Radio): il comando scelto diventa una lastra piena del colore del personaggio con la parola in nero; la squadra senza pannelli grandi, volto in cornice storta e numeri grandi su un fondo nero leggero; REC CAM in alto a sinistra sopra TURNO n, che conta i turni.
 - **Attacco di squadra al BREAK**: ogni compagno colpisce più forte (più del doppio) e la barra del nemico scende a ogni colpo, col nome e il danno; poi il totale.

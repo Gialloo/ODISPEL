@@ -566,7 +566,8 @@ class _Layer extends Control:
 			draw_arc(kp, 10.0, 0.0, TAU, 20, Color(CmdWheel.INK, fa), 2.0, true)
 			draw_string(fb, kp + Vector2(-4.5, 5.5), str(k + 1), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(CmdWheel.CREAM, fa))
 			# la parola: crema col contorno nero, gialla se scelta, spenta se non si puo' usare
-			var fill: Color = CmdWheel.INK if on else Color(CmdWheel.CREAM, 0.5 if dimmed else 1.0)
+			# non disponibile: grigio pieno invece di crema trasparente (sul cielo chiaro spariva), il motivo resta scritto sotto in rosso
+			var fill: Color = CmdWheel.INK if on else (Color("#a7a1b4") if not ok else Color(CmdWheel.CREAM, 0.5 if dimmed else 1.0))
 			var shade: Color = Color(w.col.lightened(0.3), 1.0) if on else Color(w.col.darkened(0.25), (0.45 if dimmed else 1.0))
 			_word(Vector2(x0, by), nm, big, small, Color(fill, fill.a * fa), Color(shade, shade.a * fa), -0.1)
 			# sottotitolo e costo, piccoli e corsivi sotto la parola (come "Use a Skill" in Persona 5)
@@ -577,7 +578,8 @@ class _Layer extends Control:
 			var sy: float = by + 24.0 * sz
 			draw_set_transform_matrix(Transform2D(-0.1, Vector2.ONE, -0.2, Vector2(sx, sy)))
 			draw_string_outline(fb, Vector2.ZERO, line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(19.0 * maxf(s, 0.95)), 7, Color(CmdWheel.INK, fa))
-			draw_string(fb, Vector2.ZERO, line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(19.0 * maxf(s, 0.95)), Color((w.col.lightened(0.6) if ult else CmdWheel.CREAM), (0.6 if dimmed else 1.0) * fa))
+			var sub_c: Color = Color("#ff8a9a") if not ok else Color((w.col.lightened(0.6) if ult else CmdWheel.CREAM), (0.6 if dimmed else 1.0))
+			draw_string(fb, Vector2.ZERO, line, HORIZONTAL_ALIGNMENT_LEFT, -1, int(19.0 * maxf(s, 0.95)), Color(sub_c, sub_c.a * fa))
 			draw_set_transform_matrix(Transform2D.IDENTITY)
 			var hit := Rect2(p - Vector2(rad + 12.0, rad + 12.0), Vector2(rad * 2.0 + 24.0, rad * 2.0 + 24.0))
 			hit = hit.merge(Rect2(x0 - 10.0, by - big * 0.85, tw + 40.0, big * 0.85 + 34.0 * sz))
