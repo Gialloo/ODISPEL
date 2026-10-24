@@ -333,7 +333,7 @@ func _build_arena() -> void:
 		cb.car(-6.0 + 3.3, -12.0, Color("#6b3fa0"))
 		cb.moon(Vector3(24, 40, -110), 8.0)
 		cb.build(self)
-		add_child(SkyDome.new())
+		add_child(SkyDome.make("strada"))
 		_cam_lim = 7.2
 		_night_dress("strada", {"wall_x": 7.0, "z0": 10.0, "z1": -22.0, "seed": 41, "count": 3, "road_half": 4.0, "side_y": 0.16})
 		return
@@ -350,7 +350,7 @@ func _build_arena() -> void:
 	else:
 		_cam_lim = 6.6
 	if SkyDome.outdoor(layout):
-		add_child(SkyDome.new())
+		add_child(SkyDome.make(layout))
 	var env: WorldEnvironment = null
 	for c in get_children():
 		if c is WorldEnvironment:
@@ -1281,7 +1281,7 @@ class QteRing extends Control:
 		progress = 1.0
 		# guardia a tempo: onomatopea sopra l'anello (CLANG la perfetta, TAP la buona)
 		if grade == "perfect" or grade == "good":
-			Onomato.pop(get_parent() as Control, position + size * 0.5 + Vector2(0, -150), "CLANG" if grade == "perfect" else "TAP", Ui.CYAN, grade == "perfect")
+			Onomato.pop(get_parent() as Control, position + size * 0.5 + Vector2(0, -get_viewport_rect().size.y * 0.12), "CLANG" if grade == "perfect" else "TAP", Ui.CYAN, grade == "perfect")
 		match grade:
 			"perfect":
 				_label.text = "PERFETTA!"
@@ -1536,8 +1536,10 @@ func _ono(uid: String, word: String, col: Color, delay: float, big: bool) -> voi
 	if cam.is_position_behind(p3):
 		return
 	var sz: Vector2 = get_viewport().get_visible_rect().size
-	var at: Vector2 = cam.unproject_position(p3) + Vector2(randf_range(70.0, 130.0) * (1.0 if randi() % 2 == 0 else -1.0), randf_range(-50.0, 20.0))
-	at = Vector2(clampf(at.x, 150.0, sz.x - 150.0), clampf(at.y, 160.0, sz.y - 260.0))
+	# vicino al punto d'impatto, in misure dello schermo (le parole sono piccole: non coprono personaggi ne' interfaccia)
+	var u: float = sz.y * 0.01
+	var at: Vector2 = cam.unproject_position(p3) + Vector2(randf_range(5.0, 9.0) * u * (1.0 if randi() % 2 == 0 else -1.0), randf_range(-6.0, -1.0) * u)
+	at = Vector2(clampf(at.x, sz.y * 0.2, sz.x - sz.y * 0.35), clampf(at.y, sz.y * 0.2, sz.y * 0.75))
 	Onomato.pop(_fx_layer, at, word, col, big)
 
 

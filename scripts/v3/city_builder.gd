@@ -4,7 +4,7 @@ extends RefCounted
 # Costruisce la scenografia urbana notturna in poche mesh (una per i solidi, una per i bagliori).
 # Tutto da codice e deterministico (stesso seme = stessa strada). Niente luci vere: finestre e insegne hanno "luce propria".
 
-const WALLS: Array = ["#3b2f57", "#2c3a55", "#4a2f46", "#2f4a4d", "#45384f", "#33284a", "#523a3a"]
+const WALLS: Array = ["#27364f", "#2c3a55", "#2a4048", "#2f4a4d", "#2b3548", "#263a3c", "#3a3a3e"]   # blu notte e verde-nero (non piu' viola): palette delle foto
 const LIT: Array = [Color(0.55, 0.95, 0.75, 0.0), Color(0.45, 0.85, 1.0, 0.0), Color(0.95, 0.85, 0.55, 0.0), Color(0.6, 0.75, 1.0, 0.0)]   # luci di casa fredde (verde-acqua, ciano) e qualche giallo: palette Ghost Stride
 const DARK_WIN: Color = Color(0.09, 0.08, 0.16)
 const NEON: Array = [Color(0.24, 1.0, 0.54, 0.0), Color(0.18, 0.95, 1.0, 0.0), Color(1.0, 0.14, 0.25, 0.0), Color(0.16, 0.36, 1.0, 0.0)]   # neon verde, ciano, rosso, blu (le foto dell'autore)
@@ -13,7 +13,7 @@ var solid := MeshBatch.new()
 var glow_v := PackedVector3Array()
 var glow_c := PackedColorArray()
 var rng := RandomNumberGenerator.new()
-var road_col: Color = Color("#1f1a2b")
+var road_col: Color = Color("#141b24")
 var colliders: Array = []          # [{"c": Vector2(x,z), "r": raggio}] oppure [{"rect": Rect2 su x,z}]
 
 
@@ -34,12 +34,12 @@ func street(z0: float, z1: float, half_road: float = 4.0, walk: float = 3.0) -> 
 	var zc: float = (z0 + z1) * 0.5
 	solid.box(Transform3D(Basis(), Vector3(0, -0.05, zc)), Vector3(half_road * 2.0, 0.1, len), road_col, false)
 	for sx in [-1.0, 1.0]:
-		solid.box(Transform3D(Basis(), Vector3(sx * (half_road + walk * 0.5), 0.07, zc)), Vector3(walk, 0.14, len), _c("#4b4560"), false)
-		solid.box(Transform3D(Basis(), Vector3(sx * (half_road + 0.06), 0.08, zc)), Vector3(0.14, 0.16, len), _c("#8a83a0"), false)
+		solid.box(Transform3D(Basis(), Vector3(sx * (half_road + walk * 0.5), 0.07, zc)), Vector3(walk, 0.14, len), _c("#33404c"), false)
+		solid.box(Transform3D(Basis(), Vector3(sx * (half_road + 0.06), 0.08, zc)), Vector3(0.14, 0.16, len), _c("#667684"), false)
 		# fughe del marciapiede
 		var z: float = z0
 		while z > z1:
-			solid.box(Transform3D(Basis(), Vector3(sx * (half_road + walk * 0.5), 0.142, z)), Vector3(walk, 0.005, 0.04), _c("#3a3550"), false)
+			solid.box(Transform3D(Basis(), Vector3(sx * (half_road + walk * 0.5), 0.142, z)), Vector3(walk, 0.005, 0.04), _c("#26313c"), false)
 			z -= 1.5
 	# mezzeria tratteggiata
 	var zz: float = z0 - 1.0
@@ -95,7 +95,7 @@ func building(side: float, z_front: float, length: float, depth: float, height: 
 	if rng.randf() < 0.55 and height > 8.0:
 		var nc: Color = NEON[rng.randi() % NEON.size()]
 		var nz: float = z_front - length * rng.randf_range(0.2, 0.8)
-		solid.box(Transform3D(Basis(), Vector3(side * (x_face - 0.45), 5.4, nz)), Vector3(0.7, 3.4, 0.22), _c("#1b1527"))
+		solid.box(Transform3D(Basis(), Vector3(side * (x_face - 0.45), 5.4, nz)), Vector3(0.7, 3.4, 0.22), _c("#121a22"))
 		solid.box(Transform3D(Basis(), Vector3(side * (x_face - 0.45), 5.4, nz - 0.12)), Vector3(0.5, 3.0, 0.02), nc, false)
 		solid.box(Transform3D(Basis(), Vector3(side * (x_face - 0.45), 5.4, nz + 0.12)), Vector3(0.5, 3.0, 0.02), nc, false)
 		_glow_rect(Vector3(side * (x_face - 1.4), 0.035, nz), 2.4, 2.6, Color(nc.r, nc.g, nc.b, 0.18))
@@ -111,7 +111,7 @@ func _face_quad(x: float, zc: float, w: float, y0: float, y1: float, n: Vector3,
 
 func lamp(x: float, z: float) -> void:
 	var side: float = signf(x)
-	var pole: Color = _c("#2b2638")
+	var pole: Color = _c("#1f2a33")
 	solid.prism(Transform3D(Basis(), Vector3(x, 0.14, z)), 0.11, 0.07, 4.6, 6, pole)
 	solid.box(Transform3D(Basis(), Vector3(x - side * 0.6, 4.72, z)), Vector3(1.3, 0.1, 0.12), pole)
 	solid.box(Transform3D(Basis(), Vector3(x - side * 1.15, 4.62, z)), Vector3(0.55, 0.18, 0.3), pole)
@@ -151,7 +151,7 @@ func bench(x: float, z: float) -> void:
 	solid.box(Transform3D(Basis(), Vector3(x, 0.5, z)), Vector3(0.5, 0.08, 1.8), w)
 	solid.box(Transform3D(Basis(), Vector3(x + signf(x) * 0.24, 0.85, z)), Vector3(0.08, 0.5, 1.8), w)
 	for zz in [-0.75, 0.75]:
-		solid.box(Transform3D(Basis(), Vector3(x, 0.3, z + zz)), Vector3(0.45, 0.4, 0.08), _c("#2b2638"))
+		solid.box(Transform3D(Basis(), Vector3(x, 0.3, z + zz)), Vector3(0.45, 0.4, 0.08), _c("#1f2a33"))
 	colliders.append({"rect": Rect2(x - 0.35, z - 1.0, 0.7, 2.0)})
 
 
@@ -169,11 +169,11 @@ func backdrop(z: float) -> void:
 				var wx: float = x - 2.2 + 2.2 * c
 				var wy: float = 3.4 + 3.0 * f
 				solid.quad(Vector3(wx - 0.45, wy, z + 0.01), Vector3(wx + 0.45, wy, z + 0.01), Vector3(wx + 0.45, wy + 1.3, z + 0.01), Vector3(wx - 0.45, wy + 1.3, z + 0.01), Vector3(0, 0, 1), wc)
-	solid.box(Transform3D(Basis(), Vector3(0, 9.0, z + 0.3)), Vector3(9.0, 3.4, 0.3), _c("#1b1527"))
+	solid.box(Transform3D(Basis(), Vector3(0, 9.0, z + 0.3)), Vector3(9.0, 3.4, 0.3), _c("#121a22"))
 	solid.box(Transform3D(Basis(), Vector3(0, 9.0, z + 0.46)), Vector3(8.4, 2.8, 0.02), Color(1.0, 0.24, 0.55, 0.0), false)
 	solid.box(Transform3D(Basis(), Vector3(-1.6, 9.0, z + 0.48)), Vector3(3.6, 0.5, 0.02), Color(1.0, 0.95, 0.85, 0.0), false)
 	solid.box(Transform3D(Basis(), Vector3(2.4, 9.3, z + 0.48)), Vector3(1.6, 1.2, 0.02), Color(0.25, 0.9, 1.0, 0.0), false)
-	solid.box(Transform3D(Basis(), Vector3(0, 0.0, z - 0.4)), Vector3(40.0, 0.12, 2.0), _c("#1f1a2b"), false)
+	solid.box(Transform3D(Basis(), Vector3(0, 0.0, z - 0.4)), Vector3(40.0, 0.12, 2.0), _c("#141b24"), false)
 
 
 func moon(pos: Vector3, r: float) -> void:

@@ -108,7 +108,7 @@ func _ready() -> void:
 	add_child(env)
 	_lay = LayoutBuilder.build(str(cfg.get("layout", "strada")), int(cfg.get("seme", 29)), str(cfg.get("tema", "")), self)
 	if SkyDome.outdoor(str(cfg.get("layout", "strada"))):
-		add_child(SkyDome.new())         # la cupola magenta resta nel cielo per tutto l'atto
+		add_child(SkyDome.make(str(cfg.get("layout", "strada"))))         # la cupola magenta resta nel cielo per tutto l'atto
 	_env.background_color = _lay["bg"]
 	var fog: Array = _lay["fog"]
 	Toon.set_fog(fog[0], fog[1], fog[2])

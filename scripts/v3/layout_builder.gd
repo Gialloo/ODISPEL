@@ -90,7 +90,7 @@ static func _incrocio(cb: CityBuilder, out: Dictionary) -> void:
 			var x: float = sx * (1.6 + 0.8 * k)
 			var col: Color = Color("#e8343f") if k % 2 == 0 else Color("#f2f0ea")
 			cb.solid.box(Transform3D(Basis(), Vector3(x, 0.55, -5.0)), Vector3(0.8, 0.25, 0.15), col)
-		cb.solid.box(Transform3D(Basis(), Vector3(sx * 3.6, 0.35, -5.0)), Vector3(0.1, 0.7, 0.1), Color("#2b2638"))
+		cb.solid.box(Transform3D(Basis(), Vector3(sx * 3.6, 0.35, -5.0)), Vector3(0.1, 0.7, 0.1), Color("#1b262e"))
 		cb.colliders.append({"rect": Rect2(sx * 2.8 - 1.4, -5.2, 2.8, 0.4)})
 	cb.moon(Vector3(30, 46, -140), 9.0)
 	out["points"] = {"auto_ferme": Vector2(-2.2, -21.0), "barriera": Vector2(0.0, -5.0)}
@@ -124,19 +124,19 @@ static func _vicolo(cb: CityBuilder, out: Dictionary) -> void:
 
 
 static func _galleria(cb: CityBuilder, out: Dictionary, parent: Node3D) -> void:
-	cb.road_col = Color("#3a3150")
+	cb.road_col = Color("#161f28")
 	cb.street(12.0, -46.0, 4.0, 3.0)
 	# pavimento a scacchi della galleria
 	for i in 28:
 		for j in 4:
 			if (i + j) % 2 == 0:
-				cb.solid.box(Transform3D(Basis(), Vector3(-3.0 + 2.0 * j, 0.004, 10.0 - 2.0 * i)), Vector3(2.0, 0.01, 2.0), Color("#4b4064"), false)
+				cb.solid.box(Transform3D(Basis(), Vector3(-3.0 + 2.0 * j, 0.004, 10.0 - 2.0 * i)), Vector3(2.0, 0.01, 2.0), Color("#1f2c35"), false)
 	_buildings(cb, 11.0, -44.0, 7.0, Vector2(99, 99), 1, 8.0, 12.0)
 	# tetto a vetri della galleria: archi
 	for k in 8:
 		var z: float = 8.0 - 6.0 * k
-		cb.solid.box(Transform3D(Basis(), Vector3(0, 11.0, z)), Vector3(14.5, 0.25, 0.25), Color("#2b2638"))
-	cb.solid.box(Transform3D(Basis(), Vector3(0, 11.2, -17.0)), Vector3(14.5, 0.06, 56.0), Color(0.35, 0.3, 0.55, 0.0), false)
+		cb.solid.box(Transform3D(Basis(), Vector3(0, 11.0, z)), Vector3(14.5, 0.25, 0.25), Color("#1b262e"))
+	cb.solid.box(Transform3D(Basis(), Vector3(0, 11.2, -17.0)), Vector3(14.5, 0.06, 56.0), Color(0.12, 0.35, 0.4, 0.0), false)
 	cb.backdrop(-46.0)
 	for i in 6:
 		cb.lamp(4.45 if i % 2 == 0 else -4.45, 6.0 - 9.0 * i)
@@ -204,9 +204,9 @@ static func _caveau(cb: CityBuilder, out: Dictionary) -> void:
 
 # Capitolo 5: la tangenziale sopraelevata all'alba, subito dopo la caduta della cupola. La citta' e' sotto, il casello in fondo.
 static func _tangenziale(cb: CityBuilder, out: Dictionary) -> void:
-	var asph := Color("#2a2433")
+	var asph := Color("#161d24")
 	cb.solid.box(Transform3D(Basis(), Vector3(0, -0.05, -16.0)), Vector3(10.6, 0.1, 62.0), asph, false)
-	cb.solid.box(Transform3D(Basis(), Vector3(0, -0.9, -16.0)), Vector3(11.4, 1.6, 62.0), Color("#4a4256"))
+	cb.solid.box(Transform3D(Basis(), Vector3(0, -0.9, -16.0)), Vector3(11.4, 1.6, 62.0), Color("#1f2a33"))
 	# corsie e guardrail
 	for lx in [-1.75, 1.75]:
 		var z: float = 11.0
@@ -214,15 +214,15 @@ static func _tangenziale(cb: CityBuilder, out: Dictionary) -> void:
 			cb.solid.box(Transform3D(Basis(), Vector3(lx, 0.005, z)), Vector3(0.14, 0.01, 1.8), Color("#e9e4f2"), false)
 			z -= 4.0
 	for sx in [-1.0, 1.0]:
-		cb.solid.box(Transform3D(Basis(), Vector3(sx * 5.25, 0.55, -16.0)), Vector3(0.12, 0.28, 62.0), Color("#b8bccb"))
-		cb.solid.box(Transform3D(Basis(), Vector3(sx * 5.4, 0.25, -16.0)), Vector3(0.35, 0.5, 62.0), Color("#5a5468"))
+		cb.solid.box(Transform3D(Basis(), Vector3(sx * 5.25, 0.55, -16.0)), Vector3(0.12, 0.28, 62.0), Color("#7f9aa6"))
+		cb.solid.box(Transform3D(Basis(), Vector3(sx * 5.4, 0.25, -16.0)), Vector3(0.35, 0.5, 62.0), Color("#2a3640"))
 		var zp: float = 11.0
 		while zp > -46.0:
-			cb.solid.box(Transform3D(Basis(), Vector3(sx * 5.25, 0.3, zp)), Vector3(0.1, 0.6, 0.1), Color("#5a5468"))
+			cb.solid.box(Transform3D(Basis(), Vector3(sx * 5.25, 0.3, zp)), Vector3(0.1, 0.6, 0.1), Color("#2a3640"))
 			zp -= 2.5
 		# piloni che scendono verso la citta'
 		for k in 6:
-			cb.solid.box(Transform3D(Basis(), Vector3(sx * 3.5, -10.0, 8.0 - 10.0 * k)), Vector3(1.2, 18.0, 1.2), Color("#3b3448"))
+			cb.solid.box(Transform3D(Basis(), Vector3(sx * 3.5, -10.0, 8.0 - 10.0 * k)), Vector3(1.2, 18.0, 1.2), Color("#1a242c"))
 	# la citta' sotto, ancora con le luci accese
 	var rng := cb.rng
 	for side in [-1.0, 1.0]:
@@ -239,10 +239,10 @@ static func _tangenziale(cb: CityBuilder, out: Dictionary) -> void:
 					var wc: Color = CityBuilder.LIT[rng.randi() % CityBuilder.LIT.size()]
 					cb.solid.box(Transform3D(Basis(), Vector3(x - side * (w * 0.5 + 0.02), base + 2.0 + 4.0 * f, z2)), Vector3(0.02, 1.2, w * 0.6), wc, false)
 	# il sole che sorge dietro il casello e i resti della cupola (frammenti rosa nel cielo)
-	cb.solid.ball(Transform3D(Basis(), Vector3(8.0, 6.0, -150.0)), 16.0, Color(1.0, 0.62, 0.35, 0.0), false, 6, 14)
-	for k in 14:
+	cb.solid.ball(Transform3D(Basis(), Vector3(8.0, 6.0, -150.0)), 16.0, Color(0.2, 0.55, 0.6, 0.0), false, 6, 14)
+	for k in 7:
 		var b := Basis(Vector3(rng.randf(), rng.randf(), rng.randf()).normalized(), rng.randf_range(0.0, PI))
-		cb.solid.box(Transform3D(b, Vector3(rng.randf_range(-60.0, 60.0), rng.randf_range(25.0, 60.0), rng.randf_range(-120.0, -30.0))), Vector3(rng.randf_range(2.0, 7.0), 0.3, rng.randf_range(2.0, 6.0)), Color(1.0, 0.45, 0.7, 0.0), false)
+		cb.solid.box(Transform3D(b, Vector3(rng.randf_range(-60.0, 60.0), rng.randf_range(25.0, 60.0), rng.randf_range(-120.0, -30.0))), Vector3(rng.randf_range(2.0, 7.0), 0.3, rng.randf_range(2.0, 6.0)), Color(0.16, 0.5, 0.75, 0.0), false)
 	# lampioni dell'autostrada
 	for i in 5:
 		cb.lamp(4.9 if i % 2 == 0 else -4.9, 6.0 - 10.0 * i)
@@ -252,7 +252,7 @@ static func _tangenziale(cb: CityBuilder, out: Dictionary) -> void:
 	for i in spots.size():
 		cb.car((spots[i] as Vector2).x, (spots[i] as Vector2).y, cols[i % cols.size()])
 	# cartellone dei ricercati (le quattro facce)
-	cb.solid.prism(Transform3D(Basis(), Vector3(6.6, 0.0, -17.0)), 0.18, 0.15, 5.0, 6, Color("#2b2638"))
+	cb.solid.prism(Transform3D(Basis(), Vector3(6.6, 0.0, -17.0)), 0.18, 0.15, 5.0, 6, Color("#1b262e"))
 	cb.solid.box(Transform3D(Basis(Vector3.UP, -0.5), Vector3(6.4, 5.8, -17.0)), Vector3(0.2, 2.6, 5.2), Color("#1b1527"))
 	cb.solid.box(Transform3D(Basis(Vector3.UP, -0.5), Vector3(6.28, 5.8, -17.0)), Vector3(0.02, 2.3, 4.9), Color(1.0, 0.95, 0.85, 0.0), false)
 	var face_cols: Array = [Color(0.91, 0.2, 0.25, 0.0), Color(0.22, 0.72, 1.0, 0.0), Color(0.56, 0.24, 0.94, 0.0), Color(0.18, 0.56, 0.35, 0.0)]
@@ -273,8 +273,8 @@ static func _tangenziale(cb: CityBuilder, out: Dictionary) -> void:
 		cb.solid.box(Transform3D(Basis(), Vector3(sx * 5.6, 2.6, -38.0)), Vector3(0.6, 5.2, 0.6), Color("#d9d6e0"))
 	out["bounds"] = Rect2(-4.6, -36.0, 9.2, 48.0)
 	out["cam_x"] = 4.4
-	out["bg"] = Color("#5a2a4a")
-	out["fog"] = [Color("#7a3a55"), 20.0, 90.0]
+	out["bg"] = Color("#06121a")
+	out["fog"] = [Color("#0b2530"), 20.0, 90.0]
 	out["points"] = {"auto_ferme": Vector2(1.0, -10.0), "cartellone": Vector2(4.2, -17.0), "casello": Vector2(0.0, -31.0)}
 
 
@@ -293,7 +293,7 @@ static func _anomalia(cb: CityBuilder, out: Dictionary, tema: String) -> void:
 		var z: float = cb.rng.randf_range(-36.0, 10.0)
 		var b := Basis(Vector3(cb.rng.randf(), cb.rng.randf(), cb.rng.randf()).normalized(), cb.rng.randf_range(0.0, PI))
 		var sz := Vector3(cb.rng.randf_range(1.0, 4.0), cb.rng.randf_range(1.0, 6.0), cb.rng.randf_range(1.0, 4.0))
-		cb.solid.box(Transform3D(b, Vector3(x, y, z)), sz, Color("#2b2638").lerp(Color(line.r, line.g, line.b), 0.15))
+		cb.solid.box(Transform3D(b, Vector3(x, y, z)), sz, Color("#1b262e").lerp(Color(line.r, line.g, line.b), 0.15))
 	for k in 6:
 		var z2: float = 8.0 - 7.0 * k
 		for sx in [-1.0, 1.0]:
