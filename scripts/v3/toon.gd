@@ -14,9 +14,12 @@ const _BODY: String = """
 shader_type spatial;
 render_mode unshaded, cull_back;
 uniform vec3 light_dir = vec3(-0.45, 0.85, 0.35);
-uniform vec3 shade_tint : source_color = vec3(0.50, 0.46, 0.80);
-uniform vec3 rim_col : source_color = vec3(1.0, 0.82, 0.95);
-uniform float rim_k = 0.32;
+uniform vec3 shade_tint : source_color = vec3(0.34, 0.32, 0.60);   // ombre piu' scure: i personaggi risaltano sul buio (stile Ghost Stride)
+uniform vec3 rim_col : source_color = vec3(0.18, 0.95, 1.0);       // controluce ciano; sul lato opposto vira al verde
+uniform vec3 rim_col2 : source_color = vec3(0.24, 1.0, 0.54);
+uniform float rim_k = 0.85;
+uniform float rim_w = 0.64;
+uniform vec3 night : source_color = vec3(1.0);   // 1 = personaggi; la scenografia lo abbassa (notte)
 uniform vec3 fog_col : source_color = vec3(0.10, 0.07, 0.17);
 uniform float fog_near = 18.0;
 uniform float fog_far = 70.0;
@@ -46,7 +49,9 @@ void fragment() {
 		vec3 tint = COLOR.a > 0.9 ? shade_tint : vec3(0.88, 0.64, 0.70);
 		c = mix(base * tint, base, lit);
 		float r = 1.0 - clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0);
-		c = mix(c, rim_col, step(0.80, r) * rim_k * lit);
+		vec3 rc = mix(rim_col2, rim_col, step(0.0, wn.x + wn.z * 0.4));
+		c = mix(c, rc, step(rim_w, r) * rim_k * mix(0.55, 1.0, lit));
+		c *= night;
 	}
 	float d = length(VERTEX);
 	float f = smoothstep(fog_near, fog_far, d) * (COLOR.a > 0.3 ? 1.0 : 0.55);
@@ -93,9 +98,12 @@ render_mode unshaded, cull_back;
 uniform sampler2D albedo_tex : source_color, filter_linear_mipmap;
 uniform vec4 albedo_col : source_color = vec4(1.0);
 uniform vec3 light_dir = vec3(-0.45, 0.85, 0.35);
-uniform vec3 shade_tint : source_color = vec3(0.50, 0.46, 0.80);
-uniform vec3 rim_col : source_color = vec3(1.0, 0.82, 0.95);
-uniform float rim_k = 0.32;
+uniform vec3 shade_tint : source_color = vec3(0.34, 0.32, 0.60);   // ombre piu' scure: i personaggi risaltano sul buio (stile Ghost Stride)
+uniform vec3 rim_col : source_color = vec3(0.18, 0.95, 1.0);       // controluce ciano; sul lato opposto vira al verde
+uniform vec3 rim_col2 : source_color = vec3(0.24, 1.0, 0.54);
+uniform float rim_k = 0.85;
+uniform float rim_w = 0.64;
+uniform vec3 night : source_color = vec3(1.0);   // 1 = personaggi; la scenografia lo abbassa (notte)
 uniform float metal_k = 1.0;
 uniform vec3 fog_col : source_color = vec3(0.10, 0.07, 0.17);
 uniform float fog_near = 18.0;
@@ -119,7 +127,9 @@ void fragment() {
 	band = mix(band, mix(base, vec3(1.0), 0.75), smoothstep(0.42, 0.46, m) * (1.0 - smoothstep(0.62, 0.66, m)));
 	c = mix(c, band, metal);
 	float r = 1.0 - clamp(dot(vn, normalize(VIEW)), 0.0, 1.0);
-	c = mix(c, rim_col, step(0.80, r) * rim_k * lit);
+	vec3 rc = mix(rim_col2, rim_col, step(0.0, wn.x + wn.z * 0.4));
+	c = mix(c, rc, step(rim_w, r) * rim_k * mix(0.55, 1.0, lit));
+	c *= night;
 	float f = smoothstep(fog_near, fog_far, length(VERTEX));
 	ALBEDO = mix(c, fog_col, f);
 }
@@ -161,6 +171,17 @@ static func _shader_mat(key: String, code: String) -> ShaderMaterial:
 
 static func body() -> ShaderMaterial:
 	return _shader_mat("body", _BODY)
+
+
+# Scenografia di notte (palazzi, strada, arredi): stesso shader ma buio quasi nero, tinta verde-acqua e niente controluce
+# (il controluce e' dei personaggi). Le superfici "luce propria" (finestre, neon) restano accese e saltano fuori.
+static func body_world() -> ShaderMaterial:
+	if not _cache.has("world"):
+		var m: ShaderMaterial = _shader_mat("world", _BODY)
+		m.set_shader_parameter("night", Vector3(0.24, 0.32, 0.40))      # scenografia quasi al buio: la luce la danno i neon (stile delle foto)
+		m.set_shader_parameter("rim_k", 0.0)
+		m.set_shader_parameter("shade_tint", Vector3(0.62, 0.66, 0.8))
+	return _cache["world"]
 
 
 # Materiale toon per una superficie con texture (un materiale nuovo per texture: la texture e' un parametro)
@@ -225,7 +246,7 @@ static func hit_flash() -> StandardMaterial3D:
 # Nebbia: ogni scena sceglie colore e distanze (la strada e' lunga, l'arena e' corta).
 static func set_fog(col: Color, near: float, far: float) -> void:
 	_cache["fog"] = [Vector3(col.r, col.g, col.b), near, far]
-	for m in [body(), ink(), ink_grow()]:
+	for m in [body(), body_world(), ink(), ink_grow()]:
 		_fog_one(m)
 	var alive: Array = []
 	for w in _cache.get("tex_mats", []):
@@ -237,8 +258,8 @@ static func set_fog(col: Color, near: float, far: float) -> void:
 
 
 # Applica i materiali a una mesh costruita da MeshBatch (superficie 0 corpo, 1 contorno).
-static func dress(mi: MeshInstance3D) -> void:
+static func dress(mi: MeshInstance3D, world: bool = false) -> void:
 	if mi.mesh == null:
 		return
 	for i in mi.mesh.get_surface_count():
-		mi.set_surface_override_material(i, body() if i == 0 else ink())
+		mi.set_surface_override_material(i, (body_world() if world else body()) if i == 0 else ink())

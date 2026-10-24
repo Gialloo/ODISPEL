@@ -20,7 +20,7 @@ Regole dell'universo confermate: storie separate, stesso universo, nessun media 
 ## Il progetto in questo branch
 
 - **V3, OFFICIAL DEMO ODISPEL**: JRPG 3D a turni alla Persona, atto 1. Godot 4.7.2, renderer `gl_compatibility`, telefono prima di tutto (60 fps, testi grandi). Struttura e comandi in `README.md`.
-- Canone del gioco: `docs/STORIA.md`, `data/atto1.json`, `data/dialoghi_atto1.json`. Stile: `docs/STILE_VISIVO.md` (vince l'aggiornamento in cima: urbano di oggi).
+- Canone del gioco: `docs/STORIA.md`, `data/atto1.json`, `data/dialoghi_atto1.json`. Stile: `docs/STILE_VISIVO.md` (vince l'aggiornamento in cima: «notte urbana e neon» approvato il 24/10/2026, urbano di oggi).
 - **Nomi**: nel codice gli id `ferri` e `zecca` sono **Lance** e **Rio**. Nei testi si usano sempre i nomi canonici.
 - I dialoghi **non si modificano a mano**: si corregge `tools/gen_dialoghi.py` e si rigenera `data/dialoghi_atto1.json`.
 - Le battaglie e l'atto si provano da soli: `tests/unit/`, `tools/v3_atto1.gd`, `tools/v3_vetrina.gd`, `tools/v3_prestazioni.gd`.

@@ -23,9 +23,9 @@ const PAL_NOX: Dictionary = {
 
 # Gli altri tre: stessa ricetta e stesso giallo (raggi, fiamme, bordo caldo), cambia solo il colore del personaggio
 const PAL_LANCE: Dictionary = {
-	"sky": Color("#ffb4a0"), "mid": Color("#ff3b3b"), "navy": Color("#4a0614"),
+	"sky": Color("#ffd0bc"), "mid": Color("#ff5a4a"), "navy": Color("#7a0c24"),     # persona piu' chiara: sul fondo arancio-rosso Lance si perdeva
 	"rim": Color("#ff9d1f"), "coral": Color("#ff5f80"), "line": Color("#1c0408"),
-	"top": Color("#ff7a3d"), "bottom": Color("#8a1040"), "dark": Color("#0d0505"),
+	"top": Color("#ff9a2d"), "bottom": Color("#4a0a3c"), "dark": Color("#0d0505"),   # fondo: dall'arancio al prugna, stacca dal rosso della persona
 	"ray": Color("#ffe21f"),
 	"flames": [Color("#ffe21f"), Color("#ff8a1a"), Color("#ff3d9e")],
 	"solids": PAL_NOX["solids"],
@@ -52,10 +52,13 @@ const PALETTES: Dictionary = {"nox": PAL_NOX, "ferri": PAL_LANCE, "zecca": PAL_R
 static func pal_for(char_id: String) -> Dictionary:
 	return PALETTES.get(char_id, PAL_NOX)
 
+
 var _pal: Dictionary = PAL_NOX
 var _char: String = ""
 var _light: bool = false
 var _w: int = 640
+var _h: int = H                          # nel riscaldamento le viewport sono minuscole
+var _warm: bool = false
 var _t: float = 0.0
 var manual: bool = false                 # nei test il tempo lo decide la prova
 var _tick: int = -1
@@ -73,6 +76,8 @@ var _flash: ColorRect
 var _mmis: Array = []
 var _pieces: Array = []                  # un dizionario per pezzo: mesh, indice, direzione, raggio, rotazione, scala
 var _origin: Vector3 = Vector3.ZERO
+var _last_pose: float = -1.0
+var _comp_pending: int = 0               # fotogrammi da aspettare prima di ridisegnare la composizione
 var _mat_p: ShaderMaterial
 var _mat_bg: ShaderMaterial
 var _mat_fl: ShaderMaterial
@@ -101,19 +106,27 @@ float Lr(vec2 p, float c) {
 	return s.a > 0.5 ? dot(s.rgb, vec3(0.299, 0.587, 0.114)) : c;
 }
 
-// Kuwahara a 4 settori (3x3 campioni ciascuno, passo 2 px): sceglie il settore piu' uniforme e ne prende la media
+// Kuwahara a 4 settori (3x3 campioni ciascuno, passo 2 px): sceglie il settore piu' uniforme e ne prende la media.
+// Ottimizzato: i settori condividono la riga e la colonna centrali, quindi 25 letture invece di 36 (stesso risultato)
 float kuwahara(vec2 uv, float c, vec2 px) {
+	float v[25];
+	for (int j = 0; j < 5; j++) {
+		for (int i = 0; i < 5; i++) {
+			v[j * 5 + i] = Lr(uv + vec2(float(i - 2), float(j - 2)) * 2.0 * px, c);
+		}
+	}
 	float best = 1e9;
 	float res = c;
 	for (int s = 0; s < 4; s++) {
-		vec2 o = vec2((s % 2 == 0) ? -1.0 : 1.0, (s < 2) ? -1.0 : 1.0);
+		int ox = (s % 2 == 0) ? 0 : 2;
+		int oy = (s < 2) ? 0 : 2;
 		float sum = 0.0;
 		float sq = 0.0;
-		for (int i = 0; i < 3; i++) {
-			for (int j = 0; j < 3; j++) {
-				float v = Lr(uv + o * vec2(float(i), float(j)) * 2.0 * px, c);
-				sum += v;
-				sq += v * v;
+		for (int j = 0; j < 3; j++) {
+			for (int i = 0; i < 3; i++) {
+				float x = v[(oy + j) * 5 + ox + i];
+				sum += x;
+				sq += x * x;
 			}
 		}
 		float mean = sum / 9.0;
@@ -255,10 +268,16 @@ float fl(vec2 uv, float R, float seed) {
 }
 
 void fragment() {
+	// strati interni solo dove lo strato esterno c'e' (fuori dalla fiamma, che e' quasi tutto lo schermo, 8 letture invece di 24)
 	float f3 = fl(UV, r3, 1.0);
-	float f2 = f3 * fl(UV, r2, 4.0);
-	float f1 = f2 * fl(UV, r1, 7.0);
-	COLOR = vec4(f1 > 0.5 ? c1 : (f2 > 0.5 ? c2 : c3), f3);
+	vec3 c = c3;
+	if (f3 > 0.5) {
+		float f2 = fl(UV, r2, 4.0);
+		if (f2 > 0.5) {
+			c = (fl(UV, r1, 7.0) > 0.5) ? c1 : c2;
+		}
+	}
+	COLOR = vec4(c, f3);
 }
 """
 
@@ -292,10 +311,40 @@ func start(char_id: String, pal: Dictionary = PAL_NOX) -> void:
 	Ui.place(self, 0, 0, 1, 1)
 	var vs: Vector2 = get_viewport().get_visible_rect().size
 	_w = clampi(roundi(float(H) * vs.x / maxf(vs.y, 1.0)), 640, 860)
+	if _warm:
+		_w = 64
+		_h = 36
 	_build_person_vp()
 	_build_solids_vp()
 	_build_comp()
 	apply_time(0.0)
+
+
+# RISCALDAMENTO (telefono: shader e mesh si compilano al primo disegno = scatto proprio quando parte l'ultimate).
+# A inizio battaglia si costruisce un cut-in minuscolo per ogni membro della squadra, lo si disegna 3 fotogrammi e lo si libera.
+static func warm(host: Node, char_ids: Array) -> void:
+	for ch in char_ids:
+		if not is_instance_valid(host) or not host.is_inside_tree():
+			return                       # la battaglia e' gia' chiusa (uscita veloce)
+		if not PALETTES.has(ch):
+			continue
+		var e := EdgeCutin.new()
+		e._warm = true
+		e.visible = true
+		e.modulate.a = 0.01
+		host.add_child(e)
+		e.start(ch, pal_for(ch))
+		e.manual = true
+		e.apply_time(0.5)
+		e._vp_person.render_target_update_mode = SubViewport.UPDATE_ONCE
+		e._vp_solids.render_target_update_mode = SubViewport.UPDATE_ONCE
+		e._vp_comp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		var tree: SceneTree = host.get_tree()
+		for i in 3:
+			await tree.process_frame
+		if is_instance_valid(e):
+			e.queue_free()
+		await tree.process_frame
 
 
 func _vp(w: int, h: int, three_d: bool) -> SubViewport:
@@ -304,7 +353,7 @@ func _vp(w: int, h: int, three_d: bool) -> SubViewport:
 	v.transparent_bg = three_d
 	v.own_world_3d = three_d
 	v.disable_3d = not three_d
-	v.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	v.render_target_update_mode = SubViewport.UPDATE_DISABLED     # si ridisegna solo a scatti (12 al secondo), vedi apply_time
 	v.msaa_3d = Viewport.MSAA_DISABLED
 	v.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_LINEAR
 	add_child(v)
@@ -313,7 +362,7 @@ func _vp(w: int, h: int, three_d: bool) -> SubViewport:
 
 # 1. LA PERSONA: il personaggio da solo, sfondo trasparente (l'alfa e' la maschera)
 func _build_person_vp() -> void:
-	_vp_person = _vp(_w, H, true)
+	_vp_person = _vp(_w, _h, true)
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
 	e.background_mode = Environment.BG_CLEAR_COLOR
@@ -340,7 +389,7 @@ func _build_person_vp() -> void:
 
 # 2. I SOLIDI: 8 tipi low-poly in MultiMesh, esplodono dal centro; li aggiorniamo a scatti
 func _build_solids_vp() -> void:
-	_vp_solids = _vp(_w, H, true)
+	_vp_solids = _vp(_w, _h, true)
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
 	e.background_mode = Environment.BG_CLEAR_COLOR
@@ -354,7 +403,7 @@ func _build_solids_vp() -> void:
 	cam.position = Vector3(0, 0, 9)
 	cam.current = true
 	var half_h: float = tan(deg_to_rad(27.5)) * 9.0
-	_origin = Vector3(0.06 * 2.0 * half_h * float(_w) / float(H), 0.0, 0.0)
+	_origin = Vector3(0.06 * 2.0 * half_h * float(_w) / float(_h), 0.0, 0.0)
 	var sh := Shader.new()
 	sh.code = SH_SOLID
 	var mat := ShaderMaterial.new()
@@ -363,7 +412,7 @@ func _build_solids_vp() -> void:
 	var meshes: Array = _solid_meshes()
 	var cols: Array = _pal["solids"]
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 2077
+	rng.seed = 2077                        # stesse posizioni e stesso numero di pezzi per tutti (scelta dell'autore)
 	for k in meshes.size():
 		var n: int = total / meshes.size() + (1 if k < total % meshes.size() else 0)
 		var mm := MultiMesh.new()
@@ -391,10 +440,11 @@ func _build_solids_vp() -> void:
 				"w": rng.randf_range(2.0, 7.0), "a0": rng.randf() * TAU,
 				"d": rng.randf_range(0.0, 0.12),
 			})
+	_vp_solids.render_target_update_mode = SubViewport.UPDATE_DISABLED
 
 
 func _build_comp() -> void:
-	_vp_comp = _vp(_w, H, false)
+	_vp_comp = _vp(_w, _h, false)
 	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -405,7 +455,7 @@ func _build_comp() -> void:
 	_mat_bg.set_shader_parameter("c_bot", _pal["bottom"])
 	_mat_bg.set_shader_parameter("ray_c", _pal["ray"])
 	_mat_bg.set_shader_parameter("dark_c", _pal["dark"])
-	_mat_bg.set_shader_parameter("res", Vector2(_w, H))
+	_mat_bg.set_shader_parameter("res", Vector2(_w, _h))
 	_bg = ColorRect.new()
 	_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_bg.material = _mat_bg
@@ -424,7 +474,7 @@ func _build_comp() -> void:
 	_mat_fl.set_shader_parameter("c1", fc[0])
 	_mat_fl.set_shader_parameter("c2", fc[1])
 	_mat_fl.set_shader_parameter("c3", fc[2])
-	_mat_fl.set_shader_parameter("aspect", float(_w) / float(H))
+	_mat_fl.set_shader_parameter("aspect", float(_w) / float(_h))
 	_flames = ColorRect.new()
 	_flames.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_flames.material = _mat_fl
@@ -445,10 +495,6 @@ func _build_comp() -> void:
 	_person.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_person.material = _mat_p
 	root.add_child(_person)
-	_flash = ColorRect.new()
-	_flash.color = Color(1, 1, 1, 0)
-	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.add_child(_flash)
 	var show := TextureRect.new()
 	show.texture = _vp_comp.get_texture()
 	show.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -457,6 +503,12 @@ func _build_comp() -> void:
 	show.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	show.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(show)
+	# il lampo bianco sta sopra la composizione (che si ridisegna a 12 fps): cosi' resta fluido a 60
+	_flash = ColorRect.new()
+	_flash.color = Color(1, 1, 1, 0)
+	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_flash)
 
 
 func _mat(code: String) -> ShaderMaterial:
@@ -474,11 +526,18 @@ func set_layers(halftone: bool, rays: bool, solids: bool, flames: bool, person: 
 	_solids_rect.visible = solids
 	_flames.visible = flames
 	_person.visible = person >= 0
+	_tick = -1                      # le prove cambiano i livelli: ridisegna tutto al prossimo apply_time
+	_last_pose = -1.0
 	if person >= 0:
 		_mat_p.set_shader_parameter("mode", person)
 
 
 func _process(delta: float) -> void:
+	# persona e solidi si disegnano nel fotogramma del tick, la composizione in quello dopo: il costo si divide su due frame
+	if _comp_pending > 0:
+		_comp_pending -= 1
+		if _comp_pending == 0:
+			_vp_comp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	if manual:
 		return
 	_t += delta
@@ -490,15 +549,21 @@ func apply_time(t: float) -> void:
 	_t = t
 	var tick: int = int(t * 12.0)
 	var tq: float = float(tick) / 12.0
-	var pop: float = clampf(t / 0.22, 0.0, 1.0)
-	var ease_o: float = 1.0 - pow(1.0 - pop, 3.0)
-	_cv.arm_r_x = lerpf(-0.6, -2.7, ease_o)
-	_cv.arm_l_x = lerpf(-0.2, -0.9, ease_o)
-	_cv.scale = Vector3.ONE * (1.0 + 0.12 * (1.0 - ease_o))
 	_flash.color.a = clampf(1.0 - t / 0.12, 0.0, 1.0) * 0.9
 	if tick == _tick:
 		return
 	_tick = tick
+	var pop: float = clampf(tq / 0.22, 0.0, 1.0)
+	var ease_o: float = 1.0 - pow(1.0 - pop, 3.0)
+	_cv.arm_r_x = lerpf(-0.6, -2.7, ease_o)
+	_cv.arm_l_x = lerpf(-0.2, -0.9, ease_o)
+	_cv.scale = Vector3.ONE * (1.0 + 0.12 * (1.0 - ease_o))
+	# la persona cambia solo nei primi ~0,25 s (la posa): dopo non serve ridisegnarla
+	if ease_o != _last_pose:
+		_last_pose = ease_o
+		_vp_person.render_target_update_mode = SubViewport.UPDATE_ONCE
+	_vp_solids.render_target_update_mode = SubViewport.UPDATE_ONCE
+	_comp_pending = 2
 	var gl: float = 1.0 if fposmod(sin(float(tick) * 12.9898) * 43758.5453, 1.0) > 0.55 else 0.0
 	_mat_p.set_shader_parameter("tq", tq)
 	_mat_p.set_shader_parameter("glitch", gl)

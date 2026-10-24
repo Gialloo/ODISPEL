@@ -3,7 +3,7 @@ extends RefCounted
 
 # Versione e dati fissi della V3 standalone.
 
-const VERSION: String = "0.41.0"
+const VERSION: String = "0.41.1"
 const TITLE: String = "ODISPEL"
 const SUBTITLE: String = "OFFICIAL DEMO · ATTO 1"
 const CITY: String = "[CITTÀ]"          # PROVVISORIO: nome non ancora deciso

@@ -18,7 +18,7 @@ func _ready() -> void:
 	add_child(cam)
 	cam.current = true
 	var mats: Array = [Toon.body(), Toon.ink(), Toon.ink_grow(), Toon.glow(), Toon.shadow(), Toon.hit_flash(),
-		Toon.body_tex(load("res://icon.png") as Texture2D)]
+		Toon.body_tex(load("res://icon.png") as Texture2D), Toon.body_world(), NightFx.rain_material()]
 	var x: float = -1.2
 	for m in mats:
 		var mi := MeshInstance3D.new()
@@ -34,6 +34,13 @@ func _ready() -> void:
 	cr.material = cm
 	cr.size = Vector2(32, 32)
 	add_child(cr)
+	# glitch cromatico (legge lo schermo: la prima volta compila uno shader, meglio qui che sul primo critico)
+	var gr := ColorRect.new()
+	var gm := ShaderMaterial.new()
+	gm.shader = GlitchFx.shader()
+	gr.material = gm
+	gr.size = Vector2(16, 16)
+	add_child(gr)
 	for i in FRAMES:
 		await RenderingServer.frame_post_draw
 	queue_free()

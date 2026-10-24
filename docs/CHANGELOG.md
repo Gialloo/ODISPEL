@@ -1,5 +1,11 @@
 # Novità
 
+## 0.41.1 · notte urbana e neon
+- **Nuovo stile grafico**: città e arene di notte, quasi al buio, accese da pochi neon verdi, ciano, blu e rossi, con riflessi sul pavimento bagnato e pioggia fine. I personaggi hanno un controluce forte e staccano dal buio. La Cupola magenta resta, lontana.
+- **Onomatopee a fumetto**: TAP, BAM, CLANG, KRAK, SWISH, PLING... piccole, scritte a mano con il contorno ciano-magenta, vicino al colpo.
+- **Glitch** rosso-ciano un istante sui colpi forti e sulle rotture (spento con gli effetti ridotti).
+- **Ultimate più fluida sul telefono**: l'effetto si ridisegna solo quando cambia e gli shader si preparano a inizio battaglia; Lance più leggibile.
+
 ## 0.41.0 · demo più leggera: tutorial a rate, HUD una cosa per volta, Ultimate in stile Edgerunners
 - **Tutorial spezzato**: nella storia le spiegazioni non arrivano più tutte nel primo scontro (erano dieci). Arrivano due alla volta, quando servono: schermo e ATTACCO nel primo, GUARDIA e ABILITÀ col Distributore (e a vittoria esperienza e SQUADRA), mossa annunciata e guardia a tempo nel primo scontro del capitolo 1, poi reazioni e rottura, poi ULTIMATE ed extra. Il primo scontro picchia piano ed è più corto. Il TUTORIAL dal menu resta completo. Chi aveva già fatto il vecchio tutorial non rivede niente; nella Replica le spiegazioni non tornano.
 - **HUD una cosa per volta**: la ruota dei colori è chiusa in un tasto COLORI (chi colpire lo dice già DEBOLE A sotto il nemico) e, aperta, spiega a parole chi batte chi; mentre parla Echo spariscono x1, AUTO e pausa (non si sovrappongono più al SALTA); il consiglio del primo turno compare solo quando non ci sono le spiegazioni; HYPE sulla scheda di Rio compare quando sale; al massimo due avvisi insieme.

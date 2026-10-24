@@ -12,11 +12,18 @@ const MAGIC: Color = Color("#E83DCE")
 const RADIUS: float = 95.0
 
 var _t: float = 0.0
-var strength: float = 1.0          # 1 = cielo della citta'; si puo' abbassare (es. all'alba)
+var strength: float = 0.6          # accento lontano (24/10: la notte e' verde-nero, la Cupola magenta solo all'orizzonte); 1 = cielo pieno
 
 
 static func outdoor(layout: String) -> bool:
 	return layout in ["strada", "incrocio", "vicolo", "tangenziale", ""]
+
+
+# Cupola come accento lontano: sulla tangenziale (cielo tutto aperto) e' ancora piu' tenue, altrimenti tingerebbe tutta la scena di viola
+static func make(layout: String = "") -> SkyDome:
+	var d := SkyDome.new()
+	d.strength = 0.15 if layout == "tangenziale" else 0.4
+	return d
 
 
 func _ready() -> void:

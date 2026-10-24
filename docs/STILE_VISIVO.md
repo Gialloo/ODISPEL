@@ -1,5 +1,22 @@
 # ODISPEL — Stile visivo
 
+> **STILE DEL GIOCO: «NOTTE URBANA E NEON» (decisione dell'autore, 24 ottobre 2026) — VINCE SU TUTTO IL RESTO DI QUESTO FILE.**
+> Approvato da Gianluca dopo la prova: «è fantastico come lo volevo io, tieni in memoria questo stile per il gioco».
+> Riferimenti: 16 foto in `/mnt/project-files/odispel/v3/stile_ghost_stride/riferimento/`, analisi in `ANALISI_STILE.md` (stessa cartella),
+> schermate approvate in `prova2/`. Tutto il lavoro grafico futuro (aree, nemici, interfaccia, effetti) segue queste regole:
+> - **Notte urbana stretta**: vicoli, ballatoi, palazzoni, cavi, insegne, graffiti; prospettive lunghe. Scenografia quasi al buio
+>   (`Toon.body_world()`), poche finestre accese, fondo e nebbia verde-nero / blu notte.
+> - **Luce = pochi neon fortissimi** (2-4 per scena, `night_fx.gd`): verde `#3dff8a`, ciano `#2ef2ff`, blu `#2a5cff`, accento rosso `#ff2340`,
+>   lime `#d8ff3a`; riflessi verticali finti sul pavimento bagnato, pioggia fine. Niente luci dinamiche: emissivi e trucchi economici (telefono, 60 fps).
+> - **Personaggi**: controluce forte ciano/verde (`toon.gd`), ombre scure; restano anime a due toni con contorno e i colori di battaglia.
+> - **Onomatopee a fumetto** (`onomato.gd`): parole corte internazionali (TAP, ZAP, BAM, CLANG, THUD, KRAK, SWISH, PLING), lettere sottili e storte
+>   bianco-azzurre con contorno ciano/magenta sfasato, piccole (circa 4% dello schermo, 7% sul critico), vicino all'impatto, mai sopra comandi o personaggi.
+>   Niente stelle o balloon pieni. Rosso solo per i colpi forti.
+> - **Glitch cromatico** rosso-ciano breve (`glitch_fx.gd`) solo nei momenti forti; spento con gli effetti ridotti.
+> - La **Cupola magenta** resta come accento lontano; le **Anomalie** (altro mondo) possono avere colori loro.
+> - L'**Ultimate** usa il cut-in «alla Edgerunners» (`edge_cutin.gd`): ogni personaggio col suo colore, raggi/fiamme gialli uguali, particelle uguali per tutti.
+> - Resta valido l'aggiornamento del 18 ottobre qui sotto (urbano di oggi, niente medioevo, streetwear e divise).
+
 > **AGGIORNAMENTO DELL'AUTORE (18 ottobre 2026, sera) — VINCE SU TUTTO IL RESTO DI QUESTO FILE.**
 > Provata nel gioco (0.31.0), la direzione «classi medievali» è stata **bocciata**: «sembrano usciti dal medioevo».
 > L'ambientazione è **urbana, ai giorni nostri**: i personaggi devono essere **moderni e belli**.
