@@ -20,6 +20,8 @@ const PARTY_Z: float = 4.3                 # fila della squadra: piu' indietro (
 const LEZIONI: Array = [["tut_intro", "tut_attacco"], ["tut_guardia", "tut_abilita"], ["tut_telegrafo", "tut_qte"],
 	["tut_reazioni", "tut_rottura"], ["tut_ultimate", "tut_extra"]]
 const LEZIONI_MAX: int = 2
+const FEINT_AFTER: int = 2            # parate perfette di fila prima della FINTA del nemico
+const FEINT_LEAD: float = 1.5         # con la FINTA l'impatto arriva dopo il 50% di tempo in piu'
 const STAMP_AY: float = 0.58          # UN posto per i timbri grandi (DEBOLEZZA, SLANCIO, IN DIRETTA...): sotto il cerchio della parata, lontano dalla ruota
 const TOAST_MAX: int = 2              # avvisi sulla lastra scura visibili insieme
 const NOTICE_Y: float = 64.0          # avvisi in alto a sinistra (Persona 5: nome della mossa e "Attacco su!"), sotto l'etichetta REC
@@ -70,6 +72,7 @@ var auto_on: bool = false
 var fast: bool = false
 var first_turn: bool = true
 var first_qte: bool = true
+var _perfect_streak: int = 0         # parate perfette di fila: a 2 il nemico prova una FINTA (contromossa, non un taglio alla parata)
 var _qte_on: bool = false
 var _qte_t: float = 0.0
 var _qte_lead: float = QTE_LEAD      # la prima volta il cerchio e' piu' lento, per leggere l'indicazione
@@ -780,7 +783,7 @@ func _advance() -> void:
 			await _wait(0.45 if not _quick else 0.3)       # in AUTO si vede chi tocca prima che agisca
 			if not is_inside_tree() or ended:
 				return
-			await _do_action(pid, BattleAI.choose(b, pid), _quick)
+			await _do_action(pid, (BattleAI.choose_quick(b, pid) if _quick else BattleAI.choose(b, pid)), _quick)
 			continue
 		if tutorial or lezioni:
 			await _tut_turn(uid)
@@ -788,7 +791,7 @@ func _advance() -> void:
 				return
 			if auto_on:
 				# AUTO acceso mentre parlava Echo: il turno lo gioca l'IA, come sopra
-				await _do_action(pid, BattleAI.choose(b, pid), _quick)
+				await _do_action(pid, (BattleAI.choose_quick(b, pid) if _quick else BattleAI.choose(b, pid)), _quick)
 				continue
 		waiting = true
 		_cam_choose(uid)
@@ -1195,6 +1198,14 @@ func _timed_guard() -> String:
 	_qte_perfect = float(w["perfect"]) / 1000.0
 	_qte_late = float(w["late"]) / 1000.0
 	_qte_lead = Parry.LEAD_MS / 1000.0
+	# CONTROMOSSA: dopo due parate perfette di fila il nemico finta. Il colpo arriva piu' tardi (il cerchio si chiude
+	# piu' piano): chi tocca a memoria e' in anticipo, chi guarda il cerchio para lo stesso.
+	var feint: bool = _perfect_streak >= FEINT_AFTER and not first_qte
+	if feint:
+		_perfect_streak = 0
+		_qte_lead *= FEINT_LEAD
+		_qte_ring._label.text = "FINTA"
+		_toast("FINTA! %s ha letto le tue parate: aspetta che il cerchio si chiuda" % _cap(_bn()), Color("#ff7a9c"), 1.6)
 	if first_qte:
 		first_qte = false
 		_qte_lead *= 2.0
@@ -1219,6 +1230,7 @@ func _timed_guard() -> String:
 	_hint.text = ""
 	_qte_ring.finish(_qte_grade)
 	_qte_ring = null
+	_perfect_streak = _perfect_streak + 1 if _qte_grade == "perfect" else 0
 	match _qte_grade:
 		"perfect":
 			Settings.buzz(45)
@@ -1545,6 +1557,10 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					_live_banner("MOSSA RUBATA", "%s · %s" % [BattleText.move_name(smv).to_upper(), "ora si equipaggia in pausa > SQUADRA" if fresh else "Saul ce l'aveva già"], Color("#62f08c"), 2.2)
 			"finale":
 				_toast("GRAN FINALE · HYPE %d%%" % int(e.get("hype", 0)), Ui.VIOLET.lightened(0.3), 1.4)
+			"finale_early":
+				_toast("ANTEPRIMA · il pubblico carica la squadra: +%d EN e +%d%% Ultimate" % [int(e.get("energy", 0)), int(e.get("gauge", 0))], Ui.VIOLET.lightened(0.3), 1.8)
+			"slancio_guard":
+				_toast("GUARDIA DI SLANCIO · scudo a tutta la squadra", Ui.CYAN, 1.6)
 			"hype":
 				if int(e.get("amount", 0)) >= 10:
 					# il contatore sta su Rio, al suo posto (decisione dell'autore, 25/10/2026: sul nemico c'era gia' troppo)
@@ -2907,6 +2923,22 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 		{"kind": "guard", "name": "GUARDIA", "sub": "DIFENDITI", "cost": "+1 EN", "ok": _usable("guard"), "letter": "G",
 			"title": "GUARDIA", "desc": "Dimezza il danno e ricarica energia"},
 	]
+	# RITMO per categoria: i comandi che cambiano tipo di mossa lo dicono sulla ruota (+10% al colpo)
+	var lc: String = str(u.get("last_cat", ""))
+	if lc != "":
+		for it in items:
+			var cat: String = {"attack": "attacco", "skill": "abilita", "ult": "ultimate"}.get(str(it["kind"]), "")
+			if cat != "" and cat != lc:
+				if str(it["cost"]) == "":
+					it["cost"] = "RITMO"          # corto: sotto ABILITA' "RITMO +10%" toccava l'icona; il +10% e' nella descrizione
+				it["desc"] = str(it["desc"]) + "\nRITMO: dopo %s cambi tipo di mossa, +%d%% al colpo" % [BattleContent.category_name(lc), int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0))]
+	# SLANCIO: nell'azione rapida la Guardia protegge tutta la squadra (la scelta non e' solo "un altro colpo")
+	if _quick:
+		for it in items:
+			if str(it["kind"]) == "guard":
+				it["sub"] = "PROTEGGI TUTTI"
+				it["cost"] = "+%d EN" % (1 + BattleTypes.SLANCIO_GUARD_EN)
+				it["desc"] = "GUARDIA DI SLANCIO: dimezza il danno, +%d EN e uno scudo a tutta la squadra" % (1 + BattleTypes.SLANCIO_GUARD_EN)
 	_wheel.setup(str(u.get("name", "")).to_upper() + (" · RAPIDO" if _quick else ""), _col(u), items)
 
 
@@ -3522,7 +3554,7 @@ func _slancio_moment(u: Dictionary) -> void:
 	_flash(0.35)
 	_kick(0.5)
 	Settings.buzz(30)
-	_stamp("SLANCIO!", "%s AGISCE ANCORA · ATTACCO O GUARDIA" % str(u["name"]).to_upper(), col.lightened(0.25), 0.58)
+	_stamp("SLANCIO!", "%s AGISCE ANCORA · COLPISCI O PROTEGGI TUTTI" % str(u["name"]).to_upper(), col.lightened(0.25), 0.58)
 	await _wait(1.25)
 
 
@@ -3710,7 +3742,7 @@ func _toggle_auto() -> void:
 	if auto_on and waiting:
 		waiting = false
 		_show_commands(false)
-		await _do_action(cur_pid, BattleAI.choose(b, cur_pid), _quick)
+		await _do_action(cur_pid, (BattleAI.choose_quick(b, cur_pid) if _quick else BattleAI.choose(b, cur_pid)), _quick)
 		if is_inside_tree() and not ended:
 			await _advance()
 

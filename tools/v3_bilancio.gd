@@ -130,7 +130,7 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 					_scan(SeqRound.boss_action(b), st)
 				else:
 					var pid: String = str(e["player"])
-					var evp: Array = SeqRound.player_action(b, pid, BattleAI.choose(b, pid), bool(e.get("quick", false)))
+					var evp: Array = SeqRound.player_action(b, pid, BattleAI.choose_quick(b, pid) if bool(e.get("quick", false)) else BattleAI.choose(b, pid), bool(e.get("quick", false)))
 					_scan(evp, st)
 					for x in evp:
 						if str(x.get("t", "")) == "slancio":

@@ -9,6 +9,19 @@ static func _ratio(u: Dictionary) -> float:
 	return float(u["hp"]) / float(u["max_hp"])
 
 
+# Azione rapida dello SLANCIO: Guardia di slancio (scudo a tutti) se arriva un colpo grosso o un compagno e' sotto il 50%,
+# altrimenti un altro colpo.
+static func choose_quick(state: Dictionary, pid: String) -> Dictionary:
+	var tele: Dictionary = state.get("telegraph", {})
+	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	var danger: bool = not bm.is_empty() and int(BattleState.boss(state).get("stun", 0)) == 0 and BattleResolver.is_heavy_boss_move(bm)
+	for p in BattleState.alive_players(state):
+		var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+		if BattleState.is_alive(u) and float(u["hp"]) < float(u["max_hp"]) * 0.5:
+			danger = true
+	return {"swap": "", "move": BattleTypes.ACTION_GUARD if danger else BattleTypes.ACTION_ATTACK, "target": ""}
+
+
 static func choose(state: Dictionary, pid: String) -> Dictionary:
 	var p: Dictionary = BattleState.player(state, pid)
 	var choice: Dictionary = {"swap": "", "move": BattleTypes.ACTION_ATTACK, "target": ""}

@@ -91,6 +91,7 @@ func _init() -> void:
 		check(b3.article(str(pair[0])) == str(pair[1]), "articolo: %s -> %s (non %s)" % [pair[0], pair[1], b3.article(str(pair[0]))])
 	_timed_guard(team)
 	_kits(team)
+	_fase2(team)
 	print("test_v3_engine: " + ("OK" if fails == 0 else "%d errori" % fails))
 	quit(1 if fails > 0 else 0)
 
@@ -285,3 +286,45 @@ func _kits(team: Array) -> void:
 	SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "u_nox_ult", "target": ""})
 	ev = SeqRound.boss_action(s)
 	check(_has(ev, "nullified") and _dmg_to(ev, str(_u(s, "ferri")["id"])) == 0, "Rispondo io annulla il colpo")
+
+
+# Fase 2: RITMO per categoria, Guardia di slancio, Gran finale anticipato
+func _fase2(team: Array) -> void:
+	var s: Dictionary = _fresh(team)
+	var ev: Array = SeqRound.player_action(s, _pid(s, "saul"), {"swap": "", "move": "attack", "target": ""})
+	check(not _has(ev, "rhythm"), "primo colpo senza RITMO")
+	check(str(_u(s, "saul").get("last_cat", "")) == "attacco", "categoria attacco ricordata")
+	ev = SeqRound.player_action(s, _pid(s, "saul"), {"swap": "", "move": "attack", "target": ""})
+	check(not _has(ev, "rhythm"), "attacco dopo attacco: niente RITMO")
+	_u(s, "saul")["energy"] = 5
+	ev = SeqRound.player_action(s, _pid(s, "saul"), {"swap": "", "move": "u_saul_a", "target": ""})
+	check(_has(ev, "rhythm"), "abilita' dopo attacco: RITMO")
+	_u(s, "saul")["last_cat"] = "guardia"
+	ev = SeqRound.player_action(s, _pid(s, "saul"), {"swap": "", "move": "attack", "target": ""})
+	check(_has(ev, "rhythm"), "attacco dopo guardia: RITMO")
+	check(BattleContent.move_category("guard") == "guardia" and BattleContent.move_category("u_saul_ult") == "ultimate", "categorie")
+	# Guardia di slancio: scudo a tutti e +1 energia in piu' rispetto alla guardia normale
+	s = _fresh(team)
+	var en0: int = int(_u(s, "nox")["energy"])
+	var sh0: int = int(_u(s, "ferri")["shield"])
+	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "guard", "target": ""}, true)
+	check(_has(ev, "slancio_guard"), "guardia rapida = guardia di slancio")
+	check(int(_u(s, "ferri")["shield"]) > sh0, "scudo anche ai compagni")
+	check(int(_u(s, "nox")["energy"]) >= mini(BattleTypes.MAX_ENERGY, en0 + 2), "guardia di slancio: +2 energia")
+	s = _fresh(team)
+	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "guard", "target": ""})
+	check(not _has(ev, "slancio_guard"), "guardia normale: niente scudo a tutti")
+	# Gran finale anticipato: i compagni ricevono energia e Ultimate
+	s = _fresh(team)
+	_u(s, "zecca")["gauge"] = 100
+	_u(s, "zecca")["hype"] = 30
+	_u(s, "saul")["energy"] = 0
+	_u(s, "saul")["gauge"] = 0
+	ev = SeqRound.player_action(s, _pid(s, "zecca"), {"swap": "", "move": "u_zecca_ult", "target": ""})
+	check(_has(ev, "finale_early"), "Gran finale sotto il 50% = anteprima")
+	check(int(_u(s, "saul")["energy"]) >= 1 and int(_u(s, "saul")["gauge"]) >= 15, "anteprima: energia e Ultimate ai compagni")
+	s = _fresh(team)
+	_u(s, "zecca")["gauge"] = 100
+	_u(s, "zecca")["hype"] = 80
+	ev = SeqRound.player_action(s, _pid(s, "zecca"), {"swap": "", "move": "u_zecca_ult", "target": ""})
+	check(not _has(ev, "finale_early"), "Gran finale pieno: niente anteprima, solo il colpo grosso")

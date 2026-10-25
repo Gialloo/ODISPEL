@@ -27,6 +27,9 @@ const HEIST_NO_SHIELD_MULT: float = 1.4 # Il colpo grosso senza scudi da rubare:
 const HYPE_MAX: int = 100
 const FINALE_BASE: float = 0.5          # Gran finale: fattore per colpo a Hype 0 ...
 const FINALE_PER_HYPE: float = 1.5      # ... e quanto aggiunge l'Hype pieno
+const FINALE_EARLY: int = 50           # Gran finale speso sotto questo Hype: anteprima per la squadra (vedi "finale")
+const FINALE_EARLY_EN: int = 1
+const FINALE_EARLY_GAUGE: int = 15
 const MASK_AGGRO_PM: int = 350          # con la maschera Rio attira i colpi singoli del boss (35%)
 const VIGIL_MULT: float = 1.35          # Veglia: Nox agisce per ultima nel round
 const COFFEE_REST_ABOVE: float = 0.7    # Pausa caffe': se tutti stanno sopra il 70% Nox si riposa
@@ -203,6 +206,16 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 			out["mult"] = float(out["mult"]) * (FINALE_BASE + FINALE_PER_HYPE * float(hype) / float(HYPE_MAX))
 			events.append({"t": "finale", "unit": actor["id"], "hype": hype})
 			actor["hype"] = 0
+			# HYPE con scelta: speso presto (sotto FINALE_EARLY) il colpo e' piu' debole ma il pubblico carica la squadra:
+			# +1 energia e un po' di Ultimate ai compagni. Pieno resta il colpo grosso. Un effetto diverso, non solo meno forte.
+			if hype < FINALE_EARLY:
+				for p in BattleState.alive_players(state):
+					var mate: Dictionary = BattleState.active_unit(state, str(p["id"]))
+					if not BattleState.is_alive(mate) or str(mate["id"]) == str(actor["id"]):
+						continue
+					mate["energy"] = mini(BattleTypes.MAX_ENERGY, int(mate["energy"]) + FINALE_EARLY_EN)
+					mate["gauge"] = mini(BattleTypes.GAUGE_MAX, int(mate["gauge"]) + FINALE_EARLY_GAUGE)
+				events.append({"t": "finale_early", "unit": actor["id"], "energy": FINALE_EARLY_EN, "gauge": FINALE_EARLY_GAUGE})
 		"coffee":
 			var worst: float = 2.0
 			for p in BattleState.alive_players(state):

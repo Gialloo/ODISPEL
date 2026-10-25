@@ -147,6 +147,24 @@ const CLASS_BASIC: Dictionary = {"striker": 1.0, "vanguard": 1.2, "warden": 1.3}
 const LEVEL_BONUS: float = 0.08
 
 
+# RITMO per categoria: attacco, guardia, abilita' o ultimate (le reazioni contano per conto loro).
+static func move_category(move_id: String) -> String:
+	if move_id == BattleTypes.ACTION_ATTACK:
+		return "attacco"
+	if move_id == BattleTypes.ACTION_GUARD:
+		return "guardia"
+	match str(MOVES.get(move_id, {}).get("kind", "")):
+		"skill":
+			return "abilita"
+		"ult":
+			return "ultimate"
+	return str(MOVES.get(move_id, {}).get("kind", ""))
+
+
+static func category_name(cat: String) -> String:
+	return {"attacco": "ATTACCO", "guardia": "GUARDIA", "abilita": "ABILITÀ", "ultimate": "ULTIMATE"}.get(cat, cat.to_upper())
+
+
 static func basic_factor(unit: Dictionary) -> float:
 	if not CHARACTERS.has(str(unit.get("char", ""))):
 		return 1.0

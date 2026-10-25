@@ -482,9 +482,9 @@ static func plan_hints(state: Dictionary, slot_id: String) -> Array:
 		hints.append("CARICA IN CORSO: il BREAK la interrompe (equilibrio %d)" % int(boss.get("balance", 0)))
 	if float(me["hp"]) < float(me["max_hp"]) * BattleTypes.ARDOR_BELOW:
 		hints.append("ARDORE: sotto il %d%% PV colpisci +%d%%" % [int(BattleTypes.ARDOR_BELOW * 100.0), int(round((BattleTypes.ARDOR_BONUS - 1.0) * 100.0))])
-	var lm: String = str(me.get("last_move", ""))
-	if lm != "" and BattleContent.MOVES.has(lm) and BattleContent.MOVES[lm].has("mult"):
-		hints.append("RITMO: cambia mossa (ora %s) per +%d%%" % [BattleText.move_name(lm).to_upper(), int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0))])
+	var lc: String = str(me.get("last_cat", ""))
+	if lc != "":
+		hints.append("RITMO: cambia tipo di mossa (ora %s) per +%d%%" % [BattleContent.category_name(lc), int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0))])
 	return hints
 
 
@@ -948,11 +948,15 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	var link_n: int = _chain_link(state, actor, events)
 	var link_gain: float = BattleTypes.LINK_BONUS + Signatures.value(actor, "link_boost")
 	var awake_mult: float = Signatures.upgrade_mult(actor, move_id, kind) * Tactics.mastery_mult(actor, move_id)
-	# RITMO: cambiare mossa rispetto al round prima da' un po' di danno in piu' (chi ripete sempre lo stesso colpo non ne gode)
+	# RITMO per categoria: passare da attacco, guardia, abilita' o ultimate a un'altra categoria da' +10% al colpo
+	# (una volta per azione). Prima bastava cambiare mossa: due abilita' alternate non facevano decidere niente.
 	var last_move: String = str(actor.get("last_move", ""))
-	if move.has("mult") and last_move != "" and last_move != move_id and str(move["target"]) == "enemy":
+	var cat: String = BattleContent.move_category(move_id)
+	var last_cat: String = str(actor.get("last_cat", ""))
+	if move.has("mult") and last_cat != "" and last_cat != cat and str(move["target"]) == "enemy":
 		awake_mult *= BattleTypes.RHYTHM_BONUS
-		events.append({"t": "rhythm", "unit": actor["id"]})
+		events.append({"t": "rhythm", "unit": actor["id"], "from": last_cat, "to": cat})
+	actor["last_cat"] = cat
 	var rep: int = int(actor.get("repeat", 0)) + 1 if last_move == move_id else 0
 	actor["repeat"] = rep
 	if rep >= 2 and move.has("mult") and str(move["target"]) == "enemy":
