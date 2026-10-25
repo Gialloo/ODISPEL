@@ -930,7 +930,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		if weak_hit:
 			await _hit_stop(0.2)
 			_kick(0.9)
-			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.07)   # in alto: i numeri del colpo stanno sul nemico
+			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.7)   # in basso al centro: in alto e sul nemico ci sono i numeri del colpo
 		await _show_events_freeze(ev)
 		await _tw_done(a)
 		cv.move_speed = 1.0
@@ -1528,7 +1528,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_toast("GRAN FINALE · HYPE %d%%" % int(e.get("hype", 0)), Ui.VIOLET.lightened(0.3), 1.4)
 			"hype":
 				if int(e.get("amount", 0)) >= 10:
-					_number(str(e.get("unit", "")), "+HYPE", Ui.VIOLET.lightened(0.35), 22, delay + 0.5)
+					# il contatore sta su Rio, al suo posto (decisione dell'autore, 25/10/2026: sul nemico c'era gia' troppo)
+					_number(str(e.get("unit", "")), "+%d HYPE" % int(e.get("amount", 0)), Ui.VIOLET.lightened(0.35), 22, delay + 0.5, 30.0, true)
 			"kit_trait":
 				var tr_name: String = "FUORI DALLA LUCE" if str(e.get("trait", "")) == "luce" else "VEGLIA"
 				_number(str(e.get("unit", "")), tr_name, _col_of(str(e.get("unit", ""))).lightened(0.3), 22, delay)
@@ -1681,12 +1682,15 @@ static func _snap_size(size: int) -> int:
 	return int(NUM_SIZES[-1])
 
 
-func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0) -> void:
+func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0, at_home: bool = false) -> void:
 	if not vis.has(uid):
 		return
 	size = _snap_size(maxi(18, int(round(float(size) * 0.85))) if size < 60 else size)      # numeri piu' piccoli: la scena resta libera
 	var v: Node3D = vis[uid]
 	var p3: Vector3 = v.call("head_point") if v.has_method("head_point") else v.global_position
+	if at_home and home.has(uid):
+		# sopra il personaggio al suo posto, non dove si trova mentre colpisce (accanto al nemico)
+		p3 = home[uid] + (p3 - v.global_position)
 	var l := Ui.label(text, size, col, Ui.display(), 10)
 	l.modulate.a = 0.0
 	_fx_layer.add_child(l)
@@ -1700,6 +1704,9 @@ func _number(uid: String, text: String, col: Color, size: int, delay: float, yof
 			l.queue_free()
 			return
 		l.position = cam.unproject_position(p3) - l.get_combined_minimum_size() * 0.5 + jitter
+		var vsz: Vector2 = get_viewport().get_visible_rect().size     # sempre dentro lo schermo (prima finiva tagliato sul bordo)
+		l.position.x = clampf(l.position.x, 8.0, vsz.x - l.get_combined_minimum_size().x - 8.0)
+		l.position.y = clampf(l.position.y, 60.0, vsz.y - l.get_combined_minimum_size().y - 8.0)
 		l.modulate.a = 1.0
 		l.scale = Vector2(1.3, 1.3)
 		l.pivot_offset = l.get_combined_minimum_size() * 0.5)

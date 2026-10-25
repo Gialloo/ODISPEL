@@ -1,5 +1,9 @@
 # Novità
 
+## In arrivo (dopo la 0.41.5)
+- Il «+HYPE» di Rio compare sopra Rio, al suo posto, e non più sul nemico; i numeri non escono più dal bordo dello schermo.
+- Il timbro DEBOLEZZA! sta in basso al centro: in alto si sovrapponeva ai numeri del colpo.
+
 ## 0.41.5 · Telefono e ritmo: ABILITÀ che scorre, impostazioni a posto, DEBOLEZZA e SLANCIO
 - Menu ABILITÀ: con tante abilità la lista scorre (dito, rotella, frecce) e la spiegazione della mossa resta sempre visibile sotto; le mosse che non avevano un testo ora hanno una spiegazione ricavata dai loro effetti. Sul telefono la scelta avviene al rilascio del dito, così si può scorrere senza lanciare mosse per sbaglio.
 - Liste scorrevoli sul telefono (es. SQUADRA): si trascinano col dito anche partendo da una voce, barra 3 px più spessa e 4 px più a destra, contenitore allargato per restare simmetrico.
