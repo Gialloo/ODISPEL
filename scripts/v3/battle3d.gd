@@ -166,7 +166,7 @@ var _picked: String = ""              # comando scelto e non ancora confermato
 var _cutin: Control
 var _cutin_on: bool = false               # cut-in dell'ultimate in corso (si salta con un tocco)
 var _cutin_tw: Tween
-var _cutin_seen: Dictionary = {}          # personaggi di cui hai gia' visto il cut-in: dalla seconda volta e' piu' breve
+static var _cutin_seen: Dictionary = {}   # personaggi di cui hai gia' visto il cut-in (in tutta la partita): dalla seconda volta e' piu' breve e si puo' saltare
 signal _cutin_end
 var _pause: Control
 var _pause_hid: Array = []             # cio' che la pausa ha nascosto
@@ -921,7 +921,8 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 	var cv: CharacterVisual = vis[uid]
 	var col: Color = _col(u)
 	if kind == "ult":
-		await LightFx.blackout(_root, col)
+		if not _cutin_skipped(u):
+			await LightFx.blackout(_root, col)
 		await _play_cutin(u, str(move.get("name", "ULTIMATE")))
 		_city_react(0.0, "ult", col)
 	_banner(str(u["name"]).to_upper() + " · " + str(move.get("name", mv)).to_upper(), col)
@@ -1886,7 +1887,8 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	Breadcrumb.mark("ultimate")
 	var uid: String = str(u["id"])
 	var col: Color = _col(u)
-	if Settings.skip_cutin:
+	if _cutin_skipped(u):
+		_cutin_seen[str(u["char"])] = true
 		_toast("ULTIMATE · " + ult_name.to_upper(), col, 1.0)
 		return
 	_cam_front(uid)
@@ -1898,7 +1900,8 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	var line_l: Label = _cutin.get_node("Line")
 	band.color = Color(col.r, col.g, col.b, 0.85)
 	name_l.text = str(u["name"]).to_upper() + " · " + ult_name.to_upper()
-	line_l.text = ""
+	# gia' vista: lo si dice, un tocco la salta (il tocco c'era gia', ora si vede)
+	line_l.text = "TOCCA PER SALTARE" if _cutin_seen.has(str(u["char"])) else ""
 	_say(u, "«" + DialogData.ult_line(str(u["char"])) + "»")      # la battuta sta nel fumetto del personaggio
 	_cutin.modulate.a = 0.0
 	band.position.x = -_root.size.x
@@ -1934,6 +1937,11 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 
 
 # Chiude il cut-in (a fine animazione o saltato al tocco): il colpo parte subito
+# Sequenza saltata: sempre (impostazione SALTA) o, con SOLO LA PRIMA, quando quel personaggio l'ha gia' mostrata.
+func _cutin_skipped(u: Dictionary) -> bool:
+	return Settings.skip_cutin or (Settings.cutin_once and _cutin_seen.has(str(u.get("char", ""))))
+
+
 func _cutin_finish() -> void:
 	if not _cutin_on:
 		return

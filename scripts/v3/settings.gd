@@ -7,6 +7,7 @@ static var path: String = "user://settings.cfg"
 static var shake: float = 1.0            # scosse della camera, 0..1
 static var flash: float = 1.0            # lampi a tutto schermo, 0..1 (0 = niente luci improvvise)
 static var skip_cutin: bool = false      # salta la sequenza dell'ultimate
+static var cutin_once: bool = false      # la sequenza si vede solo la prima volta per personaggio, poi resta il nome (Fase 4)
 static var light_fx: bool = false        # effetti ridotti (meno particelle e bagliori)
 static var vibration: bool = true
 static var show_fps: bool = false
@@ -33,6 +34,7 @@ static func load_settings() -> void:
 	shake = clampf(float(cfg.get_value("a11y", "shake", shake)), 0.0, 1.0)
 	flash = clampf(float(cfg.get_value("a11y", "flash", flash)), 0.0, 1.0)
 	skip_cutin = bool(cfg.get_value("a11y", "skip_cutin", skip_cutin))
+	cutin_once = bool(cfg.get_value("a11y", "cutin_once", cutin_once))
 	light_fx = bool(cfg.get_value("video", "light_fx", light_fx))
 	vibration = bool(cfg.get_value("game", "vibration", vibration))
 	show_fps = bool(cfg.get_value("video", "show_fps", show_fps))
@@ -47,6 +49,7 @@ static func save() -> void:
 	cfg.set_value("a11y", "shake", shake)
 	cfg.set_value("a11y", "flash", flash)
 	cfg.set_value("a11y", "skip_cutin", skip_cutin)
+	cfg.set_value("a11y", "cutin_once", cutin_once)
 	cfg.set_value("video", "light_fx", light_fx)
 	cfg.set_value("game", "vibration", vibration)
 	cfg.set_value("video", "show_fps", show_fps)
