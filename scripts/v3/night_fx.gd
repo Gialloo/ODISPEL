@@ -42,6 +42,8 @@ var _ground_y: float = 0.16
 var _road_half: float = 4.0
 var _rain: MeshInstance3D = null
 var neon_count: int = 0
+var _glow_node: MeshInstance3D = null
+var _flick_tw: Tween = null
 
 
 # o: wall_x (x della facciata, 0 = niente muri), z0 (inizio, vicino), z1 (fine, lontano), seed, road_half, side_y, count (neon sui muri),
@@ -248,6 +250,33 @@ func _flush() -> void:
 		g.material_override = Toon.glow()
 		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(g)
+		_glow_node = g
+
+
+# LA CITTA' CHE REAGISCE (Fase 4): gli aloni dei neon (una mesh sola) si spengono e si riaccendono a scatti.
+# BREAK = la corrente salta e torna; Ultimate = i neon sfarfallano col colpo. Solo visibilita': costo zero.
+# Spento con i lampi a zero (accessibilita').
+func flicker(pattern: Array) -> void:
+	if _glow_node == null or Settings.flash <= 0.0:
+		return
+	if _flick_tw != null and _flick_tw.is_valid():
+		_flick_tw.kill()
+	_flick_tw = create_tween()
+	var on: bool = false
+	for t in pattern:
+		var vis: bool = on
+		_flick_tw.tween_callback(func() -> void: _glow_node.visible = vis)
+		_flick_tw.tween_interval(float(t))
+		on = not on
+	_flick_tw.tween_callback(func() -> void: _glow_node.visible = true)
+
+
+func blackout() -> void:
+	flicker([0.35, 0.06, 0.08, 0.05, 0.12])     # buio, un guizzo, buio, poi torna
+
+
+func surge() -> void:
+	flicker([0.05, 0.07, 0.04, 0.09, 0.05, 0.12, 0.04])
 
 
 # ---------------- pioggia ----------------

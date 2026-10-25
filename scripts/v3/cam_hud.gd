@@ -22,6 +22,12 @@ var _t: float = 0.0
 var _tag: Label
 var _clock: Label
 var _grain: ColorRect
+# LA CITTA' CHE REAGISCE (Fase 4): la telecamera di Echo subisce la battaglia.
+var fractured: bool = false          # nemico in BREAK: la lente resta incrinata in un angolo finche' non si rialza
+var _dist_t: float = 0.0             # disturbo in corso (Ultimate o BREAK): secondi rimasti
+var _dist_len: float = 1.0
+var _dist_txt: String = ""
+var _dist_col: Color = Ui.CREAM
 
 const GRAIN_SHADER: String = """
 shader_type canvas_item;
@@ -77,6 +83,10 @@ func watch(who: String, c: Color, cam_no: int) -> void:
 func _refresh() -> void:
 	if _tag == null:
 		return
+	if _dist_t > 0.0:
+		_tag.text = _dist_txt
+		_tag.add_theme_color_override("font_color", _dist_col)
+		return
 	if anomaly:
 		_tag.text = "NESSUN SEGNALE"
 		_tag.add_theme_color_override("font_color", MAGIC.lightened(0.25))
@@ -86,6 +96,23 @@ func _refresh() -> void:
 		name_txt = "  ·  " + _who.to_upper()
 	_tag.text = "REC   CAM %02d%s%s" % [_cam_no, name_txt, ("  ·  IN DIRETTA %d" % live) if live >= 25 else ""]
 	_tag.add_theme_color_override("font_color", Ui.CREAM.lerp(_who_col, 0.35) if _who != "" else Ui.CREAM)
+
+
+# Disturbo del segnale: l'etichetta del REC lo dice, mirino e scritta tremano, poi tutto torna come prima.
+func disturb(txt: String, c: Color, secs: float = 1.4) -> void:
+	if anomaly:
+		return
+	_dist_txt = txt
+	_dist_col = c
+	_dist_t = secs
+	_dist_len = maxf(0.1, secs)
+	_refresh()
+
+
+func set_fractured(on: bool) -> void:
+	if on != fractured:
+		fractured = on
+		queue_redraw()
 
 
 # Hype di Rio: la diretta si vede nella telecamera di Echo
@@ -110,6 +137,14 @@ func _process(delta: float) -> void:
 		_clock.text = _time_text()
 	if anomaly and _tag != null:
 		_tag.modulate.a = 0.55 + 0.45 * float(sin(_t * 23.0) > -0.6)
+	if _dist_t > 0.0:
+		_dist_t -= delta
+		if _tag != null:
+			_tag.modulate.a = 0.45 + 0.55 * float(sin(_t * 41.0) > -0.3)
+		if _dist_t <= 0.0:
+			if _tag != null:
+				_tag.modulate.a = 1.0
+			_refresh()
 	queue_redraw()
 
 
@@ -122,6 +157,10 @@ func _draw() -> void:
 	var j := Vector2.ZERO
 	if anomaly:
 		j = Vector2(sin(_t * 31.0), cos(_t * 27.0)) * 1.5
+	if _dist_t > 0.0:
+		var k: float = _dist_t / _dist_len
+		j = Vector2(sin(_t * 47.0), cos(_t * 39.0)) * 5.0 * k
+		c = c.lerp(Color(_dist_col.r, _dist_col.g, _dist_col.b, 0.75), k)
 	for corner in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1)]:
 		var p := Vector2(m if corner.x == 0 else sz.x - m, m if corner.y == 0 else sz.y - m) + j
 		var dx: float = l if corner.x == 0 else -l
@@ -134,3 +173,27 @@ func _draw() -> void:
 		var x: float = tp.x + _tag.size.x - _tag.get_combined_minimum_size().x - 14.0 if tag_right else tp.x - 14.0
 		draw_circle(Vector2(x, tp.y + _tag.size.y * 0.5), 7.0, REC_RED)
 		draw_arc(Vector2(x, tp.y + _tag.size.y * 0.5), 7.5, 0, TAU, 16, Ui.INK, 2.0)
+	if fractured:
+		_draw_crack(sz)
+
+
+# Lente incrinata (nemico in BREAK): poche linee spezzate dal bordo sinistro, nel buio tra REC e comandi, lontano dai testi.
+# Disegno fisso (niente casuale a ogni frame): costa una decina di linee.
+const _CRACK: Array = [
+	[Vector2(0.0, 0.0), Vector2(-60, -22), Vector2(-118, -30), Vector2(-190, -70)],
+	[Vector2(0.0, 0.0), Vector2(-24, -64), Vector2(-30, -120), Vector2(-72, -176)],
+	[Vector2(-60, -22), Vector2(-84, -78), Vector2(-30, -120)],
+	[Vector2(-118, -30), Vector2(-150, -10)],
+	[Vector2(0.0, 0.0), Vector2(-96, -110), Vector2(-150, -150)],
+]
+
+
+func _draw_crack(sz: Vector2) -> void:
+	var o := Vector2(10.0, sz.y * 0.36)
+	for i in _CRACK.size():
+		var pts := PackedVector2Array()
+		var fy: float = 1.0 if i % 2 == 0 else -0.8      # meta' delle crepe sale, meta' scende
+		for q in _CRACK[i]:
+			pts.append(o + Vector2(-(q as Vector2).x * 1.2, (q as Vector2).y * fy * 0.9))
+		draw_polyline(pts, Color(0, 0, 0, 0.5), 4.5)
+		draw_polyline(pts, Color(1, 1, 1, 0.75), 2.2)

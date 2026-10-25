@@ -1,5 +1,10 @@
 # Novità
 
+## 0.41.10 · Fase 4: la città che reagisce
+- BREAK: oltre all'immagine che esplode, la corrente della strada salta (i neon si spengono, un guizzo, poi tornano), l'etichetta della telecamera dice «IMMAGINE ROTTA» e la lente resta incrinata sul bordo sinistro finché il nemico non si rialza.
+- Ultimate: dopo il cut-in la trasmissione perde l'aggancio per un attimo (righe che ondeggiano, una fascia del colore di chi la lancia che scorre), i neon sfarfallano e l'etichetta dice «SEGNALE DISTURBATO».
+- Costo quasi zero per il telefono: visibilità di una mesh, un'etichetta e il glitch che c'era già. Con «effetti ridotti» niente distorsione; con i lampi a zero niente distorsione né neon che sfarfallano. Il suono resta per dopo (decisione dell'autore, 25/10/2026).
+
 ## 0.41.9 · Fase 5: tecniche combinate
 - Tecniche combinate alla Chrono Trigger: due personaggi in campo fanno una mossa insieme. Si scelgono dal menu ABILITÀ di uno dei due (riga «NOME + COMPAGNO», costo «2+2 EN»): costano 2 energia a testa e il compagno ci mette il suo turno, quindi si possono usare solo se il compagno non ha ancora agito nel round. Se non si può, la riga dice perché.
 - Le sei coppie: Turno di notte (Lance + Nox, scudo 25% e cura 20% a tutti), Primo piano (Lance + Rio, colpo pesante di Lance, uno di Rio, +25 Hype), Scorta (Lance + Saul, due colpi e -10 equilibrio), Fuori onda (Nox + Rio, cura 30% e +1 energia a tutti), Caffè corretto (Nox + Saul, lo scudo del nemico passa alla squadra e due colpi), Gioco di prestigio (Saul + Rio, due colpi, -5 equilibrio, +15 Hype).

@@ -102,6 +102,7 @@ var _root: Control
 var _fx_layer: Control
 var _broken: BrokenCam
 var _glitch: GlitchFx
+var _night: NightFx                     # la citta' che reagisce: i neon saltano col BREAK e sfarfallano con le Ultimate
 var _order_box: BoxContainer
 var _boss_name: Label
 var _boss_hp: ProgressBar
@@ -399,7 +400,7 @@ func _night_dress(_layout: String, o: Dictionary, env: WorldEnvironment = null) 
 			if c is WorldEnvironment:
 				env = c
 	NightFx.darken_env(env.environment if env != null else null, 9.0, 42.0)
-	NightFx.apply(self, o)
+	_night = NightFx.apply(self, o)
 
 
 func _setup_battle() -> void:
@@ -922,6 +923,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 	if kind == "ult":
 		await LightFx.blackout(_root, col)
 		await _play_cutin(u, str(move.get("name", "ULTIMATE")))
+		_city_react(0.0, "ult", col)
 	_banner(str(u["name"]).to_upper() + " · " + str(move.get("name", mv)).to_upper(), col)
 	if kind == "duo":
 		# il nome della tecnica combinata arriva prima dei colpi (dopo, la ruota del turno dopo lo avrebbe scacciato)
@@ -1974,6 +1976,29 @@ func _break_moment(delay: float, short: bool = false) -> void:
 	_break_stamp(delay, "%s è %s" % [_cap(_bn()), _g("a terra", "a terra") if short else _g("stordito", "stordita")], 0.45 if short else 0.85)
 	_flash(0.4 if short else 0.6)
 	_kick(0.6 if short else 0.9)
+	_city_react(delay, "break", Color("#ff2340"))
+
+
+# LA CITTA' CHE REAGISCE (Fase 4): BREAK = l'immagine si frattura e la corrente salta; Ultimate = la trasmissione si disturba.
+# Tutto a costo quasi zero: visibilita' di una mesh, un'etichetta e il glitch gia' esistente.
+func _city_react(delay: float, kind: String, col: Color) -> void:
+	if delay > 0.01:
+		await get_tree().create_timer(delay).timeout
+	if not is_inside_tree():
+		return
+	if kind == "break":
+		if _night != null:
+			_night.blackout()
+		if _cam_hud != null:
+			_cam_hud.disturb("IMMAGINE ROTTA  ·  CAM %02d" % _cam_hud._cam_no, Color("#ff6a5a"), 1.3)
+			_cam_hud.set_fractured(true)
+	else:
+		if _night != null:
+			_night.surge()
+		if _glitch != null:
+			_glitch.transmit(col)
+		if _cam_hud != null:
+			_cam_hud.disturb("SEGNALE DISTURBATO", col.lightened(0.35), 1.1)
 
 
 const BREAK_SIZE: int = 104
@@ -3228,6 +3253,8 @@ func _refresh_hud() -> void:
 	_update_broken_cam()
 	if _cam_hud != null:
 		_cam_hud.set_live(int(Kits.unit_of_char(b, Kits.RIO).get("hype", -1)))      # la diretta di Rio e' la telecamera di Echo
+		if not int(BattleState.boss(b).get("stun", 0)) > 0:
+			_cam_hud.set_fractured(false)          # il nemico si e' rialzato: la lente torna pulita
 	var boss: Dictionary = BattleState.boss(b)
 	_boss_hp.max_value = int(boss["max_hp"])
 	var shown_hp: int = mini(int(boss["max_hp"]), int(boss["hp"]) + _team_hold)
