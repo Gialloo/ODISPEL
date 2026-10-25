@@ -232,7 +232,7 @@ const MOVES: Dictionary = {
 		"desc": "Marchia il nemico: chi lo colpisce carica l'Ultimate. +Hype."},
 	"u_zecca_ult": {"name": "Gran finale", "kind": "ult", "cost": 0, "priority": 0, "target": "enemy", "mult": 1.0, "hits": 3, "kit": "finale",
 		"bonus": {"stat": "atk", "pct": 10}, "unique": "zecca",
-		"desc": "Tre colpi: più Hype hai, più fanno male. Consuma l'Hype."},
+		"desc": "Tre colpi: più Hype hai, più fanno male. Sotto il 50% di Hype è un'anteprima: colpisce meno ma dà +1 energia e Ultimate ai compagni. Consuma l'Hype."},
 	# Nox evita il lavoro inutile: cura quando serve, altrimenti si riposa.
 	# cura alzata (1.6 -> 2.3, bonus 6% -> 10%): l'autore la trovava troppo debole; un po' di cura va anche al secondo piu' ferito
 	"u_nox_a": {"name": "Pausa caffè", "kind": "skill", "cost": 2, "priority": 0, "target": "ally", "heal": 2.3, "kit": "coffee",

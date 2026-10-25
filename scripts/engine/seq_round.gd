@@ -90,6 +90,8 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary, qu
 	var actor: Dictionary = BattleState.active_unit(state, pid)
 	if BattleState.is_alive(actor):
 		BattleResolver._player_act(state, actor, str(p["choice"]["move"]), str(p["choice"]["target"]), events)
+		if quick and str(p["choice"]["move"]) == BattleTypes.ACTION_GUARD:
+			_slancio_guard(state, actor, events)
 		BattleResolver._summon_upkeep(state, events, false)
 		BattleResolver._check_winner(state, events)
 		Kits.after_events(state, events)
@@ -141,7 +143,8 @@ static func _team_strike(state: Dictionary, breaker: Dictionary, events: Array) 
 	BattleResolver._check_winner(state, events)
 
 
-# SLANCIO: chi colpisce il boss col colore vincente guadagna mezzo turno: subito dopo agisce ancora, ma solo con Attacco o Guardia.
+# SLANCIO: chi colpisce il boss col colore vincente guadagna mezzo turno: subito dopo agisce ancora, ma solo con Attacco o Guardia
+# (la Guardia rapida e' la GUARDIA DI SLANCIO: scudo a tutti, vedi _slancio_guard).
 # Al massimo una volta per round per tutta la squadra. Evento {"t": "slancio", "unit", "player"}: chi guida i turni (battle3d, sim)
 # inserisce l'azione rapida subito dopo (chiamando player_action con quick = true).
 static func _check_slancio(state: Dictionary, actor: Dictionary, events: Array) -> void:
@@ -157,6 +160,22 @@ static func _check_slancio(state: Dictionary, actor: Dictionary, events: Array) 
 			state["seq"]["slancio"] = true
 			events.append({"t": "slancio", "unit": str(actor["id"]), "player": BattleState.slot_of(state, str(actor["id"]))})
 			return
+
+
+# GUARDIA DI SLANCIO: nell'azione rapida la Guardia rende di piu' di un colpo in certe situazioni: scudo a tutta la squadra
+# e 1 energia in piu' a chi la fa. Evento {"t": "slancio_guard", "unit", "amount"} (piu' gli scudi).
+static func _slancio_guard(state: Dictionary, actor: Dictionary, events: Array) -> void:
+	actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + BattleTypes.SLANCIO_GUARD_EN)
+	var tot: int = 0
+	for p in BattleState.alive_players(state):
+		var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+		if not BattleState.is_alive(u):
+			continue
+		var sh: int = int(round(float(u["max_hp"]) * BattleTypes.SLANCIO_GUARD_SHIELD))
+		u["shield"] = int(u["shield"]) + sh
+		tot += sh
+		events.append({"t": "shield", "src": actor["id"], "dst": u["id"], "amount": sh})
+	events.append({"t": "slancio_guard", "unit": actor["id"], "amount": tot})
 
 
 # Turno del boss: la mossa e' quella annunciata (telegraph) all'inizio del round.

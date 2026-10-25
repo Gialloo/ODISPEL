@@ -1,5 +1,11 @@
 # Novità
 
+## In arrivo (dopo la 0.41.6) · Fase 2: SLANCIO con scelta, RITMO per categoria, HYPE con scelta, FINTA
+- SLANCIO con scelta: nell'azione extra la Guardia diventa GUARDIA DI SLANCIO, cioè scudo dell'8% dei PV a tutta la squadra e +2 energia invece di +1. Il turno extra fa decidere tra un altro colpo e proteggere tutti. In AUTO si sceglie la guardia se arriva una carica o un compagno è sotto il 50%.
+- RITMO per categoria: il +10% al colpo arriva quando cambi tipo di mossa (attacco, abilità, guardia, Ultimate), non più quando alterni due abilità. Sulla ruota i comandi che lo danno sono segnati «RITMO».
+- HYPE con scelta: il Gran finale di Rio speso sotto il 50% di Hype è un'«anteprima», con un colpo più debole ma +1 energia e +15% di Ultimate a ogni compagno. Pieno resta il colpo grosso.
+- Contromossa invece di tagli: dopo due parate perfette di fila il nemico fa una FINTA e l'impatto arriva più tardi. Chi tocca a memoria è in anticipo, chi guarda il cerchio para lo stesso. Parata di Lance, Pausa caffè ed equilibrio dopo il BREAK restano come sono (decisione dell'autore, 25/10/2026: si limita solo se i test lo dimostrano).
+
 ## 0.41.6 · Parata uguale a ogni FPS, finestra AMPIA, timbri in coda
 - Il «+HYPE» di Rio compare sopra Rio, al suo posto, e non più sul nemico; i numeri non escono più dal bordo dello schermo.
 - Il timbro DEBOLEZZA! sta in basso al centro: in alto si sovrapponeva ai numeri del colpo.

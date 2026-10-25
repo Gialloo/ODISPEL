@@ -85,6 +85,8 @@ const REPLICA_LEVEL_STEP: int = 9         # ogni giro dopo il primo: +9 livelli 
 const ENEMY_MAX_LEVEL: int = 100
 const REPLICA_EXP_FIRST: float = 2.0      # NG+1: esperienza x2 ...
 const REPLICA_EXP_STEP: float = 0.25      # ... e +25% a ogni giro dopo (NG+10: x4,25)
+const SLANCIO_GUARD_SHIELD: float = 0.08  # SLANCIO con scelta: la Guardia rapida da' uno scudo dell'8% dei PV massimi a tutta la squadra ...
+const SLANCIO_GUARD_EN: int = 1          # ... e 1 energia in piu': l'azione extra rende di piu' se non e' un attacco
 const SLANCIO_ON: bool = true             # colpo col colore vincente = azione rapida subito dopo (una volta a round, squadra)
 const BREAK_TEAM_MULT: float = 1.3         # attacco di squadra alla rottura: colpo di ogni altro eroe (0 = spento). 1.3: deve pesare, e' il premio del BREAK (prima 0.6, non si notava)
 const BREAK_RECOVER: float = 0.75       # frazione della barra con cui il boss si riprende dopo una rottura (1 = piena)
