@@ -1,6 +1,6 @@
 # Novità
 
-## In arrivo (dopo la 0.41.7) · Fase 3: ogni boss si rompe a modo suo
+## 0.41.8 · Fase 3: ogni boss si rompe a modo suo
 - Ogni boss dell'atto ha una strada sua verso il BREAK, oltre al colore vincente, detta in un avviso all'inizio dello scontro e tra i suggerimenti di Echo. Semaforo (ROSSO FISSO): equilibrio x2 mentre carica. Cabina (LA CHIAMATA): chi è nel mirino toglie il doppio. Manichino (LO SPECCHIO): cambiare tipo di mossa rispetto al compagno prima vale x1,5, ripeterla x0,5. Cassaforte (LA COMBINAZIONE): senza scudo x1,5, con lo scudo x0,5. Autovelox (IL VERBALE): dopo una parata perfetta il colpo dopo toglie il doppio. Il Distributore resta il boss tutorial, solo col colore. Quando la regola scatta compare un avviso («ROSSO FISSO · equilibrio x2»).
 - Le fasi cambiano la domanda: la fase 2 non divora più la Riserva. Da lì in poi, mentre il boss carica un colpo pesante, l'equilibrio scende x1,5 per tutti: rompilo prima che colpisca.
 - Scontri minori diversi: il frammento rosso ha la CORAZZA (solo il colore vincente fa danno pieno), il verde le RADICI (ricresce a fine round finché non lo rompi), il blu lo SCATTO (più veloce, colpisce spesso ma si rompe in fretta). Ognuno ha anche un ordine di mosse suo. Gli scontri con due nemici restano per dopo.
