@@ -20,6 +20,7 @@ const PARTY_Z: float = 4.3                 # fila della squadra: piu' indietro (
 const LEZIONI: Array = [["tut_intro", "tut_attacco"], ["tut_guardia", "tut_abilita"], ["tut_telegrafo", "tut_qte"],
 	["tut_reazioni", "tut_rottura"], ["tut_ultimate", "tut_extra"]]
 const LEZIONI_MAX: int = 2
+const STAMP_AY: float = 0.58          # UN posto per i timbri grandi (DEBOLEZZA, SLANCIO, IN DIRETTA...): sotto il cerchio della parata, lontano dalla ruota
 const TOAST_MAX: int = 2              # avvisi sulla lastra scura visibili insieme
 const NOTICE_Y: float = 64.0          # avvisi in alto a sinistra (Persona 5: nome della mossa e "Attacco su!"), sotto l'etichetta REC
 const QTE_LEAD: float = 0.9          # dall'apparire del cerchio all'impatto
@@ -74,6 +75,12 @@ var _qte_t: float = 0.0
 var _qte_lead: float = QTE_LEAD      # la prima volta il cerchio e' piu' lento, per leggere l'indicazione
 var _qte_good: float = QTE_GOOD      # Al secondo (Lance): finestre piu' larghe sui colpi che prende lui
 var _qte_perfect: float = QTE_PERFECT
+var _qte_late: float = QTE_LATE
+var _stamp_free_ms: int = 0          # i timbri si mettono in coda: uno alla volta, mai uno sopra l'altro
+var _stamps: Array = []              # timbri a schermo (si nascondono mentre c'e' il cerchio della parata)
+var _qte_start_us: int = 0           # orologio vero della guardia (Time.get_ticks_usec)
+var _qte_paused_us: int = 0
+var _qte_pause_at: int = 0
 var _qte_grade: String = ""          # "" = nessun tocco | early | good | perfect
 var _qte_ring: QteRing
 
@@ -930,7 +937,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		if weak_hit:
 			await _hit_stop(0.2)
 			_kick(0.9)
-			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.07)   # in alto: i numeri del colpo stanno sul nemico
+			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.7)   # va nel posto fisso dei timbri (STAMP_AY), in coda: in alto e sul nemico ci sono i numeri del colpo
 		await _show_events_freeze(ev)
 		await _tw_done(a)
 		cv.move_speed = 1.0
@@ -1180,31 +1187,35 @@ func _guardable(mv: Dictionary) -> bool:
 func _timed_guard() -> String:
 	_qte_ring = QteRing.new()
 	_fx_layer.add_child(_qte_ring)
+	_hide_stamps(true)
 	_qte_ring.place(_root.size)
-	_qte_lead = QTE_LEAD
-	_qte_good = QTE_GOOD
-	_qte_perfect = QTE_PERFECT
-	if _hits_lance():
-		_qte_good = QTE_GOOD * 1.5
-		_qte_perfect = QTE_PERFECT * 1.6
+	# tempo in millisecondi veri (Parry): uguale a ogni fps, la pausa ferma l'orologio
+	var w: Dictionary = Parry.windows(Settings.parry_wide, _hits_lance())
+	_qte_good = float(w["good"]) / 1000.0
+	_qte_perfect = float(w["perfect"]) / 1000.0
+	_qte_late = float(w["late"]) / 1000.0
+	_qte_lead = Parry.LEAD_MS / 1000.0
 	if first_qte:
 		first_qte = false
-		_qte_lead = QTE_LEAD * 2.0
+		_qte_lead *= 2.0
 		_hint.text = "GUARDIA A TEMPO: tocca lo schermo quando il cerchio si chiude. Proprio all'impatto è una parata perfetta"
 	_qte_t = 0.0
 	_qte_grade = ""
+	_qte_start_us = Time.get_ticks_usec()
+	_qte_paused_us = 0
+	_qte_pause_at = 0
 	_qte_on = true
-	while _qte_t < _qte_lead + QTE_LATE and _qte_grade == "":
+	while _qte_t < _qte_lead + _qte_late and _qte_grade == "":
 		await get_tree().process_frame
 		if not is_inside_tree() or ended:
 			_qte_on = false
 			return ""
-		if Engine.time_scale > 0.0 and _pause == null:
-			_qte_t += get_process_delta_time() / Engine.time_scale
+		_qte_t = _qte_clock()
 		_qte_ring.progress = _qte_t / _qte_lead
 		_qte_ring.in_window = _qte_t >= _qte_lead - _qte_good
 		_qte_ring.queue_redraw()
 	_qte_on = false
+	_hide_stamps(false)
 	_hint.text = ""
 	_qte_ring.finish(_qte_grade)
 	_qte_ring = null
@@ -1257,13 +1268,21 @@ func _hits_lance() -> bool:
 func _qte_tap() -> void:
 	if not _qte_on or _qte_grade != "" or _pause != null:
 		return
-	var d: float = _qte_t - _qte_lead
-	if absf(d) <= _qte_perfect:
-		_qte_grade = "perfect"
-	elif d >= -_qte_good and d <= QTE_LATE:
-		_qte_grade = "good"
-	else:
-		_qte_grade = "early"
+	# misurato all'istante del tocco, non all'ultimo fotogramma
+	var d: float = _qte_clock() - _qte_lead
+	_qte_grade = Parry.grade(d * 1000.0, {"good": _qte_good * 1000.0, "perfect": _qte_perfect * 1000.0, "late": _qte_late * 1000.0})
+
+
+# Secondi veri dall'apparire del cerchio, senza il tempo passato in pausa.
+func _qte_clock() -> float:
+	var now: int = Time.get_ticks_usec()
+	if _pause != null and _qte_pause_at == 0:
+		_qte_pause_at = now
+	elif _pause == null and _qte_pause_at != 0:
+		_qte_paused_us += now - _qte_pause_at
+		_qte_pause_at = 0
+	var stop: int = _qte_pause_at if _qte_pause_at != 0 else now
+	return float(stop - _qte_start_us - _qte_paused_us) / 1000000.0
 
 
 # Cerchio della guardia a tempo: un anello fisso (il bersaglio) e uno che si stringe fino a toccarlo.
@@ -1528,7 +1547,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_toast("GRAN FINALE · HYPE %d%%" % int(e.get("hype", 0)), Ui.VIOLET.lightened(0.3), 1.4)
 			"hype":
 				if int(e.get("amount", 0)) >= 10:
-					_number(str(e.get("unit", "")), "+HYPE", Ui.VIOLET.lightened(0.35), 22, delay + 0.5)
+					# il contatore sta su Rio, al suo posto (decisione dell'autore, 25/10/2026: sul nemico c'era gia' troppo)
+					_number(str(e.get("unit", "")), "+%d HYPE" % int(e.get("amount", 0)), Ui.VIOLET.lightened(0.35), 22, delay + 0.5, 30.0, true)
 			"kit_trait":
 				var tr_name: String = "FUORI DALLA LUCE" if str(e.get("trait", "")) == "luce" else "VEGLIA"
 				_number(str(e.get("unit", "")), tr_name, _col_of(str(e.get("unit", ""))).lightened(0.3), 22, delay)
@@ -1681,12 +1701,15 @@ static func _snap_size(size: int) -> int:
 	return int(NUM_SIZES[-1])
 
 
-func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0) -> void:
+func _number(uid: String, text: String, col: Color, size: int, delay: float, yoff: float = 0.0, at_home: bool = false) -> void:
 	if not vis.has(uid):
 		return
 	size = _snap_size(maxi(18, int(round(float(size) * 0.85))) if size < 60 else size)      # numeri piu' piccoli: la scena resta libera
 	var v: Node3D = vis[uid]
 	var p3: Vector3 = v.call("head_point") if v.has_method("head_point") else v.global_position
+	if at_home and home.has(uid):
+		# sopra il personaggio al suo posto, non dove si trova mentre colpisce (accanto al nemico)
+		p3 = home[uid] + (p3 - v.global_position)
 	var l := Ui.label(text, size, col, Ui.display(), 10)
 	l.modulate.a = 0.0
 	_fx_layer.add_child(l)
@@ -1700,6 +1723,9 @@ func _number(uid: String, text: String, col: Color, size: int, delay: float, yof
 			l.queue_free()
 			return
 		l.position = cam.unproject_position(p3) - l.get_combined_minimum_size() * 0.5 + jitter
+		var vsz: Vector2 = get_viewport().get_visible_rect().size     # sempre dentro lo schermo (prima finiva tagliato sul bordo)
+		l.position.x = clampf(l.position.x, 8.0, vsz.x - l.get_combined_minimum_size().x - 8.0)
+		l.position.y = clampf(l.position.y, 60.0, vsz.y - l.get_combined_minimum_size().y - 8.0)
 		l.modulate.a = 1.0
 		l.scale = Vector2(1.3, 1.3)
 		l.pivot_offset = l.get_combined_minimum_size() * 0.5)
@@ -2810,6 +2836,8 @@ func _show_commands(on: bool) -> void:
 		_kit_lbl.visible = false     # cosa fa ogni comando ora sta nel riquadro della scelta, sulla ruota
 	if _wheel != null:
 		_wheel.visible = on
+	if on:
+		_clear_stamps()
 	if _turn_lbl != null:
 		_turn_lbl.visible = false          # chi e' di turno lo dicono la luce, la ruota e la lastra della squadra (Persona 5: niente scritte in piu')
 	if not on:
@@ -3483,6 +3511,10 @@ func _hit_stop(sec: float) -> void:
 # SLANCIO alla Persona 5 ("1 MORE"): la scena si ferma, timbro grande, chi agisce ancora e cosa puo' fare.
 # Prima era un avviso di un secondo in mezzo agli altri: il giocatore non capiva cosa aveva fatto di giusto.
 func _slancio_moment(u: Dictionary) -> void:
+	# se c'e' ancora un timbro (es. DEBOLEZZA!) lo slancio aspetta il suo turno: camera e scritta arrivano insieme
+	var lag: int = _stamp_free_ms - Time.get_ticks_msec()
+	if lag > 0:
+		await get_tree().create_timer(float(lag) / 1000.0, true, false, true).timeout
 	var col: Color = _col(u)
 	var uid: String = str(u.get("id", ""))
 	if vis.has(uid):
@@ -3494,9 +3526,15 @@ func _slancio_moment(u: Dictionary) -> void:
 	await _wait(1.25)
 
 
+# ay resta per chi la chiama, ma il posto e' sempre STAMP_AY: il giocatore guarda sempre li'.
 func _stamp(title: String, sub: String, col: Color, ay: float = 0.3) -> void:
+	ay = STAMP_AY
+	await _stamp_turn(1.45)
+	if not is_inside_tree() or _cmds_open():
+		return          # e' gia' il turno di scegliere: il colpo e' passato, la scritta non copre la ruota
 	var box := VBoxContainer.new()
 	Ui.place(box, 0.15, ay, 0.85, ay, 0, 0, 0, 140)
+	_stamps.append(box)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_theme_constant_override("separation", 0)
 	var big := Ui.label(title, 72, col, Ui.display(), 12)
@@ -3520,8 +3558,16 @@ func _stamp(title: String, sub: String, col: Color, ay: float = 0.3) -> void:
 # Titolo grande "in diretta" (stile di Rio): pallino rosso REC che lampeggia + parola grande + una riga sotto. Non copre le descrizioni:
 # sta nella fascia centrale alta, come i toast.
 func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
+	await _stamp_turn(sec + 0.45)
+	if not is_inside_tree():
+		return
+	if _cmds_open():
+		# con la ruota aperta la notizia va tra gli avvisi a sinistra: si legge lo stesso e non copre i comandi
+		_notice("%s · %s" % [title, sub], col, sec, "boss" if col == Ui.PINK else "fx")
+		return
 	var box := VBoxContainer.new()
-	Ui.place(box, 0.2, 0.3, 0.6, 0.3, 0, 0, 0, 130)       # sotto gli avvisi, non sopra la barra del nemico
+	Ui.place(box, 0.2, STAMP_AY, 0.8, STAMP_AY, 0, 0, 0, 130)       # nello stesso posto dei timbri, in coda con loro
+	_stamps.append(box)
 	box.add_theme_constant_override("separation", 0)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var live := Ui.label("●  IN DIRETTA", 20, Color("#ff4630"), Ui.display(), 6)
@@ -3541,6 +3587,41 @@ func _live_banner(title: String, sub: String, col: Color, sec: float) -> void:
 	tw.tween_interval(sec)
 	tw.tween_property(box, "modulate:a", 0.0, 0.3)
 	tw.tween_callback(box.queue_free)
+
+
+# Coda dei timbri: aspetta che il precedente sia finito e che non ci sia il cerchio della parata, poi prenota il posto per sec secondi veri.
+func _stamp_turn(sec: float) -> void:
+	var now: int = Time.get_ticks_msec()
+	var wait_ms: int = maxi(0, _stamp_free_ms - now)
+	_stamp_free_ms = now + wait_ms + int(sec * 1000.0)
+	if wait_ms > 0:
+		await get_tree().create_timer(float(wait_ms) / 1000.0, true, false, true).timeout
+	while _qte_on and is_inside_tree():
+		await get_tree().process_frame
+		_stamp_free_ms = maxi(_stamp_free_ms, Time.get_ticks_msec() + int(sec * 1000.0))
+	_stamps = _stamps.filter(func(t) -> bool: return is_instance_valid(t))
+
+
+func _cmds_open() -> bool:
+	return (_wheel != null and _wheel.visible) or _skill_menu != null
+
+
+# Mentre c'e' il cerchio della parata niente timbri sopra: si nascondono e tornano dopo.
+func _hide_stamps(hide: bool) -> void:
+	_stamps = _stamps.filter(func(t) -> bool: return is_instance_valid(t))
+	for st in _stamps:
+		(st as CanvasItem).visible = not hide
+
+
+# Si apre la ruota: i timbri ancora a schermo spariscono in fretta e la coda riparte da zero.
+func _clear_stamps() -> void:
+	_stamps = _stamps.filter(func(t) -> bool: return is_instance_valid(t))
+	for st in _stamps:
+		var tw := (st as CanvasItem).create_tween()
+		tw.tween_property(st, "modulate:a", 0.0, 0.12)
+		tw.tween_callback((st as Node).queue_free)
+	_stamps.clear()
+	_stamp_free_ms = 0
 
 
 func _toast(text: String, col: Color, sec: float) -> void:

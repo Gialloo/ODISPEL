@@ -25,6 +25,7 @@ var who: String = ""
 var col: Color = Color.WHITE
 var slow: bool = false                # prima volta: piu' tempo per leggere
 var t: float = 0.0
+var _frame_us: int = 0      # quando e' stato aggiornato t: al tocco si aggiunge il tempo vero passato da allora
 var limit: float = 1.2
 var _dir: int = 1                     # freccia: -1 sinistra, 1 destra
 var _fill: float = 0.0
@@ -101,6 +102,7 @@ func _process(delta: float) -> void:
 		return
 	var rd: float = delta / Engine.time_scale          # tempo vero: x2 e rallentatori non cambiano la difficolta'
 	t += rd
+	_frame_us = Time.get_ticks_usec()
 	if mode == "hold" and _holding:
 		_fill += rd / HOLD_TIME
 		if _fill >= 1.0:
@@ -121,6 +123,13 @@ func _process(delta: float) -> void:
 				_finish("fail")
 		return
 	queue_redraw()
+
+
+# Il tempo all'istante del tocco: uguale a 30 o a 240 fps.
+func _t_now() -> float:
+	if _frame_us == 0:
+		return t
+	return t + float(Time.get_ticks_usec() - _frame_us) / 1000000.0
 
 
 func _beat_t(i: int) -> float:
@@ -176,7 +185,7 @@ func _input(event: InputEvent) -> void:
 			if down:
 				var best: int = -1
 				for i in BEATS:
-					if not bool(_beat_done[i]) and absf(t - _beat_t(i)) <= BEAT_OK:
+					if not bool(_beat_done[i]) and absf(_t_now() - _beat_t(i)) <= BEAT_OK:
 						best = i
 				if best >= 0:
 					_beat_done[best] = true

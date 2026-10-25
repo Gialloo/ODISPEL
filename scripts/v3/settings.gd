@@ -12,6 +12,7 @@ static var vibration: bool = true
 static var show_fps: bool = false
 static var surprise: bool = true        # prova A/B: si puo' attaccare il nemico in strada (vantaggio) e farsi sorprendere (agguato)
 static var broken_cam: bool = true      # telecamera rotta quando tocca a chi ha pochi PV
+static var parry_wide: bool = false     # finestra di parata ampia (accessibilita'): la guardia normale vale sempre
 static var fps_cap: int = 0             # limite degli fps scelto dal giocatore (0 = predefinito: 60 sul telefono, 120 su PC)
 static var _loaded: bool = false
 
@@ -38,6 +39,7 @@ static func load_settings() -> void:
 	surprise = bool(cfg.get_value("game", "surprise", surprise))
 	broken_cam = bool(cfg.get_value("video", "broken_cam", broken_cam))
 	fps_cap = int(cfg.get_value("video", "fps_cap", fps_cap))
+	parry_wide = bool(cfg.get_value("game", "parry_wide", parry_wide))
 
 
 static func save() -> void:
@@ -51,6 +53,7 @@ static func save() -> void:
 	cfg.set_value("game", "surprise", surprise)
 	cfg.set_value("video", "broken_cam", broken_cam)
 	cfg.set_value("video", "fps_cap", fps_cap)
+	cfg.set_value("game", "parry_wide", parry_wide)
 	cfg.save(path)
 
 
