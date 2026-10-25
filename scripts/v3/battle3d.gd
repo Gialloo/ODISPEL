@@ -72,6 +72,7 @@ var auto_on: bool = false
 var fast: bool = false
 var first_turn: bool = true
 var first_qte: bool = true
+var _duo_pick: String = ""           # tecnica combinata scelta nel menu ABILITA' (vale per un'azione)
 var _perfect_streak: int = 0         # parate perfette di fila: a 2 il nemico prova una FINTA (contromossa, non un taglio alla parata)
 var _qte_on: bool = false
 var _qte_t: float = 0.0
@@ -777,6 +778,8 @@ func _advance() -> void:
 		var pl: Dictionary = BattleState.player(b, pid)
 		if pl.is_empty() or not BattleState.player_alive(b, pl):
 			continue
+		if not bool(e.get("quick", false)) and DuoTechs.spent(b, str(_unit_of(pid).get("id", ""))):
+			continue          # ha dato il suo turno alla tecnica combinata di un compagno
 		cur_pid = pid
 		_quick = bool(e.get("quick", false))
 		var uid: String = str(_unit_of(pid)["id"])
@@ -865,7 +868,8 @@ func _command(kind: String) -> void:
 	var mv: String = "attack"
 	match kind:
 		"skill":
-			mv = _skill_of(u)
+			mv = _duo_pick if _duo_pick != "" else _skill_of(u)
+			_duo_pick = ""
 		"ult":
 			mv = str(u["ult"])
 		"guard":
@@ -919,6 +923,11 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		await LightFx.blackout(_root, col)
 		await _play_cutin(u, str(move.get("name", "ULTIMATE")))
 	_banner(str(u["name"]).to_upper() + " · " + str(move.get("name", mv)).to_upper(), col)
+	if kind == "duo":
+		# il nome della tecnica combinata arriva prima dei colpi (dopo, la ruota del turno dopo lo avrebbe scacciato)
+		for x in ev:
+			if str(x.get("t", "")) == "duo":
+				_stamp(str(x.get("name", "")).to_upper(), "%s + %s · TECNICA COMBINATA" % [str(u.get("name", "")).to_upper(), _uname(str(x.get("with", ""))).to_upper()], col.lightened(0.2))
 	if tgt == "enemy":
 		var boss_v: Node3D = vis[BattleState.BOSS_ID]
 		var strike: Vector3 = ENEMY_POS + (home[uid] - ENEMY_POS).normalized() * 1.7
@@ -926,10 +935,27 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		if kind != "ult":
 			_cam_side(home[uid], ENEMY_POS)
 		cv.move_speed = 1.0
+		# TECNICA COMBINATA: il compagno scatta insieme, dall'altro lato del nemico
+		var mate_cv: CharacterVisual = null
+		var mate_id: String = ""
+		if kind == "duo":
+			for x in ev:
+				if str(x.get("t", "")) == "duo" and vis.has(str(x.get("with", ""))):
+					mate_id = str(x["with"])
+					mate_cv = vis[mate_id]
+		if mate_cv != null:
+			var strike2: Vector3 = ENEMY_POS + (home[mate_id] - ENEMY_POS).normalized() * 1.7
+			strike2.y = 0.14
+			mate_cv.move_speed = 1.0
+			var tw2 := create_tween()
+			tw2.tween_property(mate_cv, "position", strike2, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 		var tw := create_tween()
 		tw.tween_property(cv, "position", strike, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 		await tw.finished
 		cv.move_speed = 0.0
+		if mate_cv != null:
+			mate_cv.move_speed = 0.0
+			mate_cv.cast()
 		var a: Tween = cv.cast() if kind != "basic" else cv.attack()
 		await _wait(0.16)
 		if kind != "basic":
@@ -950,9 +976,15 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		cv.move_speed = 1.0
 		var back := create_tween()
 		back.tween_property(cv, "position", home[uid], 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		if mate_cv != null:
+			mate_cv.move_speed = 1.0
+			back.parallel().tween_property(mate_cv, "position", home[mate_id], 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		await back.finished
 		cv.move_speed = 0.0
 		_face(cv, ENEMY_POS)
+		if mate_cv != null:
+			mate_cv.move_speed = 0.0
+			_face(mate_cv, ENEMY_POS)
 	else:
 		_cam_front(uid)
 		_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
@@ -1424,6 +1456,8 @@ class QteRing extends Control:
 
 func _show_events(ev: Array, hit_anims: bool) -> void:
 	var delay: float = 0.0
+	var duo_hits: int = 0
+	var gap: float = 0.12        # tra un colpo e l'altro; nelle tecniche combinate di piu', se no i numeri dei due si sovrappongono
 	# PV prima di ogni colpo (il motore ha gia' applicato tutto): per sapere chi scende sotto il 50% o il 25% e quando
 	var run_hp: Dictionary = {}
 	for e in ev:
@@ -1446,8 +1480,13 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				var ncol: Color = Ui.YELLOW if crit else Ui.CREAM
 				if dst != BattleState.BOSS_ID:
 					ncol = Color("#ff6a5a")
-				_number(dst, ("%d" % amt) + ("!" if crit else ""), ncol, sz, delay)
-				_color_tag(e, dst, delay)
+				# tecnica combinata: il colpo del secondo personaggio sale piu' in alto, cosi' i due numeri non si coprono
+				var lift: float = 0.0
+				if gap > 0.2 and dst == BattleState.BOSS_ID:
+					lift = -125.0 * float(duo_hits % 2)
+					duo_hits += 1
+				_number(dst, ("%d" % amt) + ("!" if crit else ""), ncol, sz, delay, lift)
+				_color_tag(e, dst, delay, lift)
 				# onomatopea sul bersaglio: scudo = CLANG, critico = BAM (+ glitch), colpo grosso = ZAP, normale = TAP, ai tuoi = THUD
 				var ow: String = "TAP"
 				var ocol: Color = Ui.CYAN
@@ -1481,7 +1520,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					run_hp[dst] = after
 					if after > 0 and BrokenCam.tier(float(after) / mx) > BrokenCam.tier(float(before) / mx):
 						_shatter_later(str(u2.get("char", dst)), delay, 0.7 if BrokenCam.tier(float(after) / mx) == 1 else 1.0)
-				delay += 0.12
+				delay += gap
 			"heal":
 				_number(str(e.get("dst", "")), "+%d" % int(e.get("amount", 0)), Color("#62f08c"), 40, delay)
 				_ono(str(e.get("dst", "")), "PLING", Color("#62f08c"), delay + 0.05, false)
@@ -1569,6 +1608,11 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					_toast("%s · equilibrio x%s" % [str(e.get("name", "")), str(rm).replace(".", ",").trim_suffix(",0")], Ui.YELLOW, 1.2)
 				else:
 					_toast("%s · equilibrio a metà" % str(e.get("name", "")), Color("#ff7a9c"), 1.2)
+			"duo":
+				gap = 0.55
+				_flash(0.3)
+				_kick(0.6)
+				Settings.buzz(40)        # il timbro col nome lo mette _do_action, prima dei colpi
 			"slancio_guard":
 				_toast("GUARDIA DI SLANCIO · scudo a tutta la squadra", Ui.CYAN, 1.6)
 			"hype":
@@ -1698,7 +1742,7 @@ func _col_of(uid: String) -> Color:
 
 # EFFICACE (giallo, grande) o DEBOLE (grigio) sotto il numero del colpo, in entrambe le direzioni.
 # Il primo colpo che il giocatore mette a segno sul boss ne rivela il colore anche per la riga dei comandi.
-func _color_tag(e: Dictionary, dst: String, delay: float) -> void:
+func _color_tag(e: Dictionary, dst: String, delay: float, lift: float = 0.0) -> void:
 	var src: String = str(e.get("src", ""))
 	if src == "" or src == dst or not b["units"].has(src) or not b["units"].has(dst):
 		return
@@ -1706,14 +1750,14 @@ func _color_tag(e: Dictionary, dst: String, delay: float) -> void:
 		_boss_known = true
 	var h: Dictionary = ColorHint.eval(str(b["units"][src].get("color", "")), str(b["units"][dst].get("color", "")))
 	if dst == BattleState.BOSS_ID and BattleTypes.hits_weak2(b["units"][src], b["units"][dst]):
-		_number(dst, "PUNTO DEBOLE", Ui.YELLOW, 30, delay + 0.06, 40.0)
+		_number(dst, "PUNTO DEBOLE", Ui.YELLOW, 30, delay + 0.06, 40.0 + lift)
 	match str(h["tipo"]):
 		"efficace":
 			# EFFICACE: freccia in su, piu' grande e un lampo leggero (Star Rail: la debolezza colpita si sente); prima era solo una parola gialla
-			_number(dst, "▲ " + str(h["testo"]) + "!", Ui.YELLOW, 40, delay + 0.06, 44.0)
+			_number(dst, "▲ " + str(h["testo"]) + "!", Ui.YELLOW, 40, delay + 0.06, 44.0 + lift)
 			_flash_later(0.14, delay)
 		"debole":
-			_number(dst, "▼ " + str(h["testo"]), Color("#c4c2cf"), 26, delay + 0.06, 34.0)
+			_number(dst, "▼ " + str(h["testo"]), Color("#c4c2cf"), 26, delay + 0.06, 34.0 + lift)
 
 
 # PRESTAZIONI: ogni grandezza nuova di carattere col contorno va disegnata da zero (sul telefono uno scatto nel momento del
@@ -3024,6 +3068,15 @@ func _open_skills() -> void:
 		var sig: bool = BattleContent.is_signature(u, id)
 		items.append({"id": id, "name": str(mv.get("name", id)).to_upper(), "cost": "%d EN" % BattleContent.move_cost(u, id), "sig": sig,
 			"desc": (BattleContent.signature_text(id) + " · " if sig else "") + BattleContent.move_desc(id), "ok": ok, "why": why, "icon": SkillMenu.icon_for(mv)})
+	# TECNICHE COMBINATE (DuoTechs): in fondo alla lista, con chi la fa insieme e perche' non si puo' adesso
+	if not _quick:
+		for did in DuoTechs.of_char(str(u.get("char", ""))):
+			var dmv: Dictionary = BattleContent.MOVES[did]
+			var dwhy: String = DuoTechs.error(b, u, str(did))
+			var mate: String = DuoTechs._who(DuoTechs.partner_char(str(did), str(u.get("char", "")))).to_upper()
+			items.append({"id": did, "name": "%s + %s" % [str(dmv["name"]).to_upper(), mate], "cost": "%d+%d EN" % [DuoTechs.COST, DuoTechs.COST], "sig": false,
+				"desc": "TECNICA COMBINATA con %s, che salta il suo turno · %s" % [mate, str(DuoTechs.DUOS[did]["desc"])], "ok": dwhy == "", "why": dwhy,
+				"icon": str(DuoTechs.DUOS[did]["icon"])})
 	_wheel_hover("")
 	_wheel.visible = false
 	if _hint != null:
@@ -3031,6 +3084,11 @@ func _open_skills() -> void:
 	_skill_menu = SkillMenu.new()
 	_skill_menu.open(items, str(u.get("name", "")).to_upper(), _col(u), start)
 	_skill_menu.chosen.connect(func(id: String) -> void:
+		if id.begins_with("duo_"):
+			_duo_pick = id          # una volta sola: non diventa l'abilita' scelta del personaggio
+			_close_skills()
+			_command("skill")
+			return
 		_skill_pick[str(u.get("id", ""))] = id
 		_close_skills()
 		_command("skill"))

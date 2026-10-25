@@ -88,6 +88,12 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary, qu
 			claimed[swap] = true
 			BattleResolver._do_swap(state, p, swap, events)
 	var actor: Dictionary = BattleState.active_unit(state, pid)
+	if BattleState.is_alive(actor) and DuoTechs.spent(state, str(actor["id"])) and not quick:
+		# ha gia' dato il suo turno a una tecnica combinata del compagno
+		events.append({"t": "duo_rest", "unit": actor["id"]})
+		p["choice"] = null
+		_log(state, events)
+		return events
 	if BattleState.is_alive(actor):
 		BattleResolver._player_act(state, actor, str(p["choice"]["move"]), str(p["choice"]["target"]), events)
 		if quick and str(p["choice"]["move"]) == BattleTypes.ACTION_GUARD:

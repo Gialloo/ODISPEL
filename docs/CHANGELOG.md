@@ -1,5 +1,10 @@
 # Novità
 
+## 0.41.9 · Fase 5: tecniche combinate
+- Tecniche combinate alla Chrono Trigger: due personaggi in campo fanno una mossa insieme. Si scelgono dal menu ABILITÀ di uno dei due (riga «NOME + COMPAGNO», costo «2+2 EN»): costano 2 energia a testa e il compagno ci mette il suo turno, quindi si possono usare solo se il compagno non ha ancora agito nel round. Se non si può, la riga dice perché.
+- Le sei coppie: Turno di notte (Lance + Nox, scudo 25% e cura 20% a tutti), Primo piano (Lance + Rio, colpo pesante di Lance, uno di Rio, +25 Hype), Scorta (Lance + Saul, due colpi e -10 equilibrio), Fuori onda (Nox + Rio, cura 30% e +1 energia a tutti), Caffè corretto (Nox + Saul, lo scudo del nemico passa alla squadra e due colpi), Gioco di prestigio (Saul + Rio, due colpi, -5 equilibrio, +15 Hype).
+- In scena: timbro col nome della tecnica prima dei colpi, il compagno scatta insieme a chi la lancia, numeri dei due colpi separati. In AUTO l'IA usa quelle di cura quando qualcuno è sotto il 35% (non più di una ogni tre round) e quelle d'attacco a nemico rotto, se nessuno dei due ha l'Ultimate pronta. I valori sono stati alzati dopo il bilancio: con i primi l'IA perdeva il 40% degli scontri.
+
 ## 0.41.8 · Fase 3: ogni boss si rompe a modo suo
 - Ogni boss dell'atto ha una strada sua verso il BREAK, oltre al colore vincente, detta in un avviso all'inizio dello scontro e tra i suggerimenti di Echo. Semaforo (ROSSO FISSO): equilibrio x2 mentre carica. Cabina (LA CHIAMATA): chi è nel mirino toglie il doppio. Manichino (LO SPECCHIO): cambiare tipo di mossa rispetto al compagno prima vale x1,5, ripeterla x0,5. Cassaforte (LA COMBINAZIONE): senza scudo x1,5, con lo scudo x0,5. Autovelox (IL VERBALE): dopo una parata perfetta il colpo dopo toglie il doppio. Il Distributore resta il boss tutorial, solo col colore. Quando la regola scatta compare un avviso («ROSSO FISSO · equilibrio x2»).
 - Le fasi cambiano la domanda: la fase 2 non divora più la Riserva. Da lì in poi, mentre il boss carica un colpo pesante, l'equilibrio scende x1,5 per tutti: rompilo prima che colpisca.
