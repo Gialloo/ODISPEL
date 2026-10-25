@@ -1,5 +1,11 @@
 # Novità
 
+## 0.41.5 · Telefono e ritmo: ABILITÀ che scorre, impostazioni a posto, DEBOLEZZA e SLANCIO
+- Menu ABILITÀ: con tante abilità la lista scorre (dito, rotella, frecce) e la spiegazione della mossa resta sempre visibile sotto; le mosse che non avevano un testo ora hanno una spiegazione ricavata dai loro effetti. Sul telefono la scelta avviene al rilascio del dito, così si può scorrere senza lanciare mosse per sbaglio.
+- Liste scorrevoli sul telefono (es. SQUADRA): si trascinano col dito anche partendo da una voce, barra 3 px più spessa e 4 px più a destra, contenitore allargato per restare simmetrico.
+- IMPOSTAZIONI: il pannello sta sempre al centro e dentro lo schermo (prima, sul telefono, usciva in basso a destra); in pausa i foglietti sotto si nascondono finché è aperto.
+- Ritmo della battaglia: il colpo alla debolezza ferma il tempo per un istante con il timbro DEBOLEZZA!; lo SLANCIO ha un suo momento (camera alle spalle, timbro grande, chi agisce ancora e cosa può fare); dopo ogni azione una pausa diversa per tipo di mossa; in AUTO si vede chi tocca prima che agisca.
+
 ## 0.41.4 · Correzioni dal telefono e ABILITÀ FIRMA
 - Sotto ABILITÀ nella ruota resta solo «MOSSE»: niente EN, perché la mossa si sceglie dopo.
 - Telefono: il menu ABILITÀ si apre davvero (il tocco arrivava due volte, come tocco e come clic, e la seconda volta lo richiudeva).

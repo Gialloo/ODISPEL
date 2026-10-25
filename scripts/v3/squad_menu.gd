@@ -206,7 +206,7 @@ func _open_picker(c: String, kind: String) -> void:
 	_picker = veil
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", Ui.box(Color(0.07, 0.04, 0.12, 0.98), _col(c), 4, 6, 8))
-	Ui.place(panel, 0.5, 0.5, 0.5, 0.5, -440, -300, 440, 300)
+	Ui.place(panel, 0.5, 0.5, 0.5, 0.5, -440 - Ui.SCROLL_SHIFT * 0.5 - Ui.SCROLL_EXTRA_W, -300, 440 + Ui.SCROLL_SHIFT * 0.5 + Ui.SCROLL_EXTRA_W, 300)
 	veil.add_child(panel)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 8)
@@ -217,8 +217,9 @@ func _open_picker(c: String, kind: String) -> void:
 		# in battaglia si usano tutte dal menu ABILITA': quella scelta qui e' la preferita e rende di piu'
 		vb.add_child(Ui.label("Tutte le abilità sbloccate si usano in battaglia. Quella scelta è la sua FIRMA: costa 1 EN in meno, fa più danno o dà uno scudo.", 17, Ui.YELLOW, null, 4))
 	var sc := ScrollContainer.new()
-	sc.custom_minimum_size = Vector2(840, 400 if kind == "skill" else 430)
+	sc.custom_minimum_size = Vector2(840 + Ui.SCROLL_SHIFT + Ui.SCROLL_EXTRA_W, 400 if kind == "skill" else 430)
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	Ui.phone_scroll(sc, _col(c))
 	vb.add_child(sc)
 	var list := VBoxContainer.new()
 	list.add_theme_constant_override("separation", 6)
@@ -230,6 +231,7 @@ func _open_picker(c: String, kind: String) -> void:
 		var open: bool = bool(o[1])
 		var ob := Button.new()
 		ob.focus_mode = Control.FOCUS_NONE
+		Ui.pass_drag(ob)
 		ob.custom_minimum_size = Vector2(820, 96)
 		ob.disabled = not open
 		var on: bool = id == cur
@@ -248,7 +250,11 @@ func _open_picker(c: String, kind: String) -> void:
 		ob.add_child(ds)
 		for ch in ob.get_children():
 			(ch as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var down_at: Array = [0]
+		ob.button_down.connect(func() -> void: down_at[0] = sc.scroll_vertical)
 		ob.pressed.connect(func() -> void:
+			if absi(sc.scroll_vertical - int(down_at[0])) > 8:
+				return       # era uno scorrimento col dito, non una scelta
 			Progress.equip(c, kind, id)
 			Settings.buzz(25)
 			_picker.queue_free()

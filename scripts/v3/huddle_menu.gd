@@ -84,7 +84,11 @@ func _build(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint
 		_say_then("ferri", "Piano deciso. Si va.", on_resume)))
 	notes.add_child(_note("IMPOSTAZIONI", "Nox abbassa il volume", 2.0, func() -> void:
 		_say("nox", "Abbassate. Qualcuno sta cercando di dormire.")
-		add_child(SettingsPanel.new())))
+		# con le impostazioni aperte i foglietti sotto si nascondono: non si sovrappongono al pannello
+		var sp := SettingsPanel.new()
+		notes.visible = false
+		sp.closed.connect(func() -> void: notes.visible = true)
+		add_child(sp)))
 	# SQUADRA (livelli e cosa equipaggiare): e' la voce di Rio, che finalmente si mette al centro
 	notes.add_child(_note("SQUADRA", "Rio si mette al centro", 3.0, func() -> void:
 		_say("zecca", "Finalmente. Inquadrate me. Poi gli altri.")

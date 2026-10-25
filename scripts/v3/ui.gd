@@ -137,3 +137,38 @@ static func place(c: Control, al: float, at: float, ar: float, ab: float, ol: fl
 	c.offset_top = ot
 	c.offset_right = orr
 	c.offset_bottom = ob
+
+
+# Lista scorrevole fatta per il telefono (decisione dell'autore, 25/10/2026): si trascina col dito anche partendo
+# da un tasto (i tasti passano il trascinamento al contenitore), la barra e' piu' spessa di 3 px per prenderla col dito
+# e sta 4 px piu' a destra: chi chiama allarga il contenitore di 4 px per lasciarlo simmetrico.
+const SCROLL_EXTRA_W: float = 3.0
+const SCROLL_SHIFT: float = 4.0
+
+
+static func phone_scroll(sc: ScrollContainer, col: Color = CREAM) -> void:
+	sc.scroll_deadzone = 12
+	var bar: VScrollBar = sc.get_v_scroll_bar()
+	var w: float = maxf(bar.get_combined_minimum_size().x, 8.0) + SCROLL_EXTRA_W
+	bar.custom_minimum_size.x = w
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(0, 0, 0, 0.35)
+	track.set_corner_radius_all(int(w * 0.5))
+	track.content_margin_left = w * 0.5
+	track.content_margin_right = w * 0.5
+	var grab := StyleBoxFlat.new()
+	grab.bg_color = Color(col, 0.85)
+	grab.set_corner_radius_all(int(w * 0.5))
+	grab.content_margin_left = w * 0.5
+	grab.content_margin_right = w * 0.5
+	bar.add_theme_stylebox_override("scroll", track)
+	bar.add_theme_stylebox_override("grabber", grab)
+	bar.add_theme_stylebox_override("grabber_highlight", grab)
+	bar.add_theme_stylebox_override("grabber_pressed", grab)
+	sc.add_theme_constant_override("scrollbar_h_separation", int(SCROLL_SHIFT))
+
+
+# I tasti dentro una lista scorrevole lasciano passare il trascinamento al contenitore (sul telefono prima si bloccava)
+static func pass_drag(b: Control) -> void:
+	b.mouse_filter = Control.MOUSE_FILTER_PASS
+

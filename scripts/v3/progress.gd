@@ -258,7 +258,7 @@ static func item_desc(kind: String, id: String) -> String:
 		"skill", "ult":
 			var m: Dictionary = BattleContent.MOVES.get(id, {})
 			var cost: String = (" ·\u00a0%d\u00a0ENERGIA" % int(m.get("cost", 0))) if kind == "skill" else ""
-			return str(m.get("desc", "")) + cost
+			return BattleContent.move_desc(id) + cost
 		"react":
 			return str(REACT_MODS.get(id, {}).get("desc", ""))
 		"trait":
