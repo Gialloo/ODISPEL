@@ -1,6 +1,6 @@
 # Novità
 
-## In arrivo (dopo la 0.41.9) · Fase 4: la città che reagisce
+## 0.41.10 · Fase 4: la città che reagisce
 - BREAK: oltre all'immagine che esplode, la corrente della strada salta (i neon si spengono, un guizzo, poi tornano), l'etichetta della telecamera dice «IMMAGINE ROTTA» e la lente resta incrinata sul bordo sinistro finché il nemico non si rialza.
 - Ultimate: dopo il cut-in la trasmissione perde l'aggancio per un attimo (righe che ondeggiano, una fascia del colore di chi la lancia che scorre), i neon sfarfallano e l'etichetta dice «SEGNALE DISTURBATO».
 - Costo quasi zero per il telefono: visibilità di una mesh, un'etichetta e il glitch che c'era già. Con «effetti ridotti» niente distorsione; con i lampi a zero niente distorsione né neon che sfarfallano. Il suono resta per dopo (decisione dell'autore, 25/10/2026).
