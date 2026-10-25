@@ -1,5 +1,9 @@
 # Novità
 
+## In arrivo (dopo la 0.41.10) · Saltare le Ultimate ripetute
+- Nuova scelta in Impostazioni, «Sequenza ultimate»: MOSTRA (come prima), SOLO LA PRIMA (la scena di ogni personaggio si vede una volta, poi resta solo il nome dell'Ultimate), SALTA (mai).
+- Dalla seconda volta, durante la scena compare «TOCCA PER SALTARE»: il tocco c'era già, ora si vede. Il ricordo delle scene già viste vale per tutta la partita, non solo per lo scontro. Quando la scena si salta, si salta anche il lampo nero prima. Il suono resta per dopo (decisione dell'autore, 25/10/2026).
+
 ## 0.41.10 · Fase 4: la città che reagisce
 - BREAK: oltre all'immagine che esplode, la corrente della strada salta (i neon si spengono, un guizzo, poi tornano), l'etichetta della telecamera dice «IMMAGINE ROTTA» e la lente resta incrinata sul bordo sinistro finché il nemico non si rialza.
 - Ultimate: dopo il cut-in la trasmissione perde l'aggancio per un attimo (righe che ondeggiano, una fascia del colore di chi la lancia che scorre), i neon sfarfallano e l'etichetta dice «SEGNALE DISTURBATO».

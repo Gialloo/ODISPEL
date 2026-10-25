@@ -63,7 +63,15 @@ func _build() -> void:
 		c.queue_free()
 	_row("Scosse della camera", Settings.level_text(Settings.shake), func() -> void: Settings.shake = Settings.next_level(Settings.shake))
 	_row("Lampi", Settings.level_text(Settings.flash), func() -> void: Settings.flash = Settings.next_level(Settings.flash))
-	_row("Sequenza ultimate", "SALTA" if Settings.skip_cutin else "MOSTRA", func() -> void: Settings.skip_cutin = not Settings.skip_cutin)
+	# tre scelte: sempre, solo la prima volta per personaggio (le ripetute si saltano), mai
+	_row("Sequenza ultimate", "SALTA" if Settings.skip_cutin else ("SOLO LA PRIMA" if Settings.cutin_once else "MOSTRA"), func() -> void:
+		if Settings.skip_cutin:
+			Settings.skip_cutin = false
+			Settings.cutin_once = false
+		elif Settings.cutin_once:
+			Settings.skip_cutin = true
+		else:
+			Settings.cutin_once = true)
 	_row("Telecamera rotta (PV bassi)", "SÌ" if Settings.broken_cam else "NO", func() -> void: Settings.broken_cam = not Settings.broken_cam)
 	_row("Effetti ridotti", "SÌ" if Settings.light_fx else "NO", func() -> void: Settings.light_fx = not Settings.light_fx)
 	_row("Vibrazione", "SÌ" if Settings.vibration else "NO", func() -> void: Settings.vibration = not Settings.vibration)
