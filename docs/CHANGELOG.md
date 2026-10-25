@@ -1,6 +1,6 @@
 # Novità
 
-## In arrivo (dopo la 0.41.10) · Saltare le Ultimate ripetute
+## 0.41.11 · Saltare le Ultimate ripetute
 - Nuova scelta in Impostazioni, «Sequenza ultimate»: MOSTRA (come prima), SOLO LA PRIMA (la scena di ogni personaggio si vede una volta, poi resta solo il nome dell'Ultimate), SALTA (mai).
 - Dalla seconda volta, durante la scena compare «TOCCA PER SALTARE»: il tocco c'era già, ora si vede. Il ricordo delle scene già viste vale per tutta la partita, non solo per lo scontro. Quando la scena si salta, si salta anche il lampo nero prima. Il suono resta per dopo (decisione dell'autore, 25/10/2026).
 
