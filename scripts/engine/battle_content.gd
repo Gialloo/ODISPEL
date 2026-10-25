@@ -494,7 +494,7 @@ const BOSSES: Dictionary = {
 	"frammento_rosso": {
 		"name": "Frammento", "title": "ANOMALIA MINORE", "color": "rosso", "hp_per_player": 260,
 		"atk": 250, "def": 10, "spd": 100,
-		"desc": "Un pezzo d'Anomalia che vaga per le strade. PROVVISORIO (V3).",
+		"desc": "Un pezzo d'Anomalia che vaga per le strade. Corazza: solo il colore vincente fa danno pieno (BreakRules).",
 		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
 		"atk_scale": [0.6, 0.75, 0.9],
 		"drops": 1,
@@ -502,9 +502,9 @@ const BOSSES: Dictionary = {
 	},
 	"frammento_blu": {
 		"name": "Frammento", "title": "ANOMALIA MINORE", "color": "blu", "hp_per_player": 260,
-		"atk": 250, "def": 10, "spd": 100,
-		"desc": "Un pezzo d'Anomalia che vaga per le strade. PROVVISORIO (V3).",
-		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
+		"atk": 250, "def": 10, "spd": 128,
+		"desc": "Un pezzo d'Anomalia che vaga per le strade. Scatto: veloce, colpisce spesso ma si rompe in fretta (BreakRules).",
+		"cycle": ["raffica", "scarica", "raffica", "scossa"],
 		"atk_scale": [0.6, 0.75, 0.9],
 		"drops": 1,
 		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},
@@ -512,8 +512,8 @@ const BOSSES: Dictionary = {
 	"frammento_verde": {
 		"name": "Frammento", "title": "ANOMALIA MINORE", "color": "verde", "hp_per_player": 260,
 		"atk": 250, "def": 10, "spd": 100,
-		"desc": "Un pezzo d'Anomalia che vaga per le strade. PROVVISORIO (V3).",
-		"cycle": ["scarica", "raffica", "scossa", "sovraccarico"],
+		"desc": "Un pezzo d'Anomalia che vaga per le strade. Radici: ricresce a fine round finche' non lo rompi (BreakRules).",
+		"cycle": ["scossa", "scarica", "sovraccarico", "raffica"],
 		"atk_scale": [0.6, 0.75, 0.9],
 		"drops": 1,
 		"reward": {"coins": 0, "nucleo": [0, 0], "lega": [0, 0], "gear_chance": 0},

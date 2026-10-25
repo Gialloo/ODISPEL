@@ -474,6 +474,9 @@ static func plan_hints(state: Dictionary, slot_id: String) -> Array:
 				shown_rules[str(r["id"])] = true
 				hints.append("%s PRONTA con %s: %s" % [str(r["name"]), str(BattleState.unit(state, str(m["with"])).get("name", "")).to_upper(), str(r["desc"])])
 	hints.append_array(Arena.hint_lines(state))
+	var br: String = BreakRules.hint(state)
+	if br != "":
+		hints.append(br)
 	if not bool(boss.get("exposed", false)) and int(boss.get("balance", 99)) <= 6:
 		hints.append("BREAK VICINO: equilibrio %d, colpisci col colore vantaggioso" % int(boss["balance"]))
 	var tele: Dictionary = state.get("telegraph", {})
@@ -526,7 +529,7 @@ static func _check_phase(state: Dictionary, events: Array) -> void:
 	if not bool(boss.get("exposed", false)):
 		boss["balance"] = int(boss["balance_max"])
 	events.append({"t": "phase", "phase": ph})
-	if ph == 2 and int(state.get("reserve", 0)) > 0:
+	if ph == 2 and int(state.get("reserve", 0)) > 0 and BattleTypes.PHASE_DRAINS_RESERVE:
 		_spend_reserve(state, BattleTypes.RESERVE_DRAIN_PHASE, "boss", events)
 	var sh: int = int(round(float(boss["max_hp"]) * BattleTypes.PHASE_SHIELD))
 	boss["shield"] = int(boss["shield"]) + sh
@@ -655,6 +658,8 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 	if Marks.dodges(state, defender, attacker, events.size()):
 		events.append({"t": "dodge", "unit": defender["id"]})
 		return
+	if str(defender["side"]) == "boss" and str(attacker["side"]) == "player":
+		mult *= BreakRules.dmg_mult(defender, attacker)      # Corazza del frammento rosso
 	var dmg: int = calc_damage(attacker, defender, mult, pierce, flat, ammo_hit)
 	var crit: bool = Factions.rolls_crit(state, attacker, defender, events.size(), crit_pm)
 	if crit:
@@ -681,7 +686,7 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		events.append({"t": "tenacity", "unit": defender["id"]})
 	Tactics.on_damaged(defender, events)
 	if str(defender["side"]) == "boss" and str(attacker["side"]) == "player" and int(defender["hp"]) > 0:
-		_chip_balance(defender, attacker, mult, events)
+		_chip_balance(defender, attacker, mult, events, state)
 	if crit and Atypical.fx(attacker, "crit_ammo") > 0:
 		_change_ammo(attacker, Atypical.fx(attacker, "crit_ammo"), events)
 	var reflect: int = Atypical.fx(defender, "reflect_shield")
@@ -744,7 +749,7 @@ static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, e
 
 
 # Equilibrio del boss: ogni colpo lo consuma (di piu' col vantaggio di colore, sui marchiati e coi colpi pesanti).
-static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, events: Array) -> void:
+static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, events: Array, state: Dictionary = {}) -> void:
 	if int(boss.get("stun", 0)) > 0 or bool(boss.get("exposed", false)):
 		return
 	var cm: float = BattleTypes.color_multiplier(str(attacker["color"]), str(boss["color"]))
@@ -753,6 +758,17 @@ static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, e
 		pts += BattleTypes.BREAK_MARKED
 	if mult >= 2.0:
 		pts += BattleTypes.BREAK_HEAVY
+	# la strada di questo boss verso il BREAK (BreakRules): carica, chiamata, specchio, scudo, parata
+	if not state.is_empty():
+		var rm: float = BreakRules.balance_mult(state, boss, attacker)
+		if rm != 1.0:
+			pts = maxi(1, int(round(float(pts) * rm)))
+			var said: bool = false
+			for e in events:
+				if str(e.get("t", "")) == "break_rule":
+					said = true
+			if not said:
+				events.append({"t": "break_rule", "mult": rm, "name": str(BreakRules.of(boss).get("name", "CARICA"))})
 	_drain_balance(boss, pts, attacker, events)
 
 
@@ -957,6 +973,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		awake_mult *= BattleTypes.RHYTHM_BONUS
 		events.append({"t": "rhythm", "unit": actor["id"], "from": last_cat, "to": cat})
 	actor["last_cat"] = cat
+	BreakRules.on_act(state, actor, cat)
 	var rep: int = int(actor.get("repeat", 0)) + 1 if last_move == move_id else 0
 	actor["repeat"] = rep
 	if rep >= 2 and move.has("mult") and str(move["target"]) == "enemy":
@@ -1196,6 +1213,8 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 	# guardia a tempo: vale solo per il colpo annunciato, non per i colpi in piu' della catena
 	var timed: String = str(state.get("timed_guard", ""))
 	state.erase("timed_guard")
+	if timed == "perfect":
+		BreakRules.on_perfect(state)          # Autovelox: dopo la parata perfetta il colpo dopo toglie il doppio di equilibrio
 	var countered: bool = false
 	events.append({"t": "boss_move", "move": move_id})
 	if bool(move.get("camera", false)):
@@ -1383,10 +1402,11 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 	# Riserva di squadra: +1 a round; dalla fase 2 il boss ne divora una parte (le priorita' cambiano: non basta piu' accumulare)
 	_gain_reserve(state, BattleTypes.RESERVE_PER_ROUND, "round", events)
 	var bs: Dictionary = BattleState.boss(state)
-	if int(state.get("phase", 1)) >= 2 and int(bs.get("stun", 0)) == 0 and int(state.get("reserve", 0)) > 0:
+	if BattleTypes.PHASE_DRAINS_RESERVE and int(state.get("phase", 1)) >= 2 and int(bs.get("stun", 0)) == 0 and int(state.get("reserve", 0)) > 0:
 		_spend_reserve(state, BattleTypes.RESERVE_DRAIN_ROUND, "boss", events)
 
 	# modifiche temporanee e aure di fazione (chi e' caduto non da' piu' aure)
+	BreakRules.round_end(state, events)
 	Factions.tick(state)
 	Factions.refresh(state)
 
