@@ -86,6 +86,8 @@ static func _build_moves() -> Dictionary:
 		var um: Dictionary = Signatures.MOVES[mid].duplicate(true)
 		um["rarity"] = int(_merge_cast().get(str(um["unique"]), {}).get("rarity", 0))
 		out[mid] = um
+	# tecniche combinate (Fase 5): kind "duo", si scelgono dal menu ABILITA' se il compagno c'e'
+	out.merge(DuoTechs.moves())
 	return out
 
 

@@ -120,6 +120,10 @@ static func validate_choice(state: Dictionary, pid: String, choice: Dictionary) 
 				return "ultimate non equipaggiata"
 			if int(u["gauge"]) < BattleTypes.GAUGE_MAX:
 				return "barra non piena"
+		"duo":
+			var duo_why: String = DuoTechs.error(state, u, move_id)
+			if duo_why != "":
+				return duo_why
 		"reaction", "rescue":
 			var why: String = reaction_error(state, p, move_id)
 			if why != "":
@@ -936,6 +940,15 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 			kind = "basic"
 		else:
 			return
+	# TECNICA COMBINATA: un'azione a due, fuori dalle regole delle abilita' (DuoTechs)
+	if kind == "duo":
+		if DuoTechs.error(state, actor, move_id) == "":
+			DuoTechs.run(state, actor, move_id, events)
+			actor["last_cat"] = "duo"
+			return
+		move_id = BattleTypes.ACTION_ATTACK
+		move = BattleContent.MOVES[move_id]
+		kind = "basic"
 	# controlli al momento dell'esecuzione
 	if kind == "ult" and int(actor["gauge"]) < BattleTypes.GAUGE_MAX:
 		move_id = BattleTypes.ACTION_ATTACK

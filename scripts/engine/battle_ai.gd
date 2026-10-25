@@ -23,6 +23,11 @@ static func choose_quick(state: Dictionary, pid: String) -> Dictionary:
 
 
 static func choose(state: Dictionary, pid: String) -> Dictionary:
+	var duo_me: Dictionary = BattleState.active_unit(state, pid)
+	if BattleState.is_alive(duo_me):
+		var duo: String = DuoTechs.ai_pick(state, duo_me)
+		if duo != "":
+			return {"swap": "", "move": duo, "target": ""}
 	var p: Dictionary = BattleState.player(state, pid)
 	var choice: Dictionary = {"swap": "", "move": BattleTypes.ACTION_ATTACK, "target": ""}
 	var me: Dictionary = BattleState.active_unit(state, pid)
