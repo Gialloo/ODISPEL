@@ -254,6 +254,10 @@ func _ready() -> void:
 			if not wu.is_empty() and not chs.has(str(wu["char"])):
 				chs.append(str(wu["char"]))
 		EdgeCutin.warm(_root, chs)          # riscalda shader e mesh del cut-in senza bloccare l'ingresso (scatto sul telefono)
+	# la strada di questo nemico verso il BREAK, detta una volta all'inizio (poi resta tra i suggerimenti)
+	var brk_rule: Dictionary = BreakRules.of(BattleState.boss(b))
+	if not brk_rule.is_empty():
+		_notice("%s · %s" % [str(brk_rule["name"]), str(brk_rule["short"])], Ui.YELLOW, 4.0, "fx")      # corto: l'avviso taglia oltre 34 lettere
 	match ingresso:
 		"vantaggio":
 			_toast("ATTACCO A SORPRESA! %s è già %s al BREAK e agite per primi" % [_cap(_bn()), _g("vicino", "vicina")], Ui.YELLOW, 3.0)
@@ -1559,6 +1563,12 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_toast("GRAN FINALE · HYPE %d%%" % int(e.get("hype", 0)), Ui.VIOLET.lightened(0.3), 1.4)
 			"finale_early":
 				_toast("ANTEPRIMA · il pubblico carica la squadra: +%d EN e +%d%% Ultimate" % [int(e.get("energy", 0)), int(e.get("gauge", 0))], Ui.VIOLET.lightened(0.3), 1.8)
+			"break_rule":
+				var rm: float = float(e.get("mult", 1.0))
+				if rm > 1.0:
+					_toast("%s · equilibrio x%s" % [str(e.get("name", "")), str(rm).replace(".", ",").trim_suffix(",0")], Ui.YELLOW, 1.2)
+				else:
+					_toast("%s · equilibrio a metà" % str(e.get("name", "")), Color("#ff7a9c"), 1.2)
 			"slancio_guard":
 				_toast("GUARDIA DI SLANCIO · scudo a tutta la squadra", Ui.CYAN, 1.6)
 			"hype":
@@ -1601,7 +1611,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 			"slancio":
 				pass      # lo racconta _slancio_moment, a fine azione, in grande (prima era un avviso piccolo che passava inosservato)
 			"phase":
-				_live_banner("FASE %d" % int(e.get("phase", 2)), "%s passa al piano B · guarda la prossima mossa" % _cap(_bn()), Ui.PINK, 2.2)
+				# Fase 3 del piano: la fase cambia la domanda (rompilo mentre carica) invece di togliere la Riserva
+				_live_banner("FASE %d" % int(e.get("phase", 2)), "%s passa al piano B · quando carica rompilo: equilibrio x1,5" % _cap(_bn()), Ui.PINK, 2.2)
 				_kick(0.8)
 				_flash(0.3)
 			"down":

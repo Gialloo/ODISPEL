@@ -1,5 +1,10 @@
 # Novità
 
+## 0.41.8 · Fase 3: ogni boss si rompe a modo suo
+- Ogni boss dell'atto ha una strada sua verso il BREAK, oltre al colore vincente, detta in un avviso all'inizio dello scontro e tra i suggerimenti di Echo. Semaforo (ROSSO FISSO): equilibrio x2 mentre carica. Cabina (LA CHIAMATA): chi è nel mirino toglie il doppio. Manichino (LO SPECCHIO): cambiare tipo di mossa rispetto al compagno prima vale x1,5, ripeterla x0,5. Cassaforte (LA COMBINAZIONE): senza scudo x1,5, con lo scudo x0,5. Autovelox (IL VERBALE): dopo una parata perfetta il colpo dopo toglie il doppio. Il Distributore resta il boss tutorial, solo col colore. Quando la regola scatta compare un avviso («ROSSO FISSO · equilibrio x2»).
+- Le fasi cambiano la domanda: la fase 2 non divora più la Riserva. Da lì in poi, mentre il boss carica un colpo pesante, l'equilibrio scende x1,5 per tutti: rompilo prima che colpisca.
+- Scontri minori diversi: il frammento rosso ha la CORAZZA (solo il colore vincente fa danno pieno), il verde le RADICI (ricresce a fine round finché non lo rompi), il blu lo SCATTO (più veloce, colpisce spesso ma si rompe in fretta). Ognuno ha anche un ordine di mosse suo. Gli scontri con due nemici restano per dopo.
+
 ## 0.41.7 · Fase 2: SLANCIO con scelta, RITMO per categoria, HYPE con scelta, FINTA
 - SLANCIO con scelta: nell'azione extra la Guardia diventa GUARDIA DI SLANCIO, cioè scudo dell'8% dei PV a tutta la squadra e +2 energia invece di +1. Il turno extra fa decidere tra un altro colpo e proteggere tutti. In AUTO si sceglie la guardia se arriva una carica o un compagno è sotto il 50%.
 - RITMO per categoria: il +10% al colpo arriva quando cambi tipo di mossa (attacco, abilità, guardia, Ultimate), non più quando alterni due abilità. Sulla ruota i comandi che lo danno sono segnati «RITMO».
