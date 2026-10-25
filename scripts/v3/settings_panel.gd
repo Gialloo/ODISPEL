@@ -36,9 +36,26 @@ func _ready() -> void:
 	pad.custom_minimum_size.y = 6
 	vb.add_child(pad)
 	_build()
-	await get_tree().process_frame
-	var vp := get_viewport_rect().size
-	position = ((vp - size) * 0.5).max(Vector2.ZERO)
+	_fit()
+
+
+# Sempre al centro e sempre tutto dentro lo schermo: sul telefono (e in pausa) il pannello finiva in basso a destra,
+# mezzo fuori, con le etichette staccate dai tasti. Ora si ricentra a ogni fotogramma e, se non ci sta, si rimpicciolisce.
+func _process(_delta: float) -> void:
+	_fit()
+
+
+func _fit() -> void:
+	var vp: Vector2 = get_viewport_rect().size
+	var sz: Vector2 = get_combined_minimum_size().max(size)
+	if sz.x < 1.0 or vp.x < 1.0:
+		return
+	var k: float = minf(1.0, minf((vp.x - 24.0) / sz.x, (vp.y - 24.0) / sz.y))
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	size = sz
+	pivot_offset = Vector2.ZERO
+	scale = Vector2(k, k)
+	position = ((vp - sz * k) * 0.5).max(Vector2.ZERO)
 
 
 func _build() -> void:

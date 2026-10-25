@@ -770,7 +770,7 @@ func _advance() -> void:
 		_fx_turn(uid)
 		_refresh_hud()
 		if auto_on:
-			await _wait(0.2)
+			await _wait(0.45 if not _quick else 0.3)       # in AUTO si vede chi tocca prima che agisca
 			if not is_inside_tree() or ended:
 				return
 			await _do_action(pid, BattleAI.choose(b, pid), _quick)
@@ -884,6 +884,17 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 	var kind: String = str(move.get("kind", "basic"))
 	var tgt: String = str(move.get("target", "enemy"))
 	var ev: Array = SeqRound.player_action(b, pid, choice, quick)
+	# RITMO (decisione dell'autore, 25/10/2026): i momenti giusti si fermano e si leggono. Colpo alla debolezza = fermo
+	# del colpo + timbro DEBOLEZZA; SLANCIO = una pausa sua, con il timbro e chi agisce ancora.
+	var weak_hit: bool = false
+	var got_slancio: bool = false
+	var boss_u: Dictionary = BattleState.boss(b)
+	for x in ev:
+		if str(x.get("t", "")) == "damage" and str(x.get("src", "")) == uid and str(x.get("dst", "")) == BattleState.BOSS_ID \
+			and int(x.get("amount", 0)) > 0 and BattleTypes.color_multiplier(str(u.get("color", "")), str(boss_u.get("color", ""))) > 1.0:
+			weak_hit = true
+		if str(x.get("t", "")) == "slancio":
+			got_slancio = true
 	for x in ev:
 		if str(x.get("t", "")) == "slancio":
 			# SLANCIO: subito dopo agisce ancora lo stesso eroe, ma solo con Attacco o Guardia
@@ -916,6 +927,10 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			_kick(1.0)
 		else:
 			_kick(0.45 if kind == "basic" else 0.7)
+		if weak_hit:
+			await _hit_stop(0.2)
+			_kick(0.9)
+			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.07)   # in alto: i numeri del colpo stanno sul nemico
 		await _show_events_freeze(ev)
 		await _tw_done(a)
 		cv.move_speed = 1.0
@@ -937,6 +952,10 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		await _tw_done(a2)
 	_refresh_hud()
 	await _wait(0.12)
+	# respiro dopo l'azione: piu' lungo per le mosse che contano, cosi' non tutto dura uguale
+	await _wait({"basic": 0.15, "skill": 0.3, "ult": 0.45}.get(kind, 0.2) + (0.35 if weak_hit else 0.0))
+	if got_slancio and is_inside_tree() and not ended:
+		await _slancio_moment(u)
 	# dopo l'inquadratura frontale si stacca di netto (cambio di telecamera): niente viaggio attraverso i compagni
 	_cam_overview(tgt != "enemy")
 
@@ -1544,7 +1563,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if str(dsc.get("text", "")) != "":
 					_toast(str(dsc["text"]), Ui.PINK if str(dsc.get("kind", "")) == "boss" else (Ui.YELLOW if str(dsc.get("kind", "")) == "link" else Ui.CREAM), 1.6)
 			"slancio":
-				_toast("SLANCIO · agisce ancora %s" % _uname(str(e.get("unit", ""))), Ui.YELLOW, 1.4)
+				pass      # lo racconta _slancio_moment, a fine azione, in grande (prima era un avviso piccolo che passava inosservato)
 			"phase":
 				_live_banner("FASE %d" % int(e.get("phase", 2)), "%s passa al piano B · guarda la prossima mossa" % _cap(_bn()), Ui.PINK, 2.2)
 				_kick(0.8)
@@ -2933,7 +2952,7 @@ func _open_skills() -> void:
 			start = items.size()
 		var sig: bool = BattleContent.is_signature(u, id)
 		items.append({"id": id, "name": str(mv.get("name", id)).to_upper(), "cost": "%d EN" % BattleContent.move_cost(u, id), "sig": sig,
-			"desc": (BattleContent.signature_text(id) + " · " if sig else "") + str(mv.get("desc", "")), "ok": ok, "why": why, "icon": SkillMenu.icon_for(mv)})
+			"desc": (BattleContent.signature_text(id) + " · " if sig else "") + BattleContent.move_desc(id), "ok": ok, "why": why, "icon": SkillMenu.icon_for(mv)})
 	_wheel_hover("")
 	_wheel.visible = false
 	if _hint != null:
@@ -3451,6 +3470,30 @@ func _rec_frame() -> Control:
 
 
 # Timbro grande al centro (parola + riga sotto) che entra di scatto e svanisce
+# Fermo del colpo: il tempo quasi si ferma per un istante (i colpi giusti si sentono). Non tocca la pausa.
+func _hit_stop(sec: float) -> void:
+	if _pause != null or Engine.time_scale <= 0.0:
+		return
+	Engine.time_scale = 0.06
+	await get_tree().create_timer(sec, true, false, true).timeout
+	if _pause == null and absf(Engine.time_scale - 0.06) < 0.001:
+		Engine.time_scale = 1.8 if fast else 1.0
+
+
+# SLANCIO alla Persona 5 ("1 MORE"): la scena si ferma, timbro grande, chi agisce ancora e cosa puo' fare.
+# Prima era un avviso di un secondo in mezzo agli altri: il giocatore non capiva cosa aveva fatto di giusto.
+func _slancio_moment(u: Dictionary) -> void:
+	var col: Color = _col(u)
+	var uid: String = str(u.get("id", ""))
+	if vis.has(uid):
+		_cam_choose(uid)          # alle spalle di chi agisce ancora, col nemico davanti
+	_flash(0.35)
+	_kick(0.5)
+	Settings.buzz(30)
+	_stamp("SLANCIO!", "%s AGISCE ANCORA · ATTACCO O GUARDIA" % str(u["name"]).to_upper(), col.lightened(0.25), 0.58)
+	await _wait(1.25)
+
+
 func _stamp(title: String, sub: String, col: Color, ay: float = 0.3) -> void:
 	var box := VBoxContainer.new()
 	Ui.place(box, 0.15, ay, 0.85, ay, 0, 0, 0, 140)

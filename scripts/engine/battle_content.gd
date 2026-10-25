@@ -190,6 +190,49 @@ static func move_cost(unit: Dictionary, move_id: String) -> int:
 	return c
 
 
+# Spiegazione breve di una mossa per i menu: quella scritta a mano se c'e', altrimenti ricavata dai suoi effetti
+# (le mosse delle famiglie, es. Marchio II, non hanno un testo proprio)
+static func move_desc(move_id: String) -> String:
+	var m: Dictionary = MOVES.get(move_id, {})
+	if str(m.get("desc", "")) != "":
+		return str(m["desc"])
+	var bits: Array = []
+	if float(m.get("mult", 0.0)) > 0.0:
+		var hits: int = int(m.get("hits", 1))
+		bits.append(("%d colpi" % hits if hits > 1 else "Colpo") + " da %d%% dell'attacco" % int(round(float(m["mult"]) * 100.0)))
+	if int(m.get("pierce", 0)) > 0:
+		bits.append("ignora il %d%% della difesa" % int(m["pierce"]))
+	var st: Dictionary = m.get("status", {})
+	if st.has("mark"):
+		bits.append("marchia il nemico per %d turni (critici più facili)" % int(st["mark"]))
+	var db: Dictionary = m.get("debuff", {})
+	if db.has("def"):
+		bits.append("abbassa la difesa del nemico")
+	if db.has("atk"):
+		bits.append("abbassa l'attacco del nemico")
+	var ss: Dictionary = m.get("self_status", {})
+	if ss.has("taunt"):
+		bits.append("attira su di sé i colpi")
+	if float(m.get("shield", 0.0)) > 0.0:
+		bits.append("scudo a " + ("tutta la squadra" if str(m.get("target", "")) == "allies" else "sé"))
+	if (m.get("ally_buff", {}) as Dictionary).has("atk"):
+		bits.append("alza l'attacco della squadra")
+	if float(m.get("heal", 0.0)) > 0.0:
+		bits.append("cura " + ("la squadra" if str(m.get("target", "")) == "allies" else "un compagno"))
+	if bool(m.get("cleanse", false)):
+		bits.append("toglie i malus")
+	if float(m.get("self_cost_hp", 0.0)) > 0.0:
+		bits.append("costa il %d%% dei tuoi PV" % int(round(float(m["self_cost_hp"]) * 100.0)))
+	if int(m.get("ammo", 0)) > 0:
+		bits.append("usa %d munizion%s" % [int(m["ammo"]), "e" if int(m["ammo"]) == 1 else "i"])
+	if int(m.get("priority", 0)) > 0:
+		bits.append("agisce prima")
+	if bits.is_empty():
+		return ""
+	var t: String = ", ".join(bits) + "."
+	return t.substr(0, 1).to_upper() + t.substr(1)
+
+
 # Bonus statistico per rank, per rarita' (comune, rara, epica, leggendaria): piu' raro = piu' forte.
 const RANK_BONUS_BY_RARITY: Array = [0.04, 0.05, 0.06, 0.08]
 
