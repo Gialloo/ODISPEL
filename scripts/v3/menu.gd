@@ -5,6 +5,7 @@ extends Control
 var _t: float = 0.0
 var _bg: Control
 var _upd: Button
+var _osd: Label
 var _overlay: Control = null       # CAPITOLI o IMPOSTAZIONI aperti sopra il menu
 
 
@@ -42,7 +43,7 @@ func _ready() -> void:
 	gap.custom_minimum_size = Vector2(0, 6)
 	col.add_child(gap)
 	# pulsante "aggiorna", nascosto finche' itch non dice che c'e' una versione nuova
-	_upd = Ui.button("", Color("#46e07a"), 22, 380)
+	_upd = Ui.vhs_button("", 22, 380, Color("#2f9a55"))
 	_upd.visible = false
 	_upd.pressed.connect(func() -> void: OS.shell_open(UpdateCheck.PAGE))
 	col.add_child(_upd)
@@ -59,12 +60,12 @@ func _ready() -> void:
 
 	var cont: bool = Story.has_save()
 	if cont:
-		var bc := Ui.button("CONTINUA", Ui.YELLOW, 34, 380)
+		var bc := Ui.vhs_button("CONTINUA", 34, 380)
 		bc.pressed.connect(func() -> void:
 			Story.load_game()
 			_main().next_story())
 		col.add_child(bc)
-	var b1 := Ui.button("NUOVA PARTITA", Ui.CREAM if cont else Ui.YELLOW, 28 if cont else 34, 380)
+	var b1 := Ui.vhs_button("NUOVA PARTITA", 28 if cont else 34, 380)
 	b1.pressed.connect(func() -> void:
 		Story.new_game()
 		_main().next_story())
@@ -72,30 +73,36 @@ func _ready() -> void:
 	var row1 := HBoxContainer.new()
 	row1.add_theme_constant_override("separation", 10)
 	col.add_child(row1)
-	var b2 := Ui.button("CAPITOLI", Ui.CYAN, 22, 185)
+	var b2 := Ui.vhs_button("CAPITOLI", 22, 185)
 	b2.pressed.connect(_open_chapters)
 	row1.add_child(b2)
-	var b5 := Ui.button("BATTAGLIA", Ui.CREAM, 22, 185)
+	var b5 := Ui.vhs_button("BATTAGLIA", 22, 185)
 	b5.pressed.connect(func() -> void: _main().go("battle", {"from": "menu"}))
 	row1.add_child(b5)
 	var row2 := HBoxContainer.new()
 	row2.add_theme_constant_override("separation", 10)
 	col.add_child(row2)
-	var b3 := Ui.button("IMPOSTAZIONI", Ui.CREAM, 22, 185)
+	var b3 := Ui.vhs_button("IMPOSTAZIONI", 22, 185)
 	b3.pressed.connect(_open_settings)
 	row2.add_child(b3)
 	# TUTORIAL: lo scontro guidato da Echo (nella storia parte da solo al primo nemico)
-	var b6 := Ui.button("TUTORIAL", Ui.CYAN, 22, 185)
+	var b6 := Ui.vhs_button("TUTORIAL", 22, 185)
 	b6.pressed.connect(func() -> void: _main().go("battle", {"from": "menu", "tutorial": true, "boss": "frammento_giallo",
 		"visual": "frammento_giallo", "arena": "strada", "minore": true}))
 	row2.add_child(b6)
 	if not OS.has_feature("mobile"):
-		var b4 := Ui.button("ESCI", Color("#ff7a9c"), 22, 120)
+		var b4 := Ui.vhs_button("ESCI", 22, 120, Color("#8f1d24"))
 		b4.pressed.connect(func() -> void: _main().quit())
 		row2.add_child(b4)
 	for b in col.get_children():
 		if b is Button:
 			(b as Button).size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+
+	# OSD da videoregistratore (come il riferimento VHS dell'autore): PLAY, contatore che scorre, SP
+	_osd = Ui.label("", 30, Color(Ui.VHS_TEXT.r, Ui.VHS_TEXT.g, Ui.VHS_TEXT.b, 0.75), Ui.vhs(), 0)
+	_osd.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	Ui.place(_osd, 0.6, 0.0, 1.0, 0.0, 0, 22, -32, 120)
+	add_child(_osd)
 
 	var info := Ui.label(_device_info(), 16, Color(1, 1, 1, 0.55), null, 3)
 	Ui.place(info, 0.0, 1.0, 1.0, 1.0, 24, -34, 0, -8)
@@ -186,6 +193,8 @@ func back() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_bg.queue_redraw()
+	var sec: int = int(_t)
+	_osd.text = "DECK 1      PLAY \u25B6\n%d:%02d:%02d   SP" % [sec / 3600, (sec / 60) % 60, sec % 60]
 
 
 # Sfondo pop: notte viola, fasce oblique che scorrono, quattro silhouette di colore (i protagonisti)
