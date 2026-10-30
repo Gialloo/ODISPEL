@@ -75,6 +75,9 @@ func _build() -> void:
 	_row("Telecamera rotta (PV bassi)", "SÌ" if Settings.broken_cam else "NO", func() -> void: Settings.broken_cam = not Settings.broken_cam)
 	_row("Effetti ridotti", "SÌ" if Settings.light_fx else "NO", func() -> void: Settings.light_fx = not Settings.light_fx)
 	_row("Vibrazione", "SÌ" if Settings.vibration else "NO", func() -> void: Settings.vibration = not Settings.vibration)
+	_row("Velocità del testo", str(Settings.TEXT_SPEEDS[Settings.text_speed]), func() -> void:
+		Settings.text_speed = (Settings.text_speed + 1) % Settings.TEXT_SPEEDS.size())
+	_row("Dialoghi automatici", "SÌ" if Settings.auto_text else "NO", func() -> void: Settings.auto_text = not Settings.auto_text)
 	_row("Finestra di parata", "AMPIA" if Settings.parry_wide else "NORMALE", func() -> void: Settings.parry_wide = not Settings.parry_wide)
 	_row("Attacco a sorpresa (prova A/B)", "SÌ" if Settings.surprise else "NO", func() -> void: Settings.surprise = not Settings.surprise)
 	_row("Limite FPS", "%d" % Settings.fps_value(), func() -> void:

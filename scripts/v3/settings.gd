@@ -15,10 +15,14 @@ static var surprise: bool = true        # prova A/B: si puo' attaccare il nemico
 static var broken_cam: bool = true      # telecamera rotta quando tocca a chi ha pochi PV
 static var parry_wide: bool = false     # finestra di parata ampia (accessibilita'): la guardia normale vale sempre
 static var fps_cap: int = 0             # limite degli fps scelto dal giocatore (0 = predefinito: 60 sul telefono, 120 su PC)
+static var text_speed: int = 0          # velocita' del testo nei dialoghi: 0 NORMALE, 1 VELOCE, 2 ISTANTANEO
+static var auto_text: bool = false      # dialoghi automatici (AUTO alla Persona): la battuta va avanti da sola dopo una pausa
 static var _loaded: bool = false
 
 const LEVELS: Array = [1.0, 0.5, 0.0]
 const FPS_CAPS: Array = [30, 60, 120, 240]
+const TEXT_SPEEDS: Array = ["NORMALE", "VELOCE", "ISTANTANEO"]
+const TEXT_CPS: Array = [48.0, 110.0, 0.0]   # caratteri al secondo; 0 = tutta la battuta subito
 
 
 static func ensure_loaded() -> void:
@@ -42,6 +46,8 @@ static func load_settings() -> void:
 	broken_cam = bool(cfg.get_value("video", "broken_cam", broken_cam))
 	fps_cap = int(cfg.get_value("video", "fps_cap", fps_cap))
 	parry_wide = bool(cfg.get_value("game", "parry_wide", parry_wide))
+	text_speed = clampi(int(cfg.get_value("game", "text_speed", text_speed)), 0, TEXT_SPEEDS.size() - 1)
+	auto_text = bool(cfg.get_value("game", "auto_text", auto_text))
 
 
 static func save() -> void:
@@ -57,6 +63,8 @@ static func save() -> void:
 	cfg.set_value("video", "broken_cam", broken_cam)
 	cfg.set_value("video", "fps_cap", fps_cap)
 	cfg.set_value("game", "parry_wide", parry_wide)
+	cfg.set_value("game", "text_speed", text_speed)
+	cfg.set_value("game", "auto_text", auto_text)
 	cfg.save(path)
 
 
