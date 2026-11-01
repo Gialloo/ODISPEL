@@ -104,6 +104,8 @@ var _broken: BrokenCam
 var _glitch: GlitchFx
 var _night: NightFx                     # la citta' che reagisce: i neon saltano col BREAK e sfarfallano con le Ultimate
 var _order_box: BoxContainer
+var _combo: int = 0                 # colpi a segno della squadra di fila prima che il nemico agisca
+var _combo_lbl: Label               # contatore COMBO a pennarello (approvato dall'autore, 1/11/2026)
 var _boss_name: Label
 var _boss_hp: ProgressBar
 var _boss_hp_txt: Label
@@ -918,6 +920,10 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		if str(x.get("t", "")) == "slancio":
 			# SLANCIO: subito dopo agisce ancora lo stesso eroe, ma solo con Attacco o Guardia
 			turn_list.insert(turn_i + 1, {"unit": str(x["unit"]), "player": str(x["player"]), "boss": false, "spd": -1, "extra": true, "quick": true})
+	for x in ev:
+		if str(x.get("t", "")) == "damage" and str(x.get("src", "")) == uid and str(x.get("dst", "")) == BattleState.BOSS_ID and int(x.get("amount", 0)) > 0:
+			_combo += 1
+	_combo_show(_col(u))
 	var cv: CharacterVisual = vis[uid]
 	var col: Color = _col(u)
 	if kind == "ult":
@@ -1011,6 +1017,8 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 
 func _boss_turn() -> void:
 	cur_pid = ""
+	_combo = 0
+	_combo_show(Ui.YELLOW)
 	_quick = false
 	_boss_acting = true
 	_fx_turn("")
@@ -1839,6 +1847,22 @@ func _sparks_later(uid: String, delay: float, crit: bool) -> void:
 	LightFx.sparks(self, at, LightFx.IVORY if crit else LightFx.IMPACT, 16 if crit else 10)
 
 
+# COMBO: da 2 colpi di fila il numero entra con uno scatto; l'ombra prende il colore di chi ha colpito per ultimo
+func _combo_show(col: Color) -> void:
+	if _combo_lbl == null:
+		return
+	if _combo < 2:
+		_combo_lbl.visible = false
+		return
+	_combo_lbl.visible = true
+	_combo_lbl.text = "%d COMBO" % _combo
+	_combo_lbl.add_theme_color_override("font_shadow_color", col)
+	_combo_lbl.add_theme_constant_override("shadow_offset_x", 5)
+	_combo_lbl.add_theme_constant_override("shadow_offset_y", 5)
+	_combo_lbl.scale = Vector2(1.35, 1.35)
+	_combo_lbl.create_tween().tween_property(_combo_lbl, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 # Chi e' di turno: cerchio di luce del suo colore ai piedi e la telecamera che lo inquadra (vuoto = turno del nemico)
 func _fx_turn(uid: String) -> void:
 	if uid == "" or not b["units"].has(uid) or not home.has(uid):
@@ -2289,6 +2313,16 @@ func _build_ui() -> void:
 	_order_box.add_theme_constant_override("separation", 4)
 	_order_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ov.add_child(_order_box)
+	# CONTATORE COMBO: numero enorme a pennarello (Permanent Marker) sul lato destro, giallo con contorno nero spesso e ombra
+	# del colore di chi ha colpito; solo da 2 colpi di fila (font, colori e spessore approvati dall'autore, 1/11/2026)
+	_combo_lbl = Ui.label("", 42, Ui.YELLOW, Ui._font("PermanentMarker-Regular.ttf"), 12)
+	_combo_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	Ui.place(_combo_lbl, 1.0, 0.42, 1.0, 0.42, -300, -66, -28, 0)      # a meta' schermo: in alto c'e' il cartellino del nemico
+	_combo_lbl.rotation = -0.08
+	_combo_lbl.pivot_offset = Vector2(272, 33)
+	_combo_lbl.visible = false
+	_combo_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_combo_lbl)
 
 	# nemico: lastra nera storta in alto a sinistra (Persona 5: il nome del nemico in alto a sinistra), vita ed equilibrio
 	# come due barre sottili sotto il nome; DEBOLE A e la prossima mossa solo mentre si sceglie
