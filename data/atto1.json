@@ -3,8 +3,11 @@
 
 	"capitoli": [
 		{"id": "prologo", "titolo": "PROLOGO · LA NOTTE DELLA CUPOLA", "passi": [
+			{"tipo": "scena", "dialogo": "apertura_gancio", "sfondo": "piazza"},
+			{"tipo": "cartello", "titolo": "DUE MINUTI PRIMA", "sotto": "Piazza Centrale, ore 2:58"},
 			{"tipo": "area", "area": "strada"},
 			{"tipo": "scena", "dialogo": "accordo", "sfondo": "strada"},
+			{"tipo": "scena", "dialogo": "accordo_prezzi", "sfondo": "strada"},
 			{"tipo": "scena", "dialogo": "rifugio_arrivo", "sfondo": "rifugio"}
 		]},
 		{"id": "cap1", "titolo": "CAPITOLO 1 · ROSSO FISSO", "passi": [
@@ -41,13 +44,17 @@
 		]},
 		{"id": "finale", "titolo": "FINALE · IL VARCO", "passi": [
 			{"tipo": "cartello", "titolo": "FINALE", "sotto": "Il varco"},
-			{"tipo": "scena", "dialogo": "varco", "sfondo": "varco"}
+			{"tipo": "scena", "dialogo": "varco", "sfondo": "varco"},
+			{"tipo": "scena", "dialogo": "varco_crollo", "sfondo": "varco"}
 		]},
 		{"id": "cap5", "titolo": "CAPITOLO 5 · LA TANGENZIALE", "passi": [
 			{"tipo": "cartello", "titolo": "CAPITOLO 5", "sotto": "La tangenziale"},
 			{"tipo": "scena", "dialogo": "c5_alba", "sfondo": "alba"},
 			{"tipo": "area", "area": "tangenziale"},
 			{"tipo": "scena", "dialogo": "c5_casello", "sfondo": "alba"},
+			{"tipo": "scena", "dialogo": "c5_buio", "sfondo": "notte"},
+			{"tipo": "cartello", "titolo": "POCO DOPO", "sotto": "Sotto il cavalcavia"},
+			{"tipo": "scena", "dialogo": "c5_famiglia", "sfondo": "alba"},
 			{"tipo": "cartello", "titolo": "FINE DELL'ATTO 1", "sotto": "Fuori dalla città, insieme. Adesso comincia la caccia."},
 			{"tipo": "fine"}
 		]}
@@ -63,7 +70,7 @@
 				{"id": "telecamera", "pos": [-5.6, -27.0], "raggio": 3.0, "etichetta": "OSSERVA LA TELECAMERA", "tasto": "GUARDA", "dialogo": "telecamera"},
 				{"id": "scontrino", "pos": [3.7, -28.6], "raggio": 1.7, "etichetta": "RACCOGLI LO SCONTRINO", "tasto": "PRENDI", "dialogo": "scontrino", "oggetto": true, "debolezza": "VIOLA"}
 			],
-			"punti": [{"id": "auto_rossa", "pos": [2.7, -25.0]}, {"id": "panchina", "pos": [-6.1, -21.5]}, {"id": "auto_blu", "pos": [-2.7, -11.0]}],
+			"punti": [{"id": "auto_rossa", "pos": [2.7, -25.0]}, {"id": "panchina", "pos": [-6.1, -21.5]}, {"id": "auto_blu", "pos": [-2.7, -11.0]}, {"id": "angolo_fontana", "pos": [-6.0, 10.5]}, {"id": "angolo_gioielleria", "pos": [6.2, -6.0]}, {"id": "angolo_fondo", "pos": [6.0, -41.0]}],
 			"nemici": [{"id": "f1", "pos": [0.8, -16.0], "boss": "frammento_giallo", "livello": 1}],
 			"boss": {"id": "distributore", "tipo": "distributore", "pos": [5.3, -33.0], "rot": 90, "dialogo": "distributore", "agguato": "agguato", "livello": 1, "arena": "strada", "pv": 1.0, "atk": 0.8},
 			"segreto": {"id": "osservatore", "tipo": "telecamera", "pos": [-3.5, -40.0], "rot": 0, "livello": 1, "pv": 1.0, "atk": 1.0, "arena": "strada", "dialogo": "segreto_avviso", "_nota": "BOSS SEGRETO DI PROVA (PROVVISORIO): porta un personaggio al 50% e poi al 25% per vedere la telecamera rotta"}
@@ -76,7 +83,7 @@
 				{"id": "radio", "pos": [-5.4, -9.0], "raggio": 2.4, "etichetta": "ASCOLTA LA RADIO LIBRACORP", "tasto": "ASCOLTA", "dialogo": "c1_radio"},
 				{"id": "multa", "pos": [3.4, -15.5], "raggio": 1.8, "etichetta": "LEGGI LA MULTA", "tasto": "LEGGI", "dialogo": "c1_multa", "oggetto": true, "debolezza": "BLU"}
 			],
-			"punti": [{"id": "auto_ferme", "pos": [-2.2, -21.0]}, {"id": "barriera", "pos": [0.0, -5.0]}],
+			"punti": [{"id": "auto_ferme", "pos": [-2.2, -21.0]}, {"id": "barriera", "pos": [0.0, -5.0]}, {"id": "angolo_edicola", "pos": [-6.0, 9.5]}, {"id": "angolo_bar", "pos": [6.0, -30.0]}, {"id": "angolo_cane", "pos": [-6.0, -38.0]}],
 			"nemici": [{"id": "f1", "pos": [-1.0, -12.0], "boss": "frammento_rosso", "livello": 3}, {"id": "f2", "pos": [2.0, -27.0], "boss": "frammento_rosso", "livello": 3}],
 			"uscita": {"pos": [0.0, -33.0], "etichetta": "ENTRA NELL'ANOMALIA", "tasto": "ENTRA", "dialogo": "c1_soglia", "tipo": "semaforo"}
 		},
@@ -94,7 +101,7 @@
 				{"id": "registro", "pos": [3.2, -10.0], "raggio": 2.0, "etichetta": "APRI IL REGISTRO DEI TURNI", "tasto": "APRI", "dialogo": "c2_registro"},
 				{"id": "adesivo", "pos": [-3.1, -26.0], "raggio": 1.8, "etichetta": "GUARDA L'ADESIVO", "tasto": "GUARDA", "dialogo": "c2_adesivo", "oggetto": true, "debolezza": "VERDE"}
 			],
-			"punti": [{"id": "cabine", "pos": [3.0, -18.0]}, {"id": "manifesti", "pos": [-3.3, -6.0]}],
+			"punti": [{"id": "cabine", "pos": [3.0, -18.0]}, {"id": "manifesti", "pos": [-3.3, -6.0]}, {"id": "angolo_gatto", "pos": [-2.7, 10.5]}, {"id": "angolo_scritta", "pos": [2.7, -30.0]}, {"id": "angolo_fondo", "pos": [-2.7, -41.5]}],
 			"nemici": [{"id": "f1", "pos": [0.0, -14.0], "boss": "frammento_blu", "livello": 5}, {"id": "f2", "pos": [0.5, -29.0], "boss": "frammento_blu", "livello": 5, "gregario": "frammento_rosso"}],
 			"uscita": {"pos": [0.0, -35.0], "etichetta": "RISPONDI ALLA CABINA", "tasto": "RISPONDI", "dialogo": "c2_soglia", "tipo": "cabina"}
 		},
@@ -112,7 +119,7 @@
 				{"id": "chat", "pos": [-3.0, -9.0], "raggio": 2.2, "etichetta": "LEGGI LA CHAT DELLA DIRETTA", "tasto": "LEGGI", "dialogo": "c3_chat"},
 				{"id": "etichetta", "pos": [3.3, -22.0], "raggio": 1.8, "etichetta": "LEGGI IL CARTELLINO", "tasto": "LEGGI", "dialogo": "c3_etichetta", "oggetto": true, "debolezza": "ROSSO"}
 			],
-			"punti": [{"id": "vetrine", "pos": [-4.0, -16.0]}, {"id": "manichini", "pos": [4.0, -28.0]}],
+			"punti": [{"id": "vetrine", "pos": [-4.0, -16.0]}, {"id": "manichini", "pos": [4.0, -28.0]}, {"id": "angolo_cabina_foto", "pos": [-6.0, 10.0]}, {"id": "angolo_fontana", "pos": [6.0, -8.0]}, {"id": "angolo_maschere", "pos": [6.0, -38.0]}],
 			"nemici": [{"id": "f1", "pos": [0.5, -13.0], "boss": "frammento_verde", "livello": 7}, {"id": "f2", "pos": [-0.8, -27.0], "boss": "frammento_verde", "livello": 7, "gregario": "frammento_blu"}],
 			"uscita": {"pos": [0.0, -35.0], "etichetta": "GUARDA NELLA VETRINA", "tasto": "GUARDA", "dialogo": "c3_soglia", "tipo": "manichino"}
 		},
@@ -130,13 +137,14 @@
 				{"id": "inventario", "pos": [2.4, -9.0], "raggio": 2.0, "etichetta": "CONSULTA L'INVENTARIO", "tasto": "LEGGI", "dialogo": "c4_inventario"},
 				{"id": "combinazione", "pos": [-2.3, -21.0], "raggio": 1.8, "etichetta": "STUDIA LA SERRATURA", "tasto": "STUDIA", "dialogo": "c4_combinazione", "oggetto": true, "debolezza": "ROSSO"}
 			],
-			"punti": [{"id": "lingotti", "pos": [2.3, -16.0]}, {"id": "laser", "pos": [0.0, -5.0]}],
+			"punti": [{"id": "lingotti", "pos": [2.3, -16.0]}, {"id": "laser", "pos": [0.0, -5.0]}, {"id": "angolo_cassette", "pos": [-3.4, 10.0]}, {"id": "angolo_quadro", "pos": [3.4, -28.0]}, {"id": "angolo_brandina", "pos": [-3.4, -36.5]}],
 			"nemici": [{"id": "f1", "pos": [0.0, -13.0], "boss": "frammento_verde", "livello": 9}, {"id": "f2", "pos": [-0.5, -25.0], "boss": "frammento_verde", "livello": 9, "gregario": "frammento_rosso"}],
 			"boss": {"id": "cassaforte", "tipo": "cassaforte", "pos": [0.0, -34.0], "rot": 0, "dialogo": "c4_boss", "agguato": "c4_agguato", "livello": 9, "arena": "caveau", "pv": 0.6, "atk": 0.75}
 		},
 		"tangenziale": {
 			"layout": "tangenziale", "seme": 91, "capo": "ferri", "chiacchiere": "tangenziale",
 			"obiettivo": "La tangenziale all'alba. Il casello in fondo è l'unica uscita che non porta in cella.",
+			"punti": [{"id": "angolo_panorama", "pos": [-4.2, 11.0]}, {"id": "angolo_piazzola", "pos": [4.2, -6.0]}, {"id": "angolo_pannello", "pos": [-4.2, -24.0]}],
 			"telecamera": [-4.9, -14.0],
 			"indizi": [
 				{"id": "ricercati", "pos": [4.2, -17.0], "raggio": 2.4, "etichetta": "LEGGI IL CARTELLONE DEI RICERCATI", "tasto": "LEGGI", "dialogo": "c5_ricercati"},
