@@ -10,10 +10,18 @@ extends Control
 #   lato = sx o dx (se manca: il primo che parla a sinistra, il secondo a destra)
 # Ritratti: res://assets/portraits/<chi>_<espr>.png (girati verso destra; a destra si specchiano).
 # SALTA chiude tutto e mostra per qualche secondo il riassunto della scena, cosi' chi salta non si perde.
+# AUTO (come in Persona) manda avanti le battute da sole dopo una pausa che cresce con la lunghezza;
+# REGISTRO riapre le ultime battute lette, per chi ha toccato troppo in fretta. Velocita' del testo nelle impostazioni.
 
 signal finished
 
 const CPS: float = 48.0
+const LOG_MAX: int = 80               # battute tenute nel registro (anche delle scene prima)
+const AUTO_BASE: float = 1.1          # pausa dell'AUTO a battuta scritta: base + lunghezza, con un tetto
+const AUTO_PER_CHAR: float = 0.03
+const AUTO_MAX: float = 4.5
+
+static var history: Array = []        # {nome, col, testo}: il registro vale per tutta la sessione
 const PORTRAIT_DIR: String = "res://assets/portraits/"
 
 var _lines: Array = []
@@ -36,6 +44,10 @@ var _choices: VBoxContainer
 var _waiting_choice: bool = false
 var _speaker_col: Color = Ui.YELLOW
 var _speaker_side: String = "sx"
+var _auto: Button
+var _log_btn: Button
+var _log: Control = null
+var _auto_t: float = 0.0
 
 
 func _ready() -> void:
@@ -76,6 +88,15 @@ func _ready() -> void:
 	Ui.place(_skip, 1.0, 0, 1.0, 0, -170, 24, -24, 84)
 	_skip.pressed.connect(skip)
 	_stage.add_child(_skip)
+	_auto = Ui.button("AUTO NO", Ui.CREAM, 20)
+	Ui.place(_auto, 1.0, 0, 1.0, 0, -330, 24, -184, 84)
+	_auto.pressed.connect(toggle_auto)
+	_stage.add_child(_auto)
+	_style_auto()
+	_log_btn = Ui.button("REGISTRO", Ui.CREAM, 20)
+	Ui.place(_log_btn, 1.0, 0, 1.0, 0, -540, 24, -344, 84)
+	_log_btn.pressed.connect(open_log)
+	_stage.add_child(_log_btn)
 	_choices = VBoxContainer.new()
 	_choices.add_theme_constant_override("separation", 10)
 	Ui.place(_choices, 0.5, 0.2, 0.5, 0.2, -330, 0, 330, 300)
@@ -218,7 +239,11 @@ func _next() -> void:
 	_name.text = display
 	_text.text = str(ln.get("testo", ""))
 	_shown = 0.0
-	_text.visible_characters = 0
+	_auto_t = 0.0
+	_text.visible_characters = 0 if _cps() > 0.0 else -1
+	history.append({"nome": display, "col": _speaker_col.to_html(false), "testo": _text.text})
+	if history.size() > LOG_MAX:
+		history = history.slice(history.size() - LOG_MAX)
 	if tex != null:
 		var tr: TextureRect = _pt[side]
 		var entering: bool = not tr.visible or _who.get(side, "") != id
@@ -318,6 +343,90 @@ func _auto_resolve_rest() -> void:
 		j += 1
 
 
+func _cps() -> float:
+	return float(Settings.TEXT_CPS[clampi(Settings.text_speed, 0, Settings.TEXT_CPS.size() - 1)])
+
+
+# AUTO: acceso resta acceso anche nelle scene dopo (e' un'impostazione); a battuta scritta parte la pausa
+func toggle_auto() -> void:
+	Settings.auto_text = not Settings.auto_text
+	Settings.save()
+	_auto_t = 0.0
+	_style_auto()
+	Settings.buzz(10)
+
+
+func _style_auto() -> void:
+	var bg: Color = Ui.YELLOW if Settings.auto_text else Ui.CREAM
+	_auto.text = "AUTO SÌ" if Settings.auto_text else "AUTO NO"
+	_auto.add_theme_stylebox_override("normal", Ui.box(bg))
+	_auto.add_theme_stylebox_override("hover", Ui.box(bg.lightened(0.15)))
+	_auto.add_theme_stylebox_override("pressed", Ui.box(bg.darkened(0.12), Ui.INK, 4, 6, 2))
+
+
+func _auto_wait() -> float:
+	return minf(AUTO_BASE + float(_text.text.length()) * AUTO_PER_CHAR, AUTO_MAX)
+
+
+func is_log_open() -> bool:
+	return _log != null
+
+
+# Registro: le ultime battute lette (anche delle scene prima), dalla piu' vecchia alla piu' nuova, si scorre col dito
+func open_log() -> void:
+	if not _active or _log != null:
+		return
+	_log = Control.new()
+	Ui.place(_log, 0, 0, 1, 1)
+	_log.mouse_filter = Control.MOUSE_FILTER_STOP
+	var bg := ColorRect.new()
+	bg.color = Color(0.02, 0.0, 0.06, 0.92)
+	Ui.place(bg, 0, 0, 1, 1)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_log.add_child(bg)
+	var title := Ui.plate_label("REGISTRO", 30, Ui.INK, Ui.YELLOW, Ui.INK, Ui.display())
+	Ui.place(title, 0.5, 0, 0.5, 0, -150, 24, 150, 84)
+	_log.add_child(title)
+	var close := Ui.button("CHIUDI", Ui.CREAM, 20)
+	Ui.place(close, 1.0, 0, 1.0, 0, -200, 24, -24, 84)
+	close.pressed.connect(close_log)
+	_log.add_child(close)
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	Ui.place(sc, 0.12, 0, 0.88, 1, 0, 104, 0, -24)
+	Ui.phone_scroll(sc, Ui.YELLOW)
+	_log.add_child(sc)
+	var vb := VBoxContainer.new()
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb.add_theme_constant_override("separation", 14)
+	sc.add_child(vb)
+	for e in history:
+		var who := Ui.label(str(e.get("nome", "")), 24, Color(str(e.get("col", "#ffd23f"))), Ui.names(), 6)
+		who.mouse_filter = Control.MOUSE_FILTER_PASS
+		vb.add_child(who)
+		var txt := Ui.label(str(e.get("testo", "")), 26 if Ui.is_touch() else 23, Ui.CREAM, Ui.story())
+		txt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		txt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		txt.mouse_filter = Control.MOUSE_FILTER_PASS
+		vb.add_child(txt)
+	add_child(_log)
+	_stage.visible = false           # sotto il registro non restano tasti e fumetto in trasparenza
+	# si apre sull'ultima battuta: le vecchie stanno sopra
+	await get_tree().process_frame
+	if is_instance_valid(sc):
+		sc.scroll_vertical = int(sc.get_v_scroll_bar().max_value)
+	Settings.buzz(8)
+
+
+func close_log() -> void:
+	if _log == null:
+		return
+	_log.queue_free()
+	_log = null
+	_stage.visible = _active
+	_auto_t = 0.0
+
+
 func skip() -> void:
 	if not _active:
 		return
@@ -332,6 +441,7 @@ func _close(skipped: bool) -> void:
 		return
 	_active = false
 	_stage.visible = false
+	close_log()
 	if skipped and _recap != "":
 		_recap_lbl.text = "RIASSUNTO · " + _recap
 		_recap_lbl.visible = true
@@ -349,11 +459,18 @@ func _process(delta: float) -> void:
 	_t += delta
 	if not _active:
 		return
-	_shown += delta * CPS
+	if _log != null:
+		return
+	var cps: float = _cps()
+	_shown += delta * (cps if cps > 0.0 else 100000.0)
 	if _text.visible_characters >= 0:
 		_text.visible_characters = int(_shown)
 	if not _waiting_choice and _done():
 		_maybe_choices()
+		if Settings.auto_text and not _waiting_choice:
+			_auto_t += delta
+			if _auto_t >= _auto_wait():
+				advance()
 	_box.queue_redraw()
 
 
@@ -367,9 +484,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var k: int = (event as InputEventKey).physical_keycode
-		if k in [KEY_E, KEY_ENTER, KEY_SPACE, KEY_KP_ENTER]:
+		if _log != null:
+			# registro aperto: i tasti lo chiudono e non mandano avanti ne' saltano la scena
+			if k in [KEY_E, KEY_ENTER, KEY_SPACE, KEY_KP_ENTER, KEY_ESCAPE, KEY_R]:
+				close_log()
+				get_viewport().set_input_as_handled()
+		elif k in [KEY_E, KEY_ENTER, KEY_SPACE, KEY_KP_ENTER]:
 			advance()
 			get_viewport().set_input_as_handled()
 		elif k == KEY_ESCAPE:
 			skip()
+			get_viewport().set_input_as_handled()
+		elif k == KEY_R:
+			open_log()
 			get_viewport().set_input_as_handled()

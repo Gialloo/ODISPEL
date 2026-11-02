@@ -13,6 +13,11 @@
 - AUTO: Ultimate e chi ha il colore vincente sul Frammento colpiscono il Frammento, con il Frammento rotto tutti su di lui, altrimenti prima la Scheggia.
 - Simulazione su 40 partite: gli scontri doppi durano 2-2,5 round (i singoli 1,5-2), AUTO vince il 98-100%; gli scontri di sempre danno numeri identici a prima.
 
+## Prossima versione (non ancora rilasciata) · Dialoghi alla Persona: AUTO, velocità del testo, REGISTRO
+- Nei dialoghi, accanto a SALTA, due tasti nuovi. AUTO: le battute vanno avanti da sole, con una pausa che cresce con la lunghezza della battuta (da 1,1 a 4,5 secondi); resta acceso anche nelle scene dopo e si spegne con lo stesso tasto. REGISTRO (anche col tasto R): riapre le ultime 80 battute lette, anche delle scene prima, con il nome nel colore del personaggio; si scorre col dito e si chiude con CHIUDI. Con il registro aperto la scena non va avanti.
+- Impostazioni: «Velocità del testo» (NORMALE, VELOCE, ISTANTANEO) e «Dialoghi automatici» (lo stesso AUTO).
+- Perché: chi legge piano non perde le battute, chi legge veloce non aspetta, e chi tocca troppo in fretta può rileggere invece di saltare la scena (feedback degli amici: «si salta la storia»). Nessuna battuta cambiata, nessun passo nuovo.
+
 ## 0.41.11 · Saltare le Ultimate ripetute
 - Nuova scelta in Impostazioni, «Sequenza ultimate»: MOSTRA (come prima), SOLO LA PRIMA (la scena di ogni personaggio si vede una volta, poi resta solo il nome dell'Ultimate), SALTA (mai).
 - Dalla seconda volta, durante la scena compare «TOCCA PER SALTARE»: il tocco c'era già, ora si vede. Il ricordo delle scene già viste vale per tutta la partita, non solo per lo scontro. Quando la scena si salta, si salta anche il lampo nero prima. Il suono resta per dopo (decisione dell'autore, 25/10/2026).
