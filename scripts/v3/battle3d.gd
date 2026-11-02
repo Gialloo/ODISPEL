@@ -10,6 +10,7 @@ extends Node3D
 const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
 const START_GAUGE: int = 60          # PROVVISORIO (test): ultimate gia' a buon punto, cosi' si vede nel mini combattimento
 const ENEMY_POS := Vector3(0, 0.14, -3.4)
+const GREG_POS := Vector3(2.7, 0.14, -2.4)   # la scheggia (due nemici) sta di fianco al nemico principale, un passo avanti
 const PARTY_Z: float = 4.3                 # fila della squadra: piu' indietro (prima 3.0) per dare respiro tra squadra e nemico
 
 # GUARDIA A TEMPO: quando parte il colpo annunciato un cerchio si chiude sul bersaglio; toccare quando si chiude
@@ -50,6 +51,12 @@ var _pinched: bool = false                # il FOV e' stretto dalla scossa: va r
 var _boss_known: bool = false             # il giocatore conosce il colore del boss (indizio o primo colpo)
 var ritorno: Dictionary = {}             # dove tornare: area (nemico minore), storia (boss), niente = demo dal menu
 var minore: bool = false
+var gregario: String = ""                # due nemici: la scheggia accanto al nemico principale (Gregario), "" = nemico solo
+var _target: String = ""                 # bersaglio scelto: "" = nemico principale, Gregario.ID = la scheggia
+var _greg_tag: VBoxContainer             # cartellino della scheggia: nome, PV, chi colpira'
+var _greg_hp: ProgressBar
+var _greg_tele: Label
+var _aim_btn: Button                     # MIRA: sopra il nemico non preso di mira, lo si tocca per cambiare bersaglio
 var tutorial: bool = false            # TUTORIAL dal menu: Echo e la squadra spiegano ogni meccanica in un solo scontro
 var primo: bool = false               # primo scontro della storia: nemico che picchia piano
 var lezioni: bool = false             # storia: le stesse spiegazioni a rate, al massimo LEZIONI_MAX per scontro
@@ -104,6 +111,8 @@ var _broken: BrokenCam
 var _glitch: GlitchFx
 var _night: NightFx                     # la citta' che reagisce: i neon saltano col BREAK e sfarfallano con le Ultimate
 var _order_box: BoxContainer
+var _combo: int = 0                 # colpi a segno della squadra di fila prima che il nemico agisca
+var _combo_lbl: Label               # contatore COMBO a pennarello (approvato dall'autore, 1/11/2026)
 var _boss_name: Label
 var _boss_hp: ProgressBar
 var _boss_hp_txt: Label
@@ -155,6 +164,7 @@ var _say_balloon: EchoBalloon
 var _say_seq: int = 0
 var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
 var _party_back: Control
+var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
 var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
 var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
 var _pop_key: String = ""               # ultimo turno annunciato con lo scatto (evita di rifarlo a ogni aggiornamento)
@@ -202,6 +212,7 @@ func configure(args: Dictionary) -> void:
 		weak = weak + ["VIOLA"]
 	ritorno = args.get("ritorno", {})
 	minore = bool(args.get("minore", false))
+	gregario = str(args.get("gregario", ""))
 	# la storia chiede "tutorial" per il primo scontro; il tutorial completo e' solo quello del menu
 	primo = bool(args.get("tutorial", false)) and str(args.get("from", "")) != "menu"
 	tutorial = bool(args.get("tutorial", false)) and not primo
@@ -422,6 +433,7 @@ func _setup_battle() -> void:
 		bu["hp"] = bu["max_hp"]
 	if atk_k != 1.0:
 		bu["atk"] = maxi(1, int(round(float(bu["atk"]) * atk_k)))
+	Gregario.add(b, gregario)          # dopo la scala della storia: PV e attacco in proporzione al nemico gia' scalato
 	# legami del rifugio: +5% attacco alle coppie che hanno passato una serata insieme (PROVVISORIO)
 	if not ritorno.is_empty():
 		for bd in Story.active_bonds():
@@ -436,7 +448,7 @@ func _setup_battle() -> void:
 	for p in b["players"]:
 		slots.append(str(p["id"]))
 	for uid in b["units"]:
-		if str(uid) != BattleState.BOSS_ID:
+		if not Gregario.is_enemy(b, str(uid)):
 			# le sinergie piu' forti (terzetti, tutti e quattro) fanno partire l'Ultimate un po' piu' carica
 			b["units"][uid]["gauge"] = mini(BattleTypes.GAUGE_MAX, START_GAUGE + int(b["units"][uid].get("syn_gauge", 0)))
 	if ingresso == "vantaggio":
@@ -467,6 +479,16 @@ func _build_units() -> void:
 	add_child(m)
 	vis[BattleState.BOSS_ID] = m
 	home[BattleState.BOSS_ID] = ENEMY_POS
+	if Gregario.present(b):
+		var g := VendingVisual.new()
+		g.kind = str(Gregario.unit(b)["char"])
+		g.position = GREG_POS
+		g.scale = Vector3.ONE * 0.75
+		g.awake = true
+		add_child(g)
+		_face(g, Vector3(0, 0, PARTY_Z))
+		vis[Gregario.ID] = g
+		home[Gregario.ID] = GREG_POS
 	_seal = LightFx.seal(self, ENEMY_POS + Vector3(0, -0.1, 0), 2.0 if not minore else 1.4)
 
 
@@ -540,7 +562,7 @@ func _cam_choose(uid: String, close: bool = false) -> void:
 	# i compagni tra la telecamera e la scena escono di quadro mentre si sceglie (come in Persona 5)
 	var dme: float = cp.distance_to(p)
 	for id in home:
-		if id == uid or id == BattleState.BOSS_ID or not vis.has(id):
+		if id == uid or Gregario.is_enemy(b, str(id)) or not vis.has(id):
 			continue
 		(vis[id] as Node3D).visible = cp.distance_to(home[id]) > dme + 1.0
 	if vis.has(uid) and vis[uid].has_method("highlight"):
@@ -575,13 +597,14 @@ func _cam_front(uid: String) -> void:
 
 func _process(delta: float) -> void:
 	var rd: float = minf(delta, 0.05)
-	if _reticle != null and _reticle.visible and vis.has(BattleState.BOSS_ID):
-		# il mirino segue il petto del nemico (la telecamera si muove: si riposiziona, costa una proiezione)
-		var bp: Vector3 = (vis[BattleState.BOSS_ID] as Node).call("chest_point")
+	if _reticle != null and _reticle.visible and vis.has(_tgt_uid()):
+		# il mirino segue il petto del nemico preso di mira (la telecamera si muove: si riposiziona, costa una proiezione)
+		var bp: Vector3 = (vis[_tgt_uid()] as Node).call("chest_point")
 		if not cam.is_position_behind(bp):
 			_reticle.position = cam.unproject_position(bp)
 	_update_wheel()
 	_place_boss_tag()
+	_place_greg_tag()
 	_cam_pos = _cam_pos.lerp(_cam_want_pos, minf(1.0, rd * _cam_rate))
 	_cam_look = _cam_look.lerp(_cam_want_look, minf(1.0, rd * _cam_rate))
 	var sh := Vector3.ZERO
@@ -654,6 +677,7 @@ func _place_boss_tag() -> void:
 	var vs: Vector2 = get_viewport().get_visible_rect().size
 	var sz: Vector2 = _boss_panel.get_combined_minimum_size()
 	sz.x = maxf(sz.x, 300.0)
+	var rm: float = 120.0 if _p1 != null else 0.0      # HUD col ritratto: la colonna ORDINE sul bordo destro resta libera
 	var want := Vector2(hp.x - sz.x * 0.5, hp.y - sz.y - 18.0)
 	if want.y < 64.0:
 		# boss alto: sopra la testa non c'e' posto e il cartellino gli finirebbe addosso. Va di fianco alla figura,
@@ -662,8 +686,8 @@ func _place_boss_tag() -> void:
 		var half: float = maxf(60.0, absf(fp.y - hp.y) * 0.4)
 		var cx: float = (hp.x + fp.x) * 0.5
 		want.y = maxf(64.0, hp.y)
-		want.x = cx + half + 24.0 if cx + half + 24.0 + sz.x <= vs.x - 16.0 else cx - half - 24.0 - sz.x
-	want.x = clampf(want.x, 16.0, vs.x - sz.x - 16.0)
+		want.x = cx + half + 24.0 if cx + half + 24.0 + sz.x <= vs.x - 16.0 - rm else cx - half - 24.0 - sz.x
+	want.x = clampf(want.x, 16.0, vs.x - sz.x - 16.0 - rm)
 	want.y = clampf(want.y, 64.0, vs.y * 0.5)
 	_boss_panel.position = _boss_panel.position.lerp(want, 0.3) if _boss_panel.position.y > 1.0 else want
 	_boss_panel.size = sz
@@ -772,6 +796,9 @@ func _advance() -> void:
 			await _start_round()
 			return
 		var e: Dictionary = turn_list[turn_i]
+		if bool(e.get("greg", false)):
+			await _greg_turn()
+			continue
 		if bool(e["boss"]):
 			await _boss_turn()
 			continue
@@ -814,6 +841,8 @@ func _advance() -> void:
 func _choice_for(move_id: String) -> Dictionary:
 	var move: Dictionary = BattleContent.MOVES[move_id]
 	var choice: Dictionary = {"swap": "", "move": move_id, "target": "", "order": "", "push": ""}
+	if str(move["target"]) == "enemy" and _tgt_uid() == Gregario.ID:
+		choice["target"] = Gregario.ID
 	if str(move["target"]) == "ally":
 		var best: String = cur_pid
 		var worst: float = 2.0
@@ -907,9 +936,12 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 	# del colpo + timbro DEBOLEZZA; SLANCIO = una pausa sua, con il timbro e chi agisce ancora.
 	var weak_hit: bool = false
 	var got_slancio: bool = false
-	var boss_u: Dictionary = BattleState.boss(b)
+	# due nemici: il colpo va sul bersaglio scelto (la scheggia solo se scelta e in piedi prima del colpo)
+	var tid: String = BattleState.BOSS_ID if str(choice.get("target", "")) != Gregario.ID or not vis.has(Gregario.ID) else Gregario.ID
+	var tpos: Vector3 = home.get(tid, ENEMY_POS)
+	var boss_u: Dictionary = BattleState.unit(b, tid)
 	for x in ev:
-		if str(x.get("t", "")) == "damage" and str(x.get("src", "")) == uid and str(x.get("dst", "")) == BattleState.BOSS_ID \
+		if str(x.get("t", "")) == "damage" and str(x.get("src", "")) == uid and str(x.get("dst", "")) == tid \
 			and int(x.get("amount", 0)) > 0 and BattleTypes.color_multiplier(str(u.get("color", "")), str(boss_u.get("color", ""))) > 1.0:
 			weak_hit = true
 		if str(x.get("t", "")) == "slancio":
@@ -918,6 +950,10 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		if str(x.get("t", "")) == "slancio":
 			# SLANCIO: subito dopo agisce ancora lo stesso eroe, ma solo con Attacco o Guardia
 			turn_list.insert(turn_i + 1, {"unit": str(x["unit"]), "player": str(x["player"]), "boss": false, "spd": -1, "extra": true, "quick": true})
+	for x in ev:
+		if str(x.get("t", "")) == "damage" and str(x.get("src", "")) == uid and str(x.get("dst", "")) == BattleState.BOSS_ID and int(x.get("amount", 0)) > 0:
+			_combo += 1
+	_combo_show(_col(u))
 	var cv: CharacterVisual = vis[uid]
 	var col: Color = _col(u)
 	if kind == "ult":
@@ -932,11 +968,11 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			if str(x.get("t", "")) == "duo":
 				_stamp(str(x.get("name", "")).to_upper(), "%s + %s · TECNICA COMBINATA" % [str(u.get("name", "")).to_upper(), _uname(str(x.get("with", ""))).to_upper()], col.lightened(0.2))
 	if tgt == "enemy":
-		var boss_v: Node3D = vis[BattleState.BOSS_ID]
-		var strike: Vector3 = ENEMY_POS + (home[uid] - ENEMY_POS).normalized() * 1.7
+		var boss_v: Node3D = vis[tid]
+		var strike: Vector3 = tpos + (home[uid] - tpos).normalized() * (1.7 if tid == BattleState.BOSS_ID else 1.3)
 		strike.y = 0.14
 		if kind != "ult":
-			_cam_side(home[uid], ENEMY_POS)
+			_cam_side(home[uid], tpos)
 		cv.move_speed = 1.0
 		# TECNICA COMBINATA: il compagno scatta insieme, dall'altro lato del nemico
 		var mate_cv: CharacterVisual = null
@@ -947,7 +983,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 					mate_id = str(x["with"])
 					mate_cv = vis[mate_id]
 		if mate_cv != null:
-			var strike2: Vector3 = ENEMY_POS + (home[mate_id] - ENEMY_POS).normalized() * 1.7
+			var strike2: Vector3 = tpos + (home[mate_id] - tpos).normalized() * 1.7
 			strike2.y = 0.14
 			mate_cv.move_speed = 1.0
 			var tw2 := create_tween()
@@ -988,6 +1024,8 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		if mate_cv != null:
 			mate_cv.move_speed = 0.0
 			_face(mate_cv, ENEMY_POS)
+		if tid == Gregario.ID and not Gregario.alive(b):
+			_set_target("")             # scheggia abbattuta: il mirino torna sul nemico principale
 	else:
 		_cam_front(uid)
 		_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
@@ -1011,6 +1049,8 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 
 func _boss_turn() -> void:
 	cur_pid = ""
+	_combo = 0
+	_combo_show(Ui.YELLOW)
 	_quick = false
 	_boss_acting = true
 	_fx_turn("")
@@ -1466,7 +1506,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 	for e in ev:
 		if str(e.get("t", "")) == "damage" and not bool(e.get("cost", false)):
 			var d0: String = str(e.get("dst", ""))
-			if d0 != BattleState.BOSS_ID and b["units"].has(d0):
+			if not Gregario.is_enemy(b, d0) and b["units"].has(d0):
 				run_hp[d0] = int(run_hp.get(d0, int(b["units"][d0]["hp"]))) + int(e.get("amount", 0))
 	for e in ev:
 		var t: String = str(e.get("t", ""))
@@ -1481,7 +1521,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				var dmax: float = maxf(1.0, float(b["units"].get(dst, {}).get("max_hp", 1)))
 				var sz: int = clampi(int(round(lerpf(30.0, 64.0, clampf(float(amt) / dmax / 0.25, 0.0, 1.0)))), 30, 64)
 				var ncol: Color = Ui.YELLOW if crit else Ui.CREAM
-				if dst != BattleState.BOSS_ID:
+				if not Gregario.is_enemy(b, dst):
 					ncol = Color("#ff6a5a")
 				# tecnica combinata: il colpo del secondo personaggio sale piu' in alto, cosi' i due numeri non si coprono
 				var lift: float = 0.0
@@ -1498,7 +1538,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				elif crit:
 					ow = "BAM"
 					ocol = Ui.YELLOW
-				elif dst != BattleState.BOSS_ID:
+				elif not Gregario.is_enemy(b, dst):
 					ow = "THUD"
 					ocol = Color("#ff6a5a")
 				elif sz >= 46:
@@ -1664,7 +1704,10 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_flash(0.3)
 			"down":
 				var du: String = str(e.get("unit", ""))
-				if du != BattleState.BOSS_ID:
+				if du == Gregario.ID:
+					_number(du, "ABBATTUTA", Ui.YELLOW, 48, delay + 0.1, -10.0)
+					_kick(0.5)
+				elif du != BattleState.BOSS_ID:
 					_number(du, "K.O.", Color("#ff4a5a"), 64, delay + 0.1, -10.0)       # chi cade si legge subito, non solo dalla card
 					_kick(0.5)
 				if vis.has(du):
@@ -1837,6 +1880,22 @@ func _sparks_later(uid: String, delay: float, crit: bool) -> void:
 	var v: Node3D = vis[uid]
 	var at: Vector3 = v.call("chest_point") if v.has_method("chest_point") else v.global_position + Vector3(0, 1, 0)
 	LightFx.sparks(self, at, LightFx.IVORY if crit else LightFx.IMPACT, 16 if crit else 10)
+
+
+# COMBO: da 2 colpi di fila il numero entra con uno scatto; l'ombra prende il colore di chi ha colpito per ultimo
+func _combo_show(col: Color) -> void:
+	if _combo_lbl == null:
+		return
+	if _combo < 2:
+		_combo_lbl.visible = false
+		return
+	_combo_lbl.visible = true
+	_combo_lbl.text = "%d COMBO" % _combo
+	_combo_lbl.add_theme_color_override("font_shadow_color", col)
+	_combo_lbl.add_theme_constant_override("shadow_offset_x", 5)
+	_combo_lbl.add_theme_constant_override("shadow_offset_y", 5)
+	_combo_lbl.scale = Vector2(1.35, 1.35)
+	_combo_lbl.create_tween().tween_property(_combo_lbl, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 # Chi e' di turno: cerchio di luce del suo colore ai piedi e la telecamera che lo inquadra (vuoto = turno del nemico)
@@ -2078,6 +2137,10 @@ func _end_battle() -> void:
 	_refresh_hud()
 	Breadcrumb.mark("risultato")
 	var win: bool = str(b["winner"]) == "players"
+	if win and Gregario.alive(b) and vis.has(Gregario.ID):
+		# caduto il nemico principale, la scheggia rimasta sola si dissolve
+		(vis[Gregario.ID] as VendingVisual).ko()
+		_number(Gregario.ID, "SI DISSOLVE", Ui.CREAM, 30, 0.1, -10.0)
 	await _wait(0.6)
 	if not is_inside_tree():
 		return
@@ -2085,7 +2148,7 @@ func _end_battle() -> void:
 	_cam_set(Vector3(0, 2.2, 7.2), Vector3(0, 1.2, 3.0), 2.0)
 	if win:
 		for uid in vis:
-			if uid != BattleState.BOSS_ID and not (vis[uid] as CharacterVisual).down:
+			if not Gregario.is_enemy(b, str(uid)) and not (vis[uid] as CharacterVisual).down:
 				(vis[uid] as CharacterVisual).cheer()
 	if tutorial and win:
 		await _tut("tut_fine")
@@ -2264,7 +2327,8 @@ func _build_ui() -> void:
 	_fx_layer.add_child(_spot)
 	_reticle = Reticle.new()
 	_fx_layer.add_child(_reticle)
-	_wheel = CmdWheel.new()
+	# HUD col ritratto 2D (remake di Persona 1, 2/11/2026): stessa interfaccia della ruota, che resta disponibile
+	_wheel = PortraitHud.new() if Settings.hud_ritratto else CmdWheel.new()
 	_wheel.visible = false
 	_wheel.tapped.connect(_wheel_tap)
 	_wheel.hovered.connect(_wheel_hover)
@@ -2289,6 +2353,16 @@ func _build_ui() -> void:
 	_order_box.add_theme_constant_override("separation", 4)
 	_order_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ov.add_child(_order_box)
+	# CONTATORE COMBO: numero enorme a pennarello (Permanent Marker) sul lato destro, giallo con contorno nero spesso e ombra
+	# del colore di chi ha colpito; solo da 2 colpi di fila (font, colori e spessore approvati dall'autore, 1/11/2026)
+	_combo_lbl = Ui.label("", 42, Ui.YELLOW, Ui._font("PermanentMarker-Regular.ttf"), 12)
+	_combo_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	Ui.place(_combo_lbl, 1.0, 0.42, 1.0, 0.42, -300, -66, -28, 0)      # a meta' schermo: in alto c'e' il cartellino del nemico
+	_combo_lbl.rotation = -0.08
+	_combo_lbl.pivot_offset = Vector2(272, 33)
+	_combo_lbl.visible = false
+	_combo_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_combo_lbl)
 
 	# nemico: lastra nera storta in alto a sinistra (Persona 5: il nome del nemico in alto a sinistra), vita ed equilibrio
 	# come due barre sottili sotto il nome; DEBOLE A e la prossima mossa solo mentre si sceglie
@@ -2334,6 +2408,7 @@ func _build_ui() -> void:
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_tele.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bp.add_child(_tele)
+	_build_greg_ui()
 
 	_party_back = Control.new()
 	Ui.place(_party_back, 0, 0, 1, 1)
@@ -2355,6 +2430,17 @@ func _build_ui() -> void:
 		_cards.append(card)
 	party.sort_children.connect(_party_back.queue_redraw)
 	_intro_panels(ob, bp, party)
+	if Settings.hud_ritratto:
+		# squadra e turni li disegna PortraitParty: le card e la riga dei turni restano (stato, prove) ma non si vedono
+		_p1 = PortraitParty.new()
+		_root.add_child(_p1)
+		for c in [party, _party_back, ob]:
+			(c as Control).visible = false
+			(c as Control).modulate.a = 0.0
+		_order_panel = null
+		# il COMBO si sposta a sinistra della colonna ORDINE (stesso font, colori e spessore)
+		_combo_lbl.offset_left -= 96.0
+		_combo_lbl.offset_right -= 96.0
 
 	# comandi (basso a destra)
 	_cmd_box = VBoxContainer.new()
@@ -2452,6 +2538,9 @@ func _build_ui() -> void:
 	_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if Settings.hud_ritratto:
+		# in basso a sinistra ora c'e' il ritratto: il fumetto di Echo va in basso al centro, tra ritratto e squadra
+		Ui.place(_hint, 0.0, 1.0, 1.0, 1.0, 480, -40, -470, -40)
 	_root.add_child(EchoBalloon.new(_hint))
 	_root.add_child(_hint)
 
@@ -2548,6 +2637,12 @@ func _hud_focus(choice: bool) -> void:
 	for c in [_order_panel, _boss_panel, _weak_row, _tele, _hint]:
 		if c != null:
 			(c as Control).visible = choice
+	if _p1 != null:
+		_p1.set_order_visible(choice)
+	if _greg_tag != null:
+		_greg_tag.visible = choice and Gregario.alive(b)
+	if _aim_btn != null:
+		_aim_btn.visible = choice and Gregario.alive(b) and cur_pid != "" and not ended
 	if _top_bar != null:
 		_top_bar.visible = choice or auto_on
 	if _legend != null and not choice:
@@ -3027,7 +3122,34 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 				it["sub"] = "PROTEGGI TUTTI"
 				it["cost"] = "+%d EN" % (1 + BattleTypes.SLANCIO_GUARD_EN)
 				it["desc"] = "GUARDIA DI SLANCIO: dimezza il danno, +%d EN e uno scudo a tutta la squadra" % (1 + BattleTypes.SLANCIO_GUARD_EN)
+	if _wheel is PortraitHud:
+		(_wheel as PortraitHud).set_who(str(u.get("char", "")))
 	_wheel.setup(str(u.get("name", "")).to_upper() + (" · RAPIDO" if _quick else ""), _col(u), items)
+
+
+# HUD col ritratto: dati della fila della squadra e della colonna ORDINE (si ridisegna solo se cambiano)
+func _p1_refresh(marked: String) -> void:
+	var prow: Array = []
+	for i in slots.size():
+		var u: Dictionary = _slot_unit(i)
+		prow.append({"id": str(u.get("char", "")), "name": str(u.get("name", "")), "col": _col(u), "hp": int(u.get("hp", 0)),
+			"max_hp": int(u.get("max_hp", 1)), "en": int(u.get("energy", 0)), "gauge": int(u.get("gauge", 0)), "gmax": BattleTypes.GAUGE_MAX,
+			"active": str(slots[i]) == cur_pid and not ended, "alive": BattleState.is_alive(u), "marked": marked != "" and str(u.get("id", "")) == marked})
+	var orow: Array = []
+	for k in range(maxi(0, turn_i), turn_list.size()):
+		var e: Dictionary = turn_list[k]
+		var uu: Dictionary = BattleState.unit(b, str(e["unit"]))
+		if not BattleState.is_alive(uu):
+			continue
+		var is_boss: bool = bool(e["boss"])
+		var onm: String = _bname() if is_boss else str(uu.get("name", "")).to_upper()
+		if bool(e.get("greg", false)):
+			onm = Gregario.NAME.to_upper()      # due nemici: la scheggia nella colonna ORDINE col suo nome, in rosso come il nemico
+		orow.append({"id": "" if is_boss else str(uu.get("char", "")), "name": onm,
+			"col": Ui.YELLOW if is_boss else _col(uu), "boss": is_boss, "now": k == turn_i})
+		if orow.size() >= 6:
+			break
+	_p1.set_data(prow, orow, int(b.get("round", 1)), _choice_hud)
 
 
 # Scegliere un comando non lo lancia: si accende (pennellata in luce, scena scura attorno al personaggio) e mostra cosa fa.
@@ -3298,6 +3420,7 @@ func _refresh_hud() -> void:
 	_tele.visible = _tele.text != ""
 	_tele_dress(tstate)
 	_weak_refresh(boss)
+	_greg_refresh()
 	_ghost_to(_boss_ghost, float(shown_hp), float(boss["max_hp"]))
 	_static_set(BattleState.BOSS_ID, not ended and BattleState.is_alive(boss) and int(boss.get("stun", 0)) > 0, Color(1.0, 0.85, 0.45))
 	var marked: String = _update_mark(tele, mv, boss)
@@ -3361,6 +3484,8 @@ func _refresh_hud() -> void:
 			continue
 		var is_boss: bool = bool(e["boss"])
 		var nm: String = _bname() if is_boss else str(uu.get("name", "?")).to_upper()
+		if bool(e.get("greg", false)):
+			nm = Gregario.NAME.to_upper()
 		if nm.length() > 10:
 			nm = nm.substr(0, 9) + "."      # una riga sola in alto: i nomi lunghi (DISTRIBUTORE) si accorciano
 		rows.append([("▶ " if k == turn_i else "") + nm, 17 if k == turn_i else 14, Ui.YELLOW if is_boss else _col(uu).lightened(0.25), k == turn_i])
@@ -3388,6 +3513,8 @@ func _refresh_hud() -> void:
 			l.add_theme_color_override("font_color", Ui.INK if now else r[2])
 			l.add_theme_constant_override("outline_size", 0 if now else 5)
 			l.add_theme_font_override("font", Ui.display())
+	if _p1 != null:
+		_p1_refresh(marked)
 	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper() + (" · RAPIDO" if _quick else "")) if cur_pid != "" and not ended else ""
 	if waiting:
 		_show_commands(true)
@@ -3895,6 +4022,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		var k: int = (event as InputEventKey).physical_keycode
+		if k == KEY_TAB and _aim_btn != null and _aim_btn.visible:
+			_set_target("" if _target == Gregario.ID else Gregario.ID)
+			get_viewport().set_input_as_handled()
+			return
 		match k:
 			KEY_ESCAPE:
 				if _pause != null:
@@ -3951,3 +4082,111 @@ func _close_pause() -> void:
 				(n as CanvasItem).visible = true
 		_pause_hid.clear()
 	Engine.time_scale = 1.8 if fast else 1.0
+
+
+# ---------------------------------------------------------------- due nemici (Gregario)
+
+# Chi e' preso di mira adesso: la scheggia solo se scelta e ancora in piedi, altrimenti il nemico principale.
+func _tgt_uid() -> String:
+	return Gregario.ID if _target == Gregario.ID and Gregario.alive(b) else BattleState.BOSS_ID
+
+
+func _set_target(t: String) -> void:
+	_target = t if t == Gregario.ID and Gregario.alive(b) else ""
+	if _reticle != null and _reticle.visible and cur_pid != "":
+		_reticle.lock_on(_col(_unit_of(cur_pid)).lightened(0.15), (84.0 if Ui.is_touch() else 70.0) * (0.8 if _target != "" else 1.0))
+	_greg_refresh()
+	Settings.buzz(12)
+
+
+# Cartellino della scheggia (nome nel suo colore, PV, chi colpira') e il tasto MIRA sopra il nemico non preso di mira.
+func _build_greg_ui() -> void:
+	_greg_tag = VBoxContainer.new()
+	_greg_tag.add_theme_constant_override("separation", 3)
+	_greg_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_greg_tag.visible = false
+	_root.add_child(_greg_tag)
+	var gu: Dictionary = Gregario.unit(b)
+	var gcol: Color = _col(gu) if not gu.is_empty() else Ui.CREAM
+	var nm := Ui.label(Gregario.NAME.to_upper(), 18, Ui.CREAM, Ui.display(), 0)
+	nm.add_theme_stylebox_override("normal", Ui.plate(Color(0.02, 0.01, 0.03, 0.92), gcol, -0.18, 5))
+	_greg_tag.add_child(nm)
+	_greg_hp = _bar(Color("#ff4b6e"), 12)
+	_greg_hp.custom_minimum_size.x = 170.0
+	_greg_tag.add_child(_greg_hp)
+	_greg_tele = Ui.label("", 14, Ui.CREAM, Ui.display(), 5)
+	_greg_tag.add_child(_greg_tele)
+	_aim_btn = Ui.button("MIRA", Ui.YELLOW, 18, 120)
+	_aim_btn.visible = false
+	_aim_btn.pressed.connect(func() -> void: _set_target("" if _target == Gregario.ID else Gregario.ID))
+	_root.add_child(_aim_btn)
+
+
+func _greg_refresh() -> void:
+	if _greg_tag == null:
+		return
+	var gu: Dictionary = Gregario.unit(b)
+	if gu.is_empty() or not BattleState.is_alive(gu):
+		_greg_tag.visible = false
+		if _aim_btn != null:
+			_aim_btn.visible = false
+		return
+	_greg_hp.max_value = int(gu["max_hp"])
+	_greg_hp.value = int(gu["hp"])
+	var t2: Dictionary = b.get("telegraph2", {})
+	var who: String = str(BattleState.active_unit(b, str(t2.get("target", ""))).get("name", "")).to_upper()
+	_greg_tele.text = ("Colpirà " + who) if who != "" else ""
+	_aim_btn.text = "MIRA QUI"         # sta sempre ai piedi del nemico che non e' preso di mira
+
+
+func _place_greg_tag() -> void:
+	if _greg_tag == null or not vis.has(Gregario.ID) or cam == null:
+		return
+	var gv: Node3D = vis[Gregario.ID]
+	if _greg_tag.visible:
+		var h3: Vector3 = gv.call("head_point")
+		if not cam.is_position_behind(h3):
+			var hp: Vector2 = cam.unproject_position(h3 + Vector3(0, 0.25, 0))
+			var sz: Vector2 = _greg_tag.get_combined_minimum_size()
+			var vs: Vector2 = get_viewport().get_visible_rect().size
+			var want := Vector2(clampf(hp.x - sz.x * 0.5, 16.0, vs.x - sz.x - 16.0), clampf(hp.y - sz.y - 12.0, 64.0, vs.y * 0.6))
+			# non sopra il cartellino del nemico principale: se si toccano, la scheggia scende sotto
+			if _boss_panel != null and _boss_panel.visible and Rect2(want, sz).intersects(Rect2(_boss_panel.position, _boss_panel.size)):
+				want.y = minf(_boss_panel.position.y + _boss_panel.size.y + 10.0, vs.y * 0.6)
+			_greg_tag.position = want
+			_greg_tag.size = sz
+	if _aim_btn != null and _aim_btn.visible:
+		# MIRA sta ai piedi del nemico che NON e' preso di mira: si tocca li' per cambiare bersaglio
+		var other: Node3D = vis[BattleState.BOSS_ID] if _target == Gregario.ID else gv
+		var f3: Vector3 = other.global_position + Vector3(0, 0.2, 0)
+		if not cam.is_position_behind(f3):
+			var fp: Vector2 = cam.unproject_position(f3)
+			var bs: Vector2 = _aim_btn.get_combined_minimum_size()
+			var vs2: Vector2 = get_viewport().get_visible_rect().size
+			_aim_btn.position = Vector2(clampf(fp.x - bs.x * 0.5, 16.0, vs2.x - bs.x - 16.0), clampf(fp.y + 8.0, 64.0, vs2.y - bs.y - 16.0))
+			_aim_btn.size = bs
+
+
+# Turno della scheggia: un colpo solo, veloce, senza guardia a tempo (la parata resta per i colpi del nemico principale).
+func _greg_turn() -> void:
+	if not Gregario.alive(b) or not vis.has(Gregario.ID):
+		return
+	cur_pid = ""
+	_quick = false
+	_fx_turn("")
+	_refresh_hud()
+	var g: VendingVisual = vis[Gregario.ID]
+	var t2: Dictionary = b.get("telegraph2", {})
+	var who: String = str(BattleState.active_unit(b, str(t2.get("target", ""))).get("name", "?")).to_upper()
+	_cam_set(GREG_POS + Vector3(-1.6, 2.2, 5.2), GREG_POS + Vector3(-0.8, 1.0, 1.0), 3.0)
+	_banner(Gregario.NAME.to_upper() + " · COLPISCE " + who, _col(Gregario.unit(b)))
+	await _wait(0.25)
+	var ev: Array = SeqRound.boss_action(b, Gregario.ID)
+	var tw: Tween = g.attack()
+	await _wait(0.2)
+	_kick(0.4)
+	await _show_events(ev, true)
+	await _tw_done(tw)
+	_refresh_hud()
+	await _wait(0.12)
+	_cam_overview()

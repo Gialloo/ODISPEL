@@ -40,6 +40,7 @@ static func begin_round(state: Dictionary) -> void:
 			target = Kits.mask_target(state, target, rng)
 			_save_rng(state, rng)
 	state["telegraph"] = {"move": move_id, "target": target}
+	Gregario.telegraph(state)
 	Tactics.roll_chain(state, cycle)
 	Arena.roll(state)
 	# L'IA decide subito, cosi' le sue intenzioni si vedono durante la pianificazione (non dipendono dalla scelta degli umani).
@@ -266,6 +267,8 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 		actions.append({"actor": u["id"], "move": move_id, "target": str(p["choice"]["target"]), "prio": int(move["priority"]), "spd": int(u["spd"]), "boss": false})
 	var boss: Dictionary = BattleState.boss(state)
 	actions.append({"actor": boss["id"], "move": str(state["telegraph"]["move"]), "target": str(state["telegraph"]["target"]), "prio": 0, "spd": int(round(float(boss["spd"]) * Marks.boss_mult(boss, "spd"))), "boss": true})
+	if Gregario.alive(state):
+		actions.append({"actor": Gregario.ID, "move": "", "target": "", "prio": 0, "spd": int(Gregario.unit(state)["spd"]), "boss": true, "greg": true})
 	actions.sort_custom(_action_before)
 
 	for a in actions:
@@ -274,7 +277,9 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 		var actor: Dictionary = BattleState.unit(state, str(a["actor"]))
 		if not BattleState.is_alive(actor):
 			continue
-		if bool(a["boss"]):
+		if bool(a.get("greg", false)):
+			Gregario.act(state, events)
+		elif bool(a["boss"]):
 			_break_link(state, events)
 			if int(actor.get("stun", 0)) > 0:
 				actor["stun"] = int(actor["stun"]) - 1
@@ -284,6 +289,7 @@ static func resolve_round(state: Dictionary, force: bool = false) -> Array:
 		else:
 			_player_act(state, actor, str(a["move"]), str(a["target"]), events)
 			_summon_upkeep(state, events, false)
+			Gregario.after_events(state, events)
 		_check_winner(state, events)
 
 	# 4. fine round: prima l'evento dell'arena, poi il resto
@@ -689,8 +695,8 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 	if tenacious:
 		events.append({"t": "tenacity", "unit": defender["id"]})
 	Tactics.on_damaged(defender, events)
-	if str(defender["side"]) == "boss" and str(attacker["side"]) == "player" and int(defender["hp"]) > 0:
-		_chip_balance(defender, attacker, mult, events, state)
+	if str(defender["id"]) == BattleState.BOSS_ID and str(attacker["side"]) == "player" and int(defender["hp"]) > 0:
+		_chip_balance(defender, attacker, mult, events, state)     # la scheggia (Gregario) non ha equilibrio
 	if crit and Atypical.fx(attacker, "crit_ammo") > 0:
 		_change_ammo(attacker, Atypical.fx(attacker, "crit_ammo"), events)
 	var reflect: int = Atypical.fx(defender, "reflect_shield")
@@ -1025,7 +1031,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 	var targets: Array = []
 	match str(move["target"]):
 		"enemy":
-			targets = [BattleState.boss(state)]
+			targets = [Gregario.target_unit(state, target_pid)]     # due nemici: la scheggia solo se scelta (Gregario)
 		"self":
 			targets = [actor]
 		"ally":
@@ -1057,7 +1063,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 			t["marked_by"] = str(actor["id"])
 		if move.has("mult"):
 			var m_total: float = float(move["mult"]) * (1.0 + link_gain * float(link_n)) * awake_mult * emp_mult
-			if str(t["side"]) == "boss":
+			if str(t["id"]) == BattleState.BOSS_ID:
 				m_total *= _synergies(state, actor, t, events, move)
 			if move.has("consume_marks"):
 				# Orbital Strike: ogni marchio sul bersaglio vale danno in piu', poi i marchi spariscono

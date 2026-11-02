@@ -1,5 +1,18 @@
 # Novità
 
+## 0.42.0 · HUD di battaglia col ritratto 2D
+- In basso a sinistra il ritratto 2D di chi è di turno, con i comandi attorno (ATTACCO, SKILL e GUARDIA a sinistra, ULTIMATE a destra, tasti a rombo centrato sul cuore del personaggio, scritte tutte della stessa grandezza), ognuno col suo tasto (1-4 su PC, icona sul telefono) e il nome grande in fondo; in basso a destra la fila dei ritratti della squadra con PV, EN e barrette; sul bordo destro la colonna ORDINE dei turni. Riferimento dell'autore (2/11/2026). Rio ha il ritratto disegnato dall'autore (con contorno e ombra); gli altri sono segnaposto finché non arrivano quelli fatti a mano (guida: `docs/RITRATTI_HUD_PROCREATE.md`). La ruota attorno al personaggio resta nel codice (`Settings.hud_ritratto = false`).
+
+## 0.42.0 · Contatore COMBO
+- Quando la squadra colpisce il nemico due o più volte di fila prima che lui agisca, sul lato destro compare «N COMBO» grande, a pennarello (Permanent Marker, licenza Apache 2.0), giallo con contorno nero spesso e ombra del colore di chi ha colpito per ultimo. Si azzera quando il nemico agisce.
+
+## 0.42.0 · Scontri con due nemici: la Scheggia
+- In 5 scontri minori su 14, dal vicolo in poi, accanto al Frammento c'è una **Scheggia**: un pezzo più piccolo di un altro colore (vicolo: blu + rossa; galleria: verde + blu; caveau: verde + rossa; tangenziale: giallo + verde e rosso + blu). Strada e incrocio restano a un nemico solo, per imparare.
+- La Scheggia ha il 40% dei PV e metà dell'attacco del Frammento, è un po' più veloce e ha il suo turno: un colpo solo sul bersaglio che annuncia a inizio round («Colpirà NOX» sul suo cartellino). Niente equilibrio né BREAK: quelli restano del Frammento.
+- **Scelta del bersaglio**: tocca MIRA QUI ai piedi del nemico che vuoi colpire (su PC anche TAB); il mirino si sposta. Abbattere la Scheggia dà +1 Riserva. Si vince quando cade il Frammento: la Scheggia rimasta sola si dissolve.
+- AUTO: Ultimate e chi ha il colore vincente sul Frammento colpiscono il Frammento, con il Frammento rotto tutti su di lui, altrimenti prima la Scheggia.
+- Simulazione su 40 partite: gli scontri doppi durano 2-2,5 round (i singoli 1,5-2), AUTO vince il 98-100%; gli scontri di sempre danno numeri identici a prima.
+
 ## Prossima versione (non ancora rilasciata) · Dialoghi alla Persona: AUTO, velocità del testo, REGISTRO
 - Nei dialoghi, accanto a SALTA, due tasti nuovi. AUTO: le battute vanno avanti da sole, con una pausa che cresce con la lunghezza della battuta (da 1,1 a 4,5 secondi); resta acceso anche nelle scene dopo e si spegne con lo stesso tasto. REGISTRO (anche col tasto R): riapre le ultime 80 battute lette, anche delle scene prima, con il nome nel colore del personaggio; si scorre col dito e si chiude con CHIUDI. Con il registro aperto la scena non va avanti.
 - Impostazioni: «Velocità del testo» (NORMALE, VELOCE, ISTANTANEO) e «Dialoghi automatici» (lo stesso AUTO).

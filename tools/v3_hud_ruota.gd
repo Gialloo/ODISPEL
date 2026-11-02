@@ -14,6 +14,7 @@ func _init() -> void:
 		TouchUi.force = true
 	DirAccess.make_dir_recursive_absolute(out)
 	Settings.ensure_loaded()
+	Settings.hud_ritratto = false      # questa prova e' della ruota (l'HUD col ritratto ha tools/v3_hud_ritratto.gd)
 	_run()
 
 

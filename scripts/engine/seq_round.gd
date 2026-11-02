@@ -49,6 +49,9 @@ static func order(state: Dictionary) -> Array:
 		list.append({"unit": str(u["id"]), "player": str(p["id"]), "boss": false, "spd": int(u["spd"])})
 	var boss: Dictionary = BattleState.boss(state)
 	list.append({"unit": str(boss["id"]), "player": "", "boss": true, "spd": int(round(float(boss["spd"]) * Marks.boss_mult(boss, "spd")))})
+	if Gregario.alive(state):
+		# due nemici: la scheggia ha il suo turno (voce "boss" con "greg": chi guida i turni chiama boss_action con il suo id)
+		list.append({"unit": Gregario.ID, "player": "", "boss": true, "greg": true, "spd": int(Gregario.unit(state)["spd"])})
 	list.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		if int(a["spd"]) != int(b["spd"]):
 			return int(a["spd"]) > int(b["spd"])
@@ -99,6 +102,7 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary, qu
 		if quick and str(p["choice"]["move"]) == BattleTypes.ACTION_GUARD:
 			_slancio_guard(state, actor, events)
 		BattleResolver._summon_upkeep(state, events, false)
+		Gregario.after_events(state, events)
 		BattleResolver._check_winner(state, events)
 		Kits.after_events(state, events)
 		_team_strike(state, actor, events)
@@ -185,11 +189,18 @@ static func _slancio_guard(state: Dictionary, actor: Dictionary, events: Array) 
 
 
 # Turno del boss: la mossa e' quella annunciata (telegraph) all'inizio del round.
-static func boss_action(state: Dictionary) -> Array:
+# unit_id = Gregario.ID: turno della scheggia (un colpo sul suo bersaglio annunciato, telegraph2).
+static func boss_action(state: Dictionary, unit_id: String = BattleState.BOSS_ID) -> Array:
 	var events: Array = []
 	if str(state["winner"]) != "":
 		return events
 	state["events"] = events
+	if unit_id == Gregario.ID:
+		Gregario.act(state, events)
+		BattleResolver._check_winner(state, events)
+		Kits.after_events(state, events)
+		_log(state, events)
+		return events
 	var boss: Dictionary = BattleState.boss(state)
 	if BattleState.is_alive(boss):
 		var tele: Dictionary = state["telegraph"]

@@ -6,7 +6,7 @@ extends SceneTree
 #   semi=N      quanti semi per scontro (default 40)
 #   replica=N   Replica della diretta: nemici +15% PV e attacco per giro
 #   dettaglio   sotto ogni scontro la quota di danno di tutti e quattro
-#   minori      include anche i frammenti (nemici minori)
+#   minori      include anche i frammenti (nemici minori), compresi quelli con la scheggia (due nemici, Gregario)
 #   solo=ID     un solo scontro
 #   ng=N        New Game+ N: nemici al livello di BattleTypes.replica_level, squadra da Progress (sblocchi migliori equipaggiati)
 #   scarto=K    con ng: la squadra ha K livelli in meno del nemico (default 0; negativo = piu' alta)
@@ -20,7 +20,11 @@ const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
 const ENC: Array = [
 	["frammento_giallo", 1, 1.0, 1.0, true], ["frammento_rosso", 3, 1.0, 1.0, true], ["frammento_blu", 5, 1.0, 1.0, true], ["frammento_verde", 7, 1.0, 1.0, true],
 	["distributore", 1, 1.0, 0.8, false], ["semaforo", 3, 0.9, 0.9, false], ["cabina", 5, 0.8, 0.9, false],
-	["manichino", 7, 0.8, 0.85, false], ["cassaforte", 9, 0.6, 0.75, false], ["autovelox", 11, 0.65, 0.8, false]]
+	["manichino", 7, 0.8, 0.85, false], ["cassaforte", 9, 0.6, 0.75, false], ["autovelox", 11, 0.65, 0.8, false],
+	# due nemici (Gregario): frammento + scheggia, come in data/atto1.json
+	["frammento_blu", 5, 1.0, 1.0, true, "frammento_rosso"], ["frammento_verde", 7, 1.0, 1.0, true, "frammento_blu"],
+	["frammento_verde", 9, 1.0, 1.0, true, "frammento_rosso"], ["frammento_giallo", 10, 1.0, 1.0, true, "frammento_verde"],
+	["frammento_rosso", 10, 1.0, 1.0, true, "frammento_blu"]]
 
 
 var replica: int = 0
@@ -42,7 +46,7 @@ func _kit_team(lvl: int) -> Array:
 	return team
 
 
-func _setup(boss: String, lvl: int, pv: float, atk: float, minore: bool, seed_value: int) -> Dictionary:
+func _setup(boss: String, lvl: int, pv: float, atk: float, minore: bool, seed_value: int, greg: String = "") -> Dictionary:
 	var team: Array = []
 	if ng >= 0:
 		lvl = BattleTypes.replica_level(lvl, ng)
@@ -62,10 +66,11 @@ func _setup(boss: String, lvl: int, pv: float, atk: float, minore: bool, seed_va
 	bu["max_hp"] = maxi(1, int(round(float(bu["max_hp"]) * pk)))
 	bu["hp"] = bu["max_hp"]
 	bu["atk"] = maxi(1, int(round(float(bu["atk"]) * ak)))
+	Gregario.add(b, greg)
 	if ng >= 0 or use_kit:
 		Progress.apply_to_battle(b)
 	for uid in b["units"]:
-		if str(uid) != "boss":
+		if not Gregario.is_enemy(b, str(uid)):
 			b["units"][uid]["gauge"] = mini(BattleTypes.GAUGE_MAX, 60 + int(b["units"][uid].get("syn_gauge", 0)))
 	return b
 
@@ -100,10 +105,10 @@ func _scan(ev: Array, st: Dictionary) -> void:
 				st["break"] = float(st.get("break", 0.0)) + 1.0
 
 
-func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: int) -> Dictionary:
+func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: int, greg: String = "") -> Dictionary:
 	var st: Dictionary = {}
 	for sd in range(1, seeds + 1):
-		var b: Dictionary = _setup(boss, lvl, pv, atk, minore, sd)
+		var b: Dictionary = _setup(boss, lvl, pv, atk, minore, sd, greg)
 		var guard: int = 0
 		var minhp: float = 1.0
 		st["runs"] = float(st.get("runs", 0.0)) + 1.0
@@ -122,7 +127,9 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 				oi += 1
 				if str(b["winner"]) != "":
 					break
-				if bool(e["boss"]):
+				if bool(e.get("greg", false)):
+					_scan(SeqRound.boss_action(b, Gregario.ID), st)
+				elif bool(e["boss"]):
 					if int(BattleState.boss(b).get("stun", 0)) > 0:
 						st["boss_persi"] = float(st.get("boss_persi", 0.0)) + 1.0
 					else:
@@ -138,14 +145,14 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 							order.insert(oi, {"unit": x["unit"], "player": x["player"], "boss": false, "spd": -1, "extra": true, "quick": true})
 			_scan(SeqRound.finish(b), st)
 			for uid in b["units"]:
-				if str(uid) != "boss":
+				if not Gregario.is_enemy(b, str(uid)):
 					minhp = minf(minhp, float(b["units"][uid]["hp"]) / float(maxi(1, int(b["units"][uid]["max_hp"]))))
 		st["rounds"] = float(st.get("rounds", 0.0)) + float(guard)
 		st["minhp"] = float(st.get("minhp", 0.0)) + minhp
 		if str(b["winner"]) == "players":
 			st["wins"] = float(st.get("wins", 0.0)) + 1.0
 		for uid in b["units"]:
-			if str(uid) != "boss" and int(b["units"][uid]["hp"]) <= 0:
+			if not Gregario.is_enemy(b, str(uid)) and int(b["units"][uid]["hp"]) <= 0:
 				st["ko"] = float(st.get("ko", 0.0)) + 1.0
 	return st
 
@@ -181,11 +188,13 @@ func _init() -> void:
 			continue
 		if solo != "" and str(enc[0]) != solo:
 			continue
-		var st: Dictionary = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds)
+		var greg: String = str(enc[5]) if enc.size() > 5 else ""
+		var st: Dictionary = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds, greg)
 		var r: float = float(st["runs"])
 		var tot_dmg: float = maxf(1.0, float(st.get("dmg_tot", 0.0)))
+		var label: String = str(enc[0]) if greg == "" else "%s+%s" % [str(enc[0]).trim_prefix("frammento_"), str(greg).trim_prefix("frammento_")]
 		print("%-18s %3d %5.0f %5.2f %5.1f %6.2f %6.2f %5.2f %5.2f %6.0f %6.0f %6.2f %5.2f %6.2f %5.2f" % [
-			enc[0], BattleTypes.replica_level(int(enc[1]), ng) if ng >= 0 else int(enc[1]), 100.0 * float(st.get("wins", 0.0)) / r, float(st.get("ko", 0.0)) / r, float(st.get("rounds", 0.0)) / r,
+			label, BattleTypes.replica_level(int(enc[1]), ng) if ng >= 0 else int(enc[1]), 100.0 * float(st.get("wins", 0.0)) / r, float(st.get("ko", 0.0)) / r, float(st.get("rounds", 0.0)) / r,
 			float(st.get("boss_giocati", 0.0)) / r, float(st.get("boss_persi", 0.0)) / r, float(st.get("break", 0.0)) / r, float(st.get("slancio", 0.0)) / r,
 			100.0 * float(st.get("dmg_saul", 0.0)) / tot_dmg, 100.0 * float(st.get("dmg_nox", 0.0)) / tot_dmg,
 			float(st.get("heal_nox", 0.0)) / r, float(st.get("veglia", 0.0)) / r,

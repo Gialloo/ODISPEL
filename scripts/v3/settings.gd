@@ -14,6 +14,7 @@ static var show_fps: bool = false
 static var surprise: bool = true        # prova A/B: si puo' attaccare il nemico in strada (vantaggio) e farsi sorprendere (agguato)
 static var broken_cam: bool = true      # telecamera rotta quando tocca a chi ha pochi PV
 static var parry_wide: bool = false     # finestra di parata ampia (accessibilita'): la guardia normale vale sempre
+static var hud_ritratto: bool = true    # HUD di battaglia col ritratto 2D (remake di Persona 1, 2/11/2026); false = la ruota attorno al personaggio
 static var fps_cap: int = 0             # limite degli fps scelto dal giocatore (0 = predefinito: 60 sul telefono, 120 su PC)
 static var text_speed: int = 0          # velocita' del testo nei dialoghi: 0 NORMALE, 1 VELOCE, 2 ISTANTANEO
 static var auto_text: bool = false      # dialoghi automatici (AUTO alla Persona): la battuta va avanti da sola dopo una pausa
@@ -48,6 +49,7 @@ static func load_settings() -> void:
 	parry_wide = bool(cfg.get_value("game", "parry_wide", parry_wide))
 	text_speed = clampi(int(cfg.get_value("game", "text_speed", text_speed)), 0, TEXT_SPEEDS.size() - 1)
 	auto_text = bool(cfg.get_value("game", "auto_text", auto_text))
+	hud_ritratto = bool(cfg.get_value("video", "hud_ritratto", hud_ritratto))
 
 
 static func save() -> void:
@@ -65,6 +67,7 @@ static func save() -> void:
 	cfg.set_value("game", "parry_wide", parry_wide)
 	cfg.set_value("game", "text_speed", text_speed)
 	cfg.set_value("game", "auto_text", auto_text)
+	cfg.set_value("video", "hud_ritratto", hud_ritratto)
 	cfg.save(path)
 
 
