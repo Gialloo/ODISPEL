@@ -25,19 +25,23 @@ const SLOT: Dictionary = {      # (vecchia disposizione a colonna, tenuta come r
 # TASTI A ROMBO come Y/X/B/A del controller (correzione dell'autore, 2/11/2026: «il placing dei tasti e' scorretto»).
 # Centro del rombo rispetto all'angolo in basso a sinistra; ogni comando sta accanto al suo tasto:
 # a sinistra, a scaletta dall'alto: ATTACCO, ABILITA', GUARDIA; a destra, sotto al personaggio: ULTIMATE (autore, 2/11/2026).
-const PAD_C: Vector2 = Vector2(218.0, -176.0)
+# Il centro vuoto del rombo sta sul cuore del personaggio (autore, 2/11/2026): sul disegno 1536x2048 ~ (820, 1500).
+const PAD_C: Vector2 = Vector2(188.0, -126.0)
 const PAD: Dictionary = {      # kind -> [posto del tasto dal centro, grandezza della scritta, scritta a destra del tasto?]
-	"attack": [Vector2(6, -60), 38, false],
-	"skill": [Vector2(-46, -10), 32, false],
-	"guard": [Vector2(-2, 58), 32, false],
+	"attack": [Vector2(6, -52), 30, false],
+	"skill": [Vector2(-46, -4), 30, false],
+	"guard": [Vector2(-2, 46), 30, false],
 	"ult": [Vector2(52, 14), 30, true],
 }
+# Scritte tutte della stessa grandezza, quella del piu' piccolo (autore, 2/11/2026); ABILITA' qui si chiama SKILL.
+const LABEL: Dictionary = {"skill": "SKILL"}
 const KEYS: Dictionary = {"attack": "1", "skill": "2", "ult": "3", "guard": "4"}
 const GREY: Color = Color("#8a8496")
 
 var who_id: String = ""                       # id del personaggio (ferri, zecca, nox, saul...): sceglie il ritratto
 var _tex: Texture2D
 var _tex_real: bool = false
+var _usz: int = 30          # grandezza comune delle scritte dei comandi
 var _sil: Texture2D                          # sagoma bianca del disegno (per il bordo chiaro)
 var _rects: Dictionary = {}                   # kind -> Rect2 in coordinate del controllo (tocco e mouse)
 var _hov: String = ""
@@ -164,6 +168,11 @@ func _draw() -> void:
 			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
 		draw_texture_rect(_tex, r, false, Color(1, 1, 1, e))
 	# 3) comandi attorno al ritratto
+	_usz = 30
+	for kind in ["ult", "skill", "attack", "guard"]:
+		var it0: Dictionary = item(kind)
+		if not it0.is_empty():
+			_usz = mini(_usz, _fit_size(kind, it0, dx, H, f))
 	for kind in ["ult", "skill", "attack", "guard"]:
 		var it: Dictionary = item(kind)
 		if it.is_empty():
@@ -182,17 +191,26 @@ func _draw() -> void:
 		_draw_tip(item(picked), dx, H, e)
 
 
+# grandezza piu' grande con cui la scritta di questo comando entra nel suo spazio
+func _fit_size(kind: String, it: Dictionary, dx: float, H: float, f: Font) -> int:
+	var pd: Array = PAD[kind]
+	var bc: Vector2 = Vector2(dx, H) + PAD_C + (pd[0] as Vector2)
+	var name: String = str(LABEL.get(kind, it.get("name", kind)))
+	var maxw: float = (bc.x - 26.0 - dx - 6.0) if not bool(pd[2]) else 160.0
+	var sz: int = int(pd[1])
+	while sz > 20 and f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x > maxw:
+		sz -= 2
+	return sz
+
+
 func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: float) -> void:
 	var pd: Array = PAD[kind]
 	var bc: Vector2 = Vector2(dx, H) + PAD_C + (pd[0] as Vector2)      # tasto rotondo (posto nel rombo)
 	var right: bool = bool(pd[2])
-	var sz: int = int(pd[1])
-	var name: String = str(it.get("name", kind))
+	var sz: int = _usz
+	var name: String = str(LABEL.get(kind, it.get("name", kind)))
 	var ok: bool = bool(it.get("ok", false))
 	var on: bool = picked == kind
-	var maxw: float = (bc.x - 26.0 - dx - 6.0) if not right else 160.0
-	while sz > 20 and f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x > maxw:
-		sz -= 2
 	var tw: float = f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
 	var br: float = 15.0 if not on else 18.0
 	# la scritta sta a sinistra del tasto e finisce sul tasto (ULTIMATE, ABILITA', ATTACCO) o parte dal tasto (GUARDIA)
