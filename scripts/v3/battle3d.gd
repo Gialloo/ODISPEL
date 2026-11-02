@@ -157,6 +157,7 @@ var _say_balloon: EchoBalloon
 var _say_seq: int = 0
 var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
 var _party_back: Control
+var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
 var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
 var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
 var _pop_key: String = ""               # ultimo turno annunciato con lo scatto (evita di rifarlo a ogni aggiornamento)
@@ -656,6 +657,7 @@ func _place_boss_tag() -> void:
 	var vs: Vector2 = get_viewport().get_visible_rect().size
 	var sz: Vector2 = _boss_panel.get_combined_minimum_size()
 	sz.x = maxf(sz.x, 300.0)
+	var rm: float = 120.0 if _p1 != null else 0.0      # HUD col ritratto: la colonna ORDINE sul bordo destro resta libera
 	var want := Vector2(hp.x - sz.x * 0.5, hp.y - sz.y - 18.0)
 	if want.y < 64.0:
 		# boss alto: sopra la testa non c'e' posto e il cartellino gli finirebbe addosso. Va di fianco alla figura,
@@ -664,8 +666,8 @@ func _place_boss_tag() -> void:
 		var half: float = maxf(60.0, absf(fp.y - hp.y) * 0.4)
 		var cx: float = (hp.x + fp.x) * 0.5
 		want.y = maxf(64.0, hp.y)
-		want.x = cx + half + 24.0 if cx + half + 24.0 + sz.x <= vs.x - 16.0 else cx - half - 24.0 - sz.x
-	want.x = clampf(want.x, 16.0, vs.x - sz.x - 16.0)
+		want.x = cx + half + 24.0 if cx + half + 24.0 + sz.x <= vs.x - 16.0 - rm else cx - half - 24.0 - sz.x
+	want.x = clampf(want.x, 16.0, vs.x - sz.x - 16.0 - rm)
 	want.y = clampf(want.y, 64.0, vs.y * 0.5)
 	_boss_panel.position = _boss_panel.position.lerp(want, 0.3) if _boss_panel.position.y > 1.0 else want
 	_boss_panel.size = sz
@@ -2288,7 +2290,8 @@ func _build_ui() -> void:
 	_fx_layer.add_child(_spot)
 	_reticle = Reticle.new()
 	_fx_layer.add_child(_reticle)
-	_wheel = CmdWheel.new()
+	# HUD col ritratto 2D (remake di Persona 1, 2/11/2026): stessa interfaccia della ruota, che resta disponibile
+	_wheel = PortraitHud.new() if Settings.hud_ritratto else CmdWheel.new()
 	_wheel.visible = false
 	_wheel.tapped.connect(_wheel_tap)
 	_wheel.hovered.connect(_wheel_hover)
@@ -2389,6 +2392,17 @@ func _build_ui() -> void:
 		_cards.append(card)
 	party.sort_children.connect(_party_back.queue_redraw)
 	_intro_panels(ob, bp, party)
+	if Settings.hud_ritratto:
+		# squadra e turni li disegna PortraitParty: le card e la riga dei turni restano (stato, prove) ma non si vedono
+		_p1 = PortraitParty.new()
+		_root.add_child(_p1)
+		for c in [party, _party_back, ob]:
+			(c as Control).visible = false
+			(c as Control).modulate.a = 0.0
+		_order_panel = null
+		# il COMBO si sposta a sinistra della colonna ORDINE (stesso font, colori e spessore)
+		_combo_lbl.offset_left -= 96.0
+		_combo_lbl.offset_right -= 96.0
 
 	# comandi (basso a destra)
 	_cmd_box = VBoxContainer.new()
@@ -2486,6 +2500,9 @@ func _build_ui() -> void:
 	_hint.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if Settings.hud_ritratto:
+		# in basso a sinistra ora c'e' il ritratto: il fumetto di Echo va in basso al centro, tra ritratto e squadra
+		Ui.place(_hint, 0.0, 1.0, 1.0, 1.0, 420, -40, -500, -40)
 	_root.add_child(EchoBalloon.new(_hint))
 	_root.add_child(_hint)
 
@@ -2582,6 +2599,8 @@ func _hud_focus(choice: bool) -> void:
 	for c in [_order_panel, _boss_panel, _weak_row, _tele, _hint]:
 		if c != null:
 			(c as Control).visible = choice
+	if _p1 != null:
+		_p1.set_order_visible(choice)
 	if _top_bar != null:
 		_top_bar.visible = choice or auto_on
 	if _legend != null and not choice:
@@ -3061,7 +3080,31 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 				it["sub"] = "PROTEGGI TUTTI"
 				it["cost"] = "+%d EN" % (1 + BattleTypes.SLANCIO_GUARD_EN)
 				it["desc"] = "GUARDIA DI SLANCIO: dimezza il danno, +%d EN e uno scudo a tutta la squadra" % (1 + BattleTypes.SLANCIO_GUARD_EN)
+	if _wheel is PortraitHud:
+		(_wheel as PortraitHud).set_who(str(u.get("char", "")))
 	_wheel.setup(str(u.get("name", "")).to_upper() + (" · RAPIDO" if _quick else ""), _col(u), items)
+
+
+# HUD col ritratto: dati della fila della squadra e della colonna ORDINE (si ridisegna solo se cambiano)
+func _p1_refresh(marked: String) -> void:
+	var prow: Array = []
+	for i in slots.size():
+		var u: Dictionary = _slot_unit(i)
+		prow.append({"id": str(u.get("char", "")), "name": str(u.get("name", "")), "col": _col(u), "hp": int(u.get("hp", 0)),
+			"max_hp": int(u.get("max_hp", 1)), "en": int(u.get("energy", 0)), "gauge": int(u.get("gauge", 0)), "gmax": BattleTypes.GAUGE_MAX,
+			"active": str(slots[i]) == cur_pid and not ended, "alive": BattleState.is_alive(u), "marked": marked != "" and str(u.get("id", "")) == marked})
+	var orow: Array = []
+	for k in range(maxi(0, turn_i), turn_list.size()):
+		var e: Dictionary = turn_list[k]
+		var uu: Dictionary = BattleState.unit(b, str(e["unit"]))
+		if not BattleState.is_alive(uu):
+			continue
+		var is_boss: bool = bool(e["boss"])
+		orow.append({"id": "" if is_boss else str(uu.get("char", "")), "name": _bname() if is_boss else str(uu.get("name", "")).to_upper(),
+			"col": Ui.YELLOW if is_boss else _col(uu), "boss": is_boss, "now": k == turn_i})
+		if orow.size() >= 6:
+			break
+	_p1.set_data(prow, orow, int(b.get("round", 1)), _choice_hud)
 
 
 # Scegliere un comando non lo lancia: si accende (pennellata in luce, scena scura attorno al personaggio) e mostra cosa fa.
@@ -3422,6 +3465,8 @@ func _refresh_hud() -> void:
 			l.add_theme_color_override("font_color", Ui.INK if now else r[2])
 			l.add_theme_constant_override("outline_size", 0 if now else 5)
 			l.add_theme_font_override("font", Ui.display())
+	if _p1 != null:
+		_p1_refresh(marked)
 	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper() + (" · RAPIDO" if _quick else "")) if cur_pid != "" and not ended else ""
 	if waiting:
 		_show_commands(true)

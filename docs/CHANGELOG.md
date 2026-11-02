@@ -1,5 +1,8 @@
 # Novità
 
+## In prova · HUD di battaglia col ritratto 2D
+- In basso a sinistra il ritratto 2D di chi è di turno, con i comandi attorno (ULTIMATE, ABILITÀ, ATTACCO a sinistra, GUARDIA a destra), ognuno col suo tasto (1-4 su PC, icona sul telefono) e il nome grande in fondo; in basso a destra la fila dei ritratti della squadra con PV, EN e barrette; sul bordo destro la colonna ORDINE dei turni. Riferimento dell'autore (2/11/2026). I ritratti sono segnaposto finché non arrivano quelli fatti a mano (guida: `docs/RITRATTI_HUD_PROCREATE.md`). La ruota attorno al personaggio resta nel codice (`Settings.hud_ritratto = false`).
+
 ## 0.41.12 · Contatore COMBO
 - Quando la squadra colpisce il nemico due o più volte di fila prima che lui agisca, sul lato destro compare «N COMBO» grande, a pennarello (Permanent Marker, licenza Apache 2.0), giallo con contorno nero spesso e ombra del colore di chi ha colpito per ultimo. Si azzera quando il nemico agisce.
 
