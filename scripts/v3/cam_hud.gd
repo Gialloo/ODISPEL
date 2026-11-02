@@ -30,7 +30,8 @@ var _dist_txt: String = ""
 var _dist_col: Color = Ui.CREAM
 # CAMBIO DI TELECAMERA (PIANO fase 2, lo scorrimento alla Metaphor della V2 detto con lo sguardo di Echo): quando il turno passa
 # a un altro personaggio il segnale salta per un attimo, fasce di disturbo che scorrono di lato e il numero della nuova CAM.
-const CUT_TIME: float = 0.22
+const CUT_TIME: float = 0.22         # il segnale salta (velo e disturbo)
+const STAMP_TIME: float = 0.75       # il cartellino della nuova CAM resta il tempo di leggerlo, poi esce
 var _cut_t: float = 0.0
 var _cut_dir: float = 1.0            # verso dello scorrimento: +1 la nuova telecamera sta a destra, -1 a sinistra
 
@@ -120,7 +121,7 @@ func cut(dir: float = 1.0) -> void:
 	if anomaly:
 		return
 	_cut_dir = 1.0 if dir >= 0.0 else -1.0
-	_cut_t = CUT_TIME
+	_cut_t = STAMP_TIME
 
 
 func cutting() -> bool:
@@ -200,30 +201,78 @@ func _draw() -> void:
 		_draw_cut(sz)
 
 
-# Il segnale salta: velo scuro che si apre, fasce di disturbo che scorrono verso la nuova telecamera, numero grande.
-# Poche forme piatte per pochi fotogrammi, niente shader.
+# Il segnale salta (primi 0,22 s): velo scuro che si apre, la linea bianca che spazza verso la nuova telecamera, fasce di
+# disturbo coi colori separati (rosso e ciano, come l'aberrazione dei glitch) e l'immagine che sobbalza.
+# Poi resta il CARTELLINO della CAM (alla Persona 5: lastra nera inclinata, bordo nel colore del personaggio, numero grande e
+# nome), che entra dal lato del nuovo personaggio, si ferma e scivola via. Poche forme piatte per pochi fotogrammi, niente shader.
 func _draw_cut(sz: Vector2) -> void:
-	var k: float = _cut_t / CUT_TIME              # 1 = appena tagliato, 0 = finito
-	var veil: float = (0.35 if Settings.light_fx else 0.6) * clampf(Settings.flash, 0.0, 1.0) * k
-	if veil > 0.01:
-		draw_rect(Rect2(Vector2.ZERO, sz), Color(0.03, 0.02, 0.07, veil))
-	var n: int = 3 if Settings.light_fx else 6
-	var slide: float = (1.0 - k) * sz.x * 0.35 * _cut_dir
-	for i in n:
-		var h: float = fract_hash(float(i) * 7.13 + floor(_t * 30.0)) 
-		var y: float = sz.y * fract_hash(float(i) * 3.7 + 0.5)
-		var bh: float = 6.0 + 22.0 * h
-		var x0: float = -sz.x * 0.2 + slide + sz.x * 0.3 * fract_hash(float(i) * 5.1)
-		var col: Color = Color(1, 1, 1, 0.22 * k) if i % 2 == 0 else Color(_who_col.r, _who_col.g, _who_col.b, 0.35 * k)
-		draw_rect(Rect2(x0, y, sz.x * (0.5 + 0.4 * h), bh), col)
+	var el: float = STAMP_TIME - _cut_t            # tempo dal taglio
+	var lite: bool = Settings.light_fx
+	if el < CUT_TIME:
+		var k: float = 1.0 - el / CUT_TIME          # 1 = appena tagliato, 0 = finito
+		var veil: float = (0.35 if lite else 0.62) * clampf(Settings.flash, 0.0, 1.0) * k
+		if veil > 0.01:
+			draw_rect(Rect2(Vector2.ZERO, sz), Color(0.03, 0.02, 0.07, veil))
+		# linea che spazza lo schermo nel verso del cambio, con la scia del colore del personaggio
+		var sx: float = lerpf(-0.05, 1.05, el / CUT_TIME)
+		if _cut_dir < 0.0:
+			sx = 1.0 - sx
+		draw_rect(Rect2(sz.x * sx - 3.0, 0, 6.0, sz.y), Color(1, 1, 1, 0.8 * k))
+		draw_rect(Rect2(sz.x * sx - (90.0 if _cut_dir > 0.0 else -6.0) * 1.0, 0, 84.0, sz.y), Color(_who_col.r, _who_col.g, _who_col.b, 0.22 * k))
+		# fasce di disturbo: ognuna e' una coppia rossa/ciano sfasata, che scorre verso la nuova telecamera
+		var n: int = 4 if lite else 9
+		var slide: float = (1.0 - k) * sz.x * 0.4 * _cut_dir
+		var frame: float = floor(_t * 30.0)
+		for i in n:
+			var h: float = fract_hash(float(i) * 7.13 + frame)
+			var y: float = sz.y * fract_hash(float(i) * 3.7 + 0.5 + floor(frame / 3.0) * 0.11)
+			var bh: float = 3.0 + 20.0 * h * h
+			var x0: float = -sz.x * 0.25 + slide + sz.x * 0.45 * fract_hash(float(i) * 5.1 + frame * 0.3)
+			var bw: float = sz.x * (0.25 + 0.55 * h)
+			var off: float = 10.0 + 14.0 * h
+			draw_rect(Rect2(x0 - off, y, bw, bh), Color(1.0, 0.16, 0.25, 0.32 * k))
+			draw_rect(Rect2(x0 + off, y, bw, bh), Color(0.25, 0.9, 1.0, 0.32 * k))
+			draw_rect(Rect2(x0, y + bh * 0.3, bw, maxf(1.0, bh * 0.4)), Color(1, 1, 1, 0.4 * k) if i % 3 == 0 else Color(_who_col.r, _who_col.g, _who_col.b, 0.45 * k))
+	_draw_cam_stamp(sz, el)
+
+
+# Cartellino della CAM: entra veloce dal lato del nuovo personaggio (0,12 s), sta fermo, esce dal lato opposto negli ultimi 0,15 s.
+func _draw_cam_stamp(sz: Vector2, el: float) -> void:
+	var t_in: float = 0.12
+	var t_out: float = 0.15
+	var a: float = 1.0
+	var dx: float = 0.0
+	if el < t_in:
+		var q: float = 1.0 - el / t_in
+		dx = q * q * 180.0 * _cut_dir           # arriva dal lato della nuova telecamera
+		a = 1.0 - q * 0.6
+	elif el > STAMP_TIME - t_out:
+		var q2: float = (el - (STAMP_TIME - t_out)) / t_out
+		dx = -q2 * q2 * 140.0 * _cut_dir        # esce dalla parte opposta, come se la camera continuasse a scorrere
+		a = 1.0 - q2
+	if a <= 0.01:
+		return
 	var f: Font = Ui.display()
-	var txt: String = "CAM %02d" % _cam_no
-	var fs: int = 64
-	var tw: float = f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-	# in basso al centro, sopra il riquadro di Echo: in alto c'e' il cartellino del nemico che lo coprirebbe
-	var pos := Vector2(sz.x * 0.5 - tw * 0.5 + 40.0 * _cut_dir * (1.0 - k), sz.y * 0.74)
-	draw_string(f, pos + Vector2(4, 4), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, 0.6 * k))
-	draw_string(f, pos, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, k))
+	var fb: Font = Ui.body()
+	var num: String = "CAM %02d" % _cam_no
+	var who: String = _who.to_upper() if _who != "" else "VISTA GENERALE"
+	var fs: int = 66
+	var fs2: int = 26
+	var w1: float = f.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var w2: float = fb.get_string_size(who, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2).x
+	var bw: float = maxf(w1, w2) + 70.0
+	var bh: float = 116.0
+	var c := Vector2(sz.x * 0.64 + dx, sz.y * 0.72)      # a destra di chi e' di turno (che sta a sinistra del centro), sotto il nemico
+	draw_set_transform(c, deg_to_rad(-6.0), Vector2.ONE)
+	var r := Rect2(-bw * 0.5, -bh * 0.5, bw, bh)
+	draw_rect(Rect2(r.position + Vector2(10, 10), r.size), Color(_who_col.r, _who_col.g, _who_col.b, 0.85 * a))   # ombra piena nel colore
+	draw_rect(r, Color(Ui.INK.r, Ui.INK.g, Ui.INK.b, 0.94 * a))
+	draw_rect(r, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, 0.9 * a), false, 3.0)
+	# pallino del REC e numero grande, nome sotto nel colore del personaggio
+	draw_circle(Vector2(r.position.x + 24.0, r.position.y + 34.0), 8.0, Color(REC_RED.r, REC_RED.g, REC_RED.b, a))
+	draw_string(f, Vector2(r.position.x + 42.0, r.position.y + 66.0), num, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, a))
+	draw_string(fb, Vector2(r.position.x + 44.0, r.position.y + 100.0), who, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, Color(_who_col.lightened(0.4).r, _who_col.lightened(0.4).g, _who_col.lightened(0.4).b, a))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 static func fract_hash(x: float) -> float:

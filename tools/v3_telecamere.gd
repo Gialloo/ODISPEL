@@ -79,7 +79,8 @@ func _run() -> void:
 	bt.call("_refresh_hud")
 	bt.call("_update_broken_cam")
 	await _shot("6_cambio_telecamera", 2)
-	await create_timer(0.6).timeout
+	await _shot("6b_cartellino_cam", 8)
+	await create_timer(1.0).timeout
 	await _shot("7_dopo_il_taglio")
 	print("OK telecamere")
 	quit(0)
