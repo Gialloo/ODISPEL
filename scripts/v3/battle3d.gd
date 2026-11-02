@@ -1572,6 +1572,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if hit_anims and home.has(hd):
 					_ring(home[hd], Color("#62f08c"), 1.6)
 					LightFx.rise(self, home[hd], Color("#62f08c"))
+				_signal_back(hd, int(e.get("amount", 0)), delay)
 				delay += 0.1
 			"shield":
 				_number(str(e.get("dst", "")), "SCUDO +%d" % int(e.get("amount", 0)), Ui.CYAN, 28, delay)
@@ -1710,6 +1711,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				elif du != BattleState.BOSS_ID:
 					_number(du, "K.O.", Color("#ff4a5a"), 64, delay + 0.1, -10.0)       # chi cade si legge subito, non solo dalla card
 					_kick(0.5)
+					_signal_lost_later(du, delay)
 				if vis.has(du):
 					var dv: Node3D = vis[du]
 					if dv.has_method("ko"):
@@ -2014,6 +2016,44 @@ func _cutin_finish() -> void:
 
 
 # ---------------------------------------------------------------- fine
+
+# Numero della telecamera di un compagno (stesso conto di _fx_turn: CAM 01 e' l'inquadratura generale); 0 = non e' in squadra
+func _cam_no_of(uid: String) -> int:
+	for i in slots.size():
+		if str(BattleState.player(b, str(slots[i])).get("active", "")) == uid:
+			return 2 + i
+	return 0
+
+
+# K.O. di un compagno = la sua telecamera va in frantumi e perde il segnale (le telecamere che si incrinano, PIANO fase 2).
+# Prima a 0 PV non succedeva niente: la rottura scattava solo scendendo sotto il 50% o il 25%, il momento piu' forte restava muto.
+func _signal_lost_later(uid: String, delay: float) -> void:
+	var u: Dictionary = b["units"].get(uid, {})
+	if u.is_empty():
+		return
+	_shatter_later(str(u.get("char", uid)), delay, 1.0)
+	_glitch_later(0.9, delay)          # il segnale salta (spento con effetti ridotti e lampi a zero, come gli altri glitch)
+	if delay > 0.01:
+		await get_tree().create_timer(delay).timeout
+	if is_inside_tree() and _cam_hud != null:
+		_cam_hud.disturb("SEGNALE PERSO  ·  CAM %02d  ·  %s" % [_cam_no_of(uid), str(u.get("name", "")).to_upper()], Color("#ff4a5a"), 1.6)
+
+
+# Una cura che riporta un compagno sopra la soglia (50% / 25%) ricalibra la sua telecamera: lo si legge in parole, non solo
+# dalle crepe che spariscono.
+func _signal_back(uid: String, amount: int, delay: float) -> void:
+	var u: Dictionary = b["units"].get(uid, {})
+	if u.is_empty() or amount <= 0 or Gregario.is_enemy(b, uid) or uid == BattleState.BOSS_ID:
+		return
+	var mx: float = maxf(1.0, float(u.get("max_hp", 1)))
+	var now: int = int(u.get("hp", 0))
+	if now <= 0 or BrokenCam.tier(float(now) / mx) >= BrokenCam.tier(float(maxi(1, now - amount)) / mx):
+		return
+	if delay > 0.01:
+		await get_tree().create_timer(delay).timeout
+	if is_inside_tree() and _cam_hud != null:
+		_cam_hud.disturb("SEGNALE RECUPERATO  ·  CAM %02d  ·  %s" % [_cam_no_of(uid), str(u.get("name", "")).to_upper()], Color("#62f08c"), 1.2)
+
 
 func _shatter_later(key: String, delay: float, strength: float, big: bool = false) -> void:
 	if _broken == null:
