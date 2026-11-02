@@ -166,6 +166,8 @@ static func describe(state: Dictionary, e: Dictionary) -> Dictionary:
 		"reserve":
 			if int(e["delta"]) == 0:
 				return {"text": "", "kind": "info"}
+			if str(e.get("why", "")) == "gregario":
+				return {"text": "SCHEGGIA ABBATTUTA: RISERVA +%d (%d)" % [int(e["delta"]), int(e["value"])], "kind": "info"}
 			return {"text": "RISERVA %s%d (%d)" % ["+" if int(e["delta"]) > 0 else "", int(e["delta"]), int(e["value"])], "kind": "info"}
 		"phase":
 			return {"text": "IL BOSS CAMBIA SCHEMA: FASE %d" % int(e["phase"]), "kind": "boss"}
