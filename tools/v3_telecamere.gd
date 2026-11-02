@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Schermate delle telecamere che si incrinano (PIANO fase 2): chi e' di turno al 40% e al 20% dei PV, il K.O. di un compagno
-# (la sua telecamera va in frantumi e perde il segnale) e la cura che la ricalibra.
+# (la sua telecamera va in frantumi e perde il segnale), la cura che la ricalibra e il cambio di telecamera tra i turni.
 # Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_telecamere.gd -- <cartella> [touch|pc]
 
 var out: String = "/tmp/v3telecamere"
@@ -68,5 +68,18 @@ func _run() -> void:
 	bt.call("_update_broken_cam")
 	await create_timer(0.5).timeout
 	await _shot("5_segnale_recuperato")
+	# 6: cambio di telecamera verso un compagno (il taglio a meta')
+	var nx: String = str(BattleState.player(b, str(slots[0]))["active"])
+	bt.set("_last_turn_uid", uid)
+	bt.set("cur_pid", str(slots[0]))
+	bt.call("_cam_actor", nx)
+	bt.call("_cam_switch", nx)
+	bt.call("_fx_turn", nx)
+	bt.call("_cam_choose", nx)
+	bt.call("_refresh_hud")
+	bt.call("_update_broken_cam")
+	await _shot("6_cambio_telecamera", 2)
+	await create_timer(0.6).timeout
+	await _shot("7_dopo_il_taglio")
 	print("OK telecamere")
 	quit(0)

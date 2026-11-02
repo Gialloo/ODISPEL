@@ -517,7 +517,7 @@ func _cam_set(pos: Vector3, look: Vector3, rate: float = 3.0, snap: bool = false
 	_cam_want_pos = pos
 	_cam_want_look = look
 	_cam_rate = rate
-	if snap:
+	if snap or Engine.get_process_frames() == _cut_frame:
 		_cam_pos = pos
 		_cam_look = look
 
@@ -812,6 +812,7 @@ func _advance() -> void:
 		_quick = bool(e.get("quick", false))
 		var uid: String = str(_unit_of(pid)["id"])
 		_cam_actor(uid)
+		_cam_switch(uid)
 		_fx_turn(uid)
 		_refresh_hud()
 		if auto_on:
@@ -1898,6 +1899,30 @@ func _combo_show(col: Color) -> void:
 	_combo_lbl.add_theme_constant_override("shadow_offset_y", 5)
 	_combo_lbl.scale = Vector2(1.35, 1.35)
 	_combo_lbl.create_tween().tween_property(_combo_lbl, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+# CAMBIO DI TELECAMERA tra un personaggio e l'altro (PIANO fase 2: la presentazione della V2 nel motore della V3).
+# Nella V2 la camera scorreva di lato di quanti posti separano i due; qui lo sguardo di Echo TAGLIA da una CAM all'altra:
+# il segnale salta per 0,22 s verso il lato del nuovo personaggio e, sotto il disturbo, la telecamera e' gia' alle sue spalle
+# (niente lunga carrellata a ogni turno). Lo stesso personaggio due volte di fila: nessun taglio.
+var _last_turn_uid: String = ""
+var _cut_frame: int = -1
+
+
+func _cam_switch(uid: String) -> void:
+	var prev: String = _last_turn_uid
+	_last_turn_uid = uid
+	if prev == "" or prev == uid or _cam_hud == null or not home.has(uid):
+		return
+	var dir: float = 1.0
+	if home.has(prev):
+		dir = signf((home[uid] as Vector3).x - (home[prev] as Vector3).x)
+	_cam_hud.cut(dir if dir != 0.0 else 1.0)
+	# taglio secco: il disturbo copre il salto. Vale per tutte le inquadrature chieste in questo fotogramma (alle spalle e poi
+	# quella della scelta), cosi' dopo il taglio si e' gia' dove si sceglie, senza carrellata
+	_cut_frame = Engine.get_process_frames()
+	_cam_pos = _cam_want_pos
+	_cam_look = _cam_want_look
 
 
 # Chi e' di turno: cerchio di luce del suo colore ai piedi e la telecamera che lo inquadra (vuoto = turno del nemico)

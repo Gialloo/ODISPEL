@@ -28,6 +28,11 @@ var _dist_t: float = 0.0             # disturbo in corso (Ultimate o BREAK): sec
 var _dist_len: float = 1.0
 var _dist_txt: String = ""
 var _dist_col: Color = Ui.CREAM
+# CAMBIO DI TELECAMERA (PIANO fase 2, lo scorrimento alla Metaphor della V2 detto con lo sguardo di Echo): quando il turno passa
+# a un altro personaggio il segnale salta per un attimo, fasce di disturbo che scorrono di lato e il numero della nuova CAM.
+const CUT_TIME: float = 0.22
+var _cut_t: float = 0.0
+var _cut_dir: float = 1.0            # verso dello scorrimento: +1 la nuova telecamera sta a destra, -1 a sinistra
 
 const GRAIN_SHADER: String = """
 shader_type canvas_item;
@@ -109,6 +114,19 @@ func disturb(txt: String, c: Color, secs: float = 1.4) -> void:
 	_refresh()
 
 
+# Taglio tra due telecamere: dir = verso in cui sta la nuova (come lo scorrimento della V2: da F1 a F3 si va a destra).
+# Con effetti ridotti resta solo il velo, piu' leggero; con i lampi a zero niente velo scuro.
+func cut(dir: float = 1.0) -> void:
+	if anomaly:
+		return
+	_cut_dir = 1.0 if dir >= 0.0 else -1.0
+	_cut_t = CUT_TIME
+
+
+func cutting() -> bool:
+	return _cut_t > 0.0
+
+
 func set_fractured(on: bool) -> void:
 	if on != fractured:
 		fractured = on
@@ -137,6 +155,9 @@ func _process(delta: float) -> void:
 		_clock.text = _time_text()
 	if anomaly and _tag != null:
 		_tag.modulate.a = 0.55 + 0.45 * float(sin(_t * 23.0) > -0.6)
+	if _cut_t > 0.0:
+		# tetto al passo: il primo fotogramma dopo il taglio puo' essere lento (scena nuova da disegnare) e si mangerebbe tutto
+		_cut_t = maxf(0.0, _cut_t - minf(delta, 0.034))
 	if _dist_t > 0.0:
 		_dist_t -= delta
 		if _tag != null:
@@ -175,6 +196,39 @@ func _draw() -> void:
 		draw_arc(Vector2(x, tp.y + _tag.size.y * 0.5), 7.5, 0, TAU, 16, Ui.INK, 2.0)
 	if fractured:
 		_draw_crack(sz)
+	if _cut_t > 0.0:
+		_draw_cut(sz)
+
+
+# Il segnale salta: velo scuro che si apre, fasce di disturbo che scorrono verso la nuova telecamera, numero grande.
+# Poche forme piatte per pochi fotogrammi, niente shader.
+func _draw_cut(sz: Vector2) -> void:
+	var k: float = _cut_t / CUT_TIME              # 1 = appena tagliato, 0 = finito
+	var veil: float = (0.35 if Settings.light_fx else 0.6) * clampf(Settings.flash, 0.0, 1.0) * k
+	if veil > 0.01:
+		draw_rect(Rect2(Vector2.ZERO, sz), Color(0.03, 0.02, 0.07, veil))
+	var n: int = 3 if Settings.light_fx else 6
+	var slide: float = (1.0 - k) * sz.x * 0.35 * _cut_dir
+	for i in n:
+		var h: float = fract_hash(float(i) * 7.13 + floor(_t * 30.0)) 
+		var y: float = sz.y * fract_hash(float(i) * 3.7 + 0.5)
+		var bh: float = 6.0 + 22.0 * h
+		var x0: float = -sz.x * 0.2 + slide + sz.x * 0.3 * fract_hash(float(i) * 5.1)
+		var col: Color = Color(1, 1, 1, 0.22 * k) if i % 2 == 0 else Color(_who_col.r, _who_col.g, _who_col.b, 0.35 * k)
+		draw_rect(Rect2(x0, y, sz.x * (0.5 + 0.4 * h), bh), col)
+	var f: Font = Ui.display()
+	var txt: String = "CAM %02d" % _cam_no
+	var fs: int = 64
+	var tw: float = f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	# in basso al centro, sopra il riquadro di Echo: in alto c'e' il cartellino del nemico che lo coprirebbe
+	var pos := Vector2(sz.x * 0.5 - tw * 0.5 + 40.0 * _cut_dir * (1.0 - k), sz.y * 0.74)
+	draw_string(f, pos + Vector2(4, 4), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, 0.6 * k))
+	draw_string(f, pos, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, k))
+
+
+static func fract_hash(x: float) -> float:
+	var v: float = sin(x * 91.345) * 47453.5453
+	return v - floor(v)
 
 
 # Lente incrinata (nemico in BREAK): poche linee spezzate dal bordo sinistro, nel buio tra REC e comandi, lontano dai testi.
