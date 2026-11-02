@@ -1141,3 +1141,10 @@ def dump(o, ind=0):
 open(sys.argv[1], "w").write(dump(out) + "\n")
 n = sum(len(v["righe"]) for k, v in S.items())
 print("scene", len(S), "righe", n, "chiacchiere", sum(len(v) for v in CH.values()))
+# Storia che non si salta (feedback amici 18/10): una battuta oltre MAX_CAR va spezzata in due fumetti, una scena oltre
+# MAX_RIGHE va spezzata o spostata in parte nelle chiacchiere. Qui si avvisa e basta: decide chi scrive.
+MAX_CAR, MAX_RIGHE = 80, 24
+lunghe = [(k, r["testo"]) for k, v in S.items() for r in v["righe"] if len(r["testo"]) > MAX_CAR]
+lunghe += [(k, r["testo"]) for k, v in CH.items() for b in v for r in b["righe"] if len(r["testo"]) > MAX_CAR]
+fiumi = [(k, len(v["righe"])) for k, v in S.items() if len(v["righe"]) > MAX_RIGHE]
+print("battute oltre", MAX_CAR, "caratteri:", len(lunghe), "| scene oltre", MAX_RIGHE, "battute:", fiumi)
