@@ -28,6 +28,7 @@ var bow: Vector3 = Vector3.ZERO
 var width: float = 0.3
 var radius: float = 1.0
 var seed_v: float = 0.0
+var expo: float = 0.0                       # LUNGA ESPOSIZIONE: secondi in cui il tratto intero resta, tenue, dopo la pennellata
 var _sparks: Array = []                     # [direzione, velocita', lunghezza]
 var _fade: float = 1.0
 var _stopping: bool = false
@@ -130,6 +131,14 @@ static func seal(parent: Node, feet: Vector3, r: float = 1.9) -> LightFx:
 	return fx
 
 
+# Lunga esposizione (abilita' e ultimate): come una foto di lightpainting, il tratto intero resta tenue per secs e poi svanisce.
+# Allunga la vita dell'effetto, non il disegno della pennellata. Con effetti ridotti dura la meta'.
+func expose(secs: float) -> LightFx:
+	expo = secs * (0.5 if Settings.light_fx else 1.0)
+	dur += expo
+	return self
+
+
 func stop() -> void:
 	_stopping = true
 
@@ -221,13 +230,24 @@ func _ribbon(pts: Array, w: float, c: Color, k: float) -> void:
 
 
 func _draw_stroke() -> void:
-	var u: float = t / dur
+	var d0: float = dur - expo
+	var u: float = minf(1.0, t / d0)
 	var head: float = ease(minf(1.0, u / 0.45), 0.4)
+	var segs: int = 10 if Settings.light_fx else 18
+	if expo > 0.0:
+		# la scia "impressionata": tutto il tratto gia' disegnato resta, sottile e tenue, e svanisce nella lunga esposizione
+		var ek: float = 1.0 - clampf((t - d0) / expo, 0.0, 1.0)
+		ek = sqrt(ek)          # resta piena a lungo e svanisce alla fine, come la luce impressa
+		var gp: Array = []
+		for i in segs + 1:
+			var s0: float = head * float(i) / float(segs)
+			gp.append(_bez(s0) + Vector3(0, sin(s0 * 17.0 + seed_v) * 0.05, cos(s0 * 13.0 + seed_v) * 0.04))
+		_ribbon(gp, width * 0.6, col, 0.6 * ek)
+		_ribbon(gp, width * 0.18, IVORY, 0.8 * ek)
 	var tail: float = clampf((u - 0.3) / 0.7, 0.0, 1.0)
 	tail = tail * tail
 	if head - tail < 0.02:
 		return
-	var segs: int = 10 if Settings.light_fx else 18
 	var pts: Array = []
 	for i in segs + 1:
 		var s: float = lerpf(tail, head, float(i) / float(segs))
