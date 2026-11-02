@@ -14,6 +14,7 @@ static var show_fps: bool = false
 static var surprise: bool = true        # prova A/B: si puo' attaccare il nemico in strada (vantaggio) e farsi sorprendere (agguato)
 static var broken_cam: bool = true      # telecamera rotta quando tocca a chi ha pochi PV
 static var parry_wide: bool = false     # finestra di parata ampia (accessibilita'): la guardia normale vale sempre
+static var hud_ritratto: bool = true    # HUD di battaglia col ritratto 2D (remake di Persona 1, 2/11/2026); false = la ruota attorno al personaggio
 static var fps_cap: int = 0             # limite degli fps scelto dal giocatore (0 = predefinito: 60 sul telefono, 120 su PC)
 static var _loaded: bool = false
 
@@ -42,6 +43,7 @@ static func load_settings() -> void:
 	broken_cam = bool(cfg.get_value("video", "broken_cam", broken_cam))
 	fps_cap = int(cfg.get_value("video", "fps_cap", fps_cap))
 	parry_wide = bool(cfg.get_value("game", "parry_wide", parry_wide))
+	hud_ritratto = bool(cfg.get_value("video", "hud_ritratto", hud_ritratto))
 
 
 static func save() -> void:
@@ -57,6 +59,7 @@ static func save() -> void:
 	cfg.set_value("video", "broken_cam", broken_cam)
 	cfg.set_value("video", "fps_cap", fps_cap)
 	cfg.set_value("game", "parry_wide", parry_wide)
+	cfg.set_value("video", "hud_ritratto", hud_ritratto)
 	cfg.save(path)
 
 
