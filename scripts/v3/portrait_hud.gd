@@ -38,6 +38,7 @@ const GREY: Color = Color("#8a8496")
 var who_id: String = ""                       # id del personaggio (ferri, zecca, nox, saul...): sceglie il ritratto
 var _tex: Texture2D
 var _tex_real: bool = false
+var _sil: Texture2D                          # sagoma bianca del disegno (per il bordo chiaro)
 var _rects: Dictionary = {}                   # kind -> Rect2 in coordinate del controllo (tocco e mouse)
 var _hov: String = ""
 
@@ -55,16 +56,46 @@ func set_who(id: String) -> void:
 		return
 	who_id = id
 	_tex = null
+	_sil = null
 	_tex_real = false
 	var real: String = "res://assets/portraits/hud/%s_hud.png" % id
 	if ResourceLoader.exists(real):
 		_tex = load(real)
 		_tex_real = true
+		_sil = _silhouette(_tex)
 	else:
 		var fp: String = "res://assets/portraits/%s_neutro.png" % id
 		if ResourceLoader.exists(fp):
 			_tex = load(fp)
 	queue_redraw()
+
+
+# Sagoma bianca piena del disegno, a un quarto della grandezza (basta per un bordo di pochi pixel). La soglia sull'alfa
+# toglie i puntini quasi trasparenti rimasti attorno al disegno (altrimenti diventano macchie bianche). Una volta per file.
+static var _sil_cache: Dictionary = {}
+
+
+static func _silhouette(t: Texture2D) -> Texture2D:
+	if _sil_cache.has(t.resource_path):
+		return _sil_cache[t.resource_path]
+	var src: Image = t.get_image()
+	if src == null:
+		return null
+	src = src.duplicate()
+	if src.is_compressed():
+		src.decompress()
+	src.convert(Image.FORMAT_RGBA8)
+	src.resize(maxi(1, src.get_width() / 4), maxi(1, src.get_height() / 4), Image.INTERPOLATE_BILINEAR)
+	var d: PackedByteArray = src.get_data()
+	for i in range(0, d.size(), 4):
+		d[i] = 255
+		d[i + 1] = 255
+		d[i + 2] = 255
+		d[i + 3] = 255 if d[i + 3] >= 140 else 0
+	var out := Image.create_from_data(src.get_width(), src.get_height(), false, Image.FORMAT_RGBA8, d)
+	var tex := ImageTexture.create_from_image(out)
+	_sil_cache[t.resource_path] = tex
+	return tex
 
 
 func setup(p_who: String, p_col: Color, p_items: Array) -> void:
@@ -109,7 +140,7 @@ func _draw() -> void:
 	for q in sh:
 		off.append(q + Vector2(10, 8))
 	draw_colored_polygon(off, Color(INK, 0.9 * e))
-	draw_colored_polygon(sh, Color(col.darkened(0.55), 0.92 * e))
+	draw_colored_polygon(sh, Color(col.darkened(0.38 if _tex_real else 0.55), 0.92 * e))      # disegno a mano: lastra piu' chiara, il nero si stacca
 	draw_colored_polygon(PackedVector2Array([Vector2(dx, H - 330), Vector2(dx + 226, H - 376), Vector2(dx + 240, H - 362), Vector2(dx, H - 314)]), Color(col.lightened(0.15), 0.9 * e))
 	draw_colored_polygon(PackedVector2Array([Vector2(dx + 268, H - 408), Vector2(dx + 286, H - 412), Vector2(dx + PW + 46, H), Vector2(dx + PW + 26, H)]), Color(col, 0.85 * e))
 	# 2) ritratto: in basso, tagliato dal bordo; il volto sta nella meta' destra della zona, le scritte a sinistra e in fondo
@@ -118,8 +149,17 @@ func _draw() -> void:
 		if not _tex_real:
 			# segnaposto (mezzobusto 512x768, volto al centro): spostato e ingrandito per mettere il volto nella sua zona
 			r = Rect2(Vector2(dx + 92.0, H - 500.0), Vector2(320.0, 480.0))
-		# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
-		draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
+		if _tex_real:
+			# disegno fatto a mano: niente ombra scura (appesantiva i disegni con tanto nero), ma un bordo chiaro del
+			# colore del personaggio attorno alla sagoma, cosi' giacche e capelli scuri si staccano dalla lastra (autore, 2/11/2026)
+			if _sil != null:
+				var rc: Color = Color(col.lightened(0.55), 0.95 * e)
+				for k in 8:
+					var o: Vector2 = Vector2.RIGHT.rotated(TAU * float(k) / 8.0) * 3.5
+					draw_texture_rect(_sil, Rect2(r.position + o, r.size), false, rc)
+		else:
+			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
+			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
 		draw_texture_rect(_tex, r, false, Color(1, 1, 1, e))
 	# 3) comandi attorno al ritratto
 	for kind in ["ult", "skill", "attack", "guard"]:
