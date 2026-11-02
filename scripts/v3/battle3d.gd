@@ -47,6 +47,7 @@ var atk_k: float = 1.0
 var arena: String = "strada"
 var weak: Array = []                     # debolezze scoperte con gli indizi
 const FOV_BASE: float = 58.0
+var _dzoom_t: float = 0.0              # zoom digitale sul punto debole: secondi rimasti
 var _pinched: bool = false                # il FOV e' stretto dalla scossa: va riportato a FOV_BASE
 var _boss_known: bool = false             # il giocatore conosce il colore del boss (indizio o primo colpo)
 var ritorno: Dictionary = {}             # dove tornare: area (nemico minore), storia (boss), niente = demo dal menu
@@ -258,6 +259,9 @@ func _ready() -> void:
 	_refresh_hud()
 	Breadcrumb.mark("battaglia")
 	await get_tree().create_timer(0.6).timeout
+	if not is_inside_tree():
+		return
+	await _boss_intro()
 	if not is_inside_tree():
 		return
 	if not Settings.skip_cutin:
@@ -618,9 +622,19 @@ func _process(delta: float) -> void:
 	elif _pinched:
 		cam.fov = FOV_BASE
 		_pinched = false
+	var look: Vector3 = _cam_look
+	if _dzoom_t > 0.0:
+		# ZOOM DIGITALE della telecamera di Echo sul punto debole: scatto dentro, tiene, poi riapre negli ultimi 0,25 s
+		_dzoom_t = maxf(0.0, _dzoom_t - rd)
+		var z: float = clampf(_dzoom_t / 0.25, 0.0, 1.0)
+		z = z * z * (3.0 - 2.0 * z)
+		cam.fov = cam.fov * lerpf(1.0, 0.82 if Settings.light_fx else 0.62, z)
+		if vis.has(BattleState.BOSS_ID):
+			look = look.lerp((vis[BattleState.BOSS_ID] as Node).call("chest_point"), 0.45 * z)
+		_pinched = true
 	cam.position = _cam_pos + sh
-	if cam.position.distance_to(_cam_look) > 0.01:
-		cam.look_at(_cam_look, Vector3.UP)
+	if cam.position.distance_to(look) > 0.01:
+		cam.look_at(look, Vector3.UP)
 
 
 # La ruota segue il petto di chi e' di turno (la telecamera si muove); il riflettore lo tiene in luce mentre sceglie
@@ -1000,7 +1014,9 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		await _wait(0.16)
 		if kind != "basic":
 			# la magia si disegna con la luce: una pennellata del suo colore dal personaggio al nemico
-			LightFx.stroke(self, cv.chest_point(), (boss_v as Node).call("chest_point"), col, 0.6 if kind == "ult" else 0.42)
+			var stk: LightFx = LightFx.stroke(self, cv.chest_point(), (boss_v as Node).call("chest_point"), col, 0.6 if kind == "ult" else 0.42)
+			if kind != "basic":
+				stk.expose(0.5)          # abilita' e ultimate: la luce resta impressa mezzo secondo (lunga esposizione)
 		_ring(boss_v.position + Vector3(0, 0.05, 0), col, 2.8 if kind == "ult" else 1.8)
 		if kind == "ult":
 			_flash(0.9)
@@ -1008,6 +1024,9 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		else:
 			_kick(0.45 if kind == "basic" else 0.7)
 		if weak_hit:
+			_dzoom_t = 0.75            # la telecamera di Echo zooma di scatto sul punto debole (x2) e lo scrive nel REC
+			if _cam_hud != null:
+				_cam_hud.disturb("ZOOM x2  ·  PUNTO DEBOLE", Ui.YELLOW, 0.9)
 			await _hit_stop(0.2)
 			_kick(0.9)
 			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.7)   # va nel posto fisso dei timbri (STAMP_AY), in coda: in alto e sul nemico ci sono i numeri del colpo
@@ -1097,6 +1116,8 @@ func _boss_turn() -> void:
 					return
 				if grade == "good" or grade == "perfect":
 					b["timed_guard"] = grade
+				if grade == "perfect":
+					await _parry_shot(str(tele.get("target", "")))
 		var ev: Array = SeqRound.boss_action(b)
 		var tw: Tween = m.slam() if all else m.attack()
 		await _wait(0.3 if all else 0.2)
@@ -1607,6 +1628,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 			"counter":
 				_number(str(e.get("unit", "")), "CONTRATTACCO", Ui.YELLOW, 26, delay + 0.2, -26.0)
 			"act":
+				if str(b["units"].get(str(e.get("unit", "")), {}).get("side", "")) == "player":
+					_last_act = {"unit": str(e.get("unit", "")), "move": str(e.get("move", ""))}
 				if str(e.get("unit", "")) == BattleState.BOSS_ID and BattleResolver.is_heavy_boss_move(BattleContent.BOSS_MOVES.get(str(e.get("move", "")), {})):
 					_glitch_later(0.8, delay)
 				# ARDORE: sotto il 30% dei PV chi attacca colpisce piu' forte (il motore non emette un evento: si legge dallo stato)
@@ -1717,6 +1740,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					var dv: Node3D = vis[du]
 					if dv.has_method("ko"):
 						dv.call("ko")
+				if du == BattleState.BOSS_ID and str(b.get("winner", "")) == "players":
+					_finisher(delay)
 				if du == BattleState.BOSS_ID and _seal != null and is_instance_valid(_seal):
 					_seal.stop()              # la magia lascia l'oggetto: torna un oggetto qualsiasi
 					LightFx.rise(self, ENEMY_POS, LightFx.MAGIC, 1.1, 1.3)
@@ -1899,6 +1924,82 @@ func _combo_show(col: Color) -> void:
 	_combo_lbl.add_theme_constant_override("shadow_offset_y", 5)
 	_combo_lbl.scale = Vector2(1.35, 1.35)
 	_combo_lbl.create_tween().tween_property(_combo_lbl, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+# INGRESSO DEL NEMICO: prima dei turni la telecamera di Echo lo inquadra da vicino e lo presenta col cartellino (nome grande,
+# classe dell'Anomalia sotto), avvicinandosi piano; poi torna sulla scena. 1,4 s. Saltato nelle lezioni e con «salta i cut-in».
+func _boss_intro() -> void:
+	if tutorial or lezioni or Settings.skip_cutin or _cam_hud == null:
+		return
+	var bd: Dictionary = BattleContent.BOSSES.get(boss_id, {})
+	var nm: String = str(bd.get("name", "Anomalia")).to_upper()
+	var ttl: String = str(bd.get("title", "ANOMALIA"))
+	var bcol: Color = Ui.BATTLE_COLORS.get(str(bd.get("color", "")), LightFx.MAGIC)
+	_cam_set(ENEMY_POS + Vector3(1.7, 1.6, 4.2), ENEMY_POS + Vector3(0, 1.3, 0), 3.0, true)
+	_cam_set(ENEMY_POS + Vector3(1.2, 1.45, 3.1), ENEMY_POS + Vector3(0, 1.3, 0), 0.9)      # si avvicina piano
+	var prev_col: Color = _cam_hud._who_col
+	_cam_hud._who_col = bcol
+	_cam_hud.cut(1.0, nm, ttl, 1.4)
+	await get_tree().create_timer(1.4).timeout
+	if not is_inside_tree():
+		return
+	_cam_hud._who_col = prev_col
+	_cam_overview()
+
+
+# PARATA PERFETTA: un decimo di secondo di fermo e un'inquadratura stretta su chi para (di lato, all'altezza del petto),
+# poi la telecamera torna sul nemico che colpisce. Contro TUTTI resta l'inquadratura del nemico (non c'e' un solo eroe).
+func _parry_shot(pid: String) -> void:
+	var pl: Dictionary = BattleState.player(b, pid) if pid != "" else {}
+	var uid: String = str(pl.get("active", ""))
+	if uid != "" and home.has(uid):
+		var p: Vector3 = home[uid]
+		var side: float = -signf(p.x) if absf(p.x) > 0.1 else 1.0
+		_cam_set(p + Vector3(side * 1.25, 1.45, -0.9), p + Vector3(0, 1.25, 0), 9.0, true)
+		if _cam_hud != null:
+			_cam_hud.disturb("PARATA PERFETTA  ·  CAM %02d  ·  %s" % [_cam_no_of(uid), str(b["units"][uid].get("name", "")).to_upper()], Ui.CYAN, 1.0)
+	_hit_stop(0.12)
+	await get_tree().create_timer(0.32, true, false, true).timeout
+	if is_inside_tree():
+		_cam_boss()
+
+
+# COLPO FINALE (alla Persona 5): il colpo che abbatte il nemico va al rallentatore con la telecamera addosso, poi l'immagine
+# si BLOCCA: fermo immagine della telecamera di Echo con ■ STOP, il nome della mossa e chi l'ha fatta. Il momento che resta.
+# Tempo reale: 0,45 s di rallentatore + 1,1 s di fermo; in pausa o a battaglia chiusa non parte. La fine attende che finisca.
+var _last_act: Dictionary = {}
+var _finishing: bool = false
+
+
+func _finisher(delay: float) -> void:
+	if _finishing or _pause != null or _cam_hud == null:
+		return
+	_finishing = true
+	var act: Dictionary = _last_act.duplicate()
+	if delay > 0.01:
+		await get_tree().create_timer(delay, true, false, true).timeout
+	if not is_inside_tree():
+		_finishing = false
+		return
+	var who: Dictionary = b["units"].get(str(act.get("unit", "")), {})
+	var col: Color = _col(who) if not who.is_empty() else Ui.CREAM
+	if _reticle != null:
+		_reticle.visible = false          # il mirino non va sopra il fermo immagine
+	_cam_set(ENEMY_POS + Vector3(-1.9, 1.5, 3.6), ENEMY_POS + Vector3(0, 1.15, 0), 7.0)
+	Engine.time_scale = 0.2
+	await get_tree().create_timer(0.45, true, false, true).timeout
+	if not is_inside_tree() or _pause != null:
+		_finishing = false
+		return
+	Engine.time_scale = 0.0
+	var mv: String = str(act.get("move", ""))
+	var title: String = BattleText.move_name(mv).to_upper() if mv != "" else "COLPO FINALE"
+	_cam_hud.freeze(title, str(who.get("name", "")).to_upper(), col, 1.1)
+	Settings.buzz(90)
+	await get_tree().create_timer(1.1, true, false, true).timeout
+	if is_inside_tree() and _pause == null and Engine.time_scale == 0.0:
+		Engine.time_scale = 1.0
+	_finishing = false
 
 
 # CAMBIO DI TELECAMERA tra un personaggio e l'altro (PIANO fase 2: la presentazione della V2 nel motore della V3).
@@ -2206,6 +2307,8 @@ func _end_battle() -> void:
 		# caduto il nemico principale, la scheggia rimasta sola si dissolve
 		(vis[Gregario.ID] as VendingVisual).ko()
 		_number(Gregario.ID, "SI DISSOLVE", Ui.CREAM, 30, 0.1, -10.0)
+	while _finishing and is_inside_tree():
+		await get_tree().process_frame
 	await _wait(0.6)
 	if not is_inside_tree():
 		return

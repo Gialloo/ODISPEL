@@ -33,6 +33,9 @@ var _dist_col: Color = Ui.CREAM
 const CUT_TIME: float = 0.22         # il segnale salta (velo e disturbo)
 const STAMP_TIME: float = 0.75       # il cartellino della nuova CAM resta il tempo di leggerlo, poi esce
 var _cut_t: float = 0.0
+var _stamp_len: float = STAMP_TIME   # durata del cartellino (piu' lunga per la presentazione del nemico)
+var _stamp_main: String = ""         # testo grande del cartellino ("" = CAM nn)
+var _stamp_sub: String = ""          # riga sotto ("" = nome di chi si guarda)
 var _cut_dir: float = 1.0            # verso dello scorrimento: +1 la nuova telecamera sta a destra, -1 a sinistra
 
 const GRAIN_SHADER: String = """
@@ -117,11 +120,95 @@ func disturb(txt: String, c: Color, secs: float = 1.4) -> void:
 
 # Taglio tra due telecamere: dir = verso in cui sta la nuova (come lo scorrimento della V2: da F1 a F3 si va a destra).
 # Con effetti ridotti resta solo il velo, piu' leggero; con i lampi a zero niente velo scuro.
-func cut(dir: float = 1.0) -> void:
+# main/sub: testi del cartellino al posto di CAM nn e del nome; secs: quanto resta (presentazione del nemico).
+func cut(dir: float = 1.0, main: String = "", sub: String = "", secs: float = STAMP_TIME) -> void:
 	if anomaly:
 		return
 	_cut_dir = 1.0 if dir >= 0.0 else -1.0
-	_cut_t = STAMP_TIME
+	_stamp_main = main
+	_stamp_sub = sub
+	_stamp_len = maxf(CUT_TIME + 0.3, secs)
+	_cut_t = _stamp_len
+
+
+# RIO IN DIRETTA: con l'Hype da 25 in su, sul bordo destro (sopra la squadra, lontano dai comandi a sinistra) scorrono i
+# commenti dei suoi pochi follower (canone: 32 follower). Massimo tre righe, ognuna resta 3 s. Testi PROVVISORI, da rivedere
+# con l'autore. Disegnati con draw_string: niente nodi nuovi.
+const CHAT: Array = [
+	["utente_07", "RAGA È VERO??"],
+	["utente_19", "rio la batteria è al 2%"],
+	["utente_32", "CLIP CLIP CLIP"],
+	["utente_11", "che è quella cupola rosa"],
+	["utente_04", "il Re del Circo è tornato"],
+	["utente_32", "titolo in MAIUSCOLO o non vale"],
+	["utente_13", "questa va in tendenza"],
+	["utente_19", "ma è un AUTOVELOX che si muove?"],
+	["utente_07", "signore e signori..."],
+	["utente_22", "seguo da 3 minuti e già lo amo"],
+]
+const RIO_COL: Color = Color("#8e3df0")
+var _chat: Array = []                # [indice in CHAT, millisecondi di nascita]
+var _chat_next: float = 0.6
+var _chat_i: int = 0
+
+
+func _chat_tick(delta: float) -> void:
+	if live < 25 or anomaly:
+		if not _chat.is_empty():
+			_chat.clear()
+		return
+	_chat_next -= delta
+	if _chat_next <= 0.0:
+		_chat_next = 2.6 if Settings.light_fx else 1.4
+		_chat_i = (_chat_i + 1 + int(_t * 7.0) % 3) % CHAT.size()
+		_chat.append([_chat_i, Time.get_ticks_msec()])
+		if _chat.size() > 3:
+			_chat.pop_front()
+	var now: int = Time.get_ticks_msec()
+	while not _chat.is_empty() and now - int(_chat[0][1]) > 3000:
+		_chat.pop_front()
+
+
+func _draw_chat(sz: Vector2) -> void:
+	if _chat.is_empty():
+		return
+	var fb: Font = Ui.body()
+	var fs: int = 22
+	var now: int = Time.get_ticks_msec()
+	var y: float = sz.y * 0.74
+	for i in range(_chat.size() - 1, -1, -1):
+		var e: Array = _chat[i]
+		var age: float = float(now - int(e[1])) / 1000.0
+		var a: float = clampf(age / 0.15, 0.0, 1.0) * clampf((3.0 - age) / 0.4, 0.0, 1.0)
+		var who: String = str(CHAT[int(e[0])][0]) + "  "
+		var txt: String = str(CHAT[int(e[0])][1])
+		var ww: float = fb.get_string_size(who, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var tw: float = fb.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var x: float = sz.x - 28.0 - ww - tw + (1.0 - clampf(age / 0.15, 0.0, 1.0)) * 40.0
+		draw_rect(Rect2(x - 12.0, y - fs - 6.0, ww + tw + 24.0, fs + 16.0), Color(Ui.INK.r, Ui.INK.g, Ui.INK.b, 0.72 * a))
+		draw_rect(Rect2(x - 12.0, y - fs - 6.0, 4.0, fs + 16.0), Color(RIO_COL.r, RIO_COL.g, RIO_COL.b, a))
+		var wc: Color = RIO_COL.lightened(0.45)
+		draw_string(fb, Vector2(x, y), who, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(wc.r, wc.g, wc.b, a))
+		draw_string(fb, Vector2(x + ww, y), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, a))
+		y -= fs + 22.0
+
+
+# FERMO IMMAGINE del colpo finale: va a tempo reale (durante il fermo il gioco e' a tempo zero).
+var _frz_until: int = 0
+var _frz_from: int = 0
+var _frz_title: String = ""
+var _frz_who: String = ""
+var _frz_col: Color = Ui.CREAM
+
+
+func freeze(title: String, who: String, c: Color, secs: float) -> void:
+	_frz_from = Time.get_ticks_msec()
+	_frz_until = _frz_from + int(secs * 1000.0)
+	_frz_title = title
+	_frz_who = who
+	_frz_col = c
+	_cut_t = 0.0          # il fermo prende tutto lo schermo: niente cartellino della CAM sotto
+	queue_redraw()
 
 
 func cutting() -> bool:
@@ -156,6 +243,7 @@ func _process(delta: float) -> void:
 		_clock.text = _time_text()
 	if anomaly and _tag != null:
 		_tag.modulate.a = 0.55 + 0.45 * float(sin(_t * 23.0) > -0.6)
+	_chat_tick(delta)
 	if _cut_t > 0.0:
 		# tetto al passo: il primo fotogramma dopo il taglio puo' essere lento (scena nuova da disegnare) e si mangerebbe tutto
 		_cut_t = maxf(0.0, _cut_t - minf(delta, 0.034))
@@ -199,6 +287,44 @@ func _draw() -> void:
 		_draw_crack(sz)
 	if _cut_t > 0.0:
 		_draw_cut(sz)
+	_draw_chat(sz)
+	if Time.get_ticks_msec() < _frz_until:
+		_draw_freeze(sz)
+
+
+# Fermo immagine: velo freddo, cornice del fotogramma, ■ STOP rosso e la lastra col nome della mossa che entra di scatto.
+func _draw_freeze(sz: Vector2) -> void:
+	var el: float = float(Time.get_ticks_msec() - _frz_from) / 1000.0
+	var tot: float = float(_frz_until - _frz_from) / 1000.0
+	var a: float = clampf((tot - el) / 0.18, 0.0, 1.0)          # svanisce negli ultimi 0,18 s
+	var pop: float = clampf(el / 0.08, 0.0, 1.0)                 # la lastra entra in 0,08 s
+	draw_rect(Rect2(Vector2.ZERO, sz), Color(0.05, 0.03, 0.12, 0.35 * a))
+	# lampo bianco brevissimo all'attimo del fermo (solo coi lampi accesi)
+	if el < 0.07:
+		draw_rect(Rect2(Vector2.ZERO, sz), Color(1, 1, 1, 0.45 * clampf(Settings.flash, 0.0, 1.0) * (1.0 - el / 0.07)))
+	var m: float = 26.0
+	draw_rect(Rect2(m, m, sz.x - m * 2.0, sz.y - m * 2.0), Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, 0.55 * a), false, 3.0)
+	var f: Font = Ui.display()
+	var fb: Font = Ui.body()
+	draw_rect(Rect2(m + 22.0, m + 70.0, 26.0, 26.0), Color(REC_RED.r, REC_RED.g, REC_RED.b, a))
+	draw_string(f, Vector2(m + 60.0, m + 96.0), "STOP", HORIZONTAL_ALIGNMENT_LEFT, -1, 34, Color(REC_RED.r, REC_RED.g, REC_RED.b, a))
+	# lastra al centro: nome della mossa grande, sotto chi l'ha fatta nel suo colore
+	var fs: int = 76
+	var w1: float = f.get_string_size(_frz_title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	var sub: String = "COLPO FINALE" + (("  ·  " + _frz_who) if _frz_who != "" else "")
+	var w2: float = fb.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 28).x
+	var bw: float = maxf(w1, w2) + 90.0
+	var bh: float = 150.0
+	var sc: float = lerpf(1.35, 1.0, pop)
+	draw_set_transform(Vector2(sz.x * 0.5, sz.y * 0.6), deg_to_rad(-5.0), Vector2(sc, sc))      # sotto il cartellino del nemico
+	var r := Rect2(-bw * 0.5, -bh * 0.5, bw, bh)
+	draw_rect(Rect2(r.position + Vector2(14, 14), r.size), Color(_frz_col.r, _frz_col.g, _frz_col.b, 0.9 * a))
+	draw_rect(r, Color(Ui.INK.r, Ui.INK.g, Ui.INK.b, 0.95 * a))
+	draw_rect(r, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, 0.9 * a), false, 4.0)
+	draw_string(f, Vector2(r.position.x + 45.0, r.position.y + 86.0), _frz_title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, a))
+	var lc: Color = _frz_col.lightened(0.4)
+	draw_string(fb, Vector2(r.position.x + 47.0, r.position.y + 126.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, Color(lc.r, lc.g, lc.b, a))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 # Il segnale salta (primi 0,22 s): velo scuro che si apre, la linea bianca che spazza verso la nuova telecamera, fasce di
@@ -206,7 +332,7 @@ func _draw() -> void:
 # Poi resta il CARTELLINO della CAM (alla Persona 5: lastra nera inclinata, bordo nel colore del personaggio, numero grande e
 # nome), che entra dal lato del nuovo personaggio, si ferma e scivola via. Poche forme piatte per pochi fotogrammi, niente shader.
 func _draw_cut(sz: Vector2) -> void:
-	var el: float = STAMP_TIME - _cut_t            # tempo dal taglio
+	var el: float = _stamp_len - _cut_t            # tempo dal taglio
 	var lite: bool = Settings.light_fx
 	if el < CUT_TIME:
 		var k: float = 1.0 - el / CUT_TIME          # 1 = appena tagliato, 0 = finito
@@ -246,16 +372,16 @@ func _draw_cam_stamp(sz: Vector2, el: float) -> void:
 		var q: float = 1.0 - el / t_in
 		dx = q * q * 180.0 * _cut_dir           # arriva dal lato della nuova telecamera
 		a = 1.0 - q * 0.6
-	elif el > STAMP_TIME - t_out:
-		var q2: float = (el - (STAMP_TIME - t_out)) / t_out
+	elif el > _stamp_len - t_out:
+		var q2: float = (el - (_stamp_len - t_out)) / t_out
 		dx = -q2 * q2 * 140.0 * _cut_dir        # esce dalla parte opposta, come se la camera continuasse a scorrere
 		a = 1.0 - q2
 	if a <= 0.01:
 		return
 	var f: Font = Ui.display()
 	var fb: Font = Ui.body()
-	var num: String = "CAM %02d" % _cam_no
-	var who: String = _who.to_upper() if _who != "" else "VISTA GENERALE"
+	var num: String = _stamp_main if _stamp_main != "" else "CAM %02d" % _cam_no
+	var who: String = _stamp_sub if _stamp_sub != "" else (_who.to_upper() if _who != "" else "VISTA GENERALE")
 	var fs: int = 66
 	var fs2: int = 26
 	var w1: float = f.get_string_size(num, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
