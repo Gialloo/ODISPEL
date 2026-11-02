@@ -16,11 +16,21 @@ extends CmdWheel
 const PW: float = 352.0
 const PH: float = 470.0
 # posto di ogni comando: [x, distanza della linea di base dal fondo, grandezza, rotazione]. ATTACCO e' il piu' grande.
-const SLOT: Dictionary = {
+const SLOT: Dictionary = {      # (vecchia disposizione a colonna, tenuta come riferimento: non piu' usata)
 	"ult": [10.0, 300.0, 32, -0.10],
 	"skill": [16.0, 236.0, 32, -0.07],
 	"attack": [6.0, 168.0, 38, -0.05],
 	"guard": [196.0, 104.0, 30, -0.04],
+}
+# TASTI A ROMBO come Y/X/B/A del controller (correzione dell'autore, 2/11/2026: «il placing dei tasti e' scorretto»).
+# Centro del rombo rispetto all'angolo in basso a sinistra; ogni comando sta accanto al suo tasto:
+# a sinistra, a scaletta dall'alto: ATTACCO, ABILITA', GUARDIA; a destra, sotto al personaggio: ULTIMATE (autore, 2/11/2026).
+const PAD_C: Vector2 = Vector2(218.0, -176.0)
+const PAD: Dictionary = {      # kind -> [posto del tasto dal centro, grandezza della scritta, scritta a destra del tasto?]
+	"attack": [Vector2(6, -60), 38, false],
+	"skill": [Vector2(-46, -10), 32, false],
+	"guard": [Vector2(-2, 58), 32, false],
+	"ult": [Vector2(52, 14), 30, true],
 }
 const KEYS: Dictionary = {"attack": "1", "skill": "2", "ult": "3", "guard": "4"}
 const GREY: Color = Color("#8a8496")
@@ -131,25 +141,25 @@ func _draw() -> void:
 
 
 func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: float) -> void:
-	var sl: Array = SLOT[kind]
-	var sz: int = int(sl[2])
+	var pd: Array = PAD[kind]
+	var bc: Vector2 = Vector2(dx, H) + PAD_C + (pd[0] as Vector2)      # tasto rotondo (posto nel rombo)
+	var right: bool = bool(pd[2])
+	var sz: int = int(pd[1])
 	var name: String = str(it.get("name", kind))
 	var ok: bool = bool(it.get("ok", false))
 	var on: bool = picked == kind
-	var maxw: float = 150.0
-	while sz > 22 and f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x > maxw:
+	var maxw: float = (bc.x - 26.0 - dx - 6.0) if not right else 160.0
+	while sz > 20 and f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x > maxw:
 		sz -= 2
-	if on:
-		sz += 4
 	var tw: float = f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
-	var p := Vector2(dx + float(sl[0]), H - float(sl[1]))
-	var rot: float = float(sl[3])
+	var br: float = 15.0 if not on else 18.0
+	# la scritta sta a sinistra del tasto e finisce sul tasto (ULTIMATE, ABILITA', ATTACCO) o parte dal tasto (GUARDIA)
+	var p := Vector2(bc.x + br + 8.0, bc.y + sz * 0.36) if right else Vector2(bc.x - br - 8.0 - tw, bc.y + sz * 0.36)
+	var rot: float = -0.06
 	var fill: Color = Color(CREAM.lerp(col.lightened(0.6), 0.45)) if ok else GREY
-	var edge: Color = INK
-	# il comando scelto: lastra piena del colore dietro alla scritta, scritta scura
 	draw_set_transform(p, rot)
 	if on:
-		var slab := PackedVector2Array([Vector2(-10, -sz * 0.92), Vector2(tw + 18, -sz * 1.02), Vector2(tw + 8, sz * 0.22), Vector2(-16, sz * 0.3)])
+		var slab := PackedVector2Array([Vector2(-10, -sz * 0.92), Vector2(tw + 14, -sz * 1.02), Vector2(tw + 6, sz * 0.22), Vector2(-16, sz * 0.3)])
 		var sdw := PackedVector2Array()
 		for q in slab:
 			sdw.append(q + Vector2(6, 6))
@@ -162,13 +172,13 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 	draw_set_transform(p + Vector2(4, 4).rotated(rot), rot, Vector2(1, 1))
 	draw_string_outline(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, 10, Color(col.darkened(0.2), 0.95 * e))
 	draw_set_transform(p, rot)
-	draw_string_outline(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, 9, Color(edge, e))
+	draw_string_outline(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, 9, Color(INK, e))
 	draw_string(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, Color(fill, e))
+	# ULTIMATE non pronta: la carica in piccolo sotto la scritta
+	if kind == "ult" and not ok:
+		draw_string(Ui.body(), Vector2(4, 18), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(GREY, e))
+	draw_set_transform_matrix(Transform2D.IDENTITY)
 	# tasto rotondo: numero della tastiera su PC, icona sul telefono
-	var bc := Vector2(tw + 22, -sz * 0.62)
-	if kind == "guard":
-		bc = Vector2(-20, -sz * 0.5)      # GUARDIA ha il tasto a sinistra (come DEFEND nel riferimento)
-	var br: float = 15.0 if not on else 18.0
 	draw_circle(bc + Vector2(2, 2), br + 3, Color(INK, e))
 	draw_circle(bc, br + 2, Color(CREAM if ok else GREY, e))
 	draw_circle(bc, br - 1, Color(INK if not on else col.darkened(0.3), e))
@@ -178,15 +188,11 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 		var k: String = str(KEYS.get(kind, ""))
 		var ks: Vector2 = f.get_string_size(k, HORIZONTAL_ALIGNMENT_LEFT, -1, 18)
 		draw_string(f, bc + Vector2(-ks.x * 0.5, 7), k, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(CREAM if ok else GREY, e))
-	# ULTIMATE non pronta: la carica in piccolo sotto la scritta
-	if kind == "ult" and not ok:
-		draw_string(Ui.body(), Vector2(6, 18), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(GREY, e))
-	draw_set_transform_matrix(Transform2D.IDENTITY)
-	# zona del tocco: scritta + tasto, almeno 56 di altezza (dito sul telefono)
-	var x0: float = minf(0.0, bc.x - br) - 8.0
-	var x1: float = maxf(tw, bc.x + br) + 8.0
-	var hh: float = maxf(56.0, sz * 1.3)
-	_rects[kind] = Rect2(p + Vector2(x0, -sz - (hh - sz * 1.3) * 0.5), Vector2(x1 - x0, hh))
+	# zona del tocco: scritta + tasto, almeno 48 di altezza (i tasti del rombo sono vicini: le zone non si sovrappongono)
+	var x0: float = minf(p.x, bc.x - br) - 6.0
+	var x1: float = maxf(p.x + tw, bc.x + br) + 6.0
+	var hh: float = 46.0
+	_rects[kind] = Rect2(Vector2(x0, bc.y - hh * 0.5), Vector2(x1 - x0, hh))
 
 
 func _draw_tip(it: Dictionary, dx: float, H: float, e: float) -> void:

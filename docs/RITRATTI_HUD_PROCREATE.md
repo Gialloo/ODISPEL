@@ -25,18 +25,20 @@ Cartella: `assets/portraits/hud/` (oppure mandali nel thread e li metto io).
 
 **Inquadratura: mezzobusto** (dalla testa a metà petto / vita), niente figura intera e niente solo faccia.
 
-**Posa**: di tre quarti, girato verso **destra** (verso il nemico), **spostato nella metà destra** della tela. Le scritte dei
-comandi stanno a sinistra e in basso, quindi:
+**Posa**: di tre quarti, girato verso **destra** (verso il nemico), **spostato nella metà destra** della tela, testa in alto.
+A sinistra, a scaletta dall'alto, ci sono ATTACCO, ABILITÀ e GUARDIA; i tasti stanno a rombo al centro (come Y/X/B/A del
+controller) e ULTIMATE a destra, sotto al volto. Quindi:
 
 | Zona (px sulla tela 1536×2048) | Cosa ci va |
 |---|---|
-| x 860–1460, y 250–1125 | **Volto**: testa e occhi tutti qui dentro |
-| x 0–840, y 615–1435 | Colonna dei comandi (ULTIMATE, ABILITÀ, ATTACCO): spalla e braccio vanno bene, **niente volto né mani importanti** |
-| x 800–1500, y 1435–1700 | GUARDIA: petto/giacca, niente dettagli che devono leggersi |
+| x 900–1460, y 250–940 | **Volto**: testa e occhi tutti qui dentro |
+| x 0–900, y 860–1660 | ATTACCO, ABILITÀ, GUARDIA: spalla e braccio vanno bene, **niente volto né mani importanti** |
+| x 700–1300, y 940–1660 | Tasti a rombo: collo e petto, niente dettagli che devono leggersi |
+| x 1100–1536, y 1200–1460 | ULTIMATE: spalla o petto |
 | x 0–1000, y 1780–2048 | Nome grande del personaggio |
 | y 0–40 | Margine: i capelli possono arrivarci, non oltre |
 
-Una mano o un oggetto che racconta il personaggio (regola U20) va a destra, sotto il volto (x > 860).
+Una mano o un oggetto che racconta il personaggio (regola U20) va accanto al volto, in alto a destra (x > 900, y < 1200).
 Stile: contorno d'inchiostro spesso (10–14 px, `#120a1c`), colori piatti con 1–2 toni d'ombra, come i personaggi del gioco.
 **Niente sfondo, niente ombra portata, niente bagliore attorno**: lastra colorata, ombra e animazione le fa il gioco.
 

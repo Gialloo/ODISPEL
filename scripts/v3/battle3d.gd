@@ -2502,7 +2502,7 @@ func _build_ui() -> void:
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if Settings.hud_ritratto:
 		# in basso a sinistra ora c'e' il ritratto: il fumetto di Echo va in basso al centro, tra ritratto e squadra
-		Ui.place(_hint, 0.0, 1.0, 1.0, 1.0, 420, -40, -500, -40)
+		Ui.place(_hint, 0.0, 1.0, 1.0, 1.0, 480, -40, -470, -40)
 	_root.add_child(EchoBalloon.new(_hint))
 	_root.add_child(_hint)
 
