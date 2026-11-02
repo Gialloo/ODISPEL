@@ -1,5 +1,20 @@
 # Novità
 
+## 0.43.0 · Battaglia più spettacolare: lo sguardo di Echo
+- **K.O. = SEGNALE PERSO**: quando un compagno cade la sua telecamera va in frantumi, il segnale salta e nel REC compare «SEGNALE PERSO · CAM 03 · NOX». Una cura che lo riporta sopra il 50% o il 25% scrive «SEGNALE RECUPERATO».
+- **Cambio di telecamera tra i turni**: quando tocca a un altro personaggio il segnale salta per un attimo (linea bianca che spazza, fasce rosse e ciano) e la telecamera è già alle sue spalle; il cartellino della CAM, inclinato alla Persona 5 con l'ombra nel colore del personaggio, entra dal suo lato, resta il tempo di leggerlo ed esce.
+- **Colpo finale**: il colpo che abbatte il nemico va al rallentatore, poi l'immagine si blocca su un fermo con ■ STOP, il nome della mossa e chi l'ha fatta.
+- **Ingresso del nemico**: prima dei turni la telecamera lo inquadra da vicino col cartellino (nome e classe dell'Anomalia). Saltato nelle lezioni e con «salta i cut-in».
+- **Debolezza colpita**: zoom digitale x2 della telecamera di Echo sul nemico, «ZOOM x2 · PUNTO DEBOLE» nel REC.
+- **Parata perfetta**: un decimo di secondo di fermo e un'inquadratura stretta su chi para.
+- **Rio in diretta**: con l'Hype da 25 in su, sul bordo destro scorrono i commenti dei suoi follower (testi provvisori, da rivedere).
+- **Lunga esposizione**: le pennellate di luce di abilità e ultimate restano impresse mezzo secondo.
+- Tutto rispetta effetti ridotti, intensità dei lampi e salto dei cut-in. Prova: `tools/v3_telecamere.gd`.
+
+## 0.43.0 · Storia che non si salta e primi 10 minuti
+- Il prologo si apre sulla cupola (sei fumetti: cielo rosa, cupola, facce sugli schermi, la foto del tesserino), poi il cartello DUE MINUTI PRIMA e l'apertura dalle 2:58, con una riga nuova di Echo. Nessuna battuta tolta: cambia l'ordine. Sfondo nuovo «piazza» col cielo rosa.
+- Battute lunghe divise in due fumetti con le stesse parole, scene lunghe in più tempi col loro riassunto, 10 chiacchiere nuove dentro le Anomalie e 18 negli angoli fuori strada, che partono solo se ci vai.
+
 ## 0.42.0 · HUD di battaglia col ritratto 2D
 - In basso a sinistra il ritratto 2D di chi è di turno, con i comandi attorno (ATTACCO, SKILL e GUARDIA a sinistra, ULTIMATE a destra, tasti a rombo centrato sul cuore del personaggio, scritte tutte della stessa grandezza), ognuno col suo tasto (1-4 su PC, icona sul telefono) e il nome grande in fondo; in basso a destra la fila dei ritratti della squadra con PV, EN e barrette; sul bordo destro la colonna ORDINE dei turni. Riferimento dell'autore (2/11/2026). Rio ha il ritratto disegnato dall'autore (con contorno e ombra); gli altri sono segnaposto finché non arrivano quelli fatti a mano (guida: `docs/RITRATTI_HUD_PROCREATE.md`). La ruota attorno al personaggio resta nel codice (`Settings.hud_ritratto = false`).
 
@@ -13,7 +28,7 @@
 - AUTO: Ultimate e chi ha il colore vincente sul Frammento colpiscono il Frammento, con il Frammento rotto tutti su di lui, altrimenti prima la Scheggia.
 - Simulazione su 40 partite: gli scontri doppi durano 2-2,5 round (i singoli 1,5-2), AUTO vince il 98-100%; gli scontri di sempre danno numeri identici a prima.
 
-## Prossima versione (non ancora rilasciata) · Dialoghi alla Persona: AUTO, velocità del testo, REGISTRO
+## 0.43.0 · Dialoghi alla Persona: AUTO, velocità del testo, REGISTRO
 - Nei dialoghi, accanto a SALTA, due tasti nuovi. AUTO: le battute vanno avanti da sole, con una pausa che cresce con la lunghezza della battuta (da 1,1 a 4,5 secondi); resta acceso anche nelle scene dopo e si spegne con lo stesso tasto. REGISTRO (anche col tasto R): riapre le ultime 80 battute lette, anche delle scene prima, con il nome nel colore del personaggio; si scorre col dito e si chiude con CHIUDI. Con il registro aperto la scena non va avanti.
 - Impostazioni: «Velocità del testo» (NORMALE, VELOCE, ISTANTANEO) e «Dialoghi automatici» (lo stesso AUTO).
 - Perché: chi legge piano non perde le battute, chi legge veloce non aspetta, e chi tocca troppo in fretta può rileggere invece di saltare la scena (feedback degli amici: «si salta la storia»). Nessuna battuta cambiata, nessun passo nuovo.
