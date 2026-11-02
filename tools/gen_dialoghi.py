@@ -870,6 +870,14 @@ F = {"tipo": "fermo"}
 
 CH = {}
 CH["strada"] = [
+    # ANGOLI (02/11, richiesta dell'autore): chi esplora fuori dalla strada principale viene premiato con una chiacchiera
+    # che altrimenti non sente. Punti "angolo_*" in data/atto1.json (lontani dal percorso, raggiungibili: provati sui muri).
+    B("s_angolo_fontana", V("angolo_fontana"), L("nox/neutro", "La fontana. Il telefono doveva finire lì dentro."),
+      L("zecca/felice", "Lancialo! Faccio lo slow motion!"), L("nox/neutro", "Lancio il tuo.")),
+    B("s_angolo_gioielleria", V("angolo_gioielleria"), L("saul/neutro", "Una gioielleria con la saracinesca alzata. Alle tre di notte."),
+      L("ferri/serio", "Non ci pensare."), L("saul/neutro", "Ci pensavi tu. Io guardavo.")),
+    B("s_angolo_fondo", V("angolo_fondo"), L("ferri/serio", "Un'altra foto mia. Di profilo, stavolta."),
+      L("saul/neutro", "Il profilo buono?"), L("ferri/serio", "Non ne ho uno buono.")),
     # Dall'apertura (storia che non si salta, 02/11): si discute su chi scappa con chi mentre si e' gia' in fuga.
     # Z alta = partono una dopo l'altra appena si prende il controllo, in quest'ordine.
     B("s_fuga_lance", Z(99.0), L("ferri/serio", "Io non scappo dalla mia squadra. Vado e spiego."),
@@ -915,6 +923,15 @@ CH["strada"] = [
     B("s_f2", F, L("zecca/felice", "Raga, se stiamo fermi faccio una live. Tre... due..."), L("ferri/serio", "Cammina.")),
 ]
 CH["incrocio"] = [
+    # ANGOLI (02/11, richiesta dell'autore): chi esplora fuori dalla strada principale viene premiato con una chiacchiera
+    # che altrimenti non sente. Punti "angolo_*" in data/atto1.json (lontani dal percorso, raggiungibili: provati sui muri).
+    B("i_angolo_edicola", V("angolo_edicola"), L("ferri/neutro", "L'edicola di Gino. Mi teneva il giornale ogni mattina."),
+      L("zecca/sorpreso", "E tu che gli davi?"), L("ferri/serio", "Una multa al mese. Per affetto.")),
+    B("i_angolo_bar", V("angolo_bar"), L("nox/sorpreso", "Un caffè fermo nella tazza da sei ore."),
+      L("saul/neutro", "È di quel tizio congelato."), L("nox/neutro", "Lo era.")),
+    B("i_angolo_cane", V("angolo_cane"), L("zecca/felice", "Raga, un cane fermo a metà salto. È il mio nuovo sfondo."),
+      L("ferri/serio", "Briciola. L'ho multato due volte."), L("zecca/sorpreso", "...Un CANE?"),
+      L("ferri/serio", "Senza guinzaglio.")),
     B("i_ripresa", C, L("zecca/felice", "Lance, Saul, quella di prima la rifacciamo? Non stavo registrando."),
       L("ferri/serio", "No."), L("saul/neutro", "La seconda si paga."),
       L("nox/neutro", "E io ci passo davanti.")),
@@ -962,6 +979,14 @@ CH["dentro_rosso"] = [
     B("dr_f1", F, L("ferri/serio", "Fermi al rosso. Bravi."), L("nox/neutro", "Ci siamo solo stancati.")),
 ]
 CH["vicolo"] = [
+    # ANGOLI (02/11, richiesta dell'autore): chi esplora fuori dalla strada principale viene premiato con una chiacchiera
+    # che altrimenti non sente. Punti "angolo_*" in data/atto1.json (lontani dal percorso, raggiungibili: provati sui muri).
+    B("v_angolo_gatto", V("angolo_gatto"), L("saul/sorpreso", "Un gatto mi fissa da quando siamo entrati."),
+      L("nox/neutro", "Si fa offrire la cena da tutto il quartiere."), L("saul/neutro", "Un collega.")),
+    B("v_angolo_scritta", V("angolo_scritta"), L("zecca/sorpreso", "Raga, su questo muro c'è scritto «NOX TORNA»."),
+      L("nox/neutro", "Vecchia."), L("zecca/serio", "La vernice è fresca."), L("nox/triste", "...")),
+    B("v_angolo_fondo", V("angolo_fondo"), L("ferri/serio", "Vicolo cieco. Articolo diciotto: mai entrare in un vicolo cieco."),
+      L("saul/neutro", "E allora perché ci siamo?"), L("ferri/serio", "Per controllare che fosse cieco.")),
     B("v_distributore", C, L("ferri/serio", "Echo. Mi sta guardando qualcuno?"),
       L("echo/neutro", "Io."), L("ferri/serio", "A parte te."), L("echo/neutro", "Nessuno."),
       L("echo/felice", "...Colpetto sul fianco. Due merendine. Come Saul."),
@@ -1013,6 +1038,15 @@ CH["dentro_blu"] = [
     B("db_f1", F, L("nox/serio", "Non state fermi. Qui il silenzio squilla.")),
 ]
 CH["galleria"] = [
+    # ANGOLI (02/11, richiesta dell'autore): chi esplora fuori dalla strada principale viene premiato con una chiacchiera
+    # che altrimenti non sente. Punti "angolo_*" in data/atto1.json (lontani dal percorso, raggiungibili: provati sui muri).
+    B("g_angolo_cabina", V("angolo_cabina_foto"), L("zecca/felice", "Una cabina per le fototessere! Raga, tutti dentro!"),
+      L("ferri/serio", "Siamo ricercati."), L("zecca/felice", "Appunto. Ci servono foto nuove.")),
+    B("g_angolo_fontana", V("angolo_fontana"), L("echo/neutro", "Quella fontana. Ogni giorno ci buttano quaranta monete."),
+      L("echo/neutro", "Desiderano quasi tutti la stessa cosa."), L("zecca/felice", "Soldi?"),
+      L("echo/neutro", "Che qualcuno li guardi."), L("zecca/serio", "...Ah.")),
+    B("g_angolo_maschere", V("angolo_maschere"), L("nox/neutro", "Un negozio di maschere. Rio, vuoi un ricambio?"),
+      L("zecca/serio", "La mia non si cambia."), L("nox/neutro", "Lo so.")),
     B("g_travestimenti", C, L("ferri/serio", "Galleria piena di gente. Non dobbiamo dare nell'occhio."),
       L("zecca/sfotto", "Lance, con quel cappotto sembri un armadio triste."), L("ferri/serio", "Anonimo."),
       L("nox/neutro", "Io ho un cappello. Fine."),
@@ -1057,6 +1091,14 @@ CH["dentro_verde"] = [
     B("dv_f1", F, L("nox/neutro", "Fermi qui no. Si mettono in posa anche loro.")),
 ]
 CH["caveau"] = [
+    # ANGOLI (02/11, richiesta dell'autore): chi esplora fuori dalla strada principale viene premiato con una chiacchiera
+    # che altrimenti non sente. Punti "angolo_*" in data/atto1.json (lontani dal percorso, raggiungibili: provati sui muri).
+    B("c_angolo_cassette", V("angolo_cassette"), L("saul/neutro", "Cassette di sicurezza. Ognuna è il segreto di qualcuno."),
+      L("zecca/sorpreso", "E la tua qual è?"), L("saul/neutro", "La numero zero. Non esiste.")),
+    B("c_angolo_quadro", V("angolo_quadro"), L("ferri/serio", "Un quadro rubato. È nel registro dal 2019."),
+      L("saul/neutro", "Dal 2018."), L("ferri/sorpreso", "...Come lo sai?"), L("saul/neutro", "Mia nonna.")),
+    B("c_angolo_brandina", V("angolo_brandina"), L("nox/felice", "Una brandina nell'ufficio del direttore. Svegliatemi fra cinque minuti."),
+      L("ferri/serio", "Siamo in mezzo a un colpo."), L("nox/neutro", "Quattro.")),
     B("c_orologio", C, L("saul/neutro", "Capo, che ore sono?"),
       L("ferri/serio", "Quattro e diciassette. Siamo in ritardo di quattro secondi."),
       L("saul/neutro", "Mia nonna diceva: chi conta i secondi non si gode i minuti."), L("ferri/serio", "Quale nonna?"),
@@ -1082,6 +1124,14 @@ CH["caveau"] = [
     B("c_f1", F, L("saul/neutro", "Non fermatevi davanti ai lingotti. Le telecamere registrano la faccia golosa.")),
 ]
 CH["tangenziale"] = [
+    # ANGOLI (02/11, richiesta dell'autore): chi esplora fuori dalla strada principale viene premiato con una chiacchiera
+    # che altrimenti non sente. Punti "angolo_*" in data/atto1.json (lontani dal percorso, raggiungibili: provati sui muri).
+    B("t_angolo_panorama", V("angolo_panorama"), L("zecca/serio", "Da qui si vede tutta la città."),
+      L("ferri/neutro", "Trecentododici multe. Da quassù sembrano poche.")),
+    B("t_angolo_piazzola", V("angolo_piazzola"), L("saul/neutro", "Piazzola. Un distributore."), L("ferri/serio", "Faccio io."),
+      L("ferri/serio", "..."), L("saul/neutro", "Il colpetto è sul fianco, capo. Ci vogliono anni.")),
+    B("t_angolo_pannello", V("angolo_pannello"), L("echo/neutro", "(dal pannello luminoso) «GUIDATE CON PRUDENZA». Era per voi."),
+      L("nox/neutro", "Non guidiamo. Scappiamo."), L("echo/felice", "«SCAPPATE CON PRUDENZA», allora.")),
     B("t_nomi", C, L("ferri/serio", "Fuori città servono nomi falsi. Io sono Luca Bianchi. Impiegato. Documenti in ordine."),
       L("saul/neutro", "Troppo in ordine. Nessun impiegato ha i documenti in ordine."),
       L("zecca/felice", "Io sono Rio Tempesta!"), L("nox/neutro", "Ti trovano in un minuto."),
