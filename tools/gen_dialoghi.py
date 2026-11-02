@@ -86,14 +86,7 @@ scene("apertura", "Echo, un'entità che vive nelle telecamere, presenta quattro 
     L("ferri/sorpreso", "...Hanno messo la foto del tesserino."),
     L("nox/neutro", "Il turno è finito da un minuto. Ricercata da un minuto."),
     L("saul/serio", "Sirene. LibraCorp da una parte, Civette dall'altra."),
-    L("ferri/serio", "Io non scappo dalla mia squadra. Vado e spiego."),
-    L("saul/neutro", "Ti arresteranno con l'uniforme in ordine."),
-    L("nox/neutro", "Io scappo. Nessuno mi interroga prima del caffè."),
-    L("zecca/felice", "Raga, seguiamo quello col pacco. Ha la faccia di uno che sa scappare!"),
-    L("saul/neutro", "Non seguirmi. Porto sfortuna."),
-    L("zecca/felice", "Allora siamo in due!"),
-    L("ferri/arrabbiato", "...Articolo nove: in mancanza di ordini si seguono i sospettati."),
-    L("nox/neutro", "Se l'è appena inventato."),
+    # (la discussione su chi scappa con chi e' nelle chiacchiere dei primi metri di strada: CH["strada"], "s_fuga_*")
     L("echo/serio", "Andava tutto come avevo previsto. Quasi tutto."))
 
 scene("telecamera", "Una telecamera sembra seguire la squadra. Saul se ne accorge.",
@@ -218,7 +211,8 @@ scene("tut_fine", "Dopo la vittoria: ESPERIENZA, LIVELLO e SQUADRA.",
     L("echo/felice", "Nessuno. È stato un vero... punto di esperienza. Capito? Esperienza."),
     L("nox/neutro", "Non l'abbiamo capito. Ed è meglio così."))
 
-scene("accordo", "Echo si presenta: è un Kairos, vive nelle telecamere. La cupola è retta da quattro Anomalie: se le chiudono, lei consegna le registrazioni della piazza che li scagionano. E a ognuno promette quello che vuole di più: il grado a Lance, le ferie a Nox, la live dell'anno a Rio, le taglie a Saul.",
+# Storia che non si salta (02/11): l'accordo e' in due tempi, il patto e poi i prezzi; chi salta ha il riassunto di ognuno.
+scene("accordo", "Echo si presenta: è un Kairos, vive nelle telecamere. La cupola è retta da quattro Anomalie: se le chiudono, lei consegna le registrazioni della piazza che li scagionano. Saul avverte: niente è gratis.",
     L("echo/neutro", "Bel lavoro. Quel distributore mi doveva dei soldi."),
     L("ferri/arrabbiato", "Chi parla? Nome, grado, reparto."),
     L("echo/felice", "Echo. Niente grado. Sono la telecamera sopra di te. Ciao."),
@@ -239,7 +233,9 @@ scene("accordo", "Echo si presenta: è un Kairos, vive nelle telecamere. La cupo
     L("nox/neutro", "E tu che ci guadagni?"),
     L("echo/neutro", "Sono chiusa qui dentro come voi. Cerchiamo la stessa porta."),
     L("saul/neutro", "Ragazzi, se c'è qualcosa che ho imparato nella vita è che niente è gratis."),
-    L("saul/neutro", "Quindi occhio. Anche a una telecamera gentile."),
+    L("saul/neutro", "Quindi occhio. Anche a una telecamera gentile."))
+
+scene("accordo_prezzi", "Echo promette a ognuno quello che vuole di più: il grado a Lance, le ferie a Nox, la live dell'anno a Rio, le taglie a Saul. Lance fa votare la squadra.",
     L("echo/neutro", "Allora parliamo di prezzi. Lance: chi chiude il caso torna in servizio. Nome pulito. E il grado."),
     L("ferri/sorpreso", "...Il grado."),
     L("nox/neutro", "Gli si è inceppata la faccia."),
@@ -698,7 +694,8 @@ scene("c4_vigilia", "L'ultima notte al rifugio. Ognuno dice cosa farà con quell
 # salvare Rio. Echo inceppa le telecamere della piazza come all'Incrocio Nove: il braccio lo vede solo il gruppo. Mostrarlo
 # al paese e' il climax dell'arco di Lance, piu' avanti.
 
-scene("varco", "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale. Il Committente le ruba il varco, la cupola crolla e Lance usa il braccio per salvare Rio. Echo inceppa le telecamere della piazza: il braccio lo vede solo il gruppo. Ora li cerca il paese intero.",
+# Storia che non si salta (02/11): due tempi, la confessione e il crollo. E' un climax: si stringe, non si sposta nulla.
+scene("varco", "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale.",
     L("echo/felice", "Quattro Anomalie chiuse. Lassù, sopra la piazza: un varco. Porta a casa mia. Grazie. Davvero."),
     L("ferri/serio", "Echo. Le registrazioni. Dove sono?"),
     L("echo/triste", "..."),
@@ -718,7 +715,9 @@ scene("varco", "In piazza si apre un varco. Echo confessa: li ha incastrati lei 
     L("ferri/serio", "Prove cancellate, facce sugli schermi, promesse su misura. Hai fatto quello che LibraCorp fa tutti i giorni."),
     L("zecca/triste", "Ti tolgo dai contatti."),
     L("echo/triste", "...Lo capisco."),
-    L("zecca/triste", "Non riesco a premere il tasto. Perché non riesco?"),
+    L("zecca/triste", "Non riesco a premere il tasto. Perché non riesco?"))
+
+scene("varco_crollo", "Il Committente ruba il varco a Echo, la cupola crolla e Lance usa il braccio per salvare Rio. Echo inceppa le telecamere della piazza: il braccio lo vede solo il gruppo. Ora li cerca il paese intero.",
     L("VOCE SENZA VOLTO", "Che scena commovente. Grazie per il varco, piccola Echo. Non era tuo."),
     L("echo/sorpreso", "Tu... il Committente. No. No, no. Il varco si chiude!"),
     L("VOCE SENZA VOLTO", "Per te. Per me si è appena aperto."),
@@ -802,7 +801,8 @@ scene("c5_agguato", "L'Autovelox attacca per primo.",
     L("AUTOVELOX", "FLASH. FLASH. FOTO SCATTATA. VERBALE IN ARRIVO."),
     L("zecca/sorpreso", "Sono venuto malissimo! Cancellala!"))
 
-scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Echo spegne ogni telecamera e ogni luce della città per farli scappare, anche se per lei è come chiudere gli occhi. Si riaccende nel telefono di Rio, ma di lei resta solo il nucleo: per riaverla servono pezzi e frammenti. Nella fuga i quattro diventano una famiglia.",
+# Storia che non si salta (02/11): tre tempi, il blocco, il buio (la citta' spenta) e la famiglia.
+scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Echo spegne ogni telecamera e ogni luce della città per farli scappare, anche se per lei è come chiudere gli occhi.",
     L("zecca/felice", "La sbarra è alzata! Raga, siamo fuori!"),
     L("ferri/sorpreso", "No. Fermi. Fari. Due colonne di fari."),
     L("COMANDANTE ASTRID", "(dal megafono) Lance. Torna a casa. Ti sistemiamo noi. Ti aggiustiamo."),
@@ -819,7 +819,9 @@ scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Ec
     L("echo/serio", "Telecamere. Fari. Lampioni. Semafori. Tabelloni. Tutto quello che vedo. Tutto quello che sono."),
     L("echo/triste", "Se spengo tutto, per un po' non vedrò niente. Non vedrò voi. Non so se mi riaccendo."),
     L("nox/sorpreso", "Echo, no..."),
-    L("echo/felice", "Le promesse erano false. Questa no. Spento."),
+    L("echo/felice", "Le promesse erano false. Questa no. Spento."))
+
+scene("c5_buio", "Al buio la squadra scappa giù dalla scarpata. Echo si riaccende nel telefono di Rio, ma di lei resta solo il nucleo: per riaverla servono pezzi e frammenti.",
     L("COMANDANTE ASTRID", "Chi ha spento la luce?! Unità, a terra!"),
     L("STRIX", "Astrid, la torcia ce l'hai tu."),
     L("COMANDANTE ASTRID", "Non è il momento, Strix!"),
@@ -842,7 +844,9 @@ scene("c5_casello", "Al casello aspettano Astrid e Strix con le loro squadre. Ec
     L("echo/neutro", "Pezzi. Telecamere rotte, circuiti. E i frammenti delle Anomalie, quelli che vagano per strada."),
     L("saul/neutro", "Rottami e roba che non dovrebbe esistere. Finalmente un lavoro che so fare."),
     L("echo/felice", "Tregua?", se="echo_tregua"),
-    L("echo/neutro", "Non sono dei vostri. Ma vi vedo lo stesso. Un pochino.", se="echo_rancore"),
+    L("echo/neutro", "Non sono dei vostri. Ma vi vedo lo stesso. Un pochino.", se="echo_rancore"))
+
+scene("c5_famiglia", "Nella fuga i quattro diventano una famiglia.",
     L("nox/neutro", "Latitanti. Senza casa, senza caffè, con un disertore, un ladro, un bambino e una telecamera rotta."),
     L("nox/felice", "E sono felice. Non ditelo a nessuno."),
     L("ferri/neutro", "Pagina uno di un taccuino nuovo: riportare Echo intera."),
@@ -866,6 +870,15 @@ F = {"tipo": "fermo"}
 
 CH = {}
 CH["strada"] = [
+    # Dall'apertura (storia che non si salta, 02/11): si discute su chi scappa con chi mentre si e' gia' in fuga.
+    # Z alta = partono una dopo l'altra appena si prende il controllo, in quest'ordine.
+    B("s_fuga_lance", Z(99.0), L("ferri/serio", "Io non scappo dalla mia squadra. Vado e spiego."),
+      L("saul/neutro", "Ti arresteranno con l'uniforme in ordine.")),
+    B("s_fuga_nox", Z(99.0), L("nox/neutro", "Io scappo. Nessuno mi interroga prima del caffè.")),
+    B("s_fuga_rio", Z(99.0), L("zecca/felice", "Raga, seguiamo quello col pacco. Ha la faccia di uno che sa scappare!"),
+      L("saul/neutro", "Non seguirmi. Porto sfortuna."), L("zecca/felice", "Allora siamo in due!")),
+    B("s_fuga_articolo", Z(99.0), L("ferri/arrabbiato", "...Articolo nove: in mancanza di ordini si seguono i sospettati."),
+      L("nox/neutro", "Se l'è appena inventato.")),
     B("s_orologio", C, L("saul/neutro", "Capo, che ore sono?"), L("ferri/serio", "Tre e ventuno. E quaranta secondi."),
       L("saul/neutro", "Non ti ho chiesto i secondi."), L("ferri/serio", "Omaggio.")),
     B("s_inizio", Z(6.0), L("ferri/serio", "Formazione. Io davanti, voi dietro, nessuno parla."),
@@ -943,6 +956,10 @@ CH["dentro_rosso"] = [
       L("zecca/felice", "Sei un meme vivente.")),
     B("dr_c3", C, L("zecca/serio", "Saul, se restassimo bloccati qui per sempre?"),
       L("saul/neutro", "Aprirei un'officina. Clienti fermi.")),
+    # nuove (02/11)
+    B("dr_orologio", C, L("ferri/serio", "Sei e zero zero. E zero secondi. Ancora."),
+      L("saul/neutro", "Finalmente sei puntuale.")),
+    B("dr_f1", F, L("ferri/serio", "Fermi al rosso. Bravi."), L("nox/neutro", "Ci siamo solo stancati.")),
 ]
 CH["vicolo"] = [
     B("v_distributore", C, L("ferri/serio", "Echo. Mi sta guardando qualcuno?"),
@@ -988,6 +1005,12 @@ CH["dentro_blu"] = [
     B("db_c1", C, L("zecca/serio", "Nox, dimmi una cosa bella."), L("nox/neutro", "Il caffè di domani.")),
     B("db_c2", C, L("saul/neutro", "Agente. Se ti senti cadere, appoggiati. Non ti faccio pagare."),
       L("nox/neutro", "La cosa più gentile che tu abbia mai detto."), L("saul/neutro", "Lo nego.")),
+    # nuove (02/11)
+    B("db_gettoni", C, L("zecca/sorpreso", "Un telefono coi gettoni. Dove si mette il caricatore?"),
+      L("nox/neutro", "Al museo.")),
+    B("db_ora", C, L("ferri/serio", "Ore tre e dodici. Di nuovo."), L("nox/serio", "Non dirmi l'ora qui dentro."),
+      L("ferri/neutro", "...Ricevuto.")),
+    B("db_f1", F, L("nox/serio", "Non state fermi. Qui il silenzio squilla.")),
 ]
 CH["galleria"] = [
     B("g_travestimenti", C, L("ferri/serio", "Galleria piena di gente. Non dobbiamo dare nell'occhio."),
@@ -1026,6 +1049,12 @@ CH["dentro_verde"] = [
       L("ferri/serio", "Volevo solo che contaste qualcosa.")),
     B("dv_c2", C, L("nox/neutro", "Rio. Stammi vicino."), L("zecca/serio", "Hai paura?"),
       L("nox/neutro", "Tu sì. La tengo io per tutti e due.")),
+    # nuove (02/11)
+    B("dv_somiglia", C, L("saul/neutro", "Rio, questi manichini ti somigliano."), L("zecca/felice", "Perché sono belli?"),
+      L("saul/neutro", "Perché posano anche quando nessuno guarda.")),
+    B("dv_specchio", C, L("ferri/serio", "Articolo trenta: vietato specchiarsi in servizio."),
+      L("zecca/serio", "Non mi specchio. Controllo che ci sono.")),
+    B("dv_f1", F, L("nox/neutro", "Fermi qui no. Si mettono in posa anche loro.")),
 ]
 CH["caveau"] = [
     B("c_orologio", C, L("saul/neutro", "Capo, che ore sono?"),
@@ -1100,6 +1129,48 @@ CH["tangenziale"] = [
 ]
 import re
 
+# Storia che non si salta (02/11): una battuta oltre MAX_CAR diventa due (o piu') fumetti dello stesso personaggio,
+# spezzata dove c'e' gia' una fine di frase, mai dentro le «virgolette». Le parole restano quelle.
+# "se"/"se_non" valgono per tutti i pezzi; "imposta" e "scelte" restano sull'ultimo.
+MAX_CAR = 80
+_FINE = re.compile(r"(?<=[.!?»…])\s+")
+
+
+def _spezza_testo(s):
+    if len(s) <= MAX_CAR:
+        return [s]
+    best = None
+    for m in _FINE.finditer(s):
+        a, b = s[:m.start()], s[m.end():]
+        if a.count("«") > a.count("»") or len(a) < 12 or len(b) < 8:
+            continue
+        if a.startswith("(") and ")" not in a:
+            continue
+        peso = max(len(a), len(b))
+        if best is None or peso < best[0]:
+            best = (peso, a, b)
+    if best is None:
+        return [s]
+    return _spezza_testo(best[1]) + _spezza_testo(best[2])
+
+
+def spezza(righe):
+    out = []
+    for r in righe:
+        pezzi = [r["testo"]] if "scelte" in r else _spezza_testo(r["testo"])
+        for i, p in enumerate(pezzi):
+            n = {k: v for k, v in r.items() if i == len(pezzi) - 1 or k not in ("imposta", "scelte")}
+            n["testo"] = p
+            out.append(n)
+    return out
+
+
+for _v in S.values():
+    _v["righe"] = spezza(_v["righe"])
+for _v in CH.values():
+    for _b in _v:
+        _b["righe"] = spezza(_b["righe"])
+
 out = {"_nota": "Testi dell'atto 1 (PROVVISORI). Generati da tools/gen_dialoghi (vedi docs/STORIA.md per voci e arco). Scene: righe + riassunto. Una riga puo' avere 'se' o 'se_non' (vale solo se una scelta e' stata fatta o no) e 'scelte' (lista di {testo, imposta, vai}). 'chiacchiere': battute durante l'esplorazione, per area. Gli id dei personaggi restano ferri/zecca (file e ritratti); i nomi sono Lance e Rio."}
 out.update(S)
 out["chiacchiere"] = CH
@@ -1143,7 +1214,7 @@ n = sum(len(v["righe"]) for k, v in S.items())
 print("scene", len(S), "righe", n, "chiacchiere", sum(len(v) for v in CH.values()))
 # Storia che non si salta (feedback amici 18/10): una battuta oltre MAX_CAR va spezzata in due fumetti, una scena oltre
 # MAX_RIGHE va spezzata o spostata in parte nelle chiacchiere. Qui si avvisa e basta: decide chi scrive.
-MAX_CAR, MAX_RIGHE = 80, 24
+MAX_RIGHE = 24
 lunghe = [(k, r["testo"]) for k, v in S.items() for r in v["righe"] if len(r["testo"]) > MAX_CAR]
 lunghe += [(k, r["testo"]) for k, v in CH.items() for b in v for r in b["righe"] if len(r["testo"]) > MAX_CAR]
 fiumi = [(k, len(v["righe"])) for k, v in S.items() if len(v["righe"]) > MAX_RIGHE]

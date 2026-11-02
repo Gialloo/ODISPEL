@@ -16,11 +16,15 @@
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Mi chiamo Echo. Vivo nelle telecamere di questa città. Guardo."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Sulla panchina: Nox. Civette, i maghi con la licenza. In servizio. Tecnicamente."},
 			{"chi": "nox", "espr": "triste", "testo": "Due minuti alla fine del turno. Se squilla il telefono, lo lancio nella fontana."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Col berretto: Lance. LibraCorp, la polizia che dà la caccia alla magia. Retrocesso martedì."},
-			{"chi": "ferri", "espr": "serio", "testo": "Ore 2:58 e quaranta. Una che dorme in servizio. Uno con un pacco. Un minorenne che parla da solo."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Il minorenne è Rio. Diciannove anni. La maschera gli dà poteri. Gli è arrivata per posta."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Col berretto: Lance."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "LibraCorp, la polizia che dà la caccia alla magia. Retrocesso martedì."},
+			{"chi": "ferri", "espr": "serio", "testo": "Ore 2:58 e quaranta. Una che dorme in servizio."},
+			{"chi": "ferri", "espr": "serio", "testo": "Uno con un pacco. Un minorenne che parla da solo."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Il minorenne è Rio. Diciannove anni."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "La maschera gli dà poteri. Gli è arrivata per posta."},
 			{"chi": "zecca", "espr": "felice", "testo": "Buonasera raga, e benvenuti a RIO ALLE TRE DI NOTTE!"},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Col pacco: Saul. Contrabbandiere. Consegna alle tre in punto. Non sa cosa c'è dentro."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Col pacco: Saul. Contrabbandiere."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Consegna alle tre in punto. Non sa cosa c'è dentro."},
 			{"chi": "saul", "espr": "neutro", "testo": "Non chiedo. Le domande costano."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Quattro sconosciuti. Ognuno con un segreto. Ricordatevelo."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Ore tre. Il pacco si apre."},
@@ -28,18 +32,11 @@
 			{"chi": "nox", "espr": "sorpreso", "testo": "È una cupola. Su tutta la città."},
 			{"chi": "ferri", "espr": "arrabbiato", "testo": "LibraCorp! Nessuno si muova! Voi tre, in stato di fermo!"},
 			{"chi": "saul", "espr": "neutro", "testo": "Noi tre. Guarda gli schermi, capo."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Su ogni schermo della città, quattro facce. «RESPONSABILI DEL SIGILLO. RICERCATI.»"},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Su ogni schermo della città, quattro facce."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "«RESPONSABILI DEL SIGILLO. RICERCATI.»"},
 			{"chi": "ferri", "espr": "sorpreso", "testo": "...Hanno messo la foto del tesserino."},
 			{"chi": "nox", "espr": "neutro", "testo": "Il turno è finito da un minuto. Ricercata da un minuto."},
 			{"chi": "saul", "espr": "serio", "testo": "Sirene. LibraCorp da una parte, Civette dall'altra."},
-			{"chi": "ferri", "espr": "serio", "testo": "Io non scappo dalla mia squadra. Vado e spiego."},
-			{"chi": "saul", "espr": "neutro", "testo": "Ti arresteranno con l'uniforme in ordine."},
-			{"chi": "nox", "espr": "neutro", "testo": "Io scappo. Nessuno mi interroga prima del caffè."},
-			{"chi": "zecca", "espr": "felice", "testo": "Raga, seguiamo quello col pacco. Ha la faccia di uno che sa scappare!"},
-			{"chi": "saul", "espr": "neutro", "testo": "Non seguirmi. Porto sfortuna."},
-			{"chi": "zecca", "espr": "felice", "testo": "Allora siamo in due!"},
-			{"chi": "ferri", "espr": "arrabbiato", "testo": "...Articolo nove: in mancanza di ordini si seguono i sospettati."},
-			{"chi": "nox", "espr": "neutro", "testo": "Se l'è appena inventato."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Andava tutto come avevo previsto. Quasi tutto."}
 		]
 	},
@@ -101,11 +98,14 @@
 	"tut_intro": {
 		"riassunto": "Echo, istruttrice dal cuore delle telecamere, spiega lo schermo del primo scontro.",
 		"righe": [
-			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Istruttrice Echo, telecamera 07. Scontro vero ma piccolo: un Frammento, un pezzetto d'Anomalia."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Istruttrice Echo, telecamera 07."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Scontro vero ma piccolo: un Frammento, un pezzetto d'Anomalia."},
 			{"chi": "zecca", "espr": "sfotto", "testo": "Raga, io non leggo le istruzioni. Io ho il feeling."},
 			{"chi": "saul", "espr": "neutro", "testo": "Io le leggo solo se in fondo c'è il prezzo."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "In alto il nemico: i suoi PV e la barra bianca EQUILIBRIO. A sinistra, l'ordine dei turni."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "In basso le vostre schede: PV, ENERGIA e la barra dell'ULTIMATE. Sono le 21:04, domande?"},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "In alto il nemico: i suoi PV e la barra bianca EQUILIBRIO."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "A sinistra, l'ordine dei turni."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "In basso le vostre schede: PV, ENERGIA e la barra dell'ULTIMATE."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Sono le 21:04, domande?"},
 			{"chi": "nox", "espr": "neutro", "testo": "Una. Posso saltare la lezione?"}
 		]
 	},
@@ -115,7 +115,8 @@
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Primo comando: ATTACCO. Tocchi e colpisci. Semplice."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Ma il colore conta. Lance è ROSSO, Nox BLU, Rio VIOLA, Saul VERDE."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Sul colore giusto esce EFFICACE: più 50 per cento. Su quello sbagliato, DEBOLE."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Il Frammento è GIALLO e teme il ROSSO. Quindi colpisce Lance. Cioè: colpisce lui."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Il Frammento è GIALLO e teme il ROSSO."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Quindi colpisce Lance. Cioè: colpisce lui."},
 			{"chi": "ferri", "espr": "serio", "testo": "Lo metto a verbale: sono il rosso utile. Articolo 3."},
 			{"chi": "zecca", "espr": "sfotto", "testo": "Io sono viola. Il colore dei grandi artisti incompresi."}
 		]
@@ -124,7 +125,8 @@
 		"riassunto": "GUARDIA riduce i danni e dà +1 ENERGIA, che serve per l'ABILITÀ.",
 		"righe": [
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Secondo comando: GUARDIA. Subisci meno danni e guadagni 1 ENERGIA."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "L'ENERGIA serve per l'ABILITÀ, che vediamo adesso. Quindi la GUARDIA non è tempo perso."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "L'ENERGIA serve per l'ABILITÀ, che vediamo adesso."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Quindi la GUARDIA non è tempo perso."},
 			{"chi": "nox", "espr": "felice", "testo": "La GUARDIA è la mia mossa preferita. Non fare niente, ma con stile."},
 			{"chi": "ferri", "espr": "arrabbiato", "testo": "Non è «niente». È una difesa attiva. C'è un articolo."},
 			{"chi": "nox", "espr": "neutro", "testo": "Sì. Ed è un articolo che amo."}
@@ -137,8 +139,10 @@
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Lance protegge: con Copertura prende lui il colpo al posto di un compagno."},
 			{"chi": "nox", "espr": "neutro", "testo": "Io curo. Pausa caffè. Il mio ruolo preferito dopo la GUARDIA."},
 			{"chi": "zecca", "espr": "felice", "testo": "Io Inquadratura: marco il nemico e faccio salire l'HYPE. Pubblico, svegliati."},
-			{"chi": "saul", "espr": "neutro", "testo": "Mano lesta. Rubo lo scudo del nemico. Se non ce l'ha, gli rubo EQUILIBRIO e mi riprendo energia."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Ultimo trucco: cambiare mossa da un turno all'altro dà un piccolo bonus. Variate, non siate banali."}
+			{"chi": "saul", "espr": "neutro", "testo": "Mano lesta. Rubo lo scudo del nemico."},
+			{"chi": "saul", "espr": "neutro", "testo": "Se non ce l'ha, gli rubo EQUILIBRIO e mi riprendo energia."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Ultimo trucco: cambiare mossa da un turno all'altro dà un piccolo bonus."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Variate, non siate banali."}
 		]
 	},
 	"tut_telegrafo": {
@@ -147,15 +151,18 @@
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Il Frammento è onesto: annuncia la prossima mossa nella riga in alto."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "E dice su chi cade: cerchio rosso ai piedi del bersaglio, bordo rosso sulla sua scheda."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "FORTE significa colpo pesante. SU TUTTI significa che colpisce tutti."},
-			{"chi": "saul", "espr": "neutro", "testo": "Un nemico che avvisa. Mia nonna Ines diceva che i migliori affari sono quelli senza sorprese."},
+			{"chi": "saul", "espr": "neutro", "testo": "Un nemico che avvisa."},
+			{"chi": "saul", "espr": "neutro", "testo": "Mia nonna Ines diceva che i migliori affari sono quelli senza sorprese."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Raga, quindi la riga rossa in alto non era pubblicità?"}
 		]
 	},
 	"tut_qte": {
 		"riassunto": "GUARDIA A TEMPO: si tocca quando il cerchio che si stringe tocca quello fermo.",
 		"righe": [
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Quando il nemico colpisce, parte la GUARDIA A TEMPO. C'è un cerchio fermo e uno che si stringe."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Tocca lo schermo quando si toccano. Preciso al millisecondo: parata PERFETTA e contrattacco."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Quando il nemico colpisce, parte la GUARDIA A TEMPO."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "C'è un cerchio fermo e uno che si stringe."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Tocca lo schermo quando si toccano."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Preciso al millisecondo: parata PERFETTA e contrattacco."},
 			{"chi": "ferri", "espr": "serio", "testo": "Il cronometro lo porto io. Tolleranza: zero virgola zero."},
 			{"chi": "zecca", "espr": "sfotto", "testo": "Raga, la parata perfetta in clip fa numeri. Fatemi prendere il colpo."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Non è questo il senso. Ma ha un suo fascino."}
@@ -164,10 +171,14 @@
 	"tut_reazioni": {
 		"riassunto": "Davanti a un colpo pesante in carica compaiono le REAZIONI, che costano RISERVA e il turno.",
 		"righe": [
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Se il nemico CARICA un colpo pesante, compaiono le REAZIONI. Costano RISERVA e il turno di chi le usa."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "La RISERVA è di squadra: ne ricaricate un po' a ogni round. Ognuna si gioca diversa."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "SCHIVA: compare una freccia, tocca quel lato. COPRI: tieni premuto, lascia quando la barra è nella fascia."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "FERMA: tocca a raffica finché la barra si riempie. Toglie subito EQUILIBRIO al nemico."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Se il nemico CARICA un colpo pesante, compaiono le REAZIONI."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Costano RISERVA e il turno di chi le usa."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "La RISERVA è di squadra: ne ricaricate un po' a ogni round."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Ognuna si gioca diversa."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "SCHIVA: compare una freccia, tocca quel lato."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "COPRI: tieni premuto, lascia quando la barra è nella fascia."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "FERMA: tocca a raffica finché la barra si riempie."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Toglie subito EQUILIBRIO al nemico."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "SOCCORRI: tocca a tempo col battito, tre volte. Rialza un compagno KO."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Se sbagli, la reazione funziona lo stesso. Vale meno. Dopotutto siete umani."}
 		]
@@ -176,7 +187,8 @@
 		"riassunto": "A EQUILIBRIO zero il nemico va in BREAK e parte l'ATTACCO DI SQUADRA.",
 		"righe": [
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Quando la barra bianca EQUILIBRIO arriva a zero, il nemico va in BREAK: stordito."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Allora parte l'ATTACCO DI SQUADRA. Io faccio un FERMO IMMAGINE e colpite uno dopo l'altro."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Allora parte l'ATTACCO DI SQUADRA."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Io faccio un FERMO IMMAGINE e colpite uno dopo l'altro."},
 			{"chi": "zecca", "espr": "felice", "testo": "FERMO IMMAGINE. Ditemi che l'avete registrato. Voglio la clip."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Telecamera 07 registra tutto. Il mio archivio è già pieno di voi."},
 			{"chi": "saul", "espr": "neutro", "testo": "Una clip in cambio di una percentuale. Dico solo questo."}
@@ -185,7 +197,8 @@
 	"tut_ultimate": {
 		"riassunto": "La barra dell'ULTIMATE si riempie colpendo e prendendo colpi; si può lanciare anche in diretta.",
 		"righe": [
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "La barra dell'ULTIMATE si riempie colpendo e prendendo colpi. Piena: ULTIMATE, il colpo più forte."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "La barra dell'ULTIMATE si riempie colpendo e prendendo colpi."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Piena: ULTIMATE, il colpo più forte."},
 			{"chi": "ferri", "espr": "serio", "testo": "Quindi anche incassare serve. Lo trovo coerente col regolamento."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Altra cosa: mentre il nemico carica, chi ha la barra piena può lanciarla fuori turno."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Si chiama ULTIMATE IN DIRETTA. Compaiono i pulsanti ULT con il suo nome."},
@@ -214,13 +227,14 @@
 		]
 	},
 	"accordo": {
-		"riassunto": "Echo si presenta: è un Kairos, vive nelle telecamere. La cupola è retta da quattro Anomalie: se le chiudono, lei consegna le registrazioni della piazza che li scagionano. E a ognuno promette quello che vuole di più: il grado a Lance, le ferie a Nox, la live dell'anno a Rio, le taglie a Saul.",
+		"riassunto": "Echo si presenta: è un Kairos, vive nelle telecamere. La cupola è retta da quattro Anomalie: se le chiudono, lei consegna le registrazioni della piazza che li scagionano. Saul avverte: niente è gratis.",
 		"righe": [
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Bel lavoro. Quel distributore mi doveva dei soldi."},
 			{"chi": "ferri", "espr": "arrabbiato", "testo": "Chi parla? Nome, grado, reparto."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Echo. Niente grado. Sono la telecamera sopra di te. Ciao."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Raga. La telecamera ha detto «ciao»."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Sono un Kairos. Vengo da un altro posto, qui vivo nei circuiti. Vedo tutta la città."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Sono un Kairos. Vengo da un altro posto, qui vivo nei circuiti."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Vedo tutta la città."},
 			{"chi": "nox", "espr": "serio", "testo": "Allora cos'è la cupola?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Un sigillo. L'ha acceso il pacco di Saul."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Lo reggono quattro Anomalie, come quel distributore. Più grosse."},
@@ -236,8 +250,14 @@
 			{"chi": "nox", "espr": "neutro", "testo": "E tu che ci guadagni?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Sono chiusa qui dentro come voi. Cerchiamo la stessa porta."},
 			{"chi": "saul", "espr": "neutro", "testo": "Ragazzi, se c'è qualcosa che ho imparato nella vita è che niente è gratis."},
-			{"chi": "saul", "espr": "neutro", "testo": "Quindi occhio. Anche a una telecamera gentile."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Allora parliamo di prezzi. Lance: chi chiude il caso torna in servizio. Nome pulito. E il grado."},
+			{"chi": "saul", "espr": "neutro", "testo": "Quindi occhio. Anche a una telecamera gentile."}
+		]
+	},
+	"accordo_prezzi": {
+		"riassunto": "Echo promette a ognuno quello che vuole di più: il grado a Lance, le ferie a Nox, la live dell'anno a Rio, le taglie a Saul. Lance fa votare la squadra.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Allora parliamo di prezzi."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Lance: chi chiude il caso torna in servizio. Nome pulito. E il grado."},
 			{"chi": "ferri", "espr": "sorpreso", "testo": "...Il grado."},
 			{"chi": "nox", "espr": "neutro", "testo": "Gli si è inceppata la faccia."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Nox: tre settimane di ferie per ogni Anomalia di classe alta. Dodici settimane."},
@@ -274,7 +294,8 @@
 			{"chi": "ferri", "espr": "serio", "testo": "Sì."},
 			{"chi": "saul", "espr": "neutro", "testo": "Io dormo col pacco sotto la testa. Chi lo tocca, lo compra."},
 			{"chi": "zecca", "espr": "serio", "testo": "Io col telefono acceso. Nove per cento. Se mi rapiscono, almeno è in diretta."},
-			{"chi": "nox", "espr": "felice", "testo": "C'è una macchinetta del caffè. Chi mi riempie il thermos ha il divano dopo di me."},
+			{"chi": "nox", "espr": "felice", "testo": "C'è una macchinetta del caffè."},
+			{"chi": "nox", "espr": "felice", "testo": "Chi mi riempie il thermos ha il divano dopo di me."},
 			{"chi": "saul", "espr": "neutro", "testo": "Affare."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Dormite tutti con un occhio aperto."},
 			{"chi": "nox", "espr": "neutro", "testo": "Ci guardi anche mentre dormiamo?"},
@@ -309,7 +330,8 @@
 			{"chi": "ferri", "espr": "triste", "testo": "La Comandante Astrid. Mi ha insegnato a rifare la branda. E tutto il resto."},
 			{"chi": "zecca", "espr": "serio", "testo": "Però ti vuole vivo. È buono, no?"},
 			{"chi": "ferri", "espr": "serio", "testo": "Con Astrid «vivo» è la parte brutta."},
-			{"chi": "saul", "espr": "neutro", "testo": "Ti ha insegnato tutto, quindi sa anche dove scappi. Ci penso io per stavolta, poi ricambi il favore."},
+			{"chi": "saul", "espr": "neutro", "testo": "Ti ha insegnato tutto, quindi sa anche dove scappi."},
+			{"chi": "saul", "espr": "neutro", "testo": "Ci penso io per stavolta, poi ricambi il favore."},
 			{"chi": "ferri", "espr": "serio", "testo": "...Non è un brutto ragionamento."}
 		]
 	},
@@ -363,13 +385,15 @@
 			{"chi": "nox", "espr": "felice", "testo": "Pff..."},
 			{"chi": "ferri", "espr": "arrabbiato", "testo": "Smettetela."},
 			{"chi": "ferri", "espr": "triste", "testo": "Se lo scoprono mi contengono. Come un'Anomalia. Fine."},
-			{"chi": "saul", "espr": "neutro", "testo": "Rilassati, capo. Con me il segreto è al sicuro. Il prezzo lo decidiamo con calma."},
+			{"chi": "saul", "espr": "neutro", "testo": "Rilassati, capo. Con me il segreto è al sicuro."},
+			{"chi": "saul", "espr": "neutro", "testo": "Il prezzo lo decidiamo con calma."},
 			{"chi": "nox", "espr": "neutro", "testo": "Saul."},
 			{"chi": "saul", "espr": "neutro", "testo": "...Gratis. Che schifo."},
 			{"chi": "zecca", "espr": "serio", "testo": "Raga. Telefono giù. Questa non la registro."},
 			{"chi": "ferri", "espr": "neutro", "testo": "...Grazie, minorenne."},
 			{"chi": "zecca", "espr": "arrabbiato", "testo": "HO DICIANNOVE ANNI."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Il semaforo è verde. Uno su quattro. E il braccio di Lance non è nelle mie registrazioni. Telecamera inceppata."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Il semaforo è verde. Uno su quattro."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "E il braccio di Lance non è nelle mie registrazioni. Telecamera inceppata."},
 			{"chi": "ferri", "espr": "sorpreso", "testo": "...Davvero?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Da adesso sì."}
 		]
@@ -412,7 +436,8 @@
 		"righe": [
 			{"chi": "ferri", "espr": "serio", "testo": "LibraCorp e Civette. Da regolamento dovremmo odiarci."},
 			{"chi": "nox", "espr": "neutro", "testo": "Io odio i turni di notte e il mio capoturno, Strix. Tu sei terzo."},
-			{"chi": "ferri", "espr": "serio", "testo": "Strix. Lavorava in coppia con Astrid, dieci anni fa. Poi è andata male. Nessuno ne parla."},
+			{"chi": "ferri", "espr": "serio", "testo": "Strix. Lavorava in coppia con Astrid, dieci anni fa."},
+			{"chi": "ferri", "espr": "serio", "testo": "Poi è andata male. Nessuno ne parla."},
 			{"chi": "nox", "espr": "sfotto", "testo": "Due capi orribili con un passato. Brindiamo. Col caffè, siamo in servizio."},
 			{"chi": "ferri", "espr": "serio", "testo": "Siamo latitanti."},
 			{"chi": "nox", "espr": "neutro", "testo": "Allora doppio.", "imposta": "legame_ferri_nox"}
@@ -421,7 +446,8 @@
 	"c2_briefing": {
 		"riassunto": "In tutta la città i telefoni squillano alle 3:12, l'ora della notte peggiore di Nox. L'Anomalia è nel Vicolo delle Civette.",
 		"righe": [
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Tutti i telefoni della città squillano alle tre e dodici. Chi risponde non riattacca più."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Tutti i telefoni della città squillano alle tre e dodici."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Chi risponde non riattacca più."},
 			{"chi": "nox", "espr": "sorpreso", "testo": "...Le tre e dodici."},
 			{"chi": "zecca", "espr": "serio", "testo": "Nox? Sei più bianca del solito. E il tuo solito è già un fantasma."},
 			{"chi": "nox", "espr": "serio", "testo": "Vicolo delle Civette. Il mio vecchio posto. Guido io. Nessuno risponde a niente."},
@@ -436,9 +462,11 @@
 	"c2_registro": {
 		"riassunto": "Il registro dei turni: alle 3:12 di una notte di due anni fa, Nox non rispose a una chiamata di soccorso. Alla radio c'è Strix, il suo capoturno.",
 		"righe": [
-			{"chi": "nox", "espr": "triste", "testo": "Il registro dei turni. Due anni fa. «3:12, chiamata di soccorso. Nessuna risposta. Turno: Nox.»"},
+			{"chi": "nox", "espr": "triste", "testo": "Il registro dei turni. Due anni fa."},
+			{"chi": "nox", "espr": "triste", "testo": "«3:12, chiamata di soccorso. Nessuna risposta. Turno: Nox.»"},
 			{"chi": "zecca", "espr": "serio", "testo": "Nox..."},
-			{"chi": "nox", "espr": "triste", "testo": "Ero sola. Avevo paura. L'ho lasciato squillare. La mattina dopo c'era un nome in meno."},
+			{"chi": "nox", "espr": "triste", "testo": "Ero sola. Avevo paura. L'ho lasciato squillare."},
+			{"chi": "nox", "espr": "triste", "testo": "La mattina dopo c'era un nome in meno."},
 			{"chi": "STRIX", "col": "#3f9dff", "testo": "(alla radio) Nox. Torni sempre dove hai sbagliato."},
 			{"chi": "STRIX", "col": "#3f9dff", "testo": "Consegnati a noi prima che ti trovi LibraCorp. Loro non chiedono: contengono."},
 			{"chi": "ferri", "espr": "serio", "testo": "Su LibraCorp ha ragione. Mi costa dirlo."},
@@ -527,7 +555,8 @@
 			{"chi": "ferri", "espr": "serio", "testo": "Li ho scritti. Il capitolo tre è mio."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "...Davvero?"},
 			{"chi": "ferri", "espr": "serio", "testo": "«Postura e dignità». Quaranta pagine."},
-			{"chi": "zecca", "espr": "serio", "testo": "La mia maschera, il tuo braccio. Roba strana che ci è caduta addosso. Siamo uguali, no?"},
+			{"chi": "zecca", "espr": "serio", "testo": "La mia maschera, il tuo braccio."},
+			{"chi": "zecca", "espr": "serio", "testo": "Roba strana che ci è caduta addosso. Siamo uguali, no?"},
 			{"chi": "ferri", "espr": "neutro", "testo": "No. Ma ci copriamo le spalle. Guardia alta."},
 			{"chi": "zecca", "espr": "felice", "testo": "TITOLO: «Mi alleno con Lance. Ho pianto».", "imposta": "legame_ferri_zecca"}
 		]
@@ -553,7 +582,8 @@
 		"riassunto": "Nox e Saul trattano su tutto. Legame Nox e Saul.",
 		"righe": [
 			{"chi": "saul", "espr": "neutro", "testo": "Agente Nox. Quanto costa che ti scordi di avermi visto, quando sarà finita?"},
-			{"chi": "nox", "espr": "neutro", "testo": "Fascicolo duemiladuecentodiciannove. Saul, ventidue anni. Ricettazione, truffa, un cammello."},
+			{"chi": "nox", "espr": "neutro", "testo": "Fascicolo duemiladuecentodiciannove."},
+			{"chi": "nox", "espr": "neutro", "testo": "Saul, ventidue anni. Ricettazione, truffa, un cammello."},
 			{"chi": "saul", "espr": "sorpreso", "testo": "Il cammello era un malinteso."},
 			{"chi": "nox", "espr": "neutro", "testo": "Il cammello aveva i documenti falsi."},
 			{"chi": "saul", "espr": "neutro", "testo": "Ottimi documenti."},
@@ -565,7 +595,8 @@
 	"c3_briefing": {
 		"riassunto": "Nella Galleria Lumière chi entra perde la faccia e diventa un manichino. I video sono ovunque. Guida Rio.",
 		"righe": [
-			{"chi": "zecca", "espr": "sorpreso", "testo": "Raga, i video della Galleria Lumière. La gente si fa un selfie e... non ha più la faccia."},
+			{"chi": "zecca", "espr": "sorpreso", "testo": "Raga, i video della Galleria Lumière."},
+			{"chi": "zecca", "espr": "sorpreso", "testo": "La gente si fa un selfie e... non ha più la faccia."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Restano in posa. Manichini. Nelle mie telecamere sono già ventitré."},
 			{"chi": "zecca", "espr": "serio", "testo": "Guido io. Lì dentro serve uno che sa stare davanti a un obiettivo."},
 			{"chi": "nox", "espr": "neutro", "testo": "Tieni la maschera ben ferma, allora."},
@@ -580,7 +611,8 @@
 	"c3_chat": {
 		"riassunto": "La chat della diretta di Rio chiede di vedergli la faccia. Rio ha paura di non essere nessuno senza maschera.",
 		"righe": [
-			{"chi": "zecca", "espr": "felice", "testo": "La chat è impazzita. «Facci vedere la faccia.» «Senza maschera sei nessuno.» Simpatici."},
+			{"chi": "zecca", "espr": "felice", "testo": "La chat è impazzita. «Facci vedere la faccia.»"},
+			{"chi": "zecca", "espr": "felice", "testo": "«Senza maschera sei nessuno.» Simpatici."},
 			{"chi": "saul", "espr": "serio", "testo": "Chi sono?"},
 			{"chi": "zecca", "espr": "neutro", "testo": "Gente. Uno si chiama «Pane_Fritto_92»."},
 			{"chi": "saul", "espr": "neutro", "testo": "Non si dà la faccia a uno che si chiama Pane Fritto."},
@@ -611,8 +643,10 @@
 		"righe": [
 			{"chi": "MANICHINO", "col": "#46e07a", "testo": "Dammi la tua faccia. Tanto non la usi. Hai sempre la maschera."},
 			{"chi": "zecca", "espr": "triste", "testo": "...Forse hai ragione. Senza maschera non sono nessuno."},
-			{"chi": "saul", "espr": "arrabbiato", "testo": "Ragazzino. Guarda me. Ho mentito a mezza città e la faccia ce l'ho ancora. Tienitela."},
-			{"chi": "nox", "espr": "serio", "testo": "Rio. Ti abbiamo visto dormire con la bocca aperta e la maschera storta. Sei tu. Basta."},
+			{"chi": "saul", "espr": "arrabbiato", "testo": "Ragazzino. Guarda me."},
+			{"chi": "saul", "espr": "arrabbiato", "testo": "Ho mentito a mezza città e la faccia ce l'ho ancora. Tienitela."},
+			{"chi": "nox", "espr": "serio", "testo": "Rio. Ti abbiamo visto dormire con la bocca aperta e la maschera storta."},
+			{"chi": "nox", "espr": "serio", "testo": "Sei tu. Basta."},
 			{"chi": "ferri", "espr": "serio", "testo": "E russi."},
 			{"chi": "zecca", "espr": "sfotto", "testo": "...Questa faccia è mia. Brutta, ma MIA. Tu non te la prendi."},
 			{"chi": "zecca", "espr": "serio", "testo": "E la maschera me la tolgo quando decido io. Non quando lo dici tu."}
@@ -675,7 +709,8 @@
 			{"chi": "zecca", "espr": "felice", "testo": "Echo! Quando si apre la cupola, vieni a vivere nel mio telefono?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Il tuo telefono ha il quattro per cento e sessanta foto di te."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "...Sessantadue."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Io torno a casa. Da dove vengo non ci sono telecamere. Non ci sono nemmeno le forme."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Io torno a casa. Da dove vengo non ci sono telecamere."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Non ci sono nemmeno le forme."},
 			{"chi": "nox", "espr": "serio", "testo": "E come ci torni?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "...Ve lo dico quando è il momento. Dormite. Domani è il giorno di Saul."},
 			{"chi": "ferri", "espr": "serio", "testo": "Ha cambiato discorso. A verbale."},
@@ -704,7 +739,8 @@
 			{"chi": "VOCE SENZA VOLTO", "col": "#c9c3d6", "testo": "Ciao, Saul. Hai consegnato bene il mio pacco."},
 			{"chi": "saul", "espr": "serio", "testo": "Tu. Quel pacco ha chiuso una città. Mi avevi detto «documenti»."},
 			{"chi": "VOCE SENZA VOLTO", "col": "#c9c3d6", "testo": "Erano documenti. Di un certo tipo."},
-			{"chi": "VOCE SENZA VOLTO", "col": "#c9c3d6", "testo": "Nel caveau c'è quello che ti avevo promesso. E di più. Prendilo e vattene. Loro non ti servono."},
+			{"chi": "VOCE SENZA VOLTO", "col": "#c9c3d6", "testo": "Nel caveau c'è quello che ti avevo promesso."},
+			{"chi": "VOCE SENZA VOLTO", "col": "#c9c3d6", "testo": "E di più. Prendilo e vattene. Loro non ti servono."},
 			{"chi": "VOCE SENZA VOLTO", "col": "#c9c3d6", "testo": "Ti apro un'uscita. Solo per te. Una volta ci avresti già pensato."},
 			{"chi": "saul", "espr": "serio", "testo": "...", "scelte": [{"testo": "Riattacca e dillo agli altri", "imposta": "saul_leale"}, {"testo": "Tieni la telefonata per te", "imposta": "saul_tentato"}]},
 			{"chi": "saul", "espr": "serio", "testo": "Il tizio del pacco. Ci vuole divisi. Quindi restiamo insieme. Per dispetto.", "se": "saul_leale"},
@@ -718,7 +754,8 @@
 	"c4_inventario": {
 		"riassunto": "L'inventario LibraCorp elenca il sequestro di un braccio prototipo, assegnato all'agente Lance. Firmato: Astrid.",
 		"righe": [
-			{"chi": "saul", "espr": "sorpreso", "testo": "Inventario dei sequestri. Braccio prototipo, magico. In prova all'agente Lance. Firmato: Astrid."},
+			{"chi": "saul", "espr": "sorpreso", "testo": "Inventario dei sequestri. Braccio prototipo, magico."},
+			{"chi": "saul", "espr": "sorpreso", "testo": "In prova all'agente Lance. Firmato: Astrid."},
 			{"chi": "ferri", "espr": "sorpreso", "testo": "...Astrid. Sapeva tutto. Mi ha fatto da cavia e mi chiamava «ragazzo mio»."},
 			{"chi": "nox", "espr": "serio", "testo": "LibraCorp contiene la magia di giorno e la monta ai suoi di notte. Che sorpresa."},
 			{"chi": "zecca", "espr": "serio", "testo": "Lance... stai bene?"},
@@ -759,7 +796,8 @@
 	"c4_dopo": {
 		"riassunto": "La cassaforte è chiusa: quattro Anomalie chiuse. Saul ha due costole incrinate e non se ne pente. Echo li manda a riposare: all'alba, in piazza.",
 		"righe": [
-			{"chi": "zecca", "espr": "felice", "testo": "Quattro su quattro! Avete visto QUELLO CHE HO FATTO? ...Cioè, Saul. Ma io ero nell'inquadratura."},
+			{"chi": "zecca", "espr": "felice", "testo": "Quattro su quattro! Avete visto QUELLO CHE HO FATTO?"},
+			{"chi": "zecca", "espr": "felice", "testo": "...Cioè, Saul. Ma io ero nell'inquadratura."},
 			{"chi": "nox", "espr": "neutro", "testo": "Saul. Le costole."},
 			{"chi": "saul", "espr": "neutro", "testo": "Sono a posto."},
 			{"chi": "nox", "espr": "neutro", "testo": "Due incrinate. Zitto, respira piano, e stanotte il divano è tuo."},
@@ -768,27 +806,34 @@
 			{"chi": "zecca", "espr": "serio", "testo": "Saul... perché l'hai fatto?"},
 			{"chi": "saul", "espr": "neutro", "testo": "Non lo so. Di solito so sempre quanto ci guadagno."},
 			{"chi": "saul", "espr": "serio", "testo": "Stavolta niente. Credo di essere malato."},
-			{"chi": "saul", "espr": "neutro", "testo": "Prima mi ha chiamato il tizio del pacco. Un'uscita, solo per me. Non ve l'avevo detto.", "se": "saul_tentato"},
+			{"chi": "saul", "espr": "neutro", "testo": "Prima mi ha chiamato il tizio del pacco.", "se": "saul_tentato"},
+			{"chi": "saul", "espr": "neutro", "testo": "Un'uscita, solo per me. Non ve l'avevo detto.", "se": "saul_tentato"},
 			{"chi": "ferri", "espr": "serio", "testo": "E sei rimasto. A tenere una porta blindata con le costole.", "se": "saul_tentato"},
 			{"chi": "saul", "espr": "neutro", "testo": "Fuori, chi vi sopportava?", "se": "saul_tentato"},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Quattro Anomalie. Riposate. All'alba, in piazza: vi porto le registrazioni. Promesso."}
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Quattro Anomalie. Riposate."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "All'alba, in piazza: vi porto le registrazioni. Promesso."}
 		]
 	},
 	"c4_vigilia": {
 		"riassunto": "L'ultima notte al rifugio. Ognuno dice cosa farà con quello che Echo gli ha promesso. Echo chiede di essere salvata tra i contatti di Rio, e quasi confessa qualcosa.",
 		"righe": [
 			{"chi": "nox", "espr": "neutro", "testo": "Ultima notte. Domani la cupola cade e ognuno a casa sua."},
-			{"chi": "zecca", "espr": "felice", "testo": "La live della cupola è tutta nel telefono. Quando torna la rete la carico. Milioni, raga."},
+			{"chi": "zecca", "espr": "felice", "testo": "La live della cupola è tutta nel telefono."},
+			{"chi": "zecca", "espr": "felice", "testo": "Quando torna la rete la carico. Milioni, raga."},
 			{"chi": "zecca", "espr": "serio", "testo": "...Però a casa ho trentadue follower. Qui ho voi."},
 			{"chi": "saul", "espr": "neutro", "testo": "Noi non ti seguiamo. Ti sopportiamo."},
-			{"chi": "ferri", "espr": "serio", "testo": "Io torno in servizio. Col grado. E poi dico la verità. Sul braccio, su Astrid, su tutto."},
+			{"chi": "ferri", "espr": "serio", "testo": "Io torno in servizio. Col grado. E poi dico la verità."},
+			{"chi": "ferri", "espr": "serio", "testo": "Sul braccio, su Astrid, su tutto."},
 			{"chi": "saul", "espr": "neutro", "testo": "Ti arresteranno."},
 			{"chi": "ferri", "espr": "neutro", "testo": "Con l'uniforme in ordine."},
-			{"chi": "nox", "espr": "neutro", "testo": "Dodici settimane di ferie. Le prime tre dormo. Poi forse torno alle Civette. Forse rispondo al telefono."},
+			{"chi": "nox", "espr": "neutro", "testo": "Dodici settimane di ferie. Le prime tre dormo."},
+			{"chi": "nox", "espr": "neutro", "testo": "Poi forse torno alle Civette. Forse rispondo al telefono."},
 			{"chi": "saul", "espr": "neutro", "testo": "Io apro un negozio. Roba usata. Onesta. Quasi tutta."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Saul onesto? Questo è il vero colpo di scena."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Rio. Mi salvi tra i contatti? Con un nome. Ho sempre avuto solo numeri di telecamera."},
-			{"chi": "zecca", "espr": "felice", "testo": "Fatto. «Echo». Con la telecamera accanto. E il cuore. No, il cuore lo tolgo. ...No, lo lascio."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Rio. Mi salvi tra i contatti? Con un nome."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Ho sempre avuto solo numeri di telecamera."},
+			{"chi": "zecca", "espr": "felice", "testo": "Fatto. «Echo». Con la telecamera accanto."},
+			{"chi": "zecca", "espr": "felice", "testo": "E il cuore. No, il cuore lo tolgo. ...No, lo lascio."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "...Grazie."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Se un giorno scopriste che vi ho detto una cosa non vera... all'inizio..."},
 			{"chi": "nox", "espr": "neutro", "testo": "Echo?"},
@@ -797,17 +842,22 @@
 		]
 	},
 	"varco": {
-		"riassunto": "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale. Il Committente le ruba il varco, la cupola crolla e Lance usa il braccio per salvare Rio. Echo inceppa le telecamere della piazza: il braccio lo vede solo il gruppo. Ora li cerca il paese intero.",
+		"riassunto": "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale.",
 		"righe": [
-			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Quattro Anomalie chiuse. Lassù, sopra la piazza: un varco. Porta a casa mia. Grazie. Davvero."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Quattro Anomalie chiuse. Lassù, sopra la piazza: un varco."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Porta a casa mia. Grazie. Davvero."},
 			{"chi": "ferri", "espr": "serio", "testo": "Echo. Le registrazioni. Dove sono?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "..."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Non esistono. Le ho cancellate io, alle tre e un minuto. Le facce sugli schermi... le ho messe io."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Mi serviva qualcuno che chiudesse le Anomalie. Qualcuno che non potesse andare né da LibraCorp né dalle Civette."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Un agente con un braccio illegale. Una Civetta con una chiamata senza risposta. Un ragazzino con una maschera. Un contrabbandiere con un pacco."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Non esistono. Le ho cancellate io, alle tre e un minuto."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Le facce sugli schermi... le ho messe io."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Mi serviva qualcuno che chiudesse le Anomalie."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Qualcuno che non potesse andare né da LibraCorp né dalle Civette."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Un agente con un braccio illegale. Una Civetta con una chiamata senza risposta."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Un ragazzino con una maschera. Un contrabbandiere con un pacco."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Se aveste detto la verità, nessuno vi avrebbe creduto. Vi ho scelti per questo."},
 			{"chi": "ferri", "espr": "serio", "testo": "Il grado. Il nome pulito. Non c'era nessun caso. C'eravamo noi da usare."},
-			{"chi": "nox", "espr": "triste", "testo": "Le ferie non m'importano. Le notti. Mi hai fatto compagnia le notti. Anche quello era lavoro?"},
+			{"chi": "nox", "espr": "triste", "testo": "Le ferie non m'importano. Le notti."},
+			{"chi": "nox", "espr": "triste", "testo": "Mi hai fatto compagnia le notti. Anche quello era lavoro?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "No. Tutto quello dopo la piazza era vero. Solo le promesse erano false."},
 			{"chi": "nox", "espr": "neutro", "testo": "Su quelle si reggeva il resto."},
 			{"chi": "zecca", "espr": "triste", "testo": "La live. L'ho registrata per te. Per noi. Era il mio video più bello."},
@@ -815,10 +865,16 @@
 			{"chi": "saul", "espr": "neutro", "testo": "Quattro taglie. Me l'hai venduta bene. Nessuno ci era mai riuscito.", "se": "echo_diffidenza"},
 			{"chi": "saul", "espr": "arrabbiato", "testo": "E io ti ho pure creduta. Io. Che le promesse le vendo.", "se": "echo_fiducia"},
 			{"chi": "saul", "espr": "serio", "testo": "...Ti odio. E mi dispiace che sia così facile."},
-			{"chi": "ferri", "espr": "serio", "testo": "Prove cancellate, facce sugli schermi, promesse su misura. Hai fatto quello che LibraCorp fa tutti i giorni."},
+			{"chi": "ferri", "espr": "serio", "testo": "Prove cancellate, facce sugli schermi, promesse su misura."},
+			{"chi": "ferri", "espr": "serio", "testo": "Hai fatto quello che LibraCorp fa tutti i giorni."},
 			{"chi": "zecca", "espr": "triste", "testo": "Ti tolgo dai contatti."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "...Lo capisco."},
-			{"chi": "zecca", "espr": "triste", "testo": "Non riesco a premere il tasto. Perché non riesco?"},
+			{"chi": "zecca", "espr": "triste", "testo": "Non riesco a premere il tasto. Perché non riesco?"}
+		]
+	},
+	"varco_crollo": {
+		"riassunto": "Il Committente ruba il varco a Echo, la cupola crolla e Lance usa il braccio per salvare Rio. Echo inceppa le telecamere della piazza: il braccio lo vede solo il gruppo. Ora li cerca il paese intero.",
+		"righe": [
 			{"chi": "VOCE SENZA VOLTO", "col": "#c9c3d6", "testo": "Che scena commovente. Grazie per il varco, piccola Echo. Non era tuo."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "sorpreso", "testo": "Tu... il Committente. No. No, no. Il varco si chiude!"},
 			{"chi": "VOCE SENZA VOLTO", "col": "#c9c3d6", "testo": "Per te. Per me si è appena aperto."},
@@ -827,10 +883,13 @@
 			{"chi": "ferri", "espr": "serio", "testo": "...Preso. Sta' giù."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Lance... il braccio. Ci sono telecamere ovunque."},
 			{"chi": "ferri", "espr": "neutro", "testo": "Lo so."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Piazza Centrale, telecamere dalla uno alla dodici: inceppate. Come all'Incrocio Nove."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Piazza Centrale, telecamere dalla uno alla dodici: inceppate."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Come all'Incrocio Nove."},
 			{"chi": "ferri", "espr": "serio", "testo": "...Non ti ringrazio. Rio. Alzati. Correte."},
-			{"chi": "STRIX", "col": "#3f9dff", "testo": "(alla radio) Civette, in caccia in tutto il paese. Nox... mi dispiace. Stavolta non posso coprirti."},
-			{"chi": "nox", "espr": "serio", "testo": "Prima ci cercava una città. Adesso il paese. E abbiamo un agente col braccio che brilla."},
+			{"chi": "STRIX", "col": "#3f9dff", "testo": "(alla radio) Civette, in caccia in tutto il paese."},
+			{"chi": "STRIX", "col": "#3f9dff", "testo": "Nox... mi dispiace. Stavolta non posso coprirti."},
+			{"chi": "nox", "espr": "serio", "testo": "Prima ci cercava una città. Adesso il paese."},
+			{"chi": "nox", "espr": "serio", "testo": "E abbiamo un agente col braccio che brilla."},
 			{"chi": "ferri", "espr": "neutro", "testo": "Ex agente. Fa meno male se lo dico io."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "...Portatemi con voi. Non ho più una casa. Per rimediare."},
 			{"chi": "zecca", "espr": "serio", "testo": "..."},
@@ -842,24 +901,29 @@
 		"righe": [
 			{"chi": "zecca", "espr": "triste", "testo": "L'alba. È bruttissima. È bellissima."},
 			{"chi": "nox", "espr": "neutro", "testo": "Cinquantasei ore sveglia. Vedo due soli."},
-			{"chi": "ferri", "espr": "serio", "testo": "Situazione. Ore 6:02 e undici. Ricercati da tutti. Risorse: un manganello, un caffè freddo, un telefono al tre per cento."},
+			{"chi": "ferri", "espr": "serio", "testo": "Situazione. Ore 6:02 e undici. Ricercati da tutti."},
+			{"chi": "ferri", "espr": "serio", "testo": "Risorse: un manganello, un caffè freddo, un telefono al tre per cento."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Due."},
 			{"chi": "saul", "espr": "neutro", "testo": "E una costola e mezza."},
 			{"chi": "nox", "espr": "neutro", "testo": "Lance. Il braccio?"},
 			{"chi": "ferri", "espr": "neutro", "testo": "Brilla. L'hanno visto tre persone e una telecamera inceppata. Per ora."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "(dal cartello luminoso della rampa) Sono qui. Il cartello «RALLENTARE» è mio, adesso."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "(dal cartello luminoso della rampa) Sono qui."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Il cartello «RALLENTARE» è mio, adesso."},
 			{"chi": "ferri", "espr": "arrabbiato", "testo": "Zitta."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Sì. Ma so dove sono i posti di blocco. Il più debole è il casello della tangenziale."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Sì. Ma so dove sono i posti di blocco."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Il più debole è il casello della tangenziale."},
 			{"chi": "nox", "espr": "serio", "testo": "Perché dovremmo crederti?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Non dovreste. Ma è l'unica strada che non finisce in una cella."},
-			{"chi": "saul", "espr": "neutro", "testo": "Mia nonna diceva: un bugiardo che ti indica l'uscita resta un bugiardo. Ma l'uscita è un'uscita."},
+			{"chi": "saul", "espr": "neutro", "testo": "Mia nonna diceva: un bugiardo che ti indica l'uscita resta un bugiardo."},
+			{"chi": "saul", "espr": "neutro", "testo": "Ma l'uscita è un'uscita."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Quale nonna?"},
 			{"chi": "saul", "espr": "neutro", "testo": "Quella cinica."},
 			{"chi": "zecca", "espr": "serio", "testo": "Echo... sei ancora nei miei contatti. Non ci sono riuscito."},
 			{"chi": "nox", "espr": "neutro", "testo": "Allora. Che ne facciamo di lei?", "scelte": [{"testo": "«Tregua. Finché siamo fuori.»", "imposta": "echo_tregua"}, {"testo": "«Ci guidi. Ma non sei dei nostri.»", "imposta": "echo_rancore"}]},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Tregua. Mi piace la parola. Non l'avevo mai detta.", "se": "echo_tregua"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Capito. Vi guido lo stesso.", "se": "echo_rancore"},
-			{"chi": "ferri", "espr": "serio", "testo": "Tangenziale, poi casello. Guido io: i posti di blocco LibraCorp li ho montati io. Male, a quanto pare."}
+			{"chi": "ferri", "espr": "serio", "testo": "Tangenziale, poi casello."},
+			{"chi": "ferri", "espr": "serio", "testo": "Guido io: i posti di blocco LibraCorp li ho montati io. Male, a quanto pare."}
 		]
 	},
 	"c5_ricercati": {
@@ -901,7 +965,8 @@
 	"c5_boss": {
 		"riassunto": "Al casello aspetta un autovelox nato quando è caduta la cupola: un'Anomalia nuova.",
 		"righe": [
-			{"chi": "echo", "col": "#3fe0ff", "espr": "sorpreso", "testo": "Il casello. Quell'autovelox non è mio. È un'Anomalia nuova. È nata quando è caduta la cupola."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "sorpreso", "testo": "Il casello. Quell'autovelox non è mio."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "sorpreso", "testo": "È un'Anomalia nuova. È nata quando è caduta la cupola."},
 			{"chi": "AUTOVELOX", "col": "#ffd23f", "testo": "VELOCITÀ RILEVATA: TROPPA. FUGA RILEVATA: TOTALE. SANZIONE: TUTTO."},
 			{"chi": "ferri", "espr": "serio", "testo": "Articolo uno del codice della strada: chi scappa non si ferma per le multe."},
 			{"chi": "saul", "espr": "neutro", "testo": "Non è l'articolo uno."},
@@ -916,7 +981,7 @@
 		]
 	},
 	"c5_casello": {
-		"riassunto": "Al casello aspettano Astrid e Strix con le loro squadre. Echo spegne ogni telecamera e ogni luce della città per farli scappare, anche se per lei è come chiudere gli occhi. Si riaccende nel telefono di Rio, ma di lei resta solo il nucleo: per riaverla servono pezzi e frammenti. Nella fuga i quattro diventano una famiglia.",
+		"riassunto": "Al casello aspettano Astrid e Strix con le loro squadre. Echo spegne ogni telecamera e ogni luce della città per farli scappare, anche se per lei è come chiudere gli occhi.",
 		"righe": [
 			{"chi": "zecca", "espr": "felice", "testo": "La sbarra è alzata! Raga, siamo fuori!"},
 			{"chi": "ferri", "espr": "sorpreso", "testo": "No. Fermi. Fari. Due colonne di fari."},
@@ -931,10 +996,17 @@
 			{"chi": "saul", "espr": "neutro", "testo": "Nonna saggia."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Aspettate. Lasciate fare a me."},
 			{"chi": "zecca", "espr": "serio", "testo": "Echo? Cosa fai?"},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Telecamere. Fari. Lampioni. Semafori. Tabelloni. Tutto quello che vedo. Tutto quello che sono."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Se spengo tutto, per un po' non vedrò niente. Non vedrò voi. Non so se mi riaccendo."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Telecamere. Fari. Lampioni. Semafori. Tabelloni."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Tutto quello che vedo. Tutto quello che sono."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Se spengo tutto, per un po' non vedrò niente."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Non vedrò voi. Non so se mi riaccendo."},
 			{"chi": "nox", "espr": "sorpreso", "testo": "Echo, no..."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Le promesse erano false. Questa no. Spento."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Le promesse erano false. Questa no. Spento."}
+		]
+	},
+	"c5_buio": {
+		"riassunto": "Al buio la squadra scappa giù dalla scarpata. Echo si riaccende nel telefono di Rio, ma di lei resta solo il nucleo: per riaverla servono pezzi e frammenti.",
+		"righe": [
 			{"chi": "COMANDANTE ASTRID", "col": "#ff4b4b", "testo": "Chi ha spento la luce?! Unità, a terra!"},
 			{"chi": "STRIX", "col": "#3f9dff", "testo": "Astrid, la torcia ce l'hai tu."},
 			{"chi": "COMANDANTE ASTRID", "col": "#ff4b4b", "testo": "Non è il momento, Strix!"},
@@ -942,7 +1014,8 @@
 			{"chi": "saul", "espr": "neutro", "testo": "Avrà un conto da saldare, adesso."},
 			{"chi": "nox", "espr": "serio", "testo": "Saul."},
 			{"chi": "saul", "espr": "neutro", "testo": "...Niente. Sbagliato io."},
-			{"chi": "ferri", "espr": "serio", "testo": "Giù dalla scarpata. Saul, appoggiati a me. Rio, la mano di Nox. Nessuno resta indietro."},
+			{"chi": "ferri", "espr": "serio", "testo": "Giù dalla scarpata. Saul, appoggiati a me."},
+			{"chi": "ferri", "espr": "serio", "testo": "Rio, la mano di Nox. Nessuno resta indietro."},
 			{"chi": "saul", "espr": "neutro", "testo": "Capo. La promessa sul tetto. Se scappo, mi insegui tu.", "se": "legame_ferri_saul"},
 			{"chi": "ferri", "espr": "neutro", "testo": "Stavolta scappiamo insieme. Non conta.", "se": "legame_ferri_saul"},
 			{"chi": "zecca", "espr": "serio", "testo": "Raga... il telefono è morto. Zero. Echo era lì dentro."},
@@ -952,12 +1025,19 @@
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Si accende. Echo? Ci sei?"},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "...Vi vedo. Male. Sgranati. Siete bellissimi."},
 			{"chi": "zecca", "espr": "sorpreso", "testo": "Echo... sul display c'è solo un puntino di luce. Trema."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Mi sono spenta tutta. È rimasto il nucleo. Il resto l'ho lasciato sulla tangenziale."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Mi sono spenta tutta. È rimasto il nucleo."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Il resto l'ho lasciato sulla tangenziale."},
 			{"chi": "nox", "espr": "serio", "testo": "Come ti rimettiamo in piedi?"},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Pezzi. Telecamere rotte, circuiti. E i frammenti delle Anomalie, quelli che vagano per strada."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Pezzi. Telecamere rotte, circuiti."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "E i frammenti delle Anomalie, quelli che vagano per strada."},
 			{"chi": "saul", "espr": "neutro", "testo": "Rottami e roba che non dovrebbe esistere. Finalmente un lavoro che so fare."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "Tregua?", "se": "echo_tregua"},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Non sono dei vostri. Ma vi vedo lo stesso. Un pochino.", "se": "echo_rancore"},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Non sono dei vostri. Ma vi vedo lo stesso. Un pochino.", "se": "echo_rancore"}
+		]
+	},
+	"c5_famiglia": {
+		"riassunto": "Nella fuga i quattro diventano una famiglia.",
+		"righe": [
 			{"chi": "nox", "espr": "neutro", "testo": "Latitanti. Senza casa, senza caffè, con un disertore, un ladro, un bambino e una telecamera rotta."},
 			{"chi": "nox", "espr": "felice", "testo": "E sono felice. Non ditelo a nessuno."},
 			{"chi": "ferri", "espr": "neutro", "testo": "Pagina uno di un taccuino nuovo: riportare Echo intera."},
@@ -970,6 +1050,10 @@
 	},
 	"chiacchiere": {
 		"strada": [
+			{"id": "s_fuga_lance", "quando": {"tipo": "zona", "z": 99.0}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Io non scappo dalla mia squadra. Vado e spiego."}, {"chi": "saul", "espr": "neutro", "testo": "Ti arresteranno con l'uniforme in ordine."}]},
+			{"id": "s_fuga_nox", "quando": {"tipo": "zona", "z": 99.0}, "righe": [{"chi": "nox", "espr": "neutro", "testo": "Io scappo. Nessuno mi interroga prima del caffè."}]},
+			{"id": "s_fuga_rio", "quando": {"tipo": "zona", "z": 99.0}, "righe": [{"chi": "zecca", "espr": "felice", "testo": "Raga, seguiamo quello col pacco. Ha la faccia di uno che sa scappare!"}, {"chi": "saul", "espr": "neutro", "testo": "Non seguirmi. Porto sfortuna."}, {"chi": "zecca", "espr": "felice", "testo": "Allora siamo in due!"}]},
+			{"id": "s_fuga_articolo", "quando": {"tipo": "zona", "z": 99.0}, "righe": [{"chi": "ferri", "espr": "arrabbiato", "testo": "...Articolo nove: in mancanza di ordini si seguono i sospettati."}, {"chi": "nox", "espr": "neutro", "testo": "Se l'è appena inventato."}]},
 			{"id": "s_orologio", "quando": {"tipo": "caso"}, "righe": [{"chi": "saul", "espr": "neutro", "testo": "Capo, che ore sono?"}, {"chi": "ferri", "espr": "serio", "testo": "Tre e ventuno. E quaranta secondi."}, {"chi": "saul", "espr": "neutro", "testo": "Non ti ho chiesto i secondi."}, {"chi": "ferri", "espr": "serio", "testo": "Omaggio."}]},
 			{"id": "s_inizio", "quando": {"tipo": "zona", "z": 6.0}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Formazione. Io davanti, voi dietro, nessuno parla."}, {"chi": "saul", "espr": "neutro", "testo": "Tu davanti, con quella divisa? Ci vedono da tre isolati."}, {"chi": "zecca", "espr": "felice", "testo": "Raga, lui è Lance. Salutate Lance. ...Lance non saluta."}]},
 			{"id": "s_caffe", "quando": {"tipo": "zona", "z": -3.0}, "righe": [{"chi": "nox", "espr": "triste", "testo": "Qualcuno ha un caffè? Non chiedo altro dalla vita."}, {"chi": "saul", "espr": "neutro", "testo": "Te lo trovo. Ti costa."}, {"chi": "nox", "espr": "neutro", "testo": "Tutto quello che vuoi."}]},
@@ -1009,7 +1093,9 @@
 			{"id": "dr_echo", "quando": {"tipo": "zona", "z": -6.0}, "righe": [{"chi": "zecca", "espr": "serio", "testo": "Raga, è strano senza Echo. Non ci guarda nessuno."}, {"chi": "saul", "espr": "neutro", "testo": "Vacanza."}]},
 			{"id": "dr_c1", "quando": {"tipo": "caso"}, "righe": [{"chi": "saul", "espr": "neutro", "testo": "Auto che galleggiano. Mettilo nel rapporto, capo."}, {"chi": "ferri", "espr": "serio", "testo": "Ho finito le pagine."}]},
 			{"id": "dr_c2", "quando": {"tipo": "caso"}, "righe": [{"chi": "nox", "espr": "neutro", "testo": "Questo rosso mi ricorda i miei occhi. Ventotto ore sveglia."}, {"chi": "zecca", "espr": "felice", "testo": "Sei un meme vivente."}]},
-			{"id": "dr_c3", "quando": {"tipo": "caso"}, "righe": [{"chi": "zecca", "espr": "serio", "testo": "Saul, se restassimo bloccati qui per sempre?"}, {"chi": "saul", "espr": "neutro", "testo": "Aprirei un'officina. Clienti fermi."}]}
+			{"id": "dr_c3", "quando": {"tipo": "caso"}, "righe": [{"chi": "zecca", "espr": "serio", "testo": "Saul, se restassimo bloccati qui per sempre?"}, {"chi": "saul", "espr": "neutro", "testo": "Aprirei un'officina. Clienti fermi."}]},
+			{"id": "dr_orologio", "quando": {"tipo": "caso"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Sei e zero zero. E zero secondi. Ancora."}, {"chi": "saul", "espr": "neutro", "testo": "Finalmente sei puntuale."}]},
+			{"id": "dr_f1", "quando": {"tipo": "fermo"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Fermi al rosso. Bravi."}, {"chi": "nox", "espr": "neutro", "testo": "Ci siamo solo stancati."}]}
 		],
 		"vicolo": [
 			{"id": "v_distributore", "quando": {"tipo": "caso"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Echo. Mi sta guardando qualcuno?"}, {"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Io."}, {"chi": "ferri", "espr": "serio", "testo": "A parte te."}, {"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Nessuno."}, {"chi": "echo", "col": "#3fe0ff", "espr": "felice", "testo": "...Colpetto sul fianco. Due merendine. Come Saul."}, {"chi": "ferri", "espr": "neutro", "testo": "Non è a verbale."}]},
@@ -1030,11 +1116,14 @@
 			{"id": "db_thermos", "quando": {"tipo": "caso"}, "righe": [{"chi": "nox", "espr": "serio", "testo": "Chi ha toccato il thermos."}, {"chi": "zecca", "espr": "sorpreso", "testo": "Io no! Cioè, l'ho spostato. Per l'inquadratura."}, {"chi": "nox", "espr": "neutro", "testo": "Manca un sorso."}, {"chi": "zecca", "espr": "triste", "testo": "...Piccolo."}, {"chi": "saul", "espr": "neutro", "testo": "Mia nonna diceva: tra una donna e il suo caffè non ci si mette."}]},
 			{"id": "db_inizio", "quando": {"tipo": "zona", "z": 6.0}, "righe": [{"chi": "nox", "espr": "serio", "testo": "Sento lo squillo. Anche dentro la testa."}, {"chi": "saul", "espr": "neutro", "testo": "Copriamolo. Capo, una barzelletta."}, {"chi": "ferri", "espr": "serio", "testo": "Articolo quattordici: vietato raccontare barzellette in servizio."}, {"chi": "zecca", "espr": "sorpreso", "testo": "...Era quella, la barzelletta?"}, {"chi": "ferri", "espr": "serio", "testo": "Sì."}]},
 			{"id": "db_c1", "quando": {"tipo": "caso"}, "righe": [{"chi": "zecca", "espr": "serio", "testo": "Nox, dimmi una cosa bella."}, {"chi": "nox", "espr": "neutro", "testo": "Il caffè di domani."}]},
-			{"id": "db_c2", "quando": {"tipo": "caso"}, "righe": [{"chi": "saul", "espr": "neutro", "testo": "Agente. Se ti senti cadere, appoggiati. Non ti faccio pagare."}, {"chi": "nox", "espr": "neutro", "testo": "La cosa più gentile che tu abbia mai detto."}, {"chi": "saul", "espr": "neutro", "testo": "Lo nego."}]}
+			{"id": "db_c2", "quando": {"tipo": "caso"}, "righe": [{"chi": "saul", "espr": "neutro", "testo": "Agente. Se ti senti cadere, appoggiati. Non ti faccio pagare."}, {"chi": "nox", "espr": "neutro", "testo": "La cosa più gentile che tu abbia mai detto."}, {"chi": "saul", "espr": "neutro", "testo": "Lo nego."}]},
+			{"id": "db_gettoni", "quando": {"tipo": "caso"}, "righe": [{"chi": "zecca", "espr": "sorpreso", "testo": "Un telefono coi gettoni. Dove si mette il caricatore?"}, {"chi": "nox", "espr": "neutro", "testo": "Al museo."}]},
+			{"id": "db_ora", "quando": {"tipo": "caso"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Ore tre e dodici. Di nuovo."}, {"chi": "nox", "espr": "serio", "testo": "Non dirmi l'ora qui dentro."}, {"chi": "ferri", "espr": "neutro", "testo": "...Ricevuto."}]},
+			{"id": "db_f1", "quando": {"tipo": "fermo"}, "righe": [{"chi": "nox", "espr": "serio", "testo": "Non state fermi. Qui il silenzio squilla."}]}
 		],
 		"galleria": [
 			{"id": "g_travestimenti", "quando": {"tipo": "caso"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Galleria piena di gente. Non dobbiamo dare nell'occhio."}, {"chi": "zecca", "espr": "sfotto", "testo": "Lance, con quel cappotto sembri un armadio triste."}, {"chi": "ferri", "espr": "serio", "testo": "Anonimo."}, {"chi": "nox", "espr": "neutro", "testo": "Io ho un cappello. Fine."}, {"chi": "saul", "espr": "neutro", "testo": "Io ho scambiato la giacca con un manichino. Ci ha guadagnato lui."}, {"chi": "zecca", "espr": "felice", "testo": "Io non mi travesto. Un profilo così non si nasconde."}, {"chi": "nox", "espr": "neutro", "testo": "È questo il problema."}]},
-			{"id": "g_inizio", "quando": {"tipo": "zona", "z": 5.0}, "righe": [{"chi": "zecca", "espr": "felice", "testo": "La Galleria Lumière! Qui ho girato il mio primo video. Tre like. Uno era mia madre."}, {"chi": "nox", "espr": "neutro", "testo": "E gli altri due?"}, {"chi": "zecca", "espr": "triste", "testo": "Mia madre."}]},
+			{"id": "g_inizio", "quando": {"tipo": "zona", "z": 5.0}, "righe": [{"chi": "zecca", "espr": "felice", "testo": "La Galleria Lumière! Qui ho girato il mio primo video."}, {"chi": "zecca", "espr": "felice", "testo": "Tre like. Uno era mia madre."}, {"chi": "nox", "espr": "neutro", "testo": "E gli altri due?"}, {"chi": "zecca", "espr": "triste", "testo": "Mia madre."}]},
 			{"id": "g_echo", "quando": {"tipo": "zona", "z": -4.0}, "righe": [{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Rio. Il tuo primo video l'ho visto. Telecamera nove. Undici volte."}, {"chi": "zecca", "espr": "felice", "testo": "...Bellissimo. E inquietante."}]},
 			{"id": "g_vetrine", "quando": {"tipo": "vicino", "punto": "vetrine"}, "righe": [{"chi": "saul", "espr": "serio", "testo": "Quei manichini ieri avevano una faccia. Nessuno compra quella giacca senza."}]},
 			{"id": "g_manichini", "quando": {"tipo": "vicino", "punto": "manichini"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Non guardateli negli occhi."}, {"chi": "zecca", "espr": "sfotto", "testo": "Non hanno occhi, Lance."}, {"chi": "ferri", "espr": "serio", "testo": "Appunto."}]},
@@ -1049,7 +1138,10 @@
 			{"id": "dv_entrata", "quando": {"tipo": "caso"}, "righe": [{"chi": "zecca", "espr": "felice", "testo": "Raga, dal boss entro io per primo. Al rallentatore."}, {"chi": "ferri", "espr": "serio", "testo": "In formazione."}, {"chi": "saul", "espr": "neutro", "testo": "Lascialo entrare. Il primo colpo lo prende lui."}, {"chi": "zecca", "espr": "serio", "testo": "...In formazione."}]},
 			{"id": "dv_inizio", "quando": {"tipo": "zona", "z": 6.0}, "righe": [{"chi": "zecca", "espr": "sorpreso", "testo": "Mille me in posa. Nessuno ha la faccia."}, {"chi": "saul", "espr": "neutro", "testo": "Io una faccia ce l'ho. Bellissima, tra l'altro."}]},
 			{"id": "dv_c1", "quando": {"tipo": "caso"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Contate i manichini. Se sono pari, va tutto bene."}, {"chi": "nox", "espr": "neutro", "testo": "E se sono dispari?"}, {"chi": "ferri", "espr": "serio", "testo": "Volevo solo che contaste qualcosa."}]},
-			{"id": "dv_c2", "quando": {"tipo": "caso"}, "righe": [{"chi": "nox", "espr": "neutro", "testo": "Rio. Stammi vicino."}, {"chi": "zecca", "espr": "serio", "testo": "Hai paura?"}, {"chi": "nox", "espr": "neutro", "testo": "Tu sì. La tengo io per tutti e due."}]}
+			{"id": "dv_c2", "quando": {"tipo": "caso"}, "righe": [{"chi": "nox", "espr": "neutro", "testo": "Rio. Stammi vicino."}, {"chi": "zecca", "espr": "serio", "testo": "Hai paura?"}, {"chi": "nox", "espr": "neutro", "testo": "Tu sì. La tengo io per tutti e due."}]},
+			{"id": "dv_somiglia", "quando": {"tipo": "caso"}, "righe": [{"chi": "saul", "espr": "neutro", "testo": "Rio, questi manichini ti somigliano."}, {"chi": "zecca", "espr": "felice", "testo": "Perché sono belli?"}, {"chi": "saul", "espr": "neutro", "testo": "Perché posano anche quando nessuno guarda."}]},
+			{"id": "dv_specchio", "quando": {"tipo": "caso"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Articolo trenta: vietato specchiarsi in servizio."}, {"chi": "zecca", "espr": "serio", "testo": "Non mi specchio. Controllo che ci sono."}]},
+			{"id": "dv_f1", "quando": {"tipo": "fermo"}, "righe": [{"chi": "nox", "espr": "neutro", "testo": "Fermi qui no. Si mettono in posa anche loro."}]}
 		],
 		"caveau": [
 			{"id": "c_orologio", "quando": {"tipo": "caso"}, "righe": [{"chi": "saul", "espr": "neutro", "testo": "Capo, che ore sono?"}, {"chi": "ferri", "espr": "serio", "testo": "Quattro e diciassette. Siamo in ritardo di quattro secondi."}, {"chi": "saul", "espr": "neutro", "testo": "Mia nonna diceva: chi conta i secondi non si gode i minuti."}, {"chi": "ferri", "espr": "serio", "testo": "Quale nonna?"}, {"chi": "saul", "espr": "neutro", "testo": "Quella puntuale."}]},
@@ -1064,7 +1156,7 @@
 			{"id": "c_f1", "quando": {"tipo": "fermo"}, "righe": [{"chi": "saul", "espr": "neutro", "testo": "Non fermatevi davanti ai lingotti. Le telecamere registrano la faccia golosa."}]}
 		],
 		"tangenziale": [
-			{"id": "t_nomi", "quando": {"tipo": "caso"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Fuori città servono nomi falsi. Io sono Luca Bianchi. Impiegato. Documenti in ordine."}, {"chi": "saul", "espr": "neutro", "testo": "Troppo in ordine. Nessun impiegato ha i documenti in ordine."}, {"chi": "zecca", "espr": "felice", "testo": "Io sono Rio Tempesta!"}, {"chi": "nox", "espr": "neutro", "testo": "Ti trovano in un minuto."}, {"chi": "nox", "espr": "neutro", "testo": "Io sono Maria. Nessuno si ricorda una Maria."}, {"chi": "saul", "espr": "neutro", "testo": "Io ne ho cinque. Il più onesto è un vescovo."}]},
+			{"id": "t_nomi", "quando": {"tipo": "caso"}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Fuori città servono nomi falsi."}, {"chi": "ferri", "espr": "serio", "testo": "Io sono Luca Bianchi. Impiegato. Documenti in ordine."}, {"chi": "saul", "espr": "neutro", "testo": "Troppo in ordine. Nessun impiegato ha i documenti in ordine."}, {"chi": "zecca", "espr": "felice", "testo": "Io sono Rio Tempesta!"}, {"chi": "nox", "espr": "neutro", "testo": "Ti trovano in un minuto."}, {"chi": "nox", "espr": "neutro", "testo": "Io sono Maria. Nessuno si ricorda una Maria."}, {"chi": "saul", "espr": "neutro", "testo": "Io ne ho cinque. Il più onesto è un vescovo."}]},
 			{"id": "t_conto", "quando": {"tipo": "caso"}, "righe": [{"chi": "saul", "espr": "neutro", "testo": "Capo, siamo a trentuno."}, {"chi": "ferri", "espr": "serio", "testo": "Nel caveau ti ho tirato fuori io da sotto la porta."}, {"chi": "saul", "espr": "neutro", "testo": "Scalato. Restano trentuno."}]},
 			{"id": "t_pasto", "quando": {"tipo": "fermo"}, "righe": [{"chi": "nox", "espr": "neutro", "testo": "Cinque minuti. Mangiamo tranquilli."}, {"chi": "ferri", "espr": "serio", "testo": "Perché l'hai detto."}, {"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Pattuglia a quattrocento metri."}, {"chi": "nox", "espr": "neutro", "testo": "Il panino lo mangio correndo."}]},
 			{"id": "t_inizio", "quando": {"tipo": "zona", "z": 6.0}, "righe": [{"chi": "ferri", "espr": "serio", "testo": "Sei corsie, nessuna auto, il sole in faccia. Il posto peggiore per nascondersi."}, {"chi": "saul", "espr": "neutro", "testo": "Il migliore per scappare."}, {"chi": "nox", "espr": "neutro", "testo": "Io mi sdraio sull'asfalto e faccio l'incidente."}]},

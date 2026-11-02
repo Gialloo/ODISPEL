@@ -5,6 +5,7 @@
 		{"id": "prologo", "titolo": "PROLOGO · LA NOTTE DELLA CUPOLA", "passi": [
 			{"tipo": "area", "area": "strada"},
 			{"tipo": "scena", "dialogo": "accordo", "sfondo": "strada"},
+			{"tipo": "scena", "dialogo": "accordo_prezzi", "sfondo": "strada"},
 			{"tipo": "scena", "dialogo": "rifugio_arrivo", "sfondo": "rifugio"}
 		]},
 		{"id": "cap1", "titolo": "CAPITOLO 1 · ROSSO FISSO", "passi": [
@@ -41,13 +42,17 @@
 		]},
 		{"id": "finale", "titolo": "FINALE · IL VARCO", "passi": [
 			{"tipo": "cartello", "titolo": "FINALE", "sotto": "Il varco"},
-			{"tipo": "scena", "dialogo": "varco", "sfondo": "varco"}
+			{"tipo": "scena", "dialogo": "varco", "sfondo": "varco"},
+			{"tipo": "scena", "dialogo": "varco_crollo", "sfondo": "varco"}
 		]},
 		{"id": "cap5", "titolo": "CAPITOLO 5 · LA TANGENZIALE", "passi": [
 			{"tipo": "cartello", "titolo": "CAPITOLO 5", "sotto": "La tangenziale"},
 			{"tipo": "scena", "dialogo": "c5_alba", "sfondo": "alba"},
 			{"tipo": "area", "area": "tangenziale"},
 			{"tipo": "scena", "dialogo": "c5_casello", "sfondo": "alba"},
+			{"tipo": "scena", "dialogo": "c5_buio", "sfondo": "notte"},
+			{"tipo": "cartello", "titolo": "POCO DOPO", "sotto": "Sotto il cavalcavia"},
+			{"tipo": "scena", "dialogo": "c5_famiglia", "sfondo": "alba"},
 			{"tipo": "cartello", "titolo": "FINE DELL'ATTO 1", "sotto": "Fuori dalla città, insieme. Adesso comincia la caccia."},
 			{"tipo": "fine"}
 		]}
