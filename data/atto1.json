@@ -3,6 +3,8 @@
 
 	"capitoli": [
 		{"id": "prologo", "titolo": "PROLOGO · LA NOTTE DELLA CUPOLA", "passi": [
+			{"tipo": "scena", "dialogo": "apertura_gancio", "sfondo": "piazza"},
+			{"tipo": "cartello", "titolo": "DUE MINUTI PRIMA", "sotto": "Piazza Centrale, ore 2:58"},
 			{"tipo": "area", "area": "strada"},
 			{"tipo": "scena", "dialogo": "accordo", "sfondo": "strada"},
 			{"tipo": "scena", "dialogo": "accordo_prezzi", "sfondo": "strada"},

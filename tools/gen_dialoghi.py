@@ -65,9 +65,19 @@ scene("segreto_avviso", "Un boss segreto troppo forte per voi: lo avete lasciato
     scelta("AVVISO", "Questo boss è troppo forte per te al momento. Sei sicuro di affrontarlo?",
         [{"testo": "NO, meglio di no"}, {"testo": "SÌ, affrontiamolo", "imposta": "segreto_si"}]))
 
+# Primi 10 minuti (02/11, scelta dell'autore): si apre sul botto. Il gancio mostra la cupola e le facce sugli schermi,
+# poi il cartello DUE MINUTI PRIMA e l'apertura dalle 2:58: chi non sa niente di ODISPEL ha subito una domanda.
+scene("apertura_gancio", "Alle tre di notte una cupola rosa chiude la città. Su ogni schermo, quattro facce: ricercati.",
+    L("echo/serio", "Telecamera sette. Piazza Centrale. Ore tre."),
+    L("zecca/sorpreso", "Raga... il cielo è ROSA. Non è un filtro. Ho riavviato due volte."),
+    L("nox/sorpreso", "È una cupola. Su tutta la città."),
+    L("echo/serio", "Su ogni schermo della città, quattro facce. «RESPONSABILI DEL SIGILLO. RICERCATI.»"),
+    L("ferri/sorpreso", "...Hanno messo la foto del tesserino."))
+
 scene("apertura", "Echo, un'entità che vive nelle telecamere, presenta quattro sconosciuti in piazza alle tre di notte. Il pacco di Saul si apre, una cupola chiude la città e gli schermi accusano proprio loro quattro. Sono costretti a scappare insieme.",
     L("echo/neutro", "Telecamera sette. Piazza Centrale. Ore 2:58."),
     L("echo/neutro", "Mi chiamo Echo. Vivo nelle telecamere di questa città. Guardo."),
+    L("echo/serio", "Fra due minuti, questi quattro saranno i più ricercati della città."),
     L("echo/neutro", "Sulla panchina: Nox. Civette, i maghi con la licenza. In servizio. Tecnicamente."),
     L("nox/triste", "Due minuti alla fine del turno. Se squilla il telefono, lo lancio nella fontana."),
     L("echo/neutro", "Col berretto: Lance. LibraCorp, la polizia che dà la caccia alla magia. Retrocesso martedì."),
@@ -78,12 +88,8 @@ scene("apertura", "Echo, un'entità che vive nelle telecamere, presenta quattro 
     L("saul/neutro", "Non chiedo. Le domande costano."),
     L("echo/serio", "Quattro sconosciuti. Ognuno con un segreto. Ricordatevelo."),
     L("echo/serio", "Ore tre. Il pacco si apre."),
-    L("zecca/sorpreso", "Raga... il cielo è ROSA. Non è un filtro. Ho riavviato due volte."),
-    L("nox/sorpreso", "È una cupola. Su tutta la città."),
     L("ferri/arrabbiato", "LibraCorp! Nessuno si muova! Voi tre, in stato di fermo!"),
     L("saul/neutro", "Noi tre. Guarda gli schermi, capo."),
-    L("echo/serio", "Su ogni schermo della città, quattro facce. «RESPONSABILI DEL SIGILLO. RICERCATI.»"),
-    L("ferri/sorpreso", "...Hanno messo la foto del tesserino."),
     L("nox/neutro", "Il turno è finito da un minuto. Ricercata da un minuto."),
     L("saul/serio", "Sirene. LibraCorp da una parte, Civette dall'altra."),
     # (la discussione su chi scappa con chi e' nelle chiacchiere dei primi metri di strada: CH["strada"], "s_fuga_*")

@@ -9,11 +9,23 @@
 			{"chi": "AVVISO", "col": "#ffd23f", "testo": "Questo boss è troppo forte per te al momento. Sei sicuro di affrontarlo?", "scelte": [{"testo": "NO, meglio di no"}, {"testo": "SÌ, affrontiamolo", "imposta": "segreto_si"}]}
 		]
 	},
+	"apertura_gancio": {
+		"riassunto": "Alle tre di notte una cupola rosa chiude la città. Su ogni schermo, quattro facce: ricercati.",
+		"righe": [
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Telecamera sette. Piazza Centrale. Ore tre."},
+			{"chi": "zecca", "espr": "sorpreso", "testo": "Raga... il cielo è ROSA. Non è un filtro. Ho riavviato due volte."},
+			{"chi": "nox", "espr": "sorpreso", "testo": "È una cupola. Su tutta la città."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Su ogni schermo della città, quattro facce."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "«RESPONSABILI DEL SIGILLO. RICERCATI.»"},
+			{"chi": "ferri", "espr": "sorpreso", "testo": "...Hanno messo la foto del tesserino."}
+		]
+	},
 	"apertura": {
 		"riassunto": "Echo, un'entità che vive nelle telecamere, presenta quattro sconosciuti in piazza alle tre di notte. Il pacco di Saul si apre, una cupola chiude la città e gli schermi accusano proprio loro quattro. Sono costretti a scappare insieme.",
 		"righe": [
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Telecamera sette. Piazza Centrale. Ore 2:58."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Mi chiamo Echo. Vivo nelle telecamere di questa città. Guardo."},
+			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Fra due minuti, questi quattro saranno i più ricercati della città."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Sulla panchina: Nox. Civette, i maghi con la licenza. In servizio. Tecnicamente."},
 			{"chi": "nox", "espr": "triste", "testo": "Due minuti alla fine del turno. Se squilla il telefono, lo lancio nella fontana."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "Col berretto: Lance."},
@@ -28,13 +40,8 @@
 			{"chi": "saul", "espr": "neutro", "testo": "Non chiedo. Le domande costano."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Quattro sconosciuti. Ognuno con un segreto. Ricordatevelo."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Ore tre. Il pacco si apre."},
-			{"chi": "zecca", "espr": "sorpreso", "testo": "Raga... il cielo è ROSA. Non è un filtro. Ho riavviato due volte."},
-			{"chi": "nox", "espr": "sorpreso", "testo": "È una cupola. Su tutta la città."},
 			{"chi": "ferri", "espr": "arrabbiato", "testo": "LibraCorp! Nessuno si muova! Voi tre, in stato di fermo!"},
 			{"chi": "saul", "espr": "neutro", "testo": "Noi tre. Guarda gli schermi, capo."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Su ogni schermo della città, quattro facce."},
-			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "«RESPONSABILI DEL SIGILLO. RICERCATI.»"},
-			{"chi": "ferri", "espr": "sorpreso", "testo": "...Hanno messo la foto del tesserino."},
 			{"chi": "nox", "espr": "neutro", "testo": "Il turno è finito da un minuto. Ricercata da un minuto."},
 			{"chi": "saul", "espr": "serio", "testo": "Sirene. LibraCorp da una parte, Civette dall'altra."},
 			{"chi": "echo", "col": "#3fe0ff", "espr": "serio", "testo": "Andava tutto come avevo previsto. Quasi tutto."}
