@@ -4,6 +4,7 @@ extends Control
 # Usata per i passi "scena" e "rifugio" di data/atto1.json.
 
 const BACKS: Dictionary = {
+	"piazza": {"top": "#3a0a30", "bot": "#c2337a", "luogo": "PIAZZA CENTRALE · ORE 3:00", "forme": "citta"},   # il gancio: cielo rosa della cupola
 	"strada": {"top": "#1a0f30", "bot": "#3a1840", "luogo": "VIA DALLA PIAZZA" , "forme": "citta"},
 	"rifugio": {"top": "#1e140c", "bot": "#3a2614", "luogo": "RIFUGIO · DEPOSITO DELLA METRO", "forme": "archi"},
 	"anomalia_rossa": {"top": "#2a0710", "bot": "#5a0f22", "luogo": "DENTRO L'ANOMALIA", "forme": "vetri"},
