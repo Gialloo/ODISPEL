@@ -153,9 +153,9 @@ func _draw() -> void:
 			# disegno fatto a mano: niente ombra scura (appesantiva i disegni con tanto nero), ma un bordo chiaro del
 			# colore del personaggio attorno alla sagoma, cosi' giacche e capelli scuri si staccano dalla lastra (autore, 2/11/2026)
 			if _sil != null:
-				var rc: Color = Color(col.lightened(0.55), 0.95 * e)
+				var rc: Color = Color(col.lightened(0.15), 0.85 * e)      # sottile e scuro (autore, 2/11/2026: prima troppo spesso e chiaro)
 				for k in 8:
-					var o: Vector2 = Vector2.RIGHT.rotated(TAU * float(k) / 8.0) * 3.5
+					var o: Vector2 = Vector2.RIGHT.rotated(TAU * float(k) / 8.0) * 1.5
 					draw_texture_rect(_sil, Rect2(r.position + o, r.size), false, rc)
 		else:
 			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
