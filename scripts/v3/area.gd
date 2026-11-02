@@ -907,6 +907,7 @@ func _enemy_battle(id: String, ingresso: String) -> void:
 	_go_battle({"boss": str(e.get("boss", "frammento_giallo")), "visual": str(e.get("boss", "frammento_giallo")), "livello": int(e.get("livello", 1)),
 		"ingresso": ingresso, "arena": str(cfg.get("tema", "")) if cfg.has("tema") else str(cfg.get("layout", "strada")),
 		"ritorno": {"tipo": "area", "area": area_id, "vinto": win_state, "perso": Story.area_state.duplicate(true)}, "minore": true, "indizi": [],
+		"gregario": str(e.get("gregario", "")),      # due nemici: la scheggia accanto al frammento (data/atto1.json)
 		"tutorial": area_id == "strada" and not Story.has_flag("tutorial_fatto")})
 
 

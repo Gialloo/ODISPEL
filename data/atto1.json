@@ -95,7 +95,7 @@
 				{"id": "adesivo", "pos": [-3.1, -26.0], "raggio": 1.8, "etichetta": "GUARDA L'ADESIVO", "tasto": "GUARDA", "dialogo": "c2_adesivo", "oggetto": true, "debolezza": "VERDE"}
 			],
 			"punti": [{"id": "cabine", "pos": [3.0, -18.0]}, {"id": "manifesti", "pos": [-3.3, -6.0]}],
-			"nemici": [{"id": "f1", "pos": [0.0, -14.0], "boss": "frammento_blu", "livello": 5}, {"id": "f2", "pos": [0.5, -29.0], "boss": "frammento_blu", "livello": 5}],
+			"nemici": [{"id": "f1", "pos": [0.0, -14.0], "boss": "frammento_blu", "livello": 5}, {"id": "f2", "pos": [0.5, -29.0], "boss": "frammento_blu", "livello": 5, "gregario": "frammento_rosso"}],
 			"uscita": {"pos": [0.0, -35.0], "etichetta": "RISPONDI ALLA CABINA", "tasto": "RISPONDI", "dialogo": "c2_soglia", "tipo": "cabina"}
 		},
 		"dentro_cabina": {
@@ -113,7 +113,7 @@
 				{"id": "etichetta", "pos": [3.3, -22.0], "raggio": 1.8, "etichetta": "LEGGI IL CARTELLINO", "tasto": "LEGGI", "dialogo": "c3_etichetta", "oggetto": true, "debolezza": "ROSSO"}
 			],
 			"punti": [{"id": "vetrine", "pos": [-4.0, -16.0]}, {"id": "manichini", "pos": [4.0, -28.0]}],
-			"nemici": [{"id": "f1", "pos": [0.5, -13.0], "boss": "frammento_verde", "livello": 7}, {"id": "f2", "pos": [-0.8, -27.0], "boss": "frammento_verde", "livello": 7}],
+			"nemici": [{"id": "f1", "pos": [0.5, -13.0], "boss": "frammento_verde", "livello": 7}, {"id": "f2", "pos": [-0.8, -27.0], "boss": "frammento_verde", "livello": 7, "gregario": "frammento_blu"}],
 			"uscita": {"pos": [0.0, -35.0], "etichetta": "GUARDA NELLA VETRINA", "tasto": "GUARDA", "dialogo": "c3_soglia", "tipo": "manichino"}
 		},
 		"dentro_vetrina": {
@@ -131,7 +131,7 @@
 				{"id": "combinazione", "pos": [-2.3, -21.0], "raggio": 1.8, "etichetta": "STUDIA LA SERRATURA", "tasto": "STUDIA", "dialogo": "c4_combinazione", "oggetto": true, "debolezza": "ROSSO"}
 			],
 			"punti": [{"id": "lingotti", "pos": [2.3, -16.0]}, {"id": "laser", "pos": [0.0, -5.0]}],
-			"nemici": [{"id": "f1", "pos": [0.0, -13.0], "boss": "frammento_verde", "livello": 9}, {"id": "f2", "pos": [-0.5, -25.0], "boss": "frammento_verde", "livello": 9}],
+			"nemici": [{"id": "f1", "pos": [0.0, -13.0], "boss": "frammento_verde", "livello": 9}, {"id": "f2", "pos": [-0.5, -25.0], "boss": "frammento_verde", "livello": 9, "gregario": "frammento_rosso"}],
 			"boss": {"id": "cassaforte", "tipo": "cassaforte", "pos": [0.0, -34.0], "rot": 0, "dialogo": "c4_boss", "agguato": "c4_agguato", "livello": 9, "arena": "caveau", "pv": 0.6, "atk": 0.75}
 		},
 		"tangenziale": {
@@ -143,7 +143,7 @@
 				{"id": "verbale", "pos": [-0.6, -19.0], "raggio": 1.8, "etichetta": "PRENDI IL VERBALE SUL CRUSCOTTO", "tasto": "PRENDI", "dialogo": "c5_verbale", "oggetto": true, "debolezza": "VIOLA"},
 				{"id": "radio", "pos": [3.3, -11.0], "raggio": 1.9, "etichetta": "ASCOLTA LA RADIO DELL'AUTO", "tasto": "ASCOLTA", "dialogo": "c5_radio"}
 			],
-			"nemici": [{"id": "f1", "pos": [0.0, -8.0], "boss": "frammento_giallo", "livello": 10}, {"id": "f2", "pos": [-0.5, -23.0], "boss": "frammento_rosso", "livello": 10}],
+			"nemici": [{"id": "f1", "pos": [0.0, -8.0], "boss": "frammento_giallo", "livello": 10, "gregario": "frammento_verde"}, {"id": "f2", "pos": [-0.5, -23.0], "boss": "frammento_rosso", "livello": 10, "gregario": "frammento_blu"}],
 			"boss": {"id": "autovelox", "tipo": "autovelox", "pos": [0.0, -31.0], "rot": 0, "dialogo": "c5_boss", "agguato": "c5_agguato", "livello": 11, "arena": "tangenziale", "pv": 0.65, "atk": 0.8}
 		}
 	},

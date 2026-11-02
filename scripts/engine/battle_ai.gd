@@ -11,7 +11,16 @@ static func _ratio(u: Dictionary) -> float:
 
 # Azione rapida dello SLANCIO: Guardia di slancio (scudo a tutti) se arriva un colpo grosso o un compagno e' sotto il 50%,
 # altrimenti un altro colpo.
+# Con due nemici l'IA sceglie anche il bersaglio (Gregario.with_target); senza scheggia la scelta resta quella di sempre.
 static func choose_quick(state: Dictionary, pid: String) -> Dictionary:
+	return Gregario.with_target(state, pid, _choose_quick_base(state, pid))
+
+
+static func choose(state: Dictionary, pid: String) -> Dictionary:
+	return Gregario.with_target(state, pid, _choose_base(state, pid))
+
+
+static func _choose_quick_base(state: Dictionary, pid: String) -> Dictionary:
 	var tele: Dictionary = state.get("telegraph", {})
 	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	var danger: bool = not bm.is_empty() and int(BattleState.boss(state).get("stun", 0)) == 0 and BattleResolver.is_heavy_boss_move(bm)
@@ -22,7 +31,7 @@ static func choose_quick(state: Dictionary, pid: String) -> Dictionary:
 	return {"swap": "", "move": BattleTypes.ACTION_GUARD if danger else BattleTypes.ACTION_ATTACK, "target": ""}
 
 
-static func choose(state: Dictionary, pid: String) -> Dictionary:
+static func _choose_base(state: Dictionary, pid: String) -> Dictionary:
 	var duo_me: Dictionary = BattleState.active_unit(state, pid)
 	if BattleState.is_alive(duo_me):
 		var duo: String = DuoTechs.ai_pick(state, duo_me)
