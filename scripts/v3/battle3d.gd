@@ -1618,6 +1618,13 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if _team_follow:
 					continue              # la annuncia la sequenza di squadra
 				_break_moment(delay)
+				# chi ha rotto la guardia appare per un attimo come fotogramma disturbato (Rio: variante "break", 3/11/2026)
+				for x in ev:
+					if str(x.get("t", "")) == "damage" and str(x.get("dst", "")) == BattleState.BOSS_ID:
+						var bu: Dictionary = b["units"].get(str(x.get("src", "")), {})
+						if not bu.is_empty():
+							_lampo_ritratto(str(bu.get("char", "")), "break", delay + 0.05, Color("#ff2340"))
+						break
 			"tenacity":
 				# il colpo era mortale: resta in piedi con 1 PV e l'ultimate piena
 				var tn: String = str(e.get("unit", ""))
@@ -2106,6 +2113,16 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 		edge.start(ch, EdgeCutin.pal_for(ch))
 		dark.visible = false
 		hold = 0.8 if seen else 1.2
+	# il ritratto 2D attraversa lo schermo sopra la scena (Persona; autore, 3/11/2026): l'ombra con lo sguardo acceso
+	var sweep: RitrattoLampo = null
+	var ut: Texture2D = RitrattoVarianti.tex(ch, "ombra")
+	if ut == null:
+		ut = RitrattoVarianti.tex(ch, "hud")
+	if ut != null:
+		sweep = RitrattoLampo.new()
+		_cutin.add_child(sweep)
+		_cutin.move_child(sweep, edge.get_index() + 1 if edge != null else dark.get_index() + 1)
+		sweep.start(ut, "ult", col, hold + 0.45)
 	_cutin_on = true
 	var tw := create_tween()
 	_cutin_tw = tw
@@ -2115,6 +2132,8 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	tw.tween_property(_cutin, "modulate:a", 0.0, 0.18)
 	tw.tween_callback(_cutin_finish)
 	await _cutin_end
+	if is_instance_valid(sweep):
+		sweep.queue_free()               # saltato al tocco: il ritratto sparisce con la scena
 	if edge != null:
 		edge.queue_free()                # le viewport a bassa risoluzione si liberano subito
 		dark.visible = true
@@ -2163,6 +2182,22 @@ func _signal_lost_later(uid: String, delay: float) -> void:
 		await get_tree().create_timer(delay).timeout
 	if is_inside_tree() and _cam_hud != null:
 		_cam_hud.disturb("SEGNALE PERSO  ·  CAM %02d  ·  %s" % [_cam_no_of(uid), str(u.get("name", "")).to_upper()], Color("#ff4a5a"), 1.6)
+	# la telecamera si spegne e resta la sagoma (Rio: variante "ko", 3/11/2026)
+	_lampo_ritratto(str(u.get("char", "")), "ko", 0.0, Color("#3a6bff"))
+
+
+# Lampo del ritratto 2D sul lato dello schermo (RitrattoLampo): solo se il disegno di quella variante c'e'.
+func _lampo_ritratto(ch: String, stato: String, delay: float, col: Color) -> void:
+	var t: Texture2D = RitrattoVarianti.tex(ch, stato)
+	if t == null or _root == null:
+		return
+	if delay > 0.01:
+		await get_tree().create_timer(delay).timeout
+	if not is_inside_tree() or (ended and stato != "ko"):
+		return
+	var l := RitrattoLampo.new()
+	_root.add_child(l)
+	l.start(t, stato, col)
 
 
 # Una cura che riporta un compagno sopra la soglia (50% / 25%) ricalibra la sua telecamera: lo si legge in parole, non solo
@@ -3292,6 +3327,9 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 				it["desc"] = "GUARDIA DI SLANCIO: dimezza il danno, +%d EN e uno scudo a tutta la squadra" % (1 + BattleTypes.SLANCIO_GUARD_EN)
 	if _wheel is PortraitHud:
 		(_wheel as PortraitHud).set_who(str(u.get("char", "")))
+		# sotto il 50% / 25% dei PV il ritratto si scurisce (varianti di Rio, 3/11/2026)
+		var vs: String = RitrattoVarianti.per_vita(int(u.get("hp", 0)), int(u.get("max_hp", 1)))
+		(_wheel as PortraitHud).set_stato("" if vs == "ko" else vs)
 	_wheel.setup(str(u.get("name", "")).to_upper() + (" · RAPIDO" if _quick else ""), _col(u), items)
 
 

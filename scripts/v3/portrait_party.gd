@@ -47,17 +47,35 @@ func set_order_visible(on: bool) -> void:
 		queue_redraw()
 
 
-func _face(id: String) -> Array:
-	# [texture, regione]: il volto disegnato apposta se c'e', altrimenti il mezzobusto ritagliato
-	if not _tex.has(id):
+func _face(id: String, stato: String = "") -> Array:
+	# [texture, regione]: il volto disegnato apposta se c'e', altrimenti il mezzobusto ritagliato.
+	# stato (varianti dell'autore, 3/11/2026): "ferito", "critico", "ko" o "ng" usano <id>_volto_<stato>.png se c'e'.
+	var key: String = id + "|" + stato
+	if not _tex.has(key):
+		var vp: String = "res://assets/portraits/hud/%s_volto_%s.png" % [id, stato]
+		if stato != "" and ResourceLoader.exists(vp):
+			var tv: Texture2D = load(vp)
+			_tex[key] = [tv, Rect2(Vector2.ZERO, tv.get_size()), true]
+			return _tex[key]
 		var real: String = "res://assets/portraits/hud/%s_volto.png" % id
 		if ResourceLoader.exists(real):
 			var t: Texture2D = load(real)
-			_tex[id] = [t, Rect2(Vector2.ZERO, t.get_size()), true]
+			_tex[key] = [t, Rect2(Vector2.ZERO, t.get_size()), true]
 		else:
 			var fp: String = "res://assets/portraits/%s_neutro.png" % id
-			_tex[id] = [load(fp) if ResourceLoader.exists(fp) else null, FACE, false]
-	return _tex[id]
+			_tex[key] = [load(fp) if ResourceLoader.exists(fp) else null, FACE, false]
+	return _tex[key]
+
+
+# Quale volto: K.O. e vita bassa prima, poi la skin della Replica.
+func _stato_di(u: Dictionary) -> String:
+	if not bool(u.get("alive", true)):
+		return "ko"
+	var vs: String = RitrattoVarianti.per_vita(int(u.get("hp", 0)), int(u.get("max_hp", 1)))
+	if vs != "":
+		return vs
+	var b: String = RitrattoVarianti.base(str(u.get("id", "")))
+	return "" if b == "hud" else b
 
 
 func _draw() -> void:
@@ -85,9 +103,12 @@ func _draw() -> void:
 		draw_colored_polygon(fr, edge)
 		var inner := Rect2(Vector2(x + 5, y + 8), Vector2(CW - 11, 74))
 		draw_rect(inner, col.darkened(0.6) if alive else Color(0.15, 0.15, 0.18))
-		var fd: Array = _face(str(u.get("id", "")))
+		var st: String = _stato_di(u)
+		var fd: Array = _face(str(u.get("id", "")), st)
 		if fd[0] != null:
-			draw_texture_rect_region(fd[0], inner, _fit(fd[1], inner.size), Color.WHITE if alive else Color(0.4, 0.4, 0.45))
+			# il volto K.O. disegnato apposta (sagoma blu) si vede intero; quello di ripiego si spegne in grigio come prima
+			var lit: bool = alive or (st == "ko" and bool(fd[2]) and str((fd[0] as Texture2D).resource_path).contains("_volto_ko"))
+			draw_texture_rect_region(fd[0], inner, _fit(fd[1], inner.size), Color.WHITE if lit else Color(0.4, 0.4, 0.45))
 		# numeri: PV grande, EN sotto, a destra in basso sopra la cornice (come HP/SP del riferimento)
 		var hp_s: String = "%d" % int(u.get("hp", 0))
 		var en_s: String = "EN %d" % int(u.get("en", 0))

@@ -1,5 +1,17 @@
 # Novità
 
+## 0.44.0 · Le dieci facce di Rio
+
+- Nuovo ritratto di Rio nell'HUD (grigio con i riflessi rosso-arancio), contorni rifiniti come il precedente (`tools/rifinisci_ritratto.py`).
+- Varianti del ritratto (disegni dell'autore, 3/11/2026), ognuna col suo momento: SKILL e ULTIMATE scelte = ombra con lo sguardo magenta;
+  PV sotto il 50% e il 25% = viola e rosso, sempre più scuro (anche il volto nella fila della squadra); BREAK di Rio = fotogramma
+  disturbato rosso e blu; K.O. = la sagoma blu sfarfalla e si spegne (SEGNALE PERSO); pausa = Rio scuro sul lato destro; Replica (NG+) =
+  skin magenta; caricamento di strada e battaglia = Rio chiaro e olografico, come un ricordo.
+- Ritratto vivo: respira, entra storto e si raddrizza con un rimbalzo, scatta in avanti quando scegli un comando, si avvicina sull'ULTIMATE e cambia faccia con un lampo bianco.
+- Dietro al ritratto scorrono strisce storte, come i fondali di Persona 5.
+- ULTIMATE: sopra la scena il ritratto 2D di Rio (l'ombra con lo sguardo magenta) attraversa lo schermo dentro una fascia del suo colore.
+- Gli altri personaggi useranno le stesse varianti appena ci sono i disegni (`assets/portraits/hud/<id>_<stato>.png`), senza codice nuovo.
+
 ## 0.43.0 · Battaglia più spettacolare: lo sguardo di Echo
 - **K.O. = SEGNALE PERSO**: quando un compagno cade la sua telecamera va in frantumi, il segnale salta e nel REC compare «SEGNALE PERSO · CAM 03 · NOX». Una cura che lo riporta sopra il 50% o il 25% scrive «SEGNALE RECUPERATO».
 - **Cambio di telecamera tra i turni**: quando tocca a un altro personaggio il segnale salta per un attimo (linea bianca che spazza, fasce rosse e ciano) e la telecamera è già alle sue spalle; il cartellino della CAM, inclinato alla Persona 5 con l'ombra nel colore del personaggio, entra dal suo lato, resta il tempo di leggerlo ed esce.
