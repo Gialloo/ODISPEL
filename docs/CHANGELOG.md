@@ -1,8 +1,10 @@
 # Novità
 
-## Non ancora rilasciato · Correzioni di Rio e nuovo BREAK
+## 0.45.0 · Rio celeste e il nuovo BREAK
 
 - Nuovo ritratto di Rio dell'autore (IMG_1789, contorno celeste fatto da lui: niente contorno aggiunto) e volto piccolo ritagliato perche' si veda il viso.
+- Cambio di telecamera tra i personaggi: per un attimo il segnale salta con i blocchi digitali del BREAK.
+- Prestazioni: lo shader del BREAK non calcola piu' le crepe normali e legge meno pixel; la cornice della telecamera si ridisegna solo quando qualcosa si muove.
 - Solo il Rio grigio nell'HUD: varianti spente (i file restano, `RitrattoVarianti.attive`), niente Rio nel caricamento (solo la scritta), nella pausa e nel cut-in dell'ULTIMATE.
 - Respiro piu' leggero e solo in scala dal basso: il ritratto non si stacca piu' dal bordo; entra dal basso dietro alla lastra.
 - Cambio di personaggio con una lama chiara che attraversa la lastra.
