@@ -1,11 +1,15 @@
 # Novità
 
-## Prossima · Tutto il combattimento nuovo anche contro i boss
+## 0.47.0 · Tutto il combattimento nuovo anche contro i boss
 
 - I boss si combattono dentro le Anomalie, dove la telecamera di Echo spegneva tutto: ora anche lì ci sono il cambio di telecamera coi blocchi digitali e il cartellino CAM, la presentazione del nemico, SEGNALE PERSO / RECUPERATO, i disturbi del BREAK, PARATA PERFETTA, ZOOM x2 e Rio in diretta. A riposo resta «NESSUN SEGNALE».
 - Presentazione del nemico: la telecamera parte già sul nemico e non torna più sulla vista generale (prima cambiava due volte); il primo turno taglia su chi agisce. C'è anche nelle lezioni (resta saltata nel tutorial del menu e con «salta i cut-in»).
 - Prestazioni: le lettere grandi del cartellino si preparano al primo disegno (erano uno scatto dell'ingresso); nelle Anomalie il mirino tremante si ridisegna 15 volte al secondo invece che a ogni fotogramma.
 - Prova: `tools/v3_boss_prova.gd` (scontro col boss come nella storia) e `tools/v3_telecamere.gd -- <cartella> pc anomalia_rossa`.
+
+## 0.46.0 · Personaggi a colori nel BREAK
+
+- BREAK e attacco di squadra: la scena si sbianca e si sfoca, i personaggi della squadra restano nitidi e a colori sopra (seconda telecamera solo per loro, `scripts/v3/char_pop.gd`, accesa solo in quei momenti).
 
 ## 0.45.0 · Rio celeste e il nuovo BREAK
 
