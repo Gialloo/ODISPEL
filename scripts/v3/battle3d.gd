@@ -97,6 +97,7 @@ var _qte_grade: String = ""          # "" = nessun tocco | early | good | perfec
 var _qte_ring: QteRing
 
 var cam: Camera3D
+var _pop: CharPop
 var _cam_pos: Vector3
 var _cam_look: Vector3
 var _cam_want_pos: Vector3
@@ -254,6 +255,13 @@ func _ready() -> void:
 	add_child(cam)
 	cam.current = true
 	_cam_overview(true)
+	# personaggi a colori sopra la scena sbiancata (BREAK e attacco di squadra)
+	_pop = CharPop.new()
+	_pop.src = cam
+	for uid in vis:
+		if vis[uid] is CharacterVisual:
+			_pop.targets.append(vis[uid])
+	add_child(_pop)
 	_build_ui()
 	_warm_fonts()
 	_refresh_hud()
@@ -601,6 +609,8 @@ func _cam_front(uid: String) -> void:
 
 func _process(delta: float) -> void:
 	var rd: float = minf(delta, 0.05)
+	if _pop != null and _broken != null:
+		_pop.alpha = _broken.pop_alpha
 	if _reticle != null and _reticle.visible and vis.has(_tgt_uid()):
 		# il mirino segue il petto del nemico preso di mira (la telecamera si muove: si riposiziona, costa una proiezione)
 		var bp: Vector3 = (vis[_tgt_uid()] as Node).call("chest_point")
@@ -3852,6 +3862,9 @@ func _team_sequence(rest: Array) -> void:
 	_refresh_hud()
 	(boss_v as VendingVisual).stunned = true
 	_cam_set(Vector3(0.0, 2.6, 7.6), ENEMY_POS + Vector3(0, 1.0, 0), 5.0)
+	# scena sbiancata per tutto l'assalto, i compagni restano a colori (riferimento dell'autore, 3/11/2026)
+	if _broken != null:
+		_broken.set_wash(true, Vector2(0.5, 0.45))
 	# 1. ROTTURA
 	# versione corta del BREAK (vetro + scritta, senza il fermo immagine lungo): la sequenza di squadra ha gia' il suo ritmo
 	_break_moment(0.0, true)
@@ -3932,6 +3945,8 @@ func _team_sequence(rest: Array) -> void:
 	await _show_events(others, true)
 	await _team_wait(0.3)
 	_team_on = false
+	if _broken != null:
+		_broken.set_wash(false)
 
 
 # Attesa della sequenza di squadra: un tocco la accorcia

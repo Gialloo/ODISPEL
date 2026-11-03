@@ -29,6 +29,7 @@ uniform float big = 0.0;         // 1 = rottura del nemico (BREAK): piu' schegge
 uniform vec2 impact = vec2(0.6, 0.45);
 uniform float aspect = 1.7778;
 uniform vec2 pts[14];
+uniform float wash = 0.0;        // attacco di squadra: scena sbiancata e sfocata verso il centro (i personaggi li rimette CharPop)
 
 float h1(float n) { return fract(sin(n * 91.345) * 47453.5453); }
 
@@ -149,7 +150,29 @@ vec3 break_cam(vec2 uv, float fi, float edge, vec2 dir, float edge_w, vec3 clean
 	return mix(res, vec3(1.0), glow * 0.7);
 }
 
+// SCENA SBIANCATA dell'attacco di squadra (riferimento dell'autore, 3/11/2026): colori quasi spenti, luce sovraesposta,
+// sfocatura radiale arcobaleno verso il nemico. Niente schegge. 12 letture per pixel, solo mentre dura l'attacco.
+vec3 wash_cam(vec2 uv) {
+	vec2 toc = uv - impact;
+	vec2 tq = toc; tq.x *= aspect;
+	float bl = smoothstep(0.08, 0.6, length(tq)) * wash;
+	vec3 c = vec3(0.0);
+	for (int i = 0; i < 4; i++) {
+		float f = 1.0 - float(i) * 0.03 * bl;
+		c.r += texture(screen_tex, clamp(impact + toc * f, vec2(0.001), vec2(0.999))).r;
+		c.g += texture(screen_tex, clamp(impact + toc * f * (1.0 - 0.012 * bl), vec2(0.001), vec2(0.999))).g;
+		c.b += texture(screen_tex, clamp(impact + toc * f * (1.0 - 0.024 * bl), vec2(0.001), vec2(0.999))).b;
+	}
+	c /= 4.0;
+	float lum = dot(c, vec3(0.3, 0.59, 0.11));
+	vec3 bleach = vec3(0.74, 0.74, 0.76) + vec3(lum) * 0.4 + (c - vec3(lum)) * 0.25;
+	return mix(c, bleach, (0.45 + 0.55 * bl) * wash);
+}
+
 void fragment() {
+	if (wash > 0.01 && (big < 0.5 || prog >= 0.75)) {
+		COLOR = vec4(wash_cam(SCREEN_UV), 1.0);
+	} else {
 	vec2 uv = SCREEN_UV;
 	float d1 = 1e5; float d2 = 1e5; int id = 0;
 	for (int i = 0; i < 14; i++) {
@@ -245,6 +268,7 @@ void fragment() {
 	col = mix(col, vec3(1.0), glow * (0.35 + 0.35 * big));
 	COLOR = vec4(col, 1.0);
 	}
+	}
 }
 """
 
@@ -260,6 +284,9 @@ var _rel: PackedVector2Array = PackedVector2Array()   # schegge relative al punt
 var _imp: Vector2 = Vector2(0.6, 0.45)
 var _stop_gen: int = 0
 var _who: String = ""
+var _wash: float = 0.0
+var _wash_to: float = 0.0
+var pop_alpha: float = 0.0           # quanto devono stare sopra i personaggi a colori (CharPop), 0..1
 var _pattern: String = ""
 
 
@@ -341,6 +368,13 @@ func shatter(key: String, strength: float = 1.0, impact: Vector2 = Vector2(-1, -
 
 # Fermo immagine di ~0.13 s (tempo reale) sul colpo che rompe: Persona/Star Rail, il colpo "pesa". Solo se il gioco corre normale
 # (non in pausa, non quando il tempo e' gia' rallentato) e si rimette a posto da solo.
+# Attacco di squadra: la scena si sbianca (on) e torna normale (off). Rispetta l'impostazione della telecamera rotta.
+func set_wash(on: bool, impact: Vector2 = Vector2(-1, -1)) -> void:
+	_wash_to = 1.0 if on and Settings.broken_cam else 0.0
+	if on and impact.x >= 0.0:
+		_mat.set_shader_parameter("impact", impact)
+
+
 func _hit_stop() -> void:
 	if Engine.time_scale < 0.5 or Engine.time_scale > 2.0:
 		return
@@ -392,7 +426,15 @@ func _process(delta: float) -> void:
 		# il BREAK resta teso un attimo (le schegge sospese) e poi ricade; il colpo normale salta subito e ricade
 		# BREAK: le schegge restano sospese e poi cadono (lo fa lo shader con prog), non tornano al loro posto
 		b = _burst * (1.0 - k) * (1.0 - k) if _big < 0.5 else _burst * (1.0 - smoothstep(0.9, 1.0, k))
-	_rect.visible = _crack > 0.005 or b > 0.005
+	_wash = move_toward(_wash, _wash_to, delta * 4.0)
+	# i personaggi restano nitidi e a colori mentre le schegge sono in vista e per tutto l'attacco di squadra
+	var hold: float = 0.0
+	if _big > 0.5 and _burst_t < _burst_dur:
+		hold = smoothstep(0.0, 0.04, k) * (1.0 - smoothstep(0.58, 0.6, k))
+		if k >= 0.75:
+			hold = _wash
+	pop_alpha = maxf(hold, _wash if (_big < 0.5 or _burst_t >= _burst_dur or k >= 0.75) else 0.0)
+	_rect.visible = _crack > 0.005 or b > 0.005 or _wash > 0.005
 	if not _rect.visible:
 		return
 	var sz: Vector2 = get_viewport().get_visible_rect().size
@@ -401,5 +443,6 @@ func _process(delta: float) -> void:
 	_mat.set_shader_parameter("burst", b)
 	_mat.set_shader_parameter("prog", k)
 	_mat.set_shader_parameter("big", _big if _burst_t < _burst_dur else 0.0)   # finito il BREAK restano solo le crepe della vita
+	_mat.set_shader_parameter("wash", _wash)
 	# lampo bianco nei primi 0.15 s, solo se i lampi sono accesi nelle impostazioni
 	_mat.set_shader_parameter("glow", Settings.flash * maxf(0.0, 1.0 - _burst_t / 0.15) * _burst if _burst_t < 0.15 else 0.0)
