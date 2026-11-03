@@ -2,6 +2,7 @@
 
 ## Non ancora rilasciato · Correzioni di Rio e nuovo BREAK
 
+- Nuovo ritratto di Rio dell'autore (IMG_1789, contorno celeste fatto da lui: niente contorno aggiunto) e volto piccolo ritagliato perche' si veda il viso.
 - Solo il Rio grigio nell'HUD: varianti spente (i file restano, `RitrattoVarianti.attive`), niente Rio nel caricamento (solo la scritta), nella pausa e nel cut-in dell'ULTIMATE.
 - Respiro piu' leggero e solo in scala dal basso: il ritratto non si stacca piu' dal bordo; entra dal basso dietro alla lastra.
 - Cambio di personaggio con una lama chiara che attraversa la lastra.
