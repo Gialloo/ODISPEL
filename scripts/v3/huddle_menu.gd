@@ -57,6 +57,26 @@ func _build(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint
 	blink.tween_property(rec, "modulate:a", 0.2, 0.5)
 	blink.tween_property(rec, "modulate:a", 1.0, 0.5)
 
+	# Rio, scuro e calmo, sul lato destro: guarda la riunione dal bordo dell'inquadratura (variante "pausa", 3/11/2026).
+	# Sta sotto a tutto, tagliato dal bordo in basso; la luce su di lui respira piano. Senza il disegno non c'e' e il menu resta com'era.
+	var pt: Texture2D = RitrattoVarianti.tex("zecca", "pausa")
+	if pt != null:
+		var fig := TextureRect.new()
+		fig.texture = pt
+		fig.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		fig.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+		fig.flip_h = true                      # guarda verso il centro
+		Ui.place(fig, 1, 1, 1, 1, -330, -560, 40, -60)
+		fig.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		fig.modulate = Color(1, 1, 1, 0.0)
+		add_child(fig)
+		var fin := fig.create_tween().set_ignore_time_scale(true)
+		fin.tween_property(fig, "modulate:a", 0.9, 0.5)
+		# respira con la luce, non spostandosi: muovere position qui scavalca le ancore (la figura finiva fuori schermo)
+		var br := fig.create_tween().set_loops().set_ignore_time_scale(true).set_trans(Tween.TRANS_SINE)
+		br.tween_property(fig, "self_modulate", Color(0.8, 0.8, 0.9), 2.2)
+		br.tween_property(fig, "self_modulate", Color.WHITE, 2.2)
+
 	# il cerchio
 	var stage := Control.new()
 	Ui.place(stage, 0.5, 0.47, 0.5, 0.47)

@@ -45,6 +45,8 @@ var _usz: int = 30          # grandezza comune delle scritte dei comandi
 var _sil: Texture2D                          # sagoma bianca del disegno (per il bordo chiaro)
 var _rects: Dictionary = {}                   # kind -> Rect2 in coordinate del controllo (tocco e mouse)
 var _hov: String = ""
+var stato: String = ""                        # variante per la vita: "", "ferito", "critico" (RitrattoVarianti)
+var _base: String = "hud"                     # "hud" o "ng" (skin della Replica)
 
 
 func _init() -> void:
@@ -66,7 +68,8 @@ func set_who(id: String) -> void:
 	if ResourceLoader.exists(real):
 		_tex = load(real)
 		_tex_real = true
-		_sil = _silhouette(_tex)
+		_sil = _silhouette(_tex)          # le varianti hanno la stessa sagoma: il bordo e l'ombra valgono per tutte
+		_base = RitrattoVarianti.base(id)
 	else:
 		var fp: String = "res://assets/portraits/%s_neutro.png" % id
 		if ResourceLoader.exists(fp):
@@ -100,6 +103,27 @@ static func _silhouette(t: Texture2D) -> Texture2D:
 	var tex := ImageTexture.create_from_image(out)
 	_sil_cache[t.resource_path] = tex
 	return tex
+
+
+# Vita di chi e' di turno: sotto il 50% e il 25% il ritratto si scurisce (varianti dell'autore, 3/11/2026).
+func set_stato(s: String) -> void:
+	if s != stato:
+		stato = s
+		queue_redraw()
+
+
+# Il disegno da mostrare adesso: ULTIMATE o SKILL scelte = l'ombra con lo sguardo acceso; poi la vita; poi la skin di base.
+func _tex_now() -> Texture2D:
+	if not _tex_real:
+		return _tex
+	var t: Texture2D = null
+	if picked == "ult" or picked == "skill":
+		t = RitrattoVarianti.tex(who_id, "ombra")
+	if t == null and stato != "":
+		t = RitrattoVarianti.tex(who_id, stato)
+	if t == null and _base != "hud":
+		t = RitrattoVarianti.tex(who_id, _base)
+	return t if t != null else _tex
 
 
 func setup(p_who: String, p_col: Color, p_items: Array) -> void:
@@ -166,7 +190,7 @@ func _draw() -> void:
 		else:
 			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
 			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
-		draw_texture_rect(_tex, r, false, Color(1, 1, 1, e))
+		draw_texture_rect(_tex_now(), r, false, Color(1, 1, 1, e))
 	# 3) comandi attorno al ritratto
 	_usz = 30
 	for kind in ["ult", "skill", "attack", "guard"]:

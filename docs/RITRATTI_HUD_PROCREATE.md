@@ -68,3 +68,21 @@ Se non lo fai, il gioco ritaglia il volto dal ritratto segnaposto: va bene per p
 4. Salva in File o mandalo nel thread col nome della tabella (es. `zecca_hud.png`).
 
 Controllo veloce: aperto sul telefono, attorno al personaggio deve vedersi lo sfondo dell'app (o la scacchiera), non il bianco.
+
+## 4. Varianti del ritratto (una per momento, 3/11/2026)
+
+Oltre a `<id>_hud.png` il gioco usa da solo, se ci sono, queste varianti (stessa tela 1536×2048, **stessa posa e stessa sagoma**
+del ritratto normale; il gioco le rimpicciolisce a 768×1024 con `tools/rifinisci_ritratto.py`, che rifinisce anche i contorni):
+
+| File | Quando |
+|---|---|
+| `<id>_ombra.png` | SKILL o ULTIMATE scelte |
+| `<id>_ferito.png` / `<id>_critico.png` | PV sotto il 50% / il 25% |
+| `<id>_break.png` | il suo colpo rompe la guardia (lampo sul lato destro) |
+| `<id>_ko.png` | K.O., SEGNALE PERSO (lampo che si spegne) |
+| `<id>_pausa.png` | menu di pausa (oggi solo Rio, sul lato destro) |
+| `<id>_ng.png` | skin della Replica (NG+) |
+| `<id>_ricordo.png` | schermata di caricamento (oggi solo Rio) |
+
+Volti piccoli per la fila della squadra: `<id>_volto_ko.png`, `_volto_ferito`, `_volto_critico`, `_volto_ng` (512×512, `--volto`).
+Rio le ha tutte (dieci disegni: la versione più scura del ritratto normale è di riserva, nella cartella del progetto).
