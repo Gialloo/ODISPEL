@@ -1,6 +1,6 @@
 # Novità
 
-## Prossima · Telecamera fluida
+## 0.48.0 · Telecamera fluida
 
 - Cambio di turno senza scatti: la telecamera fa una carrellata morbida ad arco da un personaggio all'altro, dalla presentazione al primo personaggio, dal personaggio al nemico e ritorno (prima era un taglio secco coperto dal disturbo).
 - Ogni spostamento della telecamera parte e frena dolcemente (molla smorzata al posto dell'inseguimento che partiva a tutta velocità); anche guardia e cure arrivano e tornano con una carrellata.
