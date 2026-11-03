@@ -109,9 +109,9 @@ func _refresh() -> void:
 
 
 # Disturbo del segnale: l'etichetta del REC lo dice, mirino e scritta tremano, poi tutto torna come prima.
+# Vale anche dentro le Anomalie (autore, 3/11/2026: contro i boss deve esserci tutto): il disturbo copre «NESSUN SEGNALE»
+# e, finito, la scritta torna quella.
 func disturb(txt: String, c: Color, secs: float = 1.4) -> void:
-	if anomaly:
-		return
 	_dist_txt = txt
 	_dist_col = c
 	_dist_t = secs
@@ -122,9 +122,8 @@ func disturb(txt: String, c: Color, secs: float = 1.4) -> void:
 # Taglio tra due telecamere: dir = verso in cui sta la nuova (come lo scorrimento della V2: da F1 a F3 si va a destra).
 # Con effetti ridotti resta solo il velo, piu' leggero; con i lampi a zero niente velo scuro.
 # main/sub: testi del cartellino al posto di CAM nn e del nome; secs: quanto resta (presentazione del nemico).
+# Anche dentro le Anomalie: i boss si combattono li' e prima perdevano cambio di telecamera e presentazione (3/11/2026).
 func cut(dir: float = 1.0, main: String = "", sub: String = "", secs: float = STAMP_TIME) -> void:
-	if anomaly:
-		return
 	_cut_dir = 1.0 if dir >= 0.0 else -1.0
 	_stamp_main = main
 	_stamp_sub = sub
@@ -154,7 +153,8 @@ var _chat_i: int = 0
 
 
 func _chat_tick(delta: float) -> void:
-	if live < 25 or anomaly:
+	# anche nelle Anomalie: Rio trasmette lo stesso (3/11/2026, contro i boss deve esserci tutto)
+	if live < 25:
 		if not _chat.is_empty():
 			_chat.clear()
 		return
@@ -259,25 +259,41 @@ func _process(delta: float) -> void:
 	# PRESTAZIONI: si ridisegna solo quando qualcosa si muove (taglio, disturbo, chat, fermo, anomalia) o quando il pallino del REC
 	# cambia stato; prima si ridisegnava tutto lo schermo a ogni fotogramma anche da fermo.
 	var blink: bool = fmod(_t, 1.2) < 0.75
-	if anomaly or _cut_t > 0.0 or _dist_t > 0.0 or _drawn_busy or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until or blink != _blink_was:
+	# nelle Anomalie il mirino trema: prima si ridisegnava tutto lo schermo a ogni fotogramma, ora 15 volte al secondo
+	# (il tremolio si legge uguale e sul telefono si risparmia il disegno a schermo intero contro i boss)
+	var anom_tick: int = int(_t * 15.0) if anomaly else 0
+	if anom_tick != _anom_was or _cut_t > 0.0 or _dist_t > 0.0 or _drawn_busy or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until or blink != _blink_was:
 		queue_redraw()
-	_drawn_busy = anomaly or _cut_t > 0.0 or _dist_t > 0.0 or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until
+	_anom_was = anom_tick
+	_drawn_busy = _cut_t > 0.0 or _dist_t > 0.0 or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until
 	_blink_was = blink
 
 
 var _blink_was: bool = false
+var _anom_was: int = 0
 var _drawn_busy: bool = false      # l'ultimo disegno aveva qualcosa in movimento: un altro giro per pulirlo
+
+
+var _fonts_warm: bool = false
 
 
 func _draw() -> void:
 	var sz: Vector2 = size
+	if not _fonts_warm:
+		# PRESTAZIONI: le lettere grandi del cartellino (66 e 26) si preparano qui, invisibili, al primo disegno; prima si
+		# preparavano sulla presentazione del nemico, ed era uno degli scatti dell'ingresso (3/11/2026)
+		_fonts_warm = true
+		var abc: String = "ABCDEFGHIJKLMNOPQRSTUVWXYZÀÈÉÌÒÙ0123456789·' "
+		draw_string(Ui.display(), Vector2(-4000, -4000), abc, HORIZONTAL_ALIGNMENT_LEFT, -1, 66, Color(1, 1, 1, 0))
+		draw_string(Ui.body(), Vector2(-4000, -4000), abc, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color(1, 1, 1, 0))
 	var c: Color = Color(MAGIC.r, MAGIC.g, MAGIC.b, 0.5) if anomaly else Color(1, 0.96, 0.86, 0.4)
 	var m: float = 12.0
 	var l: float = 36.0
 	var w: float = 3.0
 	var j := Vector2.ZERO
 	if anomaly:
-		j = Vector2(sin(_t * 31.0), cos(_t * 27.0)) * 1.5
+		var tq: float = floorf(_t * 15.0) / 15.0          # stesso passo del ridisegno: il tremolio non dipende dai fotogrammi
+		j = Vector2(sin(tq * 31.0), cos(tq * 27.0)) * 1.5
 	if _dist_t > 0.0:
 		var k: float = _dist_t / _dist_len
 		j = Vector2(sin(_t * 47.0), cos(_t * 39.0)) * 5.0 * k
