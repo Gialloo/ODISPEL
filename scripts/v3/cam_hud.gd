@@ -363,7 +363,7 @@ func _draw_cut(sz: Vector2) -> void:
 	var lite: bool = Settings.light_fx
 	if el < CUT_TIME:
 		var k: float = 1.0 - el / CUT_TIME          # 1 = appena tagliato, 0 = finito
-		var veil: float = (0.1 if lite else 0.18) * clampf(Settings.flash, 0.0, 1.0) * k
+		var veil: float = (0.15 if lite else 0.28) * clampf(Settings.flash, 0.0, 1.0) * k
 		if veil > 0.01:
 			draw_rect(Rect2(Vector2.ZERO, sz), Color(0.03, 0.02, 0.07, veil))
 		# linea che spazza lo schermo nel verso del cambio, con la scia del colore del personaggio
@@ -372,10 +372,10 @@ func _draw_cut(sz: Vector2) -> void:
 			sx = 1.0 - sx
 		# 3/11/2026 (autore: «troppo bianco, alla lunga disturba»): con la carrellata sotto il taglio non deve piu' coprire
 		# un salto, quindi velo, linea e fasce sono a meno di meta' di prima
-		draw_rect(Rect2(sz.x * sx - 1.5, 0, 3.0, sz.y), Color(1, 1, 1, 0.3 * k))
-		draw_rect(Rect2(sz.x * sx - (90.0 if _cut_dir > 0.0 else -6.0) * 1.0, 0, 84.0, sz.y), Color(_who_col.r, _who_col.g, _who_col.b, 0.12 * k))
+		draw_rect(Rect2(sz.x * sx - 1.5, 0, 3.0, sz.y), Color(1, 1, 1, 0.5 * k))
+		draw_rect(Rect2(sz.x * sx - (90.0 if _cut_dir > 0.0 else -6.0) * 1.0, 0, 84.0, sz.y), Color(_who_col.r, _who_col.g, _who_col.b, 0.16 * k))
 		# fasce di disturbo: ognuna e' una coppia rossa/ciano sfasata, che scorre verso la nuova telecamera
-		var n: int = 3 if lite else 6
+		var n: int = 4 if lite else 8
 		var slide: float = (1.0 - k) * sz.x * 0.4 * _cut_dir
 		var frame: float = floor(_t * 30.0)
 		for i in n:
@@ -385,9 +385,9 @@ func _draw_cut(sz: Vector2) -> void:
 			var x0: float = -sz.x * 0.25 + slide + sz.x * 0.45 * fract_hash(float(i) * 5.1 + frame * 0.3)
 			var bw: float = sz.x * (0.25 + 0.55 * h)
 			var off: float = 10.0 + 14.0 * h
-			draw_rect(Rect2(x0 - off, y, bw, bh), Color(1.0, 0.16, 0.25, 0.16 * k))
-			draw_rect(Rect2(x0 + off, y, bw, bh), Color(0.25, 0.9, 1.0, 0.16 * k))
-			draw_rect(Rect2(x0, y + bh * 0.3, bw, maxf(1.0, bh * 0.4)), Color(1, 1, 1, 0.14 * k) if i % 3 == 0 else Color(_who_col.r, _who_col.g, _who_col.b, 0.25 * k))
+			draw_rect(Rect2(x0 - off, y, bw, bh), Color(1.0, 0.16, 0.25, 0.22 * k))
+			draw_rect(Rect2(x0 + off, y, bw, bh), Color(0.25, 0.9, 1.0, 0.22 * k))
+			draw_rect(Rect2(x0, y + bh * 0.3, bw, maxf(1.0, bh * 0.4)), Color(1, 1, 1, 0.26 * k) if i % 3 == 0 else Color(_who_col.r, _who_col.g, _who_col.b, 0.32 * k))
 	if el < GLITCH_TIME:
 		_draw_glitch(sz, el)
 	_draw_cam_stamp(sz, el)
@@ -396,18 +396,20 @@ func _draw_cut(sz: Vector2) -> void:
 # BLOCCHI DIGITALI del cambio di telecamera (autore, 3/11/2026: «usa l'ottavo fotogramma del break»): per ~0,14 s il segnale
 # salta come nel BREAK: fondo bianco, blocchi neri a strisce, barre di colore. Solo draw_rect (~30): costa quasi niente.
 # Con i lampi spenti nelle impostazioni il bianco non c'e' (restano i blocchi, piu' trasparenti).
-# 3/11/2026: piu' breve (0,1 s), SENZA fondo bianco e coi blocchi a meta' opacita': lo stesso disturbo 8-bit del BREAK,
-# ma solo accennato, perche' a ogni turno alla lunga stancava. Il BREAK vero resta pieno.
-const GLITCH_TIME: float = 0.1
+# 3/11/2026 (autore: «andava bene colorato e bianco come prima, solo piu' leggero»): stesso disturbo della 0.47 (fondo
+# bianco, blocchi neri, barre di colore) ma piu' trasparente e un poco piu' breve, sopra la carrellata. Il BREAK resta pieno.
+const GLITCH_TIME: float = 0.12
 const GLITCH_BARS: Array = [Color("#ff7326"), Color("#33bf59"), Color("#3359f2"), Color("#ff6699"), Color("#ffe633"), Color("#141414")]
 
 
 func _draw_glitch(sz: Vector2, el: float) -> void:
 	var fl: float = clampf(Settings.flash, 0.0, 1.0)
 	var k: float = 1.0 - el / GLITCH_TIME
-	var a: float = (0.3 + 0.2 * fl) * clampf(k * 2.0, 0.0, 1.0)
+	var a: float = (0.38 + 0.27 * fl) * clampf(k * 2.0, 0.0, 1.0)
 	var frame: float = floor(el * 40.0)
-	var n: int = 6 if Settings.light_fx else 12
+	if fl > 0.05:
+		draw_rect(Rect2(Vector2.ZERO, sz), Color(0.95, 0.94, 0.92, 0.42 * fl * clampf(k * 2.0, 0.0, 1.0)))     # era 0,9
+	var n: int = 8 if Settings.light_fx else 18
 	for i in n:
 		var fi: float = float(i)
 		var h: float = fract_hash(fi * 7.31 + frame * 1.7)
