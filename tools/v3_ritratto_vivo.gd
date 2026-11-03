@@ -1,6 +1,7 @@
 extends SceneTree
 
-# Clip del ritratto vivo dell'HUD (autore, 3/11/2026: «non sono vive»): entrata, respiro, SKILL scelta, ULTIMATE scelta.
+# Clip del ritratto vivo dell'HUD (autore, 3/11/2026: «non sono vive»): entrata, respiro e strisce che scorrono, SKILL scelta,
+# ULTIMATE scelta e confermata (cut-in col ritratto 2D).
 # Salva un PNG per fotogramma a 30 fps fissi, poi: ffmpeg -framerate 30 -i <cartella>/f_%04d.png -pix_fmt yuv420p clip.mp4
 # Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 --fixed-fps 30 -s tools/v3_ritratto_vivo.gd -- <cartella>
 
@@ -17,6 +18,9 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(out)
 	Settings.ensure_loaded()
 	Settings.hud_ritratto = true
+	Settings.skip_cutin = false
+	Settings.cutin_once = false
+	RitrattoLampo.tempo_fisso = true      # i lampi contano i fotogrammi: nella clip durano quanto nel gioco
 	_run()
 
 
@@ -59,7 +63,7 @@ func _run() -> void:
 	await _rec(15)
 	bt.call("_pick", "ult")
 	await _rec(45)
-	bt.call("_pick", "")
-	await _rec(30)
+	bt.call("_command", "ult")           # conferma: parte il cut-in con il ritratto 2D che attraversa lo schermo
+	await _rec(90)
 	print("FOTOGRAMMI ", _n)
 	quit()

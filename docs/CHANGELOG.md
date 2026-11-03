@@ -1,6 +1,6 @@
 # Novità
 
-## Non ancora rilasciato · Le dieci facce di Rio
+## 0.44.0 · Le dieci facce di Rio
 
 - Nuovo ritratto di Rio nell'HUD (grigio con i riflessi rosso-arancio), contorni rifiniti come il precedente (`tools/rifinisci_ritratto.py`).
 - Varianti del ritratto (disegni dell'autore, 3/11/2026), ognuna col suo momento: SKILL e ULTIMATE scelte = ombra con lo sguardo magenta;
@@ -8,6 +8,8 @@
   disturbato rosso e blu; K.O. = la sagoma blu sfarfalla e si spegne (SEGNALE PERSO); pausa = Rio scuro sul lato destro; Replica (NG+) =
   skin magenta; caricamento di strada e battaglia = Rio chiaro e olografico, come un ricordo.
 - Ritratto vivo: respira, entra storto e si raddrizza con un rimbalzo, scatta in avanti quando scegli un comando, si avvicina sull'ULTIMATE e cambia faccia con un lampo bianco.
+- Dietro al ritratto scorrono strisce storte, come i fondali di Persona 5.
+- ULTIMATE: sopra la scena il ritratto 2D di Rio (l'ombra con lo sguardo magenta) attraversa lo schermo dentro una fascia del suo colore.
 - Gli altri personaggi useranno le stesse varianti appena ci sono i disegni (`assets/portraits/hud/<id>_<stato>.png`), senza codice nuovo.
 
 ## 0.43.0 · Battaglia più spettacolare: lo sguardo di Echo

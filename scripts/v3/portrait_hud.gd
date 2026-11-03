@@ -182,6 +182,10 @@ func _draw() -> void:
 		off.append(q + Vector2(10, 8))
 	draw_colored_polygon(off, Color(INK, 0.9 * e))
 	draw_colored_polygon(sh, Color(col.darkened(0.38 if _tex_real else 0.55), 0.92 * e))      # disegno a mano: lastra piu' chiara, il nero si stacca
+	# SFONDO CHE SCORRE (autore, 3/11/2026, idea 4): strisce storte chiare che scivolano dentro la lastra, come i fondali
+	# di Persona 5. Ritagliate sulla lastra con Geometry2D (8-10 poligoni piccoli al fotogramma).
+	if _tex_real:
+		_draw_stripes(sh, dx, H, e)
 	draw_colored_polygon(PackedVector2Array([Vector2(dx, H - 330), Vector2(dx + 226, H - 376), Vector2(dx + 240, H - 362), Vector2(dx, H - 314)]), Color(col.lightened(0.15), 0.9 * e))
 	draw_colored_polygon(PackedVector2Array([Vector2(dx + 268, H - 408), Vector2(dx + 286, H - 412), Vector2(dx + PW + 46, H), Vector2(dx + PW + 26, H)]), Color(col, 0.85 * e))
 	# 2) ritratto: in basso, tagliato dal bordo; il volto sta nella meta' destra della zona, le scritte a sinistra e in fondo
@@ -236,6 +240,29 @@ func _draw() -> void:
 	# 5) cosa fa il comando scelto: una lastra scura sopra il ritratto
 	if picked != "":
 		_draw_tip(item(picked), dx, H, e)
+
+
+const STRIPE_GAP: float = 46.0
+const STRIPE_W: float = 13.0
+const STRIPE_SPEED: float = 38.0          # px al secondo: lento, si sente ma non distrae dai comandi
+
+
+func _draw_stripes(slab: PackedVector2Array, dx: float, H: float, e: float) -> void:
+	var c1: Color = Color(col.lightened(0.35), 0.24 * e)
+	var c2: Color = Color(INK, 0.22 * e)
+	var sc: float = fmod(t * STRIPE_SPEED, STRIPE_GAP)
+	var top: float = H - 440.0
+	var lean: float = 150.0                 # inclinazione delle strisce (verso destra salendo)
+	var x: float = dx - 200.0 + sc
+	while x < dx + PW + 80.0:
+		var band := PackedVector2Array([Vector2(x, H), Vector2(x + STRIPE_W, H), Vector2(x + STRIPE_W + lean, top), Vector2(x + lean, top)])
+		for poly in Geometry2D.intersect_polygons(slab, band):
+			draw_colored_polygon(poly, c1)
+		# sottile riga scura subito dopo: le strisce sembrano pieghe di carta, non solo luce
+		var dark := PackedVector2Array([Vector2(x + STRIPE_W, H), Vector2(x + STRIPE_W + 4.0, H), Vector2(x + STRIPE_W + 4.0 + lean, top), Vector2(x + STRIPE_W + lean, top)])
+		for poly2 in Geometry2D.intersect_polygons(slab, dark):
+			draw_colored_polygon(poly2, c2)
+		x += STRIPE_GAP
 
 
 # Il ritratto vive: tutto ruota e si scala attorno al punto in basso al centro del riquadro (dove il busto esce dallo schermo).

@@ -2113,6 +2113,16 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 		edge.start(ch, EdgeCutin.pal_for(ch))
 		dark.visible = false
 		hold = 0.8 if seen else 1.2
+	# il ritratto 2D attraversa lo schermo sopra la scena (Persona; autore, 3/11/2026): l'ombra con lo sguardo acceso
+	var sweep: RitrattoLampo = null
+	var ut: Texture2D = RitrattoVarianti.tex(ch, "ombra")
+	if ut == null:
+		ut = RitrattoVarianti.tex(ch, "hud")
+	if ut != null:
+		sweep = RitrattoLampo.new()
+		_cutin.add_child(sweep)
+		_cutin.move_child(sweep, edge.get_index() + 1 if edge != null else dark.get_index() + 1)
+		sweep.start(ut, "ult", col, hold + 0.45)
 	_cutin_on = true
 	var tw := create_tween()
 	_cutin_tw = tw
@@ -2122,6 +2132,8 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	tw.tween_property(_cutin, "modulate:a", 0.0, 0.18)
 	tw.tween_callback(_cutin_finish)
 	await _cutin_end
+	if is_instance_valid(sweep):
+		sweep.queue_free()               # saltato al tocco: il ritratto sparisce con la scena
 	if edge != null:
 		edge.queue_free()                # le viewport a bassa risoluzione si liberano subito
 		dark.visible = true

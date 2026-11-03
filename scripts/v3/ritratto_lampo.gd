@@ -10,14 +10,17 @@ extends Control
 #   var l := RitrattoLampo.new(); parent.add_child(l); l.start(tex, "break", Color("#ff2340"))
 
 const INK: Color = Color("#120a1c")
-const DURATA: Dictionary = {"break": 0.95, "ko": 1.25}
+const DURATA: Dictionary = {"break": 0.95, "ko": 1.25, "ult": 1.4}
 static var lento: float = 1.0        # solo per le prove (tools/v3_varianti_rio.gd): sotto xvfb i fotogrammi sono lenti
+static var tempo_fisso: bool = false # solo per le clip (--fixed-fps): conta i fotogrammi invece dell'orologio vero
+var _el: float = 0.0
 
 var tex: Texture2D
 var mode: String = "break"
 var col: Color = Color.WHITE
 var _t0: int = 0
 var _seed: int = 0
+var _dur: float = 0.0          # durata data da chi lo lancia (cut-in dell'ULTIMATE: quanto dura la scena); 0 = DURATA
 
 
 func _init() -> void:
@@ -25,7 +28,8 @@ func _init() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
 
-func start(p_tex: Texture2D, p_mode: String, p_col: Color = Color.WHITE) -> void:
+func start(p_tex: Texture2D, p_mode: String, p_col: Color = Color.WHITE, p_dur: float = 0.0) -> void:
+	_dur = p_dur
 	tex = p_tex
 	mode = p_mode
 	col = p_col
@@ -35,12 +39,14 @@ func start(p_tex: Texture2D, p_mode: String, p_col: Color = Color.WHITE) -> void
 
 
 func _k() -> float:
-	return float(Time.get_ticks_msec() - _t0) / 1000.0 / (float(DURATA.get(mode, 1.0)) * lento)
+	var sec: float = _el if tempo_fisso else float(Time.get_ticks_msec() - _t0) / 1000.0
+	return sec / ((_dur if _dur > 0.0 else float(DURATA.get(mode, 1.0))) * lento)
 
 
 func _process(_d: float) -> void:
 	if tex == null:
 		return
+	_el += 1.0 / 30.0 if tempo_fisso else 0.0
 	if _k() >= 1.0:
 		queue_free()
 		return
@@ -53,6 +59,9 @@ func _draw() -> void:
 	var k: float = clampf(_k(), 0.0, 1.0)
 	var W: float = size.x
 	var H: float = size.y
+	if mode == "ult":
+		_draw_ult(k, W, H)
+		return
 	# il ritratto sta a destra, alto quasi come lo schermo, tagliato dal bordo in basso (lontano dal ritratto dell'HUD a sinistra)
 	var h: float = H * 0.92
 	var w: float = h * 0.75
@@ -102,3 +111,40 @@ func _draw() -> void:
 	for j in 3:
 		var ly: float = y + h * rng.randf()
 		draw_rect(Rect2(Vector2(x - 20.0, ly), Vector2(w + 40.0, 2.0)), Color(col.lightened(0.5), 0.5 * a))
+
+
+# CUT-IN DELL'ULTIMATE COL RITRATTO 2D (autore, 3/11/2026, idea 5): sopra la scena alla Edgerunners il disegno grande
+# attraversa lo schermo come in Persona: entra di scatto da destra dentro una fascia storta del suo colore, scivola piano
+# verso sinistra per tutta la scena (la "spinta" della telecamera) ed esce di scatto. Linee di velocita' dietro.
+func _draw_ult(k: float, W: float, H: float) -> void:
+	var h: float = H * 1.12
+	var w: float = h * 0.75
+	var inn: float = 1.0 - pow(1.0 - clampf(k / 0.14, 0.0, 1.0), 3.0)
+	var out: float = pow(clampf((k - 0.86) / 0.14, 0.0, 1.0), 2.0)
+	var drift: float = (k - 0.14) * 70.0
+	var x: float = W * 0.50 + (1.0 - inn) * W * 0.6 - drift - out * W * 0.9
+	var y: float = H - h * 0.92
+	var a: float = 1.0 - out * 0.6
+	# fascia storta: dal basso a sinistra all'alto a destra, con l'ombra d'inchiostro
+	var by0: float = H * 0.34          # fascia stretta: la scena alla Edgerunners dietro resta leggibile sopra e sotto
+	var by1: float = H * 0.80
+	var bx: float = (1.0 - inn) * W * 0.5 + out * -W * 0.6
+	var band := PackedVector2Array([Vector2(bx - 40.0, by0 + 70.0), Vector2(bx + W + 40.0, by0 - 40.0), Vector2(bx + W + 40.0, by1 - 90.0), Vector2(bx - 40.0, by1)])
+	var bsh := PackedVector2Array()
+	for q in band:
+		bsh.append(q + Vector2(0, 14))
+	draw_colored_polygon(bsh, Color(INK, 0.9 * a))
+	draw_colored_polygon(band, Color(col.darkened(0.2), 0.8 * a))
+	# linee di velocita' chiare che corrono a sinistra dentro la fascia
+	var rng := RandomNumberGenerator.new()
+	rng.seed = _seed
+	for i in 9:
+		var ly: float = rng.randf_range(by0 + 30.0, by1 - 60.0)
+		var ln: float = rng.randf_range(120.0, 320.0)
+		var lx: float = fmod(rng.randf() * W - k * W * 2.2 * rng.randf_range(0.7, 1.3), W + ln)
+		if lx < -ln:
+			lx += W + ln
+		draw_rect(Rect2(Vector2(lx, ly), Vector2(ln, 3.0)), Color(col.lightened(0.6), 0.55 * a))
+	# il disegno: ombra piatta e poi lui
+	draw_texture_rect(tex, Rect2(Vector2(x - 18.0, y + 12.0), Vector2(w, h)), false, Color(INK, 0.6 * a))
+	draw_texture_rect(tex, Rect2(Vector2(x, y), Vector2(w, h)), false, Color(1, 1, 1, a))
