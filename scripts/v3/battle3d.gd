@@ -253,7 +253,12 @@ func _ready() -> void:
 	cam.far = 120.0
 	add_child(cam)
 	cam.current = true
-	_cam_overview(true)
+	# con la presentazione del nemico si parte GIA' sulla sua inquadratura: prima si partiva dalla vista generale, si saltava
+	# sul nemico e si tornava indietro (la telecamera cambiava due volte prima del primo turno; autore, 3/11/2026)
+	if _intro_on():
+		_cam_set(INTRO_FROM, ENEMY_POS + Vector3(0, 1.3, 0), 3.0, true)
+	else:
+		_cam_overview(true)
 	_build_ui()
 	_warm_fonts()
 	_refresh_hud()
@@ -1934,15 +1939,24 @@ func _combo_show(col: Color) -> void:
 
 
 # INGRESSO DEL NEMICO: prima dei turni la telecamera di Echo lo inquadra da vicino e lo presenta col cartellino (nome grande,
-# classe dell'Anomalia sotto), avvicinandosi piano; poi torna sulla scena. 1,4 s. Saltato nelle lezioni e con «salta i cut-in».
+# classe dell'Anomalia sotto), avvicinandosi piano. 1,4 s. Saltato nel tutorial del menu e con «salta i cut-in».
+# 3/11/2026 (autore): c'e' anche contro i boss (dentro le Anomalie il cartellino era spento) e nelle lezioni; la telecamera
+# parte gia' qui e alla fine NON torna sulla vista generale: resta sul nemico e il primo turno taglia (CAM) su chi agisce.
+const INTRO_FROM: Vector3 = ENEMY_POS + Vector3(1.7, 1.6, 4.2)
+
+
+func _intro_on() -> bool:
+	return not tutorial and not Settings.skip_cutin
+
+
 func _boss_intro() -> void:
-	if tutorial or lezioni or Settings.skip_cutin or _cam_hud == null:
+	if not _intro_on() or _cam_hud == null:
 		return
 	var bd: Dictionary = BattleContent.BOSSES.get(boss_id, {})
 	var nm: String = str(bd.get("name", "Anomalia")).to_upper()
 	var ttl: String = str(bd.get("title", "ANOMALIA"))
 	var bcol: Color = Ui.BATTLE_COLORS.get(str(bd.get("color", "")), LightFx.MAGIC)
-	_cam_set(ENEMY_POS + Vector3(1.7, 1.6, 4.2), ENEMY_POS + Vector3(0, 1.3, 0), 3.0, true)
+	_cam_set(INTRO_FROM, ENEMY_POS + Vector3(0, 1.3, 0), 3.0, true)
 	_cam_set(ENEMY_POS + Vector3(1.2, 1.45, 3.1), ENEMY_POS + Vector3(0, 1.3, 0), 0.9)      # si avvicina piano
 	var prev_col: Color = _cam_hud._who_col
 	_cam_hud._who_col = bcol
@@ -1951,7 +1965,7 @@ func _boss_intro() -> void:
 	if not is_inside_tree():
 		return
 	_cam_hud._who_col = prev_col
-	_cam_overview()
+	_last_turn_uid = "ingresso"       # il primo turno taglia dalla presentazione a chi agisce (un solo cambio, col cartellino)
 
 
 # PARATA PERFETTA: un decimo di secondo di fermo e un'inquadratura stretta su chi para (di lato, all'altezza del petto),

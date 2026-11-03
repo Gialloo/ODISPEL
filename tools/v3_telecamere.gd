@@ -4,9 +4,11 @@ extends SceneTree
 # (la sua telecamera va in frantumi e perde il segnale), la cura che la ricalibra, il cambio di telecamera tra i turni, e le sei
 # idee per una battaglia piu' spettacolare: ingresso del nemico, colpo finale, zoom sul punto debole, parata perfetta, Rio in diretta,
 # lunga esposizione.
-# Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_telecamere.gd -- <cartella> [touch|pc]
+# Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_telecamere.gd -- <cartella> [touch|pc] [arena]
+# arena: per esempio anomalia_rossa, per provare tutto dentro un'Anomalia come contro i boss (3/11/2026)
 
 var out: String = "/tmp/v3telecamere"
+var arena: String = "tangenziale"
 
 
 func _init() -> void:
@@ -15,6 +17,8 @@ func _init() -> void:
 		out = a[0]
 	if a.size() > 1 and a[1] == "touch":
 		TouchUi.force = true
+	if a.size() > 2:
+		arena = a[2]
 	DirAccess.make_dir_recursive_absolute(out)
 	Settings.ensure_loaded()
 	Settings.hud_ritratto = true
@@ -30,7 +34,7 @@ func _shot(n: String, frames: int = 3) -> void:
 func _run() -> void:
 	await process_frame
 	var bt: Node = load("res://scripts/v3/battle3d.gd").new()
-	bt.configure({"boss": "autovelox", "livello": 11, "arena": "tangenziale"})
+	bt.configure({"boss": "autovelox", "livello": 11, "arena": arena})
 	root.add_child(bt)
 	# 0: ingresso del nemico (prima dei turni)
 	await create_timer(1.2).timeout
