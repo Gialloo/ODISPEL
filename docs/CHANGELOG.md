@@ -1,6 +1,6 @@
 # Novità
 
-## Non ancora rilasciato · Personaggi a colori nel BREAK
+## 0.46.0 · Personaggi a colori nel BREAK
 
 - BREAK e attacco di squadra: la scena si sbianca e si sfoca, i personaggi della squadra restano nitidi e a colori sopra (seconda telecamera solo per loro, `scripts/v3/char_pop.gd`, accesa solo in quei momenti).
 
