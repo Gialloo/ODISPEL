@@ -2115,9 +2115,8 @@ func _play_cutin(u: Dictionary, ult_name: String) -> void:
 		hold = 0.8 if seen else 1.2
 	# il ritratto 2D attraversa lo schermo sopra la scena (Persona; autore, 3/11/2026): l'ombra con lo sguardo acceso
 	var sweep: RitrattoLampo = null
+	# spento con le varianti (autore, 3/11/2026: niente ritratto nel cut-in dell'ULTIMATE): torna con RitrattoVarianti.attive
 	var ut: Texture2D = RitrattoVarianti.tex(ch, "ombra")
-	if ut == null:
-		ut = RitrattoVarianti.tex(ch, "hud")
 	if ut != null:
 		sweep = RitrattoLampo.new()
 		_cutin.add_child(sweep)

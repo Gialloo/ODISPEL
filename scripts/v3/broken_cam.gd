@@ -14,7 +14,7 @@ extends CanvasLayer
 
 const SEEDS: int = 14
 const BURST_TIME: float = 0.7
-const BREAK_TIME: float = 1.15
+const BREAK_TIME: float = 1.4         # BREAK piu' lungo (autore, 3/11/2026: «non abbastanza soddisfacente»): resta sospeso, poi cade
 
 const SHADER: String = """
 shader_type canvas_item;
@@ -31,6 +31,123 @@ uniform float aspect = 1.7778;
 uniform vec2 pts[14];
 
 float h1(float n) { return fract(sin(n * 91.345) * 47453.5453); }
+
+// BREAK «rompi la telecamera» (riferimenti dell'autore, 3/11/2026): il vetro si spacca in grandi schegge storte, ognuna mostra
+// la scena spostata, ruotata e ingrandita (il nemico si sdoppia), con filo bianco e inchiostro sui bordi; alcune schegge
+// cambiano colore (rossa a due toni, slavata, in negativo). Poi la telecamera "salta": un lampo bianco di blocchi digitali
+// (strisce nere, barre di colore), e torna la scena con qualche riga ancora fuori posto.
+vec3 break_cam(vec2 uv, float fi, float edge, vec2 dir, float edge_w, vec3 clean) {
+	float hold = 1.0 - smoothstep(0.58, 0.6, prog);          // schegge in vista
+	float gl = step(0.6, prog) * (1.0 - step(0.75, prog));    // lampo di blocchi digitali (~0.2 s)
+	float after = smoothstep(0.75, 1.0, prog);
+	if (prog >= 0.75) {
+		// PRESTAZIONI: finite le schegge e i blocchi resta solo la scena con le righe fuori posto (3 letture, non 20)
+		float fa = floor(prog * 40.0);
+		float a3 = 1.0 - after;
+		float rw = floor(uv.y * 26.0);
+		vec2 su2 = uv;
+		if (h1(rw * 7.3 + fa) < 0.3 * a3) {
+			su2.x += (h1(rw + fa * 1.7) - 0.5) * 0.09 * a3;
+		}
+		su2 = clamp(su2, vec2(0.001), vec2(0.999));
+		vec3 bk = texture(screen_tex, su2).rgb;
+		bk.r = texture(screen_tex, clamp(su2 + vec2(0.007 * a3, 0.0), vec2(0.001), vec2(0.999))).r;
+		bk.b = texture(screen_tex, clamp(su2 - vec2(0.007 * a3, 0.0), vec2(0.001), vec2(0.999))).b;
+		return bk;
+	}
+	float pop = smoothstep(0.0, 0.04, prog) * max(burst, 0.6);
+	float cw = 0.45 + 0.55 * edge_w;                           // al centro le schegge si spostano meno: l'azione resta leggibile
+	vec2 o2 = (dir * 0.04 + (vec2(h1(fi + 3.0), h1(fi + 5.0)) - 0.5) * 0.08) * cw * pop * (1.0 + prog * 0.5);
+	float an = (h1(fi + 7.0) - 0.5) * 0.24 * cw * pop;
+	float zm = 1.0 + (0.03 + 0.13 * h1(fi + 11.0)) * pop;
+	vec2 p = uv - pts[int(fi)];
+	p.x *= aspect;
+	p = mat2(vec2(cos(an), sin(an)), vec2(-sin(an), cos(an))) * p;
+	p.x /= aspect;
+	p /= zm;
+	vec2 s = clamp(pts[int(fi)] + p - o2, vec2(0.001), vec2(0.999));
+	// sfocatura radiale verso il colpo con i tre colori separati (arcobaleno): al centro resta nitido e a colori
+	vec2 toc = s - impact;
+	vec2 tq = toc; tq.x *= aspect;
+	float bl = smoothstep(0.1, 0.55, length(tq)) * pop;
+	vec3 c = vec3(0.0);
+	for (int i = 0; i < 4; i++) {        // PRESTAZIONI: 4 campioni bastano (12 letture), la scia resta uguale
+		float f = 1.0 - float(i) * 0.027 * bl;
+		c.r += texture(screen_tex, clamp(impact + toc * f, vec2(0.001), vec2(0.999))).r;
+		c.g += texture(screen_tex, clamp(impact + toc * f * (1.0 - 0.012 * bl), vec2(0.001), vec2(0.999))).g;
+		c.b += texture(screen_tex, clamp(impact + toc * f * (1.0 - 0.024 * bl), vec2(0.001), vec2(0.999))).b;
+	}
+	c /= 4.0;
+	float t = h1(fi + 31.0);
+	float lum = dot(c, vec3(0.3, 0.59, 0.11));
+	// luce sovraesposta e colori quasi spenti (secondo riferimento dell'autore, 3/11/2026): la notte si sbianca, il centro no
+	vec3 bleach = vec3(0.74, 0.74, 0.76) + vec3(lum) * 0.4 + (c - vec3(lum)) * 0.25;
+	c = mix(c, bleach, (0.4 + 0.6 * bl) * pop);
+	if (t < 0.12) {
+		c = mix(vec3(0.16, 0.02, 0.06), vec3(1.0, 0.14, 0.25), smoothstep(0.55, 0.85, dot(c, vec3(0.33))));   // rossa a due toni
+	} else if (t < 0.22) {
+		c = vec3(1.08) - c * 0.95;                                                             // negativo: scheggia scura
+	}
+	float wl = 0.0022;
+	float ink = 1.0 - smoothstep(wl, wl * 3.2, edge);
+	c = mix(c, vec3(0.07, 0.04, 0.1), ink * 0.85 * pop);
+	c = mix(c, vec3(1.0), (1.0 - smoothstep(0.0, wl, edge)) * pop);
+	float pr = (1.0 - smoothstep(wl, wl * 7.0, edge)) * (1.0 - ink * 0.6) * pop;
+	c += (0.5 + 0.5 * cos(6.2831 * (edge * 160.0 + vec3(0.0, 0.33, 0.67)))) * pr * 0.35;   // frangia prismatica
+	// dopo il lampo: la scena torna, con qualche riga ancora spostata e i colori separati che si calmano
+	float fr = floor(prog * 40.0);
+	float a2 = 1.0 - after;
+	float row = floor(uv.y * 26.0);
+	vec2 su = uv;
+	if (h1(row * 7.3 + fr) < 0.3 * a2) {
+		su.x += (h1(row + fr * 1.7) - 0.5) * 0.09 * a2;
+	}
+	su = clamp(su, vec2(0.001), vec2(0.999));
+	vec3 back = texture(screen_tex, su).rgb;
+	back.r = texture(screen_tex, clamp(su + vec2(0.007 * a2, 0.0), vec2(0.001), vec2(0.999))).r;
+	back.b = texture(screen_tex, clamp(su - vec2(0.007 * a2, 0.0), vec2(0.001), vec2(0.999))).b;
+	// fogli bianchi che volano via dal colpo, girando su se stessi
+	for (int k = 0; k < 9; k++) {
+		float fk = float(k);
+		float aa = fk * 2.399 + h1(fk + 41.0);
+		vec2 dk = vec2(cos(aa), sin(aa));
+		vec2 pc = impact + dk * (0.06 + (0.25 + 0.5 * h1(fk + 43.0)) * prog) / vec2(aspect, 1.0) + vec2(0.0, -0.08 * prog * prog);
+		vec2 q = uv - pc; q.x *= aspect;
+		float sp = prog * (6.0 + 8.0 * h1(fk + 47.0)) + fk;
+		q = mat2(vec2(cos(sp), sin(sp)), vec2(-sin(sp), cos(sp))) * q;
+		vec2 hs = vec2(0.028, 0.017 * abs(cos(sp * 1.7)) + 0.003);
+		float inp = step(abs(q.x), hs.x) * step(abs(q.y), hs.y);
+		c = mix(c, vec3(0.97, 0.97, 1.0) * (0.85 + 0.15 * cos(sp * 1.7)), inp * pop);
+	}
+	vec3 res = mix(back, c, hold);
+	if (gl > 0.5) {
+		// fondo bianco con blocchi neri a strisce, barre di colore e pezzi di scena fuori posto
+		vec3 g = vec3(0.95, 0.94, 0.92);
+		vec2 g1 = vec2(9.0, 7.0);
+		vec2 c1 = floor(uv * g1);
+		float r1 = h1(c1.x * 13.1 + c1.y * 71.7 + fr * 3.3);
+		vec2 f1 = fract(uv * g1);
+		vec2 lo = vec2(h1(r1 * 91.0), h1(r1 * 37.0)) * 0.5;
+		vec2 hi = lo + 0.25 + 0.6 * vec2(h1(r1 * 53.0), h1(r1 * 17.0));
+		float inb = step(lo.x, f1.x) * step(lo.y, f1.y) * step(f1.x, hi.x) * step(f1.y, hi.y);
+		if (r1 > 0.82 && inb > 0.5) {
+			g = texture(screen_tex, clamp(uv + vec2(r1 - 0.91, 0.0) * 0.6, vec2(0.001), vec2(0.999))).rgb;
+		} else if (r1 < 0.4 && inb > 0.5) {
+			float st = step(0.5, fract(uv.x * 160.0 * aspect * (0.5 + h1(r1 * 5.0)) + r1 * 7.0));
+			g = vec3(mix(0.04, 0.55, st * step(0.45, h1(r1 * 9.0))));
+		}
+		vec2 c2 = floor(uv * vec2(5.0, 34.0));
+		float r2 = h1(c2.x * 3.7 + c2.y * 19.3 + fr * 5.1);
+		if (r2 < 0.1) {
+			float bi = floor(fract(uv.x * 3.0 + r2 * 9.0) * 6.0);
+			vec3 bar = bi < 1.0 ? vec3(1.0, 0.45, 0.15) : bi < 2.0 ? vec3(0.2, 0.75, 0.35) : bi < 3.0 ? vec3(0.2, 0.35, 0.95)
+				: bi < 4.0 ? vec3(1.0, 0.4, 0.6) : bi < 5.0 ? vec3(1.0, 0.9, 0.2) : vec3(0.08);
+			g = bar;
+		}
+		res = g;
+	}
+	return mix(res, vec3(1.0), glow * 0.7);
+}
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
@@ -50,6 +167,10 @@ void fragment() {
 	float edge_w = smoothstep(0.12, 0.55, length(cc));
 	float move = crack * 0.22 * edge_w + burst;
 	vec2 dir = normalize(pts[id] - impact + vec2(0.0001));
+	// PRESTAZIONI: il BREAK ha il suo disegno; il resto (crepe della vita) non si calcola per niente, 4 letture in meno a pixel
+	if (big > 0.5) {
+		COLOR = vec4(break_cam(uv, fi, d2 - d1, dir, edge_w, vec3(0.0)), 1.0);
+	} else {
 	vec2 off = (vec2(h1(fi + 3.0), h1(fi + 5.0)) - 0.5) * vec2(0.05, 0.04) * move + dir * 0.05 * burst;
 	// BREAK: le schegge volano verso la camera (si ingrandiscono e si allontanano dal punto d'impatto), ognuna con la sua spinta (profondita')
 	float depth = 0.4 + 0.6 * h1(fi + 11.0);
@@ -61,8 +182,14 @@ void fragment() {
 	p = mat2(vec2(cos(ang), sin(ang)), vec2(-sin(ang), cos(ang))) * p;
 	p.x /= aspect;
 	p /= zoom;
+	// BREAK: dopo la sospensione ogni scheggia cade per conto suo (prima le esterne), ruotando, e dietro torna la scena pulita
+	float fs = 0.42 + 0.33 * h1(fi + 23.0) - 0.12 * edge_w;
+	float fall = smoothstep(fs, min(fs + 0.4, 1.0), prog) * big;
+	off.y -= fall * fall * 0.55 * (0.6 + 0.4 * depth);
+	off.x -= fall * (h1(fi + 29.0) - 0.5) * 0.12;
 	vec2 suv = clamp(pts[id] + p + off, vec2(0.001), vec2(0.999));
 	vec3 col = texture(screen_tex, suv).rgb;
+	vec3 clean = texture(screen_tex, uv).rgb;
 	// aberrazione cromatica solo nei primi istanti del BREAK (rosso e blu leggermente separati)
 	if (big > 0.5) {
 		vec2 ab = dir * 0.012 * burst;
@@ -98,14 +225,26 @@ void fragment() {
 		float sid = floor(k + 0.5);
 		float sp = abs(k - sid) / 9.0 * 6.2831853 * rq;   // distanza dal raggio in unita' dello schermo
 		float reach = (0.18 + 0.75 * h1(sid * 3.7 + 1.0)) * smoothstep(0.0, 0.25, prog);
-		float spoke = (1.0 - smoothstep(0.0012, 0.0034, sp)) * (1.0 - smoothstep(reach * 0.8, reach, rq)) * burst * 3.0;
-		col = mix(col, vec3(1.0), clamp(spoke, 0.0, 1.0) * 0.9);
+		float web = 1.0 - smoothstep(0.5, 0.85, prog);           // la ragnatela si spegne mentre le schegge cadono
+		float spoke = (1.0 - smoothstep(0.002, 0.005, sp)) * (1.0 - smoothstep(reach * 0.8, reach, rq)) * burst * 3.0 * web;
+		col = mix(col, vec3(1.0), clamp(spoke, 0.0, 1.0) * 0.95);
+		// RAGNATELA: anelli spezzati attorno al colpo, come il vetro vero colpito in un punto (tra un raggio e l'altro)
+		for (int r = 0; r < 4; r++) {
+			float fr = float(r);
+			float rad = (0.045 + 0.075 * fr + 0.03 * fr * fr) * (0.85 + 0.3 * h1(sid * 1.3 + fr * 7.0));
+			float on = step(0.3, h1(sid * 5.1 + fr * 3.3)) * step(rad, reach * 1.1);
+			float ring = (1.0 - smoothstep(0.0015, 0.0042, abs(rq - rad))) * on * burst * web;
+			col = mix(col, vec3(0.97, 0.99, 1.0), clamp(ring, 0.0, 1.0) * 0.85);
+		}
 		float shock = abs(rq - prog * 0.9);
 		float wave = (1.0 - smoothstep(0.0, 0.02 + 0.03 * prog, shock)) * (1.0 - prog) * burst;
 		col += vec3(0.6, 0.9, 1.0) * wave * 0.8;
 	}
+	// la scheggia caduta lascia la scena pulita
+	col = mix(col, clean, smoothstep(0.55, 1.0, fall));
 	col = mix(col, vec3(1.0), glow * (0.35 + 0.35 * big));
 	COLOR = vec4(col, 1.0);
+	}
 }
 """
 
@@ -200,7 +339,7 @@ func shatter(key: String, strength: float = 1.0, impact: Vector2 = Vector2(-1, -
 		_hit_stop()
 
 
-# Fermo immagine di ~0.09 s (tempo reale) sul colpo che rompe: Persona/Star Rail, il colpo "pesa". Solo se il gioco corre normale
+# Fermo immagine di ~0.13 s (tempo reale) sul colpo che rompe: Persona/Star Rail, il colpo "pesa". Solo se il gioco corre normale
 # (non in pausa, non quando il tempo e' gia' rallentato) e si rimette a posto da solo.
 func _hit_stop() -> void:
 	if Engine.time_scale < 0.5 or Engine.time_scale > 2.0:
@@ -209,7 +348,8 @@ func _hit_stop() -> void:
 	_stop_gen += 1
 	var gen: int = _stop_gen
 	Engine.time_scale = 0.06
-	await get_tree().create_timer(0.09, true, false, true).timeout
+	await get_tree().create_timer(0.13, true, false, true).timeout      # un poco piu' lungo: il colpo pesa di piu'
+
 	if gen == _stop_gen and is_equal_approx(Engine.time_scale, 0.06):
 		Engine.time_scale = prev
 
@@ -250,7 +390,8 @@ func _process(delta: float) -> void:
 		_burst_t += delta
 		k = clampf(_burst_t / _burst_dur, 0.0, 1.0)
 		# il BREAK resta teso un attimo (le schegge sospese) e poi ricade; il colpo normale salta subito e ricade
-		b = _burst * (1.0 - k) * (1.0 - k) if _big < 0.5 else _burst * (1.0 - smoothstep(0.35, 1.0, k))
+		# BREAK: le schegge restano sospese e poi cadono (lo fa lo shader con prog), non tornano al loro posto
+		b = _burst * (1.0 - k) * (1.0 - k) if _big < 0.5 else _burst * (1.0 - smoothstep(0.9, 1.0, k))
 	_rect.visible = _crack > 0.005 or b > 0.005
 	if not _rect.visible:
 		return
@@ -259,6 +400,6 @@ func _process(delta: float) -> void:
 	_mat.set_shader_parameter("crack", _crack)
 	_mat.set_shader_parameter("burst", b)
 	_mat.set_shader_parameter("prog", k)
-	_mat.set_shader_parameter("big", _big)
+	_mat.set_shader_parameter("big", _big if _burst_t < _burst_dur else 0.0)   # finito il BREAK restano solo le crepe della vita
 	# lampo bianco nei primi 0.15 s, solo se i lampi sono accesi nelle impostazioni
 	_mat.set_shader_parameter("glow", Settings.flash * maxf(0.0, 1.0 - _burst_t / 0.15) * _burst if _burst_t < 0.15 else 0.0)
