@@ -537,6 +537,17 @@ func _cam_set(pos: Vector3, look: Vector3, rate: float = 3.0, snap: bool = false
 	if snap or Engine.get_process_frames() == _cut_frame:
 		_cam_pos = pos
 		_cam_look = look
+		_glide_t = _glide_len           # uno stacco voluto (parata, fermo, primo piano) interrompe la carrellata
+		_cam_vel = Vector3.ZERO
+		_look_vel = Vector3.ZERO
+	elif _glide_t < _glide_len and _glide_t > 0.0:
+		# meta nuova a carrellata in corso: si riparte da dove si e', col tempo che restava (mai meno di 0,35 s), senza strappi
+		var left: float = maxf(0.35, _glide_len - _glide_t)
+		_glide_from = _cam_pos
+		_glide_from_look = _cam_look
+		_glide_t = 0.0
+		_glide_len = left
+		_glide_lift = 0.0
 
 
 # Tiene la telecamera dentro l'arena: se un'inquadratura di lato uscirebbe oltre i muri, la si riporta dentro e si
@@ -624,8 +635,22 @@ func _process(delta: float) -> void:
 	_update_wheel()
 	_place_boss_tag()
 	_place_greg_tag()
-	_cam_pos = _cam_pos.lerp(_cam_want_pos, minf(1.0, rd * _cam_rate))
-	_cam_look = _cam_look.lerp(_cam_want_look, minf(1.0, rd * _cam_rate))
+	if _glide_t < _glide_len:
+		# CARRELLATA: da dove si era a dove si va, partenza e arrivo morbidi e un piccolo arco verso l'alto (si passa sopra le
+		# teste, non attraverso i compagni). La meta puo' cambiare durante il viaggio: si arriva sempre all'ultima chiesta.
+		_glide_t = minf(_glide_len, _glide_t + rd)
+		var q: float = _glide_t / _glide_len
+		var e2: float = q * q * q * (q * (q * 6.0 - 15.0) + 10.0)
+		_cam_pos = _glide_from.lerp(_cam_want_pos, e2) + Vector3(0, sin(PI * q) * _glide_lift, 0)
+		_cam_look = _glide_from_look.lerp(_cam_want_look, e2)
+		_cam_vel = Vector3.ZERO           # la carrellata finisce ferma: la molla riparte da zero, senza strappo
+		_look_vel = Vector3.ZERO
+	else:
+		# MOLLA SMORZATA al posto dell'inseguimento esponenziale: quello partiva alla massima velocita' (lo strappo che si
+		# sentiva a ogni nuova inquadratura); questa accelera e frena morbida, con la stessa prontezza (3/11/2026)
+		var w: float = _cam_rate * 1.7
+		_cam_pos = _damp(_cam_pos, _cam_want_pos, w, rd, true)
+		_cam_look = _damp(_cam_look, _cam_want_look, w, rd, false)
 	var sh := Vector3.ZERO
 	if _shake > 0.0:
 		_shake = maxf(0.0, _shake - rd * 3.0)
@@ -1062,8 +1087,9 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		if tid == Gregario.ID and not Gregario.alive(b):
 			_set_target("")             # scheggia abbattuta: il mirino torna sul nemico principale
 	else:
-		_cam_front(uid)
+		# mossa su se stessi (guardia, cura): prima era uno stacco secco davanti al personaggio; ora una carrellata (3/11/2026)
 		_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
+		_cam_glide(0.5)
 		var a2: Tween = cv.cast()
 		await _wait(0.16)
 		LightFx.rise(self, home[uid], col)
@@ -1078,8 +1104,11 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 	await _wait({"basic": 0.15, "skill": 0.3, "ult": 0.45}.get(kind, 0.2) + (0.35 if weak_hit else 0.0))
 	if got_slancio and is_inside_tree() and not ended:
 		await _slancio_moment(u)
-	# dopo l'inquadratura frontale si stacca di netto (cambio di telecamera): niente viaggio attraverso i compagni
-	_cam_overview(tgt != "enemy")
+	# dopo l'inquadratura sul personaggio si torna alla vista generale con una carrellata ad arco (sopra le teste, non
+	# attraverso i compagni); prima era uno stacco secco (3/11/2026, autore: «deve essere fluido»)
+	_cam_overview()
+	if tgt != "enemy":
+		_cam_glide(0.55)
 
 
 func _boss_turn() -> void:
@@ -1095,6 +1124,9 @@ func _boss_turn() -> void:
 	var boss_u: Dictionary = BattleState.boss(b)
 	var stunned: bool = int(boss_u.get("stun", 0)) > 0
 	_cam_boss()
+	if _last_turn_uid != "nemico":
+		_cam_glide(0.6)                 # carrellata fluida da chi ha agito al nemico (prima scivolava di colpo)
+	_last_turn_uid = "nemico"           # il prossimo personaggio arriva con la carrellata e il cartellino della sua CAM
 	var m: VendingVisual = vis[BattleState.BOSS_ID]
 	if stunned:
 		await _wait(0.3)
@@ -2050,11 +2082,45 @@ func _cam_switch(uid: String) -> void:
 	if home.has(prev):
 		dir = signf((home[uid] as Vector3).x - (home[prev] as Vector3).x)
 	_cam_hud.cut(dir if dir != 0.0 else 1.0)
-	# taglio secco: il disturbo copre il salto. Vale per tutte le inquadrature chieste in questo fotogramma (alle spalle e poi
-	# quella della scelta), cosi' dopo il taglio si e' gia' dove si sceglie, senza carrellata
-	_cut_frame = Engine.get_process_frames()
-	_cam_pos = _cam_want_pos
-	_cam_look = _cam_want_look
+	# 3/11/2026 (autore: «a scatti, deve spostarsi in modo fluido»): niente piu' taglio secco. La telecamera fa una carrellata
+	# morbida verso chi agisce (dal nemico, dalla presentazione o da un compagno); il disturbo resta, leggero, sopra il viaggio.
+	_cam_glide(0.62 if home.has(prev) else 0.75)
+
+
+var _cam_vel: Vector3 = Vector3.ZERO
+var _look_vel: Vector3 = Vector3.ZERO
+
+
+# Molla con smorzamento critico (come SmoothDamp): niente rimbalzo, partenza e arrivo dolci.
+func _damp(x: Vector3, to: Vector3, w: float, dt: float, is_pos: bool) -> Vector3:
+	var v: Vector3 = _cam_vel if is_pos else _look_vel
+	var k: float = w * dt
+	var ex: float = 1.0 / (1.0 + k + 0.48 * k * k + 0.235 * k * k * k)
+	var ch: Vector3 = x - to
+	var tmp: Vector3 = (v + ch * w) * dt
+	v = (v - tmp * w) * ex
+	var out: Vector3 = to + (ch + tmp) * ex
+	if is_pos:
+		_cam_vel = v
+	else:
+		_look_vel = v
+	return out
+
+
+# Carrellata a tempo fisso verso l'inquadratura chiesta (anche quelle chieste subito dopo: la meta segue l'ultima).
+var _glide_from: Vector3
+var _glide_from_look: Vector3
+var _glide_t: float = 1.0
+var _glide_len: float = 0.0
+var _glide_lift: float = 0.0
+
+
+func _cam_glide(secs: float) -> void:
+	_glide_from = _cam_pos
+	_glide_from_look = _cam_look
+	_glide_t = 0.0
+	_glide_len = maxf(0.05, secs)
+	_glide_lift = clampf(_cam_pos.distance_to(_cam_want_pos) * 0.08, 0.0, 0.7)
 
 
 # Chi e' di turno: cerchio di luce del suo colore ai piedi e la telecamera che lo inquadra (vuoto = turno del nemico)
