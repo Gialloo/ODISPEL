@@ -1,5 +1,11 @@
 # Novità
 
+## Prossima · Telecamera fluida
+
+- Cambio di turno senza scatti: la telecamera fa una carrellata morbida ad arco da un personaggio all'altro, dalla presentazione al primo personaggio, dal personaggio al nemico e ritorno (prima era un taglio secco coperto dal disturbo).
+- Ogni spostamento della telecamera parte e frena dolcemente (molla smorzata al posto dell'inseguimento che partiva a tutta velocità); anche guardia e cure arrivano e tornano con una carrellata.
+- Disturbo del cambio di telecamera più leggero: niente fondo bianco, blocchi 8-bit a metà opacità e più brevi, linea e fasce più tenui. Il BREAK resta pieno com'era.
+
 ## 0.47.0 · Tutto il combattimento nuovo anche contro i boss
 
 - I boss si combattono dentro le Anomalie, dove la telecamera di Echo spegneva tutto: ora anche lì ci sono il cambio di telecamera coi blocchi digitali e il cartellino CAM, la presentazione del nemico, SEGNALE PERSO / RECUPERATO, i disturbi del BREAK, PARATA PERFETTA, ZOOM x2 e Rio in diretta. A riposo resta «NESSUN SEGNALE».

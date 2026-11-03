@@ -66,6 +66,7 @@ func _run(id: String, ar: String) -> void:
 	print("TAGLI: ", cams)
 	await _shot("primo_turno")
 	# turni giocati: quando tocca a noi foto dell'HUD, poi ATTACCO (ogni terzo turno ABILITA'); tra un turno e l'altro foto ogni 0,6 s
+	_watch_cam(bt)
 	var turns: int = 0
 	var tt: int = Time.get_ticks_msec()
 	var sh: int = 0
@@ -83,5 +84,33 @@ func _run(id: String, ar: String) -> void:
 		sh += 1
 		await _shot("azione_%03d" % sh)
 	print("turni giocati: ", turns, " finito: ", bt.get("ended") if is_instance_valid(bt) else "?")
+	print("STRAPPI DI TELECAMERA: ", _jumps.size(), " ", _jumps.slice(0, 8))
 	print("OK boss_prova")
 	quit(0)
+
+
+# Fluidita' della telecamera durante i turni: conta gli strappi (velocita' che cambia piu' di 0,3 m tra due fotogrammi; usare con --write-movie per un passo fisso) (gli stacchi voluti,
+# come parata e colpo finale, ci sono comunque; i cambi di turno non devono piu' esserci).
+var _jumps: Array = []
+
+
+func _watch_cam(bt: Node) -> void:
+	var prev: Vector3 = Vector3.ZERO
+	var vel: Vector3 = Vector3.ZERO
+	var t0: int = Time.get_ticks_msec()
+	while is_instance_valid(bt) and bt.is_inside_tree():
+		await process_frame
+		if not is_instance_valid(bt):
+			return
+		var c: Camera3D = bt.get("cam")
+		if c == null:
+			continue
+		var p: Vector3 = c.global_position
+		# strappo = la velocita' cambia di colpo tra un fotogramma e l'altro (un taglio, o una partenza a scatto)
+		if prev != Vector3.ZERO:
+			var v: Vector3 = p - prev
+			if (v - vel).length() > 0.3:
+				_jumps.append("%d ms %.2f m" % [Time.get_ticks_msec() - t0, (v - vel).length()])
+				print("STRAPPO %d ms %.2f m" % [Time.get_ticks_msec() - t0, (v - vel).length()])
+			vel = v
+		prev = p
