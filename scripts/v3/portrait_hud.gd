@@ -47,6 +47,13 @@ var _rects: Dictionary = {}                   # kind -> Rect2 in coordinate del 
 var _hov: String = ""
 var stato: String = ""                        # variante per la vita: "", "ferito", "critico" (RitrattoVarianti)
 var _base: String = "hud"                     # "hud" o "ng" (skin della Replica)
+# RITRATTO VIVO (autore, 3/11/2026: «non sono vive, non sembra Persona»): respira, entra a scatto con il rimbalzo,
+# scatta in avanti quando scegli un comando e cambia faccia con un lampo bianco. Solo trasformazioni del disegno che
+# c'e' gia' (nessuna texture in piu'): un _draw al fotogramma mentre l'HUD e' visibile, che sul telefono costa poco.
+var _punch: float = 0.0                        # 1 = appena scelto un comando o cambiata variante, poi scende
+var _swap: float = 0.0                         # lampo bianco della sagoma quando cambia la variante
+var _shown: Texture2D
+var _born: float = 0.0                         # tempo dell'ultima entrata (per l'oscillazione che si assesta)
 
 
 func _init() -> void:
@@ -132,6 +139,8 @@ func setup(p_who: String, p_col: Color, p_items: Array) -> void:
 
 
 func pick(kind: String) -> void:
+	if kind != "" and kind != picked:
+		_punch = 1.0
 	super(kind)
 	queue_redraw()
 
@@ -146,8 +155,12 @@ func _process(delta: float) -> void:
 	sel = move_toward(sel, 1.0 if picked != "" else 0.0, delta / (0.4 if picked == "ult" else 0.2))
 	var was_f: float = flash
 	flash = maxf(0.0, flash - delta * 3.2)
-	# PRESTAZIONI: si ridisegna solo mentre qualcosa si muove (entrata, scelta, lampo)
-	if appear != was_a or sel != was_s or flash != was_f:
+	_punch = maxf(0.0, _punch - delta * 4.0)
+	_swap = maxf(0.0, _swap - delta * 5.0)
+	if was_a == 0.0 and appear > 0.0:
+		_born = t
+	# PRESTAZIONI: il disegno a mano respira, quindi si ridisegna a ogni fotogramma; il segnaposto solo quando si muove
+	if _tex_real or appear != was_a or sel != was_s or flash != was_f:
 		queue_redraw()
 
 
@@ -173,6 +186,13 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([Vector2(dx + 268, H - 408), Vector2(dx + 286, H - 412), Vector2(dx + PW + 46, H), Vector2(dx + PW + 26, H)]), Color(col, 0.85 * e))
 	# 2) ritratto: in basso, tagliato dal bordo; il volto sta nella meta' destra della zona, le scritte a sinistra e in fondo
 	if _tex != null:
+		var now_t: Texture2D = _tex_now()
+		if now_t != _shown:
+			if _shown != null:
+				_swap = 1.0          # cambia faccia (ombra, ferito...): lampo bianco della sagoma e piccolo scatto
+				_punch = maxf(_punch, 0.6)
+			_shown = now_t
+		_live_transform(dx, H, e)
 		var r := Rect2(Vector2(dx, H - PH), Vector2(PW, PH))
 		if not _tex_real:
 			# segnaposto (mezzobusto 512x768, volto al centro): spostato e ingrandito per mettere il volto nella sua zona
@@ -190,7 +210,10 @@ func _draw() -> void:
 		else:
 			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
 			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
-		draw_texture_rect(_tex_now(), r, false, Color(1, 1, 1, e))
+		draw_texture_rect(now_t, r, false, Color(1, 1, 1, e))
+		if _swap > 0.0 and _sil != null and _tex_real:
+			draw_texture_rect(_sil, r, false, Color(1, 1, 1, 0.85 * _swap * _swap))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# 3) comandi attorno al ritratto
 	_usz = 30
 	for kind in ["ult", "skill", "attack", "guard"]:
@@ -213,6 +236,25 @@ func _draw() -> void:
 	# 5) cosa fa il comando scelto: una lastra scura sopra il ritratto
 	if picked != "":
 		_draw_tip(item(picked), dx, H, e)
+
+
+# Il ritratto vive: tutto ruota e si scala attorno al punto in basso al centro del riquadro (dove il busto esce dallo schermo).
+# - respiro: 1,2% di altezza e 3 px su e giu', lento (circa 3 s), sfasati tra loro come un respiro vero;
+# - entrata: arriva storto e si raddrizza con un rimbalzo smorzato (alla Persona, la posa "scatta" al suo posto);
+# - scelta: scatto in avanti verso il nemico (+6% e un poco piegato), poi resta appoggiato in avanti finche' sceglie;
+# - ULTIMATE scelta: si avvicina ancora (zoom lento), come la telecamera di Persona prima dell'All-Out.
+func _live_transform(dx: float, H: float, e: float) -> void:
+	if not _tex_real:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		return
+	var piv := Vector2(dx + PW * 0.5, H)
+	var br: float = sin(t * 2.1)
+	var settle: float = t - _born
+	var wob: float = exp(-settle * 5.0) * sin(settle * 18.0) * 0.06 if settle < 1.2 else 0.0
+	var rot: float = -(1.0 - e) * 0.12 + wob + 0.03 * sel + 0.05 * _punch
+	var sc: float = 1.0 + 0.012 * br + 0.06 * _punch * _punch + (0.05 * sel if picked == "ult" else 0.0)
+	var off := Vector2(14.0 * sel + 10.0 * _punch, -3.0 * sin(t * 2.1 + 0.7))
+	draw_set_transform_matrix(Transform2D(rot, Vector2(sc, sc), 0.0, piv + off) * Transform2D(0.0, -piv))
 
 
 # grandezza piu' grande con cui la scritta di questo comando entra nel suo spazio

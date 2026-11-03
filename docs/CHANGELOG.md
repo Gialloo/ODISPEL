@@ -7,6 +7,7 @@
   PV sotto il 50% e il 25% = viola e rosso, sempre più scuro (anche il volto nella fila della squadra); BREAK di Rio = fotogramma
   disturbato rosso e blu; K.O. = la sagoma blu sfarfalla e si spegne (SEGNALE PERSO); pausa = Rio scuro sul lato destro; Replica (NG+) =
   skin magenta; caricamento di strada e battaglia = Rio chiaro e olografico, come un ricordo.
+- Ritratto vivo: respira, entra storto e si raddrizza con un rimbalzo, scatta in avanti quando scegli un comando, si avvicina sull'ULTIMATE e cambia faccia con un lampo bianco.
 - Gli altri personaggi useranno le stesse varianti appena ci sono i disegni (`assets/portraits/hud/<id>_<stato>.png`), senza codice nuovo.
 
 ## 0.43.0 · Battaglia più spettacolare: lo sguardo di Echo
