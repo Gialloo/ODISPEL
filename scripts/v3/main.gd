@@ -132,23 +132,23 @@ var _carico: Control
 
 
 func _build_carico() -> void:
+	# per ora solo la scritta (autore, 3/11/2026): il disegno «ricordo» torna con RitrattoVarianti.attive
 	var t: Texture2D = RitrattoVarianti.tex("zecca", "ricordo")
-	if t == null:
-		return
 	_carico = Control.new()
 	Ui.place(_carico, 0, 0, 1, 1)
 	_carico.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_carico.modulate = Color(1, 1, 1, 0)
 	_carico.visible = false
 	_fade.add_child(_carico)
-	var fig := TextureRect.new()
-	fig.texture = t
-	fig.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	fig.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
-	fig.self_modulate = Color(1, 1, 1, 0.78)       # sbiadito: il nero dietro traspare un poco
-	Ui.place(fig, 1, 0, 1, 1, -560, 30, 20, 40)
-	fig.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_carico.add_child(fig)
+	if t != null:
+		var fig := TextureRect.new()
+		fig.texture = t
+		fig.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		fig.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT
+		fig.self_modulate = Color(1, 1, 1, 0.78)       # sbiadito: il nero dietro traspare un poco
+		Ui.place(fig, 1, 0, 1, 1, -560, 30, 20, 40)
+		fig.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_carico.add_child(fig)
 	var lb := Ui.label("CARICAMENTO", 30, Ui.CREAM, Ui.display(), 8)
 	Ui.place(lb, 0, 1, 0, 1, 48, -96, 560, -40)
 	_carico.add_child(lb)

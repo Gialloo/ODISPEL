@@ -16,6 +16,10 @@ extends RefCounted
 # Le varianti sono 768x1024 (un quarto del peso: sul telefono il ritratto e' alto ~705 px), si caricano solo quando servono.
 
 const DIR: String = "res://assets/portraits/hud/"
+# Varianti SPENTE (autore, 3/11/2026, dopo la prova della 0.44.0: «utilizza solo questo Rio e solo per HUD»).
+# Resta solo il ritratto normale <id>_hud.png nell'HUD di battaglia; i file delle varianti restano nel progetto per piu'
+# avanti: rimettere true le riaccende tutte (ombra, vita bassa, break, K.O., pausa, NG+, caricamento, cut-in).
+static var attive: bool = false
 const FERITO: float = 0.5
 const CRITICO: float = 0.25
 
@@ -23,6 +27,8 @@ static var _cache: Dictionary = {}
 
 
 static func path(id: String, stato: String) -> String:
+	if not attive and stato != "hud":
+		return ""
 	var p: String = DIR + "%s_%s.png" % [id, stato]
 	return p if ResourceLoader.exists(p) else ""
 
@@ -54,6 +60,6 @@ static func per_vita(hp: int, max_hp: int) -> String:
 
 # Ritratto di base: nella Replica (NG+) la skin magenta, se c'e'.
 static func base(id: String) -> String:
-	if Story.replica() > 0 and has(id, "ng"):
+	if attive and Story.replica() > 0 and has(id, "ng"):
 		return "ng"
 	return "hud"

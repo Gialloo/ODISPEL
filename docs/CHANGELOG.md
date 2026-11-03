@@ -1,5 +1,12 @@
 # Novità
 
+## Non ancora rilasciato · Correzioni di Rio e nuovo BREAK
+
+- Solo il Rio grigio nell'HUD: varianti spente (i file restano, `RitrattoVarianti.attive`), niente Rio nel caricamento (solo la scritta), nella pausa e nel cut-in dell'ULTIMATE.
+- Respiro piu' leggero e solo in scala dal basso: il ritratto non si stacca piu' dal bordo; entra dal basso dietro alla lastra.
+- Cambio di personaggio con una lama chiara che attraversa la lastra.
+- BREAK rifatto sui riferimenti dell'autore: grandi schegge spostate con filo bianco e inchiostro, scena sbiancata con sfocatura radiale arcobaleno (il centro resta nitido), fogli bianchi che volano, poi un lampo di blocchi digitali e la scena torna con qualche riga fuori posto.
+
 ## 0.44.0 · Le dieci facce di Rio
 
 - Nuovo ritratto di Rio nell'HUD (grigio con i riflessi rosso-arancio), contorni rifiniti come il precedente (`tools/rifinisci_ritratto.py`).

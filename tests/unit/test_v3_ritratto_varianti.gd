@@ -18,6 +18,17 @@ func _check(name: String, cond: bool) -> void:
 
 
 func _init() -> void:
+	# spente (autore, 3/11/2026): nel gioco solo il ritratto normale
+	_check("varianti spente di serie", not RitrattoVarianti.attive)
+	_check("spente: resta il ritratto hud", RitrattoVarianti.tex("zecca", "hud") != null)
+	for st0 in ["ombra", "ferito", "critico", "break", "ko", "pausa", "ng", "ricordo"]:
+		_check("spente: niente " + st0, RitrattoVarianti.path("zecca", st0) == "")
+	Story.flags["replica"] = 1
+	_check("spente: niente skin NG+", RitrattoVarianti.base("zecca") == "hud")
+	Story.flags["replica"] = 0
+	# i file restano: riaccese funzionano tutte
+	RitrattoVarianti.attive = true
+	RitrattoVarianti._cache.clear()
 	for st in ["hud", "ombra", "ferito", "critico", "break", "ko", "pausa", "ng", "ricordo"]:
 		_check("Rio ha la variante " + st, RitrattoVarianti.tex("zecca", st) != null)
 	for st in ["volto", "volto_ko", "volto_ferito", "volto_critico", "volto_ng"]:

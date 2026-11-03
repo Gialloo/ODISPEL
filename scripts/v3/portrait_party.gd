@@ -53,7 +53,7 @@ func _face(id: String, stato: String = "") -> Array:
 	var key: String = id + "|" + stato
 	if not _tex.has(key):
 		var vp: String = "res://assets/portraits/hud/%s_volto_%s.png" % [id, stato]
-		if stato != "" and ResourceLoader.exists(vp):
+		if stato != "" and RitrattoVarianti.attive and ResourceLoader.exists(vp):
 			var tv: Texture2D = load(vp)
 			_tex[key] = [tv, Rect2(Vector2.ZERO, tv.get_size()), true]
 			return _tex[key]

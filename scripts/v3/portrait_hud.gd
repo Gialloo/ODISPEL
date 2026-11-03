@@ -186,6 +186,15 @@ func _draw() -> void:
 	# di Persona 5. Ritagliate sulla lastra con Geometry2D (8-10 poligoni piccoli al fotogramma).
 	if _tex_real:
 		_draw_stripes(sh, dx, H, e)
+	# PASSAGGIO DA UN PERSONAGGIO ALL'ALTRO (autore, 3/11/2026: «non e' bello»): una lama chiara attraversa la lastra mentre
+	# arriva, poi il ritratto sale da sotto. Netto e veloce, alla Persona: niente dissolvenze molli.
+	if appear < 1.0:
+		var wk: float = clampf((appear - 0.1) / 0.6, 0.0, 1.0)
+		if wk > 0.0 and wk < 1.0:
+			var wx: float = dx - 120.0 + wk * (PW + 260.0)
+			var blade := PackedVector2Array([Vector2(wx, H), Vector2(wx + 46.0, H), Vector2(wx + 46.0 + 190.0, H - 460.0), Vector2(wx + 190.0, H - 460.0)])
+			for poly in Geometry2D.intersect_polygons(sh, blade):
+				draw_colored_polygon(poly, Color(CREAM, 0.85 * (1.0 - wk)))
 	draw_colored_polygon(PackedVector2Array([Vector2(dx, H - 330), Vector2(dx + 226, H - 376), Vector2(dx + 240, H - 362), Vector2(dx, H - 314)]), Color(col.lightened(0.15), 0.9 * e))
 	draw_colored_polygon(PackedVector2Array([Vector2(dx + 268, H - 408), Vector2(dx + 286, H - 412), Vector2(dx + PW + 46, H), Vector2(dx + PW + 26, H)]), Color(col, 0.85 * e))
 	# 2) ritratto: in basso, tagliato dal bordo; il volto sta nella meta' destra della zona, le scritte a sinistra e in fondo
@@ -274,14 +283,15 @@ func _live_transform(dx: float, H: float, e: float) -> void:
 	if not _tex_real:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		return
+	# Correzione dell'autore (3/11/2026, «respira troppo... si vede la fine del PNG tagliato»): niente rotazioni ne' salti
+	# in alto. Solo scala attorno al punto in basso al centro e sempre >= 1, cosi' il bordo in basso resta incollato al
+	# fondo dello schermo e i bordi tagliati del disegno non si vedono mai. Entrata: sale da sotto, in ritardo sulla lastra.
 	var piv := Vector2(dx + PW * 0.5, H)
-	var br: float = sin(t * 2.1)
-	var settle: float = t - _born
-	var wob: float = exp(-settle * 5.0) * sin(settle * 18.0) * 0.06 if settle < 1.2 else 0.0
-	var rot: float = -(1.0 - e) * 0.12 + wob + 0.03 * sel + 0.05 * _punch
-	var sc: float = 1.0 + 0.012 * br + 0.06 * _punch * _punch + (0.05 * sel if picked == "ult" else 0.0)
-	var off := Vector2(14.0 * sel + 10.0 * _punch, -3.0 * sin(t * 2.1 + 0.7))
-	draw_set_transform_matrix(Transform2D(rot, Vector2(sc, sc), 0.0, piv + off) * Transform2D(0.0, -piv))
+	var br: float = 0.5 + 0.5 * sin(t * 1.6)                         # respiro lento (~4 s), appena percettibile
+	var e2: float = _ease(clampf((appear - 0.25) / 0.75, 0.0, 1.0))  # il ritratto arriva dopo la lastra
+	var sc: float = 1.0 + 0.0035 * br + 0.025 * _punch * _punch + (0.02 * sel if picked == "ult" else 0.0)
+	var off := Vector2(0.0, (1.0 - e2) * 120.0)                       # da sotto: il bordo in basso resta fuori schermo
+	draw_set_transform_matrix(Transform2D(0.0, Vector2(sc, sc), 0.0, piv + off) * Transform2D(0.0, -piv))
 
 
 # grandezza piu' grande con cui la scritta di questo comando entra nel suo spazio
