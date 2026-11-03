@@ -40,6 +40,21 @@ vec3 break_cam(vec2 uv, float fi, float edge, vec2 dir, float edge_w, vec3 clean
 	float hold = 1.0 - smoothstep(0.58, 0.6, prog);          // schegge in vista
 	float gl = step(0.6, prog) * (1.0 - step(0.75, prog));    // lampo di blocchi digitali (~0.2 s)
 	float after = smoothstep(0.75, 1.0, prog);
+	if (prog >= 0.75) {
+		// PRESTAZIONI: finite le schegge e i blocchi resta solo la scena con le righe fuori posto (3 letture, non 20)
+		float fa = floor(prog * 40.0);
+		float a3 = 1.0 - after;
+		float rw = floor(uv.y * 26.0);
+		vec2 su2 = uv;
+		if (h1(rw * 7.3 + fa) < 0.3 * a3) {
+			su2.x += (h1(rw + fa * 1.7) - 0.5) * 0.09 * a3;
+		}
+		su2 = clamp(su2, vec2(0.001), vec2(0.999));
+		vec3 bk = texture(screen_tex, su2).rgb;
+		bk.r = texture(screen_tex, clamp(su2 + vec2(0.007 * a3, 0.0), vec2(0.001), vec2(0.999))).r;
+		bk.b = texture(screen_tex, clamp(su2 - vec2(0.007 * a3, 0.0), vec2(0.001), vec2(0.999))).b;
+		return bk;
+	}
 	float pop = smoothstep(0.0, 0.04, prog) * max(burst, 0.6);
 	float cw = 0.45 + 0.55 * edge_w;                           // al centro le schegge si spostano meno: l'azione resta leggibile
 	vec2 o2 = (dir * 0.04 + (vec2(h1(fi + 3.0), h1(fi + 5.0)) - 0.5) * 0.08) * cw * pop * (1.0 + prog * 0.5);
@@ -56,13 +71,13 @@ vec3 break_cam(vec2 uv, float fi, float edge, vec2 dir, float edge_w, vec3 clean
 	vec2 tq = toc; tq.x *= aspect;
 	float bl = smoothstep(0.1, 0.55, length(tq)) * pop;
 	vec3 c = vec3(0.0);
-	for (int i = 0; i < 5; i++) {
-		float f = 1.0 - float(i) * 0.02 * bl;
+	for (int i = 0; i < 4; i++) {        // PRESTAZIONI: 4 campioni bastano (12 letture), la scia resta uguale
+		float f = 1.0 - float(i) * 0.027 * bl;
 		c.r += texture(screen_tex, clamp(impact + toc * f, vec2(0.001), vec2(0.999))).r;
 		c.g += texture(screen_tex, clamp(impact + toc * f * (1.0 - 0.012 * bl), vec2(0.001), vec2(0.999))).g;
 		c.b += texture(screen_tex, clamp(impact + toc * f * (1.0 - 0.024 * bl), vec2(0.001), vec2(0.999))).b;
 	}
-	c /= 5.0;
+	c /= 4.0;
 	float t = h1(fi + 31.0);
 	float lum = dot(c, vec3(0.3, 0.59, 0.11));
 	// luce sovraesposta e colori quasi spenti (secondo riferimento dell'autore, 3/11/2026): la notte si sbianca, il centro no
@@ -152,6 +167,10 @@ void fragment() {
 	float edge_w = smoothstep(0.12, 0.55, length(cc));
 	float move = crack * 0.22 * edge_w + burst;
 	vec2 dir = normalize(pts[id] - impact + vec2(0.0001));
+	// PRESTAZIONI: il BREAK ha il suo disegno; il resto (crepe della vita) non si calcola per niente, 4 letture in meno a pixel
+	if (big > 0.5) {
+		COLOR = vec4(break_cam(uv, fi, d2 - d1, dir, edge_w, vec3(0.0)), 1.0);
+	} else {
 	vec2 off = (vec2(h1(fi + 3.0), h1(fi + 5.0)) - 0.5) * vec2(0.05, 0.04) * move + dir * 0.05 * burst;
 	// BREAK: le schegge volano verso la camera (si ingrandiscono e si allontanano dal punto d'impatto), ognuna con la sua spinta (profondita')
 	float depth = 0.4 + 0.6 * h1(fi + 11.0);
@@ -224,10 +243,8 @@ void fragment() {
 	// la scheggia caduta lascia la scena pulita
 	col = mix(col, clean, smoothstep(0.55, 1.0, fall));
 	col = mix(col, vec3(1.0), glow * (0.35 + 0.35 * big));
-	if (big > 0.5) {
-		col = break_cam(uv, fi, d2 - d1, dir, edge_w, clean);
-	}
 	COLOR = vec4(col, 1.0);
+	}
 }
 """
 

@@ -90,6 +90,7 @@ func watch(who: String, c: Color, cam_no: int) -> void:
 
 
 func _refresh() -> void:
+	queue_redraw()          # il pallino del REC segue la lunghezza della scritta
 	if _tag == null:
 		return
 	if _dist_t > 0.0:
@@ -255,7 +256,17 @@ func _process(delta: float) -> void:
 			if _tag != null:
 				_tag.modulate.a = 1.0
 			_refresh()
-	queue_redraw()
+	# PRESTAZIONI: si ridisegna solo quando qualcosa si muove (taglio, disturbo, chat, fermo, anomalia) o quando il pallino del REC
+	# cambia stato; prima si ridisegnava tutto lo schermo a ogni fotogramma anche da fermo.
+	var blink: bool = fmod(_t, 1.2) < 0.75
+	if anomaly or _cut_t > 0.0 or _dist_t > 0.0 or _drawn_busy or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until or blink != _blink_was:
+		queue_redraw()
+	_drawn_busy = anomaly or _cut_t > 0.0 or _dist_t > 0.0 or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until
+	_blink_was = blink
+
+
+var _blink_was: bool = false
+var _drawn_busy: bool = false      # l'ultimo disegno aveva qualcosa in movimento: un altro giro per pulirlo
 
 
 func _draw() -> void:
@@ -359,7 +370,48 @@ func _draw_cut(sz: Vector2) -> void:
 			draw_rect(Rect2(x0 - off, y, bw, bh), Color(1.0, 0.16, 0.25, 0.32 * k))
 			draw_rect(Rect2(x0 + off, y, bw, bh), Color(0.25, 0.9, 1.0, 0.32 * k))
 			draw_rect(Rect2(x0, y + bh * 0.3, bw, maxf(1.0, bh * 0.4)), Color(1, 1, 1, 0.4 * k) if i % 3 == 0 else Color(_who_col.r, _who_col.g, _who_col.b, 0.45 * k))
+	if el < GLITCH_TIME:
+		_draw_glitch(sz, el)
 	_draw_cam_stamp(sz, el)
+
+
+# BLOCCHI DIGITALI del cambio di telecamera (autore, 3/11/2026: «usa l'ottavo fotogramma del break»): per ~0,14 s il segnale
+# salta come nel BREAK: fondo bianco, blocchi neri a strisce, barre di colore. Solo draw_rect (~30): costa quasi niente.
+# Con i lampi spenti nelle impostazioni il bianco non c'e' (restano i blocchi, piu' trasparenti).
+const GLITCH_TIME: float = 0.14
+const GLITCH_BARS: Array = [Color("#ff7326"), Color("#33bf59"), Color("#3359f2"), Color("#ff6699"), Color("#ffe633"), Color("#141414")]
+
+
+func _draw_glitch(sz: Vector2, el: float) -> void:
+	var fl: float = clampf(Settings.flash, 0.0, 1.0)
+	var k: float = 1.0 - el / GLITCH_TIME
+	var a: float = (0.55 + 0.45 * fl) * clampf(k * 2.0, 0.0, 1.0)
+	var frame: float = floor(el * 40.0)
+	if fl > 0.05:
+		draw_rect(Rect2(Vector2.ZERO, sz), Color(0.95, 0.94, 0.92, 0.9 * fl * clampf(k * 2.0, 0.0, 1.0)))
+	var n: int = 10 if Settings.light_fx else 22
+	for i in n:
+		var fi: float = float(i)
+		var h: float = fract_hash(fi * 7.31 + frame * 1.7)
+		var bw: float = sz.x * (0.04 + 0.16 * fract_hash(fi * 2.9 + frame))
+		var bh: float = sz.y * (0.03 + 0.14 * h)
+		var x: float = sz.x * fract_hash(fi * 5.7 + frame * 0.37) - bw * 0.3
+		var y: float = sz.y * fract_hash(fi * 3.3 + 0.5 + frame * 0.21)
+		if i % 4 == 0:
+			# barra di colore: sei pezzi uguali uno accanto all'altro
+			var pw: float = bw * 1.6 / 6.0
+			for j in 6:
+				var c: Color = GLITCH_BARS[(j + i) % 6]
+				draw_rect(Rect2(x + pw * j, y, pw, maxf(6.0, bh * 0.25)), Color(c.r, c.g, c.b, a))
+		else:
+			draw_rect(Rect2(x, y, bw, bh), Color(0.04, 0.04, 0.05, a))
+			if h > 0.45:
+				# strisce verticali grigie dentro al blocco nero
+				var st: float = 10.0
+				var xx: float = x + 3.0
+				while xx < x + bw - st:
+					draw_rect(Rect2(xx, y + 3.0, st * 0.5, bh - 6.0), Color(0.55, 0.55, 0.58, a))
+					xx += st
 
 
 # Cartellino della CAM: entra veloce dal lato del nuovo personaggio (0,12 s), sta fermo, esce dal lato opposto negli ultimi 0,15 s.
