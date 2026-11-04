@@ -4,6 +4,14 @@
 
 - Il titolo della copertina è la frase di chi dà il colpo finale: Rio «K.O. IN DIRETTA · NO CLICKBAIT!», Lance «OBIETTIVO NEUTRALIZZATO» o «MINACCIA NEUTRALIZZATA», Nox «CE L'HO FATTA! · ORA UN MERITATO RIPOSO», Saul «UN ALTRO COLPO ANDATO A SEGNO».
 
+## Prossima · Il suono del combattimento
+
+- Il combattimento non è più muto: ogni colpo si sente e il suono segue la parola a fumetto (TAP colpo secco, ZAP colpo grosso elettrico, BAM critico, CLANG scudo e parata, THUD colpo subito, PLING cura, SWISH schivata, KRAK il vetro del BREAK con la botta nei bassi).
+- Suonano anche il cambio di telecamera (scatto e statica, leggero), il +1 COMBO (un blip che sale di tono a ogni colpo), il K.O. (segnale perso), il cut-in dell'ULTIMATE, l'attacco di squadra, il colpo finale, il turno, i comandi e la fine della battaglia (motivetto di vittoria o di sconfitta).
+- Musica di battaglia a quattro strati sempre a tempo: tappeto e basso sempre, ritmo pieno da 2 COMBO, arpeggio da 3, melodia da 5. Col BREAK entra tutto per qualche secondo; quando il nemico agisce la musica scende piano, non si spegne di colpo. Due brani: uno per strada (La minore, 128 bpm) e uno per i boss dentro le Anomalie (Re minore, 140 bpm). Si abbassa sotto il cut-in e il colpo finale.
+- IMPOSTAZIONI: volume della Musica e degli Effetti sonori (100%, 70%, 40%, spento).
+- Tutti i suoni sono nostri: li genera `tools/gen_suoni.py` (solo numpy e ffmpeg, licenza CC0). Si ritoccano lì e si rigenerano, come i dialoghi.
+
 ## 0.50.0 · Combattimento più spettacolare
 
 - Ingresso in battaglia «nastro strappato»: toccando un nemico per strada l'immagine si disturba come una VHS che si inceppa, poi si strappa in diagonale e la battaglia esce dallo strappo (una sola lettura dello schermo, nessun costo durante lo scontro).

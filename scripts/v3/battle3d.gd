@@ -233,6 +233,7 @@ func crumb() -> String:
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+	Sfx.music_stop(0.4)
 
 
 func _ready() -> void:
@@ -248,6 +249,8 @@ func _ready() -> void:
 	_build_arena()
 	_setup_battle()
 	_build_units()
+	# musica a strati che cresce col COMBO: per strada la sua, dentro le Anomalie quella del boss (Sfx, 4/11/2026)
+	Sfx.music_start("battaglia" if minore else "boss")
 	cam = Camera3D.new()
 	cam.fov = FOV_BASE
 	cam.near = 0.1
@@ -1578,6 +1581,7 @@ class QteRing extends Control:
 		# guardia a tempo: onomatopea sopra l'anello (CLANG la perfetta, TAP la buona)
 		if grade == "perfect" or grade == "good":
 			Onomato.pop(get_parent() as Control, position + size * 0.5 + Vector2(0, -get_viewport_rect().size.y * 0.12), "CLANG" if grade == "perfect" else "TAP", Ui.CYAN, grade == "perfect")
+			Sfx.word("CLANG" if grade == "perfect" else "TAP", grade == "perfect")
 		match grade:
 			"perfect":
 				_label.text = "PERFETTA!"
@@ -1821,9 +1825,11 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				var du: String = str(e.get("unit", ""))
 				if du == Gregario.ID:
 					_number(du, "ABBATTUTA", Ui.YELLOW, 48, delay + 0.1, -10.0)
+					Sfx.play("ko", delay + 0.1)
 					_kick(0.5)
 				elif du != BattleState.BOSS_ID:
 					_number(du, "K.O.", Color("#ff4a5a"), 64, delay + 0.1, -10.0)       # chi cade si legge subito, non solo dalla card
+					Sfx.play("ko", delay + 0.1)
 					_kick(0.5)
 					_signal_lost_later(du, delay)
 				if vis.has(du):
@@ -1878,6 +1884,7 @@ func _ono(uid: String, word: String, col: Color, delay: float, big: bool) -> voi
 	var p3: Vector3 = v.call("chest_point") if v.has_method("chest_point") else v.global_position + Vector3(0, 1, 0)
 	if cam.is_position_behind(p3):
 		return
+	Sfx.word(word, big)          # ogni parola a fumetto ha il suo suono (TAP, ZAP, BAM, CLANG, KRAK...)
 	var sz: Vector2 = get_viewport().get_visible_rect().size
 	# vicino al punto d'impatto, in misure dello schermo (le parole sono piccole: non coprono personaggi ne' interfaccia)
 	var u: float = sz.y * 0.01
@@ -2006,6 +2013,7 @@ func _sparks_later(uid: String, delay: float, crit: bool) -> void:
 
 # COMBO: da 2 colpi di fila il numero entra con uno scatto; l'ombra prende il colore di chi ha colpito per ultimo
 func _combo_show(col: Color) -> void:
+	Sfx.combo(_combo)            # blip che sale di tono e musica che si arricchisce
 	if _combo_lbl == null:
 		return
 	if _combo < 2:
@@ -2178,6 +2186,8 @@ func _finisher(delay: float) -> void:
 	if not is_inside_tree():
 		_finishing = false
 		return
+	Sfx.play("colpo_finale")
+	Sfx.duck(2.5)
 	var who: Dictionary = b["units"].get(str(act.get("unit", "")), {})
 	var col: Color = _col(who) if not who.is_empty() else Ui.CREAM
 	if _reticle != null:
@@ -2212,6 +2222,7 @@ func _cam_switch(uid: String) -> void:
 	_last_turn_uid = uid
 	if prev == "" or prev == uid or _cam_hud == null or not home.has(uid):
 		return
+	Sfx.play("camera")
 	var dir: float = 1.0
 	if home.has(prev):
 		dir = signf((home[uid] as Vector3).x - (home[prev] as Vector3).x)
@@ -2303,6 +2314,8 @@ func _say_off() -> void:
 # Sequenza dell'ultimate: primo piano, fascia colorata, nome e battuta. Si salta con l'impostazione.
 func _play_cutin(u: Dictionary, ult_name: String) -> void:
 	Breadcrumb.mark("ultimate")
+	Sfx.play("cutin")
+	Sfx.duck(2.2)
 	var uid: String = str(u["id"])
 	var col: Color = _col(u)
 	if _cutin_skipped(u):
@@ -2459,6 +2472,7 @@ func _shatter_later(key: String, delay: float, strength: float, big: bool = fals
 # IL MOMENTO DEL BREAK (Star Rail / Persona): fermo immagine breve + lampo + vetro che esplode dal nemico + scritta BREAK + scossa.
 # Si usa sia per il colpo che rompe sia, in versione piu' corta, dall'attacco di squadra.
 func _break_moment(delay: float, short: bool = false) -> void:
+	Sfx.surge()                  # col BREAK entra tutta la musica (il vetro lo suona KRAK qui sotto)
 	_ono(BattleState.BOSS_ID, "KRAK", Color("#ff2340"), delay + 0.02, true)
 	_glitch_later(1.0, delay)
 	_shatter_later("boss", delay, 0.8 if short else 1.0, true)
@@ -2567,6 +2581,8 @@ func _end_battle() -> void:
 	_refresh_hud()
 	Breadcrumb.mark("risultato")
 	var win: bool = str(b["winner"]) == "players"
+	Sfx.music_stop(0.5)
+	Sfx.play("vittoria" if win else "sconfitta", 0.5)
 	if win and Gregario.alive(b) and vis.has(Gregario.ID):
 		# caduto il nemico principale, la scheggia rimasta sola si dissolve
 		(vis[Gregario.ID] as VendingVisual).ko()
@@ -3533,6 +3549,7 @@ func _announce_turn() -> void:
 	if key == _pop_key or cur_pid == "" or ended:
 		return
 	_pop_key = key
+	Sfx.play("turno")
 	var col: Color = _col(_unit_of(cur_pid))
 	if _pop_tw != null and _pop_tw.is_valid():
 		_pop_tw.kill()
@@ -3718,6 +3735,7 @@ func _pick(kind: String) -> void:
 		_wheel.pick(kind)
 	if kind != "" and kind != was:
 		Settings.buzz(30 if kind == "ult" else 12)
+		Sfx.play("ui_sposta")
 	# ULTIMATE: la telecamera stringe sul personaggio, che resta in luce
 	if cur_pid != "" and waiting:
 		var uid: String = str(_unit_of(cur_pid).get("id", ""))
@@ -3737,7 +3755,9 @@ func _wheel_tap(kind: String) -> void:
 		"attack", "guard", "ult":
 			if _wheel != null and not bool(_wheel.item(kind).get("ok", false)):
 				Settings.buzz(10)
+				Sfx.play("ui_indietro")
 				return
+			Sfx.play("ui_ok")
 			_command(kind)
 
 
@@ -3747,6 +3767,8 @@ func _wheel_hover(kind: String) -> void:
 		return
 	if kind != "" and _wheel != null and not bool(_wheel.item(kind).get("ok", false)):
 		kind = ""                 # un comando spento non si accende (l'ULTIMATE non carica non fa partire le bande nere)
+	if kind != "" and kind != _picked:
+		Sfx.play("ui_sposta")
 	_picked = kind
 	if _hint != null:
 		_hint.modulate.a = 0.0 if kind != "" else 1.0
@@ -4252,6 +4274,7 @@ func _team_sequence(rest: Array) -> void:
 		boss_v.call("hit")
 		LightFx.sparks(self, (boss_v as Node).call("chest_point"), col if not bool(h[2]) else LightFx.IVORY, 8)
 		_kick(0.35)
+		Sfx.word("BAM" if bool(h[2]) else "ZAP", true)
 		total += int(h[1])
 		_team_hold = maxi(0, _team_hold - int(h[1]))
 		_refresh_hud()
