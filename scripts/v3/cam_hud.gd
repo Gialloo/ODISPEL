@@ -216,22 +216,22 @@ func freeze(title: String, who: String, c: Color, secs: float) -> void:
 # telecamera di Echo prende il «mezzo» di chi agisce: Rio in verticale come una sua diretta, Lance nel mirino
 # dell'autovelox, Nox in controluce, Saul dall'alto come un drone. Poche forme piatte per un secondo, niente shader.
 var _look: String = ""
-var _look_from: int = 0
-var _look_until: int = 0
+var _look_from: float = 0.0          # in tempo di gioco (_t), non in millisecondi veri: si registra uguale col movie maker
+var _look_until: float = 0.0
 var _look_col: Color = Ui.CREAM
 
 
 func look(kind: String, c: Color, secs: float = 1.3) -> void:
 	_look = kind
 	_look_col = c
-	_look_from = Time.get_ticks_msec()
-	_look_until = _look_from + int(secs * 1000.0)
+	_look_from = _t
+	_look_until = _t + secs
 	queue_redraw()
 
 
 func _draw_look(sz: Vector2) -> void:
-	var el: float = float(Time.get_ticks_msec() - _look_from) / 1000.0
-	var tot: float = float(_look_until - _look_from) / 1000.0
+	var el: float = _t - _look_from
+	var tot: float = _look_until - _look_from
 	var a: float = clampf(el / 0.12, 0.0, 1.0) * clampf((tot - el) / 0.2, 0.0, 1.0)
 	var f: Font = Ui.display()
 	var fb: Font = Ui.body()
@@ -351,7 +351,7 @@ func _process(delta: float) -> void:
 	# nelle Anomalie il mirino trema: prima si ridisegnava tutto lo schermo a ogni fotogramma, ora 15 volte al secondo
 	# (il tremolio si legge uguale e sul telefono si risparmia il disegno a schermo intero contro i boss)
 	var anom_tick: int = int(_t * 15.0) if anomaly else 0
-	if anom_tick != _anom_was or _cut_t > 0.0 or _dist_t > 0.0 or _drawn_busy or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until or Time.get_ticks_msec() < _look_until + 40 or blink != _blink_was:
+	if anom_tick != _anom_was or _cut_t > 0.0 or _dist_t > 0.0 or _drawn_busy or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until or _t < _look_until + 0.05 or blink != _blink_was:
 		queue_redraw()
 	_anom_was = anom_tick
 	_drawn_busy = _cut_t > 0.0 or _dist_t > 0.0 or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until
@@ -403,7 +403,7 @@ func _draw() -> void:
 		_draw_crack(sz)
 	if _cut_t > 0.0:
 		_draw_cut(sz)
-	if Time.get_ticks_msec() < _look_until:
+	if _t < _look_until:
 		_draw_look(sz)
 	_draw_chat(sz)
 	if Time.get_ticks_msec() < _frz_until:

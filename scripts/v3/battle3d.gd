@@ -1118,8 +1118,11 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			_set_target("")             # scheggia abbattuta: il mirino torna sul nemico principale
 	else:
 		# mossa su se stessi (guardia, cura): prima era uno stacco secco davanti al personaggio; ora una carrellata (3/11/2026)
-		_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
-		_cam_glide(0.5)
+		if kind == "skill" and _cam_hud != null and not tutorial:
+			_cam_sign(uid, str(u.get("char", "")), home[uid], col)     # anche Copertura e Pausa caffe' hanno la loro inquadratura
+		else:
+			_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
+			_cam_glide(0.5)
 		var a2: Tween = cv.cast()
 		await _wait(0.16)
 		LightFx.rise(self, home[uid], col)
@@ -2695,7 +2698,11 @@ func _victory_cover() -> void:
 	Ui.place(frame, 0, 0, 1, 1, 60, 50, -60, -150)
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cov.add_child(frame)
-	var t1 := Ui.label(str(tt[0]), 74, Ui.YELLOW, Ui.display(), 16)
+	var fs: int = 74          # il titolo si stringe finche' sta nella miniatura (i nomi lunghi uscivano dal bordo)
+	var avail: float = _root.size.x - 240.0
+	while fs > 36 and Ui.display().get_string_size(str(tt[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > avail:
+		fs -= 4
+	var t1 := Ui.label(str(tt[0]), fs, Ui.YELLOW, Ui.display(), 16)
 	Ui.place(t1, 0, 0, 1, 0, 110, 80, -110, 180)
 	t1.rotation = deg_to_rad(-3.0)
 	cov.add_child(t1)
