@@ -225,3 +225,9 @@ const RITMO_PER_ROUND: int = 2                   # ogni fonte conta al massimo 2
 const RITMO_HEAL_BELOW: float = 0.4              # una cura genera Ardore solo se chi la riceve era sotto il 40% dei PV
 const RITMO_HELPERS: int = 3                     # condizione «collaborazione»: tre compagni diversi hanno dato Ardore
 const RITMO_LOSS_KO: int = 10                    # un compagno KO: la squadra perde il controllo (decadimento contestuale, 2.3)
+# Salvataggio del RITMO (fase R2): Ardore minacciato dal colpo annunciato del boss e quanto ne resta da perdere con la parata
+const RITMO_HIT_LOSS: Dictionary = {"normale": 6, "pesante": 12}
+const RITMO_SAVE_KEEP: Dictionary = {
+	"normale": {"good": 0.5, "perfect": 0.0},     # parata buona: perdita ridotta; perfetta: annullata (4.2)
+	"pesante": {"good": 0.75, "perfect": 0.5},    # colpo pesante: il salvataggio vale meno (4.5)
+}

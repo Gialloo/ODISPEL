@@ -49,7 +49,7 @@ const CONDS: Dictionary = {
 static func st(state: Dictionary) -> Dictionary:
 	if not (state.get("ritmo", null) is Dictionary):
 		state["ritmo"] = {"ardore": 0, "cap": BattleTypes.RITMO_CAP, "level": CALMO, "ready": false,
-			"done": {}, "helpers": {}, "round": int(state.get("round", 1)), "gen": {}, "hold": false}
+			"done": {}, "helpers": {}, "round": int(state.get("round", 1)), "gen": {}, "hold": false, "saves": {}}
 	return state["ritmo"]
 
 
@@ -174,8 +174,10 @@ static func after_events(state: Dictionary, events: Array) -> void:
 	if int(r["round"]) != int(state.get("round", 1)):
 		r["round"] = int(state.get("round", 1))
 		r["gen"] = {}                  # i limiti per fonte valgono per round (anti-farming, 2.2)
+		r["saves"] = {}                # e il salvataggio del RITMO torna disponibile a tutti (4.1, 4.9)
 	var boss: Dictionary = BattleState.boss(state)
 	var n: int = events.size()         # si leggono solo gli eventi del motore, non quelli che aggiungiamo noi
+	_boss_threat(state, events, n)     # prima la perdita del colpo del boss (decisa dalla parata), poi il resto
 	for i in n:
 		var e: Dictionary = events[i]
 		match str(e.get("t", "")):
@@ -224,6 +226,74 @@ static func after_events(state: Dictionary, events: Array) -> void:
 	if not bool(r["hold"]):
 		_settle_down(state, "ardore", events)      # un livello tenuto con keep_level si rilascia al primo guadagno
 	_settle_up(state, events)
+
+
+# SALVATAGGIO DEL RITMO (fase R2; handoff 4, con la decisione dell'autore K4: «un solo QTE, per i PV»).
+# Il colpo annunciato del boss minaccia l'Ardore. Non c'e' un QTE in piu': decide la stessa parata a tempo che protegge i PV.
+# - colpo normale: parata buona = perdita dimezzata, perfetta = nessuna perdita;
+#   colpo pesante (BattleResolver.is_heavy_boss_move): buona = 75%, perfetta = 50% (efficacia limitata, 4.5);
+#   "devastante": true nella mossa del boss = la parata non salva l'Ardore (nessuna mossa lo ha ancora: e' un dato di design).
+# - Ogni personaggio salva una volta per round: chi para usa il suo salvataggio; se l'ha gia' usato, la parata protegge
+#   solo i PV e l'Ardore si perde per intero. Torna disponibile al round nuovo, non con un azzeramento (4.1, 4.9).
+# - Conta solo il colpo annunciato (il primo boss_move della lista), non i colpi in piu' della catena: e' il colpo che si para.
+# - La perdita si applica dopo l'esito della parata, a colpo risolto (4.4). Una parata mancata non si distingue da nessuna
+#   parata (la UI scrive solo good/perfect): quindi un fallimento non consuma il salvataggio.
+# Limiti noti, da decidere: niente secondo tentativo (4.3: servirebbe un secondo QTE, in conflitto con K4); chi salva e'
+# sempre chi para, non un compagno scelto dal giocatore (4.1).
+static func _boss_threat(state: Dictionary, events: Array, n: int) -> void:
+	var move_id: String = ""
+	for i in n:
+		if str(events[i].get("t", "")) == "boss_move":
+			move_id = str(events[i].get("move", ""))
+			break
+	if move_id == "":
+		return
+	var move: Dictionary = BattleContent.BOSS_MOVES.get(move_id, {})
+	if float(move.get("mult", 0.0)) <= 0.0 and not bool(move.get("camera", false)):
+		return                                  # una mossa che non colpisce non minaccia il RITMO
+	var heavy: bool = BattleResolver.is_heavy_boss_move(move)
+	var loss: int = int(BattleTypes.RITMO_HIT_LOSS["pesante" if heavy else "normale"])
+	if loss <= 0:
+		return
+	var grade: String = ""
+	var who: String = ""
+	for i in n:
+		var e: Dictionary = events[i]
+		if str(e.get("t", "")) == "timed_guard":
+			grade = str(e.get("grade", ""))
+			who = str(e.get("unit", ""))
+			break
+	var r: Dictionary = st(state)
+	var out: Dictionary = save_outcome(move, grade, (r["saves"] as Dictionary).has(who))
+	if bool(out["used"]):
+		r["saves"][who] = true
+	var keep: float = float(out["keep"])
+	var result: String = str(out["result"])
+	var lost: int = int(round(float(loss) * keep))
+	events.append({"t": "ritmo_save", "unit": who, "result": result, "threat": loss, "lost": lost, "heavy": heavy})
+	if lost > 0:
+		drain(state, lost, "colpo", events)
+
+
+# Esito del salvataggio (puro, senza stato): grade = "" (nessuna parata), "good" o "perfect"; already = salvataggio gia' usato.
+# keep = frazione della perdita che resta; used = il salvataggio si consuma.
+static func save_outcome(move: Dictionary, grade: String, already: bool) -> Dictionary:
+	if grade == "":
+		return {"result": "nessuna", "keep": 1.0, "used": false}
+	if bool(move.get("devastante", false)):
+		return {"result": "devastante", "keep": 1.0, "used": false}
+	if already:
+		return {"result": "gia_usato", "keep": 1.0, "used": false}
+	var k: Dictionary = BattleTypes.RITMO_SAVE_KEEP["pesante" if BattleResolver.is_heavy_boss_move(move) else "normale"]
+	return {"result": "perfetto" if grade == "perfect" else "normale", "keep": float(k.get(grade, 1.0)), "used": true}
+
+
+# Il salvataggio di questo personaggio e' ancora disponibile in questo round?
+static func save_ready(state: Dictionary, uid: String) -> bool:
+	var r: Dictionary = st(state)
+	if int(r["round"]) != int(state.get("round", 1)):
+		return true
+	return not (r["saves"] as Dictionary).has(uid)
 
 
 # Una fonte di Ardore: quantita' e limite per round da BattleTypes.RITMO_GAIN / RITMO_PER_ROUND.

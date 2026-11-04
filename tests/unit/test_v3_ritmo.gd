@@ -318,6 +318,114 @@ func _scontri_interi() -> void:
 	print("livello massimo raggiunto in AUTO (seme 7): " + ", ".join(tops))
 
 
+# ---------------------------------------------------------------- fase R2: salvataggio del RITMO con la parata (K4)
+
+func _boss_move(heavy: bool) -> String:
+	for id in BattleContent.BOSS_MOVES:
+		var m: Dictionary = BattleContent.BOSS_MOVES[id]
+		if float(m.get("mult", 0.0)) > 0.0 and BattleResolver.is_heavy_boss_move(m) == heavy and not bool(m.get("devastante", false)):
+			return str(id)
+	return ""
+
+
+func _hit(s: Dictionary, move: String, grade: String, uid: String) -> Array:
+	var evs: Array = [{"t": "boss_move", "move": move}]
+	if grade != "":
+		evs.append({"t": "timed_guard", "unit": uid, "grade": grade})
+	return _feed(s, evs)
+
+
+func _last_save(evs: Array) -> Dictionary:
+	for e in evs:
+		if str(e.get("t", "")) == "ritmo_save":
+			return e
+	return {}
+
+
+func _salvataggio() -> void:
+	var normal: String = _boss_move(false)
+	var heavy: String = _boss_move(true)
+	check(normal != "" and heavy != "", "ci sono mosse del boss normali e pesanti")
+	var hs: Array = _heroes(s_dummy())
+	# senza parata: perdita piena, nessun salvataggio consumato
+	var s: Dictionary = _fresh()
+	_put(s, 40)
+	var ev: Array = _hit(s, normal, "", "")
+	check(Ritmo.ardore(s) == 40 - int(BattleTypes.RITMO_HIT_LOSS["normale"]) and str(_last_save(ev)["result"]) == "nessuna", "colpo normale senza parata: perdita piena")
+	# parata buona: perdita dimezzata e salvataggio consumato
+	s = _fresh()
+	_put(s, 40)
+	var u: String = str(_heroes(s)[0]["id"])
+	ev = _hit(s, normal, "good", u)
+	check(int(_last_save(ev)["lost"]) == int(BattleTypes.RITMO_HIT_LOSS["normale"]) / 2 and str(_last_save(ev)["result"]) == "normale", "parata buona: perdita ridotta (%s)" % str(_last_save(ev)))
+	check(not Ritmo.save_ready(s, u), "il salvataggio di chi ha parato e' consumato")
+	check(Ritmo.save_ready(s, str(_heroes(s)[1]["id"])), "quello dei compagni resta")
+	# stesso personaggio, stesso round: la parata protegge solo i PV
+	ev = _hit(s, normal, "perfect", u)
+	check(str(_last_save(ev)["result"]) == "gia_usato" and int(_last_save(ev)["lost"]) == int(BattleTypes.RITMO_HIT_LOSS["normale"]), "una volta per personaggio per round")
+	# un compagno puo' ancora salvare: perfetta = nessuna perdita
+	ev = _hit(s, normal, "perfect", str(_heroes(s)[1]["id"]))
+	check(int(_last_save(ev)["lost"]) == 0 and not _has(ev, "ritmo_loss"), "parata perfetta di un compagno: perdita annullata")
+	# un azzeramento non ridà i salvataggi, il round nuovo si'
+	var tmp: Array = []
+	Ritmo.reset(s, "prova", tmp)
+	check(not Ritmo.save_ready(s, u), "l'azzeramento non ripristina il salvataggio (4.9)")
+	s["round"] = int(s["round"]) + 1
+	check(Ritmo.save_ready(s, u), "al round nuovo il salvataggio torna")
+	# colpo pesante: il salvataggio vale meno
+	s = _fresh()
+	_put(s, 40)
+	ev = _hit(s, heavy, "perfect", str(_heroes(s)[2]["id"]))
+	var hl: int = int(BattleTypes.RITMO_HIT_LOSS["pesante"])
+	check(int(_last_save(ev)["lost"]) == int(round(float(hl) * 0.5)) and bool(_last_save(ev)["heavy"]), "colpo pesante, parata perfetta: si perde comunque meta' (%s)" % str(_last_save(ev)))
+	# devastante: la parata non salva l'Ardore (dato di design: nessuna mossa lo ha ancora)
+	var dv: Dictionary = Ritmo.save_outcome({"mult": 1.0, "devastante": true}, "perfect", false)
+	check(str(dv["result"]) == "devastante" and float(dv["keep"]) == 1.0 and not bool(dv["used"]), "colpo devastante: niente salvataggio, disponibilita' non consumata")
+	# la perdita puo' far scendere di livello, ma solo dopo l'esito della parata
+	s = _fresh()
+	Ritmo.st(s)["level"] = Ritmo.ACCESO
+	_put(s, 27)
+	_hit(s, normal, "perfect", str(_heroes(s)[0]["id"]))
+	check(Ritmo.level(s) == Ritmo.ACCESO, "parata perfetta: il livello minacciato resta")
+	_put(s, 27)
+	_hit(s, normal, "", "")
+	check(Ritmo.level(s) == Ritmo.CALMO, "senza parata: si scende sotto la soglia")
+	# solo il colpo annunciato conta, non i colpi in piu' della catena
+	s = _fresh()
+	_put(s, 40)
+	_feed(s, [{"t": "boss_move", "move": normal}, {"t": "boss_move", "move": normal}])
+	check(Ritmo.ardore(s) == 40 - int(BattleTypes.RITMO_HIT_LOSS["normale"]), "la catena non moltiplica la perdita")
+	check(hs.size() == 4, "squadra di quattro")
+
+
+func s_dummy() -> Dictionary:
+	return _fresh()
+
+
+# Nel motore vero: la parata scritta dalla UI (state["timed_guard"]) arriva al RITMO tramite boss_action
+func _salvataggio_motore() -> void:
+	var s: Dictionary = _fresh("semaforo", 3)
+	_put(s, 40)
+	BattleFlow.start_round(s, "")
+	var guard: int = 0
+	while guard < 30:
+		guard += 1
+		var e: Dictionary = BattleFlow.next(s)
+		if bool(e.get("end", false)) or str(s["winner"]) != "":
+			break
+		if bool(e["boss"]) and not bool(e.get("greg", false)):
+			s["timed_guard"] = "perfect"
+			var ev: Array = BattleFlow.boss_action(s)
+			var sv: Dictionary = _last_save(ev)
+			check(not sv.is_empty() and str(sv["result"]) == "perfetto" and int(sv["lost"]) <= int(sv["threat"]) / 2, "nel motore: parata perfetta = salvataggio (%s)" % str(sv))
+			return
+		elif bool(e.get("greg", false)):
+			BattleFlow.boss_action(s, Gregario.ID)
+		else:
+			BattleFlow.player_action(s, str(e["player"]), {"swap": "", "move": BattleTypes.ACTION_GUARD, "target": ""}, bool(e.get("quick", false)))
+	check(false, "nel motore: il boss non ha agito nel primo round")
+
+
 func _init() -> void:
 	BattleFlow.timeline = true
 	_base()
@@ -337,6 +445,8 @@ func _init() -> void:
 	_ko()
 	_collaborazione()
 	_salvataggio_json()
+	_salvataggio()
+	_salvataggio_motore()
 	_scontri_interi()
 	if fails == 0:
 		print("test_v3_ritmo: OK")
