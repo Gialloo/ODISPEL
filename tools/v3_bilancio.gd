@@ -114,18 +114,15 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 		st["runs"] = float(st.get("runs", 0.0)) + 1.0
 		while str(b["winner"]) == "" and guard < 80:
 			guard += 1
-			SeqRound.begin(b)
 			# occasione di reazione: carica annunciata (non stordito) e almeno 1 di Riserva
 			var tele: Dictionary = b["telegraph"]
 			var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 			if not bm.is_empty() and int(BattleState.boss(b).get("stun", 0)) == 0 and BattleResolver.is_heavy_boss_move(bm) and int(b.get("reserve", 0)) >= 1:
 				st["occasioni"] = float(st.get("occasioni", 0.0)) + 1.0
-			var order: Array = SeqRound.order(b)
-			var oi: int = 0
-			while oi < order.size():
-				var e: Dictionary = order[oi]
-				oi += 1
-				if str(b["winner"]) != "":
+			BattleFlow.start_round(b)      # lo stesso giro dei turni della battaglia vera (Fase 0: sta nel motore)
+			while true:
+				var e: Dictionary = BattleFlow.next(b)
+				if bool(e.get("end", false)) or str(b["winner"]) != "":
 					break
 				if bool(e.get("greg", false)):
 					_scan(SeqRound.boss_action(b, Gregario.ID), st)
@@ -137,12 +134,12 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 					_scan(SeqRound.boss_action(b), st)
 				else:
 					var pid: String = str(e["player"])
-					var evp: Array = SeqRound.player_action(b, pid, BattleAI.choose_quick(b, pid) if bool(e.get("quick", false)) else BattleAI.choose(b, pid), bool(e.get("quick", false)))
+					var quick: bool = bool(e.get("quick", false))
+					var evp: Array = BattleFlow.player_action(b, pid, BattleAI.choose_quick(b, pid) if quick else BattleAI.choose(b, pid), quick)
 					_scan(evp, st)
 					for x in evp:
 						if str(x.get("t", "")) == "slancio":
 							st["slancio"] = float(st.get("slancio", 0.0)) + 1.0
-							order.insert(oi, {"unit": x["unit"], "player": x["player"], "boss": false, "spd": -1, "extra": true, "quick": true})
 			_scan(SeqRound.finish(b), st)
 			for uid in b["units"]:
 				if not Gregario.is_enemy(b, str(uid)):
