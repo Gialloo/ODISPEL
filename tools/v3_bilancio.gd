@@ -202,6 +202,8 @@ func _init() -> void:
 			solo = a.substr(5)
 		elif a == "giro":
 			BattleFlow.timeline = false
+		elif a == "nostab":
+			Stability.enabled = false     # Fase 3 spenta: BREAK del 0.54 (per il confronto prima/dopo)
 		elif a == "vel":
 			_vel_table()
 			quit()

@@ -103,6 +103,17 @@ const TL_INTERRUPT_PCT: int = 50          # INTERRUZIONE: recupero successivo = 
 const BREAK_TEAM_MULT: float = 1.3         # attacco di squadra alla rottura: colpo di ogni altro eroe (0 = spento). 1.3: deve pesare, e' il premio del BREAK (prima 0.6, non si notava)
 const BREAK_RECOVER: float = 0.75       # frazione della barra con cui il boss si riprende dopo una rottura (1 = piena)
 const BREAK_REGEN: int = 1             # equilibrio recuperato a fine round se non e' stato rotto
+# STABILITA' E BREAK (Fase 3 del combattimento, 04/11/2026; handoff 9, vedi Stability). Valori PROTOTIPALI da bilanciare.
+# Con STAB_ON = false: BREAK del 0.54 (fino a fine round, poi 75%), BREAK_RECOVER torna a valere.
+const STAB_ON: bool = true
+const STAB_WINDOW: Dictionary = {"boss": 3, "elite": 2, "comune": 2}          # azioni ordinarie alleate (boss 3: spec 9.2; elite/comune: D14)
+const STAB_RECOVER: Dictionary = {"boss": 0.334, "elite": 0.5, "comune": 1.0}  # quota della barra per azione del nemico (boss 33,3%: spec 9.3)
+const STAB_LATENT_CAP: Dictionary = {"boss": 0.5, "elite": 0.35, "comune": 0.25}   # limite della pressione latente × barra (D13)
+const STAB_ELITE: Array = []              # id dei nemici elite (D12: nell'atto 1 nessuno; frammenti = comuni, il resto = boss)
+const STAB_ELITE_WEAK: float = 0.7        # elite rotto: la prossima azione fa il 70% del danno (oltre al RITARDO forte)
+const SBIL_HITS: int = 2                  # SBILANCIAMENTO dopo un'Interruzione: i prossimi 2 colpi degli eroi ... (D11)
+const SBIL_DMG: float = 1.10              # ... fanno +10% di danno ...
+const SBIL_PRESS: float = 1.20            # ... e +20% di pressione
 # SINERGIE tra compagni nello stesso round
 const SYN_COVER: float = 1.12         # COPERTURA: un compagno ha scudato/curato/provocato prima, il tuo colpo fa di piu'
 const SYN_TRACE_GAUGE: int = 10       # TRACCIA: colpisci un boss marchiato da un altro: ultimate +10 a te, +5 a chi ha marchiato

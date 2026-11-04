@@ -202,6 +202,7 @@ static func boss_action(state: Dictionary, unit_id: String = BattleState.BOSS_ID
 			var rng: RNGState = BattleResolver._load_rng(state)
 			BattleResolver._boss_act(state, boss, str(tele["move"]), str(tele["target"]), rng, events)
 			BattleResolver._save_rng(state, rng)
+			Stability.on_enemy_action(state, events)     # Fase 3: la stabilita' risale a ogni azione ordinaria del boss
 		BattleResolver._check_winner(state, events)
 		Kits.after_events(state, events)
 	state["seq"]["boss_acted"] = true
