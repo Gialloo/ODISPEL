@@ -64,6 +64,14 @@ const SCIARPA: Dictionary = {
 	# id -> [rettangolo del ritaglio sul foglio 1536x2048 del ritratto, punto fermo (collo) sullo stesso foglio]
 	"zecca": [Rect2(117, 656, 1146, 896), Vector2(790, 960)],
 }
+# TESTA CHE VIVE (testa di Rio come livello a parte, autore 4/11/2026): stesso sistema. La testa ruota appena attorno al
+# collo (inclinazione lenta, scatto all'indietro quando sceglie e si riassesta), i capelli lontani dal volto ondeggiano
+# e arrivano in ritardo sullo scatto. Si disegna prima della sciarpa, che copre il mento come nel disegno.
+const TESTA: Dictionary = {
+	# id -> [ritaglio sul foglio 1536x2048, perno (collo), centro del volto (i capelli oltre ~280 px si muovono)]
+	"zecca": [Rect2(289, 0, 1226, 1006), Vector2(800, 930), Vector2(830, 520)],
+}
+var _head: Texture2D
 const SC_NX: int = 12
 const SC_NY: int = 9
 var _scarf: Texture2D
@@ -85,6 +93,7 @@ func set_who(id: String) -> void:
 	_tex = null
 	_sil = null
 	_scarf = null
+	_head = null
 	_tex_real = false
 	var real: String = "res://assets/portraits/hud/%s_hud.png" % id
 	if ResourceLoader.exists(real):
@@ -94,6 +103,8 @@ func set_who(id: String) -> void:
 		_base = RitrattoVarianti.base(id)
 		var sp: String = "res://assets/portraits/hud/%s_sciarpa.png" % id
 		_scarf = load(sp) if SCIARPA.has(id) and ResourceLoader.exists(sp) else null
+		var hp: String = "res://assets/portraits/hud/%s_testa.png" % id
+		_head = load(hp) if TESTA.has(id) and ResourceLoader.exists(hp) else null
 	else:
 		var fp: String = "res://assets/portraits/%s_neutro.png" % id
 		if ResourceLoader.exists(fp):
@@ -245,7 +256,9 @@ func _draw() -> void:
 			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
 			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
 		draw_texture_rect(now_t, r, false, Color(1, 1, 1, e))
-		if _scarf != null and now_t == _tex:     # le varianti (ferito, ombra...) hanno colori diversi: li' resta ferma
+		if _head != null and now_t == _tex:      # le varianti (ferito, ombra...) hanno colori diversi: li' resta ferma
+			_draw_head(r, e)
+		if _scarf != null and now_t == _tex:
 			_draw_scarf(r, e)
 		if _swap > 0.0 and _sil != null and _tex_real:
 			draw_texture_rect(_sil, r, false, Color(1, 1, 1, 0.85 * _swap * _swap))
@@ -346,13 +359,48 @@ func _draw_scarf(r: Rect2, e: float) -> void:
 				-2.4 * w * br + 1.2 * w * sin(t * 1.7 + u * 4.0) - 4.0 * w * whip)
 			pts.append(r.position + p * k + off)
 			uvs.append(Vector2(u, v))
+	_draw_grid(pts, uvs, _scarf, e)
+
+
+func _draw_head(r: Rect2, e: float) -> void:
+	var d: Array = TESTA[who_id]
+	var box: Rect2 = d[0]
+	var piv: Vector2 = d[1]
+	var face: Vector2 = d[2]
+	var k: float = r.size.x / 1536.0
+	var br: float = 0.5 + 0.5 * sin(t * 1.6)
+	var tw: float = t - _whip_t0
+	var whip: float = exp(-5.0 * tw) * sin(13.0 * tw) if tw >= 0.0 and tw < 1.5 else 0.0
+	var tl: float = tw - 0.07                                          # i capelli arrivano un attimo dopo
+	var hair_whip: float = exp(-4.0 * tl) * sin(12.0 * tl) if tl >= 0.0 and tl < 1.6 else 0.0
+	var ang: float = 0.006 * sin(t * 0.9) + 0.003 * br - 0.022 * whip  # radianti: meno di 1,5 gradi anche nello scatto
+	var pts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	for j in SC_NY + 1:
+		var v: float = float(j) / SC_NY
+		for i in SC_NX + 1:
+			var u: float = float(i) / SC_NX
+			var p: Vector2 = box.position + box.size * Vector2(u, v)
+			var q: Vector2 = piv + (p - piv).rotated(ang)               # testa rigida attorno al collo
+			var hw: float = clampf((p.distance_to(face) - 280.0) / 260.0, 0.0, 1.0)
+			hw *= hw
+			var off := Vector2(
+				hw * (1.8 * sin(t * 2.0 + v * 2.5 + u * 1.2) - 9.0 * hair_whip),
+				hw * (-1.4 * br + 1.0 * sin(t * 1.5 + u * 3.0)) - 1.2 * br)
+			pts.append(r.position + q * k + off)
+			uvs.append(Vector2(u, v))
+	_draw_grid(pts, uvs, _head, e)
+
+
+# Griglia (SC_NX+1)x(SC_NY+1) di punti gia' deformati -> triangoli con la texture, una sola chiamata
+func _draw_grid(pts: PackedVector2Array, uvs: PackedVector2Array, tex: Texture2D, e: float) -> void:
 	var idx := PackedInt32Array()
 	for j in SC_NY:
 		for i in SC_NX:
 			var a: int = j * (SC_NX + 1) + i
 			idx.append_array([a, a + 1, a + SC_NX + 1, a + 1, a + SC_NX + 2, a + SC_NX + 1])
 	RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), idx, pts,
-		PackedColorArray([Color(1, 1, 1, e)]), uvs, PackedInt32Array(), PackedFloat32Array(), _scarf.get_rid())
+		PackedColorArray([Color(1, 1, 1, e)]), uvs, PackedInt32Array(), PackedFloat32Array(), tex.get_rid())
 
 
 # grandezza piu' grande con cui la scritta di questo comando entra nel suo spazio

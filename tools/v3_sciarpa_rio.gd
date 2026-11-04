@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Prova della SCIARPA DI RIO che vive (autore, 4/11/2026): il ritratto dell'HUD di Rio su fondo scuro, respira per 2 s,
+# Prova della TESTA e della SCIARPA DI RIO che vivono (autore, 4/11/2026): il ritratto dell'HUD di Rio su fondo scuro, respira per 2 s,
 # poi sceglie ATTACCO (la sciarpa frusta), poi un colpo da fuori. Da girare come filmato a tempo fisso:
 # xvfb-run -a -s "-screen 0 1280x720x24" godot --path . --resolution 1280x720 --fixed-fps 30 --write-movie /tmp/sc/f.png -s tools/v3_sciarpa_rio.gd
 
