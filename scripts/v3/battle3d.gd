@@ -1828,7 +1828,11 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					_signal_lost_later(du, delay)
 				if vis.has(du):
 					var dv: Node3D = vis[du]
-					if dv.has_method("ko"):
+					if dv is VendingVisual and du != Gregario.ID:
+						# colpo finale diverso per ogni nemico (4/11/2026): parte con il rallentatore, con la sua parola
+						(dv as VendingVisual).finale(delay)
+						_ono(du, VendingVisual.finale_word((dv as VendingVisual).kind), Color("#ff4a5a"), delay + 0.05, true)
+					elif dv.has_method("ko"):
 						dv.call("ko")
 				if du == BattleState.BOSS_ID and str(b.get("winner", "")) == "players":
 					_finisher(delay)
