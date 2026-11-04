@@ -4106,7 +4106,7 @@ func _refresh_hud() -> void:
 	_boss_brk.max_value = maxi(1, int(boss.get("balance_max", 1)))
 	_boss_brk.value = int(boss.get("balance", 0))
 	_brk_lbl.text = "EQUILIBRIO  %d" % int(boss.get("balance", 0))
-	_brk_pulse(float(_boss_brk.value) / float(_boss_brk.max_value) <= 0.34 and int(boss.get("balance", 0)) > 0 and not ended)
+	_brk_pulse(float(_boss_brk.value) / float(_boss_brk.max_value) <= 0.34 and int(boss.get("balance", 0)) > 0 and not Stability.recovering(boss) and not ended)
 	var tele: Dictionary = b.get("telegraph", {})
 	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	var who: String = "TUTTI"

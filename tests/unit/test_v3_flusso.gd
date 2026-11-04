@@ -183,6 +183,7 @@ func _slancio_e_duo() -> void:
 
 
 func _init() -> void:
+	Stability.enabled = false        # Fase 3: anche la stabilita' a finestra e' una regola nuova (ha test_v3_break): qui si prova solo il giro
 	BattleFlow.timeline = false      # Fase 1: la prova di equivalenza riguarda il giro a round (la Timeline ha test_v3_timeline)
 	_same_battle()
 	_ingresso()

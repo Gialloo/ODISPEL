@@ -100,6 +100,165 @@ func _init() -> void:
 	hp0 = int(boss["hp"])
 	BreakRules.round_end(s, ev)
 	check(int(boss["hp"]) == hp0, "Radici: rotto non ricresce")
+	_fase3()
+	_fase3_scontro()
 	if fails == 0:
 		print("OK test_v3_break")
 	quit(1 if fails > 0 else 0)
+
+
+# ---------- FASE 3 DEL COMBATTIMENTO (04/11/2026): stabilita', finestra, recupero, pressione latente, tipologie ----------
+
+func _broken(boss_id: String) -> Dictionary:
+	var s: Dictionary = _fresh(boss_id)
+	Stability.mark(s)
+	return s
+
+
+func _has(ev: Array, t: String) -> bool:
+	for e in ev:
+		if str(e.get("t", "")) == t:
+			return true
+	return false
+
+
+func _fase3() -> void:
+	var s: Dictionary = _broken("semaforo")
+	var boss: Dictionary = BattleState.boss(s)
+	var hero: Dictionary = BattleState.active_unit(s, str(s["players"][0]["id"]))
+	check(Stability.on(boss), "fase 3: il nemico di BattleFlow ha la stabilita'")
+	check(Stability.category(boss) == "boss" and Stability.category(BattleState.boss(_fresh("frammento_rosso"))) == "comune", "categorie: boss e frammento comune")
+	var mx: int = int(boss["balance_max"])
+	var ev: Array = []
+	Stability.drain(boss, mx, hero, ev)
+	check(bool(boss["exposed"]) and int(boss["stun"]) == 1 and int(boss["brk_left"]) == 3, "boss rotto: vulnerabile, perde l'azione, finestra di 3")
+	var be: Dictionary = {}
+	for e in ev:
+		if str(e["t"]) == "break":
+			be = e
+	check(str(be.get("cat", "")) == "boss" and int(be.get("window", 0)) == 3, "evento break con categoria e finestra")
+	# anti-catena e pressione latente con limite
+	ev = []
+	Stability.drain(boss, 4, hero, ev)
+	check(int(boss["balance"]) == 0 and int(boss["latent"]) == 4 and _has(ev, "latent") and not _has(ev, "break"), "durante il BREAK la pressione diventa latente, niente nuovo BREAK")
+	Stability.drain(boss, 999, hero, ev)
+	check(int(boss["latent"]) == Stability.latent_cap(boss), "latente fino al limite")
+	# la finestra: l'azione che rompe non conta
+	Stability.on_ally_action(s, [{"t": "break"}])
+	check(int(boss["brk_left"]) == 3, "l'azione che rompe non consuma la finestra")
+	Stability.on_ally_action(s, [{"t": "duo_rest"}])
+	check(int(boss["brk_left"]) == 3, "il turno dato alla tecnica a due non consuma la finestra")
+	check(Stability.round_end(s, []) and bool(boss["exposed"]), "a fine round il BREAK non finisce piu'")
+	Stability.on_ally_action(s, [])
+	Stability.on_ally_action(s, [])
+	check(int(boss["brk_left"]) == 1 and bool(boss["exposed"]), "due azioni alleate: resta 1")
+	ev = []
+	Stability.on_ally_action(s, ev)
+	check(not bool(boss["exposed"]) and Stability.recovering(boss) and int(boss["balance"]) == 0 and _has(ev, "break_end"), "terza azione: fine del BREAK, recupero da 0")
+	var lat: int = int(boss["latent"])
+	ev = []
+	Stability.drain(boss, 50, hero, ev)
+	check(not _has(ev, "break") and int(boss["latent"]) == lat, "in recupero non si rompe (latente gia' al limite)")
+	# recupero: 33,3% a ogni azione del boss, tre azioni = piena
+	boss["stun"] = 0
+	Stability.on_enemy_action(s, [])
+	check(int(boss["balance"]) == int(ceil(float(mx) * 0.334 - 0.0001)) and Stability.recovering(boss), "prima azione del boss: un terzo")
+	Stability.on_enemy_action(s, [])
+	ev = []
+	Stability.on_enemy_action(s, ev)
+	check(not Stability.recovering(boss) and int(boss["balance"]) == maxi(1, mx - lat) and int(boss["latent"]) == 0 and _has(ev, "stab_full"), "tre azioni: piena, meno la pressione latente")
+	ev = []
+	Stability.drain(boss, int(boss["balance"]), hero, ev)
+	check(_has(ev, "break"), "dopo il ripristino si puo' rompere di nuovo")
+	# latente che arriverebbe a zero: niente BREAK automatico, la prossima pressione lo fa
+	s = _broken("cabina")
+	boss = BattleState.boss(s)
+	boss["stab_rec"] = true
+	boss["balance"] = 0
+	boss["latent"] = int(boss["balance_max"]) + 5
+	ev = []
+	Stability.on_phase(boss, ev)
+	check(int(boss["balance"]) == 1 and not bool(boss["exposed"]) and not _has(ev, "break"), "soglia raggiunta in recupero: il BREAK non scatta da solo (e la fase completa il recupero)")
+	Stability.drain(boss, 1, hero, ev)
+	check(bool(boss["exposed"]), "la prossima pressione provoca il collasso")
+	# limite che scende: l'eccedenza resta
+	boss["latent"] = Stability.latent_cap(boss) + 3
+	var before: int = int(boss["latent"])
+	Stability.drain(boss, 2, hero, [])
+	check(int(boss["latent"]) == before, "limite sceso: l'eccedenza non si cancella e non cresce")
+	# comune: perde l'azione, recupero rapido
+	s = _broken("frammento_rosso")
+	boss = BattleState.boss(s)
+	Stability.drain(boss, int(boss["balance_max"]), hero, [])
+	check(int(boss["stun"]) == 1 and int(boss["brk_left"]) == int(BattleTypes.STAB_WINDOW["comune"]), "comune: perde la prossima azione")
+	for i in int(BattleTypes.STAB_WINDOW["comune"]):
+		Stability.on_ally_action(s, [])
+	check(not bool(boss["exposed"]) and not Stability.recovering(boss) and int(boss["balance"]) == int(boss["balance_max"]), "comune: recupero rapido, subito pieno")
+	# elite: niente azione persa, ritardata e indebolita
+	s = _broken("semaforo")
+	boss = BattleState.boss(s)
+	boss["elite"] = true
+	Stability.drain(boss, int(boss["balance_max"]), hero, [])
+	check(int(boss["stun"]) == 0 and bool(boss["brk_weak"]) and bool(boss["brk_delay"]), "elite: ritardo e indebolimento invece dell'azione persa")
+	check(absf(Stability.damage_mult(boss, hero) - BattleTypes.STAB_ELITE_WEAK) < 0.001, "elite: il prossimo colpo e' indebolito")
+	Stability.on_enemy_action(s, [])
+	check(not boss.has("brk_weak"), "elite: indebolito solo per un'azione")
+	# SBILANCIAMENTO
+	s = _broken("semaforo")
+	boss = BattleState.boss(s)
+	ev = []
+	Stability.unbalance(boss, hero, ev)
+	check(int(boss["sbil"]) == 2 and _has(ev, "sbil"), "Interruzione: boss sbilanciato per 2 colpi")
+	check(absf(Stability.damage_mult(hero, boss) - BattleTypes.SBIL_DMG) < 0.001, "sbilanciato: +10% danno")
+	var p1: float = Stability.pressure_mult(boss)
+	var p2: float = Stability.pressure_mult(boss)
+	check(absf(p1 - 1.2) < 0.001 and absf(p2 - 1.2) < 0.001 and Stability.pressure_mult(boss) == 1.0, "sbilanciato: +20% pressione per due colpi, poi basta")
+	# fuori da BattleFlow: BREAK del 0.54 (motore classico, PvP)
+	s = _fresh("semaforo")
+	boss = BattleState.boss(s)
+	BattleResolver._drain_balance(boss, int(boss["balance_max"]), hero, [])
+	BattleResolver._drain_balance(boss, 3, hero, [])
+	check(not Stability.on(boss) and bool(boss["exposed"]) and not boss.has("latent"), "senza BattleFlow il BREAK resta quello di prima")
+
+
+# Scontro vero con la Timeline: la finestra conta solo i turni ordinari degli eroi (non SLANCIO, non il boss).
+func _fase3_scontro() -> void:
+	BattleFlow.timeline = true
+	var opened: int = 0
+	var bad: int = 0
+	for sd in range(1, 9):
+		var s: Dictionary = BattleState.create_solo("IO", _team(), [], "semaforo", sd)
+		var rounds: int = 0
+		while str(s["winner"]) == "" and rounds < 30:
+			rounds += 1
+			BattleFlow.start_round(s)
+			var guard: int = 0
+			while guard < 60 and str(s["winner"]) == "":
+				guard += 1
+				var e: Dictionary = BattleFlow.next(s)
+				if bool(e.get("end", false)):
+					break
+				var boss: Dictionary = BattleState.boss(s)
+				var left0: int = int(boss.get("brk_left", 0))
+				var open0: bool = bool(boss.get("exposed", false))
+				var ev: Array
+				if bool(e.get("greg", false)):
+					ev = BattleFlow.boss_action(s, Gregario.ID)
+				elif bool(e["boss"]):
+					ev = BattleFlow.boss_action(s)
+				else:
+					var pid: String = str(e["player"])
+					var q: bool = bool(e.get("quick", false))
+					ev = BattleFlow.player_action(s, pid, BattleAI.choose_quick(s, pid) if q else BattleAI.choose(s, pid), q)
+					if open0 and not q and not _has(ev, "duo_rest") and str(s["winner"]) == "":
+						if int(boss.get("brk_left", 0)) != left0 - 1:
+							bad += 1
+					if open0 and q and int(boss.get("brk_left", 0)) != left0:
+						bad += 1
+				if bool(e["boss"]) and open0 and int(boss.get("brk_left", 0)) != left0:
+					bad += 1
+				if _has(ev, "break"):
+					opened += 1
+			BattleFlow.finish(s)
+	check(opened > 0, "negli scontri veri il BREAK si apre (%d)" % opened)
+	check(bad == 0, "finestra: un turno ordinario la consuma, SLANCIO e boss no (%d errori)" % bad)

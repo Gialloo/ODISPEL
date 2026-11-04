@@ -494,7 +494,7 @@ static func plan_hints(state: Dictionary, slot_id: String) -> Array:
 	var br: String = BreakRules.hint(state)
 	if br != "":
 		hints.append(br)
-	if not bool(boss.get("exposed", false)) and int(boss.get("balance", 99)) <= 6:
+	if not bool(boss.get("exposed", false)) and not Stability.recovering(boss) and int(boss.get("balance", 99)) <= 6:
 		hints.append("BREAK VICINO: equilibrio %d, colpisci col colore vantaggioso" % int(boss["balance"]))
 	var tele: Dictionary = state.get("telegraph", {})
 	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
@@ -510,6 +510,8 @@ static func plan_hints(state: Dictionary, slot_id: String) -> Array:
 
 # Quando lo stordimento e' passato il boss si riprende: equilibrio di nuovo pieno.
 static func _recover_balance(state: Dictionary, events: Array) -> void:
+	if Stability.round_end(state, events):
+		return      # Fase 3: il BREAK dura una finestra di azioni alleate e il recupero va con le azioni del boss
 	var boss: Dictionary = BattleState.boss(state)
 	if bool(boss.get("exposed", false)) and int(boss.get("stun", 0)) == 0:
 		boss["exposed"] = false
@@ -543,7 +545,9 @@ static func _check_phase(state: Dictionary, events: Array) -> void:
 	state["phase"] = ph
 	state["cycle_index"] = 0
 	boss["balance_max"] = int(boss["balance_max"]) + BattleTypes.BREAK_PER_PHASE
-	if not bool(boss.get("exposed", false)):
+	if Stability.on(boss) and Stability.recovering(boss):
+		Stability.on_phase(boss, events)     # Fase 3: il cambio di fase completa il recupero (la pressione latente resta)
+	elif not bool(boss.get("exposed", false)):
 		boss["balance"] = int(boss["balance_max"])
 	events.append({"t": "phase", "phase": ph})
 	if ph == 2 and int(state.get("reserve", 0)) > 0 and BattleTypes.PHASE_DRAINS_RESERVE:
@@ -628,6 +632,7 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float,
 		dmg *= BattleTypes.ENRAGE_BONUS
 	if str(defender["side"]) == "boss" and bool(defender.get("exposed", false)):
 		dmg *= BattleTypes.BREAK_DAMAGE
+	dmg *= Stability.damage_mult(attacker, defender)      # Fase 3: boss sbilanciato, elite rotto indebolito
 	if str(attacker["side"]) == "player" and float(attacker["hp"]) < float(attacker["max_hp"]) * BattleTypes.GRIT_BELOW:
 		dmg *= BattleTypes.GRIT_BONUS
 	if float(defender["hp"]) < float(defender["max_hp"]) * BattleTypes.ENRAGE_BELOW:
@@ -767,7 +772,7 @@ static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, e
 
 # Equilibrio del boss: ogni colpo lo consuma (di piu' col vantaggio di colore, sui marchiati e coi colpi pesanti).
 static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, events: Array, state: Dictionary = {}) -> void:
-	if int(boss.get("stun", 0)) > 0 or bool(boss.get("exposed", false)):
+	if not Stability.on(boss) and (int(boss.get("stun", 0)) > 0 or bool(boss.get("exposed", false))):
 		return
 	var cm: float = BattleTypes.color_multiplier(str(attacker["color"]), str(boss["color"]))
 	var pts: int = BattleTypes.BREAK_ADV if (cm > 1.0 or BattleTypes.hits_weak2(attacker, boss)) else (BattleTypes.BREAK_DISADV if cm < 1.0 else BattleTypes.BREAK_NEUTRAL)
@@ -786,11 +791,18 @@ static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, e
 					said = true
 			if not said:
 				events.append({"t": "break_rule", "mult": rm, "name": str(BreakRules.of(boss).get("name", "CARICA"))})
+	var sm: float = Stability.pressure_mult(boss)      # SBILANCIAMENTO (Fase 3): +20% di pressione per i colpi dopo l'Interruzione
+	if sm != 1.0:
+		pts = maxi(1, int(round(float(pts) * sm)))
 	_drain_balance(boss, pts, attacker, events)
 
 
 # Toglie punti di equilibrio al boss; a zero scatta la rottura.
+# Fase 3 (STAB_ON): finestra, recupero, pressione latente e tipologie stanno in Stability.
 static func _drain_balance(boss: Dictionary, pts: int, attacker: Dictionary, events: Array) -> void:
+	if Stability.on(boss):
+		Stability.drain(boss, pts, attacker, events)
+		return
 	if int(boss.get("stun", 0)) > 0 or bool(boss.get("exposed", false)):
 		return
 	boss["balance"] = maxi(0, int(boss["balance"]) - pts)
@@ -939,6 +951,8 @@ static func _react(state: Dictionary, actor: Dictionary, move_id: String, events
 		var g: String = react_grade(state, actor)
 		var extra: int = 2 if g == "great" else (-2 if g == "fail" else 0)
 		_drain_balance(boss, maxi(1, BattleTypes.INTERRUPT_PTS + extra + (1 if str(state.get("order", "")) == "interrompi" else 0)), actor, events)
+		if g != "fail":
+			Stability.unbalance(boss, actor, events)      # Fase 3: SBILANCIAMENTO (riuscita = non fallita)
 		actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + 10)
 	return true
 

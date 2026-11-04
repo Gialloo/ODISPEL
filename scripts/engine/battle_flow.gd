@@ -31,6 +31,7 @@ static var timeline: bool = BattleTypes.TIMELINE_ON
 # ingresso (solo il primo round dello scontro): "vantaggio" = i nemici agiscono per ultimi, "agguato" = per primi.
 static func start_round(state: Dictionary, ingresso: String = "") -> void:
 	SeqRound.begin(state)
+	Stability.mark(state)        # Fase 3: stabilita' nemica e BREAK a finestra (vedi Stability)
 	if timeline:
 		_tl_round(state, ingresso)
 		return
@@ -68,6 +69,8 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary, qu
 	if timeline:
 		return _tl_player(state, pid, choice, quick)
 	var ev: Array = SeqRound.player_action(state, pid, choice, quick)
+	if not quick:
+		Stability.on_ally_action(state, ev)      # Fase 3: la finestra BREAK conta le azioni ordinarie alleate
 	var f: Dictionary = state.get("flow", {})
 	if not f.is_empty():
 		for x in ev:
@@ -415,6 +418,9 @@ static func _tl_player(state: Dictionary, pid: String, choice: Dictionary, quick
 	if mine and not quick and not s.is_empty():
 		tl["done"][pid] = true
 		_schedule(tl, s, time_cost(mv), _spd_of(state, s))
+	if mine and not quick:
+		Stability.on_ally_action(state, ev)      # Fase 3: solo il turno ordinario consuma la finestra BREAK (non SLANCIO ne' Ultimate in diretta)
+	_elite_delay(state, ev)
 	var cq: Dictionary = tl.get("cur_quick", {})
 	if quick and str(tl.get("cur", "")) == pid and not s.is_empty() and bool(cq.get("slancio", false)) and not bool(cq.get("waive", false)):
 		s["at"] = int(s["at"]) + BattleTypes.TL_SLANCIO_EXTRA * 100      # l'azione dello SLANCIO costa +15 sul recupero gia' fissato
@@ -423,6 +429,17 @@ static func _tl_player(state: Dictionary, pid: String, choice: Dictionary, quick
 		if str(x.get("t", "")) == "slancio":
 			(tl["quick"] as Array).append({"unit": str(x["unit"]), "player": str(x["player"]), "boss": false, "spd": -1, "extra": true, "quick": true, "slancio": true})
 	return ev
+
+
+# Fase 3: un elite rotto non perde l'azione, la sua prossima arriva in RITARDO forte (handoff 9.1).
+static func _elite_delay(state: Dictionary, ev: Array) -> void:
+	var boss: Dictionary = BattleState.boss(state)
+	if not bool(boss.get("brk_delay", false)):
+		return
+	boss.erase("brk_delay")
+	var sh: Dictionary = shift(state, "boss", "ritardo", "forte")
+	if not sh.is_empty():
+		ev.append(sh)
 
 
 # Come SeqRound._snapshot, ma senza nulla: tutto cio' che la squadra ha adesso conta come preso dopo l'ultima mossa del boss
