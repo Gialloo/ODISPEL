@@ -305,6 +305,12 @@ func _ready() -> void:
 	await get_tree().create_timer(0.4).timeout
 	var bonds: Array = Story.active_bonds() if not ritorno.is_empty() else []
 	var msgs: Array = []
+	# la lettura di Echo del nemico (archetipo, EnemyArchetypes): il problema si capisce dal primo scontro, non solo dopo
+	var reading: String = EnemyArchetypes.reading(str(BattleState.boss(b).get("char", "")))
+	if reading != "":
+		msgs.append([reading, Ui.CYAN])
+	if Gregario.alive(b):
+		msgs.append([EnemyArchetypes.reading(Gregario.ID), Ui.CYAN])
 	if not weak.is_empty():
 		msgs.append(["INDIZIO: %s teme il %s. Fai colpire %s." % [_bn(), str(weak[0]), _who_is(str(weak[0]))], Ui.CYAN])
 	for bd in bonds:

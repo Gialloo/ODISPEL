@@ -77,7 +77,9 @@ static func target_unit(state: Dictionary, target: String) -> Dictionary:
 	return BattleState.boss(state)
 
 
-# A inizio round la scheggia annuncia chi colpira' (a caso tra chi e' in piedi).
+# A inizio round la scheggia annuncia chi colpira'. E' una PREDATRICE (EnemyArchetypes, Review 01 del game director): punta
+# chi in campo ha meno PV in proporzione, cosi' la domanda e' vera (abbatterla prima o proteggere il ferito); a parita' a caso.
+# Prima sceglieva a caso tra chi era in piedi: la priorita' non si poteva leggere.
 static func telegraph(state: Dictionary) -> void:
 	if not alive(state):
 		state.erase("telegraph2")
@@ -86,8 +88,18 @@ static func telegraph(state: Dictionary) -> void:
 	if list.is_empty():
 		state.erase("telegraph2")
 		return
+	var low: float = INF
+	var prey: Array = []
+	for p in list:
+		var au: Dictionary = BattleState.unit(state, str(p.get("active", "")))
+		var r: float = float(au.get("hp", 1)) / maxf(1.0, float(au.get("max_hp", 1))) if not au.is_empty() else 1.0
+		if r < low - 0.001:
+			low = r
+			prey = [p]
+		elif absf(r - low) <= 0.001:
+			prey.append(p)
 	var rng: RNGState = BattleResolver._load_rng(state)
-	var target: String = str(list[rng.random_index(list.size())]["id"])
+	var target: String = str(prey[rng.random_index(prey.size())]["id"])
 	BattleResolver._save_rng(state, rng)
 	state["telegraph2"] = {"move": "scheggia", "target": target}
 
