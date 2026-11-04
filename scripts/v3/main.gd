@@ -180,16 +180,10 @@ func go_tear(screen: String, args: Dictionary = {}) -> void:
 	if img == null or img.is_empty():
 		go(screen, args)            # senza immagine (o durante un altro cambio) resta la dissolvenza di sempre
 		return
-	var mat := ShaderMaterial.new()
-	var sh := Shader.new()
-	sh.code = TEAR_SHADER
-	mat.shader = sh
-	mat.set_shader_parameter("src", ImageTexture.create_from_image(img))
-	var rect := ColorRect.new()
-	rect.material = mat
-	Ui.place(rect, 0, 0, 1, 1)
+	var tr: Array = _tear_rect(img)
+	var rect: ColorRect = tr[0]
+	var mat: ShaderMaterial = tr[1]
 	rect.mouse_filter = Control.MOUSE_FILTER_STOP
-	_overlay.add_child(rect)
 	var clock := func(v: float) -> void: mat.set_shader_parameter("t", v)
 	var run := create_tween().set_ignore_time_scale(true)
 	run.tween_method(clock, 0.0, 4.0, 4.0)
@@ -207,6 +201,44 @@ func go_tear(screen: String, args: Dictionary = {}) -> void:
 	await tw.finished
 	run.kill()
 	rect.queue_free()
+
+
+static var _tear_sh: Shader = null
+
+
+func _tear_rect(img: Image) -> Array:
+	if _tear_sh == null:
+		_tear_sh = Shader.new()
+		_tear_sh.code = TEAR_SHADER
+	var mat := ShaderMaterial.new()
+	mat.shader = _tear_sh
+	mat.set_shader_parameter("src", ImageTexture.create_from_image(img))
+	var rect := ColorRect.new()
+	rect.material = mat
+	Ui.place(rect, 0, 0, 1, 1)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_overlay.add_child(rect)
+	return [rect, mat]
+
+
+# LO SQUARCIO (boss a due fasi, idea 3): l'immagine di adesso si strappa e sotto c'e' gia' l'arena cambiata.
+# Chi chiama cambia luce e colori nel fotogramma dopo: lo strappo li rivela. Ritorna false se non si puo' (headless).
+func tear_now(secs: float = 0.6) -> bool:
+	if DisplayServer.get_name() == "headless":
+		return false
+	var img: Image = get_viewport().get_texture().get_image()
+	if img == null or img.is_empty():
+		return false
+	var tr: Array = _tear_rect(img)
+	var rect: ColorRect = tr[0]
+	var mat: ShaderMaterial = tr[1]
+	mat.set_shader_parameter("prog", 0.8)
+	var tw := create_tween().set_ignore_time_scale(true).set_parallel(true)
+	tw.tween_method(func(v: float) -> void: mat.set_shader_parameter("t", v), 0.0, secs * 2.0, secs)
+	tw.tween_method(func(v: float) -> void: mat.set_shader_parameter("open", v), 0.0, 1.0, secs) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.chain().tween_callback(rect.queue_free)
+	return true
 
 
 # PRESTAZIONI: il 3D si disegna a risoluzione ridotta (circa 720 righe su telefono, 1080 su PC), l'interfaccia resta nitida.

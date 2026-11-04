@@ -212,6 +212,95 @@ func freeze(title: String, who: String, c: Color, secs: float) -> void:
 	queue_redraw()
 
 
+# INQUADRATURE FIRMATE (idea 4, 4/11/2026 · regola U20: gli oggetti raccontano i personaggi). Durante l'abilita' la
+# telecamera di Echo prende il «mezzo» di chi agisce: Rio in verticale come una sua diretta, Lance nel mirino
+# dell'autovelox, Nox in controluce, Saul dall'alto come un drone. Poche forme piatte per un secondo, niente shader.
+var _look: String = ""
+var _look_from: int = 0
+var _look_until: int = 0
+var _look_col: Color = Ui.CREAM
+
+
+func look(kind: String, c: Color, secs: float = 1.3) -> void:
+	_look = kind
+	_look_col = c
+	_look_from = Time.get_ticks_msec()
+	_look_until = _look_from + int(secs * 1000.0)
+	queue_redraw()
+
+
+func _draw_look(sz: Vector2) -> void:
+	var el: float = float(Time.get_ticks_msec() - _look_from) / 1000.0
+	var tot: float = float(_look_until - _look_from) / 1000.0
+	var a: float = clampf(el / 0.12, 0.0, 1.0) * clampf((tot - el) / 0.2, 0.0, 1.0)
+	var f: Font = Ui.display()
+	var fb: Font = Ui.body()
+	var cr: Color = Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, a)
+	match _look:
+		"diretta":
+			# il formato verticale delle dirette di Rio: bande nere ai lati, LIVE, spettatori che salgono, il suo nome
+			var w: float = minf(sz.x, sz.y * 9.0 / 16.0)
+			var x0: float = (sz.x - w) * 0.5
+			var slide: float = (1.0 - clampf(el / 0.12, 0.0, 1.0)) * x0
+			draw_rect(Rect2(0, 0, x0 - slide, sz.y), Color(0.02, 0.01, 0.05, 0.92 * a))
+			draw_rect(Rect2(sz.x - x0 + slide, 0, x0, sz.y), Color(0.02, 0.01, 0.05, 0.92 * a))
+			draw_rect(Rect2(x0, 0, w, sz.y), Color(_look_col.r, _look_col.g, _look_col.b, 0.9 * a), false, 3.0)
+			draw_rect(Rect2(x0 + 22, 26, 92, 38), Color(REC_RED.r, REC_RED.g, REC_RED.b, a))
+			draw_string(f, Vector2(x0 + 36, 56), "LIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, cr)
+			var views: int = 8400 + int(el * 9100.0)
+			draw_string(fb, Vector2(x0 + 128, 54), "%d.%dK SPETTATORI" % [views / 1000, (views % 1000) / 100], HORIZONTAL_ALIGNMENT_LEFT, -1, 24, cr)
+			draw_string(f, Vector2(x0 + 24, sz.y - 40), "@RIO", HORIZONTAL_ALIGNMENT_LEFT, -1, 34, Color(_look_col.lightened(0.5).r, _look_col.lightened(0.5).g, _look_col.lightened(0.5).b, a))
+			for i in 4:
+				var hy: float = sz.y - 110.0 - fmod(el * 260.0 + i * 70.0, 300.0)
+				draw_circle(Vector2(x0 + w - 44.0 + sin(el * 6.0 + i) * 10.0, hy), 9.0, Color(1.0, 0.35, 0.55, a * clampf((hy - sz.y * 0.45) / 120.0, 0.0, 1.0)))
+		"autovelox":
+			# il mirino dell'autovelox di Lance: riquadro rosso al centro, fuori piu' scuro, la velocita' e l'infrazione
+			var r := Rect2(sz.x * 0.28, sz.y * 0.2, sz.x * 0.44, sz.y * 0.6)
+			var dk := Color(0.0, 0.0, 0.0, 0.42 * a)
+			draw_rect(Rect2(0, 0, sz.x, r.position.y), dk)
+			draw_rect(Rect2(0, r.end.y, sz.x, sz.y - r.end.y), dk)
+			draw_rect(Rect2(0, r.position.y, r.position.x, r.size.y), dk)
+			draw_rect(Rect2(r.end.x, r.position.y, sz.x - r.end.x, r.size.y), dk)
+			var rc := Color(REC_RED.r, REC_RED.g, REC_RED.b, a)
+			var L: float = 44.0
+			for cn in [r.position, Vector2(r.end.x, r.position.y), Vector2(r.position.x, r.end.y), r.end]:
+				var dx: float = L if cn.x == r.position.x else -L
+				var dy: float = L if cn.y == r.position.y else -L
+				draw_line(cn, cn + Vector2(dx, 0), rc, 5.0)
+				draw_line(cn, cn + Vector2(0, dy), rc, 5.0)
+			var cc: Vector2 = r.get_center()
+			draw_line(cc - Vector2(24, 0), cc + Vector2(24, 0), rc, 2.0)
+			draw_line(cc - Vector2(0, 24), cc + Vector2(0, 24), rc, 2.0)
+			draw_string(fb, Vector2(r.position.x, r.position.y - 14), "AUTOVELOX · RILEVAMENTO", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, cr)
+			var kmh: int = mini(50 + int(el * 160.0), 137)
+			draw_string(f, Vector2(r.position.x, r.end.y + 50), "%03d km/h" % kmh, HORIZONTAL_ALIGNMENT_LEFT, -1, 44, rc)
+			if kmh > 50 and fmod(el, 0.3) < 0.2:
+				draw_string(f, Vector2(r.end.x - 230, r.end.y + 50), "INFRAZIONE", HORIZONTAL_ALIGNMENT_LEFT, -1, 36, Color(Ui.YELLOW.r, Ui.YELLOW.g, Ui.YELLOW.b, a))
+		"controluce":
+			# Nox in controluce: un sole basso alle spalle (aloni chiari nel suo colore), bordi scuri, una riga di riflesso
+			var lc: Color = _look_col.lightened(0.6)
+			var ctr := Vector2(sz.x * 0.5, sz.y * 0.36)
+			for i in 6:
+				var rr: float = 60.0 + i * 70.0
+				draw_circle(ctr, rr, Color(lc.r, lc.g, lc.b, 0.07 * a))
+			draw_circle(ctr, 34.0, Color(1, 1, 1, 0.5 * a))
+			draw_rect(Rect2(0, ctr.y - 2, sz.x, 4), Color(lc.r, lc.g, lc.b, 0.35 * a))
+			for i in 5:
+				var e: float = 30.0 + i * 26.0
+				draw_rect(Rect2(0, 0, sz.x, sz.y), Color(0, 0, 0, 0.07 * a), false, e)
+		"drone":
+			# Saul dall'alto: la griglia e i dati di un drone
+			var gc := Color(_look_col.lightened(0.5).r, _look_col.lightened(0.5).g, _look_col.lightened(0.5).b, 0.22 * a)
+			for i in range(1, 6):
+				draw_line(Vector2(sz.x * i / 6.0, 0), Vector2(sz.x * i / 6.0, sz.y), gc, 1.5)
+				draw_line(Vector2(0, sz.y * i / 6.0), Vector2(sz.x, sz.y * i / 6.0), gc, 1.5)
+			var cc2 := sz * 0.5
+			draw_arc(cc2, 70.0, 0, TAU, 40, cr, 3.0)
+			draw_line(cc2 - Vector2(100, 0), cc2 - Vector2(76, 0), cr, 3.0)
+			draw_line(cc2 + Vector2(76, 0), cc2 + Vector2(100, 0), cr, 3.0)
+			draw_string(fb, Vector2(40, sz.y - 120), "DRONE · ALT %d m · N %d°" % [12 + int(el * 3.0), 45 + int(el * 20.0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 26, cr)
+
+
 func cutting() -> bool:
 	return _cut_t > 0.0
 
@@ -262,7 +351,7 @@ func _process(delta: float) -> void:
 	# nelle Anomalie il mirino trema: prima si ridisegnava tutto lo schermo a ogni fotogramma, ora 15 volte al secondo
 	# (il tremolio si legge uguale e sul telefono si risparmia il disegno a schermo intero contro i boss)
 	var anom_tick: int = int(_t * 15.0) if anomaly else 0
-	if anom_tick != _anom_was or _cut_t > 0.0 or _dist_t > 0.0 or _drawn_busy or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until or blink != _blink_was:
+	if anom_tick != _anom_was or _cut_t > 0.0 or _dist_t > 0.0 or _drawn_busy or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until or Time.get_ticks_msec() < _look_until + 40 or blink != _blink_was:
 		queue_redraw()
 	_anom_was = anom_tick
 	_drawn_busy = _cut_t > 0.0 or _dist_t > 0.0 or not _chat.is_empty() or Time.get_ticks_msec() < _frz_until
@@ -314,6 +403,8 @@ func _draw() -> void:
 		_draw_crack(sz)
 	if _cut_t > 0.0:
 		_draw_cut(sz)
+	if Time.get_ticks_msec() < _look_until:
+		_draw_look(sz)
 	_draw_chat(sz)
 	if Time.get_ticks_msec() < _frz_until:
 		_draw_freeze(sz)
