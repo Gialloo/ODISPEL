@@ -179,12 +179,11 @@ func setup(p_who: String, p_col: Color, p_items: Array) -> void:
 
 
 func pick(kind: String) -> void:
-	var nuovo: bool = kind != "" and kind != picked
-	if nuovo:
+	if kind != "" and kind != picked:
 		_punch = 1.0
 	super(kind)
-	if nuovo:
-		_whip_t0 = t          # dopo super: la ruota azzera t quando scegli
+	# niente frustata di testa, capelli e sciarpa quando cambi mossa (autore, 4/11/2026: «il movimento forte di
+	# assestamento quando cambi mossa eliminalo»): restano solo il respiro e l'ondeggiare lento
 	queue_redraw()
 
 
@@ -247,7 +246,6 @@ func _draw() -> void:
 			if _shown != null:
 				_swap = 1.0          # cambia faccia (ombra, ferito...): lampo bianco della sagoma e piccolo scatto
 				_punch = maxf(_punch, 0.6)
-				_whip_t0 = t
 			_shown = now_t
 		_live_transform(dx, H, e)
 		var r := Rect2(Vector2(dx, H - PH), Vector2(PW, PH))
@@ -362,7 +360,7 @@ func _draw_scarf(r: Rect2, e: float) -> void:
 	var k: float = r.size.x / 1536.0                                   # dal foglio del ritratto ai pixel dello schermo
 	var br: float = 0.5 + 0.5 * sin(t * 1.6)                           # stesso respiro del ritratto
 	var tw: float = t - _whip_t0
-	var whip: float = exp(-4.5 * tw) * sin(15.0 * tw) if tw >= 0.0 and tw < 1.5 else 0.0   # molla smorzata: frusta e si assesta
+	var whip: float = exp(-5.5 * tw) * sin(9.0 * tw) if tw >= 0.0 and tw < 1.5 else 0.0    # molla smorzata, morbida: un'onda e si assesta
 	var tail_x: float = box.position.x + 60.0                          # la coda che pende a sinistra
 	var pts := PackedVector2Array()
 	var uvs := PackedVector2Array()
@@ -374,8 +372,8 @@ func _draw_scarf(r: Rect2, e: float) -> void:
 			var w: float = pow(clampf(p.distance_to(anchor) / 620.0, 0.0, 1.0), 1.4)
 			var tail: float = clampf((anchor.x - p.x) / (anchor.x - tail_x), 0.0, 1.0)
 			var off := Vector2(
-				1.6 * w * sin(t * 2.1 + v * 3.0 + u * 1.5) + 2.6 * tail * tail * sin(t * 3.1 + v * 5.0) - 9.0 * w * whip,
-				-2.4 * w * br + 1.2 * w * sin(t * 1.7 + u * 4.0) - 4.0 * w * whip)
+				0.8 * w * sin(t * 1.6 + v * 3.0 + u * 1.5) + 1.3 * tail * tail * sin(t * 2.2 + v * 5.0) - 4.0 * w * whip,
+				-1.4 * w * br + 0.6 * w * sin(t * 1.3 + u * 4.0) - 1.8 * w * whip)
 			pts.append(r.position + p * k + off)
 			uvs.append(Vector2(u, v))
 	_draw_grid(pts, uvs, _scarf, Color(1, 1, 1, e))
@@ -389,11 +387,12 @@ func _draw_head(r: Rect2, e: float, shift: Vector2 = Vector2.ZERO, mod: Color = 
 	var k: float = r.size.x / 1536.0
 	var br: float = 0.5 + 0.5 * sin(t * 1.6)
 	var tw: float = t - _whip_t0
-	var whip: float = exp(-5.0 * tw) * sin(13.0 * tw) if tw >= 0.0 and tw < 1.5 else 0.0
+	var whip: float = exp(-6.0 * tw) * sin(8.0 * tw) if tw >= 0.0 and tw < 1.5 else 0.0
 	var tl: float = tw - 0.07                                          # i capelli arrivano un attimo dopo
-	var hair_whip: float = exp(-4.0 * tl) * sin(12.0 * tl) if tl >= 0.0 and tl < 1.6 else 0.0
-	# radianti. A livelli (niente testa vecchia sotto) il movimento e' piu' ampio: fino a ~2,5 gradi nello scatto
-	var amp: float = 1.8 if big else 1.0
+	var hair_whip: float = exp(-5.0 * tl) * sin(8.0 * tl) if tl >= 0.0 and tl < 1.6 else 0.0
+	# radianti. Correzione dell'autore (4/11/2026, «rendi il movimento piu' leggero»): meno di 1 grado anche nello scatto,
+	# onde lente e senza rimbalzi
+	var amp: float = 0.8 if big else 0.6
 	var ang: float = amp * (0.006 * sin(t * 0.9) + 0.003 * br - 0.022 * whip)
 	var pts := PackedVector2Array()
 	var uvs := PackedVector2Array()
@@ -406,8 +405,8 @@ func _draw_head(r: Rect2, e: float, shift: Vector2 = Vector2.ZERO, mod: Color = 
 			var hw: float = clampf((p.distance_to(face) - 280.0) / 260.0, 0.0, 1.0)
 			hw *= hw
 			var off := Vector2(
-				hw * amp * (1.8 * sin(t * 2.0 + v * 2.5 + u * 1.2) - 9.0 * hair_whip),
-				hw * amp * (-1.4 * br + 1.0 * sin(t * 1.5 + u * 3.0)) - 1.2 * br)
+				hw * amp * (1.2 * sin(t * 1.5 + v * 2.5 + u * 1.2) - 5.0 * hair_whip),
+				hw * amp * (-1.2 * br + 0.8 * sin(t * 1.2 + u * 3.0)) - 0.8 * br)
 			pts.append(r.position + q * k + off + shift)
 			uvs.append(Vector2(u, v))
 	_draw_grid(pts, uvs, _head, mod)
