@@ -1,5 +1,5 @@
 {
-	"_nota": "Testi dell'atto 1 (PROVVISORI). Generati da tools/gen_dialoghi (vedi docs/STORIA.md per voci e arco). Scene: righe + riassunto. Una riga puo' avere 'se' o 'se_non' (vale solo se una scelta e' stata fatta o no) e 'scelte' (lista di {testo, imposta, vai}). 'chiacchiere': battute durante l'esplorazione, per area. Gli id dei personaggi restano ferri/zecca (file e ritratti); i nomi sono Lance e Rio.",
+	"_nota": "Testi dell'atto 1 (PROVVISORI). Generati da tools/gen_dialoghi (vedi docs/STORIA.md per voci e arco). Scene: righe + riassunto. Una riga puo' avere 'se' o 'se_non' (vale solo se una scelta e' stata fatta o no) e 'scelte' (lista di {testo, imposta, vai}). 'chiacchiere': battute durante l'esplorazione, per area. 'battaglia': fumetti brevi della squadra in combattimento (critico, ko_nemico, compagno_ko, copre, rialzato). Gli id dei personaggi restano ferri/zecca (file e ritratti); i nomi sono Lance e Rio.",
 	"segreto_avviso": {
 		"riassunto": "Un boss segreto troppo forte per voi: lo avete lasciato stare.",
 		"righe": [
@@ -1199,5 +1199,222 @@
 			{"id": "t_c5", "quando": {"tipo": "caso"}, "righe": [{"chi": "echo", "col": "#3fe0ff", "espr": "triste", "testo": "Nox. Le notti erano vere. Su tutte le mie telecamere."}, {"chi": "nox", "espr": "neutro", "testo": "Lo so. È questo che mi fa arrabbiare."}, {"chi": "echo", "col": "#3fe0ff", "espr": "neutro", "testo": "...Posso farti compagnia lo stesso?"}, {"chi": "nox", "espr": "neutro", "testo": "Stanotte no. Domani forse."}]},
 			{"id": "t_f1", "quando": {"tipo": "fermo"}, "righe": [{"chi": "saul", "espr": "neutro", "testo": "Non fermatevi in tangenziale. Mia nonna è morta così."}, {"chi": "zecca", "espr": "sorpreso", "testo": "DAVVERO?"}, {"chi": "saul", "espr": "neutro", "testo": "No. Ma ti sei mosso."}]}
 		]
+	},
+	"battaglia": {
+		"critico": {
+			"ferri": [
+				[
+					{"chi": "ferri", "testo": "Colpo regolamentare."}
+				],
+				[
+					{"chi": "ferri", "testo": "Articolo tre: si mira al centro."}
+				],
+				[
+					{"chi": "ferri", "testo": "Zero virgola sei secondi."},
+					{"chi": "saul", "testo": "Non te l'ha chiesto nessuno."}
+				]
+			],
+			"nox": [
+				[
+					{"chi": "nox", "testo": "Fatto. Posso sedermi?"}
+				],
+				[
+					{"chi": "nox", "testo": "Meno fatica del previsto."}
+				],
+				[
+					{"chi": "zecca", "testo": "Rifallo! Non stavo registrando!"},
+					{"chi": "nox", "testo": "No."}
+				]
+			],
+			"zecca": [
+				[
+					{"chi": "zecca", "testo": "Raga, CLIP DELL'ANNO!"}
+				],
+				[
+					{"chi": "zecca", "testo": "Ditemi che qualcuno l'ha vista."}
+				],
+				[
+					{"chi": "zecca", "testo": "Avete visto QUELLO CHE HO FATTO?"},
+					{"chi": "ferri", "testo": "Sì. Torna in formazione."}
+				]
+			],
+			"saul": [
+				[
+					{"chi": "saul", "testo": "Fortuna. Ma la chiamo esperienza."}
+				],
+				[
+					{"chi": "saul", "testo": "Questo lo metto in conto."}
+				],
+				[
+					{"chi": "saul", "testo": "Mia nonna diceva: dove non arriva la mano, arriva il caso."},
+					{"chi": "nox", "testo": "Tua nonna non esiste."}
+				]
+			]
+		},
+		"ko_nemico": {
+			"ferri": [
+				[
+					{"chi": "ferri", "testo": "Neutralizzato."}
+				],
+				[
+					{"chi": "ferri", "testo": "Uno in meno. In orario."}
+				],
+				[
+					{"chi": "ferri", "testo": "Resta a terra. È un ordine."}
+				]
+			],
+			"nox": [
+				[
+					{"chi": "nox", "testo": "Spento. Beato lui."}
+				],
+				[
+					{"chi": "nox", "testo": "Uno. Il caffè è ancora caldo."}
+				]
+			],
+			"zecca": [
+				[
+					{"chi": "zecca", "testo": "E con questo... SIPARIO!"}
+				],
+				[
+					{"chi": "zecca", "testo": "Saluta il pubblico! ...Non saluta."}
+				]
+			],
+			"saul": [
+				[
+					{"chi": "saul", "testo": "Niente di personale. Quasi niente."}
+				],
+				[
+					{"chi": "saul", "testo": "Ha lasciato qualcosa? Monete, chiavi, rimpianti?"},
+					{"chi": "ferri", "testo": "Saul."}
+				]
+			]
+		},
+		"compagno_ko": {
+			"ferri": {
+				"nox": [
+					[
+						{"chi": "ferri", "testo": "Nox! ...Coprite il lato sinistro."}
+					]
+				],
+				"zecca": [
+					[
+						{"chi": "ferri", "testo": "Rio, resta giù. Ci penso io."}
+					]
+				],
+				"saul": [
+					[
+						{"chi": "ferri", "testo": "Saul, in piedi. Non ti ho dato il permesso."}
+					]
+				]
+			},
+			"nox": {
+				"ferri": [
+					[
+						{"chi": "nox", "testo": "Lance è giù. Addio pausa."}
+					]
+				],
+				"zecca": [
+					[
+						{"chi": "nox", "testo": "Rio. Non è il momento di fare scena."}
+					]
+				],
+				"saul": [
+					[
+						{"chi": "nox", "testo": "Saul. Alzati, mi devi un caffè."}
+					]
+				]
+			},
+			"zecca": {
+				"ferri": [
+					[
+						{"chi": "zecca", "testo": "LANCE! No no no, questa non va in onda!"}
+					]
+				],
+				"nox": [
+					[
+						{"chi": "zecca", "testo": "Nox?! Chi mi dice adesso se vado bene?"}
+					]
+				],
+				"saul": [
+					[
+						{"chi": "zecca", "testo": "Saul! Sveglia, ti stavo riprendendo!"}
+					]
+				]
+			},
+			"saul": {
+				"ferri": [
+					[
+						{"chi": "saul", "testo": "Il capo a terra. Brutto affare."}
+					]
+				],
+				"nox": [
+					[
+						{"chi": "saul", "testo": "Nox. ...Questo non era nel prezzo."}
+					]
+				],
+				"zecca": [
+					[
+						{"chi": "saul", "testo": "Ragazzo. I riflettori non valgono tanto."}
+					]
+				]
+			}
+		},
+		"copre": {
+			"ferri": [
+				[
+					{"chi": "ferri", "testo": "Dietro di me."}
+				],
+				[
+					{"chi": "ferri", "testo": "Il colpo lo prendo io. Procedura."}
+				]
+			],
+			"nox": [
+				[
+					{"chi": "nox", "testo": "Va bene. Questo lo prendo io."}
+				],
+				[
+					{"chi": "nox", "testo": "Non abituarti."}
+				]
+			],
+			"zecca": [
+				[
+					{"chi": "zecca", "testo": "Inquadrate qui: IL SALVATAGGIO!"}
+				]
+			],
+			"saul": [
+				[
+					{"chi": "saul", "testo": "Questo te lo segno."}
+				],
+				{
+					"se": "ferri",
+					"righe": [
+						{"chi": "saul", "testo": "Ti ho salvato. Il conto arriva domani."},
+						{"chi": "ferri", "testo": "Rifiuto."}
+					]
+				}
+			]
+		},
+		"rialzato": {
+			"ferri": [
+				[
+					{"chi": "ferri", "testo": "Ero in pausa tattica."}
+				]
+			],
+			"zecca": [
+				[
+					{"chi": "zecca", "testo": "Il protagonista torna sempre!"}
+				]
+			],
+			"saul": [
+				[
+					{"chi": "saul", "testo": "Non ero a terra. Trattavo."}
+				]
+			],
+			"nox": [
+				[
+					{"chi": "nox", "testo": "Cinque minuti in più non li avevo chiesti."}
+				]
+			]
+		}
 	}
 }
