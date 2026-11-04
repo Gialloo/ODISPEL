@@ -54,6 +54,34 @@ var _punch: float = 0.0                        # 1 = appena scelto un comando o 
 var _swap: float = 0.0                         # lampo bianco della sagoma quando cambia la variante
 var _shown: Texture2D
 var _born: float = 0.0                         # tempo dell'ultima entrata (per l'oscillazione che si assesta)
+# SCIARPA CHE VIVE (sciarpa di Rio disegnata dall'autore come livello a parte, 4/11/2026): la sciarpa e' un PNG ritagliato
+# dallo stesso foglio del ritratto (<id>_sciarpa.png, meta' risoluzione) e si disegna sopra con una griglia di triangoli
+# deformata, come un Live2D leggero: vicino al collo resta ferma, la coda e le frange ondeggiano col respiro e frustano
+# quando il personaggio scatta (scelta del comando, cambio di faccia, colpo). Il ritratto sotto ha gia' la sciarpa
+# disegnata, quindi gli spostamenti restano di pochi pixel: ai bordi si vede la stessa sciarpa, mai un buco.
+# PRESTAZIONI: 12x9 quadrati = 216 triangoli in una sola chiamata, ricalcolati al fotogramma (pochi microsecondi).
+const SCIARPA: Dictionary = {
+	# id -> [rettangolo del ritaglio sul foglio 1536x2048 del ritratto, punto fermo (collo) sullo stesso foglio]
+	"zecca": [Rect2(117, 656, 1146, 896), Vector2(790, 960)],
+}
+# TESTA CHE VIVE (testa di Rio come livello a parte, autore 4/11/2026): stesso sistema. La testa ruota appena attorno al
+# collo (inclinazione lenta, scatto all'indietro quando sceglie e si riassesta), i capelli lontani dal volto ondeggiano
+# e arrivano in ritardo sullo scatto. Si disegna prima della sciarpa, che copre il mento come nel disegno.
+const TESTA: Dictionary = {
+	# id -> [ritaglio sul foglio 1536x2048, perno (collo), centro del volto (i capelli oltre ~280 px si muovono)]
+	"zecca": [Rect2(258, 0, 1278, 1004), Vector2(800, 930), Vector2(830, 520)],
+}
+var _head: Texture2D
+# RITRATTO A LIVELLI (busto dell'autore, 4/11/2026): se c'e' <id>_busto.png (il ritratto senza la testa) e c'e' la testa,
+# il ritratto normale si compone busto + testa + sciarpa invece del PNG intero, cosi' la testa si muove di piu' senza
+# lasciare la vecchia testa sotto. La testa porta con se' il suo alone (ritagliato dal ritratto intero). Le varianti
+# (ferito, ombra...) restano PNG interi e fermi.
+var _busto: Texture2D
+var _sil_busto: Texture2D
+const SC_NX: int = 12
+const SC_NY: int = 9
+var _scarf: Texture2D
+var _whip_t0: float = -10.0                    # tempo dell'ultimo scatto: la sciarpa frusta e si assesta
 
 
 func _init() -> void:
@@ -70,6 +98,10 @@ func set_who(id: String) -> void:
 	who_id = id
 	_tex = null
 	_sil = null
+	_scarf = null
+	_head = null
+	_busto = null
+	_sil_busto = null
 	_tex_real = false
 	var real: String = "res://assets/portraits/hud/%s_hud.png" % id
 	if ResourceLoader.exists(real):
@@ -77,6 +109,14 @@ func set_who(id: String) -> void:
 		_tex_real = true
 		_sil = _silhouette(_tex)          # le varianti hanno la stessa sagoma: il bordo e l'ombra valgono per tutte
 		_base = RitrattoVarianti.base(id)
+		var sp: String = "res://assets/portraits/hud/%s_sciarpa.png" % id
+		_scarf = load(sp) if SCIARPA.has(id) and ResourceLoader.exists(sp) else null
+		var hp: String = "res://assets/portraits/hud/%s_testa.png" % id
+		_head = load(hp) if TESTA.has(id) and ResourceLoader.exists(hp) else null
+		var bp: String = "res://assets/portraits/hud/%s_busto.png" % id
+		if _head != null and ResourceLoader.exists(bp):
+			_busto = load(bp)
+			_sil_busto = _silhouette(_busto)
 	else:
 		var fp: String = "res://assets/portraits/%s_neutro.png" % id
 		if ResourceLoader.exists(fp):
@@ -142,6 +182,8 @@ func pick(kind: String) -> void:
 	if kind != "" and kind != picked:
 		_punch = 1.0
 	super(kind)
+	# niente frustata di testa, capelli e sciarpa quando cambi mossa (autore, 4/11/2026: «il movimento forte di
+	# assestamento quando cambi mossa eliminalo»): restano solo il respiro e l'ondeggiare lento
 	queue_redraw()
 
 
@@ -213,17 +255,28 @@ func _draw() -> void:
 		if _tex_real:
 			# disegno fatto a mano: niente ombra scura (appesantiva i disegni con tanto nero), ma un bordo chiaro del
 			# colore del personaggio attorno alla sagoma, cosi' giacche e capelli scuri si staccano dalla lastra (autore, 2/11/2026)
-			if _sil != null:
+			var lay: bool = _busto != null and now_t == _tex        # ritratto a livelli: la sagoma e' quella del busto
+			var sl: Texture2D = _sil_busto if lay else _sil
+			if sl != null:
 				# ombra piatta dietro al disegno, come sul segnaposto (autore, 2/11/2026: "metti l'ombra dietro al png")
-				draw_texture_rect(_sil, Rect2(r.position + Vector2(-14, 10), r.size), false, Color(INK, 0.7 * e))
+				draw_texture_rect(sl, Rect2(r.position + Vector2(-14, 10), r.size), false, Color(INK, 0.7 * e))
+				if lay:
+					_draw_head(r, e, Vector2(-14, 10), Color(INK, 0.7 * e))   # ombra della testa, che si muove con lei
 				var rc: Color = Color(col.lightened(0.15), 0.85 * e)      # sottile e scuro (autore, 2/11/2026: prima troppo spesso e chiaro)
+				# il bordo sottile usa la sagoma intera anche a livelli: quella del busto avrebbe una riga sul taglio del
+				# mento; attorno ai capelli resta sotto l'alone della testa, che si sposta di pochi pixel
 				for k in 8:
 					var o: Vector2 = Vector2.RIGHT.rotated(TAU * float(k) / 8.0) * 1.5
 					draw_texture_rect(_sil, Rect2(r.position + o, r.size), false, rc)
 		else:
 			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
 			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
-		draw_texture_rect(now_t, r, false, Color(1, 1, 1, e))
+		var layered: bool = _tex_real and _busto != null and now_t == _tex
+		draw_texture_rect(_busto if layered else now_t, r, false, Color(1, 1, 1, e))
+		if _head != null and now_t == _tex:      # le varianti (ferito, ombra...) hanno colori diversi: li' resta ferma
+			_draw_head(r, e, Vector2.ZERO, Color(1, 1, 1, e), layered)
+		if _scarf != null and now_t == _tex:
+			_draw_scarf(r, e)
 		if _swap > 0.0 and _sil != null and _tex_real:
 			draw_texture_rect(_sil, r, false, Color(1, 1, 1, 0.85 * _swap * _swap))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -292,6 +345,82 @@ func _live_transform(dx: float, H: float, e: float) -> void:
 	var sc: float = 1.0 + 0.0035 * br + 0.025 * _punch * _punch + (0.02 * sel if picked == "ult" else 0.0)
 	var off := Vector2(0.0, (1.0 - e2) * 120.0)                       # da sotto: il bordo in basso resta fuori schermo
 	draw_set_transform_matrix(Transform2D(0.0, Vector2(sc, sc), 0.0, piv + off) * Transform2D(0.0, -piv))
+
+
+# Colpo da fuori (Rio colpita mentre il ritratto e' a schermo): la sciarpa frusta come allo scatto.
+func colpo() -> void:
+	_whip_t0 = t
+	queue_redraw()
+
+
+func _draw_scarf(r: Rect2, e: float) -> void:
+	var d: Array = SCIARPA[who_id]
+	var box: Rect2 = d[0]
+	var anchor: Vector2 = d[1]
+	var k: float = r.size.x / 1536.0                                   # dal foglio del ritratto ai pixel dello schermo
+	var br: float = 0.5 + 0.5 * sin(t * 1.6)                           # stesso respiro del ritratto
+	var tw: float = t - _whip_t0
+	var whip: float = exp(-5.5 * tw) * sin(9.0 * tw) if tw >= 0.0 and tw < 1.5 else 0.0    # molla smorzata, morbida: un'onda e si assesta
+	var tail_x: float = box.position.x + 60.0                          # la coda che pende a sinistra
+	var pts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	for j in SC_NY + 1:
+		var v: float = float(j) / SC_NY
+		for i in SC_NX + 1:
+			var u: float = float(i) / SC_NX
+			var p: Vector2 = box.position + box.size * Vector2(u, v)    # punto sul foglio
+			var w: float = pow(clampf(p.distance_to(anchor) / 620.0, 0.0, 1.0), 1.4)
+			var tail: float = clampf((anchor.x - p.x) / (anchor.x - tail_x), 0.0, 1.0)
+			var off := Vector2(
+				0.8 * w * sin(t * 1.6 + v * 3.0 + u * 1.5) + 1.3 * tail * tail * sin(t * 2.2 + v * 5.0) - 4.0 * w * whip,
+				-1.4 * w * br + 0.6 * w * sin(t * 1.3 + u * 4.0) - 1.8 * w * whip)
+			pts.append(r.position + p * k + off)
+			uvs.append(Vector2(u, v))
+	_draw_grid(pts, uvs, _scarf, Color(1, 1, 1, e))
+
+
+func _draw_head(r: Rect2, e: float, shift: Vector2 = Vector2.ZERO, mod: Color = Color.WHITE, big: bool = true) -> void:
+	var d: Array = TESTA[who_id]
+	var box: Rect2 = d[0]
+	var piv: Vector2 = d[1]
+	var face: Vector2 = d[2]
+	var k: float = r.size.x / 1536.0
+	var br: float = 0.5 + 0.5 * sin(t * 1.6)
+	var tw: float = t - _whip_t0
+	var whip: float = exp(-6.0 * tw) * sin(8.0 * tw) if tw >= 0.0 and tw < 1.5 else 0.0
+	var tl: float = tw - 0.07                                          # i capelli arrivano un attimo dopo
+	var hair_whip: float = exp(-5.0 * tl) * sin(8.0 * tl) if tl >= 0.0 and tl < 1.6 else 0.0
+	# radianti. Correzione dell'autore (4/11/2026, «rendi il movimento piu' leggero»): meno di 1 grado anche nello scatto,
+	# onde lente e senza rimbalzi
+	var amp: float = 0.8 if big else 0.6
+	var ang: float = amp * (0.006 * sin(t * 0.9) + 0.003 * br - 0.022 * whip)
+	var pts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	for j in SC_NY + 1:
+		var v: float = float(j) / SC_NY
+		for i in SC_NX + 1:
+			var u: float = float(i) / SC_NX
+			var p: Vector2 = box.position + box.size * Vector2(u, v)
+			var q: Vector2 = piv + (p - piv).rotated(ang)               # testa rigida attorno al collo
+			var hw: float = clampf((p.distance_to(face) - 280.0) / 260.0, 0.0, 1.0)
+			hw *= hw
+			var off := Vector2(
+				hw * amp * (1.2 * sin(t * 1.5 + v * 2.5 + u * 1.2) - 5.0 * hair_whip),
+				hw * amp * (-1.2 * br + 0.8 * sin(t * 1.2 + u * 3.0)) - 0.8 * br)
+			pts.append(r.position + q * k + off + shift)
+			uvs.append(Vector2(u, v))
+	_draw_grid(pts, uvs, _head, mod)
+
+
+# Griglia (SC_NX+1)x(SC_NY+1) di punti gia' deformati -> triangoli con la texture, una sola chiamata
+func _draw_grid(pts: PackedVector2Array, uvs: PackedVector2Array, tex: Texture2D, mod: Color) -> void:
+	var idx := PackedInt32Array()
+	for j in SC_NY:
+		for i in SC_NX:
+			var a: int = j * (SC_NX + 1) + i
+			idx.append_array([a, a + 1, a + SC_NX + 1, a + 1, a + SC_NX + 2, a + SC_NX + 1])
+	RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), idx, pts,
+		PackedColorArray([mod]), uvs, PackedInt32Array(), PackedFloat32Array(), tex.get_rid())
 
 
 # grandezza piu' grande con cui la scritta di questo comando entra nel suo spazio
