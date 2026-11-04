@@ -1,5 +1,13 @@
 # Novità
 
+## 0.54.0 · Fase 2 del combattimento (SLANCIO per personaggio), RITMO di squadra nel motore, ritratti nuovi
+
+- **SLANCIO per personaggio**: ogni eroe ha il suo SLANCIO a round (prima era uno per tutta la squadra). Scatta col colore vincente, col secondo punto debole del boss e anche sulla Scheggia. KO e rianimazione non lo azzerano. Pronto nel motore lo SLANCIO protetto, per i boss che diventeranno invulnerabili (Fase 5).
+- **Una sola regola per la debolezza**: il timbro DEBOLEZZA appare anche sul secondo punto debole, come già contava per il BREAK.
+- **RITMO di squadra (fase R1)**: nel motore c'è la barra di squadra (Ardore e livelli CALMO, ACCESO, INCANDESCENTE, APICE). Ancora senza grafica né bonus. La rimonta sotto il 30% dei PV si chiama ora GRINTA.
+- **Ritratti a livelli** di Lance, Nox e Saul nell'HUD, dalle bozze approvate dall'autore.
+- **Prove**: 25 test verdi (nuovi `test_v3_slancio.gd` e `test_v3_ritmo.gd`); simulatore: 100% di vittorie su tutti i boss dell'atto 1.
+
 ## 0.53.0 · Fase 1 del nuovo combattimento: la Timeline basata sulla velocità
 
 Dal piano del combattimento (decisione D1 dell'autore): i turni si calcolano dalla VEL, ogni round.
