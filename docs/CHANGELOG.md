@@ -1,5 +1,16 @@
 # Novità
 
+## 0.53.0 · Fase 1 del nuovo combattimento: la Timeline basata sulla velocità
+
+Dal piano del combattimento (decisione D1 dell'autore): i turni si calcolano dalla VEL, ogni round.
+
+- **Chi tocca lo decide il tempo**: ognuno (eroi, boss, scheggia) ha l'istante del suo prossimo turno e dopo l'azione si riprogramma in base alla VEL e al peso della mossa (ATTACCO e GUARDIA 100, FIRMA 110, ULTIMATE 130).
+- **I veloci giocano subito**: se il turno di un eroe veloce torna prima che uno lento abbia giocato, lo gioca subito. Il round si chiude quando tutti e quattro hanno fatto il loro turno; i nemici possono agire due volte in un round, o nessuna.
+- **SLANCIO**: l'azione rapida resta, e in più ritarda un po' il turno dopo di chi la usa.
+- **Il ritmo del boss resta leggibile**: la prossima mossa si annuncia subito dopo la sua azione, Guardia, scudi e reazioni durano fino al suo colpo, e il cambio di fase occupa il boss come un'azione (gli eroi rispondono prima della mossa nuova).
+- **D5**: oltre la fine dell'atto 1 la VEL dei nemici cresce col livello come quella degli eroi (New Game+).
+- **Prove**: `tests/unit/test_v3_timeline.gd` (nuovo) e tutti i test verdi; simulatore: 100% di vittorie su tutti gli scontri dell'atto 1, come nella 0.52.0.
+
 ## 0.52.0 · Fase 0 del nuovo combattimento (esce con la Fase 1): il giro dei turni nel motore
 
 Dal piano del combattimento (audit del 4/11/2026, approvato dall'autore): niente regole nuove, si prepara la Timeline.
