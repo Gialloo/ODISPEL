@@ -107,8 +107,8 @@ const BREAK_REGEN: int = 1             # equilibrio recuperato a fine round se n
 const SYN_COVER: float = 1.12         # COPERTURA: un compagno ha scudato/curato/provocato prima, il tuo colpo fa di piu'
 const SYN_TRACE_GAUGE: int = 10       # TRACCIA: colpisci un boss marchiato da un altro: ultimate +10 a te, +5 a chi ha marchiato
 const ADAPT_MULT: float = 0.85        # ADATTAMENTO: la terza volta di fila che usi la stessa mossa il boss si abitua
-const ARDOR_BELOW: float = 0.3         # ARDORE: sotto il 30% PV l'operatore colpisce piu' forte (rimonta)
-const ARDOR_BONUS: float = 1.15
+const GRIT_BELOW: float = 0.3         # GRINTA (era ARDORE, rinominata dall'autore il 04/11/2026: ora Ardore e' la risorsa del RITMO): sotto il 30% PV l'operatore colpisce piu' forte (rimonta)
+const GRIT_BONUS: float = 1.15
 const PHASE_2_BELOW: float = 0.5
 const PHASE_3_BELOW: float = 0.25
 const PHASE_SHIELD: float = 0.05       # scudo del boss a ogni cambio di fase (in % dei PV massimi)
@@ -198,3 +198,19 @@ static func story_atk_grow(level: int) -> float:
 		g *= _party_growth(level) / _party_growth(STORY_KNEE) * (1.0 + STORY_ATK_EXTRA * float(level - STORY_KNEE))
 	return g
 
+
+
+# RITMO DI SQUADRA (Ritmo, fase R1, 04/11/2026). VALORI DI PROVA approvati dall'autore: tutti da bilanciare (handoff 11.1).
+# In R1 il RITMO sale e scende ma non da' ancora bonus: il gioco resta quello di prima (i bonus e APICE arrivano in R4).
+const RITMO_ON: bool = true
+const RITMO_CAP: int = 100                       # tetto base dell'Ardore (3.6)
+const RITMO_THRESHOLDS: Array = [25, 50, 75]     # Ardore per ACCESO, INCANDESCENTE, APICE
+const RITMO_MARGIN: int = 15                     # con la soglia raggiunta e la condizione da fare si accumula fino a soglia + 15 (2.4)
+const RITMO_GAIN: Dictionary = {                 # Ardore per fonte (2.2): conta l'efficacia, non il numero di azioni
+	"debolezza": 6, "break": 15, "parata": 5, "parata_perfetta": 10, "contrattacco": 4,
+	"soccorso": 8, "cura": 5, "slancio": 4, "duo": 6,
+}
+const RITMO_PER_ROUND: int = 2                   # ogni fonte conta al massimo 2 volte per round (anti-farming)
+const RITMO_HEAL_BELOW: float = 0.4              # una cura genera Ardore solo se chi la riceve era sotto il 40% dei PV
+const RITMO_HELPERS: int = 3                     # condizione «collaborazione»: tre compagni diversi hanno dato Ardore
+const RITMO_LOSS_KO: int = 10                    # un compagno KO: la squadra perde il controllo (decadimento contestuale, 2.3)

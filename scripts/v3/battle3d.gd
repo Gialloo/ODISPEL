@@ -1744,12 +1744,12 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					_last_act = {"unit": str(e.get("unit", "")), "move": str(e.get("move", ""))}
 				if str(e.get("unit", "")) == BattleState.BOSS_ID and BattleResolver.is_heavy_boss_move(BattleContent.BOSS_MOVES.get(str(e.get("move", "")), {})):
 					_glitch_later(0.8, delay)
-				# ARDORE: sotto il 30% dei PV chi attacca colpisce piu' forte (il motore non emette un evento: si legge dallo stato)
+				# GRINTA: sotto il 30% dei PV chi attacca colpisce piu' forte (il motore non emette un evento: si legge dallo stato)
 				var au: Dictionary = b["units"].get(str(e.get("unit", "")), {})
 				var amv: Dictionary = BattleContent.MOVES.get(str(e.get("move", "")), {})
 				if not au.is_empty() and str(au.get("side", "")) == "player" and BattleState.is_alive(au) and amv.has("mult") \
-						and str(amv.get("target", "")) == "enemy" and float(au["hp"]) < float(au["max_hp"]) * BattleTypes.ARDOR_BELOW:
-					_number(str(au["id"]), "ARDORE", Color("#ff6a5a"), 26, delay + 0.05, -26.0)
+						and str(amv.get("target", "")) == "enemy" and float(au["hp"]) < float(au["max_hp"]) * BattleTypes.GRIT_BELOW:
+					_number(str(au["id"]), "GRINTA", Color("#ff6a5a"), 26, delay + 0.05, -26.0)
 			"cover":
 				_number(str(e.get("unit", "")), "COPRE " + _uname(str(e.get("who", ""))), _col_of(str(e.get("unit", ""))), 24, delay + 0.1)
 			"cover_hit":

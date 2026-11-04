@@ -30,6 +30,7 @@ godot --headless --path . -s tests/unit/test_v3_engine.gd
 godot --headless --path . -s tests/unit/test_v3_dialoghi.gd
 godot --headless --path . -s tests/unit/test_v3_timeline.gd       # Timeline del combattimento (Fase 1): ordine per VEL, round, pareggi
 godot --headless --path . -s tests/unit/test_v3_slancio.gd        # SLANCIO per personaggio (Fase 2): uno a round per eroe, debolezze, KO, SLANCIO protetto
+godot --headless --path . -s tests/unit/test_v3_ritmo.gd          # RITMO di squadra (fase R1): Ardore, livelli, condizioni, perdite
 godot --headless --path . -s tools/v3_bilancio.gd -- vel           # VEL e azioni per livello; senza "vel": bilancio dell'atto (con "giro": senza Timeline)
 xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_atto1.gd -- /tmp/atto1 [tutte] [capitolo=N]
 xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_atto1.gd -- /tmp/atto1_t touch
