@@ -1,5 +1,17 @@
 # Novità
 
+## 0.52.0 · Fase 1 del game director: HUD a tre livelli, feedback, archetipi dei nemici
+
+Dalla Review 01 del game director (4/11/2026): prima si consolida il nucleo del combattimento, senza sistemi nuovi.
+
+- **HUD a tre livelli**: ogni elemento dell'HUD di battaglia ha un livello (1 priorità: vite, chi agisce, comandi, prossima mossa del nemico; 2 contesto; 3 atmosfera: diretta, cartellino CAM, battute, timbri). Mentre scegli il livello 3 si fa da parte: la chat della diretta tace, il cartellino «CAM nn» non copre la squadra, le battute aspettano la mossa. Durante le mosse torna tutto.
+- **Leggibilità sul telefono**: testo dei livelli 1 e 2 almeno 16 px nella vista di base (24 px veri su un 2400×1080), prossima mossa del nemico 18; barre della vita e dell'equilibrio del nemico più alte con la scritta più grande. Un test controlla che nessun testo dell'HUD di battaglia torni sotto il minimo.
+- **Feedback**: la guardia mancata del tutto dice IN PIENO; un colpo preso tutto dallo scudo dice BLOCCATO (prima uno 0); EQUILIBRIO -n più grande, giallo quando ne toglie tanto.
+- **Reazione al colpo per personaggio**: Lance alza la guardia e non arretra, Nox si piega e si chiude, Rio perde l'equilibrio e ne fa una posa, Saul la scampa per un pelo.
+- **Archetipi dei nemici**: ogni nemico dell'atto 1 pone un problema (aggressore, difensore, interruttore, predatore, distorsore) ed Echo lo dice a inizio scontro, già la prima volta («Carica il ROSSO: rompilo prima che scatti»).
+- **La Scheggia è una predatrice**: negli scontri a due punta chi ha meno vita, quindi abbatterla prima o proteggere il ferito è una scelta vera (prima puntava a caso). Il bilancio in AUTO non cambia.
+- Prove: `tests/unit/test_v3_livelli.gd`, `tests/unit/test_v3_archetipi.gd`, `tools/v3_tre_livelli.gd` (caso peggiore mentre scegli, a tre risoluzioni), `tools/v3_reazioni_colpo.gd`.
+
 ## 0.51.0 · Suono, colpi finali, battute di squadra
 
 - Ritratto di Rio a livelli nell'HUD di battaglia: testa, capelli e sciarpa che respirano.

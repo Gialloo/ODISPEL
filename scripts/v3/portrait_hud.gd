@@ -468,7 +468,7 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 	draw_string(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, Color(fill, e))
 	# ULTIMATE non pronta: la carica in piccolo sotto la scritta
 	if kind == "ult" and not ok:
-		draw_string(Ui.body(), Vector2(4, 18), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(GREY, e))
+		draw_string(Ui.body(), Vector2(4, 18), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(GREY, e))
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 	# tasto rotondo: numero della tastiera su PC, icona sul telefono
 	draw_circle(bc + Vector2(2, 2), br + 3, Color(INK, e))

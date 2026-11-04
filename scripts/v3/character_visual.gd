@@ -215,12 +215,54 @@ func cast() -> Tween:
 	return tw
 
 
+# REAZIONE AL COLPO firmata (Review 01 del game director, 4/11/2026: «una reazione riconoscibile quando subisce un
+# attacco»). Ognuno incassa come e' fatto: Lance alza la guardia e non arretra, Nox si piega e si chiude, Rio perde
+# l'equilibrio e lo trasforma in una posa, Saul la scampa per un pelo. Gli altri (nemici umani, comparse) come prima.
 func hit() -> Tween:
 	_flash(true)
 	var tw := create_tween()
-	tw.tween_property(self, "lean", -0.45, 0.07)
-	tw.tween_callback(_flash.bind(false))
-	tw.tween_property(self, "lean", 0.0, 0.3).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	match id:
+		"ferri":
+			tw.tween_property(self, "lean", -0.14, 0.06)
+			tw.parallel().tween_property(self, "arm_l_x", -1.5, 0.06)
+			tw.parallel().tween_property(self, "arm_r_x", -1.3, 0.06)
+			tw.tween_callback(_flash.bind(false))
+			tw.tween_property(self, "lean", 0.12, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tw.tween_property(self, "lean", 0.0, 0.2)
+			tw.parallel().tween_property(self, "arm_l_x", 0.0, 0.25)
+			tw.parallel().tween_property(self, "arm_r_x", 0.0, 0.25)
+		"nox":
+			tw.tween_property(self, "lean", 0.38, 0.08)
+			tw.parallel().tween_property(self, "hop", -0.07, 0.08)
+			tw.parallel().tween_property(self, "arm_l_x", -1.1, 0.08)
+			tw.parallel().tween_property(self, "arm_r_x", -1.1, 0.08)
+			tw.tween_callback(_flash.bind(false))
+			tw.tween_interval(0.12)
+			tw.tween_property(self, "lean", 0.0, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			tw.parallel().tween_property(self, "hop", 0.0, 0.35)
+			tw.parallel().tween_property(self, "arm_l_x", 0.0, 0.35)
+			tw.parallel().tween_property(self, "arm_r_x", 0.0, 0.35)
+		"zecca":
+			tw.tween_property(self, "lean", -0.6, 0.07)
+			tw.parallel().tween_property(self, "hop", 0.12, 0.07)
+			tw.tween_callback(_flash.bind(false))
+			tw.tween_property(self, "hop", 0.0, 0.12)
+			tw.tween_property(self, "lean", 0.0, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tw.parallel().tween_property(self, "arm_r_x", -2.8, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tw.tween_interval(0.12)
+			tw.tween_property(self, "arm_r_x", 0.0, 0.2)
+		"saul":
+			tw.tween_property(self, "hop", 0.2, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			tw.parallel().tween_property(self, "lean", -0.3, 0.06)
+			tw.parallel().tween_property(self, "arm_l_z", -0.9, 0.06)
+			tw.tween_callback(_flash.bind(false))
+			tw.tween_property(self, "hop", 0.0, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			tw.tween_property(self, "lean", 0.0, 0.22).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+			tw.parallel().tween_property(self, "arm_l_z", 0.0, 0.22)
+		_:
+			tw.tween_property(self, "lean", -0.45, 0.07)
+			tw.tween_callback(_flash.bind(false))
+			tw.tween_property(self, "lean", 0.0, 0.3).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	return tw
 
 
