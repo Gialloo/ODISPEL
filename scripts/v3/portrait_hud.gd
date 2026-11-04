@@ -63,6 +63,8 @@ var _born: float = 0.0                         # tempo dell'ultima entrata (per 
 const SCIARPA: Dictionary = {
 	# id -> [rettangolo del ritaglio sul foglio 1536x2048 del ritratto, punto fermo (collo) sullo stesso foglio]
 	"zecca": [Rect2(117, 656, 1146, 896), Vector2(790, 960)],
+	# Lance: le falde del colletto rosso (bozza approvata dall'autore, 4/11/2026): vicine al collo, quasi ferme e precise
+	"ferri": [Rect2(766, 1046, 510, 278), Vector2(1015, 1060)],
 }
 # TESTA CHE VIVE (testa di Rio come livello a parte, autore 4/11/2026): stesso sistema. La testa ruota appena attorno al
 # collo (inclinazione lenta, scatto all'indietro quando sceglie e si riassesta), i capelli lontani dal volto ondeggiano
@@ -70,6 +72,11 @@ const SCIARPA: Dictionary = {
 const TESTA: Dictionary = {
 	# id -> [ritaglio sul foglio 1536x2048, perno (collo), centro del volto (i capelli oltre ~280 px si muovono)]
 	"zecca": [Rect2(258, 0, 1278, 1004), Vector2(800, 930), Vector2(830, 520)],
+	# bozze vettoriali approvate dall'autore (4/11/2026, «vanno bene, usa questi»). Il cappuccio di Nox e il berretto di
+	# Saul stanno nella testa, cosi' la seguono: le orecchie da civetta e la punta del berretto, lontane dal volto, ondeggiano
+	"ferri": [Rect2(844, 264, 582, 702), Vector2(1015, 960), Vector2(1130, 640)],
+	"nox": [Rect2(816, 92, 668, 1020), Vector2(1015, 960), Vector2(1150, 650)],
+	"saul": [Rect2(862, 210, 644, 760), Vector2(1015, 960), Vector2(1150, 660)],
 }
 var _head: Texture2D
 # RITRATTO A LIVELLI (busto dell'autore, 4/11/2026): se c'e' <id>_busto.png (il ritratto senza la testa) e c'e' la testa,
