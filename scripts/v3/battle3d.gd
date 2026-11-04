@@ -1600,6 +1600,11 @@ class QteRing extends Control:
 				_label.text = "GUARDIA!"
 				_label.add_theme_color_override("font_color", Ui.CYAN)
 				in_window = true
+			"":
+				# guardia mancata del tutto: il cerchio lo dice invece di sparire muto (game director: ogni azione ha un esito
+				# che si legge; TROPPO PRESTO lo dice gia' l'avviso)
+				_label.text = "IN PIENO"
+				_label.add_theme_color_override("font_color", Color("#ff7a9c"))
 			_:
 				_label.text = ""
 		queue_redraw()
@@ -1648,7 +1653,12 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if gap > 0.2 and dst == BattleState.BOSS_ID:
 					lift = -125.0 * float(duo_hits % 2)
 					duo_hits += 1
-				_number(dst, ("%d" % amt) + ("!" if crit else ""), ncol, sz, delay, lift)
+				# colpo preso tutto dallo scudo: niente «0», si legge BLOCCATO (prima c'era uno 0 e SCUDO -n piccolo sotto)
+				var all_shield: bool = amt <= 0 and int(e.get("absorbed", 0)) > 0
+				if all_shield:
+					_number(dst, "BLOCCATO", Ui.CYAN, 40, delay, lift)
+				else:
+					_number(dst, ("%d" % amt) + ("!" if crit else ""), ncol, sz, delay, lift)
 				_color_tag(e, dst, delay, lift)
 				# onomatopea sul bersaglio: scudo = CLANG, critico = BAM (+ glitch), colpo grosso = ZAP, normale = TAP, ai tuoi = THUD
 				var ow: String = "TAP"
@@ -1712,7 +1722,9 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 			"balance":
 				# quanto equilibrio toglie questo colpo (lo stesso numero che scende nella barra bianca)
 				if int(e.get("amount", 0)) > 0:
-					_number(BattleState.BOSS_ID, "Equilibrio -%d" % int(e.get("amount", 0)), Color("#f2f0ea"), 20, delay + 0.2, 76.0)
+					# e' la strada verso il BREAK: si legge come il resto (prima 20 grigio, si perdeva); giallo quando ne toglie tanto
+					var bal: int = int(e.get("amount", 0))
+					_number(BattleState.BOSS_ID, "EQUILIBRIO -%d" % bal, Ui.YELLOW if bal >= 4 else Color("#f2f0ea"), 30 if bal >= 4 else 24, delay + 0.2, 76.0)
 			"break":
 				(vis[BattleState.BOSS_ID] as VendingVisual).stunned = true
 				if _team_follow:
