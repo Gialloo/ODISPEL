@@ -54,6 +54,20 @@ var _punch: float = 0.0                        # 1 = appena scelto un comando o 
 var _swap: float = 0.0                         # lampo bianco della sagoma quando cambia la variante
 var _shown: Texture2D
 var _born: float = 0.0                         # tempo dell'ultima entrata (per l'oscillazione che si assesta)
+# SCIARPA CHE VIVE (sciarpa di Rio disegnata dall'autore come livello a parte, 4/11/2026): la sciarpa e' un PNG ritagliato
+# dallo stesso foglio del ritratto (<id>_sciarpa.png, meta' risoluzione) e si disegna sopra con una griglia di triangoli
+# deformata, come un Live2D leggero: vicino al collo resta ferma, la coda e le frange ondeggiano col respiro e frustano
+# quando il personaggio scatta (scelta del comando, cambio di faccia, colpo). Il ritratto sotto ha gia' la sciarpa
+# disegnata, quindi gli spostamenti restano di pochi pixel: ai bordi si vede la stessa sciarpa, mai un buco.
+# PRESTAZIONI: 12x9 quadrati = 216 triangoli in una sola chiamata, ricalcolati al fotogramma (pochi microsecondi).
+const SCIARPA: Dictionary = {
+	# id -> [rettangolo del ritaglio sul foglio 1536x2048 del ritratto, punto fermo (collo) sullo stesso foglio]
+	"zecca": [Rect2(117, 656, 1146, 896), Vector2(790, 960)],
+}
+const SC_NX: int = 12
+const SC_NY: int = 9
+var _scarf: Texture2D
+var _whip_t0: float = -10.0                    # tempo dell'ultimo scatto: la sciarpa frusta e si assesta
 
 
 func _init() -> void:
@@ -70,6 +84,7 @@ func set_who(id: String) -> void:
 	who_id = id
 	_tex = null
 	_sil = null
+	_scarf = null
 	_tex_real = false
 	var real: String = "res://assets/portraits/hud/%s_hud.png" % id
 	if ResourceLoader.exists(real):
@@ -77,6 +92,8 @@ func set_who(id: String) -> void:
 		_tex_real = true
 		_sil = _silhouette(_tex)          # le varianti hanno la stessa sagoma: il bordo e l'ombra valgono per tutte
 		_base = RitrattoVarianti.base(id)
+		var sp: String = "res://assets/portraits/hud/%s_sciarpa.png" % id
+		_scarf = load(sp) if SCIARPA.has(id) and ResourceLoader.exists(sp) else null
 	else:
 		var fp: String = "res://assets/portraits/%s_neutro.png" % id
 		if ResourceLoader.exists(fp):
@@ -139,9 +156,12 @@ func setup(p_who: String, p_col: Color, p_items: Array) -> void:
 
 
 func pick(kind: String) -> void:
-	if kind != "" and kind != picked:
+	var nuovo: bool = kind != "" and kind != picked
+	if nuovo:
 		_punch = 1.0
 	super(kind)
+	if nuovo:
+		_whip_t0 = t          # dopo super: la ruota azzera t quando scegli
 	queue_redraw()
 
 
@@ -204,6 +224,7 @@ func _draw() -> void:
 			if _shown != null:
 				_swap = 1.0          # cambia faccia (ombra, ferito...): lampo bianco della sagoma e piccolo scatto
 				_punch = maxf(_punch, 0.6)
+				_whip_t0 = t
 			_shown = now_t
 		_live_transform(dx, H, e)
 		var r := Rect2(Vector2(dx, H - PH), Vector2(PW, PH))
@@ -224,6 +245,8 @@ func _draw() -> void:
 			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
 			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
 		draw_texture_rect(now_t, r, false, Color(1, 1, 1, e))
+		if _scarf != null and now_t == _tex:     # le varianti (ferito, ombra...) hanno colori diversi: li' resta ferma
+			_draw_scarf(r, e)
 		if _swap > 0.0 and _sil != null and _tex_real:
 			draw_texture_rect(_sil, r, false, Color(1, 1, 1, 0.85 * _swap * _swap))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -292,6 +315,44 @@ func _live_transform(dx: float, H: float, e: float) -> void:
 	var sc: float = 1.0 + 0.0035 * br + 0.025 * _punch * _punch + (0.02 * sel if picked == "ult" else 0.0)
 	var off := Vector2(0.0, (1.0 - e2) * 120.0)                       # da sotto: il bordo in basso resta fuori schermo
 	draw_set_transform_matrix(Transform2D(0.0, Vector2(sc, sc), 0.0, piv + off) * Transform2D(0.0, -piv))
+
+
+# Colpo da fuori (Rio colpita mentre il ritratto e' a schermo): la sciarpa frusta come allo scatto.
+func colpo() -> void:
+	_whip_t0 = t
+	queue_redraw()
+
+
+func _draw_scarf(r: Rect2, e: float) -> void:
+	var d: Array = SCIARPA[who_id]
+	var box: Rect2 = d[0]
+	var anchor: Vector2 = d[1]
+	var k: float = r.size.x / 1536.0                                   # dal foglio del ritratto ai pixel dello schermo
+	var br: float = 0.5 + 0.5 * sin(t * 1.6)                           # stesso respiro del ritratto
+	var tw: float = t - _whip_t0
+	var whip: float = exp(-4.5 * tw) * sin(15.0 * tw) if tw >= 0.0 and tw < 1.5 else 0.0   # molla smorzata: frusta e si assesta
+	var tail_x: float = box.position.x + 60.0                          # la coda che pende a sinistra
+	var pts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	for j in SC_NY + 1:
+		var v: float = float(j) / SC_NY
+		for i in SC_NX + 1:
+			var u: float = float(i) / SC_NX
+			var p: Vector2 = box.position + box.size * Vector2(u, v)    # punto sul foglio
+			var w: float = pow(clampf(p.distance_to(anchor) / 620.0, 0.0, 1.0), 1.4)
+			var tail: float = clampf((anchor.x - p.x) / (anchor.x - tail_x), 0.0, 1.0)
+			var off := Vector2(
+				1.6 * w * sin(t * 2.1 + v * 3.0 + u * 1.5) + 2.6 * tail * tail * sin(t * 3.1 + v * 5.0) - 9.0 * w * whip,
+				-2.4 * w * br + 1.2 * w * sin(t * 1.7 + u * 4.0) - 4.0 * w * whip)
+			pts.append(r.position + p * k + off)
+			uvs.append(Vector2(u, v))
+	var idx := PackedInt32Array()
+	for j in SC_NY:
+		for i in SC_NX:
+			var a: int = j * (SC_NX + 1) + i
+			idx.append_array([a, a + 1, a + SC_NX + 1, a + 1, a + SC_NX + 2, a + SC_NX + 1])
+	RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), idx, pts,
+		PackedColorArray([Color(1, 1, 1, e)]), uvs, PackedInt32Array(), PackedFloat32Array(), _scarf.get_rid())
 
 
 # grandezza piu' grande con cui la scritta di questo comando entra nel suo spazio
