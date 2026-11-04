@@ -945,11 +945,11 @@ func _go_battle(args: Dictionary) -> void:
 	Story.save()        # se l'app si chiude in battaglia si riprende davanti al nemico, non dall'inizio dell'area
 	_shake = 0.8
 	Settings.buzz(80)
-	_main().flash(0.8)
+	_main().flash(0.45)          # piu' leggero: ora c'e' lo strappo del nastro
 	await get_tree().create_timer(0.4).timeout
 	if is_inside_tree():
 		Breadcrumb.mark("battaglia_carico")
-		_main().go("battle", args)
+		_main().go_tear("battle", args)
 
 
 func _toast(text: String, col: Color) -> void:

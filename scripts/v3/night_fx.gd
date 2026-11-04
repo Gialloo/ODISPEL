@@ -21,9 +21,10 @@ shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
 uniform float height = 11.0;
 uniform float speed = 0.9;
+uniform float hold = 0.0;
 varying float a;
 void vertex() {
-	float ph = fract(COLOR.r - TIME * speed * (0.8 + COLOR.g * 0.5));
+	float ph = fract(COLOR.r - (TIME - hold) * speed * (0.8 + COLOR.g * 0.5));
 	VERTEX.y += height * ph;
 	VERTEX.x += (1.0 - ph) * 0.0 + (UV.y - 0.5) * 0.0;
 	a = smoothstep(0.0, 0.08, ph) * (0.55 + 0.45 * COLOR.g);
@@ -94,6 +95,10 @@ func _build(o: Dictionary) -> void:
 
 
 func _process(_d: float) -> void:
+	if _hold_left > 0.0:
+		_hold_left -= _d
+		_hold_v += _d
+		rain_material().set_shader_parameter("hold", _hold_v)
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if cam != null and _rain != null:
 		_rain.global_position = Vector3(cam.global_position.x, 0.0, cam.global_position.z - 6.0)
@@ -108,6 +113,7 @@ func _lit(c: Color) -> Color:
 func _neon(kind: int, side: float, wall_x: float, z: float, c: Color) -> void:
 	neon_count += 1
 	var x: float = side * (wall_x - 0.08)
+	_signs.append([Vector3(x, 3.4, z), side])
 	var inward: Vector3 = Vector3(-side, 0, 0)
 	match kind:
 		0:
@@ -269,6 +275,73 @@ func flicker(pattern: Array) -> void:
 		_flick_tw.tween_interval(float(t))
 		on = not on
 	_flick_tw.tween_callback(func() -> void: _glow_node.visible = true)
+
+
+# Colpo forte (critico o danno grosso): i neon perdono un colpo, un guizzo solo (idea 5, 4/11/2026)
+func jolt() -> void:
+	if _flick_tw != null and _flick_tw.is_running():
+		return          # un BREAK o un'Ultimate in corso non vengono interrotti dal guizzo
+	flicker([0.05, 0.05])
+
+
+# BREAK: la pioggia si FERMA a mezz'aria per un attimo (il tempo dell'immagine rotta) e le insegne si incrinano.
+# La pioggia ha un orologio suo nello shader (hold): mentre e' fermo, hold avanza col tempo e le gocce restano dove sono.
+# Le crepe: una mesh di sottili lame chiare sulle insegne gia' accese, che si spegne in un secondo e mezzo.
+var _hold_left: float = 0.0
+static var _hold_v: float = 0.0
+var _signs: Array = []             # [posizione sul muro, lato] delle insegne: dove si incrinano le vetrine
+
+
+func stop_rain(secs: float = 0.7) -> void:
+	if _rain == null:
+		return
+	_hold_left = maxf(_hold_left, secs)
+
+
+func crack() -> void:
+	if _signs.is_empty() or Settings.flash <= 0.0:
+		return
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var r := RandomNumberGenerator.new()
+	r.seed = Time.get_ticks_msec()
+	for k in mini(3, _signs.size()):
+		var sg: Array = _signs[r.randi() % _signs.size()]
+		var c: Vector3 = sg[0]
+		var side: float = sg[1]
+		var x: float = c.x - side * 0.09
+		for i in 7:
+			# una crepa = 3 segmenti che si allontanano dal punto d'urto con piccole deviazioni
+			var ang: float = TAU * float(i) / 7.0 + r.randf_range(-0.3, 0.3)
+			var p := Vector2(c.y, c.z)
+			for j in 3:
+				var ln: float = r.randf_range(0.25, 0.55) * (1.0 - 0.2 * j)
+				ang += r.randf_range(-0.45, 0.45)
+				var q: Vector2 = p + Vector2(sin(ang), cos(ang)) * ln
+				var w: float = 0.022 * (1.0 - 0.3 * j)
+				var nrm: Vector2 = (q - p).orthogonal().normalized() * w
+				var a := Vector3(x, p.x + nrm.x, p.y + nrm.y)
+				var b := Vector3(x, p.x - nrm.x, p.y - nrm.y)
+				var cc := Vector3(x, q.x, q.y)
+				st.add_vertex(a)
+				st.add_vertex(b)
+				st.add_vertex(cc)
+				p = q
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.albedo_color = Color(0.95, 0.97, 1.0, 1.0)
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mi.material_override = m
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(mi)
+	var tw := mi.create_tween()
+	tw.tween_interval(0.5)
+	tw.tween_property(m, "albedo_color:a", 0.0, 1.0)
+	tw.tween_callback(mi.queue_free)
 
 
 func blackout() -> void:
