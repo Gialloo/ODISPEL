@@ -1,5 +1,14 @@
 # Novità
 
+## 0.55.0 · Fase 3 del combattimento: BREAK a finestra e stabilità del nemico
+
+- **Il BREAK dura 3 azioni degli eroi** contro i boss (2 contro i frammenti), non più «fino a fine round». Solo i turni ordinari consumano la finestra: l'azione che rompe, lo SLANCIO, le reazioni e i turni del boss no.
+- **Il boss si rimette in piedi un terzo alla volta**, a ogni sua azione; finché non è in piedi non si rompe di nuovo. I frammenti si riprendono subito.
+- **La pressione non va persa**: quella fatta durante il BREAK e il recupero resta da parte (pressione latente) e alla ripresa il boss riparte già incrinato.
+- **SBILANCIAMENTO**: un'Interruzione riuscita lascia il boss sbilanciato per i due colpi dopo (+10% danno, +20% pressione).
+- **L'attacco di squadra resta**: parte quando un eroe rompe il nemico nel suo turno.
+- **Prove**: 25 test verdi (`test_v3_break.gd` esteso); simulatore: 100% di vittorie sui boss, durata media degli scontri invariata.
+
 ## 0.54.0 · Fase 2 del combattimento (SLANCIO per personaggio), RITMO di squadra nel motore, ritratti nuovi
 
 - **SLANCIO per personaggio**: ogni eroe ha il suo SLANCIO a round (prima era uno per tutta la squadra). Scatta col colore vincente, col secondo punto debole del boss e anche sulla Scheggia. KO e rianimazione non lo azzerano. Pronto nel motore lo SLANCIO protetto, per i boss che diventeranno invulnerabili (Fase 5).
