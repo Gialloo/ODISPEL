@@ -1,5 +1,13 @@
 # Novità
 
+## In lavorazione · Fase 0 del nuovo combattimento: il giro dei turni nel motore
+
+Dal piano del combattimento (audit del 4/11/2026, approvato dall'autore): niente regole nuove, si prepara la Timeline.
+
+- **Il giro dei turni sta nel motore** (`scripts/engine/battle_flow.gd`): ordine per velocità, azione rapida dello SLANCIO subito dopo, vantaggio/agguato del primo round, turno dato alla tecnica a due. Prima era nella scena della battaglia e il simulatore ne aveva una copia sua.
+- La battaglia (`battle3d.gd`) e il simulatore (`tools/v3_bilancio.gd`) chiedono al motore «chi tocca adesso?»: si gioca lo stesso combattimento di prima.
+- **Prova**: `tests/unit/test_v3_flusso.gd` gioca 180 scontri col giro vecchio e con quello nuovo, con gli stessi semi, e gli eventi sono identici. Il simulatore dà gli stessi numeri prima e dopo.
+
 ## 0.52.0 · Fase 1 del game director: HUD a tre livelli, feedback, archetipi dei nemici
 
 Dalla Review 01 del game director (4/11/2026): prima si consolida il nucleo del combattimento, senza sistemi nuovi.

@@ -71,8 +71,13 @@ var b: Dictionary = {}
 var slots: Array = []                 # id degli slot (p1, p1_f2, ...)
 var vis: Dictionary = {}              # unit id -> CharacterVisual / VendingVisual
 var home: Dictionary = {}             # unit id -> posizione di riposo
-var turn_list: Array = []
-var turn_i: int = -1
+# il giro dei turni sta nel motore (BattleFlow, Fase 0 del combattimento): qui solo in lettura, per l'HUD
+var turn_list: Array:
+	get:
+		return BattleFlow.turns(b)
+var turn_i: int:
+	get:
+		return BattleFlow.index(b)
 var cur_pid: String = ""
 var waiting: bool = false             # in attesa della scelta del giocatore
 var ended: bool = false
@@ -834,18 +839,9 @@ func _tw_done(tw: Tween) -> void:
 func _start_round() -> void:
 	if ended or not is_inside_tree():
 		return
-	SeqRound.begin(b)
-	turn_list = SeqRound.order(b)
-	if _round1:
-		# ingresso: col vantaggio il boss agisce per ultimo nel primo round, con l'agguato per primo
-		_round1 = false
-		var boss_e: Array = turn_list.filter(func(e: Dictionary) -> bool: return bool(e["boss"]))
-		var rest: Array = turn_list.filter(func(e: Dictionary) -> bool: return not bool(e["boss"]))
-		if ingresso == "vantaggio":
-			turn_list = rest + boss_e
-		elif ingresso == "agguato":
-			turn_list = boss_e + rest
-	turn_i = -1
+	# ingresso: col vantaggio il boss agisce per ultimo nel primo round, con l'agguato per primo (lo fa il motore)
+	BattleFlow.start_round(b, ingresso if _round1 else "")
+	_round1 = false
 	if tutorial:
 		_tut_round()
 	_refresh_hud()
@@ -877,7 +873,7 @@ func _round_hint() -> void:
 
 func _advance() -> void:
 	while is_inside_tree() and not ended:
-		turn_i += 1
+		var e: Dictionary = BattleFlow.next(b)       # salta da solo chi e' caduto o ha dato il turno alla tecnica a due
 		if str(b["winner"]) != "":
 			await _end_battle()
 			return
@@ -885,7 +881,7 @@ func _advance() -> void:
 			await _phase_shift(_phase_pending)
 			if not is_inside_tree() or ended:
 				return
-		if turn_i >= turn_list.size():
+		if bool(e.get("end", false)):
 			var ev: Array = SeqRound.finish(b)
 			await _show_events(ev, false)
 			if str(b["winner"]) != "":
@@ -893,7 +889,6 @@ func _advance() -> void:
 				return
 			await _start_round()
 			return
-		var e: Dictionary = turn_list[turn_i]
 		if bool(e.get("greg", false)):
 			await _greg_turn()
 			continue
@@ -901,11 +896,6 @@ func _advance() -> void:
 			await _boss_turn()
 			continue
 		var pid: String = str(e["player"])
-		var pl: Dictionary = BattleState.player(b, pid)
-		if pl.is_empty() or not BattleState.player_alive(b, pl):
-			continue
-		if not bool(e.get("quick", false)) and DuoTechs.spent(b, str(_unit_of(pid).get("id", ""))):
-			continue          # ha dato il suo turno alla tecnica combinata di un compagno
 		cur_pid = pid
 		_quick = bool(e.get("quick", false))
 		var uid: String = str(_unit_of(pid)["id"])
@@ -1030,7 +1020,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 	var move: Dictionary = BattleContent.MOVES.get(mv, {})
 	var kind: String = str(move.get("kind", "basic"))
 	var tgt: String = str(move.get("target", "enemy"))
-	var ev: Array = SeqRound.player_action(b, pid, choice, quick)
+	var ev: Array = BattleFlow.player_action(b, pid, choice, quick)     # con lo SLANCIO il motore mette in lista l'azione rapida
 	# RITMO (decisione dell'autore, 25/10/2026): i momenti giusti si fermano e si leggono. Colpo alla debolezza = fermo
 	# del colpo + timbro DEBOLEZZA; SLANCIO = una pausa sua, con il timbro e chi agisce ancora.
 	var weak_hit: bool = false
@@ -1045,10 +1035,6 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			weak_hit = true
 		if str(x.get("t", "")) == "slancio":
 			got_slancio = true
-	for x in ev:
-		if str(x.get("t", "")) == "slancio":
-			# SLANCIO: subito dopo agisce ancora lo stesso eroe, ma solo con Attacco o Guardia
-			turn_list.insert(turn_i + 1, {"unit": str(x["unit"]), "player": str(x["player"]), "boss": false, "spd": -1, "extra": true, "quick": true})
 	for x in ev:
 		if str(x.get("t", "")) == "damage" and str(x.get("src", "")) == uid and str(x.get("dst", "")) == BattleState.BOSS_ID and int(x.get("amount", 0)) > 0:
 			_combo += 1
