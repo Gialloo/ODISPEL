@@ -1,5 +1,9 @@
 # Novità
 
+## 0.50.1 · Copertina di vittoria per ogni personaggio
+
+- Il titolo della copertina è la frase di chi dà il colpo finale: Rio «K.O. IN DIRETTA · NO CLICKBAIT!», Lance «OBIETTIVO NEUTRALIZZATO» o «MINACCIA NEUTRALIZZATA», Nox «CE L'HO FATTA! · ORA UN MERITATO RIPOSO», Saul «UN ALTRO COLPO ANDATO A SEGNO».
+
 ## 0.50.0 · Combattimento più spettacolare
 
 - Ingresso in battaglia «nastro strappato»: toccando un nemico per strada l'immagine si disturba come una VHS che si inceppa, poi si strappa in diagonale e la battaglia esce dallo strappo (una sola lettura dello schermo, nessun costo durante lo scontro).

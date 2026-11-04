@@ -2673,8 +2673,17 @@ func _victory_cover() -> void:
 	var who: Dictionary = b["units"].get(str(_last_act.get("unit", "")), {})
 	var ch: String = str(who.get("char", "zecca"))
 	var nm: String = _bname()
-	var titles: Array = [["%s K.O. IN DIRETTA" % nm, "(NON È CLICKBAIT)"], ["ABBIAMO BATTUTO %s?!" % nm, "GUARDATE FINO ALLA FINE"]]
-	var tt: Array = titles[randi() % titles.size()]
+	# il titolo e' la frase di chi da' il colpo finale (scelte dall'autore, 4/11/2026); sotto, il nemico battuto
+	var tt: Array
+	match ch:
+		"ferri":
+			tt = [["OBIETTIVO NEUTRALIZZATO", "MINACCIA NEUTRALIZZATA"][randi() % 2], nm]
+		"nox":
+			tt = ["CE L'HO FATTA!", "ORA UN MERITATO RIPOSO"]
+		"saul":
+			tt = ["UN ALTRO COLPO ANDATO A SEGNO", nm]
+		_:
+			tt = ["%s K.O. IN DIRETTA" % nm, "NO CLICKBAIT!"]
 	var secs: int = maxi(1, (Time.get_ticks_msec() - _t0_ms) / 1000)
 	var quote: String = ""
 	if not ritorno.is_empty():          # nella demo dal menu le battute arrivano subito dopo nel dialogo
