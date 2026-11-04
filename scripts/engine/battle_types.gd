@@ -88,6 +88,17 @@ const REPLICA_EXP_STEP: float = 0.25      # ... e +25% a ogni giro dopo (NG+10: 
 const SLANCIO_GUARD_SHIELD: float = 0.08  # SLANCIO con scelta: la Guardia rapida da' uno scudo dell'8% dei PV massimi a tutta la squadra ...
 const SLANCIO_GUARD_EN: int = 1          # ... e 1 energia in piu': l'azione extra rende di piu' se non e' un attacco
 const SLANCIO_ON: bool = true             # colpo col colore vincente = azione rapida subito dopo (una volta a round, squadra)
+# TIMELINE (Fase 1 del combattimento, 04/11/2026; handoff 4.1-4.4, design doc 17). Valori PROTOTIPALI della spec, da verificare:
+# nessun coefficiente e' stato cambiato. Il tempo si conta in centesimi interi (deterministico, niente float nello stato).
+const TIMELINE_ON: bool = true            # false = giro a round della Fase 0 (ognuno una volta per round, in ordine di VEL)
+const TL_VEL_PIVOT: int = 100             # ΔT = C × 100 / (100 + 0,3 × (VEL − 100)): VEL di riferimento (D5: fisso o normalizzato?)
+const TL_VEL_K: float = 0.3               # quanto pesa la VEL
+const TL_COST: Dictionary = {"attacco": 100, "rapida": 100, "standard": 110, "pesante": 120, "ultimate": 130}
+const TL_SKILL_DEFAULT: String = "standard"   # FIRMA senza "tempo" dichiarato (D6: quali sono rapide, standard, pesanti)
+const TL_ENEMY_COST: int = 100            # azione dei nemici (D23: le mosse pesanti del boss costano di piu'?)
+const TL_SLANCIO_EXTRA: int = 15          # SLANCIO: +15 al recupero successivo (dopo la formula, non sul costo base; handoff 5.2)
+const TL_SHIFT: Dictionary = {"leggero": 15, "forte": 25}   # ANTICIPO −% / RITARDO +% del tempo rimanente (handoff 4.4)
+const TL_INTERRUPT_PCT: int = 50          # INTERRUZIONE: recupero successivo = 50% del costo dell'azione interrotta
 const BREAK_TEAM_MULT: float = 1.3         # attacco di squadra alla rottura: colpo di ogni altro eroe (0 = spento). 1.3: deve pesare, e' il premio del BREAK (prima 0.6, non si notava)
 const BREAK_RECOVER: float = 0.75       # frazione della barra con cui il boss si riprende dopo una rottura (1 = piena)
 const BREAK_REGEN: int = 1             # equilibrio recuperato a fine round se non e' stato rotto
