@@ -1,5 +1,9 @@
 # Novità
 
+## 0.49.0 · Disturbo del cambio di telecamera
+
+- Torna il disturbo della 0.47 (fondo bianco, blocchi 8-bit, barre di colore), ma più leggero: bianco al 42% invece del 90%, blocchi più trasparenti e un poco più brevi, sopra la carrellata fluida della 0.48.
+
 ## 0.48.0 · Telecamera fluida
 
 - Cambio di turno senza scatti: la telecamera fa una carrellata morbida ad arco da un personaggio all'altro, dalla presentazione al primo personaggio, dal personaggio al nemico e ritorno (prima era un taglio secco coperto dal disturbo).
