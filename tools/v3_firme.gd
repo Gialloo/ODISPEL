@@ -24,7 +24,7 @@ func _run(id: String, ar: String) -> void:
 		bt = m.get("current")
 	var st: Dictionary = bt.get("b")
 	var boss: Dictionary = BattleState.boss(st)
-	boss["hp"] = int(float(boss["max_hp"]) * 0.45)
+	boss["hp"] = int(float(boss["max_hp"]) * 0.3)
 	bt.set("auto_on", false)
 	var f0: int = Engine.get_frames_drawn()
 	var shown: bool = false

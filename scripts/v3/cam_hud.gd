@@ -255,7 +255,7 @@ func _draw_look(sz: Vector2) -> void:
 				draw_circle(Vector2(x0 + w - 44.0 + sin(el * 6.0 + i) * 10.0, hy), 9.0, Color(1.0, 0.35, 0.55, a * clampf((hy - sz.y * 0.45) / 120.0, 0.0, 1.0)))
 		"autovelox":
 			# il mirino dell'autovelox di Lance: riquadro rosso al centro, fuori piu' scuro, la velocita' e l'infrazione
-			var r := Rect2(sz.x * 0.28, sz.y * 0.2, sz.x * 0.44, sz.y * 0.6)
+			var r := Rect2(sz.x * 0.3, sz.y * 0.17, sz.x * 0.4, sz.y * 0.58)
 			var dk := Color(0.0, 0.0, 0.0, 0.42 * a)
 			draw_rect(Rect2(0, 0, sz.x, r.position.y), dk)
 			draw_rect(Rect2(0, r.end.y, sz.x, sz.y - r.end.y), dk)
@@ -271,11 +271,11 @@ func _draw_look(sz: Vector2) -> void:
 			var cc: Vector2 = r.get_center()
 			draw_line(cc - Vector2(24, 0), cc + Vector2(24, 0), rc, 2.0)
 			draw_line(cc - Vector2(0, 24), cc + Vector2(0, 24), rc, 2.0)
-			draw_string(fb, Vector2(r.position.x, r.position.y - 14), "AUTOVELOX · RILEVAMENTO", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, cr)
+			draw_string(fb, Vector2(r.position.x + 16, r.position.y + 34), "AUTOVELOX · RILEVAMENTO", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, cr)
 			var kmh: int = mini(50 + int(el * 160.0), 137)
 			draw_string(f, Vector2(r.position.x, r.end.y + 50), "%03d km/h" % kmh, HORIZONTAL_ALIGNMENT_LEFT, -1, 44, rc)
 			if kmh > 50 and fmod(el, 0.3) < 0.2:
-				draw_string(f, Vector2(r.end.x - 230, r.end.y + 50), "INFRAZIONE", HORIZONTAL_ALIGNMENT_LEFT, -1, 36, Color(Ui.YELLOW.r, Ui.YELLOW.g, Ui.YELLOW.b, a))
+				draw_string(f, Vector2(r.position.x + 250, r.end.y + 50), "INFRAZIONE", HORIZONTAL_ALIGNMENT_LEFT, -1, 36, Color(Ui.YELLOW.r, Ui.YELLOW.g, Ui.YELLOW.b, a))
 		"controluce":
 			# Nox in controluce: un sole basso alle spalle (aloni chiari nel suo colore), bordi scuri, una riga di riflesso
 			var lc: Color = _look_col.lightened(0.6)

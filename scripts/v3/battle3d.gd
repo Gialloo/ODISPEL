@@ -624,7 +624,7 @@ func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
 			_cam_set(a + Vector3(side * 1.1, 1.35, 1.7), mid + Vector3(0, 1.3, 0), 5.0)
 			_cam_hud.look("diretta", col)
 		"ferri":       # Lance: dal palo dell'autovelox, alto di lato
-			_cam_set(_cam_fit(mid + Vector3(side * 5.6, 3.4, -1.6), mid + Vector3(0, 1.0, 0)), mid + Vector3(0, 1.0, 0), 4.0)
+			_cam_set(mid + Vector3(side * 3.0, 3.6, -2.4), mid + Vector3(0, 1.0, 0), 4.0)      # vicino: piu' in la' si finiva dentro le facciate
 			_cam_hud.look("autovelox", col)
 		"nox":         # Nox: dal basso, controluce
 			_cam_set(a + Vector3(-side * 1.6, 0.45, -1.4), a + Vector3(0, 1.9, -0.6), 4.5)
