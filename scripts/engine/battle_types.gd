@@ -236,3 +236,12 @@ const RITMO_BONUS: Dictionary = {
 	"acceso_riserva": 1, "incandescente_pressione": 1, "apice_danno": 1.10, "apice_en": 1,
 	"apice_lance_pressione": 1, "apice_nox_cure": 1.25, "apice_rio_hype": 0.5, "apice_saul_en": 1,
 }
+
+# Tecnica APICE (fase R4, valori PROVVISORI): la prima azione di ogni personaggio dopo aver raggiunto APICE
+# ha un tocco suo, senza pulsanti nuovi. Torna disponibile solo riconquistando APICE.
+const RITMO_TECH: Dictionary = {
+	"ferri": {"name": "FINE DELLA CORSA", "balance": 10},
+	"saul": {"name": "COLPO PERFETTO", "mult": 1.3},
+	"zecca": {"name": "IN DIRETTA MONDIALE", "hype": 100},
+	"nox": {"name": "TURNO DI NOTTE", "heal": 0.15},
+}

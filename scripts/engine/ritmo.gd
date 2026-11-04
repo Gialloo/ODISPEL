@@ -399,6 +399,7 @@ static func _on_reach(state: Dictionary, lv: int, events: Array) -> void:
 			var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
 			if BattleState.is_alive(u):
 				u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + int(BattleTypes.RITMO_BONUS["apice_en"]))
+		st(state)["apice_tech"] = {}      # ogni APICE raggiunto ridà a tutti la loro tecnica
 		events.append({"t": "apice_on"})
 
 
@@ -449,3 +450,46 @@ static func _saul_apice(state: Dictionary, src: Dictionary, events: Array) -> vo
 	r["gen"]["saul_apice"] = 1
 	src["energy"] = mini(BattleTypes.MAX_ENERGY, int(src["energy"]) + int(BattleTypes.RITMO_BONUS["apice_saul_en"]))
 	events.append({"t": "apice_saul", "unit": src["id"], "energy": int(BattleTypes.RITMO_BONUS["apice_saul_en"])})
+
+
+# Tecnica APICE: la prima azione di ognuno in APICE ha il suo tocco (BattleTypes.RITMO_TECH).
+# Lance toglie equilibrio, Saul fa un critico sicuro più forte, Rio riempie l'Hype, Nox cura tutta la squadra.
+static func apice_tech(state: Dictionary, actor: Dictionary, move_id: String, move: Dictionary, events: Array) -> Dictionary:
+	var out: Dictionary = {"mult": 1.0, "crit_pm": 0}
+	if not _on(state) or level(state) < APICE or str(actor.get("side", "")) != "player" or move_id == BattleTypes.ACTION_GUARD:
+		return out
+	var c: String = str(actor.get("char", ""))
+	if not BattleTypes.RITMO_TECH.has(c):
+		return out
+	var r: Dictionary = st(state)
+	if not r.has("apice_tech"):
+		r["apice_tech"] = {}
+	if (r["apice_tech"] as Dictionary).has(str(actor["id"])):
+		return out
+	var hits_enemy: bool = move.has("mult") and str(move.get("target", "")) == "enemy"
+	var tech: Dictionary = BattleTypes.RITMO_TECH[c]
+	match c:
+		"ferri":
+			var boss: Dictionary = BattleState.boss(state)
+			if not hits_enemy or boss.is_empty():
+				return out
+			BattleResolver._drain_balance(boss, int(tech["balance"]), actor, events)
+		"saul":
+			if not hits_enemy:
+				return out
+			out["mult"] = float(tech["mult"])
+			out["crit_pm"] = 1000
+		"zecca":
+			Kits.add_hype(actor, int(tech["hype"]), events, "apice")
+		"nox":
+			for p in BattleState.alive_players(state):
+				var m: Dictionary = BattleState.active_unit(state, str(p["id"]))
+				if not BattleState.is_alive(m):
+					continue
+				var before: int = int(m["hp"])
+				m["hp"] = mini(int(m["max_hp"]), before + int(round(float(m["max_hp"]) * float(tech["heal"]))))
+				if int(m["hp"]) > before:
+					events.append({"t": "heal", "src": actor["id"], "dst": m["id"], "amount": int(m["hp"]) - before})
+	r["apice_tech"][str(actor["id"])] = 1
+	events.append({"t": "apice_tech", "unit": actor["id"], "name": str(tech["name"])})
+	return out

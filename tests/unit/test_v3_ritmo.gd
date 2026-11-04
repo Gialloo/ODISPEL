@@ -509,6 +509,47 @@ func _bonus_rio_saul() -> void:
 		check(other != "", "R4: trovato un boss debole a Saul")
 
 
+func _tecnica_apice() -> void:
+	var s: Dictionary = _fresh()
+	var hit: Dictionary = {"kind": "skill", "target": "enemy", "mult": 1.0}
+	var lance: Dictionary = _by_char(s, "ferri")
+	var saul: Dictionary = _by_char(s, "saul")
+	var rio: Dictionary = _by_char(s, "zecca")
+	var nox: Dictionary = _by_char(s, "nox")
+	var evs: Array = []
+	Ritmo.st(s)["level"] = Ritmo.INCANDESCENTE
+	Ritmo.apice_tech(s, saul, "x", hit, evs)
+	check(not _has(evs, "apice_tech"), "tecnica APICE: sotto APICE non c'e'")
+	# si raggiunge APICE: tutti hanno la loro tecnica
+	Ritmo._set_level(s, Ritmo.APICE, "test", [])
+	evs = []
+	var fx: Dictionary = Ritmo.apice_tech(s, saul, "x", hit, evs)
+	check(_has(evs, "apice_tech") and is_equal_approx(float(fx["mult"]), 1.3) and int(fx["crit_pm"]) == 1000, "tecnica APICE Saul: critico sicuro x1.3")
+	evs = []
+	fx = Ritmo.apice_tech(s, saul, "x", hit, evs)
+	check(not _has(evs, "apice_tech") and float(fx["mult"]) == 1.0, "tecnica APICE: una volta sola per APICE")
+	evs = []
+	Ritmo.apice_tech(s, lance, BattleTypes.ACTION_GUARD, {}, evs)
+	check(not _has(evs, "apice_tech"), "tecnica APICE: la guardia non la consuma")
+	Ritmo.apice_tech(s, lance, "x", hit, evs)
+	check(_has(evs, "apice_tech") and evs.size() >= 2, "tecnica APICE Lance: toglie equilibrio")
+	rio["hype"] = 10
+	Ritmo.apice_tech(s, rio, "x", {"kind": "skill", "target": "self"}, [])
+	check(int(rio["hype"]) == Kits.HYPE_MAX, "tecnica APICE Rio: Hype pieno")
+	for u in _heroes(s):
+		u["hp"] = int(u["max_hp"]) / 2
+	var lance_hp: int = int(lance["hp"])
+	evs = []
+	Ritmo.apice_tech(s, nox, "x", {"kind": "skill", "target": "ally"}, evs)
+	check(int(lance["hp"]) > lance_hp and _has(evs, "heal"), "tecnica APICE Nox: cura tutta la squadra")
+	# riconquistare APICE ridà la tecnica
+	Ritmo._set_level(s, Ritmo.INCANDESCENTE, "test", [])
+	Ritmo._set_level(s, Ritmo.APICE, "test", [])
+	evs = []
+	Ritmo.apice_tech(s, saul, "x", hit, evs)
+	check(_has(evs, "apice_tech"), "tecnica APICE: torna riconquistando APICE")
+
+
 func _init() -> void:
 	BattleFlow.timeline = true
 	_base()
@@ -532,6 +573,7 @@ func _init() -> void:
 	_salvataggio_motore()
 	_bonus_livelli()
 	_bonus_rio_saul()
+	_tecnica_apice()
 	_scontri_interi()
 	if fails == 0:
 		print("test_v3_ritmo: OK")
