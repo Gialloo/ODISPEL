@@ -41,16 +41,22 @@ func _init() -> void:
 	SeqRound.player_action(b, nox_pid, {"swap": "", "move": str(BattleState.active_unit(b, nox_pid)["ult"]), "target": ""})
 	check(int(b["reserve"]) == reserve, "l'Ultimate in diretta non costa Riserva")
 	check(int(BattleState.active_unit(b, nox_pid)["gauge"]) < 100, "l'Ultimate in diretta spende la barra")
-	# SLANCIO: al massimo uno a round
+	# SLANCIO: al massimo uno a round PER EROE (Fase 2, handoff 5.1; nel 0.52 era uno per tutta la squadra)
 	var b2: Dictionary = _battle()
 	SeqRound.begin(b2)
 	var slanci: int = 0
-	for p in b2["players"]:
-		var ev: Array = SeqRound.player_action(b2, str(p["id"]), {"swap": "", "move": "attack", "target": ""})
-		for e in ev:
-			if str(e.get("t", "")) == "slancio":
-				slanci += 1
-	check(slanci <= 1, "SLANCIO al massimo una volta a round (%d)" % slanci)
+	var chi: Dictionary = {}
+	for giro in 2:
+		for p in b2["players"]:
+			var ev: Array = SeqRound.player_action(b2, str(p["id"]), {"swap": "", "move": "attack", "target": ""})
+			for e in ev:
+				if str(e.get("t", "")) == "slancio":
+					slanci += 1
+					chi[str(e["unit"])] = int(chi.get(str(e["unit"]), 0)) + 1
+	var doppi: bool = false
+	for k in chi:
+		doppi = doppi or int(chi[k]) > 1
+	check(slanci <= (b2["players"] as Array).size() and not doppi, "SLANCIO al massimo una volta a round per eroe (%d, %s)" % [slanci, str(chi)])
 	# azione rapida: solo Attacco o Guardia
 	var b3: Dictionary = _battle()
 	SeqRound.begin(b3)

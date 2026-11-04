@@ -352,6 +352,19 @@ static func _tl_next(state: Dictionary) -> Dictionary:
 		tl["cur_quick"] = q
 		tl["n"] = int(tl["n"]) + 1
 		return q
+	# SLANCIO PROTETTO (Fase 2, handoff 5.6): appena il bersaglio torna vulnerabile, chi lo conservava lo usa subito,
+	# nell'ordine della Timeline (chi ha il prossimo turno piu' vicino prima). Non e' un turno ordinario.
+	var ready: Array = Slancio.ready_kept(state)
+	if not ready.is_empty():
+		ready.sort_custom(func(a: String, b: String) -> bool:
+			var sa: Dictionary = (tl["slots"] as Dictionary).get(BattleState.slot_of(state, a), {})
+			var sb: Dictionary = (tl["slots"] as Dictionary).get(BattleState.slot_of(state, b), {})
+			return int(sa.get("at", 0)) < int(sb.get("at", 0)))
+		var kq: Dictionary = Slancio.take_kept(state, str(ready[0]))
+		tl["cur"] = str(kq["player"])
+		tl["cur_quick"] = kq
+		tl["n"] = int(tl["n"]) + 1
+		return kq
 	var guard: int = 0
 	while guard < 256:
 		guard += 1
@@ -402,8 +415,10 @@ static func _tl_player(state: Dictionary, pid: String, choice: Dictionary, quick
 	if mine and not quick and not s.is_empty():
 		tl["done"][pid] = true
 		_schedule(tl, s, time_cost(mv), _spd_of(state, s))
-	if quick and str(tl.get("cur", "")) == pid and not s.is_empty() and bool((tl.get("cur_quick", {}) as Dictionary).get("slancio", false)):
+	var cq: Dictionary = tl.get("cur_quick", {})
+	if quick and str(tl.get("cur", "")) == pid and not s.is_empty() and bool(cq.get("slancio", false)) and not bool(cq.get("waive", false)):
 		s["at"] = int(s["at"]) + BattleTypes.TL_SLANCIO_EXTRA * 100      # l'azione dello SLANCIO costa +15 sul recupero gia' fissato
+		# (lo SLANCIO protetto la prima volta non lo paga: handoff 5.6)
 	for x in ev:
 		if str(x.get("t", "")) == "slancio":
 			(tl["quick"] as Array).append({"unit": str(x["unit"]), "player": str(x["player"]), "boss": false, "spd": -1, "extra": true, "quick": true, "slancio": true})
