@@ -18,11 +18,14 @@ static var hud_ritratto: bool = true    # HUD di battaglia col ritratto 2D (rema
 static var fps_cap: int = 0             # limite degli fps scelto dal giocatore (0 = predefinito: 60 sul telefono, 120 su PC)
 static var text_speed: int = 0          # velocita' del testo nei dialoghi: 0 NORMALE, 1 VELOCE, 2 ISTANTANEO
 static var auto_text: bool = false      # dialoghi automatici (AUTO alla Persona): la battuta va avanti da sola dopo una pausa
+static var music_volume: float = 1.0    # volume della musica, 0..1 (4/11/2026: il combattimento ha il suono)
+static var sfx_volume: float = 1.0      # volume degli effetti sonori, 0..1
 static var _loaded: bool = false
 
 const LEVELS: Array = [1.0, 0.5, 0.0]
 const FPS_CAPS: Array = [30, 60, 120, 240]
 const TEXT_SPEEDS: Array = ["NORMALE", "VELOCE", "ISTANTANEO"]
+const VOLUMES: Array = [1.0, 0.7, 0.4, 0.0]
 const TEXT_CPS: Array = [48.0, 110.0, 0.0]   # caratteri al secondo; 0 = tutta la battuta subito
 
 
@@ -50,6 +53,8 @@ static func load_settings() -> void:
 	text_speed = clampi(int(cfg.get_value("game", "text_speed", text_speed)), 0, TEXT_SPEEDS.size() - 1)
 	auto_text = bool(cfg.get_value("game", "auto_text", auto_text))
 	hud_ritratto = bool(cfg.get_value("video", "hud_ritratto", hud_ritratto))
+	music_volume = clampf(float(cfg.get_value("audio", "music", music_volume)), 0.0, 1.0)
+	sfx_volume = clampf(float(cfg.get_value("audio", "sfx", sfx_volume)), 0.0, 1.0)
 
 
 static func save() -> void:
@@ -68,6 +73,8 @@ static func save() -> void:
 	cfg.set_value("game", "text_speed", text_speed)
 	cfg.set_value("game", "auto_text", auto_text)
 	cfg.set_value("video", "hud_ritratto", hud_ritratto)
+	cfg.set_value("audio", "music", music_volume)
+	cfg.set_value("audio", "sfx", sfx_volume)
 	cfg.save(path)
 
 
@@ -82,6 +89,15 @@ static func level_text(value: float) -> String:
 	if value <= 0.01:
 		return "SPENTE"
 	return "RIDOTTE"
+
+
+static func next_volume(value: float) -> float:
+	var i: int = VOLUMES.find(value)
+	return float(VOLUMES[(i + 1) % VOLUMES.size()]) if i >= 0 else 1.0
+
+
+static func volume_text(value: float) -> String:
+	return "SPENTO" if value <= 0.01 else "%d%%" % int(round(value * 100.0))
 
 
 static func fps_value() -> int:

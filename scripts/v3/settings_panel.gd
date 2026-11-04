@@ -61,6 +61,10 @@ func _fit() -> void:
 func _build() -> void:
 	for c in _rows.get_children():
 		c.queue_free()
+	_row("Musica", Settings.volume_text(Settings.music_volume), func() -> void: Settings.music_volume = Settings.next_volume(Settings.music_volume))
+	_row("Effetti sonori", Settings.volume_text(Settings.sfx_volume), func() -> void:
+		Settings.sfx_volume = Settings.next_volume(Settings.sfx_volume)
+		Sfx.play("ui_ok"))
 	_row("Scosse della camera", Settings.level_text(Settings.shake), func() -> void: Settings.shake = Settings.next_level(Settings.shake))
 	_row("Lampi", Settings.level_text(Settings.flash), func() -> void: Settings.flash = Settings.next_level(Settings.flash))
 	# tre scelte: sempre, solo la prima volta per personaggio (le ripetute si saltano), mai

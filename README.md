@@ -10,6 +10,7 @@ Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STO
   `story.gd` (passi dell'atto e salvataggio), `banter.gd` (chiacchiere), `dialog_box.gd` (dialoghi stile Persona), `layout_builder.gd` (le aree), `battle3d.gd` (combattimento 3D),
   `character_visual.gd` / `vending_visual.gd` (segnaposto 3D, interfaccia sostituibile coi glTF), `toon.gd` + `mesh_batch.gd` + `city_builder.gd` (grafica),
   `light_fx.gd` (la magia disegnata con la luce), `sky_dome.gd` (la cupola nel cielo), `cam_hud.gd` (il mirino di Echo): vedi `docs/STILE_VISIVO.md`, ultima sezione.
+  Suono: `sfx.gd` (effetti e musica a strati che cresce col COMBO), file in `assets/audio/` generati da `tools/gen_suoni.py` (si corregge lo script e si rigenera; `tests/unit/test_v3_suoni.gd`, registrazione con l'audio: `tools/v3_suono_battaglia.gd` col `--write-movie`).
   Dalla 0.35: `progress.gd` (livelli, esperienza, sblocchi, sinergie, mosse rubate da Saul; si salva in "squadra"), `squad_menu.gd` (menu SQUADRA della pausa), `react_game.gd` (i quattro minigiochi delle reazioni).
 - `data/` — `atto1.json` (capitoli, passi, aree, nemici, boss), `dialoghi_atto1.json` (testi, generati da `tools/gen_dialoghi.py`: si corregge lo script e si rigenera) + `dialoghi.json`, `cast_visual.gd` (colori e proporzioni dei segnaposto).
 - `tests/unit/` — `test_v3_engine.gd` + test del motore portati dalla V2.  `tools/v3_atto1.gd` — gioca da solo l'atto 1 (battaglie in AUTO) e fa gli screenshot.
