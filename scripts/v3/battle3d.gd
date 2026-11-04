@@ -471,6 +471,7 @@ func _setup_battle() -> void:
 		bu["hp"] = bu["max_hp"]
 	if atk_k != 1.0:
 		bu["atk"] = maxi(1, int(round(float(bu["atk"]) * atk_k)))
+	bu["spd"] = BattleContent.enemy_spd_at(int(bu["spd"]), level)     # D5: la VEL del nemico cresce col livello come quella della squadra
 	Gregario.add(b, gregario)          # dopo la scala della storia: PV e attacco in proporzione al nemico gia' scalato
 	# legami del rifugio: +5% attacco alle coppie che hanno passato una serata insieme (PROVVISORIO)
 	if not ritorno.is_empty():

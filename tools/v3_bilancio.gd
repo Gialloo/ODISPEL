@@ -67,6 +67,7 @@ func _setup(boss: String, lvl: int, pv: float, atk: float, minore: bool, seed_va
 	bu["max_hp"] = maxi(1, int(round(float(bu["max_hp"]) * pk)))
 	bu["hp"] = bu["max_hp"]
 	bu["atk"] = maxi(1, int(round(float(bu["atk"]) * ak)))
+	bu["spd"] = BattleContent.enemy_spd_at(int(bu["spd"]), lvl)     # D5, come battle3d
 	Gregario.add(b, greg)
 	if ng >= 0 or use_kit:
 		Progress.apply_to_battle(b)
