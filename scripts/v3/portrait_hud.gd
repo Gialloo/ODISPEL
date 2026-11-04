@@ -69,9 +69,15 @@ const SCIARPA: Dictionary = {
 # e arrivano in ritardo sullo scatto. Si disegna prima della sciarpa, che copre il mento come nel disegno.
 const TESTA: Dictionary = {
 	# id -> [ritaglio sul foglio 1536x2048, perno (collo), centro del volto (i capelli oltre ~280 px si muovono)]
-	"zecca": [Rect2(289, 0, 1226, 1006), Vector2(800, 930), Vector2(830, 520)],
+	"zecca": [Rect2(258, 0, 1278, 1004), Vector2(800, 930), Vector2(830, 520)],
 }
 var _head: Texture2D
+# RITRATTO A LIVELLI (busto dell'autore, 4/11/2026): se c'e' <id>_busto.png (il ritratto senza la testa) e c'e' la testa,
+# il ritratto normale si compone busto + testa + sciarpa invece del PNG intero, cosi' la testa si muove di piu' senza
+# lasciare la vecchia testa sotto. La testa porta con se' il suo alone (ritagliato dal ritratto intero). Le varianti
+# (ferito, ombra...) restano PNG interi e fermi.
+var _busto: Texture2D
+var _sil_busto: Texture2D
 const SC_NX: int = 12
 const SC_NY: int = 9
 var _scarf: Texture2D
@@ -94,6 +100,8 @@ func set_who(id: String) -> void:
 	_sil = null
 	_scarf = null
 	_head = null
+	_busto = null
+	_sil_busto = null
 	_tex_real = false
 	var real: String = "res://assets/portraits/hud/%s_hud.png" % id
 	if ResourceLoader.exists(real):
@@ -105,6 +113,10 @@ func set_who(id: String) -> void:
 		_scarf = load(sp) if SCIARPA.has(id) and ResourceLoader.exists(sp) else null
 		var hp: String = "res://assets/portraits/hud/%s_testa.png" % id
 		_head = load(hp) if TESTA.has(id) and ResourceLoader.exists(hp) else null
+		var bp: String = "res://assets/portraits/hud/%s_busto.png" % id
+		if _head != null and ResourceLoader.exists(bp):
+			_busto = load(bp)
+			_sil_busto = _silhouette(_busto)
 	else:
 		var fp: String = "res://assets/portraits/%s_neutro.png" % id
 		if ResourceLoader.exists(fp):
@@ -245,19 +257,26 @@ func _draw() -> void:
 		if _tex_real:
 			# disegno fatto a mano: niente ombra scura (appesantiva i disegni con tanto nero), ma un bordo chiaro del
 			# colore del personaggio attorno alla sagoma, cosi' giacche e capelli scuri si staccano dalla lastra (autore, 2/11/2026)
-			if _sil != null:
+			var lay: bool = _busto != null and now_t == _tex        # ritratto a livelli: la sagoma e' quella del busto
+			var sl: Texture2D = _sil_busto if lay else _sil
+			if sl != null:
 				# ombra piatta dietro al disegno, come sul segnaposto (autore, 2/11/2026: "metti l'ombra dietro al png")
-				draw_texture_rect(_sil, Rect2(r.position + Vector2(-14, 10), r.size), false, Color(INK, 0.7 * e))
+				draw_texture_rect(sl, Rect2(r.position + Vector2(-14, 10), r.size), false, Color(INK, 0.7 * e))
+				if lay:
+					_draw_head(r, e, Vector2(-14, 10), Color(INK, 0.7 * e))   # ombra della testa, che si muove con lei
 				var rc: Color = Color(col.lightened(0.15), 0.85 * e)      # sottile e scuro (autore, 2/11/2026: prima troppo spesso e chiaro)
+				# il bordo sottile usa la sagoma intera anche a livelli: quella del busto avrebbe una riga sul taglio del
+				# mento; attorno ai capelli resta sotto l'alone della testa, che si sposta di pochi pixel
 				for k in 8:
 					var o: Vector2 = Vector2.RIGHT.rotated(TAU * float(k) / 8.0) * 1.5
 					draw_texture_rect(_sil, Rect2(r.position + o, r.size), false, rc)
 		else:
 			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
 			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
-		draw_texture_rect(now_t, r, false, Color(1, 1, 1, e))
+		var layered: bool = _tex_real and _busto != null and now_t == _tex
+		draw_texture_rect(_busto if layered else now_t, r, false, Color(1, 1, 1, e))
 		if _head != null and now_t == _tex:      # le varianti (ferito, ombra...) hanno colori diversi: li' resta ferma
-			_draw_head(r, e)
+			_draw_head(r, e, Vector2.ZERO, Color(1, 1, 1, e), layered)
 		if _scarf != null and now_t == _tex:
 			_draw_scarf(r, e)
 		if _swap > 0.0 and _sil != null and _tex_real:
@@ -359,10 +378,10 @@ func _draw_scarf(r: Rect2, e: float) -> void:
 				-2.4 * w * br + 1.2 * w * sin(t * 1.7 + u * 4.0) - 4.0 * w * whip)
 			pts.append(r.position + p * k + off)
 			uvs.append(Vector2(u, v))
-	_draw_grid(pts, uvs, _scarf, e)
+	_draw_grid(pts, uvs, _scarf, Color(1, 1, 1, e))
 
 
-func _draw_head(r: Rect2, e: float) -> void:
+func _draw_head(r: Rect2, e: float, shift: Vector2 = Vector2.ZERO, mod: Color = Color.WHITE, big: bool = true) -> void:
 	var d: Array = TESTA[who_id]
 	var box: Rect2 = d[0]
 	var piv: Vector2 = d[1]
@@ -373,7 +392,9 @@ func _draw_head(r: Rect2, e: float) -> void:
 	var whip: float = exp(-5.0 * tw) * sin(13.0 * tw) if tw >= 0.0 and tw < 1.5 else 0.0
 	var tl: float = tw - 0.07                                          # i capelli arrivano un attimo dopo
 	var hair_whip: float = exp(-4.0 * tl) * sin(12.0 * tl) if tl >= 0.0 and tl < 1.6 else 0.0
-	var ang: float = 0.006 * sin(t * 0.9) + 0.003 * br - 0.022 * whip  # radianti: meno di 1,5 gradi anche nello scatto
+	# radianti. A livelli (niente testa vecchia sotto) il movimento e' piu' ampio: fino a ~2,5 gradi nello scatto
+	var amp: float = 1.8 if big else 1.0
+	var ang: float = amp * (0.006 * sin(t * 0.9) + 0.003 * br - 0.022 * whip)
 	var pts := PackedVector2Array()
 	var uvs := PackedVector2Array()
 	for j in SC_NY + 1:
@@ -385,22 +406,22 @@ func _draw_head(r: Rect2, e: float) -> void:
 			var hw: float = clampf((p.distance_to(face) - 280.0) / 260.0, 0.0, 1.0)
 			hw *= hw
 			var off := Vector2(
-				hw * (1.8 * sin(t * 2.0 + v * 2.5 + u * 1.2) - 9.0 * hair_whip),
-				hw * (-1.4 * br + 1.0 * sin(t * 1.5 + u * 3.0)) - 1.2 * br)
-			pts.append(r.position + q * k + off)
+				hw * amp * (1.8 * sin(t * 2.0 + v * 2.5 + u * 1.2) - 9.0 * hair_whip),
+				hw * amp * (-1.4 * br + 1.0 * sin(t * 1.5 + u * 3.0)) - 1.2 * br)
+			pts.append(r.position + q * k + off + shift)
 			uvs.append(Vector2(u, v))
-	_draw_grid(pts, uvs, _head, e)
+	_draw_grid(pts, uvs, _head, mod)
 
 
 # Griglia (SC_NX+1)x(SC_NY+1) di punti gia' deformati -> triangoli con la texture, una sola chiamata
-func _draw_grid(pts: PackedVector2Array, uvs: PackedVector2Array, tex: Texture2D, e: float) -> void:
+func _draw_grid(pts: PackedVector2Array, uvs: PackedVector2Array, tex: Texture2D, mod: Color) -> void:
 	var idx := PackedInt32Array()
 	for j in SC_NY:
 		for i in SC_NX:
 			var a: int = j * (SC_NX + 1) + i
 			idx.append_array([a, a + 1, a + SC_NX + 1, a + 1, a + SC_NX + 2, a + SC_NX + 1])
 	RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), idx, pts,
-		PackedColorArray([Color(1, 1, 1, e)]), uvs, PackedInt32Array(), PackedFloat32Array(), tex.get_rid())
+		PackedColorArray([mod]), uvs, PackedInt32Array(), PackedFloat32Array(), tex.get_rid())
 
 
 # grandezza piu' grande con cui la scritta di questo comando entra nel suo spazio
