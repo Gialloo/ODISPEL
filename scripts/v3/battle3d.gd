@@ -617,6 +617,30 @@ func _cam_side(a: Vector3, bpos: Vector3) -> void:
 	_cam_set(mid + Vector3(side * 5.2, 2.0, 0.8), mid + Vector3(0, 1.1, 0), 4.0)
 
 
+# Inquadratura firmata delle ABILITA' (idea 4): ognuno ha il suo modo di essere ripreso (cam_hud.look)
+func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
+	var a: Vector3 = home[uid]
+	var mid: Vector3 = (a + tpos) * 0.5
+	var side: float = 1.0 if a.x >= 0.0 else -1.0
+	match ch:
+		"zecca":       # Rio: di spalla, stretta e bassa come un telefono in mano
+			_cam_set(a + Vector3(side * 1.1, 1.35, 1.7), mid + Vector3(0, 1.3, 0), 5.0)
+			_cam_hud.look("diretta", col)
+		"ferri":       # Lance: dal palo dell'autovelox, alto di lato
+			_cam_set(mid + Vector3(side * 3.0, 3.6, -2.4), mid + Vector3(0, 1.0, 0), 4.0)      # vicino: piu' in la' si finiva dentro le facciate
+			_cam_hud.look("autovelox", col)
+		"nox":         # Nox: dal basso, controluce
+			_cam_set(a + Vector3(-side * 1.6, 0.45, -1.4), a + Vector3(0, 1.9, -0.6), 4.5)
+			_cam_hud.look("controluce", col)
+		"saul":        # Saul: dall'alto, come un drone
+			_cam_set(mid + Vector3(0.0, 8.0, 1.2), mid + Vector3(0, 0.6, 0), 3.5)
+			_cam_hud.look("drone", col)
+		_:
+			_cam_side(a, tpos)
+			return
+	_cam_glide(0.4)
+
+
 func _cam_boss() -> void:
 	_cam_set(ENEMY_POS + Vector3(1.8, 3.3, -4.2), Vector3(0, 1.0, 3.0), 3.0)
 
@@ -844,6 +868,10 @@ func _advance() -> void:
 		if str(b["winner"]) != "":
 			await _end_battle()
 			return
+		if _phase_pending > 0:
+			await _phase_shift(_phase_pending)
+			if not is_inside_tree() or ended:
+				return
 		if turn_i >= turn_list.size():
 			var ev: Array = SeqRound.finish(b)
 			await _show_events(ev, false)
@@ -1029,7 +1057,9 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		var boss_v: Node3D = vis[tid]
 		var strike: Vector3 = tpos + (home[uid] - tpos).normalized() * (1.7 if tid == BattleState.BOSS_ID else 1.3)
 		strike.y = 0.14
-		if kind != "ult":
+		if kind == "skill" and _cam_hud != null and not tutorial:
+			_cam_sign(uid, str(u.get("char", "")), tpos, col)
+		elif kind != "ult":
 			_cam_side(home[uid], tpos)
 		cv.move_speed = 1.0
 		# TECNICA COMBINATA: il compagno scatta insieme, dall'altro lato del nemico
@@ -1091,8 +1121,11 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			_set_target("")             # scheggia abbattuta: il mirino torna sul nemico principale
 	else:
 		# mossa su se stessi (guardia, cura): prima era uno stacco secco davanti al personaggio; ora una carrellata (3/11/2026)
-		_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
-		_cam_glide(0.5)
+		if kind == "skill" and _cam_hud != null and not tutorial:
+			_cam_sign(uid, str(u.get("char", "")), home[uid], col)     # anche Copertura e Pausa caffe' hanno la loro inquadratura
+		else:
+			_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
+			_cam_glide(0.5)
 		var a2: Tween = cv.cast()
 		await _wait(0.16)
 		LightFx.rise(self, home[uid], col)
@@ -1618,6 +1651,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					ow = "ZAP"
 					ocol = Color("#3dff8a")
 				_ono(dst, ow, ocol, delay + 0.03, crit or sz >= 52)
+				if (crit or sz >= 52) and Gregario.is_enemy(b, dst):
+					_city_react(delay + 0.03, "hit", ocol)      # i neon perdono un colpo sui colpi forti
 				if crit:
 					_glitch_later(0.7, delay)
 				if int(e.get("absorbed", 0)) > 0:
@@ -1785,6 +1820,7 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_live_banner("FASE %d" % int(e.get("phase", 2)), "%s passa al piano B · quando carica rompilo: equilibrio x1,5" % _cap(_bn()), Ui.PINK, 2.2)
 				_kick(0.8)
 				_flash(0.3)
+				_phase_pending = maxi(_phase_pending, int(e.get("phase", 2)))
 			"down":
 				var du: String = str(e.get("unit", ""))
 				if du == Gregario.ID:
@@ -2016,6 +2052,100 @@ func _boss_intro() -> void:
 		return
 	_cam_hud._who_col = prev_col
 	_last_turn_uid = "ingresso"       # il primo turno taglia dalla presentazione a chi agisce (un solo cambio, col cartellino)
+
+
+# BOSS A DUE FASI (idea 3, 4/11/2026 · regola U18: il climax al culmine): a meta' vita l'Anomalia si SQUARCIA.
+# Tra un turno e l'altro la telecamera va sul boss, l'immagine si strappa (lo stesso strappo dell'ingresso) e sotto
+# c'e' gia' l'arena cambiata: luce e nebbia del colore del boss, il boss con un alone che pulsa, e il cut-in col nome
+# della mossa nuova (la FASE 2 si apre con Furia, battle_content.cycle_for). Contro i nemici minori niente cut-in
+# (li si incontra spesso: stancherebbe), restano colore e luce. Costo: un'immagine letta una volta e un materiale
+# sovrapposto ai pezzi del boss.
+var _phase_pending: int = 0
+var _phase_shown: int = 1
+static var _rim_sh: Shader = null
+const RIM_SHADER: String = """
+shader_type spatial;
+render_mode unshaded, blend_add, depth_draw_never, cull_back;
+uniform vec4 col : source_color = vec4(1.0, 0.2, 0.3, 1.0);
+uniform float k = 0.9;
+void fragment() {
+	float f = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.2);
+	ALBEDO = col.rgb;
+	ALPHA = clamp(f * k * (0.75 + 0.25 * sin(TIME * 6.0)), 0.0, 1.0);
+}
+"""
+
+
+func _phase_col(ph: int) -> Color:
+	if ph >= 3:
+		return Color("#ff2340")
+	var bd: Dictionary = BattleContent.BOSSES.get(boss_id, {})
+	return Ui.BATTLE_COLORS.get(str(bd.get("color", "")), LightFx.MAGIC)
+
+
+func _phase_shift(ph: int) -> void:
+	_phase_pending = 0
+	if ph <= _phase_shown:
+		return
+	_phase_shown = ph
+	while _finishing and is_inside_tree():
+		await get_tree().process_frame
+	var big: bool = ph == 2 and str(ritorno.get("tipo", "")) != "area" and not tutorial and not Settings.skip_cutin \
+		and _cam_hud != null and BattleState.is_alive(BattleState.boss(b))
+	if not big:
+		_phase_look(ph)
+		return
+	var col: Color = _phase_col(ph)
+	_cam_set(ENEMY_POS + Vector3(-1.5, 1.7, 4.4), ENEMY_POS + Vector3(0, 1.7, 0), 2.0)
+	_cam_glide(0.55)
+	await _wait(0.6)
+	if not is_inside_tree() or ended:
+		return
+	var torn: bool = _main().has_method("tear_now") and bool(_main().call("tear_now", 0.6))
+	await get_tree().process_frame          # lo strappo ha gia' la foto di prima: sotto si cambia
+	_phase_look(ph)
+	if not torn:
+		_flash(0.5)
+	_kick(0.9)
+	Settings.buzz(120)
+	var prev_col: Color = _cam_hud._who_col
+	_cam_hud._who_col = col
+	var nxt: String = str(BattleContent.cycle_for(boss_id, ph)[0]) if BattleContent.BOSSES.has(boss_id) else ""
+	_cam_hud.cut(1.0, "%s · FASE %d" % [_bname(), ph], ("NUOVA MOSSA: " + BattleText.move_name(nxt).to_upper()) if nxt != "" else "L'ANOMALIA SI SQUARCIA", 1.5)
+	_cam_set(ENEMY_POS + Vector3(1.2, 1.5, 5.0), ENEMY_POS + Vector3(0, 1.7, 0), 0.8)      # si allontana piano mentre il boss cambia
+	await _wait(1.5)
+	if not is_inside_tree():
+		return
+	_cam_hud._who_col = prev_col
+	_last_turn_uid = "ingresso"        # il turno dopo taglia dal boss a chi agisce, col cartellino
+
+
+# Colore e luce della fase: alone che pulsa sul boss, nebbia e fondo verso il suo colore (piu' rosso in FASE 3)
+func _phase_look(ph: int) -> void:
+	var col: Color = _phase_col(ph)
+	var bv: Node = vis.get(BattleState.BOSS_ID, null)
+	if bv != null:
+		if _rim_sh == null:
+			_rim_sh = Shader.new()
+			_rim_sh.code = RIM_SHADER
+		var m := ShaderMaterial.new()
+		m.shader = _rim_sh
+		m.set_shader_parameter("col", col)
+		m.set_shader_parameter("k", 1.2 if ph == 2 else 1.6)
+		for mi in bv.find_children("*", "MeshInstance3D", true, false):
+			(mi as MeshInstance3D).material_overlay = m
+	var fog: Array = Toon._cache.get("fog", [])
+	if fog.size() == 3:
+		var fc: Vector3 = fog[0]
+		var nf: Color = Color(fc.x, fc.y, fc.z).lerp(col.darkened(0.55), 0.45 if ph == 2 else 0.6)
+		Toon.set_fog(nf, float(fog[1]), float(fog[2]) * 0.92)
+	for c in get_children():
+		if c is WorldEnvironment:
+			var env: Environment = (c as WorldEnvironment).environment
+			env.background_color = env.background_color.lerp(col.darkened(0.7), 0.5)
+			env.ambient_light_color = env.ambient_light_color.lerp(col, 0.25)
+	if _night != null:
+		_night.surge()
 
 
 # PARATA PERFETTA: un decimo di secondo di fermo e un'inquadratura stretta su chi para (di lato, all'altezza del petto),
@@ -2357,9 +2487,15 @@ func _city_react(delay: float, kind: String, col: Color) -> void:
 		await get_tree().create_timer(delay).timeout
 	if not is_inside_tree():
 		return
+	if kind == "hit":
+		if _night != null:
+			_night.jolt()
+		return
 	if kind == "break":
 		if _night != null:
 			_night.blackout()
+			_night.stop_rain(0.75)       # idea 5: la pioggia si ferma a mezz'aria e le insegne si incrinano
+			_night.crack()
 		if _cam_hud != null:
 			_cam_hud.disturb("IMMAGINE ROTTA  ·  CAM %02d" % _cam_hud._cam_no, Color("#ff6a5a"), 1.3)
 			_cam_hud.set_fractured(true)
@@ -2479,6 +2615,10 @@ func _end_battle() -> void:
 		await dlg.finished
 		if not is_inside_tree():
 			return
+	if win and not tutorial and not lezioni and is_inside_tree():
+		await _victory_cover()
+		if not is_inside_tree():
+			return
 	var ln: Array = []
 	# ESPERIENZA (stile Persona 5): a fine scontro vinto nella storia tutti salgono; si salva subito con la vittoria
 	if win and not ritorno.is_empty() and _exp_report.is_empty():
@@ -2531,6 +2671,106 @@ func _end_battle() -> void:
 		var m := Ui.button("MENU", Ui.CREAM, 24, 220)
 		m.pressed.connect(func() -> void: _main().go("menu"))
 		hb.add_child(m)
+
+
+# VITTORIA COME COPERTINA DI UN VIDEO DI RIO (idea 6, 4/11/2026): la squadra in posa davanti alla telecamera, sopra
+# la miniatura del video che Rio carichera': titolo in maiuscolo da clickbait, durata vera dello scontro, la barra
+# rossa che scorre e le visualizzazioni che salgono... fino a trentadue (la comicita' dal contrasto, U19: e' lo stesso
+# numero che dice lei nella battuta di vittoria). Due secondi e mezzo, un tocco la salta; poi il riepilogo di sempre.
+var _t0_ms: int = Time.get_ticks_msec()
+
+
+func _victory_cover() -> void:
+	_cam_set(Vector3(0, 1.75, PARTY_Z - 4.6), Vector3(0, 1.35, PARTY_Z), 2.5)
+	_cam_glide(0.6)
+	for uid in vis:
+		if not Gregario.is_enemy(b, str(uid)):
+			_face(vis[uid], Vector3(0, 0, PARTY_Z - 8.0))
+	var who: Dictionary = b["units"].get(str(_last_act.get("unit", "")), {})
+	var ch: String = str(who.get("char", "zecca"))
+	var nm: String = _bname()
+	var titles: Array = [["%s K.O. IN DIRETTA" % nm, "(NON È CLICKBAIT)"], ["ABBIAMO BATTUTO %s?!" % nm, "GUARDATE FINO ALLA FINE"]]
+	var tt: Array = titles[randi() % titles.size()]
+	var secs: int = maxi(1, (Time.get_ticks_msec() - _t0_ms) / 1000)
+	var quote: String = ""
+	if not ritorno.is_empty():          # nella demo dal menu le battute arrivano subito dopo nel dialogo
+		var pick: Dictionary = {}
+		for d in DialogData.lines("vittoria"):
+			if str(d.get("chi", "")) == ch:
+				pick = d
+				break
+		if pick.is_empty() and not DialogData.lines("vittoria").is_empty():
+			pick = DialogData.lines("vittoria")[0]
+		if not pick.is_empty():
+			var cn: String = str(BattleContent.CHARACTERS.get(str(pick.get("chi", "")), {}).get("name", ""))
+			quote = "%s: «%s»" % [cn, str(pick.get("testo", ""))]
+	var cov := Control.new()
+	Ui.place(cov, 0, 0, 1, 1)
+	cov.mouse_filter = Control.MOUSE_FILTER_STOP
+	cov.modulate.a = 0.0
+	_root.add_child(cov)
+	var frame := Panel.new()
+	frame.add_theme_stylebox_override("panel", Ui.box(Color(0, 0, 0, 0), Ui.CREAM, 6, 4, 0))
+	Ui.place(frame, 0, 0, 1, 1, 60, 50, -60, -150)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cov.add_child(frame)
+	var fs: int = 74          # il titolo si stringe finche' sta nella miniatura (i nomi lunghi uscivano dal bordo)
+	var avail: float = _root.size.x - 240.0
+	while fs > 36 and Ui.display().get_string_size(str(tt[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > avail:
+		fs -= 4
+	var t1 := Ui.label(str(tt[0]), fs, Ui.YELLOW, Ui.display(), 16)
+	Ui.place(t1, 0, 0, 1, 0, 110, 80, -110, 180)
+	t1.rotation = deg_to_rad(-3.0)
+	cov.add_child(t1)
+	var t2 := Ui.label(str(tt[1]), 36, Ui.CREAM, Ui.display(), 10)
+	Ui.place(t2, 0, 0, 1, 0, 118, 176, -110, 230)
+	t2.rotation = deg_to_rad(-3.0)
+	cov.add_child(t2)
+	var dur := Ui.label("%d:%02d" % [secs / 60, secs % 60], 26, Ui.CREAM, Ui.display(), 0)
+	var db := PanelContainer.new()
+	db.add_theme_stylebox_override("panel", Ui.box(Color(0, 0, 0, 0.85), Color(0, 0, 0, 0), 0, 4, 6))
+	db.add_child(dur)
+	Ui.place(db, 1, 1, 1, 1, -170, -214, -80, -172)
+	cov.add_child(db)
+	var bar_bg := ColorRect.new()
+	bar_bg.color = Color(1, 1, 1, 0.25)
+	Ui.place(bar_bg, 0, 1, 1, 1, 66, -162, -66, -156)
+	cov.add_child(bar_bg)
+	var bar := ColorRect.new()
+	bar.color = Color("#ff2340")
+	Ui.place(bar, 0, 1, 0, 1, 66, -162, 66, -156)
+	cov.add_child(bar)
+	var rio_col: Color = Ui.BATTLE_COLORS.get("viola", Ui.CREAM)
+	var chan := Ui.label("", 28, Ui.CREAM, Ui.body(), 6)
+	Ui.place(chan, 0, 1, 1, 1, 66, -142, -66, -100)
+	cov.add_child(chan)
+	if quote != "":
+		var q := Ui.label(quote, 24, rio_col.lightened(0.55), Ui.body(), 6)
+		Ui.place(q, 0, 1, 1, 1, 66, -98, -66, -40)
+		q.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		cov.add_child(q)
+	var skip: Array = [false]
+	cov.gui_input.connect(func(ev: InputEvent) -> void:
+		if (ev is InputEventMouseButton and ev.pressed) or (ev is InputEventScreenTouch and ev.pressed):
+			skip[0] = true)
+	var tw := create_tween()
+	tw.tween_property(cov, "modulate:a", 1.0, 0.25)
+	tw.parallel().tween_property(t1, "scale", Vector2.ONE, 0.25).from(Vector2(1.25, 1.25))
+	var t_in: float = 0.0
+	var total: float = 2.6
+	Settings.buzz(60)
+	while t_in < total and not skip[0] and is_inside_tree():
+		await get_tree().process_frame
+		t_in += get_process_delta_time()
+		var k: float = clampf(t_in / (total - 0.4), 0.0, 1.0)
+		bar.offset_right = 66.0 + (cov.size.x - 132.0) * k
+		chan.text = "@RIO  ·  %d visualizzazioni  ·  adesso" % int(round(32.0 * ease(k, 0.4)))
+	if not is_inside_tree():
+		return
+	var out := create_tween()
+	out.tween_property(cov, "modulate:a", 0.0, 0.2)
+	await out.finished
+	cov.queue_free()
 
 
 # Righe dell'esperienza: nome, livello, barra che si riempie; LIVELLO SU! e gli sblocchi nuovi sotto

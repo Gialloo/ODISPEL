@@ -8,6 +8,15 @@
 - IMPOSTAZIONI: volume della Musica e degli Effetti sonori (100%, 70%, 40%, spento).
 - Tutti i suoni sono nostri: li genera `tools/gen_suoni.py` (solo numpy e ffmpeg, licenza CC0). Si ritoccano lì e si rigenerano, come i dialoghi.
 
+## 0.50.0 · Combattimento più spettacolare
+
+- Ingresso in battaglia «nastro strappato»: toccando un nemico per strada l'immagine si disturba come una VHS che si inceppa, poi si strappa in diagonale e la battaglia esce dallo strappo (una sola lettura dello schermo, nessun costo durante lo scontro).
+- Boss a due fasi: a metà vita la telecamera va sul boss, l'Anomalia si squarcia (lo stesso strappo) e sotto l'arena è già cambiata: nebbia e luce del colore del boss, il boss con un alone che pulsa, e il cut-in «FASE 2» col nome della mossa nuova. Contro i nemici minori restano solo colore e luce. In FASE 3 l'alone diventa rosso.
+- Inquadrature firmate delle abilità: Rio in verticale come una sua diretta (LIVE e spettatori), Lance nel mirino dell'autovelox, Nox dal basso in controluce, Saul dall'alto come un drone.
+- L'arena reagisce: sui colpi forti i neon perdono un colpo; col BREAK la pioggia si ferma a mezz'aria per un attimo e le insegne si incrinano.
+- Vittoria come copertina di un video di Rio: la squadra in posa, titolo in maiuscolo, durata vera dello scontro, barra rossa e visualizzazioni che salgono (fino a 32). Un tocco la salta.
+- Prove: `tools/v3_strappo.gd` (ingresso) e `tools/v3_fase.gd` (boss a due fasi).
+
 ## 0.49.0 · Disturbo del cambio di telecamera
 
 - Torna il disturbo della 0.47 (fondo bianco, blocchi 8-bit, barre di colore), ma più leggero: bianco al 42% invece del 90%, blocchi più trasparenti e un poco più brevi, sopra la carrellata fluida della 0.48.
