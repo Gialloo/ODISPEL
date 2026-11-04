@@ -720,6 +720,19 @@ static func full_kit(entry: Dictionary) -> bool:
 	return BattleState.kit_of(entry.get("skills", []), Signatures.skills_for(cid, int(entry.get("rank", 0)))).size() >= BattleTypes.SKILL_SLOTS
 
 
+# VEL DEI NEMICI AL LIVELLO (decisione D5 dell'autore, 04/11/2026): cresce come quella degli eroi (+LEVEL_BONUS a livello).
+# Perche': con la Timeline la VEL decide quante azioni fa ognuno; con i nemici fermi tra 84 e 118, al livello 30 gli eroi
+# agivano quasi due volte per ogni mossa del boss e al 100 da tre a quattro volte.
+# Fino al ginocchio della storia (STORY_KNEE, fine dell'atto 1) resta la VEL di sempre: l'atto 1 e' tarato cosi' (con la
+# crescita dal livello 1 il bilancio scendeva dal 100% all'89% di vittorie sui boss, Autovelox al 58%). Oltre, cresce allo
+# stesso ritmo della squadra: il rapporto tra eroi e nemici resta quello della fine dell'atto 1 anche in New Game+.
+static func enemy_spd_at(spd: int, level: int) -> int:
+	if level <= BattleTypes.STORY_KNEE:
+		return spd
+	var g: float = (1.0 + LEVEL_BONUS * float(level - 1)) / (1.0 + LEVEL_BONUS * float(BattleTypes.STORY_KNEE - 1))
+	return maxi(1, int(round(float(spd) * g)))
+
+
 static func compute_stats(entry: Dictionary) -> Dictionary:
 	var def: Dictionary = CHARACTERS[str(entry.get("char", "kira"))]
 	var base: Dictionary = CLASS_STATS[str(def["cls"])]

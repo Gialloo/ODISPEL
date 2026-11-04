@@ -183,6 +183,7 @@ func _slancio_e_duo() -> void:
 
 
 func _init() -> void:
+	BattleFlow.timeline = false      # Fase 1: la prova di equivalenza riguarda il giro a round (la Timeline ha test_v3_timeline)
 	_same_battle()
 	_ingresso()
 	_slancio_e_duo()

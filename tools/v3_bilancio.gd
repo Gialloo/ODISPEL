@@ -11,6 +11,7 @@ extends SceneTree
 #   ng=N        New Game+ N: nemici al livello di BattleTypes.replica_level, squadra da Progress (sblocchi migliori equipaggiati)
 #   scarto=K    con ng: la squadra ha K livelli in meno del nemico (default 0; negativo = piu' alta)
 #   kit         anche senza ng, la squadra usa Progress (sblocchi del livello) invece del kit base
+#   giro        senza Timeline: il giro a round della Fase 0 (per confrontare)  · vel  tabella VEL / ΔT / azioni ai livelli (Fase 1)
 # Gli scontri e le scale PV/attacco replicano battle3d.gd (pv_k, atk_k, livello); la squadra e' quella dell'atto 1 con ultimate al 60%.
 # Metriche: vittorie, KO, round, turni del boss giocati/persi, quota di danno di Saul e di Nox, uso di cure/scudi/Veglia di Nox,
 # occasioni di reazione (carica annunciata + Riserva disponibile) e reazioni fatte.
@@ -66,6 +67,7 @@ func _setup(boss: String, lvl: int, pv: float, atk: float, minore: bool, seed_va
 	bu["max_hp"] = maxi(1, int(round(float(bu["max_hp"]) * pk)))
 	bu["hp"] = bu["max_hp"]
 	bu["atk"] = maxi(1, int(round(float(bu["atk"]) * ak)))
+	bu["spd"] = BattleContent.enemy_spd_at(int(bu["spd"]), lvl)     # D5, come battle3d
 	Gregario.add(b, greg)
 	if ng >= 0 or use_kit:
 		Progress.apply_to_battle(b)
@@ -73,6 +75,27 @@ func _setup(boss: String, lvl: int, pv: float, atk: float, minore: bool, seed_va
 		if not Gregario.is_enemy(b, str(uid)):
 			b["units"][uid]["gauge"] = mini(BattleTypes.GAUGE_MAX, 60 + int(b["units"][uid].get("syn_gauge", 0)))
 	return b
+
+
+# TIMELINE (Fase 1): VEL vere della squadra e dei boss a vari livelli, ΔT dell'ATTACCO e azioni di ogni eroe
+# per ogni azione del boss (1,00 = come nel giro a round). Serve per la decisione D5 (VEL di riferimento fissa o normalizzata).
+func _vel_table() -> void:
+	print("Timeline: ΔT ATTACCO = 100 × 100 / (100 + 0,3 × (VEL − 100)); 'x boss' = azioni dell'eroe per ogni azione del boss")
+	for lvl in [1, 5, 11, 30, 100]:
+		var line: String = "liv %3d |" % lvl
+		var b: Dictionary = _setup("semaforo", lvl, 1.0, 1.0, false, 1)
+		var bs: int = int(BattleState.boss(b)["spd"])
+		var bdt: int = BattleFlow.delta_t(BattleTypes.TL_ENEMY_COST, bs)
+		for p in b["players"]:
+			var u: Dictionary = BattleState.active_unit(b, str(p["id"]))
+			var dt: int = BattleFlow.delta_t(100, int(u["spd"]))
+			line += " %s VEL %d ΔT %.1f x boss %.2f |" % [str(u["char"]), int(u["spd"]), dt / 100.0, float(bdt) / float(dt)]
+		var bl: String = ""
+		for boss in ["distributore", "semaforo", "cabina", "manichino", "cassaforte", "autovelox"]:
+			var bb: Dictionary = _setup(boss, lvl, 1.0, 1.0, false, 1)
+			bl += " %s %d" % [boss, int(BattleState.boss(bb)["spd"])]
+		print(line)
+		print("        | VEL boss:" + bl + "  (semaforo ΔT %.1f)" % (bdt / 100.0))
 
 
 func _char_of(uid: String) -> String:
@@ -125,13 +148,13 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 				if bool(e.get("end", false)) or str(b["winner"]) != "":
 					break
 				if bool(e.get("greg", false)):
-					_scan(SeqRound.boss_action(b, Gregario.ID), st)
+					_scan(BattleFlow.boss_action(b, Gregario.ID), st)
 				elif bool(e["boss"]):
 					if int(BattleState.boss(b).get("stun", 0)) > 0:
 						st["boss_persi"] = float(st.get("boss_persi", 0.0)) + 1.0
 					else:
 						st["boss_giocati"] = float(st.get("boss_giocati", 0.0)) + 1.0
-					_scan(SeqRound.boss_action(b), st)
+					_scan(BattleFlow.boss_action(b), st)
 				else:
 					var pid: String = str(e["player"])
 					var quick: bool = bool(e.get("quick", false))
@@ -140,7 +163,7 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 					for x in evp:
 						if str(x.get("t", "")) == "slancio":
 							st["slancio"] = float(st.get("slancio", 0.0)) + 1.0
-			_scan(SeqRound.finish(b), st)
+			_scan(BattleFlow.finish(b), st)
 			for uid in b["units"]:
 				if not Gregario.is_enemy(b, str(uid)):
 					minhp = minf(minhp, float(b["units"][uid]["hp"]) / float(maxi(1, int(b["units"][uid]["max_hp"]))))
@@ -177,6 +200,12 @@ func _init() -> void:
 			minori = true
 		elif a.begins_with("solo="):
 			solo = a.substr(5)
+		elif a == "giro":
+			BattleFlow.timeline = false
+		elif a == "vel":
+			_vel_table()
+			quit()
+			return
 	print("%-18s %3s %5s %5s %5s %6s %6s %5s %5s %6s %6s %6s %5s %6s %5s" % ["scontro", "liv", "vitt%", "KO", "round", "bossG", "bossP", "ross", "slan", "Saul%", "Nox%", "NoxCP", "vegl", "occas", "reaz"])
 	var tot: Dictionary = {}
 	var n_boss: int = 0

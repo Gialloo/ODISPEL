@@ -25,6 +25,20 @@ static func _save_rng(state: Dictionary, rng: RNGState) -> void:
 
 static func begin_round(state: Dictionary) -> void:
 	Factions.ronda_tick(state, state["events"])
+	announce(state)
+	Gregario.telegraph(state)
+	Tactics.roll_chain(state, BattleContent.cycle_for(str(BattleState.boss(state)["char"]), int(state.get("phase", 1))))
+	Arena.roll(state)
+	# L'IA decide subito, cosi' le sue intenzioni si vedono durante la pianificazione (non dipendono dalla scelta degli umani).
+	for p in state["players"]:
+		if bool(p["ai"]) and p["choice"] == null and BattleState.player_alive(state, p):
+			p["choice"] = BattleAI.choose(state, str(p["id"]))
+
+
+# ANNUNCIO della prossima mossa del boss (telegraph): la mossa del ciclo a cycle_index e il bersaglio.
+# Separato da begin_round per la Timeline (Fase 1): se il boss agisce due volte nello stesso round, la seconda mossa
+# si annuncia qui, con le stesse regole (BattleFlow).
+static func announce(state: Dictionary) -> void:
 	var boss: Dictionary = BattleState.boss(state)
 	var def: Dictionary = BattleContent.BOSSES[str(boss["char"])]
 	var cycle: Array = BattleContent.cycle_for(str(boss["char"]), int(state.get("phase", 1)))
@@ -40,13 +54,6 @@ static func begin_round(state: Dictionary) -> void:
 			target = Kits.mask_target(state, target, rng)
 			_save_rng(state, rng)
 	state["telegraph"] = {"move": move_id, "target": target}
-	Gregario.telegraph(state)
-	Tactics.roll_chain(state, cycle)
-	Arena.roll(state)
-	# L'IA decide subito, cosi' le sue intenzioni si vedono durante la pianificazione (non dipendono dalla scelta degli umani).
-	for p in state["players"]:
-		if bool(p["ai"]) and p["choice"] == null and BattleState.player_alive(state, p):
-			p["choice"] = BattleAI.choose(state, str(p["id"]))
 
 
 # Fa giocare l'IA al posto di tutti gli slot ancora senza ordine (AUTOPLAY, test), poi risolve il round.

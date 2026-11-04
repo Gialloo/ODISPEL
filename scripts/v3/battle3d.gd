@@ -471,6 +471,7 @@ func _setup_battle() -> void:
 		bu["hp"] = bu["max_hp"]
 	if atk_k != 1.0:
 		bu["atk"] = maxi(1, int(round(float(bu["atk"]) * atk_k)))
+	bu["spd"] = BattleContent.enemy_spd_at(int(bu["spd"]), level)     # D5: la VEL del nemico cresce col livello come quella della squadra
 	Gregario.add(b, gregario)          # dopo la scala della storia: PV e attacco in proporzione al nemico gia' scalato
 	# legami del rifugio: +5% attacco alle coppie che hanno passato una serata insieme (PROVVISORIO)
 	if not ritorno.is_empty():
@@ -882,7 +883,7 @@ func _advance() -> void:
 			if not is_inside_tree() or ended:
 				return
 		if bool(e.get("end", false)):
-			var ev: Array = SeqRound.finish(b)
+			var ev: Array = BattleFlow.finish(b)
 			await _show_events(ev, false)
 			if str(b["winner"]) != "":
 				await _end_battle()
@@ -1165,7 +1166,7 @@ func _boss_turn() -> void:
 	var m: VendingVisual = vis[BattleState.BOSS_ID]
 	if stunned:
 		await _wait(0.3)
-		var evs: Array = SeqRound.boss_action(b)
+		var evs: Array = BattleFlow.boss_action(b)
 		_banner(_bname() + " · STORDITO, SALTA IL TURNO", Ui.CREAM)
 		await _show_events(evs, true)
 		await _wait(0.25)
@@ -1200,7 +1201,7 @@ func _boss_turn() -> void:
 					b["timed_guard"] = grade
 				if grade == "perfect":
 					await _parry_shot(str(tele.get("target", "")))
-		var ev: Array = SeqRound.boss_action(b)
+		var ev: Array = BattleFlow.boss_action(b)
 		var tw: Tween = m.slam() if all else m.attack()
 		await _wait(0.3 if all else 0.2)
 		if all:
@@ -3687,7 +3688,7 @@ func _intro_panels(ob: Control, bp: Control, party: Control) -> void:
 # TOCCA A TE: appena un eroe diventa di turno la sua card salta (scatto in scala), "TURNO DI ..." entra grande nel suo colore,
 # la colonna dei comandi si apre e il mirino si aggancia al nemico. Una volta sola per turno, tween brevi (Persona 5: ogni cambio ha uno scatto).
 func _announce_turn() -> void:
-	var key: String = "%s|%d|%d" % [cur_pid, turn_i, int(b.get("round", 1))]
+	var key: String = "%s|%d|%d" % [cur_pid, BattleFlow.turn_no(b), int(b.get("round", 1))]
 	if key == _pop_key or cur_pid == "" or ended:
 		return
 	_pop_key = key
@@ -4899,7 +4900,7 @@ func _greg_turn() -> void:
 	_cam_set(GREG_POS + Vector3(-1.6, 2.2, 5.2), GREG_POS + Vector3(-0.8, 1.0, 1.0), 3.0)
 	_banner(Gregario.NAME.to_upper() + " · COLPISCE " + who, _col(Gregario.unit(b)))
 	await _wait(0.25)
-	var ev: Array = SeqRound.boss_action(b, Gregario.ID)
+	var ev: Array = BattleFlow.boss_action(b, Gregario.ID)
 	var tw: Tween = g.attack()
 	await _wait(0.2)
 	_kick(0.4)
