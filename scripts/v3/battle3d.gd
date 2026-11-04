@@ -164,6 +164,12 @@ var _hint: Label
 var _say_lbl: Label                   # battute dei personaggi in battaglia
 var _say_balloon: EchoBalloon
 var _say_seq: int = 0
+var _quips: BattleQuips             # battute a fumetto della squadra (critici, K.O., salvataggi): battle_quips.gd
+var _final_quip: Array = []          # battuta del colpo finale: esce quando la squadra festeggia
+var _quip_layer: Control
+var _quip_lbl: Label
+var _quip_balloon: EchoBalloon
+var _quip_seq: int = 0
 var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
 var _party_back: Control
 var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
@@ -437,6 +443,7 @@ func _setup_battle() -> void:
 		# nella storia ognuno ha il suo livello e cio' che ha equipaggiato nel menu SQUADRA; la demo dal menu resta com'era
 		team.append(Progress.entry_for(id) if not ritorno.is_empty() else BattleContent.default_entry(id, level))
 	b = BattleState.create_solo("IO", team, [], boss_id, int(Time.get_ticks_msec()) % 100000 + 7)
+	_quips = BattleQuips.new()
 	var bu: Dictionary = BattleState.boss(b)
 	# nella storia la squadra sale di livello e il nemico no: lo si fa crescere insieme (PROVVISORIO, bilanciamento dell'atto 1)
 	# obiettivo: boss in 4-6 round, frammenti in 1-2
@@ -1481,6 +1488,8 @@ class EchoBalloon extends Control:
 		if fit:
 			var f: Font = lbl.get_theme_font("font")
 			r.size.x = minf(r.size.x, f.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, lbl.get_theme_font_size("font_size")).x + 4.0)
+		if r.size.x < 24.0 or r.size.y < 12.0:
+			return        # etichetta non ancora impaginata: il fumetto storto verrebbe un poligono che si incrocia
 		if r != _r:
 			_r = r
 			queue_redraw()
@@ -1577,6 +1586,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 			var d0: String = str(e.get("dst", ""))
 			if not Gregario.is_enemy(b, d0) and b["units"].has(d0):
 				run_hp[d0] = int(run_hp.get(d0, int(b["units"][d0]["hp"]))) + int(e.get("amount", 0))
+	var last_src: Dictionary = {}     # bersaglio -> chi l'ha colpito per ultimo (chi ha dato il K.O.)
+	var quip: Array = []              # una sola battuta per azione, la piu' importante: [priorita', tipo, chi, altro, ritardo]
 	for e in ev:
 		var t: String = str(e.get("t", ""))
 		match t:
@@ -1584,6 +1595,9 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				var dst: String = str(e.get("dst", ""))
 				if bool(e.get("cost", false)):
 					continue
+				last_src[dst] = str(e.get("src", ""))
+				if bool(e.get("crit", false)) and Gregario.is_enemy(b, dst) and _quip_char(str(e.get("src", ""))) != "":
+					quip = _quip_best(quip, [1, "critico", _quip_char(str(e.get("src", ""))), "", delay])
 				var amt: int = int(e.get("amount", 0))
 				var crit: bool = bool(e.get("crit", false))
 				# il peso del colpo si legge dalla grandezza del numero (danno / PV massimi del bersaglio); rosso-arancio se tocca uno dei tuoi
@@ -1696,6 +1710,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				_number(str(e.get("unit", "")), "COPRE " + _uname(str(e.get("who", ""))), _col_of(str(e.get("unit", ""))), 24, delay + 0.1)
 			"cover_hit":
 				_toast("%s si mette davanti a %s" % [_uname(str(e.get("unit", ""))), _uname(str(e.get("who", "")))], Ui.CREAM, 1.4)
+				if _quip_char(str(e.get("unit", ""))) != "":
+					quip = _quip_best(quip, [2, "copre", _quip_char(str(e.get("unit", ""))), _quip_char(str(e.get("who", ""))), delay])
 			"coin":
 				var testa: bool = str(e.get("side", "")) == "testa"
 				_toast("TESTA! Critico sicuro" if testa else "CROCE! Saul passa energia a un compagno", Ui.YELLOW if testa else Color("#62f08c"), 1.4)
@@ -1751,6 +1767,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if vis.has(rw) and vis[rw] is CharacterVisual:
 					(vis[rw] as CharacterVisual).revive()
 				_toast("RISPONDO IO · %s torna in piedi" % _uname(rw), Ui.CYAN, 1.8)
+				if _quip_char(rw) != "":
+					quip = _quip_best(quip, [4, "rialzato", _quip_char(rw), "", delay])
 			"answer":
 				_toast("RISPONDO IO · il prossimo colpo del nemico non passa", Ui.CYAN, 1.8)
 			"nullified":
@@ -1790,6 +1808,14 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					_number(du, "K.O.", Color("#ff4a5a"), 64, delay + 0.1, -10.0)       # chi cade si legge subito, non solo dalla card
 					_kick(0.5)
 					_signal_lost_later(du, delay)
+					if _quip_char(du) != "":
+						quip = _quip_best(quip, [5, "compagno_ko", _quip_char(du), "", delay])
+				if Gregario.is_enemy(b, du) and _quip_char(str(last_src.get(du, ""))) != "":
+					var killer: String = _quip_char(str(last_src.get(du, "")))
+					if str(b.get("winner", "")) == "players":
+						_final_quip = _quips.pick("ko_nemico", killer, _quip_alive()) if _quips != null else []
+					else:
+						quip = _quip_best(quip, [3, "ko_nemico", killer, "", delay])
 				if vis.has(du):
 					var dv: Node3D = vis[du]
 					if dv.has_method("ko"):
@@ -1800,6 +1826,8 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 					_seal.stop()              # la magia lascia l'oggetto: torna un oggetto qualsiasi
 					LightFx.rise(self, ENEMY_POS, LightFx.MAGIC, 1.1, 1.3)
 	# legami e combo muti prima: UN solo banner per azione, il piu' forte, sotto quello della mossa
+	if not quip.is_empty() and _quips != null and str(b.get("winner", "")) == "":
+		_quip_show(_quips.pick(str(quip[1]), str(quip[2]), _quip_alive(), str(quip[3])), float(quip[4]) + 0.35)
 	var lb: Dictionary = CombatHud.link_banner(ev)
 	if not lb.is_empty():
 		_notice(str(lb.get("short", lb["text"])), lb["col"], 1.6, "chain")      # catena + poche parole
@@ -2160,6 +2188,61 @@ func _say(u: Dictionary, text: String, sec: float = 0.0) -> void:
 				_say_off())
 
 
+# ---------------------------------------------------------------- battute a fumetto della squadra (battle_quips.gd)
+
+# id del personaggio della squadra per un'unita' ("" se e' un nemico, il gregario o non c'e')
+func _quip_char(uid: String) -> String:
+	var u: Dictionary = (b.get("units", {}) as Dictionary).get(uid, {})
+	if u.is_empty() or Gregario.is_enemy(b, uid) or uid == Gregario.ID:
+		return ""
+	return str(u.get("char", ""))
+
+
+func _quip_alive() -> Array:
+	var out: Array = []
+	for uid in b["units"]:
+		var c: String = _quip_char(str(uid))
+		if c != "" and int(b["units"][uid].get("hp", 0)) > 0:
+			out.append(c)
+	return out
+
+
+func _quip_best(cur: Array, cand: Array) -> Array:
+	return cand if cur.is_empty() or int(cand[0]) > int(cur[0]) else cur
+
+
+func _quip_unit(ch: String) -> Dictionary:
+	for uid in b["units"]:
+		if _quip_char(str(uid)) == ch:
+			return b["units"][uid]
+	return {}
+
+
+# Mostra le righe una dopo l'altra nel fumetto delle battute di squadra. Tace durante il cut-in dell'ultimate, il fermo
+# immagine e la pausa; una battuta nuova prende il posto di quella vecchia.
+func _quip_show(righe: Array, delay: float) -> void:
+	if righe.is_empty() or not is_inside_tree() or _quip_lbl == null:
+		return
+	if delay > 0.0:
+		await get_tree().create_timer(delay, true, false, true).timeout
+	_quip_seq += 1
+	var mine: int = _quip_seq
+	for r in righe:
+		if not is_inside_tree() or mine != _quip_seq or _pause != null or _finishing or (_cutin != null and _cutin.visible):
+			break
+		var u: Dictionary = _quip_unit(str(r.get("chi", "")))
+		if u.is_empty():
+			break
+		var txt: String = str(r.get("testo", ""))
+		_quip_balloon.speaker(str(u.get("char", "")), str(u.get("name", "")).to_upper(), _col(u))
+		_quip_lbl.text = txt
+		_quip_lbl.visible = true
+		await get_tree().create_timer(BattleQuips.hold(txt), true, false, true).timeout
+	if is_inside_tree() and mine == _quip_seq and _quip_lbl != null:
+		_quip_lbl.visible = false
+		_quip_lbl.text = ""
+
+
 func _say_off() -> void:
 	if _say_lbl != null:
 		_say_lbl.text = ""
@@ -2442,6 +2525,16 @@ func _end_battle() -> void:
 		for uid in vis:
 			if not Gregario.is_enemy(b, str(uid)) and not (vis[uid] as CharacterVisual).down:
 				(vis[uid] as CharacterVisual).cheer()
+		if not _final_quip.is_empty():
+			# chi ha dato il colpo finale lo commenta mentre si festeggia; il riquadro della vittoria aspetta che si legga
+			var fq_t: float = 0.2
+			for r in _final_quip:
+				fq_t += BattleQuips.hold(str(r.get("testo", "")))
+			_quip_show(_final_quip, 0.2)
+			_final_quip = []
+			await _wait(fq_t)
+			if not is_inside_tree():
+				return
 	if tutorial and win:
 		await _tut("tut_fine")
 		Story.set_flag("tutorial_fatto")
@@ -2918,6 +3011,24 @@ func _build_ui() -> void:
 	_say_balloon.fit = true
 	_cutin.add_child(_say_balloon)
 	_cutin.add_child(_say_lbl)
+	# fumetto delle battute di squadra (battle_quips.gd): stesso fumetto, ma in un suo strato sempre acceso, in basso a
+	# destra sopra le schede della squadra (il centro resta alla scena, a sinistra ci sono ritratto e comandi)
+	_quip_layer = Control.new()
+	_quip_layer.name = "Quips"
+	Ui.place(_quip_layer, 0, 0, 1, 1)
+	_quip_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_quip_layer)
+	_quip_lbl = Ui.label("", 24, Ui.CREAM, null, 7)
+	_quip_lbl.name = "Quip"
+	Ui.place(_quip_lbl, 1.0, 1.0, 1.0, 1.0, -500, -168, -40, -168)
+	_quip_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_quip_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_quip_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_quip_lbl.visible = false
+	_quip_balloon = EchoBalloon.new(_quip_lbl)
+	_quip_balloon.fit = true
+	_quip_layer.add_child(_quip_balloon)
+	_quip_layer.add_child(_quip_lbl)
 
 
 # Persona 5: mentre qualcuno fa la mossa l'HUD si svuota. Restano le vite (squadra e nemico) e il nome della mossa;
