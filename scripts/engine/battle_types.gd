@@ -87,7 +87,8 @@ const REPLICA_EXP_FIRST: float = 2.0      # NG+1: esperienza x2 ...
 const REPLICA_EXP_STEP: float = 0.25      # ... e +25% a ogni giro dopo (NG+10: x4,25)
 const SLANCIO_GUARD_SHIELD: float = 0.08  # SLANCIO con scelta: la Guardia rapida da' uno scudo dell'8% dei PV massimi a tutta la squadra ...
 const SLANCIO_GUARD_EN: int = 1          # ... e 1 energia in piu': l'azione extra rende di piu' se non e' un attacco
-const SLANCIO_ON: bool = true             # colpo col colore vincente = azione rapida subito dopo (una volta a round, squadra)
+const SLANCIO_ON: bool = true             # colpo alla debolezza = azione rapida subito dopo (Fase 2: una volta a round PER EROE, vedi Slancio)
+const SLANCIO_GREG: bool = true           # Fase 2: anche la debolezza della Scheggia da' SLANCIO (handoff 5.1: «una debolezza compatibile»)
 # TIMELINE (Fase 1 del combattimento, 04/11/2026; handoff 4.1-4.4, design doc 17). Valori PROTOTIPALI della spec, da verificare:
 # nessun coefficiente e' stato cambiato. Il tempo si conta in centesimi interi (deterministico, niente float nello stato).
 const TIMELINE_ON: bool = true            # false = giro a round della Fase 0 (ognuno una volta per round, in ordine di VEL)

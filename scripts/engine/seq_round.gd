@@ -153,23 +153,13 @@ static func _team_strike(state: Dictionary, breaker: Dictionary, events: Array) 
 	BattleResolver._check_winner(state, events)
 
 
-# SLANCIO: chi colpisce il boss col colore vincente guadagna mezzo turno: subito dopo agisce ancora, ma solo con Attacco o Guardia
+# SLANCIO: chi colpisce una debolezza compatibile guadagna mezzo turno: subito dopo agisce ancora, ma solo con Attacco o Guardia
 # (la Guardia rapida e' la GUARDIA DI SLANCIO: scudo a tutti, vedi _slancio_guard).
-# Al massimo una volta per round per tutta la squadra. Evento {"t": "slancio", "unit", "player"}: chi guida i turni (battle3d, sim)
-# inserisce l'azione rapida subito dopo (chiamando player_action con quick = true).
+# Fase 2: una volta per round PER PERSONAGGIO (prima: per tutta la squadra), anche col secondo punto debole e sulla Scheggia.
+# Le regole stanno in Slancio (slancio.gd). Evento {"t": "slancio", "unit", "player", "dst", "why"}: chi guida i turni
+# (BattleFlow) inserisce l'azione rapida subito dopo (chiamando player_action con quick = true).
 static func _check_slancio(state: Dictionary, actor: Dictionary, events: Array) -> void:
-	if not BattleTypes.SLANCIO_ON or bool(state["seq"].get("slancio", false)) or str(state["winner"]) != "":
-		return
-	var boss: Dictionary = BattleState.boss(state)
-	if not BattleState.is_alive(boss) or not BattleState.is_alive(actor):
-		return
-	if BattleTypes.color_multiplier(str(actor["color"]), str(boss["color"])) <= 1.0:
-		return
-	for e in events:
-		if str(e.get("t", "")) == "damage" and str(e.get("src", "")) == str(actor["id"]) and str(e.get("dst", "")) == str(boss["id"]) and int(e.get("amount", 0)) > 0:
-			state["seq"]["slancio"] = true
-			events.append({"t": "slancio", "unit": str(actor["id"]), "player": BattleState.slot_of(state, str(actor["id"]))})
-			return
+	Slancio.check(state, actor, events)
 
 
 # GUARDIA DI SLANCIO: nell'azione rapida la Guardia rende di piu' di un colpo in certe situazioni: scudo a tutta la squadra

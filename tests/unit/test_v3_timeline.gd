@@ -278,7 +278,7 @@ func _slancio_costo() -> void:
 		_play(s, e)
 		e = BattleFlow.next(s)
 	var pid: String = str(e["player"])
-	s["seq"]["slancio"] = true          # niente SLANCIO vero da questo colpo: lo si mette a mano
+	s["seq"]["slancio_by"] = {str(e["unit"]): true}      # niente SLANCIO vero da questo colpo (Fase 2: per eroe): lo si mette a mano
 	BattleFlow.player_action(s, pid, _attack())
 	var at0: int = int(tl["slots"][pid]["at"])
 	(tl["quick"] as Array).append({"unit": str(e["unit"]), "player": pid, "boss": false, "spd": -1, "extra": true, "quick": true, "slancio": true})

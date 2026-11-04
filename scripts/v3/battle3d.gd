@@ -1032,7 +1032,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 	var boss_u: Dictionary = BattleState.unit(b, tid)
 	for x in ev:
 		if str(x.get("t", "")) == "damage" and str(x.get("src", "")) == uid and str(x.get("dst", "")) == tid \
-			and int(x.get("amount", 0)) > 0 and BattleTypes.color_multiplier(str(u.get("color", "")), str(boss_u.get("color", ""))) > 1.0:
+			and int(x.get("amount", 0)) > 0 and Slancio.weak_hit(u, boss_u):      # stessa regola del motore (anche il secondo punto debole)
 			weak_hit = true
 		if str(x.get("t", "")) == "slancio":
 			got_slancio = true
