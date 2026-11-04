@@ -1,6 +1,6 @@
 # Novità
 
-## In lavorazione · Fase 0 del nuovo combattimento: il giro dei turni nel motore
+## 0.52.0 · Fase 0 del nuovo combattimento (esce con la Fase 1): il giro dei turni nel motore
 
 Dal piano del combattimento (audit del 4/11/2026, approvato dall'autore): niente regole nuove, si prepara la Timeline.
 
