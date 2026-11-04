@@ -500,8 +500,8 @@ static func plan_hints(state: Dictionary, slot_id: String) -> Array:
 	var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	if not bm.is_empty() and int(boss.get("stun", 0)) == 0 and is_heavy_boss_move(bm):
 		hints.append("CARICA IN CORSO: il BREAK la interrompe (equilibrio %d)" % int(boss.get("balance", 0)))
-	if float(me["hp"]) < float(me["max_hp"]) * BattleTypes.ARDOR_BELOW:
-		hints.append("ARDORE: sotto il %d%% PV colpisci +%d%%" % [int(BattleTypes.ARDOR_BELOW * 100.0), int(round((BattleTypes.ARDOR_BONUS - 1.0) * 100.0))])
+	if float(me["hp"]) < float(me["max_hp"]) * BattleTypes.GRIT_BELOW:
+		hints.append("GRINTA: sotto il %d%% PV colpisci +%d%%" % [int(BattleTypes.GRIT_BELOW * 100.0), int(round((BattleTypes.GRIT_BONUS - 1.0) * 100.0))])
 	var lc: String = str(me.get("last_cat", ""))
 	if lc != "":
 		hints.append("RITMO: cambia tipo di mossa (ora %s) per +%d%%" % [BattleContent.category_name(lc), int(round((BattleTypes.RHYTHM_BONUS - 1.0) * 100.0))])
@@ -628,8 +628,8 @@ static func calc_damage(attacker: Dictionary, defender: Dictionary, mult: float,
 		dmg *= BattleTypes.ENRAGE_BONUS
 	if str(defender["side"]) == "boss" and bool(defender.get("exposed", false)):
 		dmg *= BattleTypes.BREAK_DAMAGE
-	if str(attacker["side"]) == "player" and float(attacker["hp"]) < float(attacker["max_hp"]) * BattleTypes.ARDOR_BELOW:
-		dmg *= BattleTypes.ARDOR_BONUS
+	if str(attacker["side"]) == "player" and float(attacker["hp"]) < float(attacker["max_hp"]) * BattleTypes.GRIT_BELOW:
+		dmg *= BattleTypes.GRIT_BONUS
 	if float(defender["hp"]) < float(defender["max_hp"]) * BattleTypes.ENRAGE_BELOW:
 		for pass_id in attacker["passives"]:
 			if bool(BattleContent.PASSIVES.get(str(pass_id), {}).get("hunter", false)):

@@ -252,6 +252,7 @@ static func finish(state: Dictionary) -> Array:
 # ---------- interni ----------
 
 static func _log(state: Dictionary, events: Array) -> void:
+	Ritmo.after_events(state, events)      # RITMO di squadra (fase R1): legge gli eventi di ogni passo e aggiunge i suoi in coda
 	if state.has("seq"):
 		(state["seq"]["events"] as Array).append_array(events)
 
