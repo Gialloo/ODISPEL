@@ -113,11 +113,11 @@ func _draw() -> void:
 		var hp_s: String = "%d" % int(u.get("hp", 0))
 		var en_s: String = "EN %d" % int(u.get("en", 0))
 		var hw: float = f.get_string_size(hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
-		var ew: float = f.get_string_size(en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+		var ew: float = f.get_string_size(en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT).x
 		draw_string_outline(f, Vector2(x + CW - hw - 2, y + 96), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, 6, INK)
 		draw_string(f, Vector2(x + CW - hw - 2, y + 96), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, CREAM if alive else Color(0.6, 0.6, 0.65))
-		draw_string_outline(f, Vector2(x + CW - ew - 2, y + 113), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, 5, INK)
-		draw_string(f, Vector2(x + CW - ew - 2, y + 113), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Ui.CYAN)
+		draw_string_outline(f, Vector2(x + CW - ew - 2, y + 113), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, 5, INK)
+		draw_string(f, Vector2(x + CW - ew - 2, y + 113), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Ui.CYAN)
 		# barrette a sinistra sotto il ritratto: vita (verde) e ULTIMATE (rosa, gialla quando e' piena)
 		var bw: float = maxf(18.0, CW - hw - 12.0)
 		var hpk: float = clampf(float(u.get("hp", 0)) / maxf(1.0, float(u.get("max_hp", 1))), 0.0, 1.0)

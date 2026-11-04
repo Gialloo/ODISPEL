@@ -16,6 +16,9 @@ var tag_right: bool = false          # etichetta a destra (esplorazione, sotto l
 var tag_y: float = -204.0            # posizione verticale dell'etichetta (dal basso se negativa)
 var _cam_no: int = 1
 var live: int = -1                   # Hype di Rio (battaglia): da 25 in su la telecamera va «in diretta» e lo scrive
+# HUD a tre livelli (HudLayers): mentre il giocatore sceglie la telecamera e' livello 3 e si fa da parte. La chat della diretta
+# tace e il cartellino «CAM nn» non copre la squadra; restano cornice, REC e la linea del taglio (game director, 4/11/2026)
+var quiet: bool = false
 var _who: String = ""
 var _who_col: Color = Ui.CREAM
 var _t: float = 0.0
@@ -154,7 +157,7 @@ var _chat_i: int = 0
 
 func _chat_tick(delta: float) -> void:
 	# anche nelle Anomalie: Rio trasmette lo stesso (3/11/2026, contro i boss deve esserci tutto)
-	if live < 25:
+	if live < 25 or quiet:
 		if not _chat.is_empty():
 			_chat.clear()
 		return
@@ -481,7 +484,8 @@ func _draw_cut(sz: Vector2) -> void:
 			draw_rect(Rect2(x0, y + bh * 0.3, bw, maxf(1.0, bh * 0.4)), Color(1, 1, 1, 0.26 * k) if i % 3 == 0 else Color(_who_col.r, _who_col.g, _who_col.b, 0.32 * k))
 	if el < GLITCH_TIME:
 		_draw_glitch(sz, el)
-	_draw_cam_stamp(sz, el)
+	if not (quiet and _stamp_main == ""):      # il cartellino generico tace mentre si sceglie; presentazione e FASE no
+		_draw_cam_stamp(sz, el)
 
 
 # BLOCCHI DIGITALI del cambio di telecamera (autore, 3/11/2026: «usa l'ottavo fotogramma del break»): per ~0,14 s il segnale

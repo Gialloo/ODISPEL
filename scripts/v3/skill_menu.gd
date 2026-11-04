@@ -247,7 +247,7 @@ func _draw() -> void:
 			var sp := r.position + Vector2(76.0 + nw + 14.0, 8.0)
 			var tag := Rect2(sp, Vector2(74.0, 26.0))
 			draw_colored_polygon(CmdWheel.slant(tag, 6.0), Color(CmdWheel.INK if on else Color("#ffd23f"), a))
-			draw_string(fb, sp + Vector2(12.0, 19.0), "FIRMA", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(Color("#ffd23f") if on else CmdWheel.INK, a))
+			draw_string(fb, sp + Vector2(12.0, 19.0), "FIRMA", HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(Color("#ffd23f") if on else CmdWheel.INK, a))
 		# costo a destra: rosso se non basta l'energia
 		var cost: String = str(it["cost"])
 		var cw: float = fd.get_string_size(cost, HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x

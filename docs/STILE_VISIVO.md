@@ -189,3 +189,15 @@ Volutamente **non** fatto: il braccio di Lance che si accende nell'Ultimate (il 
 
 Per guardare tutto senza giocare: `xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_vetrina.gd -- /tmp/vetrina`
 (protagonisti di fronte, di schiena e in posa, primi piani, Rio con la maschera incrinata, i nemici, gli effetti e la cupola).
+
+## HUD a tre livelli (Review 01 del game director, 4/11/2026)
+
+In meno di un secondo il giocatore deve sapere: **chi agisce, cosa succede, qual è la minaccia, cosa può fare**. Ogni elemento dell'HUD di battaglia ha un livello (elenco nel codice: `scripts/v3/hud_layers.gd`).
+
+- **Livello 1 · Priorità**: vite della squadra e del nemico, chi è di turno, comandi, prossima mossa del nemico. Posti fissi, mai coperti.
+- **Livello 2 · Contesto**: DEBOLE A, equilibrio, ordine dei turni, COMBO, avvisi dell'arena e dei boss, consigli di Echo, reazioni.
+- **Livello 3 · Atmosfera**: REC e cornice, cartellino CAM, chat della diretta di Rio, battute a fumetto, timbri, disturbi, fermo immagine, inquadrature firmate.
+
+Regola: **mentre si sceglie il livello 3 si fa da parte** (la chat tace, il cartellino «CAM nn» non esce, le battute aspettano la mossa fino a 6 secondi); durante le mosse, dove non c'è niente da decidere, torna pieno. Lo spettacolo resta tutto, cambia solo il momento. Il glitch resta sul livello 3 e sulle anomalie, mai sopra le informazioni del livello 1.
+
+Testo minimo per i livelli 1 e 2: **16 px** nella vista di base 1280×720 (24 px veri su un telefono 2400×1080); la prossima mossa del nemico 18. Prove: `tests/unit/test_v3_livelli.gd` (livelli e testo minimo) e `tools/v3_tre_livelli.gd` (caso peggiore mentre si sceglie, a 2400×1080, 1600×720 e 1280×720).

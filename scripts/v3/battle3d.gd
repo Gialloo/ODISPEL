@@ -2378,6 +2378,13 @@ func _quip_show(righe: Array, delay: float) -> void:
 		var u: Dictionary = _quip_unit(str(r.get("chi", "")))
 		if u.is_empty():
 			break
+		# livello 3: mentre si sceglie la battuta aspetta la mossa (al massimo qualche secondo, poi sarebbe vecchia)
+		var waited: float = 0.0
+		while _choice_hud and waited < HudLayers.QUIP_WAIT_MAX and is_inside_tree() and mine == _quip_seq:
+			await get_tree().create_timer(0.2, true, false, true).timeout
+			waited += 0.2
+		if not is_inside_tree() or mine != _quip_seq or _choice_hud:
+			break
 		var txt: String = str(r.get("testo", ""))
 		_quip_balloon.speaker(str(u.get("char", "")), str(u.get("name", "")).to_upper(), _col(u))
 		_quip_lbl.text = txt
@@ -3030,18 +3037,18 @@ func _build_ui() -> void:
 	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_boss_name.add_theme_stylebox_override("normal", Ui.plate(Color(0.02, 0.01, 0.03, 0.92), Color("#ff2340"), -0.18, 5))
 	bp.add_child(_boss_name)
-	_boss_hp = _bar(Color("#ff4b6e"), 16)
+	_boss_hp = _bar(Color("#ff4b6e"), 22)
 	bp.add_child(_boss_hp)
 	_boss_ghost = _ghost_bar(_boss_hp)
-	_boss_hp_txt = Ui.label("", 14, Ui.CREAM, null, 4)
+	_boss_hp_txt = Ui.label("", HudLayers.MIN_TEXT, Ui.CREAM, null, 4)
 	_boss_hp_txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_hp.add_child(_boss_hp_txt)
 	Ui.place(_boss_hp_txt, 0, 0, 1, 1)
 	_boss_hp_txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_boss_brk = _bar(Color("#f2f0ea"), 14)
+	_boss_brk = _bar(Color("#f2f0ea"), 20)
 	bp.add_child(_boss_brk)
 	# il nome della barra bianca dentro la barra, crema col contorno scuro, si legge su barra piena e vuota (prima grigio chiaro da 12: non si leggeva): quando arriva a zero il boss si rompe
-	_brk_lbl = Ui.label("EQUILIBRIO", 12, Ui.CREAM, Ui.display(), 4)
+	_brk_lbl = Ui.label("EQUILIBRIO", HudLayers.MIN_TEXT, Ui.CREAM, Ui.display(), 4)
 	var brk_t := _brk_lbl
 	brk_t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_brk.add_child(brk_t)
@@ -3053,12 +3060,12 @@ func _build_ui() -> void:
 	_weak_row.add_theme_constant_override("separation", 2)
 	_weak_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bp.add_child(_weak_row)
-	_weak_k = Ui.plate_label("DEBOLE A", 15, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
+	_weak_k = Ui.plate_label("DEBOLE A", HudLayers.MIN_TEXT, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
 	_weak_row.add_child(_weak_k)
-	_weak_v = Ui.plate_label("???", 15, Ui.INK, Color("#9a94a8"), Ui.INK)
+	_weak_v = Ui.plate_label("???", HudLayers.MIN_TEXT, Ui.INK, Color("#9a94a8"), Ui.INK)
 	_weak_row.add_child(_weak_v)
 	# la minaccia su una lastra scura col bordo rosso: si legge su cielo chiaro e su insegne (prima testo bianco nudo da 20)
-	_tele = Ui.label("", 15, Ui.CREAM, Ui.display(), 0)
+	_tele = Ui.label("", HudLayers.THREAT_TEXT, Ui.CREAM, Ui.display(), 0)
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_tele.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bp.add_child(_tele)
@@ -3125,7 +3132,7 @@ func _build_ui() -> void:
 	# una riga sola: la scritta piccola a sinistra dei tasti (prima una riga sopra: la colonna saliva fin sul nemico)
 	_react_box.remove_child(_react_lbl)
 	_react_lbl.autowrap_mode = TextServer.AUTOWRAP_OFF
-	_react_lbl.add_theme_font_size_override("font_size", 13)
+	_react_lbl.add_theme_font_size_override("font_size", HudLayers.MIN_TEXT)
 	_react_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	rrow.add_child(_react_lbl)
 	var rcols: Dictionary = {"schivata": Ui.CYAN, "intercettazione": Color("#62f08c"), "interruzione": Ui.PINK, "soccorso": Ui.YELLOW}
@@ -3319,7 +3326,27 @@ func _hud_focus(choice: bool) -> void:
 		_top_bar.visible = choice or auto_on
 	if _legend != null and not choice:
 		_legend.visible = false
+	# HUD a tre livelli (HudLayers): mentre si sceglie il livello 3 si fa da parte (chat e cartellino CAM tacciono, la
+	# battuta in corso si chiude e le nuove aspettano la mossa); durante le mosse torna tutto
+	if _cam_hud != null:
+		_cam_hud.quiet = choice
+	if choice and _quip_lbl != null and _quip_lbl.visible:
+		_quip_seq += 1
+		_quip_lbl.visible = false
+		_quip_lbl.text = ""
 	_stack_notices()
+
+
+# Prova della gerarchia (tools/v3_tre_livelli.gd): cosa del livello 3 si vede ancora mentre si sceglie. Vuoto = regola rispettata.
+func livello3_sopra_livello1() -> Array:
+	var out: Array = []
+	if not _choice_hud:
+		return out
+	if _quip_lbl != null and _quip_lbl.visible:
+		out.append("battute")
+	if _cam_hud != null and not _cam_hud.quiet:
+		out.append("chat_diretta / cartellino_cam")
+	return out
 
 
 # Tasto della barra rapida in alto a destra: lastra scura, scritta crema, piccolo (resta grande abbastanza per il dito)
@@ -3972,14 +3999,14 @@ func _update_react() -> void:
 		if lb.visible:
 			lb.text = "ULT\n%s" % str(_unit_of(str(lives[k])).get("name", "")).to_upper()
 			lb.set_meta("pid", str(lives[k]))
-			lb.add_theme_font_size_override("font_size", 15)
+			lb.add_theme_font_size_override("font_size", HudLayers.MIN_TEXT)
 			lb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
 	for rid in _react_btns:
 		var rb: Button = _react_btns[rid]
 		rb.visible = usable.has(rid)
 		if rb.visible:
 			rb.text = "%s · %d" % [str(REACT_SHORT[rid]), BattleResolver.reaction_cost(b, str(rid))]      # il numero e' la Riserva che costa
-			rb.add_theme_font_size_override("font_size", 15)
+			rb.add_theme_font_size_override("font_size", HudLayers.MIN_TEXT)
 			rb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
 	# la colonna e' piu' alta con la riga delle Ultimate in diretta: titolo e descrizioni salgono per non essere coperti
 	var up: float = 40.0 if not lives.is_empty() else 0.0
@@ -4178,7 +4205,7 @@ func _refresh_hud() -> void:
 	if sig != _order_sig:
 		_order_sig = sig
 		while _order_box.get_child_count() < rows.size():
-			_order_box.add_child(Ui.label("", 15, Ui.CREAM, null, 5))
+			_order_box.add_child(Ui.label("", HudLayers.MIN_TEXT, Ui.CREAM, null, 5))
 		for i in _order_box.get_child_count():
 			var l: Label = _order_box.get_child(i)
 			l.visible = i < rows.size()
@@ -4801,7 +4828,7 @@ func _build_greg_ui() -> void:
 	_greg_hp = _bar(Color("#ff4b6e"), 12)
 	_greg_hp.custom_minimum_size.x = 170.0
 	_greg_tag.add_child(_greg_hp)
-	_greg_tele = Ui.label("", 14, Ui.CREAM, Ui.display(), 5)
+	_greg_tele = Ui.label("", HudLayers.MIN_TEXT, Ui.CREAM, Ui.display(), 5)
 	_greg_tag.add_child(_greg_tele)
 	_aim_btn = Ui.button("MIRA", Ui.YELLOW, 18, 120)
 	_aim_btn.visible = false
