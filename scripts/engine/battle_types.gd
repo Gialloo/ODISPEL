@@ -231,3 +231,8 @@ const RITMO_SAVE_KEEP: Dictionary = {
 	"normale": {"good": 0.5, "perfect": 0.0},     # parata buona: perdita ridotta; perfetta: annullata (4.2)
 	"pesante": {"good": 0.75, "perfect": 0.5},    # colpo pesante: il salvataggio vale meno (4.5)
 }
+# Cosa danno i livelli del RITMO (fase R4, Ritmo._on_reach / dmg_mult / pressure_bonus / heal_mult): VALORI DI PROVA
+const RITMO_BONUS: Dictionary = {
+	"acceso_riserva": 1, "incandescente_pressione": 1, "apice_danno": 1.10, "apice_en": 1,
+	"apice_lance_pressione": 1, "apice_nox_cure": 1.25, "apice_rio_hype": 0.5, "apice_saul_en": 1,
+}

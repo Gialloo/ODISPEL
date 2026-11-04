@@ -191,6 +191,7 @@ static func after_events(state: Dictionary, events: Array) -> void:
 					_mark(state, "colpo_break", APICE, events)
 				if BattleTypes.color_multiplier(str(src["color"]), str(boss["color"])) > 1.0 or BattleTypes.hits_weak2(src, boss):
 					_source(state, "debolezza", str(src["id"]), events)
+					_saul_apice(state, src, events)
 					_mark(state, "debolezza", ACCESO, events)
 			"break":
 				_source(state, "break", str(e.get("src", "")), events)
@@ -215,6 +216,8 @@ static func after_events(state: Dictionary, events: Array) -> void:
 					_source(state, "cura", str(e.get("src", "")), events)
 			"slancio":
 				_source(state, "slancio", str(e.get("unit", "")), events)
+			"hype":
+				_rio_apice(state, e, events)
 			"duo":
 				_source(state, "duo", str(e.get("unit", "")), events)
 			"down":
@@ -367,6 +370,8 @@ static func _set_level(state: Dictionary, to: int, why: String, events: Array) -
 	r["level"] = to
 	_clear_progress(r)
 	events.append({"t": "ritmo_level", "from": from, "to": to, "why": why})
+	if to > from:
+		_on_reach(state, to, events)
 
 
 # Nuovo livello = nuova transizione: condizioni e compagni che hanno contribuito ripartono da zero.
@@ -374,3 +379,73 @@ static func _clear_progress(r: Dictionary) -> void:
 	r["done"] = {}
 	r["helpers"] = {}
 	r["ready"] = false
+
+
+# ---------------------------------------------------------------- fase R4: cosa danno i livelli (VALORI DI PROVA)
+# Ogni livello aggiunge, non sostituisce: INCANDESCENTE tiene quello che da' ACCESO, APICE tiene tutto (5.3).
+# I bonus passivi si leggono dal livello di ADESSO: quando APICE si perde spariscono subito, le azioni gia' fatte restano (5.2).
+#   ACCESO        a ogni salita: +1 Riserva di squadra (le reazioni costano meno da inseguire)
+#   INCANDESCENTE ogni colpo della squadra mette +1 pressione BREAK (distinta dal danno, sez. 9)
+#   APICE         universale: +10% danno della squadra; a ogni salita +1 EN a chi e' in piedi
+#                 individuale (5.4, nessuno obbligatorio): Lance +1 pressione BREAK in piu', Nox cure +25%,
+#                 Rio +50% HYPE guadagnato, Saul +1 EN quando colpisce una debolezza (una volta per round)
+# Il +10% al cambio di categoria (RHYTHM_BONUS) resta a parte e si somma (K2). Nessuna tecnica APICE ancora (servono i costi, R3).
+
+static func _on_reach(state: Dictionary, lv: int, events: Array) -> void:
+	if lv == ACCESO and int(BattleTypes.RITMO_BONUS["acceso_riserva"]) > 0:
+		BattleResolver._gain_reserve(state, int(BattleTypes.RITMO_BONUS["acceso_riserva"]), "ritmo", events)
+	if lv == APICE and int(BattleTypes.RITMO_BONUS["apice_en"]) > 0:
+		for p in BattleState.alive_players(state):
+			var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+			if BattleState.is_alive(u):
+				u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + int(BattleTypes.RITMO_BONUS["apice_en"]))
+		events.append({"t": "apice_on"})
+
+
+static func _on(state: Dictionary) -> bool:
+	return BattleTypes.RITMO_ON and not bool(state.get("pvp", false)) and state.get("ritmo", null) is Dictionary
+
+
+static func dmg_mult(state: Dictionary, attacker: Dictionary) -> float:
+	if not _on(state) or level(state) < APICE or str(attacker.get("side", "")) != "player":
+		return 1.0
+	return float(BattleTypes.RITMO_BONUS["apice_danno"])
+
+
+static func pressure_bonus(state: Dictionary, attacker: Dictionary) -> int:
+	if not _on(state) or str(attacker.get("side", "")) != "player":
+		return 0
+	var lv: int = level(state)
+	var b: int = 0
+	if lv >= INCANDESCENTE:
+		b += int(BattleTypes.RITMO_BONUS["incandescente_pressione"])
+	if lv >= APICE and str(attacker.get("char", "")) == "ferri":
+		b += int(BattleTypes.RITMO_BONUS["apice_lance_pressione"])
+	return b
+
+
+static func heal_mult(state: Dictionary, actor: Dictionary) -> float:
+	if not _on(state) or level(state) < APICE or str(actor.get("char", "")) != "nox":
+		return 1.0
+	return float(BattleTypes.RITMO_BONUS["apice_nox_cure"])
+
+
+static func _rio_apice(state: Dictionary, e: Dictionary, events: Array) -> void:
+	if level(state) < APICE or str(e.get("why", "")) == "apice":
+		return
+	var u: Dictionary = BattleState.unit(state, str(e.get("unit", "")))
+	if u.is_empty() or str(u.get("char", "")) != "zecca":
+		return
+	var extra: int = int(floor(float(int(e.get("amount", 0))) * float(BattleTypes.RITMO_BONUS["apice_rio_hype"])))
+	Kits.add_hype(u, extra, events, "apice")
+
+
+static func _saul_apice(state: Dictionary, src: Dictionary, events: Array) -> void:
+	if level(state) < APICE or str(src.get("char", "")) != "saul":
+		return
+	var r: Dictionary = st(state)
+	if (r["gen"] as Dictionary).has("saul_apice"):
+		return
+	r["gen"]["saul_apice"] = 1
+	src["energy"] = mini(BattleTypes.MAX_ENERGY, int(src["energy"]) + int(BattleTypes.RITMO_BONUS["apice_saul_en"]))
+	events.append({"t": "apice_saul", "unit": src["id"], "energy": int(BattleTypes.RITMO_BONUS["apice_saul_en"])})

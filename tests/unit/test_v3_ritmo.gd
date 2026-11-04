@@ -426,6 +426,89 @@ func _salvataggio_motore() -> void:
 	check(false, "nel motore: il boss non ha agito nel primo round")
 
 
+# ---------------------------------------------------------------- R4: bonus dei livelli e di APICE
+
+func _by_char(s: Dictionary, c: String) -> Dictionary:
+	for u in _heroes(s):
+		if str(u["char"]) == c:
+			return u
+	return {}
+
+
+func _bonus_livelli() -> void:
+	var s: Dictionary = _fresh()
+	var boss: Dictionary = BattleState.boss(s)
+	var h: Dictionary = _hero(s, true)
+	var lance: Dictionary = _by_char(s, "ferri")
+	var nox: Dictionary = _by_char(s, "nox")
+	check(Ritmo.dmg_mult(s, h) == 1.0 and Ritmo.pressure_bonus(s, h) == 0 and Ritmo.heal_mult(s, nox) == 1.0, "R4: in CALMO nessun bonus")
+	# ACCESO: +1 Riserva quando si raggiunge
+	_put(s, 30)
+	s["reserve"] = 2
+	var evs: Array = _feed(s, [{"t": "damage", "src": h["id"], "dst": boss["id"], "amount": 30}])
+	check(Ritmo.level(s) == Ritmo.ACCESO and int(s["reserve"]) == 3 and _has(evs, "reserve"), "R4: ACCESO raggiunto -> +1 Riserva")
+	check(Ritmo.pressure_bonus(s, h) == 0, "R4: ACCESO non da pressione extra")
+	# INCANDESCENTE: +1 pressione per tutti
+	Ritmo.st(s)["level"] = Ritmo.INCANDESCENTE
+	check(Ritmo.pressure_bonus(s, h) == 1 and Ritmo.pressure_bonus(s, boss) == 0, "R4: INCANDESCENTE +1 pressione solo agli eroi")
+	check(Ritmo.dmg_mult(s, h) == 1.0, "R4: INCANDESCENTE non da danno extra")
+	# APICE: si raggiunge con il colpo nel BREAK, +1 EN a tutti
+	_put(s, 75)
+	for u in _heroes(s):
+		u["energy"] = 2
+	boss["exposed"] = true
+	evs = _feed(s, [{"t": "damage", "src": h["id"], "dst": boss["id"], "amount": 30}])
+	boss["exposed"] = false
+	check(Ritmo.level(s) == Ritmo.APICE and _has(evs, "apice_on"), "R4: APICE raggiunto")
+	var en_ok: bool = true
+	for u in _heroes(s):
+		if str(u["char"]) != "saul" and int(u["energy"]) != 3:
+			en_ok = false
+	check(en_ok, "R4: APICE -> +1 EN a ogni eroe")
+	check(is_equal_approx(Ritmo.dmg_mult(s, h), 1.10) and Ritmo.dmg_mult(s, boss) == 1.0, "R4: APICE danno x1.10 solo agli eroi")
+	check(Ritmo.pressure_bonus(s, lance) == 2 and Ritmo.pressure_bonus(s, nox) == 1, "R4: APICE Lance +1 pressione in piu")
+	check(is_equal_approx(Ritmo.heal_mult(s, nox), 1.25) and Ritmo.heal_mult(s, lance) == 1.0, "R4: APICE cure di Nox x1.25")
+	# i bonus finiscono subito se APICE si perde
+	Ritmo.drop_level(s, 1, "test", [])
+	check(Ritmo.level(s) == Ritmo.INCANDESCENTE and Ritmo.dmg_mult(s, h) == 1.0 and Ritmo.heal_mult(s, nox) == 1.0 and Ritmo.pressure_bonus(s, lance) == 1, "R4: perso APICE, bonus tolti subito")
+
+
+func _bonus_rio_saul() -> void:
+	var s: Dictionary = _fresh()
+	var boss: Dictionary = BattleState.boss(s)
+	var rio: Dictionary = _by_char(s, "zecca")
+	var saul: Dictionary = _by_char(s, "saul")
+	Ritmo.st(s)["level"] = Ritmo.APICE
+	_put(s, 80)
+	rio["hype"] = 0
+	var evs: Array = []
+	Kits.add_hype(rio, 2, evs, "test")
+	_feed(s, evs)
+	check(int(rio["hype"]) == 3, "R4: APICE Rio guadagna HYPE +50%% (2 -> 3, era %d)" % int(rio["hype"]))
+	saul["energy"] = 1
+	var weak: bool = BattleTypes.color_multiplier(str(saul["color"]), str(boss["color"])) > 1.0 or BattleTypes.hits_weak2(saul, boss)
+	if weak:
+		_feed(s, [{"t": "damage", "src": saul["id"], "dst": boss["id"], "amount": 20}])
+		_feed(s, [{"t": "damage", "src": saul["id"], "dst": boss["id"], "amount": 20}])
+		check(int(saul["energy"]) == 2, "R4: APICE Saul +1 EN sul colpo debole, una volta per round")
+	else:
+		var other: String = ""
+		for b in ["cabina", "manichino", "cassaforte", "autovelox"]:
+			var t: Dictionary = _fresh(b)
+			var bb: Dictionary = BattleState.boss(t)
+			var sa: Dictionary = _by_char(t, "saul")
+			if BattleTypes.color_multiplier(str(sa["color"]), str(bb["color"])) > 1.0 or BattleTypes.hits_weak2(sa, bb):
+				other = b
+				Ritmo.st(t)["level"] = Ritmo.APICE
+				_put(t, 80)
+				sa["energy"] = 1
+				_feed(t, [{"t": "damage", "src": sa["id"], "dst": bb["id"], "amount": 20}])
+				_feed(t, [{"t": "damage", "src": sa["id"], "dst": bb["id"], "amount": 20}])
+				check(int(sa["energy"]) == 2, "R4: APICE Saul +1 EN sul colpo debole, una volta per round (%s)" % b)
+				break
+		check(other != "", "R4: trovato un boss debole a Saul")
+
+
 func _init() -> void:
 	BattleFlow.timeline = true
 	_base()
@@ -447,6 +530,8 @@ func _init() -> void:
 	_salvataggio_json()
 	_salvataggio()
 	_salvataggio_motore()
+	_bonus_livelli()
+	_bonus_rio_saul()
 	_scontri_interi()
 	if fails == 0:
 		print("test_v3_ritmo: OK")
