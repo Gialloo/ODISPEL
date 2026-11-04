@@ -1,5 +1,12 @@
 # Novità
 
+## 0.56.0 · RITMO: salvataggio con la parata, bonus dei livelli e tecniche APICE
+
+- **La parata salva anche l'Ardore**: il colpo annunciato del boss toglie Ardore (6, o 12 se pesante); con la parata buona se ne perde la metà, con la perfetta niente (sui colpi pesanti si salva meno). Un salvataggio a testa per round.
+- **I livelli del RITMO danno bonus**: ACCESO +1 Riserva, INCANDESCENTE +1 pressione a ogni colpo, APICE danni ×1,10 e +1 EN a tutti. In APICE ognuno ha anche il suo: Lance +1 pressione, cure di Nox ×1,25, Hype di Rio +50%, Saul +1 EN sul primo colpo debole del round. Se il livello scende, i bonus spariscono subito.
+- **Tecnica APICE per personaggio**, sulla prima azione dopo aver raggiunto APICE: Lance «FINE DELLA CORSA» (toglie equilibrio), Saul «COLPO PERFETTO» (critico sicuro ×1,3), Rio «IN DIRETTA MONDIALE» (Hype pieno), Nox «TURNO DI NOTTE» (cura tutta la squadra). Torna riconquistando APICE.
+- **Prove**: 25 test verdi (`test_v3_ritmo.gd` esteso); simulatore: 100% di vittorie sui boss, scontri un po' più brevi (media 4,6 → 4,5 round).
+
 ## 0.55.0 · Fase 3 del combattimento: BREAK a finestra e stabilità del nemico
 
 - **Il BREAK dura 3 azioni degli eroi** contro i boss (2 contro i frammenti), non più «fino a fine round». Solo i turni ordinari consumano la finestra: l'azione che rompe, lo SLANCIO, le reazioni e i turni del boss no.
