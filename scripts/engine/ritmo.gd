@@ -49,7 +49,7 @@ const CONDS: Dictionary = {
 static func st(state: Dictionary) -> Dictionary:
 	if not (state.get("ritmo", null) is Dictionary):
 		state["ritmo"] = {"ardore": 0, "cap": BattleTypes.RITMO_CAP, "level": CALMO, "ready": false,
-			"done": {}, "helpers": {}, "round": int(state.get("round", 1)), "gen": {}, "hold": false}
+			"done": {}, "helpers": {}, "round": int(state.get("round", 1)), "gen": {}, "hold": false, "saves": {}}
 	return state["ritmo"]
 
 
@@ -174,8 +174,10 @@ static func after_events(state: Dictionary, events: Array) -> void:
 	if int(r["round"]) != int(state.get("round", 1)):
 		r["round"] = int(state.get("round", 1))
 		r["gen"] = {}                  # i limiti per fonte valgono per round (anti-farming, 2.2)
+		r["saves"] = {}                # e il salvataggio del RITMO torna disponibile a tutti (4.1, 4.9)
 	var boss: Dictionary = BattleState.boss(state)
 	var n: int = events.size()         # si leggono solo gli eventi del motore, non quelli che aggiungiamo noi
+	_boss_threat(state, events, n)     # prima la perdita del colpo del boss (decisa dalla parata), poi il resto
 	for i in n:
 		var e: Dictionary = events[i]
 		match str(e.get("t", "")):
@@ -189,6 +191,7 @@ static func after_events(state: Dictionary, events: Array) -> void:
 					_mark(state, "colpo_break", APICE, events)
 				if BattleTypes.color_multiplier(str(src["color"]), str(boss["color"])) > 1.0 or BattleTypes.hits_weak2(src, boss):
 					_source(state, "debolezza", str(src["id"]), events)
+					_saul_apice(state, src, events)
 					_mark(state, "debolezza", ACCESO, events)
 			"break":
 				_source(state, "break", str(e.get("src", "")), events)
@@ -213,6 +216,8 @@ static func after_events(state: Dictionary, events: Array) -> void:
 					_source(state, "cura", str(e.get("src", "")), events)
 			"slancio":
 				_source(state, "slancio", str(e.get("unit", "")), events)
+			"hype":
+				_rio_apice(state, e, events)
 			"duo":
 				_source(state, "duo", str(e.get("unit", "")), events)
 			"down":
@@ -224,6 +229,74 @@ static func after_events(state: Dictionary, events: Array) -> void:
 	if not bool(r["hold"]):
 		_settle_down(state, "ardore", events)      # un livello tenuto con keep_level si rilascia al primo guadagno
 	_settle_up(state, events)
+
+
+# SALVATAGGIO DEL RITMO (fase R2; handoff 4, con la decisione dell'autore K4: «un solo QTE, per i PV»).
+# Il colpo annunciato del boss minaccia l'Ardore. Non c'e' un QTE in piu': decide la stessa parata a tempo che protegge i PV.
+# - colpo normale: parata buona = perdita dimezzata, perfetta = nessuna perdita;
+#   colpo pesante (BattleResolver.is_heavy_boss_move): buona = 75%, perfetta = 50% (efficacia limitata, 4.5);
+#   "devastante": true nella mossa del boss = la parata non salva l'Ardore (nessuna mossa lo ha ancora: e' un dato di design).
+# - Ogni personaggio salva una volta per round: chi para usa il suo salvataggio; se l'ha gia' usato, la parata protegge
+#   solo i PV e l'Ardore si perde per intero. Torna disponibile al round nuovo, non con un azzeramento (4.1, 4.9).
+# - Conta solo il colpo annunciato (il primo boss_move della lista), non i colpi in piu' della catena: e' il colpo che si para.
+# - La perdita si applica dopo l'esito della parata, a colpo risolto (4.4). Una parata mancata non si distingue da nessuna
+#   parata (la UI scrive solo good/perfect): quindi un fallimento non consuma il salvataggio.
+# Limiti noti, da decidere: niente secondo tentativo (4.3: servirebbe un secondo QTE, in conflitto con K4); chi salva e'
+# sempre chi para, non un compagno scelto dal giocatore (4.1).
+static func _boss_threat(state: Dictionary, events: Array, n: int) -> void:
+	var move_id: String = ""
+	for i in n:
+		if str(events[i].get("t", "")) == "boss_move":
+			move_id = str(events[i].get("move", ""))
+			break
+	if move_id == "":
+		return
+	var move: Dictionary = BattleContent.BOSS_MOVES.get(move_id, {})
+	if float(move.get("mult", 0.0)) <= 0.0 and not bool(move.get("camera", false)):
+		return                                  # una mossa che non colpisce non minaccia il RITMO
+	var heavy: bool = BattleResolver.is_heavy_boss_move(move)
+	var loss: int = int(BattleTypes.RITMO_HIT_LOSS["pesante" if heavy else "normale"])
+	if loss <= 0:
+		return
+	var grade: String = ""
+	var who: String = ""
+	for i in n:
+		var e: Dictionary = events[i]
+		if str(e.get("t", "")) == "timed_guard":
+			grade = str(e.get("grade", ""))
+			who = str(e.get("unit", ""))
+			break
+	var r: Dictionary = st(state)
+	var out: Dictionary = save_outcome(move, grade, (r["saves"] as Dictionary).has(who))
+	if bool(out["used"]):
+		r["saves"][who] = true
+	var keep: float = float(out["keep"])
+	var result: String = str(out["result"])
+	var lost: int = int(round(float(loss) * keep))
+	events.append({"t": "ritmo_save", "unit": who, "result": result, "threat": loss, "lost": lost, "heavy": heavy})
+	if lost > 0:
+		drain(state, lost, "colpo", events)
+
+
+# Esito del salvataggio (puro, senza stato): grade = "" (nessuna parata), "good" o "perfect"; already = salvataggio gia' usato.
+# keep = frazione della perdita che resta; used = il salvataggio si consuma.
+static func save_outcome(move: Dictionary, grade: String, already: bool) -> Dictionary:
+	if grade == "":
+		return {"result": "nessuna", "keep": 1.0, "used": false}
+	if bool(move.get("devastante", false)):
+		return {"result": "devastante", "keep": 1.0, "used": false}
+	if already:
+		return {"result": "gia_usato", "keep": 1.0, "used": false}
+	var k: Dictionary = BattleTypes.RITMO_SAVE_KEEP["pesante" if BattleResolver.is_heavy_boss_move(move) else "normale"]
+	return {"result": "perfetto" if grade == "perfect" else "normale", "keep": float(k.get(grade, 1.0)), "used": true}
+
+
+# Il salvataggio di questo personaggio e' ancora disponibile in questo round?
+static func save_ready(state: Dictionary, uid: String) -> bool:
+	var r: Dictionary = st(state)
+	if int(r["round"]) != int(state.get("round", 1)):
+		return true
+	return not (r["saves"] as Dictionary).has(uid)
 
 
 # Una fonte di Ardore: quantita' e limite per round da BattleTypes.RITMO_GAIN / RITMO_PER_ROUND.
@@ -297,6 +370,8 @@ static func _set_level(state: Dictionary, to: int, why: String, events: Array) -
 	r["level"] = to
 	_clear_progress(r)
 	events.append({"t": "ritmo_level", "from": from, "to": to, "why": why})
+	if to > from:
+		_on_reach(state, to, events)
 
 
 # Nuovo livello = nuova transizione: condizioni e compagni che hanno contribuito ripartono da zero.
@@ -304,3 +379,117 @@ static func _clear_progress(r: Dictionary) -> void:
 	r["done"] = {}
 	r["helpers"] = {}
 	r["ready"] = false
+
+
+# ---------------------------------------------------------------- fase R4: cosa danno i livelli (VALORI DI PROVA)
+# Ogni livello aggiunge, non sostituisce: INCANDESCENTE tiene quello che da' ACCESO, APICE tiene tutto (5.3).
+# I bonus passivi si leggono dal livello di ADESSO: quando APICE si perde spariscono subito, le azioni gia' fatte restano (5.2).
+#   ACCESO        a ogni salita: +1 Riserva di squadra (le reazioni costano meno da inseguire)
+#   INCANDESCENTE ogni colpo della squadra mette +1 pressione BREAK (distinta dal danno, sez. 9)
+#   APICE         universale: +10% danno della squadra; a ogni salita +1 EN a chi e' in piedi
+#                 individuale (5.4, nessuno obbligatorio): Lance +1 pressione BREAK in piu', Nox cure +25%,
+#                 Rio +50% HYPE guadagnato, Saul +1 EN quando colpisce una debolezza (una volta per round)
+# Il +10% al cambio di categoria (RHYTHM_BONUS) resta a parte e si somma (K2). Nessuna tecnica APICE ancora (servono i costi, R3).
+
+static func _on_reach(state: Dictionary, lv: int, events: Array) -> void:
+	if lv == ACCESO and int(BattleTypes.RITMO_BONUS["acceso_riserva"]) > 0:
+		BattleResolver._gain_reserve(state, int(BattleTypes.RITMO_BONUS["acceso_riserva"]), "ritmo", events)
+	if lv == APICE and int(BattleTypes.RITMO_BONUS["apice_en"]) > 0:
+		for p in BattleState.alive_players(state):
+			var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
+			if BattleState.is_alive(u):
+				u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + int(BattleTypes.RITMO_BONUS["apice_en"]))
+		st(state)["apice_tech"] = {}      # ogni APICE raggiunto ridà a tutti la loro tecnica
+		events.append({"t": "apice_on"})
+
+
+static func _on(state: Dictionary) -> bool:
+	return BattleTypes.RITMO_ON and not bool(state.get("pvp", false)) and state.get("ritmo", null) is Dictionary
+
+
+static func dmg_mult(state: Dictionary, attacker: Dictionary) -> float:
+	if not _on(state) or level(state) < APICE or str(attacker.get("side", "")) != "player":
+		return 1.0
+	return float(BattleTypes.RITMO_BONUS["apice_danno"])
+
+
+static func pressure_bonus(state: Dictionary, attacker: Dictionary) -> int:
+	if not _on(state) or str(attacker.get("side", "")) != "player":
+		return 0
+	var lv: int = level(state)
+	var b: int = 0
+	if lv >= INCANDESCENTE:
+		b += int(BattleTypes.RITMO_BONUS["incandescente_pressione"])
+	if lv >= APICE and str(attacker.get("char", "")) == "ferri":
+		b += int(BattleTypes.RITMO_BONUS["apice_lance_pressione"])
+	return b
+
+
+static func heal_mult(state: Dictionary, actor: Dictionary) -> float:
+	if not _on(state) or level(state) < APICE or str(actor.get("char", "")) != "nox":
+		return 1.0
+	return float(BattleTypes.RITMO_BONUS["apice_nox_cure"])
+
+
+static func _rio_apice(state: Dictionary, e: Dictionary, events: Array) -> void:
+	if level(state) < APICE or str(e.get("why", "")) == "apice":
+		return
+	var u: Dictionary = BattleState.unit(state, str(e.get("unit", "")))
+	if u.is_empty() or str(u.get("char", "")) != "zecca":
+		return
+	var extra: int = int(floor(float(int(e.get("amount", 0))) * float(BattleTypes.RITMO_BONUS["apice_rio_hype"])))
+	Kits.add_hype(u, extra, events, "apice")
+
+
+static func _saul_apice(state: Dictionary, src: Dictionary, events: Array) -> void:
+	if level(state) < APICE or str(src.get("char", "")) != "saul":
+		return
+	var r: Dictionary = st(state)
+	if (r["gen"] as Dictionary).has("saul_apice"):
+		return
+	r["gen"]["saul_apice"] = 1
+	src["energy"] = mini(BattleTypes.MAX_ENERGY, int(src["energy"]) + int(BattleTypes.RITMO_BONUS["apice_saul_en"]))
+	events.append({"t": "apice_saul", "unit": src["id"], "energy": int(BattleTypes.RITMO_BONUS["apice_saul_en"])})
+
+
+# Tecnica APICE: la prima azione di ognuno in APICE ha il suo tocco (BattleTypes.RITMO_TECH).
+# Lance toglie equilibrio, Saul fa un critico sicuro più forte, Rio riempie l'Hype, Nox cura tutta la squadra.
+static func apice_tech(state: Dictionary, actor: Dictionary, move_id: String, move: Dictionary, events: Array) -> Dictionary:
+	var out: Dictionary = {"mult": 1.0, "crit_pm": 0}
+	if not _on(state) or level(state) < APICE or str(actor.get("side", "")) != "player" or move_id == BattleTypes.ACTION_GUARD:
+		return out
+	var c: String = str(actor.get("char", ""))
+	if not BattleTypes.RITMO_TECH.has(c):
+		return out
+	var r: Dictionary = st(state)
+	if not r.has("apice_tech"):
+		r["apice_tech"] = {}
+	if (r["apice_tech"] as Dictionary).has(str(actor["id"])):
+		return out
+	var hits_enemy: bool = move.has("mult") and str(move.get("target", "")) == "enemy"
+	var tech: Dictionary = BattleTypes.RITMO_TECH[c]
+	match c:
+		"ferri":
+			var boss: Dictionary = BattleState.boss(state)
+			if not hits_enemy or boss.is_empty():
+				return out
+			BattleResolver._drain_balance(boss, int(tech["balance"]), actor, events)
+		"saul":
+			if not hits_enemy:
+				return out
+			out["mult"] = float(tech["mult"])
+			out["crit_pm"] = 1000
+		"zecca":
+			Kits.add_hype(actor, int(tech["hype"]), events, "apice")
+		"nox":
+			for p in BattleState.alive_players(state):
+				var m: Dictionary = BattleState.active_unit(state, str(p["id"]))
+				if not BattleState.is_alive(m):
+					continue
+				var before: int = int(m["hp"])
+				m["hp"] = mini(int(m["max_hp"]), before + int(round(float(m["max_hp"]) * float(tech["heal"]))))
+				if int(m["hp"]) > before:
+					events.append({"t": "heal", "src": actor["id"], "dst": m["id"], "amount": int(m["hp"]) - before})
+	r["apice_tech"][str(actor["id"])] = 1
+	events.append({"t": "apice_tech", "unit": actor["id"], "name": str(tech["name"])})
+	return out

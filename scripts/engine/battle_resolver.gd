@@ -682,6 +682,8 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		return
 	if str(defender["side"]) == "boss" and str(attacker["side"]) == "player":
 		mult *= BreakRules.dmg_mult(defender, attacker)      # Corazza del frammento rosso
+	if str(attacker["side"]) == "player" and str(defender["side"]) != "player":
+		mult *= Ritmo.dmg_mult(state, attacker)               # RITMO R4: APICE, +10% alla squadra (si toglie appena si perde)
 	var dmg: int = calc_damage(attacker, defender, mult, pierce, flat, ammo_hit)
 	var crit: bool = Factions.rolls_crit(state, attacker, defender, events.size(), crit_pm)
 	if crit:
@@ -794,6 +796,8 @@ static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, e
 	var sm: float = Stability.pressure_mult(boss)      # SBILANCIAMENTO (Fase 3): +20% di pressione per i colpi dopo l'Interruzione
 	if sm != 1.0:
 		pts = maxi(1, int(round(float(pts) * sm)))
+	if not state.is_empty():
+		pts += Ritmo.pressure_bonus(state, attacker)          # RITMO R4: INCANDESCENTE +1 pressione, APICE di Lance +1 ancora
 	_drain_balance(boss, pts, attacker, events)
 
 
@@ -1099,7 +1103,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 				Marks.consume(t, events)
 		if move.has("heal"):
 			var heal_crit: float = Archetypes.support_crit_mult(state, actor, t, events.size())
-			var amount: int = int(round((float(actor["atk"]) * float(move["heal"]) + bonus) * Archetypes.support_mult(actor) * awake_mult * heal_crit))
+			var amount: int = int(round((float(actor["atk"]) * float(move["heal"]) + bonus) * Archetypes.support_mult(actor) * awake_mult * heal_crit * Ritmo.heal_mult(state, actor)))
 			var before: int = int(t["hp"])
 			t["hp"] = mini(int(t["max_hp"]), before + amount)
 			var heal_event: Dictionary = {"t": "heal", "src": actor["id"], "dst": t["id"], "amount": int(t["hp"]) - before}

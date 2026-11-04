@@ -243,6 +243,10 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 		if str(move.get("kind", "")) == "skill" and int(move.get("cost", 0)) > 0:
 			actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + 1)     # costa un'energia in meno
 		events.append({"t": "kit_trait", "unit": actor["id"], "trait": "veglia"})
+	# Tecnica APICE (fase R4): il tocco del personaggio sulla sua prima azione in APICE
+	var tech: Dictionary = Ritmo.apice_tech(state, actor, move_id, move, events)
+	out["mult"] = float(out["mult"]) * float(tech["mult"])
+	out["crit_pm"] = maxi(int(out["crit_pm"]), int(tech["crit_pm"]))
 	return out
 
 

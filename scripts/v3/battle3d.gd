@@ -1750,6 +1750,9 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if not au.is_empty() and str(au.get("side", "")) == "player" and BattleState.is_alive(au) and amv.has("mult") \
 						and str(amv.get("target", "")) == "enemy" and float(au["hp"]) < float(au["max_hp"]) * BattleTypes.GRIT_BELOW:
 					_number(str(au["id"]), "GRINTA", Color("#ff6a5a"), 26, delay + 0.05, -26.0)
+			"apice_tech":
+				# Tecnica APICE (fase R4): nome della tecnica sopra chi la fa
+				_number(str(e.get("unit", "")), str(e.get("name", "APICE")), Color("#ffd23f"), 28, delay + 0.05, -40.0)
 			"cover":
 				_number(str(e.get("unit", "")), "COPRE " + _uname(str(e.get("who", ""))), _col_of(str(e.get("unit", ""))), 24, delay + 0.1)
 			"cover_hit":

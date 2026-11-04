@@ -318,6 +318,238 @@ func _scontri_interi() -> void:
 	print("livello massimo raggiunto in AUTO (seme 7): " + ", ".join(tops))
 
 
+# ---------------------------------------------------------------- fase R2: salvataggio del RITMO con la parata (K4)
+
+func _boss_move(heavy: bool) -> String:
+	for id in BattleContent.BOSS_MOVES:
+		var m: Dictionary = BattleContent.BOSS_MOVES[id]
+		if float(m.get("mult", 0.0)) > 0.0 and BattleResolver.is_heavy_boss_move(m) == heavy and not bool(m.get("devastante", false)):
+			return str(id)
+	return ""
+
+
+func _hit(s: Dictionary, move: String, grade: String, uid: String) -> Array:
+	var evs: Array = [{"t": "boss_move", "move": move}]
+	if grade != "":
+		evs.append({"t": "timed_guard", "unit": uid, "grade": grade})
+	return _feed(s, evs)
+
+
+func _last_save(evs: Array) -> Dictionary:
+	for e in evs:
+		if str(e.get("t", "")) == "ritmo_save":
+			return e
+	return {}
+
+
+func _salvataggio() -> void:
+	var normal: String = _boss_move(false)
+	var heavy: String = _boss_move(true)
+	check(normal != "" and heavy != "", "ci sono mosse del boss normali e pesanti")
+	var hs: Array = _heroes(s_dummy())
+	# senza parata: perdita piena, nessun salvataggio consumato
+	var s: Dictionary = _fresh()
+	_put(s, 40)
+	var ev: Array = _hit(s, normal, "", "")
+	check(Ritmo.ardore(s) == 40 - int(BattleTypes.RITMO_HIT_LOSS["normale"]) and str(_last_save(ev)["result"]) == "nessuna", "colpo normale senza parata: perdita piena")
+	# parata buona: perdita dimezzata e salvataggio consumato
+	s = _fresh()
+	_put(s, 40)
+	var u: String = str(_heroes(s)[0]["id"])
+	ev = _hit(s, normal, "good", u)
+	check(int(_last_save(ev)["lost"]) == int(BattleTypes.RITMO_HIT_LOSS["normale"]) / 2 and str(_last_save(ev)["result"]) == "normale", "parata buona: perdita ridotta (%s)" % str(_last_save(ev)))
+	check(not Ritmo.save_ready(s, u), "il salvataggio di chi ha parato e' consumato")
+	check(Ritmo.save_ready(s, str(_heroes(s)[1]["id"])), "quello dei compagni resta")
+	# stesso personaggio, stesso round: la parata protegge solo i PV
+	ev = _hit(s, normal, "perfect", u)
+	check(str(_last_save(ev)["result"]) == "gia_usato" and int(_last_save(ev)["lost"]) == int(BattleTypes.RITMO_HIT_LOSS["normale"]), "una volta per personaggio per round")
+	# un compagno puo' ancora salvare: perfetta = nessuna perdita
+	ev = _hit(s, normal, "perfect", str(_heroes(s)[1]["id"]))
+	check(int(_last_save(ev)["lost"]) == 0 and not _has(ev, "ritmo_loss"), "parata perfetta di un compagno: perdita annullata")
+	# un azzeramento non ridà i salvataggi, il round nuovo si'
+	var tmp: Array = []
+	Ritmo.reset(s, "prova", tmp)
+	check(not Ritmo.save_ready(s, u), "l'azzeramento non ripristina il salvataggio (4.9)")
+	s["round"] = int(s["round"]) + 1
+	check(Ritmo.save_ready(s, u), "al round nuovo il salvataggio torna")
+	# colpo pesante: il salvataggio vale meno
+	s = _fresh()
+	_put(s, 40)
+	ev = _hit(s, heavy, "perfect", str(_heroes(s)[2]["id"]))
+	var hl: int = int(BattleTypes.RITMO_HIT_LOSS["pesante"])
+	check(int(_last_save(ev)["lost"]) == int(round(float(hl) * 0.5)) and bool(_last_save(ev)["heavy"]), "colpo pesante, parata perfetta: si perde comunque meta' (%s)" % str(_last_save(ev)))
+	# devastante: la parata non salva l'Ardore (dato di design: nessuna mossa lo ha ancora)
+	var dv: Dictionary = Ritmo.save_outcome({"mult": 1.0, "devastante": true}, "perfect", false)
+	check(str(dv["result"]) == "devastante" and float(dv["keep"]) == 1.0 and not bool(dv["used"]), "colpo devastante: niente salvataggio, disponibilita' non consumata")
+	# la perdita puo' far scendere di livello, ma solo dopo l'esito della parata
+	s = _fresh()
+	Ritmo.st(s)["level"] = Ritmo.ACCESO
+	_put(s, 27)
+	_hit(s, normal, "perfect", str(_heroes(s)[0]["id"]))
+	check(Ritmo.level(s) == Ritmo.ACCESO, "parata perfetta: il livello minacciato resta")
+	_put(s, 27)
+	_hit(s, normal, "", "")
+	check(Ritmo.level(s) == Ritmo.CALMO, "senza parata: si scende sotto la soglia")
+	# solo il colpo annunciato conta, non i colpi in piu' della catena
+	s = _fresh()
+	_put(s, 40)
+	_feed(s, [{"t": "boss_move", "move": normal}, {"t": "boss_move", "move": normal}])
+	check(Ritmo.ardore(s) == 40 - int(BattleTypes.RITMO_HIT_LOSS["normale"]), "la catena non moltiplica la perdita")
+	check(hs.size() == 4, "squadra di quattro")
+
+
+func s_dummy() -> Dictionary:
+	return _fresh()
+
+
+# Nel motore vero: la parata scritta dalla UI (state["timed_guard"]) arriva al RITMO tramite boss_action
+func _salvataggio_motore() -> void:
+	var s: Dictionary = _fresh("semaforo", 3)
+	_put(s, 40)
+	BattleFlow.start_round(s, "")
+	var guard: int = 0
+	while guard < 30:
+		guard += 1
+		var e: Dictionary = BattleFlow.next(s)
+		if bool(e.get("end", false)) or str(s["winner"]) != "":
+			break
+		if bool(e["boss"]) and not bool(e.get("greg", false)):
+			s["timed_guard"] = "perfect"
+			var ev: Array = BattleFlow.boss_action(s)
+			var sv: Dictionary = _last_save(ev)
+			check(not sv.is_empty() and str(sv["result"]) == "perfetto" and int(sv["lost"]) <= int(sv["threat"]) / 2, "nel motore: parata perfetta = salvataggio (%s)" % str(sv))
+			return
+		elif bool(e.get("greg", false)):
+			BattleFlow.boss_action(s, Gregario.ID)
+		else:
+			BattleFlow.player_action(s, str(e["player"]), {"swap": "", "move": BattleTypes.ACTION_GUARD, "target": ""}, bool(e.get("quick", false)))
+	check(false, "nel motore: il boss non ha agito nel primo round")
+
+
+# ---------------------------------------------------------------- R4: bonus dei livelli e di APICE
+
+func _by_char(s: Dictionary, c: String) -> Dictionary:
+	for u in _heroes(s):
+		if str(u["char"]) == c:
+			return u
+	return {}
+
+
+func _bonus_livelli() -> void:
+	var s: Dictionary = _fresh()
+	var boss: Dictionary = BattleState.boss(s)
+	var h: Dictionary = _hero(s, true)
+	var lance: Dictionary = _by_char(s, "ferri")
+	var nox: Dictionary = _by_char(s, "nox")
+	check(Ritmo.dmg_mult(s, h) == 1.0 and Ritmo.pressure_bonus(s, h) == 0 and Ritmo.heal_mult(s, nox) == 1.0, "R4: in CALMO nessun bonus")
+	# ACCESO: +1 Riserva quando si raggiunge
+	_put(s, 30)
+	s["reserve"] = 2
+	var evs: Array = _feed(s, [{"t": "damage", "src": h["id"], "dst": boss["id"], "amount": 30}])
+	check(Ritmo.level(s) == Ritmo.ACCESO and int(s["reserve"]) == 3 and _has(evs, "reserve"), "R4: ACCESO raggiunto -> +1 Riserva")
+	check(Ritmo.pressure_bonus(s, h) == 0, "R4: ACCESO non da pressione extra")
+	# INCANDESCENTE: +1 pressione per tutti
+	Ritmo.st(s)["level"] = Ritmo.INCANDESCENTE
+	check(Ritmo.pressure_bonus(s, h) == 1 and Ritmo.pressure_bonus(s, boss) == 0, "R4: INCANDESCENTE +1 pressione solo agli eroi")
+	check(Ritmo.dmg_mult(s, h) == 1.0, "R4: INCANDESCENTE non da danno extra")
+	# APICE: si raggiunge con il colpo nel BREAK, +1 EN a tutti
+	_put(s, 75)
+	for u in _heroes(s):
+		u["energy"] = 2
+	boss["exposed"] = true
+	evs = _feed(s, [{"t": "damage", "src": h["id"], "dst": boss["id"], "amount": 30}])
+	boss["exposed"] = false
+	check(Ritmo.level(s) == Ritmo.APICE and _has(evs, "apice_on"), "R4: APICE raggiunto")
+	var en_ok: bool = true
+	for u in _heroes(s):
+		if str(u["char"]) != "saul" and int(u["energy"]) != 3:
+			en_ok = false
+	check(en_ok, "R4: APICE -> +1 EN a ogni eroe")
+	check(is_equal_approx(Ritmo.dmg_mult(s, h), 1.10) and Ritmo.dmg_mult(s, boss) == 1.0, "R4: APICE danno x1.10 solo agli eroi")
+	check(Ritmo.pressure_bonus(s, lance) == 2 and Ritmo.pressure_bonus(s, nox) == 1, "R4: APICE Lance +1 pressione in piu")
+	check(is_equal_approx(Ritmo.heal_mult(s, nox), 1.25) and Ritmo.heal_mult(s, lance) == 1.0, "R4: APICE cure di Nox x1.25")
+	# i bonus finiscono subito se APICE si perde
+	Ritmo.drop_level(s, 1, "test", [])
+	check(Ritmo.level(s) == Ritmo.INCANDESCENTE and Ritmo.dmg_mult(s, h) == 1.0 and Ritmo.heal_mult(s, nox) == 1.0 and Ritmo.pressure_bonus(s, lance) == 1, "R4: perso APICE, bonus tolti subito")
+
+
+func _bonus_rio_saul() -> void:
+	var s: Dictionary = _fresh()
+	var boss: Dictionary = BattleState.boss(s)
+	var rio: Dictionary = _by_char(s, "zecca")
+	var saul: Dictionary = _by_char(s, "saul")
+	Ritmo.st(s)["level"] = Ritmo.APICE
+	_put(s, 80)
+	rio["hype"] = 0
+	var evs: Array = []
+	Kits.add_hype(rio, 2, evs, "test")
+	_feed(s, evs)
+	check(int(rio["hype"]) == 3, "R4: APICE Rio guadagna HYPE +50%% (2 -> 3, era %d)" % int(rio["hype"]))
+	saul["energy"] = 1
+	var weak: bool = BattleTypes.color_multiplier(str(saul["color"]), str(boss["color"])) > 1.0 or BattleTypes.hits_weak2(saul, boss)
+	if weak:
+		_feed(s, [{"t": "damage", "src": saul["id"], "dst": boss["id"], "amount": 20}])
+		_feed(s, [{"t": "damage", "src": saul["id"], "dst": boss["id"], "amount": 20}])
+		check(int(saul["energy"]) == 2, "R4: APICE Saul +1 EN sul colpo debole, una volta per round")
+	else:
+		var other: String = ""
+		for b in ["cabina", "manichino", "cassaforte", "autovelox"]:
+			var t: Dictionary = _fresh(b)
+			var bb: Dictionary = BattleState.boss(t)
+			var sa: Dictionary = _by_char(t, "saul")
+			if BattleTypes.color_multiplier(str(sa["color"]), str(bb["color"])) > 1.0 or BattleTypes.hits_weak2(sa, bb):
+				other = b
+				Ritmo.st(t)["level"] = Ritmo.APICE
+				_put(t, 80)
+				sa["energy"] = 1
+				_feed(t, [{"t": "damage", "src": sa["id"], "dst": bb["id"], "amount": 20}])
+				_feed(t, [{"t": "damage", "src": sa["id"], "dst": bb["id"], "amount": 20}])
+				check(int(sa["energy"]) == 2, "R4: APICE Saul +1 EN sul colpo debole, una volta per round (%s)" % b)
+				break
+		check(other != "", "R4: trovato un boss debole a Saul")
+
+
+func _tecnica_apice() -> void:
+	var s: Dictionary = _fresh()
+	var hit: Dictionary = {"kind": "skill", "target": "enemy", "mult": 1.0}
+	var lance: Dictionary = _by_char(s, "ferri")
+	var saul: Dictionary = _by_char(s, "saul")
+	var rio: Dictionary = _by_char(s, "zecca")
+	var nox: Dictionary = _by_char(s, "nox")
+	var evs: Array = []
+	Ritmo.st(s)["level"] = Ritmo.INCANDESCENTE
+	Ritmo.apice_tech(s, saul, "x", hit, evs)
+	check(not _has(evs, "apice_tech"), "tecnica APICE: sotto APICE non c'e'")
+	# si raggiunge APICE: tutti hanno la loro tecnica
+	Ritmo._set_level(s, Ritmo.APICE, "test", [])
+	evs = []
+	var fx: Dictionary = Ritmo.apice_tech(s, saul, "x", hit, evs)
+	check(_has(evs, "apice_tech") and is_equal_approx(float(fx["mult"]), 1.3) and int(fx["crit_pm"]) == 1000, "tecnica APICE Saul: critico sicuro x1.3")
+	evs = []
+	fx = Ritmo.apice_tech(s, saul, "x", hit, evs)
+	check(not _has(evs, "apice_tech") and float(fx["mult"]) == 1.0, "tecnica APICE: una volta sola per APICE")
+	evs = []
+	Ritmo.apice_tech(s, lance, BattleTypes.ACTION_GUARD, {}, evs)
+	check(not _has(evs, "apice_tech"), "tecnica APICE: la guardia non la consuma")
+	Ritmo.apice_tech(s, lance, "x", hit, evs)
+	check(_has(evs, "apice_tech") and evs.size() >= 2, "tecnica APICE Lance: toglie equilibrio")
+	rio["hype"] = 10
+	Ritmo.apice_tech(s, rio, "x", {"kind": "skill", "target": "self"}, [])
+	check(int(rio["hype"]) == Kits.HYPE_MAX, "tecnica APICE Rio: Hype pieno")
+	for u in _heroes(s):
+		u["hp"] = int(u["max_hp"]) / 2
+	var lance_hp: int = int(lance["hp"])
+	evs = []
+	Ritmo.apice_tech(s, nox, "x", {"kind": "skill", "target": "ally"}, evs)
+	check(int(lance["hp"]) > lance_hp and _has(evs, "heal"), "tecnica APICE Nox: cura tutta la squadra")
+	# riconquistare APICE ridà la tecnica
+	Ritmo._set_level(s, Ritmo.INCANDESCENTE, "test", [])
+	Ritmo._set_level(s, Ritmo.APICE, "test", [])
+	evs = []
+	Ritmo.apice_tech(s, saul, "x", hit, evs)
+	check(_has(evs, "apice_tech"), "tecnica APICE: torna riconquistando APICE")
+
+
 func _init() -> void:
 	BattleFlow.timeline = true
 	_base()
@@ -337,6 +569,11 @@ func _init() -> void:
 	_ko()
 	_collaborazione()
 	_salvataggio_json()
+	_salvataggio()
+	_salvataggio_motore()
+	_bonus_livelli()
+	_bonus_rio_saul()
+	_tecnica_apice()
 	_scontri_interi()
 	if fails == 0:
 		print("test_v3_ritmo: OK")
