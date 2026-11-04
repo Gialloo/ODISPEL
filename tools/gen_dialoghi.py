@@ -1227,9 +1227,81 @@ for _v in CH.values():
     for _b in _v:
         _b["righe"] = spezza(_b["righe"])
 
-out = {"_nota": "Testi dell'atto 1 (PROVVISORI). Generati da tools/gen_dialoghi (vedi docs/STORIA.md per voci e arco). Scene: righe + riassunto. Una riga puo' avere 'se' o 'se_non' (vale solo se una scelta e' stata fatta o no) e 'scelte' (lista di {testo, imposta, vai}). 'chiacchiere': battute durante l'esplorazione, per area. Gli id dei personaggi restano ferri/zecca (file e ritratti); i nomi sono Lance e Rio."}
+# ---------------------------------------------------------------- battute di squadra in battaglia (04/11/2026)
+# Fumetti brevi dei compagni durante il combattimento (alla Persona 5): non fermano il gioco, escono ogni tanto.
+# Ogni voce e' una lista di righe {chi, testo}: la prima e' di chi agisce, le altre (botta e risposta) escono solo se
+# chi risponde e' in squadra e in piedi. {"se": id, "righe": [...]} vale solo quando l'altro coinvolto e' quel personaggio.
+# Regole: corte, niente spiegazioni, ogni battuta la puo' dire solo lui (skill dialoghi-odispel, PERSONAGGI_E_UMORISMO).
+def R(chi, testo):
+    return {"chi": chi, "testo": testo}
+
+
+BAT = {
+    # colpo critico: parla chi l'ha messo a segno
+    "critico": {
+        "ferri": [[R("ferri", "Colpo regolamentare.")],
+                  [R("ferri", "Articolo tre: si mira al centro.")],
+                  [R("ferri", "Zero virgola sei secondi."), R("saul", "Non te l'ha chiesto nessuno.")]],
+        "nox": [[R("nox", "Fatto. Posso sedermi?")],
+                [R("nox", "Meno fatica del previsto.")],
+                [R("zecca", "Rifallo! Non stavo registrando!"), R("nox", "No.")]],
+        "zecca": [[R("zecca", "Raga, CLIP DELL'ANNO!")],
+                  [R("zecca", "Ditemi che qualcuno l'ha vista.")],
+                  [R("zecca", "Avete visto QUELLO CHE HO FATTO?"), R("ferri", "Sì. Torna in formazione.")]],
+        "saul": [[R("saul", "Fortuna. Ma la chiamo esperienza.")],
+                 [R("saul", "Questo lo metto in conto.")],
+                 [R("saul", "Mia nonna diceva: dove non arriva la mano, arriva il caso."), R("nox", "Tua nonna non esiste.")]],
+    },
+    # nemico messo K.O.: parla chi ha dato l'ultimo colpo
+    "ko_nemico": {
+        "ferri": [[R("ferri", "Neutralizzato.")],
+                  [R("ferri", "Uno in meno. In orario.")],
+                  [R("ferri", "Resta a terra. È un ordine.")]],
+        "nox": [[R("nox", "Spento. Beato lui.")],
+                [R("nox", "Uno. Il caffè è ancora caldo.")]],
+        "zecca": [[R("zecca", "E con questo... SIPARIO!")],
+                  [R("zecca", "Saluta il pubblico! ...Non saluta.")]],
+        "saul": [[R("saul", "Niente di personale. Quasi niente.")],
+                 [R("saul", "Ha lasciato qualcosa? Monete, chiavi, rimpianti?"), R("ferri", "Saul.")]],
+    },
+    # un compagno va K.O.: reagisce un altro in piedi (chi parla -> chi e' caduto)
+    "compagno_ko": {
+        "ferri": {"nox": [[R("ferri", "Nox! ...Coprite il lato sinistro.")]],
+                  "zecca": [[R("ferri", "Rio, resta giù. Ci penso io.")]],
+                  "saul": [[R("ferri", "Saul, in piedi. Non ti ho dato il permesso.")]]},
+        "nox": {"ferri": [[R("nox", "Lance è giù. Addio pausa.")]],
+                "zecca": [[R("nox", "Rio. Non è il momento di fare scena.")]],
+                "saul": [[R("nox", "Saul. Alzati, mi devi un caffè.")]]},
+        "zecca": {"ferri": [[R("zecca", "LANCE! No no no, questa non va in onda!")]],
+                  "nox": [[R("zecca", "Nox?! Chi mi dice adesso se vado bene?")]],
+                  "saul": [[R("zecca", "Saul! Sveglia, ti stavo riprendendo!")]]},
+        "saul": {"ferri": [[R("saul", "Il capo a terra. Brutto affare.")]],
+                 "nox": [[R("saul", "Nox. ...Questo non era nel prezzo.")]],
+                 "zecca": [[R("saul", "Ragazzo. I riflettori non valgono tanto.")]]},
+    },
+    # si mette davanti a un compagno e prende il colpo al suo posto: parla chi copre
+    "copre": {
+        "ferri": [[R("ferri", "Dietro di me.")],
+                  [R("ferri", "Il colpo lo prendo io. Procedura.")]],
+        "nox": [[R("nox", "Va bene. Questo lo prendo io.")],
+                [R("nox", "Non abituarti.")]],
+        "zecca": [[R("zecca", "Inquadrate qui: IL SALVATAGGIO!")]],
+        "saul": [[R("saul", "Questo te lo segno.")],
+                 {"se": "ferri", "righe": [R("saul", "Ti ho salvato. Il conto arriva domani."), R("ferri", "Rifiuto.")]}],
+    },
+    # torna in piedi (RISPONDO IO di Nox): parla chi si rialza
+    "rialzato": {
+        "ferri": [[R("ferri", "Ero in pausa tattica.")]],
+        "zecca": [[R("zecca", "Il protagonista torna sempre!")]],
+        "saul": [[R("saul", "Non ero a terra. Trattavo.")]],
+        "nox": [[R("nox", "Cinque minuti in più non li avevo chiesti.")]],
+    },
+}
+
+out = {"_nota": "Testi dell'atto 1 (PROVVISORI). Generati da tools/gen_dialoghi (vedi docs/STORIA.md per voci e arco). Scene: righe + riassunto. Una riga puo' avere 'se' o 'se_non' (vale solo se una scelta e' stata fatta o no) e 'scelte' (lista di {testo, imposta, vai}). 'chiacchiere': battute durante l'esplorazione, per area. 'battaglia': fumetti brevi della squadra in combattimento (critico, ko_nemico, compagno_ko, copre, rialzato). Gli id dei personaggi restano ferri/zecca (file e ritratti); i nomi sono Lance e Rio."}
 out.update(S)
 out["chiacchiere"] = CH
+out["battaglia"] = BAT
 
 # nomi definitivi nei testi (gli id interni restano ferri/zecca)
 NAMES = [(r"\bFerri\b", "Lance"), (r"\bZecca\b", "Rio"), (r"\bAsta\b", "Astrid"), (r"\bAllocco\b", "Strix"), (r"\bKairos\b(?! )", "Kairos")]
