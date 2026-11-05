@@ -712,7 +712,7 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 	if str(defender["id"]) == BattleState.BOSS_ID and str(attacker["side"]) == "player" and int(defender["hp"]) > 0:
 		_chip_balance(defender, attacker, mult, events, state)     # la scheggia (Gregario) non ha equilibrio
 	if crit and Atypical.fx(attacker, "crit_ammo") > 0:
-		_change_ammo(attacker, Atypical.fx(attacker, "crit_ammo"), events)
+		_change_ammo(attacker, Atypical.fx(attacker, "crit_ammo"), events, "critical_trait")
 	var reflect: int = Atypical.fx(defender, "reflect_shield")
 	if reflect > 0 and absorbed > 0 and str(attacker["side"]) == "boss" and str(defender["side"]) == "player":
 		var returned: int = maxi(1, int(round(float(absorbed) * float(reflect) / 1000.0)))
@@ -818,7 +818,7 @@ static func _drain_balance(boss: Dictionary, pts: int, attacker: Dictionary, eve
 
 
 # Munizioni: positivo = ricarica, negativo = si spendono. Resta tra 0 e il massimo dell'unita'.
-static func _change_ammo(u: Dictionary, delta: int, events: Array) -> void:
+static func _change_ammo(u: Dictionary, delta: int, events: Array, source: String = "unspecified") -> void:
 	if delta == 0 or int(u["ammo_max"]) <= 0:
 		return
 	var before: int = int(u["ammo"])
@@ -828,7 +828,7 @@ static func _change_ammo(u: Dictionary, delta: int, events: Array) -> void:
 		Atypical.on_ammo_spent(u, before - now)
 	if now != before:
 		u["ammo"] = now
-	events.append({"t": "ammo", "resource": "ammo", "unit": u["id"], "value": now, "requested": delta, "effective": effective, "delta": effective, "wasted": delta - effective})
+	events.append({"t": "ammo", "resource": "ammo", "unit": u["id"], "value": now, "requested": delta, "effective": effective, "delta": effective, "wasted": absi(delta) - absi(effective), "source": source})
 
 
 # Protocollo (LibraCorp): chi viene colpito dal boss e resta in piedi, con una munizione, risponde al fuoco.
@@ -1044,7 +1044,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 				var sig_sh: int = int(round(float(actor["max_hp"]) * BattleContent.SIGNATURE_SHIELD))
 				actor["shield"] = int(actor["shield"]) + sig_sh
 				events.append({"t": "shield", "src": actor["id"], "dst": actor["id"], "amount": sig_sh})
-	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events)
+	_change_ammo(actor, int(move.get("ammo_gain", 0)) - int(move.get("ammo", 0)), events, "move:" + move_id)
 
 	var gsh: float = Signatures.value(actor, "guard_shield")
 	if gsh > 0.0 and move_id == BattleTypes.ACTION_GUARD:
@@ -1151,7 +1151,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		for uid in BattleState.player(state, str(actor["owner"]))["team"]:
 			var mate: Dictionary = BattleState.unit(state, uid)
 			if BattleState.is_alive(mate) and int(mate["ammo_max"]) > 0:
-				_change_ammo(mate, int(move["team_ammo"]) + Signatures.upgrade_grade(actor, move_id, kind), events)
+				_change_ammo(mate, int(move["team_ammo"]) + Signatures.upgrade_grade(actor, move_id, kind), events, "team_ammo:" + move_id)
 	if move.has("ally_buff"):
 		for p in state["players"]:
 			for uid in p["team"]:
@@ -1199,7 +1199,7 @@ static func _summon_upkeep(state: Dictionary, events: Array, shoot: bool) -> voi
 			continue
 		if shoot and BattleState.is_alive(boss) and int(owner["ammo"]) > 0:
 			events.append({"t": "summon_shot", "unit": owner["id"], "kind": kind})
-			_change_ammo(owner, -1, events)
+			_change_ammo(owner, -1, events, "summon:" + kind)
 			_hit(state, owner, boss, TURRET_MULT if kind == "turret" else DRONE_MULT, events, 0, 0.0, true)
 		if int(owner["ammo"]) <= 0:
 			list.remove_at(i)
