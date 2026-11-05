@@ -399,29 +399,31 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Sul colore giusto esce EFFICACE: più 50 per cento. Su quello sbagliato, DEBOLE."
+        "testo": "Se il colore è quello giusto, compare EFFICACE: danni aumentati del 50%. Se è quello sbagliato, compare DEBOLE. Danni ridotti."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Il Frammento è GIALLO e teme il ROSSO."
+        "testo": "Il Frammento è GIALLO. Il ROSSO è efficace contro di lui."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Quindi colpisce Lance. Cioè: colpisce lui."
+        "testo": "Quindi, Lance: prova tu."
       },
       {
-        "chi": "ferri",
-        "espr": "serio",
-        "testo": "Lo metto a verbale: sono il rosso utile. Articolo 3."
+        "chi": "lance",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Finalmente una cosa che non richiede spiegazioni."
       },
       {
-        "chi": "zecca",
+        "chi": "saul",
+        "col": "#3fe0ff",
         "espr": "sfotto",
-        "testo": "Io sono viola. Il colore dei grandi artisti incompresi."
+        "testo": "Non abituarti, capo."
       }
     ]
   },
