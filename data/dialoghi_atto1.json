@@ -598,61 +598,61 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Se il nemico CARICA un colpo pesante, compaiono le REAZIONI."
+        "testo": "Quando il nemico CARICA un attacco pesante, puoi usare le REAZIONI."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Costano RISERVA e il turno di chi le usa."
+        "testo": "Consumano RISERVA e il turno del personaggio che le usa."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "La RISERVA è di squadra: ne ricaricate un po' a ogni round."
+        "testo": "La RISERVA è condivisa. Ne recuperate una parte a ogni round."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Ognuna si gioca diversa."
+        "testo": "Ogni reazione funziona in modo diverso."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "SCHIVA: compare una freccia, tocca quel lato."
+        "testo": "SCHIVA: tocca nella direzione indicata dalla freccia."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "COPRI: tieni premuto, lascia quando la barra è nella fascia."
+        "testo": "COPRI: tieni premuto e rilascia quando la barra raggiunge la fascia."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "FERMA: tocca a raffica finché la barra si riempie."
+        "testo": "FERMA: tocca rapidamente finché la barra si riempie. Riduce subito EQUILIBRIO al nemico."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Toglie subito EQUILIBRIO al nemico."
+        "testo": "SOCCORRI: segui il ritmo e tocca tre volte. Può rialzare un compagno KO."
+      },
+      {
+        "chi": "rio",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "E se sbaglio?"
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
-        "espr": "serio",
-        "testo": "SOCCORRI: tocca a tempo col battito, tre volte. Rialza un compagno KO."
-      },
-      {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "felice",
-        "testo": "Se sbagli, la reazione funziona lo stesso. Vale meno. Dopotutto siete umani."
+        "espr": "neutro",
+        "testo": "La reazione funziona comunque, ma con un effetto ridotto. Non è la fine del mondo."
       }
     ]
   },
