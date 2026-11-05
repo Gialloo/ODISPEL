@@ -215,6 +215,51 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 			"react":
 				_add(st, "react", 1.0)
 				_add(st, "react_" + str(e.get("kind", "unknown")), 1.0)
+			"resource_delta":
+				var resource: String = str(e.get("resource", ""))
+				var resource_unit: String = str(e.get("unit", ""))
+				var resource_char: String = str(e.get("char", _char_of(resource_unit)))
+				var delta: float = float(e.get("delta", 0))
+				if resource != "" and resource != "ammo":
+					_add(st, "res_" + resource + "_net", delta)
+					_add(st, "res_" + resource + "_net_" + resource_char, delta)
+					if delta > 0.0:
+						_add(st, "res_" + resource + "_gain_net", delta)
+						_add(st, "res_" + resource + "_gain_net_" + resource_char, delta)
+					elif delta < 0.0:
+						_add(st, "res_" + resource + "_spend_net", -delta)
+						_add(st, "res_" + resource + "_spend_net_" + resource_char, -delta)
+			"resource_cost":
+				var cost_resource: String = str(e.get("resource", ""))
+				var cost_unit: String = str(e.get("unit", ""))
+				var cost_char: String = _char_of(cost_unit)
+				var cost_amount: float = float(e.get("amount", 0))
+				_add(st, "res_" + cost_resource + "_cost", cost_amount)
+				_add(st, "res_" + cost_resource + "_cost_" + cost_char, cost_amount)
+			"ammo":
+				var ammo_char: String = _char_of(str(e.get("unit", "")))
+				_add(st, "res_ammo_requested", float(e.get("requested", 0)))
+				_add(st, "res_ammo_effective", float(e.get("effective", 0)))
+				_add(st, "res_ammo_wasted", float(e.get("wasted", 0)))
+				_add(st, "res_ammo_net_" + ammo_char, float(e.get("effective", 0)))
+			"reserve":
+				var reserve_delta: float = float(e.get("delta", 0))
+				_add(st, "res_reserve_net", reserve_delta)
+				_add(st, "res_reserve_wasted", float(e.get("wasted", 0)))
+				if reserve_delta > 0.0:
+					_add(st, "res_reserve_gain", reserve_delta)
+				elif reserve_delta < 0.0:
+					_add(st, "res_reserve_spend", -reserve_delta)
+			"ritmo_gain":
+				_add(st, "res_ardore_gain", float(e.get("effective", e.get("amount", 0))))
+				_add(st, "res_ardore_wasted", float(e.get("wasted", 0)))
+			"ritmo_loss":
+				_add(st, "res_ardore_spend", float(e.get("effective", e.get("amount", 0))))
+				_add(st, "res_ardore_wasted", float(e.get("wasted", 0)))
+			"hype":
+				_add(st, "res_hype_requested", float(e.get("requested", e.get("amount", 0))))
+				_add(st, "res_hype_effective", float(e.get("effective", e.get("amount", 0))))
+				_add(st, "res_hype_wasted", float(e.get("wasted", 0)))
 			"break":
 				_add(st, "break", 1.0)
 
@@ -255,6 +300,7 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 	var st: Dictionary = {}
 	for sd in range(1, seeds + 1):
 		var b: Dictionary = _setup(boss, lvl, pv, atk, minore, sd, greg)
+		var resource_start: Dictionary = ResourceTelemetry.snapshot(b)
 		var guard: int = 0
 		var minhp: float = 1.0
 		var seen_reaction: Dictionary = {}
@@ -301,6 +347,17 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 		for uid in b["units"]:
 			if not Gregario.is_enemy(b, str(uid)) and int(b["units"][uid]["hp"]) <= 0:
 				st["ko"] = float(st.get("ko", 0.0)) + 1.0
+		var resource_end: Dictionary = ResourceTelemetry.snapshot(b)
+		for uid in resource_start:
+			var start_unit: Dictionary = resource_start[uid]
+			var end_unit: Dictionary = resource_end.get(uid, {})
+			if end_unit.is_empty():
+				continue
+			var char_id: String = str(start_unit.get("char", ""))
+			for resource in ["energy", "gauge", "hype", "ammo"]:
+				_add(st, "res_" + resource + "_start", float(start_unit.get(resource, 0)))
+				_add(st, "res_" + resource + "_final", float(end_unit.get(resource, 0)))
+				_add(st, "res_" + resource + "_final_" + char_id, float(end_unit.get(resource, 0)))
 	return st
 
 
