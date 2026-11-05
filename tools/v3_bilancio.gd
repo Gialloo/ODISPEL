@@ -188,6 +188,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 					else:
 						var attacker: String = _char_of(src)
 						_add(st, "dmg_" + attacker, amount)
+						_add(st, "contrib_damage_boss_" + attacker, amount)
 						_add(st, "dmg_tot", amount)
 						_add(st, "dmg_boss_direct_hp", amount)
 						_add(st, "dmg_boss_absorbed", absorbed)
@@ -238,13 +239,27 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				var recipient_unit: Dictionary = state.get("units", {}).get(recipient, {})
 				if str(recipient_unit.get("side", "")) == "player" and healer != BattleState.BOSS_ID:
 					_add(st, "heal_" + _char_of(healer), healed)
+					_add(st, "contrib_heal_" + _char_of(healer), healed)
 					if active_duo_id != "":
 						_add(st, "strat_duo_heal_" + active_duo_id, healed)
 					_add(st, "heal_total_hp", healed)
 					_add(st, "heal_events", 1.0)
 			"rescue":
+				var rescue_actor: String = _char_of(str(e.get("unit", "")))
+				var rescued_char: String = _char_of(str(e.get("who", "")))
 				_add(st, "rescue_count", 1.0)
 				_add(st, "rescue_hp", float(e.get("hp", 0)))
+				_add(st, "contrib_rescues_" + rescue_actor, 1.0)
+				_add(st, "contrib_rescued_" + rescued_char, 1.0)
+			"revive":
+				_add(st, "contrib_revives_" + _char_of(str(e.get("unit", ""))), 1.0)
+				_add(st, "contrib_revived_" + _char_of(str(e.get("who", ""))), 1.0)
+			"down":
+				_add(st, "contrib_down_" + _char_of(str(e.get("unit", ""))), 1.0)
+			"cleanse":
+				_add(st, "contrib_cleanse_" + _char_of(str(e.get("unit", ""))), 1.0)
+			"cover":
+				_add(st, "contrib_cover_" + _char_of(str(e.get("unit", ""))), 1.0)
 			"rest":
 				_add(st, "rest_nox", 1.0)
 				_add(st, "heal_nox", 1.0)
@@ -261,6 +276,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 					var shield_owner: Dictionary = state.get("units", {}).get(shield_src, {})
 					if str(shield_owner.get("side", "")) == "player":
 						_add(st, "shield_" + _char_of(shield_src), shield_amount)
+						_add(st, "contrib_shield_" + _char_of(shield_src), shield_amount)
 				elif str(shield_target.get("side", "")) == "boss":
 					_add(st, "shield_created_enemy", shield_amount)
 			"shield_expire":
@@ -275,8 +291,12 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				if str(e.get("trait", "")) == "veglia":
 					_add(st, "veglia", 1.0)
 			"react":
+				var react_char: String = _char_of(str(e.get("unit", "")))
+				var react_kind: String = str(e.get("kind", "unknown"))
 				_add(st, "react", 1.0)
-				_add(st, "react_" + str(e.get("kind", "unknown")), 1.0)
+				_add(st, "react_" + react_kind, 1.0)
+				_add(st, "contrib_react_" + react_char, 1.0)
+				_add(st, "contrib_react_" + react_char + "_" + react_kind, 1.0)
 			"resource_delta":
 				var resource: String = str(e.get("resource", ""))
 				var resource_unit: String = str(e.get("unit", ""))
@@ -285,6 +305,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				if resource != "" and resource != "ammo":
 					_add(st, "res_" + resource + "_net", delta)
 					_add(st, "res_" + resource + "_net_" + resource_char, delta)
+					_add(st, "contrib_resource_" + resource_char + "_" + resource + "_net", delta)
 					if delta > 0.0:
 						_add(st, "res_" + resource + "_gain_net", delta)
 						_add(st, "res_" + resource + "_gain_net_" + resource_char, delta)
@@ -375,6 +396,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				_add(st, "res_hype_gain_gross_" + hype_char, hype_effective)
 				_add(st, "res_hype_source_" + str(e.get("why", "unknown")) + "_gain", hype_effective)
 			"balance":
+				var balance_char: String = _char_of(str(e.get("src", "")))
+				_add(st, "contrib_break_pressure_" + balance_char, float(e.get("amount", 0)))
 				if active_duo_id != "":
 					_add(st, "strat_duo_balance_" + active_duo_id, float(e.get("amount", 0)))
 				_add(st, "break_pressure", float(e.get("amount", 0)))
@@ -387,6 +410,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 					_add(st, "break_soft_recover", 1.0)
 			"break":
 				_add(st, "break", 1.0)
+				_add(st, "contrib_breaks_" + _char_of(str(e.get("src", ""))), 1.0)
 				_add(st, "break_window_opened", float(e.get("window", 0)))
 				_add(st, "break_cat_" + str(e.get("cat", "classic")), 1.0)
 			"break_window":
@@ -395,6 +419,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 			"break_end":
 				_add(st, "break_end", 1.0)
 			"latent":
+				_add(st, "contrib_latent_" + _char_of(str(e.get("src", ""))), float(e.get("amount", 0)))
 				if active_duo_id != "":
 					_add(st, "strat_duo_balance_" + active_duo_id, float(e.get("amount", 0)))
 				_add(st, "break_latent_pressure", float(e.get("amount", 0)))
@@ -407,6 +432,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				_add(st, "break_stab_full", 1.0)
 				_add(st, "break_latent_applied", float(e.get("latent", 0)))
 			"sbil":
+				_add(st, "contrib_sbil_" + _char_of(str(e.get("src", ""))), float(e.get("hits", 0)))
 				_add(st, "break_sbil_events", 1.0)
 				_add(st, "break_sbil_hits", float(e.get("hits", 0)))
 			"phase":
@@ -536,6 +562,18 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 			if end_unit.is_empty():
 				continue
 			var char_id: String = str(start_unit.get("char", ""))
+			var contribution: String = "     CONTRIBUTO PERSONAGGI · danno boss / cure / scudi creati:"
+			for c in PARTY:
+				contribution += "  %s %.0f / %.0f / %.0f" % [c, float(st.get("contrib_damage_boss_" + c, 0.0)), float(st.get("contrib_heal_" + c, 0.0)), float(st.get("contrib_shield_" + c, 0.0))]
+			print(contribution)
+			contribution = "     CONTROLLO / DIFESA · pressione BREAK / rotture / reazioni / soccorsi:"
+			for c in PARTY:
+				contribution += "  %s %.0f / %.1f / %.1f / %.1f" % [c, float(st.get("contrib_break_pressure_" + c, 0.0) + st.get("contrib_latent_" + c, 0.0)), float(st.get("contrib_breaks_" + c, 0.0)), float(st.get("contrib_react_" + c, 0.0)), float(st.get("contrib_rescues_" + c, 0.0))]
+			print(contribution)
+			contribution = "     AZIONI / RISORSE · azioni / EN netto / Gauge netto:"
+			for c in PARTY:
+				contribution += "  %s %.0f / %+.1f / %+.1f" % [c, float(st.get("strat_actions_" + c, 0.0)), float(st.get("res_energy_net_" + c, 0.0)), float(st.get("res_gauge_net_" + c, 0.0))]
+			print(contribution)
 			for resource in ["energy", "gauge", "hype", "ammo"]:
 				_add(st, "res_" + resource + "_start", float(start_unit.get(resource, 0)))
 				_add(st, "res_" + resource + "_final", float(end_unit.get(resource, 0)))
