@@ -138,5 +138,5 @@ static func end_of_round(state: Dictionary, events: Array) -> void:
 				if best.is_empty() or int(o["gauge"]) < int(best["gauge"]):
 					best = o
 			if not best.is_empty():
-				best["gauge"] = mini(BattleTypes.GAUGE_MAX, int(best["gauge"]) + share)
+				ResourceTelemetry.gain_unit(best, "gauge", share, BattleTypes.GAUGE_MAX, events, "atypical_gauge_share")
 				events.append({"t": "trait", "trait": "atipico", "unit": uid, "name": trait_name(str(u["char"]))})
