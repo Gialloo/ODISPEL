@@ -149,7 +149,7 @@ static func reset(state: Dictionary, why: String, events: Array) -> void:
 	var before: int = int(r["ardore"])
 	r["ardore"] = 0
 	r["hold"] = false
-	events.append({"t": "ritmo_loss", "amount": before, "value": 0, "why": why})
+	events.append({"t": "ritmo_loss", "resource": "ardore", "requested": before, "amount": before, "effective": before, "value": 0, "why": why, "wasted": 0})
 	if int(r["level"]) != CALMO:
 		_set_level(state, CALMO, why, events)
 	else:
