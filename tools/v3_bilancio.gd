@@ -404,6 +404,24 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 			"phase":
 				_add(st, "break_phases", 1.0)
 				_add(st, "break_phase_" + str(e.get("phase", 0)), 1.0)
+	# La telemetria dei moltiplicatori vive fuori da events: events.size() partecipa ai tiri deterministici.
+	var strategy_hits: Array = state.get("strategy_hits", [])
+	var strategy_cursor: int = int(state.get("strategy_hit_cursor", 0))
+	for hit_index in range(strategy_cursor, strategy_hits.size()):
+		var hit: Dictionary = strategy_hits[hit_index]
+		var hit_pressure: float = float(hit.get("pressure", 0.0))
+		var hit_link_mult: float = float(hit.get("link_mult", 1.0))
+		var hit_combo_mult: float = float(hit.get("combo_mult", 1.0))
+		var hit_other_mult: float = float(hit.get("other_mult", 1.0))
+		var hit_base: float = hit_pressure / maxf(0.0001, hit_link_mult * hit_combo_mult * hit_other_mult)
+		_add(st, "strat_hit_pressure", hit_pressure)
+		_add(st, "strat_link_pressure_est", hit_base * (hit_link_mult - 1.0))
+		_add(st, "strat_combo_pressure_est", hit_base * hit_link_mult * (hit_combo_mult - 1.0))
+		if hit_link_mult > 1.0:
+			_add(st, "strat_linked_hits", 1.0)
+		if hit_combo_mult > 1.0:
+			_add(st, "strat_combo_hits", 1.0)
+	state["strategy_hit_cursor"] = strategy_hits.size()
 
 
 func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictionary, pid: String) -> void:
