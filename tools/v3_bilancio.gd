@@ -373,6 +373,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				_add(st, "res_ardore_source_" + ardore_why + "_spend", ardore_spend)
 			"hype":
 				var hype_unit: String = str(e.get("unit", ""))
+				if active_duo_id != "":
+					_add(st, "strat_duo_hype_" + active_duo_id, float(e.get("effective", e.get("amount", 0))))
 				var hype_char: String = _char_of(hype_unit)
 				var hype_effective: float = float(e.get("effective", e.get("amount", 0)))
 				_add(st, "res_hype_requested", float(e.get("requested", e.get("amount", 0))))
