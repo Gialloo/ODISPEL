@@ -662,9 +662,9 @@ func _init() -> void:
 					balances += "  %s %.0f" % [c, float(st.get("res_" + resource + "_final_" + c, 0.0)) / r]
 				print(balances)
 			for metric in st:
-				var metric_name: String = str(metric)
-				if metric_name.begins_with("strat_combo_") or metric_name.begins_with("strat_duo_") or metric_name.begins_with("strat_ult_") or metric_name.begins_with("strat_slancio_"):
-					print("     DETTAGLIO STRATEGIA · %s = %.0f" % [metric_name.trim_prefix("strat_"), float(st[metric_name])])
+				var strategy_metric_name: String = str(metric)
+				if strategy_metric_name.begins_with("strat_combo_") or strategy_metric_name.begins_with("strat_duo_") or strategy_metric_name.begins_with("strat_ult_") or strategy_metric_name.begins_with("strat_slancio_"):
+					print("     DETTAGLIO STRATEGIA · %s = %.0f" % [strategy_metric_name.trim_prefix("strat_"), float(st[strategy_metric_name])])
 			for resource in ["energy", "gauge", "hype", "ammo", "reserve", "ardore"]:
 				var source_line: String = "     FONTI " + resource + ":"
 				var prefix: String = "res_" + resource + "_source_"
