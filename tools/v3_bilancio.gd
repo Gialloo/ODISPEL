@@ -141,7 +141,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				var link_kind: String = str(e.get("kind", "unknown"))
 				_add(st, "strat_links", 1.0)
 				_add(st, "strat_link_" + link_kind, 1.0)
-				_add(st, "strat_link_rings", float(e.get("n", 0)))
+				_add(st, "strat_link_chain_index_sum", float(e.get("n", 0)))
 			"link_break":
 				_add(st, "strat_link_breaks", 1.0)
 			"duo":
@@ -584,10 +584,10 @@ func _init() -> void:
 			float(st.get("heal_total_hp", 0.0)), int(st.get("heal_events", 0.0)), int(st.get("rescue_count", 0.0)), float(st.get("rescue_hp", 0.0)),
 			float(st.get("shield_created_party", 0.0)), float(st.get("dmg_party_absorbed", 0.0)), shield_expired,
 			float(st.get("dmg_party_hp", 0.0)) + float(st.get("dmg_party_bleed_hp", 0.0)) + float(st.get("dmg_party_arena_hp", 0.0))])
-		print("     STRATEGIA · azioni %d (ordinarie %d / rapide %d) | Ultimate %d | COMBO %d | LINK %d (CROSS %d / UNISONO %d; anelli %d; interruzioni %d) | Duo %d | SLANCI %d (Guardie %d) | team strike %d" % [
+		print("     STRATEGIA · azioni %d (ordinarie %d / rapide %d) | Ultimate %d | COMBO %d | LINK %d (CROSS %d / UNISONO %d; indice catena cumulato %d; interruzioni %d) | Duo %d | SLANCI %d (Guardie %d) | team strike %d" % [
 			int(st.get("strat_actions", 0.0)), int(st.get("strat_ordinary_actions", 0.0)), int(st.get("strat_quick_actions", 0.0)),
 			int(st.get("strat_ultimates", 0.0)), int(st.get("strat_combos", 0.0)), int(st.get("strat_links", 0.0)),
-			int(st.get("strat_link_cross", 0.0)), int(st.get("strat_link_unison", 0.0)), int(st.get("strat_link_rings", 0.0)), int(st.get("strat_link_breaks", 0.0)),
+			int(st.get("strat_link_cross", 0.0)), int(st.get("strat_link_unison", 0.0)), int(st.get("strat_link_chain_index_sum", 0.0)), int(st.get("strat_link_breaks", 0.0)),
 			int(st.get("strat_duos", 0.0)), int(st.get("strat_slanci", 0.0)), int(st.get("strat_slancio_guards", 0.0)), int(st.get("strat_team_strikes", 0.0))])
 		print("     REAZIONI · cariche pesanti %d | occasioni valide %d | usate %d | schivate %d | intercettazioni %d | interruzioni %d | soccorsi %d | timeout %d" % [
 			int(st.get("occasioni_carica", 0.0)), int(st.get("occasioni", 0.0)), int(st.get("react", 0.0)) + int(st.get("rescue_count", 0.0)),
@@ -663,7 +663,7 @@ func _init() -> void:
 				print(balances)
 			for metric in st:
 				var strategy_metric_name: String = str(metric)
-				if strategy_metric_name.begins_with("strat_combo_") or strategy_metric_name.begins_with("strat_duo_") or strategy_metric_name.begins_with("strat_ult_") or strategy_metric_name.begins_with("strat_slancio_"):
+				if strategy_metric_name.begins_with("strat_combo_") or strategy_metric_name.begins_with("strat_duo_") or strategy_metric_name.begins_with("strat_ult_") or strategy_metric_name.begins_with("strat_slancio_") or strategy_metric_name.begins_with("strat_actions_") or strategy_metric_name.begins_with("strat_combo_actor_"):
 					print("     DETTAGLIO STRATEGIA · %s = %.0f" % [strategy_metric_name.trim_prefix("strat_"), float(st[strategy_metric_name])])
 			for resource in ["energy", "gauge", "hype", "ammo", "reserve", "ardore"]:
 				var source_line: String = "     FONTI " + resource + ":"
