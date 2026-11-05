@@ -400,7 +400,7 @@ static func _on_reach(state: Dictionary, lv: int, events: Array) -> void:
 		for p in BattleState.alive_players(state):
 			var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
 			if BattleState.is_alive(u):
-				u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + int(BattleTypes.RITMO_BONUS["apice_en"]))
+				ResourceTelemetry.gain_unit(u, "energy", int(BattleTypes.RITMO_BONUS["apice_en"]), BattleTypes.MAX_ENERGY, events, "apice_reach")
 		st(state)["apice_tech"] = {}      # ogni APICE raggiunto ridà a tutti la loro tecnica
 		events.append({"t": "apice_on"})
 
@@ -450,7 +450,7 @@ static func _saul_apice(state: Dictionary, src: Dictionary, events: Array) -> vo
 	if (r["gen"] as Dictionary).has("saul_apice"):
 		return
 	r["gen"]["saul_apice"] = 1
-	src["energy"] = mini(BattleTypes.MAX_ENERGY, int(src["energy"]) + int(BattleTypes.RITMO_BONUS["apice_saul_en"]))
+	ResourceTelemetry.gain_unit(src, "energy", int(BattleTypes.RITMO_BONUS["apice_saul_en"]), BattleTypes.MAX_ENERGY, events, "apice_saul")
 	events.append({"t": "apice_saul", "unit": src["id"], "energy": int(BattleTypes.RITMO_BONUS["apice_saul_en"])})
 
 
