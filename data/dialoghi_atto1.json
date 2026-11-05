@@ -1152,6 +1152,36 @@
         "testo": "Turni di guardia. Due ore a testa. Il primo lo faccio io. Il secondo pure."
       },
       {
+        "chi": "zecca",
+        "espr": "neutro",
+        "testo": "Posso fare il primo turno?"
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "No."
+      },
+      {
+        "chi": "zecca",
+        "espr": "neutro",
+        "testo": "Perché?"
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "Perché poco fa hai salutato le telecamere mentre stavamo scappando."
+      },
+      {
+        "chi": "zecca",
+        "espr": "neutro",
+        "testo": "È successo solo una volta."
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "Ed è troppo."
+      },
+      {
         "chi": "nox",
         "espr": "neutro",
         "testo": "Quindi fai tutti i turni."
@@ -1169,7 +1199,22 @@
       {
         "chi": "zecca",
         "espr": "serio",
-        "testo": "Io col telefono acceso. Nove per cento. Se mi rapiscono, almeno è in diretta."
+        "testo": "Nove per cento."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Che è comunque più alta della tua probabilità di sopravvivere là fuori."
+      },
+      {
+        "chi": "zecca",
+        "espr": "neutro",
+        "testo": "Grazie Saul, sei il massimo..."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Grazie coso, lo so bene."
       },
       {
         "chi": "nox",
