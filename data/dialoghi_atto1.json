@@ -529,34 +529,24 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Il Frammento è onesto: annuncia la prossima mossa nella riga in alto."
+        "testo": "Il Frammento annuncia sempre la sua prossima mossa nella riga in alto."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "E dice su chi cade: cerchio rosso ai piedi del bersaglio, bordo rosso sulla sua scheda."
+        "testo": "Indica anche chi prenderà il colpo: un cerchio rosso sotto i piedi del bersaglio e un bordo rosso intorno alla sua scheda."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "FORTE significa colpo pesante. SU TUTTI significa che colpisce tutti."
+        "testo": "FORTE indica un attacco pesante. SU TUTTI significa che nessuno è escluso."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Un nemico che avvisa."
-      },
-      {
-        "chi": "saul",
-        "espr": "neutro",
-        "testo": "Mia nonna Ines diceva che i migliori affari sono quelli senza sorprese."
-      },
-      {
-        "chi": "zecca",
-        "espr": "sorpreso",
-        "testo": "Raga, quindi la riga rossa in alto non era pubblicità?"
+        "testo": "Almeno questo avvisa prima di colpire."
       }
     ]
   },
@@ -567,41 +557,37 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Quando il nemico colpisce, parte la GUARDIA A TEMPO."
+        "testo": "Quando il nemico attacca, puoi usare la GUARDIA A TEMPO."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "C'è un cerchio fermo e uno che si stringe."
+        "testo": "Vedrai due cerchi: uno fermo e uno che si restringe."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Tocca lo schermo quando si toccano."
+        "testo": "Tocca quando si sovrappongono."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Preciso al millisecondo: parata PERFETTA e contrattacco."
+        "testo": "Se arrivi vicino al momento giusto, riduci i danni. Se lo prendi perfettamente, esegui una parata PERFETTA e contrattacchi."
       },
       {
-        "chi": "ferri",
-        "espr": "serio",
-        "testo": "Il cronometro lo porto io. Tolleranza: zero virgola zero."
-      },
-      {
-        "chi": "zecca",
-        "espr": "sfotto",
-        "testo": "Raga, la parata perfetta in clip fa numeri. Fatemi prendere il colpo."
+        "chi": "rio",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Aspetta, posso registrare anche questa?"
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Non è questo il senso. Ma ha un suo fascino."
+        "testo": "Puoi. Ma prima cerca di non farti colpire."
       }
     ]
   },
