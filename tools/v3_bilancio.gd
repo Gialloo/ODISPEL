@@ -414,13 +414,20 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 		var hit_combo_mult: float = float(hit.get("combo_mult", 1.0))
 		var hit_other_mult: float = float(hit.get("other_mult", 1.0))
 		var hit_base: float = hit_pressure / maxf(0.0001, hit_link_mult * hit_combo_mult * hit_other_mult)
+		var hit_char: String = _char_of(str(hit.get("unit", "")))
+		var link_value: float = hit_base * (hit_link_mult - 1.0)
+		var combo_value: float = hit_base * hit_link_mult * (hit_combo_mult - 1.0)
 		_add(st, "strat_hit_pressure", hit_pressure)
-		_add(st, "strat_link_pressure_est", hit_base * (hit_link_mult - 1.0))
-		_add(st, "strat_combo_pressure_est", hit_base * hit_link_mult * (hit_combo_mult - 1.0))
+		_add(st, "strat_link_pressure_est", link_value)
+		_add(st, "strat_combo_pressure_est", combo_value)
+		_add(st, "strat_link_pressure_est_" + hit_char, link_value)
+		_add(st, "strat_combo_pressure_est_" + hit_char, combo_value)
 		if hit_link_mult > 1.0:
 			_add(st, "strat_linked_hits", 1.0)
+			_add(st, "strat_linked_hits_" + hit_char, 1.0)
 		if hit_combo_mult > 1.0:
 			_add(st, "strat_combo_hits", 1.0)
+			_add(st, "strat_combo_hits_" + hit_char, 1.0)
 	state["strategy_hit_cursor"] = strategy_hits.size()
 
 
@@ -700,7 +707,7 @@ func _init() -> void:
 				print(balances)
 			for metric in st:
 				var strategy_metric_name: String = str(metric)
-				if strategy_metric_name.begins_with("strat_combo_") or strategy_metric_name.begins_with("strat_duo_") or strategy_metric_name.begins_with("strat_ult_") or strategy_metric_name.begins_with("strat_slancio_") or strategy_metric_name.begins_with("strat_actions_") or strategy_metric_name.begins_with("strat_combo_actor_"):
+				if strategy_metric_name.begins_with("strat_combo_") or strategy_metric_name.begins_with("strat_duo_") or strategy_metric_name.begins_with("strat_ult_") or strategy_metric_name.begins_with("strat_slancio_") or strategy_metric_name.begins_with("strat_actions_") or strategy_metric_name.begins_with("strat_combo_actor_") or strategy_metric_name.begins_with("strat_link_pressure_est_") or strategy_metric_name.begins_with("strat_combo_pressure_est_") or strategy_metric_name.begins_with("strat_linked_hits_") or strategy_metric_name.begins_with("strat_combo_hits_"):
 					print("     DETTAGLIO STRATEGIA · %s = %.0f" % [strategy_metric_name.trim_prefix("strat_"), float(st[strategy_metric_name])])
 			for resource in ["energy", "gauge", "hype", "ammo", "reserve", "ardore"]:
 				var source_line: String = "     FONTI " + resource + ":"
