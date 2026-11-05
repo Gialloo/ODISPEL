@@ -4,7 +4,7 @@ extends RefCounted
 # Osservazione delle risorse V3. Non modifica mai lo stato di battaglia.
 # I delta sono netti per singola azione: i costi lordi espliciti restano eventi separati.
 
-const UNIT_RESOURCES: Array[String] = ["energy", "gauge", "hype"]
+const UNIT_RESOURCES: Array[String] = ["energy", "gauge", "hype", "ammo"]
 
 
 static func snapshot(state: Dictionary) -> Dictionary:
@@ -35,6 +35,8 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 		if current.is_empty():
 			continue
 		for resource in UNIT_RESOURCES:
+			if resource == "ammo":
+				continue # Le munizioni hanno già il delta richiesto/effettivo in BattleResolver._change_ammo.
 			var was: int = int(old.get(resource, 0))
 			var now: int = int(current.get(resource, 0))
 			var delta: int = now - was
