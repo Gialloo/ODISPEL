@@ -155,7 +155,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 					if target_id == Gregario.ID:
 						_add(st, "dmg_gregario_indirect_hp", bleed_amount)
 				elif str(bleed_target.get("side", "")) == "player":
-					_add(st, "dmg_party_environment_hp", bleed_amount)
+					_add(st, "dmg_party_bleed_hp", bleed_amount)
 			"arena":
 				var arena_id: String = str(e.get("id", ""))
 				if arena_id == "eco":
@@ -165,7 +165,11 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 					_add(st, "dmg_boss_absorbed", eco_abs)
 					_add(st, "dmg_boss_pressure", eco_hp + eco_abs)
 				elif arena_id == "contaminazione":
-					_add(st, "dmg_party_environment_hp", float(e.get("hp_lost", e.get("amount", 0))))
+					_add(st, "dmg_party_arena_hp", float(e.get("hp_lost", e.get("amount", 0))))
+			"plate":
+				var plate_hit: float = float(e.get("hit", 0))
+				_add(st, "dmg_boss_plate", plate_hit)
+				_add(st, "dmg_boss_pressure", plate_hit)
 			"heal":
 				var healer: String = str(e.get("src", ""))
 				var recipient: String = str(e.get("dst", ""))
@@ -217,13 +221,13 @@ func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictio
 	var tele: Dictionary = state.get("telegraph", {})
 	var move_id: String = str(tele.get("move", ""))
 	var move: Dictionary = BattleContent.BOSS_MOVES.get(move_id, {})
-	if move.is_empty() or int(boss.get("stun", 0)) > 0 or not BattleResolver.is_heavy_boss_move(move):
+	if move.is_empty() or not BattleResolver.is_heavy_boss_move(move):
 		return
 	var key: String = "%d|%d|%s|%s" % [int(state.get("phase", 1)), int(state.get("cycle_index", 0)), move_id, str(tele.get("target", ""))]
 	if not bool(seen.get(key + "|heavy", false)):
 		_add(st, "occasioni_carica", 1.0)
 		seen[key + "|heavy"] = true
-	if bool(seen.get(key + "|valid", false)):
+	if pid == "" or int(boss.get("stun", 0)) > 0 or bool(seen.get(key + "|valid", false)):
 		return
 	for reaction in BattleResolver.reactions_for(state, pid):
 		var rid: String = str(reaction.get("id", ""))
@@ -262,6 +266,8 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 				if bool(e.get("greg", false)):
 					_scan(BattleFlow.boss_action(b, Gregario.ID), st, b)
 				elif bool(e["boss"]):
+					if not bool(e.get("greg", false)):
+						_count_reaction_opportunity(b, st, seen_reaction, "")
 					if int(BattleState.boss(b).get("stun", 0)) > 0:
 						st["boss_persi"] = float(st.get("boss_persi", 0.0)) + 1.0
 					else:
@@ -348,12 +354,13 @@ func _init() -> void:
 		print("     ESITO · vittorie %d | sconfitte %d | timeout %d" % [int(st.get("wins", 0.0)), int(st.get("losses", 0.0)), int(st.get("timeouts", 0.0))])
 		print("     DANNI · boss PV %.0f | assorbiti %.0f | pressione %.0f | Eco PV %.0f | indiretti %.0f | Scheggia PV %.0f | riflessi %.0f" % [
 			float(st.get("dmg_boss_direct_hp", 0.0)), float(st.get("dmg_boss_absorbed", 0.0)), float(st.get("dmg_boss_pressure", 0.0)),
-			float(st.get("dmg_arena_boss_hp", 0.0)), float(st.get("dmg_indirect_enemy_hp", 0.0)), float(st.get("dmg_gregario_hp", 0.0)), float(st.get("dmg_reflected_boss", 0.0))])
+			float(st.get("dmg_arena_boss_hp", 0.0)), float(st.get("dmg_indirect_enemy_hp", 0.0)), float(st.get("dmg_gregario_hp", 0.0)) + float(st.get("dmg_gregario_indirect_hp", 0.0)), float(st.get("dmg_reflected_boss", 0.0))])
+		print("     PLACCHE · danno assorbito dalle placche %.0f" % float(st.get("dmg_boss_plate", 0.0)))
 		var shield_expired: float = maxf(0.0, float(st.get("shield_expired_party_raw", 0.0)) - float(st.get("shield_carried_party", 0.0)))
 		print("     SOSTEGNO · cure PV %.0f (%d eventi) | soccorsi %d / PV %.0f | scudi creati %.0f | assorbiti %.0f | scaduti %.0f | danni squadra PV %.0f" % [
 			float(st.get("heal_total_hp", 0.0)), int(st.get("heal_events", 0.0)), int(st.get("rescue_count", 0.0)), float(st.get("rescue_hp", 0.0)),
 			float(st.get("shield_created_party", 0.0)), float(st.get("dmg_party_absorbed", 0.0)), shield_expired,
-			float(st.get("dmg_party_hp", 0.0)) + float(st.get("dmg_party_environment_hp", 0.0))])
+			float(st.get("dmg_party_hp", 0.0)) + float(st.get("dmg_party_bleed_hp", 0.0)) + float(st.get("dmg_party_arena_hp", 0.0))])
 		print("     REAZIONI · cariche pesanti %d | occasioni valide %d | usate %d | schivate %d | intercettazioni %d | interruzioni %d | soccorsi %d | timeout %d" % [
 			int(st.get("occasioni_carica", 0.0)), int(st.get("occasioni", 0.0)), int(st.get("react", 0.0)) + int(st.get("rescue_count", 0.0)),
 			int(st.get("react_dodge", 0.0)), int(st.get("react_intercept", 0.0)), int(st.get("react_interrupt", 0.0)), int(st.get("rescue_count", 0.0)), int(st.get("timeouts", 0.0))])
