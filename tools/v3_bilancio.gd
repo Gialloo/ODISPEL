@@ -229,6 +229,20 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 					elif delta < 0.0:
 						_add(st, "res_" + resource + "_spend_net", -delta)
 						_add(st, "res_" + resource + "_spend_net_" + resource_char, -delta)
+			"resource_change":
+				var changed_resource: String = str(e.get("resource", ""))
+				var changed_unit: String = str(e.get("unit", ""))
+				var changed_char: String = _char_of(changed_unit)
+				var changed_delta: float = float(e.get("delta", 0))
+				_add(st, "res_" + changed_resource + "_requested", float(e.get("requested", 0)))
+				_add(st, "res_" + changed_resource + "_effective", float(e.get("effective", 0)))
+				_add(st, "res_" + changed_resource + "_wasted", float(e.get("wasted", 0)))
+				if changed_delta > 0.0:
+					_add(st, "res_" + changed_resource + "_gain_gross", changed_delta)
+					_add(st, "res_" + changed_resource + "_gain_gross_" + changed_char, changed_delta)
+				elif changed_delta < 0.0:
+					_add(st, "res_" + changed_resource + "_spend_gross", -changed_delta)
+					_add(st, "res_" + changed_resource + "_spend_gross_" + changed_char, -changed_delta)
 			"resource_cost":
 				var cost_resource: String = str(e.get("resource", ""))
 				var cost_unit: String = str(e.get("unit", ""))
@@ -257,9 +271,14 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "res_ardore_spend", float(e.get("effective", e.get("amount", 0))))
 				_add(st, "res_ardore_wasted", float(e.get("wasted", 0)))
 			"hype":
+				var hype_unit: String = str(e.get("unit", ""))
+				var hype_char: String = _char_of(hype_unit)
+				var hype_effective: float = float(e.get("effective", e.get("amount", 0)))
 				_add(st, "res_hype_requested", float(e.get("requested", e.get("amount", 0))))
-				_add(st, "res_hype_effective", float(e.get("effective", e.get("amount", 0))))
+				_add(st, "res_hype_effective", hype_effective)
 				_add(st, "res_hype_wasted", float(e.get("wasted", 0)))
+				_add(st, "res_hype_gain_gross", hype_effective)
+				_add(st, "res_hype_gain_gross_" + hype_char, hype_effective)
 			"break":
 				_add(st, "break", 1.0)
 
