@@ -226,22 +226,22 @@
       },
       {
         "chi": "nox",
-        "espr": "neutro",
-        "testo": "Ha la faccia."
+        "espr": "sorpresa",
+        "testo": "Ha una.. faccia?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
-        "testo": "Indietro. Civili dietro di me."
+        "testo": "Indietro. Non sappiamo cosa sia."
       },
       {
         "chi": "saul",
-        "espr": "neutro",
-        "testo": "Qui non ci sono civili, capo. Siamo tutti ricercati."
+        "espr": "sorriso",
+        "testo": "È un distributore, capo. Più o meno."
       },
       {
-        "chi": "DISTRIBUTORE",
-        "col": "#ffd23f",
+        "chi": "distributore",
+        "espr": "",
         "testo": "*KLANG* RESTO NON DISPONIBILE. INSERIRE... ANIMA."
       }
     ]
