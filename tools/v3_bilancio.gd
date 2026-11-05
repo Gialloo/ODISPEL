@@ -151,6 +151,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 					_add(st, "dmg_indirect_enemy_hp", bleed_amount)
 					if target_id == BattleState.BOSS_ID:
 						_add(st, "dmg_boss_pressure", bleed_amount)
+					if target_id == Gregario.ID:
+						_add(st, "dmg_gregario_indirect_hp", bleed_amount)
 				elif str(bleed_target.get("side", "")) == "player":
 					_add(st, "dmg_party_environment_hp", bleed_amount)
 			"arena":
@@ -177,6 +179,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "rescue_hp", float(e.get("hp", 0)))
 			"rest":
 				_add(st, "rest_nox", 1.0)
+				_add(st, "heal_nox", 1.0)
 			"shield":
 				var shield_src: String = str(e.get("src", ""))
 				var shield_dst: String = str(e.get("dst", ""))
@@ -190,7 +193,11 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 			"shield_expire":
 				var expired_unit: Dictionary = state.get("units", {}).get(str(e.get("unit", "")), {})
 				if str(expired_unit.get("side", "")) == "player":
-					_add(st, "shield_expired_party", float(e.get("amount", 0)))
+					_add(st, "shield_expired_party_raw", float(e.get("amount", 0)))
+			"shield_carry":
+				var carried_unit: Dictionary = state.get("units", {}).get(str(e.get("unit", "")), {})
+				if str(carried_unit.get("side", "")) == "player":
+					_add(st, "shield_carried_party", float(e.get("amount", 0)))
 			"kit_trait":
 				if str(e.get("trait", "")) == "veglia":
 					_add(st, "veglia", 1.0)
@@ -211,7 +218,7 @@ func _count_reaction_opportunity(state: Dictionary, st: Dictionary) -> void:
 	var available: bool = false
 	for p in BattleState.alive_players(state):
 		for reaction in BattleResolver.reactions_for(state, str(p.get("id", ""))):
-			if str(reaction.get("err", "")) == "":
+			if str(reaction.get("err", "")) == "" and str(reaction.get("id", "")) != "soccorso":
 				available = true
 				break
 		if available:
@@ -328,9 +335,10 @@ func _init() -> void:
 		print("     DANNI · boss PV %.0f | assorbiti %.0f | pressione %.0f | Eco PV %.0f | indiretti %.0f | Scheggia PV %.0f | riflessi %.0f" % [
 			float(st.get("dmg_boss_direct_hp", 0.0)), float(st.get("dmg_boss_absorbed", 0.0)), float(st.get("dmg_boss_pressure", 0.0)),
 			float(st.get("dmg_arena_boss_hp", 0.0)), float(st.get("dmg_indirect_enemy_hp", 0.0)), float(st.get("dmg_gregario_hp", 0.0)), float(st.get("dmg_reflected_boss", 0.0))])
+		var shield_expired: float = maxf(0.0, float(st.get("shield_expired_party_raw", 0.0)) - float(st.get("shield_carried_party", 0.0)))
 		print("     SOSTEGNO · cure PV %.0f (%d eventi) | soccorsi %d / PV %.0f | scudi creati %.0f | assorbiti %.0f | scaduti %.0f | danni squadra PV %.0f" % [
 			float(st.get("heal_total_hp", 0.0)), int(st.get("heal_events", 0.0)), int(st.get("rescue_count", 0.0)), float(st.get("rescue_hp", 0.0)),
-			float(st.get("shield_created_party", 0.0)), float(st.get("dmg_party_absorbed", 0.0)), float(st.get("shield_expired_party", 0.0)),
+			float(st.get("shield_created_party", 0.0)), float(st.get("dmg_party_absorbed", 0.0)), shield_expired,
 			float(st.get("dmg_party_hp", 0.0)) + float(st.get("dmg_party_environment_hp", 0.0))])
 		print("     REAZIONI · cariche pesanti %d | occasioni valide %d | usate %d | schivate %d | intercettazioni %d | interruzioni %d | soccorsi %d | timeout %d" % [
 			int(st.get("occasioni_carica", 0.0)), int(st.get("occasioni", 0.0)), int(st.get("react", 0.0)) + int(st.get("rescue_count", 0.0)),
