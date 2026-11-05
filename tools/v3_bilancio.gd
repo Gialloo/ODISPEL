@@ -208,13 +208,19 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "break", 1.0)
 
 
-func _count_reaction_opportunity(state: Dictionary, st: Dictionary) -> void:
+func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictionary) -> void:
 	var boss: Dictionary = BattleState.boss(state)
 	var tele: Dictionary = state.get("telegraph", {})
-	var move: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	var move_id: String = str(tele.get("move", ""))
+	var move: Dictionary = BattleContent.BOSS_MOVES.get(move_id, {})
 	if move.is_empty() or int(boss.get("stun", 0)) > 0 or not BattleResolver.is_heavy_boss_move(move):
 		return
-	_add(st, "occasioni_carica", 1.0)
+	var key: String = "%d|%d|%s|%s" % [int(state.get("phase", 1)), int(state.get("cycle_index", 0)), move_id, str(tele.get("target", ""))]
+	if not bool(seen.get(key + "|heavy", false)):
+		_add(st, "occasioni_carica", 1.0)
+		seen[key + "|heavy"] = true
+	if bool(seen.get(key + "|valid", false)):
+		return
 	var available: bool = false
 	for p in BattleState.alive_players(state):
 		for reaction in BattleResolver.reactions_for(state, str(p.get("id", ""))):
@@ -225,6 +231,7 @@ func _count_reaction_opportunity(state: Dictionary, st: Dictionary) -> void:
 			break
 	if available:
 		_add(st, "occasioni", 1.0)
+		seen[key + "|valid"] = true
 
 
 func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: int, greg: String = "") -> Dictionary:
@@ -233,6 +240,7 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 		var b: Dictionary = _setup(boss, lvl, pv, atk, minore, sd, greg)
 		var guard: int = 0
 		var minhp: float = 1.0
+		var seen_reaction: Dictionary = {}
 		st["runs"] = float(st.get("runs", 0.0)) + 1.0
 		while str(b["winner"]) == "" and guard < 80:
 			guard += 1
@@ -249,8 +257,6 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 				if bool(e.get("greg", false)):
 					_scan(BattleFlow.boss_action(b, Gregario.ID), st, b)
 				elif bool(e["boss"]):
-					if not bool(e.get("greg", false)):
-						_count_reaction_opportunity(b, st)
 					if int(BattleState.boss(b).get("stun", 0)) > 0:
 						st["boss_persi"] = float(st.get("boss_persi", 0.0)) + 1.0
 					else:
@@ -258,6 +264,7 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 					_scan(BattleFlow.boss_action(b), st, b)
 				else:
 					var pid: String = str(e["player"])
+					_count_reaction_opportunity(b, st, seen_reaction)
 					var quick: bool = bool(e.get("quick", false))
 					var evp: Array = BattleFlow.player_action(b, pid, BattleAI.choose_quick(b, pid) if quick else BattleAI.choose(b, pid), quick)
 					_scan(evp, st, b)
