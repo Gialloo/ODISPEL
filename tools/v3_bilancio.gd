@@ -208,7 +208,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "break", 1.0)
 
 
-func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictionary) -> void:
+func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictionary, pid: String) -> void:
 	var boss: Dictionary = BattleState.boss(state)
 	var tele: Dictionary = state.get("telegraph", {})
 	var move_id: String = str(tele.get("move", ""))
@@ -221,17 +221,11 @@ func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictio
 		seen[key + "|heavy"] = true
 	if bool(seen.get(key + "|valid", false)):
 		return
-	var available: bool = false
-	for p in BattleState.alive_players(state):
-		for reaction in BattleResolver.reactions_for(state, str(p.get("id", ""))):
-			if str(reaction.get("err", "")) == "" and str(reaction.get("id", "")) != "soccorso":
-				available = true
-				break
-		if available:
-			break
-	if available:
-		_add(st, "occasioni", 1.0)
-		seen[key + "|valid"] = true
+	for reaction in BattleResolver.reactions_for(state, pid):
+		if str(reaction.get("err", "")) == "" and str(reaction.get("id", "")) != "soccorso":
+			_add(st, "occasioni", 1.0)
+			seen[key + "|valid"] = true
+			return
 
 
 func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: int, greg: String = "") -> Dictionary:
@@ -259,7 +253,7 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 					_scan(BattleFlow.boss_action(b), st, b)
 				else:
 					var pid: String = str(e["player"])
-					_count_reaction_opportunity(b, st, seen_reaction)
+					_count_reaction_opportunity(b, st, seen_reaction, pid)
 					var quick: bool = bool(e.get("quick", false))
 					var evp: Array = BattleFlow.player_action(b, pid, BattleAI.choose_quick(b, pid) if quick else BattleAI.choose(b, pid), quick)
 					_scan(evp, st, b)
@@ -347,7 +341,7 @@ func _init() -> void:
 			int(st.get("occasioni_carica", 0.0)), int(st.get("occasioni", 0.0)), int(st.get("react", 0.0)) + int(st.get("rescue_count", 0.0)),
 			int(st.get("react_dodge", 0.0)), int(st.get("react_intercept", 0.0)), int(st.get("react_interrupt", 0.0)), int(st.get("rescue_count", 0.0)), int(st.get("timeouts", 0.0))])
 		if dettaglio:
-			var parts: String = "     quota danno sul boss:"
+			var parts: String = "     quota danno diretto ai PV del boss:"
 			for c in PARTY:
 				parts += "  %s %.0f%%" % [c, 100.0 * float(st.get("dmg_" + c, 0.0)) / tot_dmg]
 			parts += "   | PV minimo raggiunto (media) %.0f%%" % (100.0 * float(st.get("minhp", 0.0)) / r)
