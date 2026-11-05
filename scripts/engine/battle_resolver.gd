@@ -663,7 +663,7 @@ static func _chain_link(state: Dictionary, actor: Dictionary, events: Array) -> 
 		else:
 			ResourceTelemetry.gain_unit(actor, "gauge", BattleTypes.LINK_GAUGE, BattleTypes.GAUGE_MAX, events, "link")
 			ResourceTelemetry.gain_unit(last, "gauge", BattleTypes.LINK_GAUGE, BattleTypes.GAUGE_MAX, events, "link")
-		events.append({"t": "link", "unit": actor["id"], "with": last["id"], "n": n, "kind": kind})
+		events.append({"t": "link", "unit": actor["id"], "with": last["id"], "n": n, "kind": kind, "damage_bonus": BattleTypes.LINK_BONUS + Signatures.value(actor, "link_boost")})
 	state["link"] = {"n": n, "last": str(actor["id"])}
 	return n
 
@@ -765,7 +765,8 @@ static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, e
 			ResourceTelemetry.gain_unit(mk, "gauge", int(int(r["gauge"]) / 2), BattleTypes.GAUGE_MAX, events, "combo_assist:" + str(r["id"]))
 		if int(r["brk"]) > 0:
 			_drain_balance(boss, int(r["brk"]), actor, events)
-		events.append({"t": "synergy", "id": str(r["id"]), "name": str(r["name"]), "unit": actor["id"], "with": str(m["with"]), "tier": mini(n, 2), "fx": str(r["fx"]), "col": str(r["col"])})
+		var combo_mult: float = float(r["mult"]) * (1.0 + Combos.CHAIN_BONUS * float(mini(n, Combos.CHAIN_MAX)))
+		events.append({"t": "synergy", "id": str(r["id"]), "name": str(r["name"]), "unit": actor["id"], "with": str(m["with"]), "tier": mini(n, 2), "multiplier": combo_mult, "fx": str(r["fx"]), "col": str(r["col"])})
 		if not bool(state.get("combo_reserve", false)):
 			state["combo_reserve"] = true
 			_gain_reserve(state, BattleTypes.RESERVE_PER_COMBO, "combo", events)
@@ -1091,18 +1092,28 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 			Marks.add(state, t, int(move["status"]["mark"]) + Archetypes.status_extra(actor, "mark"), events)
 			t["marked_by"] = str(actor["id"])
 		if move.has("mult"):
-			var m_total: float = float(move["mult"]) * (1.0 + link_gain * float(link_n)) * awake_mult * emp_mult
+			var link_mult: float = 1.0 + link_gain * float(link_n)
+			var combo_mult: float = 1.0
+			var m_total: float = float(move["mult"]) * link_mult * awake_mult * emp_mult
 			if str(t["id"]) == BattleState.BOSS_ID:
-				m_total *= _synergies(state, actor, t, events, move)
+				combo_mult = _synergies(state, actor, t, events, move)
+				m_total *= combo_mult
+			var mark_mult: float = 1.0
 			if move.has("consume_marks"):
 				# Orbital Strike: ogni marchio sul bersaglio vale danno in piu', poi i marchi spariscono
-				m_total *= 1.0 + float(move["consume_marks"]) * float(Marks.count(t))
+				mark_mult = 1.0 + float(move["consume_marks"]) * float(Marks.count(t))
+				m_total *= mark_mult
 			var boost: int = 0
 			if move.has("crit_dmg_per_mark"):
 				boost = mini(int(move.get("crit_dmg_cap", 650)), int(move["crit_dmg_per_mark"]) * Marks.count(t))
 			for _i in int(move.get("hits", 1)):
 				if BattleState.is_alive(t):
+					var hp_before_hit: int = int(t["hp"])
+					var shield_before_hit: int = int(t["shield"])
 					_hit(state, actor, t, m_total, events, int(move.get("pierce", 0)), bonus, ammo_hit, int(move.get("crit_pm", 0)) + emp_crit + int(kit_fx["crit_pm"]), boost)
+					if str(t["id"]) == BattleState.BOSS_ID:
+						var pressure: float = float(hp_before_hit - int(t["hp"]) + shield_before_hit - int(t["shield"]))
+						events.append({"t": "strategy_hit", "unit": actor["id"], "move": move_id, "pressure": pressure, "link_mult": link_mult, "combo_mult": combo_mult, "other_mult": float(move["mult"]) * awake_mult * emp_mult * mark_mult, "effective_mult": m_total})
 			if move.has("consume_marks"):
 				Marks.consume(t, events)
 		if move.has("heal"):
