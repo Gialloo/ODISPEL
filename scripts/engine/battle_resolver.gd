@@ -826,7 +826,7 @@ static func _change_ammo(u: Dictionary, delta: int, events: Array) -> void:
 		Atypical.on_ammo_spent(u, int(u["ammo"]) - now)
 	if now != int(u["ammo"]):
 		u["ammo"] = now
-		events.append({"t": "ammo", "unit": u["id"], "value": now})
+		events.append({"t": "ammo", "resource": "ammo", "unit": u["id"], "value": now, "requested": delta, "effective": now - int(u["ammo"]) + (int(u["ammo"]) - now), "delta": now - (now - delta), "wasted": delta - (now - (now - delta))})
 
 
 # Protocollo (LibraCorp): chi viene colpito dal boss e resta in piedi, con una munizione, risponde al fuoco.
@@ -861,12 +861,13 @@ static func _gain_reserve(state: Dictionary, n: int, why: String, events: Array)
 	var before: int = int(state.get("reserve", 0))
 	var after: int = mini(BattleTypes.RESERVE_MAX, before + n)
 	state["reserve"] = after
-	events.append({"t": "reserve", "delta": after - before, "value": after, "why": why, "wasted": n - (after - before)})
+	events.append({"t": "reserve", "resource": "reserve", "requested": n, "effective": after - before, "delta": after - before, "value": after, "why": why, "wasted": n - (after - before)})
 
 
 static func _spend_reserve(state: Dictionary, n: int, why: String, events: Array) -> void:
 	var after: int = maxi(0, int(state.get("reserve", 0)) - n)
-	events.append({"t": "reserve", "delta": after - int(state.get("reserve", 0)), "value": after, "why": why, "wasted": 0})
+	var before: int = int(state.get("reserve", 0))
+	events.append({"t": "reserve", "resource": "reserve", "requested": n, "effective": before - after, "delta": after - before, "value": after, "why": why, "wasted": 0})
 	state["reserve"] = after
 
 
@@ -991,9 +992,12 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		kind = "basic"
 
 	if kind == "ult":
+		events.append({"t": "resource_cost", "resource": "gauge", "unit": actor["id"], "amount": int(actor["gauge"]), "source": "ultimate"})
 		actor["gauge"] = 0
 	elif kind == "skill":
-		actor["energy"] = int(actor["energy"]) - BattleContent.move_cost(actor, move_id)
+		var skill_cost: int = BattleContent.move_cost(actor, move_id)
+		events.append({"t": "resource_cost", "resource": "energy", "unit": actor["id"], "amount": skill_cost, "source": "skill", "move": move_id})
+		actor["energy"] = int(actor["energy"]) - skill_cost
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
 	var acts: Dictionary = state.get("acts", {})
 	acts[str(actor["id"])] = move_id
