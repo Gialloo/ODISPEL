@@ -869,7 +869,7 @@ static func _gain_reserve(state: Dictionary, n: int, why: String, events: Array)
 static func _spend_reserve(state: Dictionary, n: int, why: String, events: Array) -> void:
 	var after: int = maxi(0, int(state.get("reserve", 0)) - n)
 	var before: int = int(state.get("reserve", 0))
-	events.append({"t": "reserve", "resource": "reserve", "requested": n, "effective": before - after, "delta": after - before, "value": after, "why": why, "wasted": 0})
+	events.append({"t": "reserve", "resource": "reserve", "requested": n, "effective": before - after, "delta": after - before, "value": after, "why": why, "wasted": n - (before - after)})
 	state["reserve"] = after
 
 
