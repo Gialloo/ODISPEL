@@ -29,7 +29,7 @@ func _has_event(events: Array, kind: String) -> Dictionary:
 
 func _unit_resources() -> void:
 	var state: Dictionary = _fresh()
-	var u: Dictionary = BattleState.active_unit(state, "IO")
+	var u: Dictionary = BattleState.active_unit(state, "p1")      # create_solo da' sempre lo slot "p1": "IO" e' solo il nome
 	var events: Array = []
 	u["energy"] = 5
 	ResourceTelemetry.gain_unit(u, "energy", 3, BattleTypes.MAX_ENERGY, events, "test_gain")
@@ -47,7 +47,7 @@ func _unit_resources() -> void:
 
 func _net_snapshot() -> void:
 	var state: Dictionary = _fresh()
-	var u: Dictionary = BattleState.active_unit(state, "IO")
+	var u: Dictionary = BattleState.active_unit(state, "p1")      # create_solo da' sempre lo slot "p1": "IO" e' solo il nome
 	var before: Dictionary = ResourceTelemetry.snapshot(state)
 	var events: Array = []
 	ResourceTelemetry.gain_unit(u, "gauge", 12, BattleTypes.GAUGE_MAX, events, "snapshot_test")
