@@ -250,22 +250,32 @@
     "riassunto": "Il distributore attacca per primo.",
     "righe": [
       {
-        "chi": "DISTRIBUTORE",
-        "col": "#ffd23f",
+        "chi": "distributore",
+        "espr": "",
         "testo": "*KLANG* CLIENTE INDECISO RILEVATO. ADDEBITO IN CORSO."
       },
       {
         "chi": "saul",
-        "espr": "sorpreso",
-        "testo": "Stavo solo guardando la vetrina."
+        "espr": "arrabbiato",
+        "testo": "Ehi! Stavo solo guardando la vetrina!"
       },
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "Aspettate, mi serve un'entrata..."
+        "testo": "Aspettate, mi serve un'entrata ad effetto!"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
+        "espr": "serio",
+        "testo": "No."
+      },
+      {
+        "chi": "zecca",
+        "espr": "sorpresa",
+        "testo": "Ma non ho ancora—"
+      },
+      {
+        "chi": "lance",
         "espr": "serio",
         "testo": "No."
       }
