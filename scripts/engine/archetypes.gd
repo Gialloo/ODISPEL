@@ -96,13 +96,13 @@ static func damage_mult(attacker: Dictionary, defender: Dictionary) -> float:
 
 
 # Dopo un colpo messo a segno da un giocatore.
-static func after_hit(attacker: Dictionary, crit: bool) -> void:
+static func after_hit(attacker: Dictionary, crit: bool, events: Array) -> void:
 	match of_unit(attacker):
 		"str":
 			attacker["momentum"] = mini(MOMENTUM_MAX, int(attacker.get("momentum", 0)) + 1)
 		"dex":
 			if crit:
-				attacker["gauge"] = mini(BattleTypes.GAUGE_MAX, int(attacker["gauge"]) + DEX_CRIT_GAUGE)
+				ResourceTelemetry.gain_unit(attacker, "gauge", DEX_CRIT_GAUGE, BattleTypes.GAUGE_MAX, events, "dex_critical")
 
 
 # Carica dell'ultimate quando si colpisce.
