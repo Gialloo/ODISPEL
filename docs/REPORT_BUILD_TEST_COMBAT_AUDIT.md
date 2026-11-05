@@ -254,3 +254,21 @@ Si trovano in `/mnt/project-files/odispel/v3/build_sperimentale_c2.6/`. Le build
 - controlla la firma dell'APK con apksigner come `itch.yml`. `itch.yml` non è stato toccato.
 
 Restano aperti, come al punto 6: `strategy_hits` nel JSON, `tools/v3_bilancio.gd:789` (`signal`), i 3 controlli della telemetria e il nome del pacchetto Android (se l'APK sperimentale deve stare sul telefono accanto alla 0.56.0).
+
+## 9. Aggiornamento: correzione dei tre difetti rimasti (via dell'autore, 05/11/2026)
+
+Commit `b667a09`:
+- **Salvataggio JSON** (`battle_resolver.gd`): `strategy_hits` ora salva la pressione come intero e i moltiplicatori in millesimi interi (`link_mult_pm`, `combo_mult_pm`, `other_mult_pm`, `effective_mult_pm`, funzione `_pm`). Lo stato torna senza decimali e il giro in JSON è identico. `tools/v3_bilancio.gd` li rilegge dividendo per 1000.
+- **`tools/v3_bilancio.gd:789`**: la variabile `signal` (parola riservata) diventa `concentrated_tag`.
+- **Telemetria delle risorse**: il codice era giusto, l'errore era nel test. `test_v3_resource_telemetry.gd` cercava lo slot `"IO"`, ma `create_solo` chiama sempre lo slot `"p1"` (`"IO"` è solo il nome mostrato). Il personaggio risultava vuoto e non c'era niente da misurare. Ho cambiato lo slot in `"p1"` nelle due righe: è una correzione del test, non un modo per farlo passare a forza, e i controlli sono rimasti gli stessi.
+
+**Import**: 0 errori. **Suite**: **26 file su 26 passano**, log senza errori di script.
+**`tools/v3_bilancio.gd -- vel`** e **`tools/v3_bilancio.gd`** (bilancio dell'atto, legge `strategy_hits`): uscita 0, 0 errori di script.
+**Atto 1 in automatico**: uscita 0, 0 errori di script, completo fino a `c6_p8`. Sei battaglie vinte. La Cabina (lv5) stavolta è persa al round 4, mentre nel giro dopo la correzione di `e36c5a9` era vinta al round 5. Anche round e tempi delle altre battaglie cambiano da un giro all'altro: la battaglia guarda l'orologio vero (`Time.get_ticks_usec`, parata a tempo) e questo giro girava insieme agli export, sotto llvmpipe. Le modifiche di `b667a09` toccano solo la telemetria, che sta fuori dagli eventi e dall'RNG, e i test deterministici del motore passano tutti. Non ho dimostrato che la sconfitta dipenda dal carico: un secondo giro del solo capitolo 2 è finito oltre il limite di tempo senza un esito.
+
+**Build da `b667a09`**, export senza errori, pck avviato senza errori di script:
+- `ODISPEL_V3_sperimentale_c2.6_b667a09_android.apk` (firma v2 verificata da `sign_apk.py`)
+- `ODISPEL_V3_sperimentale_c2.6_b667a09_pc.zip`
+
+Si trovano in `/mnt/project-files/odispel/v3/build_sperimentale_c2.6/`. Quelle di `e36c5a9` sono in `superate_e36c5a9/`. La pubblicazione su itch aspetta ancora la pagina di prova (`ITCH_LAB_TARGET`) e il via dell'autore (punto 8).
+
