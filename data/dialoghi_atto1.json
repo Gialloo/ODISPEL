@@ -663,35 +663,37 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Quando la barra bianca EQUILIBRIO arriva a zero, il nemico va in BREAK: stordito."
+        "testo": "Quando EQUILIBRIO arriva a zero, il nemico entra in BREAK. Rimane stordito e non può agire."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "felice",
-        "testo": "Allora parte l'ATTACCO DI SQUADRA."
+        "testo": "A quel punto parte l'ATTACCO DI SQUADRA."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "felice",
-        "testo": "Io faccio un FERMO IMMAGINE e colpite uno dopo l'altro."
+        "testo": "Faccio un fermo immagine e potete colpire uno dopo l'altro."
       },
       {
-        "chi": "zecca",
-        "espr": "felice",
-        "testo": "FERMO IMMAGINE. Ditemi che l'avete registrato. Voglio la clip."
+        "chi": "rio",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Aspetta, questa la voglio vedere in video."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Telecamera 07 registra tutto. Il mio archivio è già pieno di voi."
+        "testo": "Telecamera 07 registra tutto. Non preoccuparti."
       },
       {
         "chi": "saul",
+        "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Una clip in cambio di una percentuale. Dico solo questo."
+        "testo": "Se diventa virale, voglio una percentuale."
       }
     ]
   },
