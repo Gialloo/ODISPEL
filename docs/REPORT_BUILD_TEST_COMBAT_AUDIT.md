@@ -226,3 +226,31 @@ Non ho applicato nessuna correzione al branch, come chiede l'handoff.
 2. aggiungere un workflow separato, per esempio `.github/workflows/itch-sperimentale.yml`, che parte **solo a mano** (`workflow_dispatch`), prende APK e ZIP da un artifact o da una release GitHub (non da `releases/`), controlla la firma con apksigner e fa `butler push` sui canali `experimental-android` / `experimental-pc` con `--userversion 0.56.0-exp.c2.6+<commit>`;
 3. come destinazione, meglio una **pagina itch separata in bozza o con accesso ristretto** (per esempio `boomeranza/odispel-lab`) che i canali sperimentali sulla pagina pubblica. Va creata dall'autore su itch;
 4. poiché l'APK ha lo stesso pacchetto e la stessa chiave della stabile, installarlo sostituisce la 0.56.0 sul telefono. Se si vogliono tenere le due versioni insieme, serve un `package/unique_name` diverso (per esempio `com.gialloo.odispel.v3.lab`), ma è una modifica al progetto.
+
+## 8. Aggiornamento: correzione della riga 911 (via dell'autore, 05/11/2026)
+
+L'autore ha scelto «Correggo la riga 911 e rifaccio». Commit `e36c5a9`:
+- `battle_resolver.gd`: `react_bonus(state, actor, kind, events: Array = [])` e il soccorso le passa la sua lista di eventi (`react_bonus(state, actor, "rescue", events)`). La telemetria del bonus «reperibile» di Nox resta, ora con la lista giusta. Nessun altro cambiamento di codice.
+- `.github/workflows/itch-sperimentale.yml` (nuovo, vedi sotto).
+
+**Import**: 0 errori. **Suite** (stesso runner, 180 s a file): **23 file su 26 passano**, log senza errori di script. Restano solo i tre già descritti al punto 3: `test_archetypes` (1, JSON), `test_battle` (2, JSON), `test_v3_resource_telemetry` (3). Risultato identico alla prova diagnostica.
+
+**Atto 1 in automatico** (`xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_atto1.gd -- <dir>`): uscita 0, 0 errori di script, fino all'ultimo passo `c6_p8`, 108 schermate. Battaglie, tutte vinte in AUTO: frammento_giallo lv1 (1 round), distributore lv1 (4), semaforo lv3 (5), cabina lv5 (5), manichino lv7 (7), cassaforte lv9 (8), autovelox lv11 (5).
+
+**Nuove build** da `e36c5a9`, export senza errori:
+
+| | Android | PC |
+|---|---|---|
+| File | `ODISPEL_V3_sperimentale_c2.6_e36c5a9_android.apk`, 38.268.440 byte, firma v2 verificata da `sign_apk.py` | `ODISPEL_V3_sperimentale_c2.6_e36c5a9_pc.zip`, 49.634.957 byte |
+| SHA-256 | `ee720f23…6f5e55` | `16a406a4…15f0fd` |
+| Avvio | non provato: niente dispositivo o emulatore | il pck parte col binario Linux 4.7.2 senza errori di script; l'.exe non è provato (niente Windows o Wine) |
+
+Si trovano in `/mnt/project-files/odispel/v3/build_sperimentale_c2.6/`. Le build rotte di `4ea37bc` sono in `rotte_4ea37bc/`.
+
+**Workflow itch sperimentale** (`.github/workflows/itch-sperimentale.yml`), non ancora usato:
+- parte solo con un push su `experiment/**` che cambia `releases_sperimentali/*.apk|*.zip`. Mettere lì le build vuol dire pubblicare, quindi serve un altro sì dell'autore;
+- carica sui canali `experimental-android` e `experimental-pc`, con versione `0.56.0-exp.<branch>+<commit>`;
+- la pagina di destinazione viene dalla variabile del repository `ITCH_LAB_TARGET`. Se manca, o se vale `boomeranza/odispel` (la pagina stabile), il workflow si ferma senza caricare;
+- controlla la firma dell'APK con apksigner come `itch.yml`. `itch.yml` non è stato toccato.
+
+Restano aperti, come al punto 6: `strategy_hits` nel JSON, `tools/v3_bilancio.gd:789` (`signal`), i 3 controlli della telemetria e il nome del pacchetto Android (se l'APK sperimentale deve stare sul telefono accanto alla 0.56.0).
