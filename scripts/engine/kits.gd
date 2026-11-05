@@ -148,8 +148,8 @@ static func add_hype(u: Dictionary, n: int, events: Array, why: String) -> void:
 		return
 	var before: int = int(u.get("hype", 0))
 	u["hype"] = mini(HYPE_MAX, before + n)
-	if int(u["hype"]) != before:
-		events.append({"t": "hype", "unit": u["id"], "amount": int(u["hype"]) - before, "hype": int(u["hype"]), "why": why})
+	var effective: int = int(u["hype"]) - before
+	events.append({"t": "hype", "resource": "hype", "unit": u["id"], "requested": n, "amount": effective, "effective": effective, "wasted": n - effective, "hype": int(u["hype"]), "why": why})
 
 
 # ---------------------------------------------------------------- azione di un compagno
