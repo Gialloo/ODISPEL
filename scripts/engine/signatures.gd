@@ -96,10 +96,10 @@ static func apply_bench(helper: Dictionary, target: Dictionary, factor: float = 
 		out.append({"t": "shield", "src": str(helper["id"]), "dst": str(target["id"]), "amount": amount})
 	var g: float = bench_value(cid, "gauge", rank) * factor
 	if g > 0.0:
-		target["gauge"] = mini(BattleTypes.GAUGE_MAX, int(target["gauge"]) + int(round(g)))
+		ResourceTelemetry.gain_unit(target, "gauge", int(round(g)), BattleTypes.GAUGE_MAX, out, "bench_signature")
 	var en: float = bench_value(cid, "energy", rank) * factor
 	if en >= 1.0:
-		target["energy"] = mini(BattleTypes.MAX_ENERGY, int(target["energy"]) + int(round(en)))
+		ResourceTelemetry.gain_unit(target, "energy", int(round(en)), BattleTypes.MAX_ENERGY, out, "bench_signature")
 	return out
 
 
