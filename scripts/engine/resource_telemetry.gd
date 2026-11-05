@@ -24,11 +24,12 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 	if before.is_empty():
 		return
 	var source: String = phase
-	for e in events:
-		if str(e.get("t", "")) == "act":
-			source = "azione:" + str(e.get("move", "unknown"))
-		if str(e.get("t", "")) == "duo":
-			source = "duo:" + str(e.get("id", "unknown"))
+	if phase != "phase_transition":
+		for e in events:
+			if str(e.get("t", "")) == "act":
+				source = "azione:" + str(e.get("move", "unknown"))
+			if str(e.get("t", "")) == "duo":
+				source = "duo:" + str(e.get("id", "unknown"))
 	for uid in before:
 		var old: Dictionary = before[uid]
 		var current: Dictionary = state.get("units", {}).get(str(uid), {})
