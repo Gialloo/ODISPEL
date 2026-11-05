@@ -902,6 +902,12 @@ static func react_grade(state: Dictionary, u: Dictionary) -> String:
 	return str((state.get("react_grade", {}) as Dictionary).get(str(u.get("id", "")), "ok"))
 
 
+# Telemetria: i moltiplicatori si salvano in millesimi interi, perche' lo stato passa dal JSON e non deve contenere float
+# (BattleState.normalize li troncherebbe: 2.691 -> 2).
+static func _pm(x: float) -> int:
+	return int(round(x * 1000.0))
+
+
 # PV in piu' (frazione) del Soccorso: esito del minigioco e reazione personale di Nox
 static func react_bonus(state: Dictionary, actor: Dictionary, kind: String, events: Array = []) -> float:
 	var g: String = react_grade(state, actor)
@@ -1112,9 +1118,9 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 					var shield_before_hit: int = int(t["shield"])
 					_hit(state, actor, t, m_total, events, int(move.get("pierce", 0)), bonus, ammo_hit, int(move.get("crit_pm", 0)) + emp_crit + int(kit_fx["crit_pm"]), boost)
 					if str(t["id"]) == BattleState.BOSS_ID:
-						var pressure: float = float(hp_before_hit - int(t["hp"]) + shield_before_hit - int(t["shield"]))
+						var pressure: int = hp_before_hit - int(t["hp"]) + shield_before_hit - int(t["shield"])
 						var strategy_hits: Array = state.get("strategy_hits", [])
-						strategy_hits.append({"unit": actor["id"], "move": move_id, "pressure": pressure, "link_mult": link_mult, "combo_mult": combo_mult, "other_mult": float(move["mult"]) * awake_mult * emp_mult * mark_mult, "effective_mult": m_total})
+						strategy_hits.append({"unit": actor["id"], "move": move_id, "pressure": pressure, "link_mult_pm": _pm(link_mult), "combo_mult_pm": _pm(combo_mult), "other_mult_pm": _pm(float(move["mult"]) * awake_mult * emp_mult * mark_mult), "effective_mult_pm": _pm(m_total)})
 						state["strategy_hits"] = strategy_hits
 			if move.has("consume_marks"):
 				Marks.consume(t, events)
