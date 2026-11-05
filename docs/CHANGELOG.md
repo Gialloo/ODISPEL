@@ -1,5 +1,10 @@
 # Novità
 
+## 0.57.0 · Lance e Saul disegnati dall'autore nell'HUD
+
+- **Nuovi ritratti di Lance e Saul** nell'HUD di battaglia e nel volto piccolo della squadra, disegnati a mano dall'autore. Sono fermi: niente respiro né animazioni, entrano con la lastra e restano immobili.
+- **Correzioni**: il gioco tornava a non compilare per un errore nella telemetria del Soccorso (`react_bonus`); corretto anche il salvataggio in JSON della telemetria della strategia. 26 test verdi.
+
 ## 0.56.0 · RITMO: salvataggio con la parata, bonus dei livelli e tecniche APICE
 
 - **La parata salva anche l'Ardore**: il colpo annunciato del boss toglie Ardore (6, o 12 se pesante); con la parata buona se ne perde la metà, con la perfetta niente (sui colpi pesanti si salva meno). Un salvataggio a testa per round.
