@@ -755,19 +755,19 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Tre extra. SLANCIO: colpire col colore vincente a volte regala un mezzo turno in più."
+        "testo": "Un'ultima cosa: SLANCIO. Se colpite un nemico con il colore efficace, ottenete subito un'azione extra."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Vale solo con ATTACCO o GUARDIA. Con le altre mosse, niente."
+        "testo": "Con SLANCIO potete scegliere solo ATTACCO o GUARDIA. E ogni personaggio può attivarlo una volta per round."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "AUTO combatte da solo. x2 va più veloce. Per i turni noiosi."
+        "testo": "Poi ci sono AUTO, che combatte al posto vostro, e x2, che accelera gli scontri."
       },
       {
         "chi": "nox",
@@ -778,7 +778,18 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Pausa: il tasto in alto, oppure Esc. Il tempo si ferma. Io, invece, no."
+        "testo": "E se volete fermarvi, usate il tasto in alto oppure ESC. Il tempo si ferma."
+      },
+      {
+        "chi": "rio",
+        "espr": "sorpreso",
+        "testo": "Anche tu?"
+      },
+      {
+        "chi": "echo",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Io no."
       }
     ]
   },
