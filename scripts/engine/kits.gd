@@ -206,8 +206,7 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 			out["mult"] = float(out["mult"]) * (FINALE_BASE + FINALE_PER_HYPE * float(hype) / float(HYPE_MAX))
 			events.append({"t": "finale", "unit": actor["id"], "hype": hype})
 			if hype > 0:
-				events.append({"t": "resource_cost", "resource": "hype", "unit": actor["id"], "amount": hype, "source": "finale"})
-			actor["hype"] = 0
+				ResourceTelemetry.spend_unit(actor, "hype", hype, events, "finale")
 			# HYPE con scelta: speso presto (sotto FINALE_EARLY) il colpo e' piu' debole ma il pubblico carica la squadra:
 			# +1 energia e un po' di Ultimate ai compagni. Pieno resta il colpo grosso. Un effetto diverso, non solo meno forte.
 			if hype < FINALE_EARLY:
@@ -215,8 +214,8 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 					var mate: Dictionary = BattleState.active_unit(state, str(p["id"]))
 					if not BattleState.is_alive(mate) or str(mate["id"]) == str(actor["id"]):
 						continue
-					mate["energy"] = mini(BattleTypes.MAX_ENERGY, int(mate["energy"]) + FINALE_EARLY_EN)
-					mate["gauge"] = mini(BattleTypes.GAUGE_MAX, int(mate["gauge"]) + FINALE_EARLY_GAUGE)
+					ResourceTelemetry.gain_unit(mate, "energy", FINALE_EARLY_EN, BattleTypes.MAX_ENERGY, events, "finale_early")
+					ResourceTelemetry.gain_unit(mate, "gauge", FINALE_EARLY_GAUGE, BattleTypes.GAUGE_MAX, events, "finale_early")
 				events.append({"t": "finale_early", "unit": actor["id"], "energy": FINALE_EARLY_EN, "gauge": FINALE_EARLY_GAUGE})
 		"coffee":
 			var worst: float = 2.0
@@ -226,7 +225,7 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 			if worst > COFFEE_REST_ABOVE and coffee_ready(state, actor):
 				# nessuno ne ha bisogno: Nox si riposa (energia restituita) e il prossimo round agisce due volte
 				out["skip"] = true
-				actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + int(move.get("cost", 0)))
+				ResourceTelemetry.gain_unit(actor, "energy", int(move.get("cost", 0)), BattleTypes.MAX_ENERGY, events, "coffee_refund")
 				actor["rested"] = true
 				actor["rest_round"] = int(state.get("round", 1))
 				events.append({"t": "rest", "unit": actor["id"]})
@@ -237,13 +236,13 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 					m["shield"] = int(m["shield"]) + sh
 					events.append({"t": "shield", "src": actor["id"], "dst": m["id"], "amount": sh})
 					if str(m["id"]) != str(actor["id"]):
-						m["energy"] = mini(BattleTypes.MAX_ENERGY, int(m["energy"]) + 1)
+						ResourceTelemetry.gain_unit(m, "energy", 1, BattleTypes.MAX_ENERGY, events, "coffee_gift")
 						events.append({"t": "energy_gift", "unit": actor["id"], "dst": m["id"], "amount": 1})
 	# Veglia: Nox per ultima nel round (non quando si riposa: non sta facendo niente)
 	if is_char(actor, NOX) and move_id != BattleTypes.ACTION_GUARD and not bool(out["skip"]) and vigil_on(state, actor):
 		out["mult"] = float(out["mult"]) * VIGIL_MULT
 		if str(move.get("kind", "")) == "skill" and int(move.get("cost", 0)) > 0:
-			actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + 1)     # costa un'energia in meno
+			ResourceTelemetry.gain_unit(actor, "energy", 1, BattleTypes.MAX_ENERGY, events, "veglia_refund")     # costa un'energia in meno
 		events.append({"t": "kit_trait", "unit": actor["id"], "trait": "veglia"})
 	# Tecnica APICE (fase R4): il tocco del personaggio sulla sua prima azione in APICE
 	var tech: Dictionary = Ritmo.apice_tech(state, actor, move_id, move, events)
@@ -274,7 +273,7 @@ static func after_act(state: Dictionary, actor: Dictionary, move_id: String, mov
 					if str(u["id"]) != str(actor["id"]) and (best.is_empty() or int(u["energy"]) < int(best["energy"])):
 						best = u
 				if not best.is_empty():
-					best["energy"] = mini(BattleTypes.MAX_ENERGY, int(best["energy"]) + COIN_TAILS_ENERGY)
+					ResourceTelemetry.gain_unit(best, "energy", COIN_TAILS_ENERGY, BattleTypes.MAX_ENERGY, events, "coin_tails")
 					events.append({"t": "energy_gift", "unit": actor["id"], "dst": best["id"], "amount": COIN_TAILS_ENERGY})
 			actor.erase("coin")
 		"frame":
@@ -291,7 +290,7 @@ static func after_act(state: Dictionary, actor: Dictionary, move_id: String, mov
 				var boss3: Dictionary = BattleState.boss(state)
 				if BattleState.is_alive(boss3):
 					BattleResolver._drain_balance(boss3, PICK_BALANCE, actor, events)
-				actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + int(move.get("cost", 0)))
+				ResourceTelemetry.gain_unit(actor, "energy", int(move.get("cost", 0)), BattleTypes.MAX_ENERGY, events, "pickpocket_refund")
 				events.append({"t": "pickpocket", "unit": actor["id"], "amount": 0})
 		"loot_exp", "heist2":
 			var add: int = LOOT_EXP if str(move.get("kit", "")) == "loot_exp" else HEIST2_EXP
@@ -314,14 +313,14 @@ static func after_act(state: Dictionary, actor: Dictionary, move_id: String, mov
 				known.append(best)
 				state["stolen_known"] = known
 			else:
-				actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + 1)
+				ResourceTelemetry.gain_unit(actor, "energy", 1, BattleTypes.MAX_ENERGY, events, "steal_move_refund")
 			events.append({"t": "steal_move", "unit": actor["id"], "move": best})
 		"coffee":
 			# (col riposo l'azione si ferma prima e after_act non arriva qui)
 			var t: Dictionary = BattleState.active_unit(state, target_pid)
 			if t.is_empty() or not BattleState.is_alive(t):
 				t = actor
-			t["energy"] = mini(BattleTypes.MAX_ENERGY, int(t["energy"]) + 1)
+			ResourceTelemetry.gain_unit(t, "energy", 1, BattleTypes.MAX_ENERGY, events, "coffee_after_act")
 			events.append({"t": "energy_gift", "unit": actor["id"], "dst": t["id"], "amount": 1})
 			# un sorso anche al secondo piu' ferito
 			var second: Dictionary = {}
@@ -375,10 +374,10 @@ static func team_boost(state: Dictionary, src: Dictionary, energy: int, gauge: i
 		if m.is_empty() or not BattleState.is_alive(m):
 			continue
 		if energy > 0:
-			m["energy"] = mini(BattleTypes.MAX_ENERGY, int(m["energy"]) + energy)
+			ResourceTelemetry.gain_unit(m, "energy", energy, BattleTypes.MAX_ENERGY, events, "team_boost")
 			events.append({"t": "energy_gift", "unit": src["id"], "dst": m["id"], "amount": energy})
 		if gauge > 0:
-			m["gauge"] = mini(BattleTypes.GAUGE_MAX, int(m["gauge"]) + gauge)
+			ResourceTelemetry.gain_unit(m, "gauge", gauge, BattleTypes.GAUGE_MAX, events, "team_boost")
 
 
 # Reazione personale riuscita (REACT_PERKS). Ritorna vero se ha fatto qualcosa.
@@ -386,8 +385,8 @@ static func react_perk(state: Dictionary, boss: Dictionary, u: Dictionary, kind:
 	var pk: Dictionary = REACT_PERKS.get(str(u.get("react_mod", "")), {})
 	if pk.is_empty() or str(pk["on"]) != kind:
 		return false
-	u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + int(pk.get("gauge", 0)))
-	u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + int(pk.get("energy", 0)))
+	ResourceTelemetry.gain_unit(u, "gauge", int(pk.get("gauge", 0)), BattleTypes.GAUGE_MAX, events, "reaction_perk")
+	ResourceTelemetry.gain_unit(u, "energy", int(pk.get("energy", 0)), BattleTypes.MAX_ENERGY, events, "reaction_perk")
 	if pk.has("hype"):
 		add_hype(u, int(pk["hype"]), events, "schivata")
 	if bool(pk.get("steal_shield", false)) and int(boss.get("shield", 0)) > 0:
