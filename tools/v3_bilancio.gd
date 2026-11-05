@@ -125,7 +125,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				if source_player and dst == BattleState.BOSS_ID:
 					if bool(e.get("thorns", false)):
 						_add(st, "dmg_reflected_boss", amount)
-						_add(st, "dmg_boss_pressure", amount)
+						_add(st, "dmg_boss_absorbed", absorbed)
+						_add(st, "dmg_boss_pressure", amount + absorbed)
 					else:
 						var attacker: String = _char_of(src)
 						_add(st, "dmg_" + attacker, amount)
@@ -149,11 +150,13 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				var bleed_target: Dictionary = state.get("units", {}).get(target_id, {})
 				var bleed_amount: float = float(e.get("amount", 0))
 				if str(bleed_target.get("side", "")) == "boss":
-					_add(st, "dmg_indirect_enemy_hp", bleed_amount)
 					if target_id == BattleState.BOSS_ID:
+						_add(st, "dmg_boss_indirect_hp", bleed_amount)
 						_add(st, "dmg_boss_pressure", bleed_amount)
-					if target_id == Gregario.ID:
+					elif target_id == Gregario.ID:
 						_add(st, "dmg_gregario_indirect_hp", bleed_amount)
+					else:
+						_add(st, "dmg_indirect_enemy_hp", bleed_amount)
 				elif str(bleed_target.get("side", "")) == "player":
 					_add(st, "dmg_party_bleed_hp", bleed_amount)
 			"arena":
@@ -354,7 +357,7 @@ func _init() -> void:
 		print("     ESITO · vittorie %d | sconfitte %d | timeout %d" % [int(st.get("wins", 0.0)), int(st.get("losses", 0.0)), int(st.get("timeouts", 0.0))])
 		print("     DANNI · boss PV %.0f | assorbiti %.0f | pressione %.0f | Eco PV %.0f | indiretti %.0f | Scheggia PV %.0f | riflessi %.0f" % [
 			float(st.get("dmg_boss_direct_hp", 0.0)), float(st.get("dmg_boss_absorbed", 0.0)), float(st.get("dmg_boss_pressure", 0.0)),
-			float(st.get("dmg_arena_boss_hp", 0.0)), float(st.get("dmg_indirect_enemy_hp", 0.0)), float(st.get("dmg_gregario_hp", 0.0)) + float(st.get("dmg_gregario_indirect_hp", 0.0)), float(st.get("dmg_reflected_boss", 0.0))])
+			float(st.get("dmg_arena_boss_hp", 0.0)), float(st.get("dmg_boss_indirect_hp", 0.0)) + float(st.get("dmg_indirect_enemy_hp", 0.0)), float(st.get("dmg_gregario_hp", 0.0)) + float(st.get("dmg_gregario_indirect_hp", 0.0)), float(st.get("dmg_reflected_boss", 0.0))])
 		print("     PLACCHE · danno assorbito dalle placche %.0f" % float(st.get("dmg_boss_plate", 0.0)))
 		var shield_expired: float = maxf(0.0, float(st.get("shield_expired_party_raw", 0.0)) - float(st.get("shield_carried_party", 0.0)))
 		print("     SOSTEGNO · cure PV %.0f (%d eventi) | soccorsi %d / PV %.0f | scudi creati %.0f | assorbiti %.0f | scaduti %.0f | danni squadra PV %.0f" % [
