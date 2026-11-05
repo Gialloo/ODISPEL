@@ -104,6 +104,8 @@ static func run(state: Dictionary, actor: Dictionary, duo_id: String, events: Ar
 	var mate: Dictionary = partner(state, actor, duo_id)
 	if mate.is_empty():
 		return
+	events.append({"t": "resource_cost", "resource": "energy", "unit": actor["id"], "amount": COST, "source": "duo", "move": duo_id})
+	events.append({"t": "resource_cost", "resource": "energy", "unit": mate["id"], "amount": COST, "source": "duo", "move": duo_id})
 	actor["energy"] = int(actor["energy"]) - COST
 	mate["energy"] = int(mate["energy"]) - COST
 	var sp: Dictionary = state["seq"].get("spent", {})
