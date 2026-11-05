@@ -137,11 +137,26 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				_add(st, "strat_combos", 1.0)
 				_add(st, "strat_combo_" + combo_id, 1.0)
 				_add(st, "strat_combo_actor_" + _char_of(combo_actor), 1.0)
+				_add(st, "strat_combo_multiplier_sum", float(e.get("multiplier", 1.0)))
 			"link":
 				var link_kind: String = str(e.get("kind", "unknown"))
 				_add(st, "strat_links", 1.0)
 				_add(st, "strat_link_" + link_kind, 1.0)
 				_add(st, "strat_link_chain_index_sum", float(e.get("n", 0)))
+				_add(st, "strat_link_damage_bonus_sum", float(e.get("damage_bonus", BattleTypes.LINK_BONUS)))
+			"strategy_hit":
+				var hit_pressure: float = float(e.get("pressure", 0.0))
+				var hit_link_mult: float = float(e.get("link_mult", 1.0))
+				var hit_combo_mult: float = float(e.get("combo_mult", 1.0))
+				var hit_other_mult: float = float(e.get("other_mult", 1.0))
+				var hit_base: float = hit_pressure / maxf(0.0001, hit_link_mult * hit_combo_mult * hit_other_mult)
+				_add(st, "strat_hit_pressure", hit_pressure)
+				_add(st, "strat_link_pressure_est", hit_base * (hit_link_mult - 1.0))
+				_add(st, "strat_combo_pressure_est", hit_base * hit_link_mult * (hit_combo_mult - 1.0))
+				if hit_link_mult > 1.0:
+					_add(st, "strat_linked_hits", 1.0)
+				if hit_combo_mult > 1.0:
+					_add(st, "strat_combo_hits", 1.0)
 			"link_break":
 				_add(st, "strat_link_breaks", 1.0)
 			"duo":
@@ -589,6 +604,10 @@ func _init() -> void:
 			int(st.get("strat_ultimates", 0.0)), int(st.get("strat_combos", 0.0)), int(st.get("strat_links", 0.0)),
 			int(st.get("strat_link_cross", 0.0)), int(st.get("strat_link_unison", 0.0)), int(st.get("strat_link_chain_index_sum", 0.0)), int(st.get("strat_link_breaks", 0.0)),
 			int(st.get("strat_duos", 0.0)), int(st.get("strat_slanci", 0.0)), int(st.get("strat_slancio_guards", 0.0)), int(st.get("strat_team_strikes", 0.0))])
+		print("     VALORE STIMATO · pressione totale %.0f | LINK +%.0f (colpi collegati %d) | COMBO +%.0f (colpi combinati %d) | moltiplicatore medio COMBO %.3f" % [
+			float(st.get("strat_hit_pressure", 0.0)), float(st.get("strat_link_pressure_est", 0.0)), int(st.get("strat_linked_hits", 0.0)),
+			float(st.get("strat_combo_pressure_est", 0.0)), int(st.get("strat_combo_hits", 0.0)),
+			float(st.get("strat_combo_multiplier_sum", 0.0)) / maxf(1.0, float(st.get("strat_combos", 0.0)))])
 		print("     REAZIONI · cariche pesanti %d | occasioni valide %d | usate %d | schivate %d | intercettazioni %d | interruzioni %d | soccorsi %d | timeout %d" % [
 			int(st.get("occasioni_carica", 0.0)), int(st.get("occasioni", 0.0)), int(st.get("react", 0.0)) + int(st.get("rescue_count", 0.0)),
 			int(st.get("react_dodge", 0.0)), int(st.get("react_intercept", 0.0)), int(st.get("react_interrupt", 0.0)), int(st.get("rescue_count", 0.0)), int(st.get("timeouts", 0.0))])
