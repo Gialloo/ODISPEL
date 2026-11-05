@@ -253,8 +253,9 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 					_scan(BattleFlow.boss_action(b), st, b)
 				else:
 					var pid: String = str(e["player"])
-					_count_reaction_opportunity(b, st, seen_reaction, pid)
 					var quick: bool = bool(e.get("quick", false))
+					if not quick:
+						_count_reaction_opportunity(b, st, seen_reaction, pid)
 					var evp: Array = BattleFlow.player_action(b, pid, BattleAI.choose_quick(b, pid) if quick else BattleAI.choose(b, pid), quick)
 					_scan(evp, st, b)
 					for x in evp:
