@@ -182,12 +182,16 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "rest_nox", 1.0)
 				_add(st, "heal_nox", 1.0)
 			"shield":
+				var shield_src: String = str(e.get("src", ""))
 				var shield_dst: String = str(e.get("dst", ""))
 				var shield_target: Dictionary = state.get("units", {}).get(shield_dst, {})
 				var shield_amount: float = float(e.get("amount", 0))
 				if str(shield_target.get("side", "")) == "player":
 					_add(st, "shield_created_party", shield_amount)
 					_add(st, "shield_created_events", 1.0)
+					var shield_owner: Dictionary = state.get("units", {}).get(shield_src, {})
+					if str(shield_owner.get("side", "")) == "player":
+						_add(st, "shield_" + _char_of(shield_src), shield_amount)
 				elif str(shield_target.get("side", "")) == "boss":
 					_add(st, "shield_created_enemy", shield_amount)
 			"shield_expire":
@@ -351,6 +355,13 @@ func _init() -> void:
 				parts += "  %s %.0f%%" % [c, 100.0 * float(st.get("dmg_" + c, 0.0)) / tot_dmg]
 			parts += "   | PV minimo raggiunto (media) %.0f%%" % (100.0 * float(st.get("minhp", 0.0)) / r)
 			print(parts)
+			var support: String = "     cure PV per fonte:"
+			for c in PARTY:
+				support += "  %s %.0f" % [c, float(st.get("heal_" + c, 0.0))]
+			support += "   | scudi generati per fonte:"
+			for c in PARTY:
+				support += "  %s %.0f" % [c, float(st.get("shield_" + c, 0.0))]
+			print(support)
 		if not bool(enc[4]):
 			n_boss += 1
 			for k in st:
