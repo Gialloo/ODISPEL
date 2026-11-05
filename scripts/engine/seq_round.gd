@@ -166,7 +166,7 @@ static func _check_slancio(state: Dictionary, actor: Dictionary, events: Array) 
 # GUARDIA DI SLANCIO: nell'azione rapida la Guardia rende di piu' di un colpo in certe situazioni: scudo a tutta la squadra
 # e 1 energia in piu' a chi la fa. Evento {"t": "slancio_guard", "unit", "amount"} (piu' gli scudi).
 static func _slancio_guard(state: Dictionary, actor: Dictionary, events: Array) -> void:
-	actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + BattleTypes.SLANCIO_GUARD_EN)
+	ResourceTelemetry.gain_unit(actor, "energy", BattleTypes.SLANCIO_GUARD_EN, BattleTypes.MAX_ENERGY, events, "slancio_guard")
 	var tot: int = 0
 	for p in BattleState.alive_players(state):
 		var u: Dictionary = BattleState.active_unit(state, str(p["id"]))
