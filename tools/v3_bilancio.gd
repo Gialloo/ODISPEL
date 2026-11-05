@@ -349,6 +349,8 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 	for sd in range(1, seeds + 1):
 		var b: Dictionary = _setup(boss, lvl, pv, atk, minore, sd, greg)
 		var resource_start: Dictionary = ResourceTelemetry.snapshot(b)
+		var reserve_start: int = int(b.get("reserve", 0))
+		var ardore_start: int = Ritmo.ardore(b)
 		var guard: int = 0
 		var minhp: float = 1.0
 		var seen_reaction: Dictionary = {}
@@ -396,6 +398,10 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 			if not Gregario.is_enemy(b, str(uid)) and int(b["units"][uid]["hp"]) <= 0:
 				st["ko"] = float(st.get("ko", 0.0)) + 1.0
 		var resource_end: Dictionary = ResourceTelemetry.snapshot(b)
+		_add(st, "res_reserve_start", reserve_start)
+		_add(st, "res_reserve_final", float(b.get("reserve", 0)))
+		_add(st, "res_ardore_start", ardore_start)
+		_add(st, "res_ardore_final", Ritmo.ardore(b))
 		for uid in resource_start:
 			var start_unit: Dictionary = resource_start[uid]
 			var end_unit: Dictionary = resource_end.get(uid, {})
@@ -488,15 +494,25 @@ func _init() -> void:
 		print("                RISERVA +%.1f / -%.1f | spreco %.1f | saldo netto %+.1f" % [
 			float(st.get("res_reserve_gain", 0.0)) / r, float(st.get("res_reserve_spend", 0.0)) / r,
 			float(st.get("res_reserve_wasted", 0.0)) / r, float(st.get("res_reserve_net", 0.0)) / r])
-		print("                ARDORE +%.1f / -%.1f | spreco %.1f" % [
-			float(st.get("res_ardore_gain", 0.0)) / r, float(st.get("res_ardore_spend", 0.0)) / r, float(st.get("res_ardore_wasted", 0.0)) / r])
-		print("                RICONCILIAZIONE · EN %+.1f | GAUGE %+.1f | HYPE %+.1f | munizioni %+.1f | Riserva %+.1f | Ardore %+.1f (atteso 0)" % [
+		print("                ARDORE +%.1f / -%.1f | spreco %.1f | saldo iniziale/finale %.1f / %.1f" % [
+			float(st.get("res_ardore_gain", 0.0)) / r, float(st.get("res_ardore_spend", 0.0)) / r, float(st.get("res_ardore_wasted", 0.0)) / r,
+			float(st.get("res_ardore_start", 0.0)) / r, float(st.get("res_ardore_final", 0.0)) / r])
+		print("                RISERVA saldo iniziale/finale %.1f / %.1f" % [
+			float(st.get("res_reserve_start", 0.0)) / r, float(st.get("res_reserve_final", 0.0)) / r])
+		print("                RICONCILIAZIONE FLUSSI · EN %+.1f | GAUGE %+.1f | HYPE %+.1f | munizioni %+.1f | Riserva %+.1f | Ardore %+.1f (atteso 0)" % [
 			(float(st.get("res_energy_net", 0.0)) - float(st.get("res_energy_gain_gross", 0.0)) + float(st.get("res_energy_spend_gross", 0.0))) / r,
 			(float(st.get("res_gauge_net", 0.0)) - float(st.get("res_gauge_gain_gross", 0.0)) + float(st.get("res_gauge_spend_gross", 0.0))) / r,
 			(float(st.get("res_hype_net", 0.0)) - float(st.get("res_hype_gain_gross", 0.0)) + float(st.get("res_hype_spend_gross", 0.0))) / r,
 			(float(st.get("res_ammo_net", 0.0)) - float(st.get("res_ammo_gain_gross", 0.0)) + float(st.get("res_ammo_spend_gross", 0.0))) / r,
 			(float(st.get("res_reserve_net", 0.0)) - float(st.get("res_reserve_gain", 0.0)) + float(st.get("res_reserve_spend", 0.0))) / r,
 			(float(st.get("res_ardore_net", 0.0)) - float(st.get("res_ardore_gain", 0.0)) + float(st.get("res_ardore_spend", 0.0))) / r])
+		print("                RICONCILIAZIONE SALDI · EN %+.1f | GAUGE %+.1f | HYPE %+.1f | munizioni %+.1f | Riserva %+.1f | Ardore %+.1f (atteso 0)" % [
+			(float(st.get("res_energy_final", 0.0)) - float(st.get("res_energy_start", 0.0)) - float(st.get("res_energy_net", 0.0))) / r,
+			(float(st.get("res_gauge_final", 0.0)) - float(st.get("res_gauge_start", 0.0)) - float(st.get("res_gauge_net", 0.0))) / r,
+			(float(st.get("res_hype_final", 0.0)) - float(st.get("res_hype_start", 0.0)) - float(st.get("res_hype_net", 0.0))) / r,
+			(float(st.get("res_ammo_final", 0.0)) - float(st.get("res_ammo_start", 0.0)) - float(st.get("res_ammo_net", 0.0))) / r,
+			(float(st.get("res_reserve_final", 0.0)) - float(st.get("res_reserve_start", 0.0)) - float(st.get("res_reserve_net", 0.0))) / r,
+			(float(st.get("res_ardore_final", 0.0)) - float(st.get("res_ardore_start", 0.0)) - float(st.get("res_ardore_net", 0.0))) / r])
 		if dettaglio:
 			var parts: String = "     quota danno diretto ai PV del boss:"
 			for c in PARTY:
