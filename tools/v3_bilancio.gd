@@ -238,13 +238,15 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "res_" + changed_resource + "_effective", float(e.get("effective", 0)))
 				_add(st, "res_" + changed_resource + "_wasted", float(e.get("wasted", 0)))
 				var change_source: String = str(e.get("source", "unknown"))
-				_add(st, "res_" + changed_resource + "_source_" + change_source, changed_delta)
+				_add(st, "res_" + changed_resource + "_source_" + change_source + "_net", changed_delta)
 				if changed_delta > 0.0:
 					_add(st, "res_" + changed_resource + "_gain_gross", changed_delta)
 					_add(st, "res_" + changed_resource + "_gain_gross_" + changed_char, changed_delta)
+					_add(st, "res_" + changed_resource + "_source_" + change_source + "_gain", changed_delta)
 				elif changed_delta < 0.0:
 					_add(st, "res_" + changed_resource + "_spend_gross", -changed_delta)
 					_add(st, "res_" + changed_resource + "_spend_gross_" + changed_char, -changed_delta)
+					_add(st, "res_" + changed_resource + "_source_" + change_source + "_spend", -changed_delta)
 			"resource_cost":
 				var cost_resource: String = str(e.get("resource", ""))
 				var cost_unit: String = str(e.get("unit", ""))
@@ -260,30 +262,39 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				var ammo_effective: float = float(e.get("effective", 0))
 				_add(st, "res_ammo_net_" + ammo_char, ammo_effective)
 				var ammo_source: String = str(e.get("source", "unknown"))
-				_add(st, "res_ammo_source_" + ammo_source, ammo_effective)
+				_add(st, "res_ammo_source_" + ammo_source + "_net", ammo_effective)
 				if ammo_effective > 0.0:
 					_add(st, "res_ammo_gain_gross", ammo_effective)
 					_add(st, "res_ammo_gain_gross_" + ammo_char, ammo_effective)
+					_add(st, "res_ammo_source_" + ammo_source + "_gain", ammo_effective)
 				elif ammo_effective < 0.0:
 					_add(st, "res_ammo_spend_gross", -ammo_effective)
 					_add(st, "res_ammo_spend_gross_" + ammo_char, -ammo_effective)
+					_add(st, "res_ammo_source_" + ammo_source + "_spend", -ammo_effective)
 			"reserve":
 				var reserve_delta: float = float(e.get("delta", 0))
 				_add(st, "res_reserve_net", reserve_delta)
 				_add(st, "res_reserve_wasted", float(e.get("wasted", 0)))
-				_add(st, "res_reserve_source_" + str(e.get("why", "unknown")), reserve_delta)
+				var reserve_source: String = str(e.get("why", "unknown"))
+				_add(st, "res_reserve_source_" + reserve_source + "_net", reserve_delta)
 				if reserve_delta > 0.0:
 					_add(st, "res_reserve_gain", reserve_delta)
+					_add(st, "res_reserve_source_" + reserve_source + "_gain", reserve_delta)
 				elif reserve_delta < 0.0:
 					_add(st, "res_reserve_spend", -reserve_delta)
+					_add(st, "res_reserve_source_" + reserve_source + "_spend", -reserve_delta)
 			"ritmo_gain":
-				_add(st, "res_ardore_gain", float(e.get("effective", e.get("amount", 0))))
+				var ardore_gain: float = float(e.get("effective", e.get("amount", 0)))
+				var ardore_source: String = str(e.get("src", "unknown"))
+				_add(st, "res_ardore_gain", ardore_gain)
 				_add(st, "res_ardore_wasted", float(e.get("wasted", 0)))
-				_add(st, "res_ardore_source_" + str(e.get("src", "unknown")), float(e.get("effective", e.get("amount", 0))))
+				_add(st, "res_ardore_source_" + ardore_source + "_gain", ardore_gain)
 			"ritmo_loss":
-				_add(st, "res_ardore_spend", float(e.get("effective", e.get("amount", 0))))
+				var ardore_spend: float = float(e.get("effective", e.get("amount", 0)))
+				var ardore_why: String = str(e.get("why", "unknown"))
+				_add(st, "res_ardore_spend", ardore_spend)
 				_add(st, "res_ardore_wasted", float(e.get("wasted", 0)))
-				_add(st, "res_ardore_source_" + str(e.get("why", "unknown")), -float(e.get("effective", e.get("amount", 0))))
+				_add(st, "res_ardore_source_" + ardore_why + "_spend", ardore_spend)
 			"hype":
 				var hype_unit: String = str(e.get("unit", ""))
 				var hype_char: String = _char_of(hype_unit)
@@ -293,7 +304,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "res_hype_wasted", float(e.get("wasted", 0)))
 				_add(st, "res_hype_gain_gross", hype_effective)
 				_add(st, "res_hype_gain_gross_" + hype_char, hype_effective)
-				_add(st, "res_hype_source_" + str(e.get("why", "unknown")), hype_effective)
+				_add(st, "res_hype_source_" + str(e.get("why", "unknown")) + "_gain", hype_effective)
 			"break":
 				_add(st, "break", 1.0)
 
