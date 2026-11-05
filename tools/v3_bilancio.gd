@@ -526,6 +526,11 @@ func _init() -> void:
 			for c in PARTY:
 				resources += "  %s +%.0f/−%.0f" % [c, float(st.get("res_ammo_gain_gross_" + c, 0.0)), float(st.get("res_ammo_spend_gross_" + c, 0.0))]
 			print(resources)
+			for resource in ["energy", "gauge", "hype", "ammo"]:
+				var balances: String = "     saldo finale " + resource + ":"
+				for c in PARTY:
+					balances += "  %s %.0f" % [c, float(st.get("res_" + resource + "_final_" + c, 0.0)) / r]
+				print(balances)
 			for resource in ["energy", "gauge", "hype", "ammo", "reserve", "ardore"]:
 				var source_line: String = "     FONTI " + resource + ":"
 				var prefix: String = "res_" + resource + "_source_"
