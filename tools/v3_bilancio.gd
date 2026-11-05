@@ -11,7 +11,9 @@ extends SceneTree
 #   ng=N        New Game+ N: nemici al livello di BattleTypes.replica_level, squadra da Progress (sblocchi migliori equipaggiati)
 #   scarto=K    con ng: la squadra ha K livelli in meno del nemico (default 0; negativo = piu' alta)
 #   kit         anche senza ng, la squadra usa Progress (sblocchi del livello) invece del kit base
-#   giro        senza Timeline: il giro a round della Fase 0 (per confrontare)  · vel  tabella VEL / ΔT / azioni ai livelli (Fase 1)
+#   giro        senza Timeline: il giro a round della Fase 0 (per confrontare)
+#   confronto   esegue gli stessi semi con Stabilita' attiva e disattiva (A4), poi stampa le differenze
+#   vel         tabella VEL / ΔT / azioni ai livelli (Fase 1)
 # Gli scontri e le scale PV/attacco replicano battle3d.gd (pv_k, atk_k, livello); la squadra e' quella dell'atto 1 con ultimate al 60%.
 # Metriche: esito, KO, turni boss, danno diretto/indiretto, cure/scudi, reazioni, timeout ed economia risorse.
 # Risorse: EN, Gauge, HYPE, munizioni, Riserva e Ardore; flussi lordi/netti, sprechi, fonti e saldi iniziali/finali.
@@ -310,8 +312,40 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "res_hype_gain_gross", hype_effective)
 				_add(st, "res_hype_gain_gross_" + hype_char, hype_effective)
 				_add(st, "res_hype_source_" + str(e.get("why", "unknown")) + "_gain", hype_effective)
+			"balance":
+				_add(st, "break_pressure", float(e.get("amount", 0)))
+				_add(st, "break_balance_left_sum", float(e.get("left", 0)))
+				_add(st, "break_balance_events", 1.0)
+			"recover":
+				_add(st, "break_recover_events", 1.0)
+				_add(st, "break_recover_left_sum", float(e.get("left", 0)))
+				if bool(e.get("soft", false)):
+					_add(st, "break_soft_recover", 1.0)
 			"break":
 				_add(st, "break", 1.0)
+				_add(st, "break_window_opened", float(e.get("window", 0)))
+				_add(st, "break_cat_" + str(e.get("cat", "classic")), 1.0)
+			"break_window":
+				_add(st, "break_window_actions", 1.0)
+				_add(st, "break_window_left_sum", float(e.get("left", 0)))
+			"break_end":
+				_add(st, "break_end", 1.0)
+			"latent":
+				_add(st, "break_latent_pressure", float(e.get("amount", 0)))
+				_add(st, "break_latent_events", 1.0)
+			"stab_recover":
+				_add(st, "break_stab_recover_events", 1.0)
+				_add(st, "break_stab_recover_left", float(e.get("left", 0)))
+				_add(st, "break_stab_recover_max", float(e.get("max", 0)))
+			"stab_full":
+				_add(st, "break_stab_full", 1.0)
+				_add(st, "break_latent_applied", float(e.get("latent", 0)))
+			"sbil":
+				_add(st, "break_sbil_events", 1.0)
+				_add(st, "break_sbil_hits", float(e.get("hits", 0)))
+			"phase":
+				_add(st, "break_phases", 1.0)
+				_add(st, "break_phase_" + str(e.get("phase", 0)), 1.0)
 
 
 func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictionary, pid: String) -> void:
@@ -346,8 +380,9 @@ func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictio
 		return
 
 
-func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: int, greg: String = "") -> Dictionary:
+func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: int, greg: String = "", stab_enabled: bool = true) -> Dictionary:
 	var st: Dictionary = {}
+	Stability.enabled = stab_enabled
 	for sd in range(1, seeds + 1):
 		var b: Dictionary = _setup(boss, lvl, pv, atk, minore, sd, greg)
 		var resource_start: Dictionary = ResourceTelemetry.snapshot(b)
@@ -422,6 +457,7 @@ func _init() -> void:
 	var minori: bool = false
 	var solo: String = ""
 	var dettaglio: bool = false
+	var confronto: bool = false
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("semi="):
 			seeds = int(a.substr(5))
@@ -444,6 +480,8 @@ func _init() -> void:
 			BattleFlow.timeline = false
 		elif a == "nostab":
 			Stability.enabled = false     # Fase 3 spenta: BREAK del 0.54 (per il confronto prima/dopo)
+		elif a == "confronto":
+			confronto = true
 		elif a == "vel":
 			_vel_table()
 			quit()
@@ -457,7 +495,22 @@ func _init() -> void:
 		if solo != "" and str(enc[0]) != solo:
 			continue
 		var greg: String = str(enc[5]) if enc.size() > 5 else ""
-		var st: Dictionary = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds, greg)
+		var st: Dictionary
+		if confronto:
+			var legacy: Dictionary = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds, greg, false)
+			st = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds, greg, true)
+			var lr: float = maxf(1.0, float(legacy.get("runs", 0.0)))
+			var sr: float = maxf(1.0, float(st.get("runs", 0.0)))
+			print("     A4 STABILITA' vs CLASSICO · vittorie %+.1f pp | KO %+.2f | round %+.2f | BREAK %+.2f | azioni finestra %.2f | pressione latente %.1f | fasi %+.2f" % [
+				100.0 * (float(st.get("wins", 0.0)) / sr - float(legacy.get("wins", 0.0)) / lr),
+				float(st.get("ko", 0.0)) / sr - float(legacy.get("ko", 0.0)) / lr,
+				float(st.get("rounds", 0.0)) / sr - float(legacy.get("rounds", 0.0)) / lr,
+				float(st.get("break", 0.0)) / sr - float(legacy.get("break", 0.0)) / lr,
+				float(st.get("break_window_actions", 0.0)) / sr,
+				float(st.get("break_latent_pressure", 0.0)) / sr,
+				float(st.get("break_phases", 0.0)) / sr - float(legacy.get("break_phases", 0.0)) / lr])
+		else:
+			st = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds, greg)
 		var r: float = float(st["runs"])
 		var tot_dmg: float = maxf(1.0, float(st.get("dmg_tot", 0.0)))
 		var label: String = str(enc[0]) if greg == "" else "%s+%s" % [str(enc[0]).trim_prefix("frammento_"), str(greg).trim_prefix("frammento_")]
@@ -471,6 +524,8 @@ func _init() -> void:
 		print("     DANNI · boss PV %.0f | assorbiti %.0f | pressione %.0f | Eco PV %.0f | indiretti %.0f | Scheggia PV %.0f | riflessi %.0f" % [
 			float(st.get("dmg_boss_direct_hp", 0.0)), float(st.get("dmg_boss_absorbed", 0.0)), float(st.get("dmg_boss_pressure", 0.0)),
 			float(st.get("dmg_arena_boss_hp", 0.0)), float(st.get("dmg_boss_indirect_hp", 0.0)) + float(st.get("dmg_indirect_enemy_hp", 0.0)), float(st.get("dmg_gregario_hp", 0.0)) + float(st.get("dmg_gregario_indirect_hp", 0.0)), float(st.get("dmg_reflected_boss", 0.0))])
+		print("     BREAK · rotture %.1f | pressione equilibrio %.0f | recuperi %.1f (soft %.1f) | azioni finestra %.1f | chiusure %.1f" % [float(st.get("break", 0.0)) / r, float(st.get("break_pressure", 0.0)) / r, float(st.get("break_recover_events", 0.0)) / r, float(st.get("break_soft_recover", 0.0)) / r, float(st.get("break_window_actions", 0.0)) / r, float(st.get("break_end", 0.0)) / r])
+		print("          latente %.1f (%.1f applicata al recupero) | recupero stabilita' %.1f | sbilanciamento %.1f eventi / %.1f colpi | fasi %.1f" % [float(st.get("break_latent_pressure", 0.0)) / r, float(st.get("break_latent_applied", 0.0)) / r, float(st.get("break_stab_recover_events", 0.0)) / r, float(st.get("break_sbil_events", 0.0)) / r, float(st.get("break_sbil_hits", 0.0)) / r, float(st.get("break_phases", 0.0)) / r])
 		print("     PLACCHE · danno assorbito dalle placche %.0f" % float(st.get("dmg_boss_plate", 0.0)))
 		var shield_expired: float = maxf(0.0, float(st.get("shield_expired_party_raw", 0.0)) - float(st.get("shield_carried_party", 0.0)))
 		print("     SOSTEGNO · cure PV %.0f (%d eventi) | soccorsi %d / PV %.0f | scudi creati %.0f | assorbiti %.0f | scaduti %.0f | danni squadra PV %.0f" % [
