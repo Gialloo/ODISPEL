@@ -800,35 +800,35 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "felice",
-        "testo": "Vinto. Ogni scontro dà ESPERIENZA a tutti, anche a chi era in panchina."
+        "testo": "E questo è tutto per il combattimento. Almeno per oggi."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Con un nuovo LIVELLO si sbloccano mosse, ULTIMATE, reazioni personali, tratti e sinergie tra compagni."
+        "testo": "Ogni scontro vi dà ESPERIENZA. La ricevono tutti, anche i compagni che non hanno partecipato."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Si equipaggiano nel menu di pausa, alla voce SQUADRA. Provateci con calma."
+        "testo": "Salendo di LIVELLO sbloccate nuove mosse, ULTIMATE, reazioni, tratti e sinergie."
+      },
+      {
+        "chi": "echo",
+        "col": "#3fe0ff",
+        "espr": "serio",
+        "testo": "Potete equipaggiarli dal menu di pausa, alla voce SQUADRA."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Una domanda. Chi paga il tutorial."
-      },
-      {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "felice",
-        "testo": "Nessuno. È stato un vero... punto di esperienza. Capito? Esperienza."
+        "testo": "Quindi abbiamo fatto tutto questo per una lezione gratuita?"
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Non l'abbiamo capito. Ed è meglio così."
+        "testo": "Non ricordarglielo. Potrebbe assegnarcene un'altra."
       }
     ]
   },
