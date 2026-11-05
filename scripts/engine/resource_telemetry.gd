@@ -1,8 +1,8 @@
 class_name ResourceTelemetry
 extends RefCounted
 
-# Osservazione delle risorse V3. Non modifica mai lo stato di battaglia.
-# I delta sono netti per singola azione: i costi lordi espliciti restano eventi separati.
+# Osservazione delle risorse V3. Non modifica mai le regole o i valori del combattimento.
+# Snapshot = delta netto per azione; gain/spend = mutazioni con richiesto, effettivo e spreco.
 
 const UNIT_RESOURCES: Array[String] = ["energy", "gauge", "hype", "ammo"]
 
