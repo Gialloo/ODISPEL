@@ -244,11 +244,6 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 		st["runs"] = float(st.get("runs", 0.0)) + 1.0
 		while str(b["winner"]) == "" and guard < 80:
 			guard += 1
-			# occasione di reazione: carica annunciata (non stordito) e almeno 1 di Riserva
-			var tele: Dictionary = b["telegraph"]
-			var bm: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
-			if not bm.is_empty() and int(BattleState.boss(b).get("stun", 0)) == 0 and BattleResolver.is_heavy_boss_move(bm) and int(b.get("reserve", 0)) >= 1:
-				st["occasioni"] = float(st.get("occasioni", 0.0)) + 1.0
 			BattleFlow.start_round(b)      # lo stesso giro dei turni della battaglia vera (Fase 0: sta nel motore)
 			while true:
 				var e: Dictionary = BattleFlow.next(b)
