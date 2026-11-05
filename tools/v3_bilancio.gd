@@ -229,6 +229,14 @@ func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictio
 		var rid: String = str(reaction.get("id", ""))
 		if str(reaction.get("err", "")) != "" or rid == "soccorso":
 			continue
+		if rid == "interruzione":
+			var already_interrupted: bool = false
+			for used in state.get("reactions", []):
+				if str(used.get("react", "")) == "interrupt":
+					already_interrupted = true
+					break
+			if already_interrupted:
+				continue
 		if rid == "schivata" and str(tele.get("target", "")) != pid and str(move.get("target", "")) != "all":
 			continue
 		_add(st, "occasioni", 1.0)
