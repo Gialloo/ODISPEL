@@ -458,9 +458,9 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 	for hit_index in range(strategy_cursor, strategy_hits.size()):
 		var hit: Dictionary = strategy_hits[hit_index]
 		var hit_pressure: float = float(hit.get("pressure", 0.0))
-		var hit_link_mult: float = float(hit.get("link_mult", 1.0))
-		var hit_combo_mult: float = float(hit.get("combo_mult", 1.0))
-		var hit_other_mult: float = float(hit.get("other_mult", 1.0))
+		var hit_link_mult: float = float(hit.get("link_mult_pm", 1000)) / 1000.0
+		var hit_combo_mult: float = float(hit.get("combo_mult_pm", 1000)) / 1000.0
+		var hit_other_mult: float = float(hit.get("other_mult_pm", 1000)) / 1000.0
 		var hit_base: float = hit_pressure / maxf(0.0001, hit_link_mult * hit_combo_mult * hit_other_mult)
 		var hit_char: String = _char_of(str(hit.get("unit", "")))
 		var link_value: float = hit_base * (hit_link_mult - 1.0)
@@ -786,8 +786,8 @@ func _init() -> void:
 							top_count = move_count
 							top_move = move_key.trim_prefix(move_prefix)
 				var share: float = 100.0 * top_count / maxf(1.0, move_total)
-				var signal: String = " · CONCENTRATA" if share >= 50.0 and move_total >= 10.0 else ""
-				print("          %s · %s %d/%d (%.1f%%)%s" % [c, top_move if top_move != "" else "nessuna", int(top_count), int(move_total), share, signal])
+				var concentrated_tag: String = " · CONCENTRATA" if share >= 50.0 and move_total >= 10.0 else ""
+				print("          %s · %s %d/%d (%.1f%%)%s" % [c, top_move if top_move != "" else "nessuna", int(top_count), int(move_total), share, concentrated_tag])
 			for metric in st:
 				var strategy_metric_name: String = str(metric)
 				if strategy_metric_name.begins_with("strat_combo_") or strategy_metric_name.begins_with("strat_duo_") or strategy_metric_name.begins_with("strat_ult_") or strategy_metric_name.begins_with("strat_slancio_") or strategy_metric_name.begins_with("strat_actions_") or strategy_metric_name.begins_with("strat_combo_actor_") or strategy_metric_name.begins_with("strat_link_pressure_est_") or strategy_metric_name.begins_with("strat_combo_pressure_est_") or strategy_metric_name.begins_with("strat_linked_hits_") or strategy_metric_name.begins_with("strat_combo_hits_"):

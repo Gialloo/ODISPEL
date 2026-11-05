@@ -79,6 +79,10 @@ const TESTA: Dictionary = {
 	"saul": [Rect2(862, 210, 644, 760), Vector2(1015, 960), Vector2(1150, 660)],
 }
 var _head: Texture2D
+# RITRATTI FERMI (autore, 5/11/2026: Lance e Saul disegnati a mano, «come Rio ma senza animazioni»): per questi niente
+# testa, sciarpa e busto a livelli, niente respiro ne' scatti; il ritratto entra con la lastra e poi resta immobile.
+# Le bozze vettoriali di prima sono nella cartella del progetto, odispel/v3/ritratti_bozze_lance_saul/.
+const FERMI: Array = ["ferri", "saul"]
 # RITRATTO A LIVELLI (busto dell'autore, 4/11/2026): se c'e' <id>_busto.png (il ritratto senza la testa) e c'e' la testa,
 # il ritratto normale si compone busto + testa + sciarpa invece del PNG intero, cosi' la testa si muove di piu' senza
 # lasciare la vecchia testa sotto. La testa porta con se' il suo alone (ritagliato dal ritratto intero). Le varianti
@@ -116,6 +120,9 @@ func set_who(id: String) -> void:
 		_tex_real = true
 		_sil = _silhouette(_tex)          # le varianti hanno la stessa sagoma: il bordo e l'ombra valgono per tutte
 		_base = RitrattoVarianti.base(id)
+		if FERMI.has(id):
+			queue_redraw()
+			return
 		var sp: String = "res://assets/portraits/hud/%s_sciarpa.png" % id
 		_scarf = load(sp) if SCIARPA.has(id) and ResourceLoader.exists(sp) else null
 		var hp: String = "res://assets/portraits/hud/%s_testa.png" % id
@@ -347,6 +354,11 @@ func _live_transform(dx: float, H: float, e: float) -> void:
 	# in alto. Solo scala attorno al punto in basso al centro e sempre >= 1, cosi' il bordo in basso resta incollato al
 	# fondo dello schermo e i bordi tagliati del disegno non si vedono mai. Entrata: sale da sotto, in ritardo sulla lastra.
 	var piv := Vector2(dx + PW * 0.5, H)
+	if FERMI.has(who_id):
+		# fermo: solo l'entrata da sotto insieme alla lastra, poi immobile
+		var e3: float = _ease(clampf((appear - 0.25) / 0.75, 0.0, 1.0))
+		draw_set_transform(Vector2(0.0, (1.0 - e3) * 120.0), 0.0, Vector2.ONE)
+		return
 	var br: float = 0.5 + 0.5 * sin(t * 1.6)                         # respiro lento (~4 s), appena percettibile
 	var e2: float = _ease(clampf((appear - 0.25) / 0.75, 0.0, 1.0))  # il ritratto arriva dopo la lastra
 	var sc: float = 1.0 + 0.0035 * br + 0.025 * _punch * _punch + (0.02 * sel if picked == "ult" else 0.0)
