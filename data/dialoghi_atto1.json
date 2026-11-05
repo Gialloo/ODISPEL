@@ -843,48 +843,47 @@
       },
       {
         "chi": "ferri",
-        "espr": "arrabbiato",
-        "testo": "Chi parla? Nome, grado, reparto."
+        "espr": "serio",
+        "testo": "Aspetta. Sei tu la voce che ci ha guidati durante lo scontro?"
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "felice",
-        "testo": "Echo. Niente grado. Sono la telecamera sopra di te. Ciao."
+        "testo": "In persona. O meglio, in camera. Sono Echo."
       },
       {
         "chi": "zecca",
         "espr": "sorpreso",
-        "testo": "Raga. La telecamera ha detto «ciao»."
+        "testo": "Quindi parlavamo davvero con una telecamera."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Sono un Kairos. Vengo da un altro posto, qui vivo nei circuiti."
+        "testo": "Già. Sono un Kairos. Vengo da un altro posto e vivo nei circuiti. Questa telecamera è casa mia."
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "E ci stavi osservando?"
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Vedo tutta la città."
+        "testo": "Vedo quello che vedono le telecamere della città. Quindi sì, più o meno tutto."
       },
       {
         "chi": "nox",
         "espr": "serio",
-        "testo": "Allora cos'è la cupola?"
+        "testo": "Allora sai cos'è successo. Cos'è quella cupola?"
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Un sigillo. L'ha acceso il pacco di Saul."
-      },
-      {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "serio",
-        "testo": "Lo reggono quattro Anomalie, come quel distributore. Più grosse."
+        "testo": "Un sigillo. L'ha attivato il pacco che avete portato."
       },
       {
         "chi": "saul",
@@ -897,55 +896,64 @@
         "testo": "Ma che razza di documenti porti in giro?!"
       },
       {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Non c'era scritto di aprirlo!"
+      },
+      {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Chiudete le quattro Anomalie e la cupola cade."
+        "testo": "Il sigillo è retto da quattro Anomalie. Come quel distributore, ma più grosse."
       },
       {
         "chi": "nox",
-        "espr": "neutro",
-        "testo": "Solo quattro."
+        "espr": "serio",
+        "testo": "E se le chiudiamo?"
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Io ho le registrazioni della piazza: vi scagionano."
-      },
-      {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "serio",
-        "testo": "Ve le do alla fine."
+        "testo": "La cupola cade."
       },
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "Le Anomalie le chiude LibraCorp."
+        "testo": "Le Anomalie sono un problema di LibraCorp. Se ne occupano loro."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "LibraCorp e Odispeller sono là fuori a darvi la caccia."
-      },
-      {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "serio",
-        "testo": "Le Anomalie sono qua dentro e voi siete ricercati: non mi pare abbiate molto da perdere."
+        "testo": "LibraCorp e gli Odispeller sono là fuori, non possono entrare. E stanno dando la caccia proprio a voi."
       },
       {
         "chi": "nox",
         "espr": "neutro",
+        "testo": "E noi come dovremmo uscire da questa situazione?"
+      },
+      {
+        "chi": "echo",
+        "col": "#3fe0ff",
+        "espr": "serio",
+        "testo": "Ho le registrazioni della piazza. Mostrano quello che è successo davvero. Posso consegnarvele quando la cupola sarà caduta."
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "Quindi dovremmo fidarci di una telecamera e andare a caccia di quattro Anomalie."
+      },
+      {
+        "chi": "nox",
+        "espr": "serio",
         "testo": "E tu che ci guadagni?"
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Sono chiusa qui dentro come voi. Cerchiamo la stessa porta."
+        "testo": "Sono bloccata qui dentro come voi. Se il sigillo resta attivo, non posso andarmene."
       },
       {
         "chi": "saul",
