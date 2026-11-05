@@ -289,3 +289,4 @@ static func _apply_carry(state: Dictionary, carry: Array, events: Array) -> void
 			u["statuses"][s] = maxi(int(u["statuses"].get(s, 0)), int(c["statuses"][s]))
 		if int(c["shield"]) > 0:
 			u["shield"] = int(u["shield"]) + int(c["shield"])
+			events.append({"t": "shield_carry", "unit": u["id"], "amount": int(c["shield"])})
