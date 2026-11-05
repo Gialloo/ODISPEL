@@ -167,6 +167,12 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 			"team_strike":
 				team_strike_after_duo = active_duo_id != ""
 				_add(st, "strat_team_strikes", 1.0)
+			"dodge":
+				var dodger_char: String = _char_of(str(e.get("unit", "")))
+				if dodger_char in PARTY:
+					_add(st, "contrib_dodges_" + dodger_char, 1.0)
+			"counter":
+				_add(st, "contrib_counters_" + _char_of(str(e.get("unit", ""))), 1.0)
 			"damage":
 				if bool(e.get("cost", false)):
 					continue
@@ -198,6 +204,9 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 					_add(st, "dmg_gregario_absorbed", absorbed)
 					_add(st, "dmg_gregario_pressure", amount + absorbed)
 				elif target_player:
+					var defender_char: String = _char_of(dst)
+					_add(st, "contrib_damage_taken_" + defender_char, amount)
+					_add(st, "contrib_absorbed_" + defender_char, absorbed)
 					_add(st, "dmg_party_hp", amount)
 					_add(st, "dmg_party_absorbed", absorbed)
 					if bool(e.get("thorns", false)):
@@ -569,6 +578,10 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 			contribution = "     CONTROLLO / DIFESA · pressione BREAK / rotture / reazioni / soccorsi:"
 			for c in PARTY:
 				contribution += "  %s %.0f / %.1f / %.1f / %.1f" % [c, float(st.get("contrib_break_pressure_" + c, 0.0) + st.get("contrib_latent_" + c, 0.0)), float(st.get("contrib_breaks_" + c, 0.0)), float(st.get("contrib_react_" + c, 0.0)), float(st.get("contrib_rescues_" + c, 0.0))]
+			print(contribution)
+			contribution = "     SOPRAVVIVENZA · danni PV subiti / assorbiti / schivate:"
+			for c in PARTY:
+				contribution += "  %s %.0f / %.0f / %.1f" % [c, float(st.get("contrib_damage_taken_" + c, 0.0)), float(st.get("contrib_absorbed_" + c, 0.0)), float(st.get("contrib_dodges_" + c, 0.0))]
 			print(contribution)
 			contribution = "     AZIONI / RISORSE · azioni / EN netto / Gauge netto:"
 			for c in PARTY:
