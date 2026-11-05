@@ -106,8 +106,8 @@ static func run(state: Dictionary, actor: Dictionary, duo_id: String, events: Ar
 		return
 	events.append({"t": "resource_cost", "resource": "energy", "unit": actor["id"], "amount": COST, "source": "duo", "move": duo_id})
 	events.append({"t": "resource_cost", "resource": "energy", "unit": mate["id"], "amount": COST, "source": "duo", "move": duo_id})
-	actor["energy"] = int(actor["energy"]) - COST
-	mate["energy"] = int(mate["energy"]) - COST
+	ResourceTelemetry.spend_unit(actor, "energy", COST, events, "duo:" + duo_id)
+	ResourceTelemetry.spend_unit(mate, "energy", COST, events, "duo:" + duo_id)
 	var sp: Dictionary = state["seq"].get("spent", {})
 	sp[str(mate["id"])] = true
 	state["seq"]["spent"] = sp
@@ -150,7 +150,7 @@ static func run(state: Dictionary, actor: Dictionary, duo_id: String, events: Ar
 				u["hp"] = int(u["hp"]) + got
 				events.append({"t": "heal", "src": actor["id"], "dst": u["id"], "amount": got})
 		if int(d.get("team_energy", 0)) > 0:
-			u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + int(d["team_energy"]))
+			ResourceTelemetry.gain_unit(u, "energy", int(d["team_energy"]), BattleTypes.MAX_ENERGY, events, "duo_team")
 	if str(d["icon"]) == "guard":
 		state["duo_support_round"] = int(state.get("round", 0))
 	if int(d.get("hype", 0)) > 0:
