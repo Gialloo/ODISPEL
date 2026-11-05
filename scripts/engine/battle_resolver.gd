@@ -559,8 +559,8 @@ static func _check_phase(state: Dictionary, events: Array) -> void:
 		var u: Dictionary = state["units"][uid]
 		if str(u["side"]) != "player" or not BattleState.is_alive(u):
 			continue
-		u["energy"] = maxi(0, int(u["energy"]) - 1)
-		u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + BattleTypes.PHASE_GAUGE)
+		ResourceTelemetry.spend_unit(u, "energy", 1, events, "phase_change")
+		ResourceTelemetry.gain_unit(u, "gauge", BattleTypes.PHASE_GAUGE, BattleTypes.GAUGE_MAX, events, "phase_change")
 
 
 # Ordine in cui agiranno le unita' in questo round, anche prima che tutti abbiano scelto (per mostrarlo al giocatore).
@@ -661,8 +661,8 @@ static func _chain_link(state: Dictionary, actor: Dictionary, events: Array) -> 
 			kind = "unison"
 			n = mini(n + 1, BattleTypes.LINK_MAX)
 		else:
-			actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + BattleTypes.LINK_GAUGE)
-			last["gauge"] = mini(BattleTypes.GAUGE_MAX, int(last["gauge"]) + BattleTypes.LINK_GAUGE)
+			ResourceTelemetry.gain_unit(actor, "gauge", BattleTypes.LINK_GAUGE, BattleTypes.GAUGE_MAX, events, "link")
+			ResourceTelemetry.gain_unit(last, "gauge", BattleTypes.LINK_GAUGE, BattleTypes.GAUGE_MAX, events, "link")
 		events.append({"t": "link", "unit": actor["id"], "with": last["id"], "n": n, "kind": kind})
 	state["link"] = {"n": n, "last": str(actor["id"])}
 	return n
@@ -700,7 +700,7 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		tenacious = true
 		defender["tenacity_used"] = true
 		lost = maxi(0, int(defender["hp"]) - 1)
-		defender["gauge"] = BattleTypes.GAUGE_MAX
+		ResourceTelemetry.gain_unit(defender, "gauge", BattleTypes.GAUGE_MAX - int(defender["gauge"]), BattleTypes.GAUGE_MAX, events, "tenacity")
 	defender["hp"] = maxi(0, int(defender["hp"]) - lost)
 	var hit_event: Dictionary = {"t": "damage", "src": attacker["id"], "dst": defender["id"], "amount": lost, "absorbed": absorbed}
 	if crit:
@@ -722,10 +722,10 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 			_on_down(attacker, events)
 		events.append({"t": "trait", "trait": "atipico", "unit": defender["id"], "name": Atypical.trait_name(str(defender["char"]))})
 	if str(attacker["side"]) == "player":
-		attacker["gauge"] = mini(BattleTypes.GAUGE_MAX, int(attacker["gauge"]) + Archetypes.gauge_on_hit(attacker))
-		Archetypes.after_hit(attacker, crit)
+		ResourceTelemetry.gain_unit(attacker, "gauge", Archetypes.gauge_on_hit(attacker), BattleTypes.GAUGE_MAX, events, "hit")
+		Archetypes.after_hit(attacker, crit, events)
 	if str(defender["side"]) == "player":
-		defender["gauge"] = mini(BattleTypes.GAUGE_MAX, int(defender["gauge"]) + BattleTypes.GAUGE_ON_DAMAGED)
+		ResourceTelemetry.gain_unit(defender, "gauge", BattleTypes.GAUGE_ON_DAMAGED, BattleTypes.GAUGE_MAX, events, "hit_taken")
 	var steal: float = Signatures.value(attacker, "lifesteal")
 	if steal > 0.0 and lost > 0 and BattleState.is_alive(attacker):
 		var got: int = mini(int(attacker["max_hp"]) - int(attacker["hp"]), int(round(float(lost) * steal)))
@@ -760,9 +760,9 @@ static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, e
 		state["combo_used"] = used
 		mult *= float(r["mult"]) * (1.0 + Combos.CHAIN_BONUS * float(mini(n, Combos.CHAIN_MAX)))
 		if int(r["gauge"]) > 0:
-			actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + int(r["gauge"]))
+			ResourceTelemetry.gain_unit(actor, "gauge", int(r["gauge"]), BattleTypes.GAUGE_MAX, events, "combo:" + str(r["id"]))
 			var mk: Dictionary = BattleState.unit(state, str(m["with"]))
-			mk["gauge"] = mini(BattleTypes.GAUGE_MAX, int(mk["gauge"]) + int(r["gauge"]) / 2)
+			ResourceTelemetry.gain_unit(mk, "gauge", int(r["gauge"]) / 2, BattleTypes.GAUGE_MAX, events, "combo_assist:" + str(r["id"]))
 		if int(r["brk"]) > 0:
 			_drain_balance(boss, int(r["brk"]), actor, events)
 		events.append({"t": "synergy", "id": str(r["id"]), "name": str(r["name"]), "unit": actor["id"], "with": str(m["with"]), "tier": mini(n, 2), "fx": str(r["fx"]), "col": str(r["col"])})
@@ -907,7 +907,7 @@ static func react_bonus(state: Dictionary, actor: Dictionary, kind: String) -> f
 	var k: float = 0.15 if g == "great" else (-0.1 if g == "fail" else 0.0)
 	if kind == "rescue" and str(actor.get("react_mod", "")) == "reperibile":
 		k += 0.2
-		actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + 1)
+		ResourceTelemetry.gain_unit(actor, "energy", 1, BattleTypes.MAX_ENERGY, events, "rescue_perk")
 	if kind == "rescue":
 		k += Kits.react_rescue_hp(actor)        # reazioni personali oltre l'atto 1 (Reperibile H24, ...)
 	return k
@@ -923,17 +923,17 @@ static func _react_perk(state: Dictionary, boss: Dictionary, u: Dictionary, kind
 	match mod:
 		"muro":
 			if kind == "intercept":
-				u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + 15)
+				ResourceTelemetry.gain_unit(u, "gauge", 15, BattleTypes.GAUGE_MAX, events, "reaction_perk")
 				events.append({"t": "react_mod", "unit": u["id"], "mod": mod})
 		"cambio_scena":
 			if kind == "dodge":
 				Kits.add_hype(u, 20, events, "schivata")
-				u["gauge"] = mini(BattleTypes.GAUGE_MAX, int(u["gauge"]) + 15)
+				ResourceTelemetry.gain_unit(u, "gauge", 15, BattleTypes.GAUGE_MAX, events, "reaction_perk")
 				events.append({"t": "react_mod", "unit": u["id"], "mod": mod})
 		"sgattaiolare":
 			if kind == "dodge" and BattleState.is_alive(boss):
 				events.append({"t": "react_mod", "unit": u["id"], "mod": mod})
-				u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + 1)
+				ResourceTelemetry.gain_unit(u, "energy", 1, BattleTypes.MAX_ENERGY, events, "reaction_perk")
 				_hit(state, u, boss, 0.8, events)
 
 
@@ -960,7 +960,7 @@ static func _react(state: Dictionary, actor: Dictionary, move_id: String, events
 		_drain_balance(boss, maxi(1, BattleTypes.INTERRUPT_PTS + extra + (1 if str(state.get("order", "")) == "interrompi" else 0)), actor, events)
 		if g != "fail":
 			Stability.unbalance(boss, actor, events)      # Fase 3: SBILANCIAMENTO (riuscita = non fallita)
-		actor["gauge"] = mini(BattleTypes.GAUGE_MAX, int(actor["gauge"]) + 10)
+		ResourceTelemetry.gain_unit(actor, "gauge", 10, BattleTypes.GAUGE_MAX, events, "interrupt")
 	return true
 
 
@@ -994,12 +994,10 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		kind = "basic"
 
 	if kind == "ult":
-		events.append({"t": "resource_cost", "resource": "gauge", "unit": actor["id"], "amount": int(actor["gauge"]), "source": "ultimate"})
-		actor["gauge"] = 0
+		ResourceTelemetry.spend_unit(actor, "gauge", int(actor["gauge"]), events, "ultimate")
 	elif kind == "skill":
 		var skill_cost: int = BattleContent.move_cost(actor, move_id)
-		events.append({"t": "resource_cost", "resource": "energy", "unit": actor["id"], "amount": skill_cost, "source": "skill", "move": move_id})
-		actor["energy"] = int(actor["energy"]) - skill_cost
+		ResourceTelemetry.spend_unit(actor, "energy", skill_cost, events, "skill:" + move_id)
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
 	var acts: Dictionary = state.get("acts", {})
 	acts[str(actor["id"])] = move_id
@@ -1054,7 +1052,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 		actor["shield"] = int(actor["shield"]) + gs_amount
 		events.append({"t": "shield", "src": actor["id"], "dst": actor["id"], "amount": gs_amount})
 	if move.has("energy"):
-		actor["energy"] = mini(BattleTypes.MAX_ENERGY, int(actor["energy"]) + int(move["energy"]))
+		ResourceTelemetry.gain_unit(actor, "energy", int(move["energy"]), BattleTypes.MAX_ENERGY, events, "move:" + move_id)
 	if move.has("self_status"):
 		for s in move["self_status"]:
 			_add_status(actor, str(s), int(move["self_status"][s]), events)
@@ -1342,7 +1340,7 @@ static func _boss_act(state: Dictionary, boss: Dictionary, move_id: String, targ
 		if timed == "good" or timed == "perfect":
 			var perfect: bool = timed == "perfect"
 			hit_mult *= BattleTypes.TIMED_PERFECT_FACTOR if perfect else BattleTypes.TIMED_GUARD_FACTOR
-			t["gauge"] = mini(BattleTypes.GAUGE_MAX, int(t["gauge"]) + (BattleTypes.TIMED_PERFECT_GAUGE if perfect else BattleTypes.TIMED_GUARD_GAUGE))
+			ResourceTelemetry.gain_unit(t, "gauge", BattleTypes.TIMED_PERFECT_GAUGE if perfect else BattleTypes.TIMED_GUARD_GAUGE, BattleTypes.GAUGE_MAX, events, "timed_guard")
 			events.append({"t": "timed_guard", "unit": t["id"], "grade": timed})
 		var hp_before: int = int(t["hp"])
 		_hit(state, boss, t, hit_mult, events)
@@ -1428,7 +1426,7 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 				events.append({"t": "shield", "src": pu["id"], "dst": pu["id"], "amount": gained_shield, "source": "round_regen"})
 		var gr: float = Signatures.value(pu, "gauge_regen")
 		if gr > 0.0:
-			pu["gauge"] = mini(BattleTypes.GAUGE_MAX, int(pu["gauge"]) + int(round(gr)))
+			ResourceTelemetry.gain_unit(pu, "gauge", int(round(gr)), BattleTypes.GAUGE_MAX, events, "round_signature")
 
 	# sostegno dalla panchina: i guardiani a riposo aiutano chi combatte (un guardiano per giocatore)
 	for p in state["players"]:
@@ -1450,7 +1448,7 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 			if not BattleState.is_alive(u):
 				continue
 			var gain: int = (BattleTypes.REGEN_ACTIVE if BattleState.is_front(state, str(uid)) else BattleTypes.REGEN_BENCH) + Archetypes.round_energy(u)
-			u["energy"] = mini(BattleTypes.MAX_ENERGY, int(u["energy"]) + gain)
+			ResourceTelemetry.gain_unit(u, "energy", gain, BattleTypes.MAX_ENERGY, events, "round_regen")
 
 	# se l'attivo e' caduto entra il compagno con piu' vita
 	for p in state["players"]:
