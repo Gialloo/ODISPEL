@@ -201,8 +201,8 @@
     "righe": [
       {
         "chi": "saul",
-        "espr": "sorpreso",
-        "testo": "Uno scontrino per terra. Prezzo: un'anima. Non dà resto VIOLA."
+        "espr": "serio",
+        "testo": "Uno scontrino... Prezzo: un'anima. E guarda qui: «Resto non disponibile. VIOLA»."
       },
       {
         "chi": "zecca",
@@ -211,8 +211,8 @@
       },
       {
         "chi": "saul",
-        "espr": "neutro",
-        "testo": "Finalmente servi a qualcosa."
+        "espr": "sorriso",
+        "testo": "Allora puoi essere utile, stavolta."
       }
     ]
   },
