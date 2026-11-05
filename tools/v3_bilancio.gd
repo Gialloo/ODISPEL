@@ -222,10 +222,14 @@ func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictio
 	if bool(seen.get(key + "|valid", false)):
 		return
 	for reaction in BattleResolver.reactions_for(state, pid):
-		if str(reaction.get("err", "")) == "" and str(reaction.get("id", "")) != "soccorso":
-			_add(st, "occasioni", 1.0)
-			seen[key + "|valid"] = true
-			return
+		var rid: String = str(reaction.get("id", ""))
+		if str(reaction.get("err", "")) != "" or rid == "soccorso":
+			continue
+		if rid == "schivata" and str(tele.get("target", "")) != pid and str(move.get("target", "")) != "all":
+			continue
+		_add(st, "occasioni", 1.0)
+		seen[key + "|valid"] = true
+		return
 
 
 func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: int, greg: String = "") -> Dictionary:
