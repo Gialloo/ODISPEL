@@ -704,35 +704,47 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "La barra dell'ULTIMATE si riempie colpendo e prendendo colpi."
+        "testo": "La barra dell'ULTIMATE si riempie quando colpite o subite danni."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Piena: ULTIMATE, il colpo più forte."
+        "testo": "Quando è piena, potete usare la mossa più potente del personaggio."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
-        "testo": "Quindi anche incassare serve. Lo trovo coerente col regolamento."
+        "testo": "Quindi anche quando incassiamo?"
+      },
+      {
+        "chi": "echo",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Esatto."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Altra cosa: mentre il nemico carica, chi ha la barra piena può lanciarla fuori turno."
+        "testo": "E c'è un'altra cosa: solo quando il nemico CARICA, chi ha l'ULTIMATE pronta può usarlo anche fuori dal proprio turno."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Si chiama ULTIMATE IN DIRETTA. Compaiono i pulsanti ULT con il suo nome."
+        "testo": "Questa possibilità si chiama ULTIMATE IN DIRETTA. Comparirà un pulsante ULT con il nome del personaggio."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
-        "testo": "In diretta. IN. DIRETTA. Echo, adesso ti adoro."
+        "testo": "Aspetta. Posso entrare in scena anche fuori turno?"
+      },
+      {
+        "chi": "echo",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Sì. Cerca solo di scegliere il momento giusto."
       }
     ]
   },
