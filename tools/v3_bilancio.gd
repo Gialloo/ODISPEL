@@ -269,12 +269,14 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 			"down":
 				_add(st, "contrib_down_" + _char_of(str(e.get("unit", ""))), 1.0)
 			"cleanse":
-				_add(st, "contrib_cleanse_" + _char_of(str(e.get("unit", ""))), 1.0)
+				_add(st, "contrib_cleanse_" + _char_of(str(e.get("src", ""))), 1.0)
 			"cover":
 				_add(st, "contrib_cover_" + _char_of(str(e.get("unit", ""))), 1.0)
+			"cover_hit":
+				_add(st, "contrib_cover_used_" + _char_of(str(e.get("unit", ""))), 1.0)
+				_add(st, "cover_hits", 1.0)
 			"rest":
 				_add(st, "rest_nox", 1.0)
-				_add(st, "heal_nox", 1.0)
 			"shield":
 				var shield_src: String = str(e.get("src", ""))
 				var shield_dst: String = str(e.get("dst", ""))
@@ -484,6 +486,8 @@ func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictio
 	var move: Dictionary = BattleContent.BOSS_MOVES.get(move_id, {})
 	if move.is_empty() or not BattleResolver.is_heavy_boss_move(move):
 		return
+	# cycle_index identifica la carica annunciata: BattleFlow.finish lo ripristina
+	# quando la stessa mossa resta in attesa oltre la fine del round.
 	var key: String = "%d|%d|%s|%s" % [int(state.get("phase", 1)), int(state.get("cycle_index", 0)), move_id, str(tele.get("target", ""))]
 	if not bool(seen.get(key + "|heavy", false)):
 		_add(st, "occasioni_carica", 1.0)
@@ -655,7 +659,7 @@ func _init() -> void:
 			label, BattleTypes.replica_level(int(enc[1]), ng) if ng >= 0 else int(enc[1]), 100.0 * float(st.get("wins", 0.0)) / r, float(st.get("ko", 0.0)) / r, float(st.get("rounds", 0.0)) / r,
 			float(st.get("boss_giocati", 0.0)) / r, float(st.get("boss_persi", 0.0)) / r, float(st.get("break", 0.0)) / r, float(st.get("slancio", 0.0)) / r,
 			100.0 * float(st.get("dmg_saul", 0.0)) / tot_dmg, 100.0 * float(st.get("dmg_nox", 0.0)) / tot_dmg,
-			float(st.get("heal_nox", 0.0)) / r, float(st.get("veglia", 0.0)) / r,
+			float(st.get("rest_nox", 0.0)) / r, float(st.get("veglia", 0.0)) / r,
 			float(st.get("occasioni", 0.0)) / r, float(st.get("react", 0.0)) / r])
 		print("     ESITO · vittorie %d | sconfitte %d | timeout %d" % [int(st.get("wins", 0.0)), int(st.get("losses", 0.0)), int(st.get("timeouts", 0.0))])
 		print("     DANNI · boss PV %.0f | assorbiti %.0f | pressione %.0f | Eco PV %.0f | indiretti %.0f | Scheggia PV %.0f | riflessi %.0f" % [
@@ -666,8 +670,8 @@ func _init() -> void:
 		print("          tipologia BREAK · comune %.1f | elite %.1f | boss %.1f | fase 2 %.1f | fase 3 %.1f" % [float(st.get("break_cat_comune", 0.0)) / r, float(st.get("break_cat_elite", 0.0)) / r, float(st.get("break_cat_boss", 0.0)) / r, float(st.get("break_phase_2", 0.0)) / r, float(st.get("break_phase_3", 0.0)) / r])
 		print("     PLACCHE · danno assorbito dalle placche %.0f" % float(st.get("dmg_boss_plate", 0.0)))
 		var shield_expired: float = maxf(0.0, float(st.get("shield_expired_party_raw", 0.0)) - float(st.get("shield_carried_party", 0.0)))
-		print("     SOSTEGNO · cure PV %.0f (%d eventi) | soccorsi %d / PV %.0f | scudi creati %.0f | assorbiti %.0f | scaduti %.0f | danni squadra PV %.0f" % [
-			float(st.get("heal_total_hp", 0.0)), int(st.get("heal_events", 0.0)), int(st.get("rescue_count", 0.0)), float(st.get("rescue_hp", 0.0)),
+		print("     SOSTEGNO · cure PV %.0f (%d eventi) | soccorsi %d / PV %.0f | coperture usate %d | scudi creati %.0f | assorbiti %.0f | scaduti %.0f | danni squadra PV %.0f" % [
+			float(st.get("heal_total_hp", 0.0)), int(st.get("heal_events", 0.0)), int(st.get("rescue_count", 0.0)), float(st.get("rescue_hp", 0.0)), int(st.get("cover_hits", 0.0)),
 			float(st.get("shield_created_party", 0.0)), float(st.get("dmg_party_absorbed", 0.0)), shield_expired,
 			float(st.get("dmg_party_hp", 0.0)) + float(st.get("dmg_party_bleed_hp", 0.0)) + float(st.get("dmg_party_arena_hp", 0.0))])
 		print("     STRATEGIA · azioni %d (ordinarie %d / rapide %d) | Ultimate %d | COMBO %d | LINK %d (CROSS %d / UNISONO %d; indice catena cumulato %d; interruzioni %d) | Duo %d | SLANCI %d (Guardie %d) | team strike %d" % [
@@ -806,6 +810,6 @@ func _init() -> void:
 			"MEDIA BOSS", "", 100.0 * float(tot.get("wins", 0.0)) / r2, float(tot.get("ko", 0.0)) / r2, float(tot.get("rounds", 0.0)) / r2,
 			float(tot.get("boss_giocati", 0.0)) / r2, float(tot.get("boss_persi", 0.0)) / r2, float(tot.get("break", 0.0)) / r2, float(tot.get("slancio", 0.0)) / r2,
 			100.0 * float(tot.get("dmg_saul", 0.0)) / d2, 100.0 * float(tot.get("dmg_nox", 0.0)) / d2,
-			float(tot.get("heal_nox", 0.0)) / r2, float(tot.get("veglia", 0.0)) / r2,
+			float(tot.get("rest_nox", 0.0)) / r2, float(tot.get("veglia", 0.0)) / r2,
 			float(tot.get("occasioni", 0.0)) / r2, float(tot.get("react", 0.0)) / r2])
 	quit()
