@@ -263,8 +263,10 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "res_ammo_source_" + ammo_source, ammo_effective)
 				if ammo_effective > 0.0:
 					_add(st, "res_ammo_gain_gross", ammo_effective)
+					_add(st, "res_ammo_gain_gross_" + ammo_char, ammo_effective)
 				elif ammo_effective < 0.0:
 					_add(st, "res_ammo_spend_gross", -ammo_effective)
+					_add(st, "res_ammo_spend_gross_" + ammo_char, -ammo_effective)
 			"reserve":
 				var reserve_delta: float = float(e.get("delta", 0))
 				_add(st, "res_reserve_net", reserve_delta)
@@ -487,6 +489,22 @@ func _init() -> void:
 			for c in PARTY:
 				support += "  %s %.0f" % [c, float(st.get("shield_" + c, 0.0))]
 			print(support)
+			var resources: String = "     EN per personaggio (guadagno/spesa lordi):"
+			for c in PARTY:
+				resources += "  %s +%.0f/−%.0f" % [c, float(st.get("res_energy_gain_gross_" + c, 0.0)), float(st.get("res_energy_spend_gross_" + c, 0.0))]
+			print(resources)
+			resources = "     GAUGE per personaggio (guadagno/spesa lordi):"
+			for c in PARTY:
+				resources += "  %s +%.0f/−%.0f" % [c, float(st.get("res_gauge_gain_gross_" + c, 0.0)), float(st.get("res_gauge_spend_gross_" + c, 0.0))]
+			print(resources)
+			resources = "     HYPE per personaggio (guadagno/consumo):"
+			for c in PARTY:
+				resources += "  %s +%.0f/−%.0f" % [c, float(st.get("res_hype_gain_gross_" + c, 0.0)), float(st.get("res_hype_spend_gross_" + c, 0.0))]
+			print(resources)
+			resources = "     MUNIZIONI per personaggio (ricarica/spesa):"
+			for c in PARTY:
+				resources += "  %s +%.0f/−%.0f" % [c, float(st.get("res_ammo_gain_gross_" + c, 0.0)), float(st.get("res_ammo_spend_gross_" + c, 0.0))]
+			print(resources)
 		if not bool(enc[4]):
 			n_boss += 1
 			for k in st:
