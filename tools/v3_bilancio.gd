@@ -510,6 +510,13 @@ func _init() -> void:
 				float(st.get("break_window_actions", 0.0)) / sr,
 				float(st.get("break_latent_pressure", 0.0)) / sr,
 				float(st.get("break_phases", 0.0)) / sr - float(legacy.get("break_phases", 0.0)) / lr])
+			print("          boss turns %+.2f | danno diretto boss %+.0f | pressione equilibrio %+.0f | EN spesa %+.1f | Gauge spesa %+.1f | Riserva spesa %+.1f" % [
+				float(st.get("boss_giocati", 0.0)) / sr - float(legacy.get("boss_giocati", 0.0)) / lr,
+				float(st.get("dmg_boss_direct_hp", 0.0)) / sr - float(legacy.get("dmg_boss_direct_hp", 0.0)) / lr,
+				float(st.get("break_pressure", 0.0)) / sr - float(legacy.get("break_pressure", 0.0)) / lr,
+				float(st.get("res_energy_spend_gross", 0.0)) / sr - float(legacy.get("res_energy_spend_gross", 0.0)) / lr,
+				float(st.get("res_gauge_spend_gross", 0.0)) / sr - float(legacy.get("res_gauge_spend_gross", 0.0)) / lr,
+				float(st.get("res_reserve_spend", 0.0)) / sr - float(legacy.get("res_reserve_spend", 0.0)) / lr])
 		else:
 			st = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds, greg, use_stability)
 		var r: float = float(st["runs"])
@@ -527,6 +534,7 @@ func _init() -> void:
 			float(st.get("dmg_arena_boss_hp", 0.0)), float(st.get("dmg_boss_indirect_hp", 0.0)) + float(st.get("dmg_indirect_enemy_hp", 0.0)), float(st.get("dmg_gregario_hp", 0.0)) + float(st.get("dmg_gregario_indirect_hp", 0.0)), float(st.get("dmg_reflected_boss", 0.0))])
 		print("     BREAK · rotture %.1f | pressione equilibrio %.0f | recuperi %.1f (soft %.1f) | azioni finestra %.1f | chiusure %.1f" % [float(st.get("break", 0.0)) / r, float(st.get("break_pressure", 0.0)) / r, float(st.get("break_recover_events", 0.0)) / r, float(st.get("break_soft_recover", 0.0)) / r, float(st.get("break_window_actions", 0.0)) / r, float(st.get("break_end", 0.0)) / r])
 		print("          latente %.1f (%.1f applicata al recupero) | recupero stabilita' %.1f | sbilanciamento %.1f eventi / %.1f colpi | fasi %.1f" % [float(st.get("break_latent_pressure", 0.0)) / r, float(st.get("break_latent_applied", 0.0)) / r, float(st.get("break_stab_recover_events", 0.0)) / r, float(st.get("break_sbil_events", 0.0)) / r, float(st.get("break_sbil_hits", 0.0)) / r, float(st.get("break_phases", 0.0)) / r])
+		print("          tipologia BREAK · comune %.1f | elite %.1f | boss %.1f | fase 2 %.1f | fase 3 %.1f" % [float(st.get("break_cat_comune", 0.0)) / r, float(st.get("break_cat_elite", 0.0)) / r, float(st.get("break_cat_boss", 0.0)) / r, float(st.get("break_phase_2", 0.0)) / r, float(st.get("break_phase_3", 0.0)) / r])
 		print("     PLACCHE · danno assorbito dalle placche %.0f" % float(st.get("dmg_boss_plate", 0.0)))
 		var shield_expired: float = maxf(0.0, float(st.get("shield_expired_party_raw", 0.0)) - float(st.get("shield_carried_party", 0.0)))
 		print("     SOSTEGNO · cure PV %.0f (%d eventi) | soccorsi %d / PV %.0f | scudi creati %.0f | assorbiti %.0f | scaduti %.0f | danni squadra PV %.0f" % [
