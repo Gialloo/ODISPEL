@@ -54,3 +54,23 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 				"source": source,
 				"phase": phase
 			})
+
+
+static func gain_unit(u: Dictionary, resource: String, requested: int, cap: int, events: Array, source: String) -> void:
+	if u.is_empty() or requested <= 0:
+		return
+	var before: int = int(u.get(resource, 0))
+	var after: int = mini(cap, before + requested)
+	var effective: int = after - before
+	u[resource] = after
+	events.append({"t": "resource_change", "resource": resource, "unit": str(u.get("id", "")), "requested": requested, "effective": effective, "delta": effective, "wasted": requested - effective, "before": before, "after": after, "source": source})
+
+
+static func spend_unit(u: Dictionary, resource: String, requested: int, events: Array, source: String) -> void:
+	if u.is_empty() or requested <= 0:
+		return
+	var before: int = int(u.get(resource, 0))
+	var after: int = maxi(0, before - requested)
+	var effective: int = before - after
+	u[resource] = after
+	events.append({"t": "resource_change", "resource": resource, "unit": str(u.get("id", "")), "requested": requested, "effective": effective, "delta": -effective, "wasted": requested - effective, "before": before, "after": after, "source": source})
