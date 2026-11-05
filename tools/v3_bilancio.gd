@@ -112,6 +112,7 @@ func _add(st: Dictionary, key: String, amount: float) -> void:
 
 
 func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = false) -> void:
+	var active_duo_id: String = ""
 	for e in ev:
 		var t: String = str(e.get("t", ""))
 		match t:
@@ -160,9 +161,11 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 			"link_break":
 				_add(st, "strat_link_breaks", 1.0)
 			"duo":
-				var duo_id: String = str(e.get("id", "unknown"))
+				active_duo_id = str(e.get("id", "unknown"))
 				_add(st, "strat_duos", 1.0)
-				_add(st, "strat_duo_" + duo_id, 1.0)
+				_add(st, "strat_duo_" + active_duo_id, 1.0)
+				_add(st, "strat_duo_energy_cost", float(DuoTechs.COST * 2))
+				_add(st, "strat_duo_energy_cost_" + active_duo_id, float(DuoTechs.COST * 2))
 			"slancio":
 				var slancio_unit: String = str(e.get("unit", ""))
 				var slancio_char: String = _char_of(slancio_unit)
@@ -184,6 +187,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				var target_unit: Dictionary = state.get("units", {}).get(dst, {})
 				var source_player: bool = str(source_unit.get("side", "")) == "player"
 				var target_player: bool = str(target_unit.get("side", "")) == "player"
+				if active_duo_id != "" and source_player and dst == BattleState.BOSS_ID:
+					_add(st, "strat_duo_damage_" + active_duo_id, amount + absorbed)
 				if source_player and dst == BattleState.BOSS_ID:
 					if bool(e.get("thorns", false)):
 						_add(st, "dmg_reflected_boss", amount)
@@ -242,6 +247,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				var recipient_unit: Dictionary = state.get("units", {}).get(recipient, {})
 				if str(recipient_unit.get("side", "")) == "player" and healer != BattleState.BOSS_ID:
 					_add(st, "heal_" + _char_of(healer), healed)
+					if active_duo_id != "":
+						_add(st, "strat_duo_heal_" + active_duo_id, healed)
 					_add(st, "heal_total_hp", healed)
 					_add(st, "heal_events", 1.0)
 			"rescue":
@@ -257,6 +264,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				var shield_amount: float = float(e.get("amount", 0))
 				if str(shield_target.get("side", "")) == "player":
 					_add(st, "shield_created_party", shield_amount)
+					if active_duo_id != "":
+						_add(st, "strat_duo_shield_" + active_duo_id, shield_amount)
 					_add(st, "shield_created_events", 1.0)
 					var shield_owner: Dictionary = state.get("units", {}).get(shield_src, {})
 					if str(shield_owner.get("side", "")) == "player":
@@ -296,6 +305,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				var changed_unit: String = str(e.get("unit", ""))
 				var changed_char: String = _char_of(changed_unit)
 				var changed_delta: float = float(e.get("delta", 0))
+				if active_duo_id != "" and changed_resource == "energy" and changed_delta > 0.0:
+					_add(st, "strat_duo_energy_gain_" + active_duo_id, changed_delta)
 				_add(st, "res_" + changed_resource + "_requested", float(e.get("requested", 0)))
 				_add(st, "res_" + changed_resource + "_effective", float(e.get("effective", 0)))
 				_add(st, "res_" + changed_resource + "_wasted", float(e.get("wasted", 0)))
@@ -371,6 +382,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				_add(st, "res_hype_gain_gross_" + hype_char, hype_effective)
 				_add(st, "res_hype_source_" + str(e.get("why", "unknown")) + "_gain", hype_effective)
 			"balance":
+				if active_duo_id != "":
+					_add(st, "strat_duo_balance_" + active_duo_id, float(e.get("amount", 0)))
 				_add(st, "break_pressure", float(e.get("amount", 0)))
 				_add(st, "break_balance_left_sum", float(e.get("left", 0)))
 				_add(st, "break_balance_events", 1.0)
@@ -389,6 +402,8 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 			"break_end":
 				_add(st, "break_end", 1.0)
 			"latent":
+				if active_duo_id != "":
+					_add(st, "strat_duo_balance_" + active_duo_id, float(e.get("amount", 0)))
 				_add(st, "break_latent_pressure", float(e.get("amount", 0)))
 				_add(st, "break_latent_events", 1.0)
 			"stab_recover":
