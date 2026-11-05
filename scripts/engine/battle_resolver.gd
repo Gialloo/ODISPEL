@@ -762,7 +762,7 @@ static func _synergies(state: Dictionary, actor: Dictionary, boss: Dictionary, e
 		if int(r["gauge"]) > 0:
 			ResourceTelemetry.gain_unit(actor, "gauge", int(r["gauge"]), BattleTypes.GAUGE_MAX, events, "combo:" + str(r["id"]))
 			var mk: Dictionary = BattleState.unit(state, str(m["with"]))
-			ResourceTelemetry.gain_unit(mk, "gauge", int(r["gauge"]) / 2, BattleTypes.GAUGE_MAX, events, "combo_assist:" + str(r["id"]))
+			ResourceTelemetry.gain_unit(mk, "gauge", int(int(r["gauge"]) / 2), BattleTypes.GAUGE_MAX, events, "combo_assist:" + str(r["id"]))
 		if int(r["brk"]) > 0:
 			_drain_balance(boss, int(r["brk"]), actor, events)
 		events.append({"t": "synergy", "id": str(r["id"]), "name": str(r["name"]), "unit": actor["id"], "with": str(m["with"]), "tier": mini(n, 2), "fx": str(r["fx"]), "col": str(r["col"])})
