@@ -571,22 +571,6 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 			if end_unit.is_empty():
 				continue
 			var char_id: String = str(start_unit.get("char", ""))
-			var contribution: String = "     CONTRIBUTO PERSONAGGI · danno boss / cure / scudi creati:"
-			for c in PARTY:
-				contribution += "  %s %.0f / %.0f / %.0f" % [c, float(st.get("contrib_damage_boss_" + c, 0.0)), float(st.get("contrib_heal_" + c, 0.0)), float(st.get("contrib_shield_" + c, 0.0))]
-			print(contribution)
-			contribution = "     CONTROLLO / DIFESA · pressione BREAK / rotture / reazioni / soccorsi:"
-			for c in PARTY:
-				contribution += "  %s %.0f / %.1f / %.1f / %.1f" % [c, float(st.get("contrib_break_pressure_" + c, 0.0) + st.get("contrib_latent_" + c, 0.0)), float(st.get("contrib_breaks_" + c, 0.0)), float(st.get("contrib_react_" + c, 0.0)), float(st.get("contrib_rescues_" + c, 0.0))]
-			print(contribution)
-			contribution = "     SOPRAVVIVENZA · danni PV subiti / assorbiti / schivate:"
-			for c in PARTY:
-				contribution += "  %s %.0f / %.0f / %.1f" % [c, float(st.get("contrib_damage_taken_" + c, 0.0)), float(st.get("contrib_absorbed_" + c, 0.0)), float(st.get("contrib_dodges_" + c, 0.0))]
-			print(contribution)
-			contribution = "     AZIONI / RISORSE · azioni / EN netto / Gauge netto:"
-			for c in PARTY:
-				contribution += "  %s %.0f / %+.1f / %+.1f" % [c, float(st.get("strat_actions_" + c, 0.0)), float(st.get("res_energy_net_" + c, 0.0)), float(st.get("res_gauge_net_" + c, 0.0))]
-			print(contribution)
 			for resource in ["energy", "gauge", "hype", "ammo"]:
 				_add(st, "res_" + resource + "_start", float(start_unit.get(resource, 0)))
 				_add(st, "res_" + resource + "_final", float(end_unit.get(resource, 0)))
@@ -743,6 +727,22 @@ func _init() -> void:
 			for c in PARTY:
 				support += "  %s %.0f" % [c, float(st.get("shield_" + c, 0.0))]
 			print(support)
+			var contribution: String = "     CONTRIBUTO PERSONAGGI · danno boss / cure / scudi creati:"
+			for c in PARTY:
+				contribution += "  %s %.0f / %.0f / %.0f" % [c, float(st.get("contrib_damage_boss_" + c, 0.0)), float(st.get("contrib_heal_" + c, 0.0)), float(st.get("contrib_shield_" + c, 0.0))]
+			print(contribution)
+			contribution = "     CONTROLLO / DIFESA · pressione BREAK / rotture / reazioni / soccorsi:"
+			for c in PARTY:
+				contribution += "  %s %.0f / %.1f / %.1f / %.1f" % [c, float(st.get("contrib_break_pressure_" + c, 0.0) + st.get("contrib_latent_" + c, 0.0)), float(st.get("contrib_breaks_" + c, 0.0)), float(st.get("contrib_react_" + c, 0.0)), float(st.get("contrib_rescues_" + c, 0.0))]
+			print(contribution)
+			contribution = "     SOPRAVVIVENZA · danni PV subiti / assorbiti / schivate:"
+			for c in PARTY:
+				contribution += "  %s %.0f / %.0f / %.1f" % [c, float(st.get("contrib_damage_taken_" + c, 0.0)), float(st.get("contrib_absorbed_" + c, 0.0)), float(st.get("contrib_dodges_" + c, 0.0))]
+			print(contribution)
+			contribution = "     AZIONI / RISORSE · azioni / EN netto / Gauge netto:"
+			for c in PARTY:
+				contribution += "  %s %.0f / %+.1f / %+.1f" % [c, float(st.get("strat_actions_" + c, 0.0)), float(st.get("res_energy_net_" + c, 0.0)), float(st.get("res_gauge_net_" + c, 0.0))]
+			print(contribution)
 			var resources: String = "     EN per personaggio (guadagno/spesa lordi):"
 			for c in PARTY:
 				resources += "  %s +%.0f/−%.0f" % [c, float(st.get("res_energy_gain_gross_" + c, 0.0)), float(st.get("res_energy_spend_gross_" + c, 0.0))]
