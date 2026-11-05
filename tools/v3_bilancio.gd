@@ -113,6 +113,8 @@ func _add(st: Dictionary, key: String, amount: float) -> void:
 
 func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = false) -> void:
 	var active_duo_id: String = ""
+	var active_duo_units: Array = []
+	var team_strike_after_duo: bool = false
 	for e in ev:
 		var t: String = str(e.get("t", ""))
 		match t:
@@ -149,6 +151,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				_add(st, "strat_link_breaks", 1.0)
 			"duo":
 				active_duo_id = str(e.get("id", "unknown"))
+				active_duo_units = [str(e.get("unit", "")), str(e.get("with", ""))]
 				_add(st, "strat_duos", 1.0)
 				_add(st, "strat_duo_" + active_duo_id, 1.0)
 				_add(st, "strat_duo_energy_cost", float(DuoTechs.COST * 2))
@@ -162,6 +165,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 			"slancio_guard":
 				_add(st, "strat_slancio_guards", 1.0)
 			"team_strike":
+				team_strike_after_duo = active_duo_id != ""
 				_add(st, "strat_team_strikes", 1.0)
 			"damage":
 				if bool(e.get("cost", false)):
@@ -174,7 +178,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				var target_unit: Dictionary = state.get("units", {}).get(dst, {})
 				var source_player: bool = str(source_unit.get("side", "")) == "player"
 				var target_player: bool = str(target_unit.get("side", "")) == "player"
-				if active_duo_id != "" and source_player and dst == BattleState.BOSS_ID:
+				if active_duo_id != "" and not team_strike_after_duo and active_duo_units.has(src) and source_player and dst == BattleState.BOSS_ID:
 					_add(st, "strat_duo_damage_" + active_duo_id, amount + absorbed)
 				if source_player and dst == BattleState.BOSS_ID:
 					if bool(e.get("thorns", false)):
