@@ -473,45 +473,52 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Terzo comando: ABILITÀ. Costa ENERGIA, e ognuno ha la sua."
+        "testo": "Terzo comando: ABILITÀ. Consumano ENERGIA, ognuno ne ha una diversa."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Lance protegge: con Copertura prende lui il colpo al posto di un compagno."
+        "testo": "Lance usa Copertura: può proteggere un compagno prendendo lui il colpo."
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Io curo. Pausa caffè. Il mio ruolo preferito dopo la GUARDIA."
+        "testo": "Io posso curare. Ma non gratis: ogni cura consuma ENERGIA."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
+        "col": "#3fe0ff",
         "espr": "felice",
-        "testo": "Io Inquadratura: marco il nemico e faccio salire l'HYPE. Pubblico, svegliati."
+        "testo": "Io uso Inquadratura. Marchio il nemico e faccio salire l'HYPE. Finalmente qualcosa che capisco!"
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Mano lesta. Rubo lo scudo del nemico."
+        "testo": "Mano lesta. Gli rubo lo scudo."
+      },
+      {
+        "chi": "echo",
+        "col": "#3fe0ff",
+        "espr": "serio",
+        "testo": "E se il nemico non ha uno scudo?"
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Se non ce l'ha, gli rubo EQUILIBRIO e mi riprendo energia."
+        "testo": "Gli rubo EQUILIBRIO. E recupero un po' di energia."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "felice",
-        "testo": "Ultimo trucco: cambiare mossa da un turno all'altro dà un piccolo bonus."
+        "testo": "Un'ultima cosa: alternare le mosse da un turno all'altro dà un piccolo bonus."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "felice",
-        "testo": "Variate, non siate banali."
+        "testo": "Quindi non fossilizzatevi su una sola strategia."
       }
     ]
   },
