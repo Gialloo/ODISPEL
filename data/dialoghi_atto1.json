@@ -974,13 +974,13 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Allora parliamo di prezzi."
+        "testo": "Possiamo anche parlare di cosa ci guadagnate."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Lance: chi chiude il caso torna in servizio. Nome pulito. E il grado."
+        "testo": "Lance. Se chiudete il caso, posso aiutarti a tornare in servizio. Nome pulito. E il grado."
       },
       {
         "chi": "ferri",
@@ -990,35 +990,41 @@
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Gli si è inceppata la faccia."
+        "testo": "Ecco. Adesso ti interessa."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Nox: tre settimane di ferie per ogni Anomalia di classe alta. Dodici settimane."
+        "testo": "Nox. Tre settimane di ferie per ogni Anomalia di classe alta. Dodici settimane in tutto."
       },
       {
         "chi": "nox",
         "espr": "sorpreso",
-        "testo": "Chi devo ammazzare."
+        "testo": "Questa conversazione sta migliorando."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "felice",
-        "testo": "Rio: una città sotto una cupola rosa, quattro mostri, e tu in diretta."
+        "testo": "Rio. Una città sotto una cupola rosa, quattro mostri e tu in diretta."
       },
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "La live del DECENNIO. Ci sto."
+        "testo": "La live del DECENNIO. Aspetta, posso davvero riprendere tutto?"
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Saul: LibraCorp paga una taglia per ogni Anomalia chiusa."
+        "testo": "Finché non intralci il lavoro."
+      },
+      {
+        "chi": "echo",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Saul. LibraCorp paga una taglia per ogni Anomalia chiusa."
       },
       {
         "chi": "saul",
@@ -1029,7 +1035,7 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Abbastanza da non consegnare più pacchi senza sapere cosa c'è dentro."
+        "testo": "Abbastanza da non dover accettare un altro pacco alla cieca."
       },
       {
         "chi": "saul",
@@ -1039,7 +1045,12 @@
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "Raga, una telecamera che ci dà una missione. È letteralmente un tutorial."
+        "testo": "Raga, una telecamera che ci offre un lavoro. È letteralmente un tutorial."
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "Basta. Dobbiamo decidere."
       },
       {
         "chi": "ferri",
@@ -1049,12 +1060,12 @@
       {
         "chi": "nox",
         "espr": "sorpreso",
-        "testo": "...Esiste un articolo quarantuno?"
+        "testo": "Esiste davvero un articolo quarantuno?"
       },
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "No. Ma adesso sì."
+        "testo": "No. Adesso sì."
       },
       {
         "chi": "saul",
@@ -1064,12 +1075,12 @@
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "Non è una squadra. È un'emergenza."
+        "testo": "Non lo siamo. È un'emergenza."
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Allora. Ci fidiamo della telecamera parlante?",
+        "testo": "Va bene. Ci fidiamo della telecamera?",
         "scelte": [
           {
             "testo": "«Affare fatto. Ma ti teniamo d'occhio.»",
