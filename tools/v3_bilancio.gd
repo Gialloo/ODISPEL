@@ -145,19 +145,6 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = fa
 				_add(st, "strat_link_" + link_kind, 1.0)
 				_add(st, "strat_link_chain_index_sum", float(e.get("n", 0)))
 				_add(st, "strat_link_damage_bonus_sum", float(e.get("damage_bonus", BattleTypes.LINK_BONUS)))
-			"strategy_hit":
-				var hit_pressure: float = float(e.get("pressure", 0.0))
-				var hit_link_mult: float = float(e.get("link_mult", 1.0))
-				var hit_combo_mult: float = float(e.get("combo_mult", 1.0))
-				var hit_other_mult: float = float(e.get("other_mult", 1.0))
-				var hit_base: float = hit_pressure / maxf(0.0001, hit_link_mult * hit_combo_mult * hit_other_mult)
-				_add(st, "strat_hit_pressure", hit_pressure)
-				_add(st, "strat_link_pressure_est", hit_base * (hit_link_mult - 1.0))
-				_add(st, "strat_combo_pressure_est", hit_base * hit_link_mult * (hit_combo_mult - 1.0))
-				if hit_link_mult > 1.0:
-					_add(st, "strat_linked_hits", 1.0)
-				if hit_combo_mult > 1.0:
-					_add(st, "strat_combo_hits", 1.0)
 			"link_break":
 				_add(st, "strat_link_breaks", 1.0)
 			"duo":
