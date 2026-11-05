@@ -1143,7 +1143,7 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 			events.append(shield_event)
 		if bool(move.get("cleanse", false)):
 			t["statuses"].erase("bleed")
-			events.append({"t": "cleanse", "unit": t["id"]})
+			events.append({"t": "cleanse", "unit": t["id"], "src": actor["id"]})
 		if move.has("status") and BattleState.is_alive(t):
 			for s in move["status"]:
 				if str(s) == "mark" and str(t["side"]) == "boss":
