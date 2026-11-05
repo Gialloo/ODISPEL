@@ -103,29 +103,121 @@ func _char_of(uid: String) -> String:
 	return parts[parts.size() - 1]
 
 
-func _scan(ev: Array, st: Dictionary) -> void:
+func _add(st: Dictionary, key: String, amount: float) -> void:
+	st[key] = float(st.get(key, 0.0)) + amount
+
+
+func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 	for e in ev:
 		var t: String = str(e.get("t", ""))
 		match t:
 			"damage":
-				if str(e.get("dst", "")) == "boss" and str(e.get("src", "")) != "boss":
-					var c: String = _char_of(str(e.get("src", "")))
-					st["dmg_" + c] = float(st.get("dmg_" + c, 0.0)) + float(e.get("amount", 0))
-					st["dmg_tot"] = float(st.get("dmg_tot", 0.0)) + float(e.get("amount", 0))
+				if bool(e.get("cost", false)):
+					continue
+				var src: String = str(e.get("src", ""))
+				var dst: String = str(e.get("dst", ""))
+				var amount: float = float(e.get("amount", 0))
+				var absorbed: float = float(e.get("absorbed", 0))
+				var source_unit: Dictionary = state.get("units", {}).get(src, {})
+				var target_unit: Dictionary = state.get("units", {}).get(dst, {})
+				var source_player: bool = str(source_unit.get("side", "")) == "player"
+				var target_player: bool = str(target_unit.get("side", "")) == "player"
+				if source_player and dst == BattleState.BOSS_ID:
+					if bool(e.get("thorns", false)):
+						_add(st, "dmg_reflected_boss", amount)
+					else:
+						var attacker: String = _char_of(src)
+						_add(st, "dmg_" + attacker, amount)
+						_add(st, "dmg_tot", amount)
+						_add(st, "dmg_boss_direct_hp", amount)
+						_add(st, "dmg_boss_absorbed", absorbed)
+						_add(st, "dmg_boss_pressure", amount + absorbed)
+				elif source_player and dst == Gregario.ID:
+					_add(st, "dmg_gregario_hp", amount)
+					_add(st, "dmg_gregario_absorbed", absorbed)
+					_add(st, "dmg_gregario_pressure", amount + absorbed)
+				elif target_player:
+					_add(st, "dmg_party_hp", amount)
+					_add(st, "dmg_party_absorbed", absorbed)
+					if bool(e.get("thorns", false)):
+						_add(st, "dmg_reflected_party", amount)
+				if source_player and str(target_unit.get("side", "")) == "boss":
+					_add(st, "dmg_enemy_other_hp", amount)
+			"bleed":
+				var target_id: String = str(e.get("unit", ""))
+				var bleed_target: Dictionary = state.get("units", {}).get(target_id, {})
+				var bleed_amount: float = float(e.get("amount", 0))
+				if str(bleed_target.get("side", "")) == "boss":
+					_add(st, "dmg_indirect_enemy_hp", bleed_amount)
+					if target_id == BattleState.BOSS_ID:
+						_add(st, "dmg_boss_pressure", bleed_amount)
+				elif str(bleed_target.get("side", "")) == "player":
+					_add(st, "dmg_party_environment_hp", bleed_amount)
+			"arena":
+				var arena_id: String = str(e.get("id", ""))
+				if arena_id == "eco":
+					var eco_hp: float = float(e.get("hp_lost", 0))
+					var eco_abs: float = float(e.get("absorbed", 0))
+					_add(st, "dmg_arena_boss_hp", eco_hp)
+					_add(st, "dmg_boss_absorbed", eco_abs)
+					_add(st, "dmg_boss_pressure", eco_hp + eco_abs)
+				elif arena_id == "contaminazione":
+					_add(st, "dmg_party_environment_hp", float(e.get("hp_lost", e.get("amount", 0))))
 			"heal":
-				if str(e.get("src", "")) != "boss":
-					var c2: String = _char_of(str(e.get("src", "")))
-					st["heal_" + c2] = float(st.get("heal_" + c2, 0.0)) + 1.0
+				var healer: String = str(e.get("src", ""))
+				var recipient: String = str(e.get("dst", ""))
+				var healed: float = float(e.get("amount", 0))
+				var recipient_unit: Dictionary = state.get("units", {}).get(recipient, {})
+				if str(recipient_unit.get("side", "")) == "player" and healer != BattleState.BOSS_ID:
+					_add(st, "heal_" + _char_of(healer), healed)
+					_add(st, "heal_total_hp", healed)
+					_add(st, "heal_events", 1.0)
+			"rescue":
+				_add(st, "rescue_count", 1.0)
+				_add(st, "rescue_hp", float(e.get("hp", 0)))
 			"rest":
-				# Pausa caffe' a riposo (scudo a tutti): un'azione utile di Nox, conta come una cura
-				st["heal_nox"] = float(st.get("heal_nox", 0.0)) + 1.0
+				_add(st, "rest_nox", 1.0)
+			"shield":
+				var shield_src: String = str(e.get("src", ""))
+				var shield_dst: String = str(e.get("dst", ""))
+				var shield_target: Dictionary = state.get("units", {}).get(shield_dst, {})
+				var shield_amount: float = float(e.get("amount", 0))
+				if str(shield_target.get("side", "")) == "player":
+					_add(st, "shield_created_party", shield_amount)
+					_add(st, "shield_created_events", 1.0)
+				elif str(shield_target.get("side", "")) == "boss":
+					_add(st, "shield_created_enemy", shield_amount)
+			"shield_expire":
+				var expired_unit: Dictionary = state.get("units", {}).get(str(e.get("unit", "")), {})
+				if str(expired_unit.get("side", "")) == "player":
+					_add(st, "shield_expired_party", float(e.get("amount", 0)))
 			"kit_trait":
 				if str(e.get("trait", "")) == "veglia":
-					st["veglia"] = float(st.get("veglia", 0.0)) + 1.0
+					_add(st, "veglia", 1.0)
 			"react":
-				st["react"] = float(st.get("react", 0.0)) + 1.0
+				_add(st, "react", 1.0)
+				_add(st, "react_" + str(e.get("kind", "unknown")), 1.0)
 			"break":
-				st["break"] = float(st.get("break", 0.0)) + 1.0
+				_add(st, "break", 1.0)
+
+
+func _count_reaction_opportunity(state: Dictionary, st: Dictionary) -> void:
+	var boss: Dictionary = BattleState.boss(state)
+	var tele: Dictionary = state.get("telegraph", {})
+	var move: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	if move.is_empty() or int(boss.get("stun", 0)) > 0 or not BattleResolver.is_heavy_boss_move(move):
+		return
+	_add(st, "occasioni_carica", 1.0)
+	var available: bool = false
+	for p in BattleState.alive_players(state):
+		for reaction in BattleResolver.reactions_for(state, str(p.get("id", ""))):
+			if str(reaction.get("err", "")) == "":
+				available = true
+				break
+		if available:
+			break
+	if available:
+		_add(st, "occasioni", 1.0)
 
 
 func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: int, greg: String = "") -> Dictionary:
@@ -148,29 +240,35 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 				if bool(e.get("end", false)) or str(b["winner"]) != "":
 					break
 				if bool(e.get("greg", false)):
-					_scan(BattleFlow.boss_action(b, Gregario.ID), st)
+					_scan(BattleFlow.boss_action(b, Gregario.ID), st, b)
 				elif bool(e["boss"]):
+					if not bool(e.get("greg", false)):
+						_count_reaction_opportunity(b, st)
 					if int(BattleState.boss(b).get("stun", 0)) > 0:
 						st["boss_persi"] = float(st.get("boss_persi", 0.0)) + 1.0
 					else:
 						st["boss_giocati"] = float(st.get("boss_giocati", 0.0)) + 1.0
-					_scan(BattleFlow.boss_action(b), st)
+					_scan(BattleFlow.boss_action(b), st, b)
 				else:
 					var pid: String = str(e["player"])
 					var quick: bool = bool(e.get("quick", false))
 					var evp: Array = BattleFlow.player_action(b, pid, BattleAI.choose_quick(b, pid) if quick else BattleAI.choose(b, pid), quick)
-					_scan(evp, st)
+					_scan(evp, st, b)
 					for x in evp:
 						if str(x.get("t", "")) == "slancio":
 							st["slancio"] = float(st.get("slancio", 0.0)) + 1.0
-			_scan(BattleFlow.finish(b), st)
+			_scan(BattleFlow.finish(b), st, b)
 			for uid in b["units"]:
 				if not Gregario.is_enemy(b, str(uid)):
 					minhp = minf(minhp, float(b["units"][uid]["hp"]) / float(maxi(1, int(b["units"][uid]["max_hp"]))))
 		st["rounds"] = float(st.get("rounds", 0.0)) + float(guard)
 		st["minhp"] = float(st.get("minhp", 0.0)) + minhp
 		if str(b["winner"]) == "players":
-			st["wins"] = float(st.get("wins", 0.0)) + 1.0
+			_add(st, "wins", 1.0)
+		elif str(b["winner"]) == "boss":
+			_add(st, "losses", 1.0)
+		else:
+			_add(st, "timeouts", 1.0)
 		for uid in b["units"]:
 			if not Gregario.is_enemy(b, str(uid)) and int(b["units"][uid]["hp"]) <= 0:
 				st["ko"] = float(st.get("ko", 0.0)) + 1.0
@@ -227,6 +325,16 @@ func _init() -> void:
 			100.0 * float(st.get("dmg_saul", 0.0)) / tot_dmg, 100.0 * float(st.get("dmg_nox", 0.0)) / tot_dmg,
 			float(st.get("heal_nox", 0.0)) / r, float(st.get("veglia", 0.0)) / r,
 			float(st.get("occasioni", 0.0)) / r, float(st.get("react", 0.0)) / r])
+		print("     DANNI · boss PV %.0f | assorbiti %.0f | pressione %.0f | Eco PV %.0f | indiretti %.0f | Scheggia PV %.0f | riflessi %.0f" % [
+			float(st.get("dmg_boss_direct_hp", 0.0)), float(st.get("dmg_boss_absorbed", 0.0)), float(st.get("dmg_boss_pressure", 0.0)),
+			float(st.get("dmg_arena_boss_hp", 0.0)), float(st.get("dmg_indirect_enemy_hp", 0.0)), float(st.get("dmg_gregario_hp", 0.0)), float(st.get("dmg_reflected_boss", 0.0))])
+		print("     SOSTEGNO · cure PV %.0f (%d eventi) | soccorsi %d / PV %.0f | scudi creati %.0f | assorbiti %.0f | scaduti %.0f | danni squadra PV %.0f" % [
+			float(st.get("heal_total_hp", 0.0)), int(st.get("heal_events", 0.0)), int(st.get("rescue_count", 0.0)), float(st.get("rescue_hp", 0.0)),
+			float(st.get("shield_created_party", 0.0)), float(st.get("dmg_party_absorbed", 0.0)), float(st.get("shield_expired_party", 0.0)),
+			float(st.get("dmg_party_hp", 0.0)) + float(st.get("dmg_party_environment_hp", 0.0))])
+		print("     REAZIONI · cariche pesanti %d | occasioni valide %d | usate %d | schivate %d | intercettazioni %d | interruzioni %d | soccorsi %d | timeout %d" % [
+			int(st.get("occasioni_carica", 0.0)), int(st.get("occasioni", 0.0)), int(st.get("react", 0.0)) + int(st.get("rescue_count", 0.0)),
+			int(st.get("react_dodge", 0.0)), int(st.get("react_intercept", 0.0)), int(st.get("react_interrupt", 0.0)), int(st.get("rescue_count", 0.0)), int(st.get("timeouts", 0.0))])
 		if dettaglio:
 			var parts: String = "     quota danno sul boss:"
 			for c in PARTY:
