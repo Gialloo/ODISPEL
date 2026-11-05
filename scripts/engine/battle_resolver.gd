@@ -1397,6 +1397,9 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 				expired.append(s)
 		for s in expired:
 			u["statuses"].erase(s)
+		var expired_shield: int = int(u["shield"])
+		if expired_shield > 0:
+			events.append({"t": "shield_expire", "unit": uid, "amount": expired_shield})
 		u["shield"] = 0
 
 	# passive uniche di fine round: rigenerazione, scudo che riparte, carica dell'ultimate
