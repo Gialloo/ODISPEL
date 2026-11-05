@@ -172,12 +172,12 @@
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "Regola uno per chi scappa: non dare nell'occhio."
+        "testo": "Allora smettete di guardarla. Non date nell'occhio."
       },
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "CIAO! Salutate, raga, magari è un fan."
+        "testo": "CIAO! Salutate, raga! Magari è un fan."
       },
       {
         "chi": "ferri",
@@ -187,12 +187,12 @@
       {
         "chi": "zecca",
         "espr": "sorpreso",
-        "testo": "Che c'è? È il mio normale!"
+        "testo": "Che c'è? È la mia routine!"
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "È questo il problema."
+        "testo": "È proprio questo il problema."
       }
     ]
   },
