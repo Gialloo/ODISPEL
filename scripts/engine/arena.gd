@@ -103,16 +103,20 @@ static func resolve(state: Dictionary, events: Array) -> void:
 		if not safe:
 			amount = mini(int(u["hp"]) - 1, maxi(1, int(round(float(u["max_hp"]) * CONTAMINATION_PCT))))
 			u["hp"] = int(u["hp"]) - amount
-		events.append({"t": "arena", "id": "contaminazione", "ok": safe, "unit": u["id"], "amount": amount})
+		events.append({"t": "arena", "id": "contaminazione", "ok": safe, "unit": u["id"], "amount": amount, "hp_lost": amount, "absorbed": 0})
 	elif str(ev["id"]) == "eco":
 		var echo_dmg: int = int(round(float(state.get("echo", 0)) * Tactics.ECHO_PCT))
+		var shield_part: int = 0
+		var hp_lost: int = 0
 		if echo_dmg > 0 and BattleState.is_alive(boss):
-			var shield_part: int = mini(int(boss["shield"]), echo_dmg)
+			var before_hp: int = int(boss["hp"])
+			shield_part = mini(int(boss["shield"]), echo_dmg)
 			boss["shield"] = int(boss["shield"]) - shield_part
-			boss["hp"] = maxi(0, int(boss["hp"]) - (echo_dmg - shield_part))
+			boss["hp"] = maxi(0, before_hp - (echo_dmg - shield_part))
+			hp_lost = before_hp - int(boss["hp"])
 			if int(boss["hp"]) <= 0:
 				BattleResolver._on_down(boss, events)
-		events.append({"t": "arena", "id": "eco", "ok": echo_dmg > 0, "unit": "", "amount": echo_dmg})
+		events.append({"t": "arena", "id": "eco", "ok": echo_dmg > 0, "unit": "", "amount": echo_dmg, "hp_lost": hp_lost, "absorbed": shield_part})
 	elif str(ev["id"]) == "sigillo":
 		var attackers: Dictionary = {}
 		for entry in state.get("tags", []):
