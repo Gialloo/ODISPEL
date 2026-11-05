@@ -516,6 +516,14 @@ func _init() -> void:
 			for c in PARTY:
 				resources += "  %s +%.0f/−%.0f" % [c, float(st.get("res_ammo_gain_gross_" + c, 0.0)), float(st.get("res_ammo_spend_gross_" + c, 0.0))]
 			print(resources)
+			for resource in ["energy", "gauge", "hype", "ammo", "reserve", "ardore"]:
+				var source_line: String = "     FONTI " + resource + ":"
+				var prefix: String = "res_" + resource + "_source_"
+				for metric in st:
+					var metric_name: String = str(metric)
+					if metric_name.begins_with(prefix):
+						source_line += "  %s=%+.0f" % [metric_name.trim_prefix(prefix), float(st[metric])]
+				print(source_line)
 		if not bool(enc[4]):
 			n_boss += 1
 			for k in st:
