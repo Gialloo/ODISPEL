@@ -111,10 +111,53 @@ func _add(st: Dictionary, key: String, amount: float) -> void:
 	st[key] = float(st.get(key, 0.0)) + amount
 
 
-func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
+func _scan(ev: Array, st: Dictionary, state: Dictionary, quick_action: bool = false) -> void:
 	for e in ev:
 		var t: String = str(e.get("t", ""))
 		match t:
+			"act":
+				var act_unit: String = str(e.get("unit", ""))
+				var act_data: Dictionary = state.get("units", {}).get(act_unit, {})
+				if str(act_data.get("side", "")) == "player":
+					var act_char: String = _char_of(act_unit)
+					_add(st, "strat_actions", 1.0)
+					_add(st, "strat_actions_" + act_char, 1.0)
+					if quick_action:
+						_add(st, "strat_quick_actions", 1.0)
+						_add(st, "strat_quick_" + act_char, 1.0)
+					else:
+						_add(st, "strat_ordinary_actions", 1.0)
+					var act_move: String = str(e.get("move", ""))
+					if act_move != "" and act_move == str(act_data.get("ult", "")):
+						_add(st, "strat_ultimates", 1.0)
+						_add(st, "strat_ult_" + act_char, 1.0)
+			"synergy":
+				var combo_id: String = str(e.get("id", "unknown"))
+				var combo_actor: String = str(e.get("unit", ""))
+				_add(st, "strat_combos", 1.0)
+				_add(st, "strat_combo_" + combo_id, 1.0)
+				_add(st, "strat_combo_actor_" + _char_of(combo_actor), 1.0)
+			"link":
+				var link_kind: String = str(e.get("kind", "unknown"))
+				_add(st, "strat_links", 1.0)
+				_add(st, "strat_link_" + link_kind, 1.0)
+				_add(st, "strat_link_rings", float(e.get("n", 0)))
+			"link_break":
+				_add(st, "strat_link_breaks", 1.0)
+			"duo":
+				var duo_id: String = str(e.get("id", "unknown"))
+				_add(st, "strat_duos", 1.0)
+				_add(st, "strat_duo_" + duo_id, 1.0)
+			"slancio":
+				var slancio_unit: String = str(e.get("unit", ""))
+				var slancio_char: String = _char_of(slancio_unit)
+				_add(st, "strat_slanci", 1.0)
+				_add(st, "strat_slancio_" + slancio_char, 1.0)
+				_add(st, "strat_slancio_why_" + str(e.get("why", "unknown")), 1.0)
+			"slancio_guard":
+				_add(st, "strat_slancio_guards", 1.0)
+			"team_strike":
+				_add(st, "strat_team_strikes", 1.0)
 			"damage":
 				if bool(e.get("cost", false)):
 					continue
@@ -415,7 +458,7 @@ func _run(boss: String, lvl: int, pv: float, atk: float, minore: bool, seeds: in
 					if not quick:
 						_count_reaction_opportunity(b, st, seen_reaction, pid)
 					var evp: Array = BattleFlow.player_action(b, pid, BattleAI.choose_quick(b, pid) if quick else BattleAI.choose(b, pid), quick)
-					_scan(evp, st, b)
+					_scan(evp, st, b, quick)
 					for x in evp:
 						if str(x.get("t", "")) == "slancio":
 							st["slancio"] = float(st.get("slancio", 0.0)) + 1.0
@@ -541,6 +584,11 @@ func _init() -> void:
 			float(st.get("heal_total_hp", 0.0)), int(st.get("heal_events", 0.0)), int(st.get("rescue_count", 0.0)), float(st.get("rescue_hp", 0.0)),
 			float(st.get("shield_created_party", 0.0)), float(st.get("dmg_party_absorbed", 0.0)), shield_expired,
 			float(st.get("dmg_party_hp", 0.0)) + float(st.get("dmg_party_bleed_hp", 0.0)) + float(st.get("dmg_party_arena_hp", 0.0))])
+		print("     STRATEGIA · azioni %d (ordinarie %d / rapide %d) | Ultimate %d | COMBO %d | LINK %d (CROSS %d / UNISONO %d; anelli %d; interruzioni %d) | Duo %d | SLANCI %d (Guardie %d) | team strike %d" % [
+			int(st.get("strat_actions", 0.0)), int(st.get("strat_ordinary_actions", 0.0)), int(st.get("strat_quick_actions", 0.0)),
+			int(st.get("strat_ultimates", 0.0)), int(st.get("strat_combos", 0.0)), int(st.get("strat_links", 0.0)),
+			int(st.get("strat_link_cross", 0.0)), int(st.get("strat_link_unison", 0.0)), int(st.get("strat_link_rings", 0.0)), int(st.get("strat_link_breaks", 0.0)),
+			int(st.get("strat_duos", 0.0)), int(st.get("strat_slanci", 0.0)), int(st.get("strat_slancio_guards", 0.0)), int(st.get("strat_team_strikes", 0.0))])
 		print("     REAZIONI · cariche pesanti %d | occasioni valide %d | usate %d | schivate %d | intercettazioni %d | interruzioni %d | soccorsi %d | timeout %d" % [
 			int(st.get("occasioni_carica", 0.0)), int(st.get("occasioni", 0.0)), int(st.get("react", 0.0)) + int(st.get("rescue_count", 0.0)),
 			int(st.get("react_dodge", 0.0)), int(st.get("react_intercept", 0.0)), int(st.get("react_interrupt", 0.0)), int(st.get("rescue_count", 0.0)), int(st.get("timeouts", 0.0))])
@@ -613,6 +661,10 @@ func _init() -> void:
 				for c in PARTY:
 					balances += "  %s %.0f" % [c, float(st.get("res_" + resource + "_final_" + c, 0.0)) / r]
 				print(balances)
+			for metric in st:
+				var metric_name: String = str(metric)
+				if metric_name.begins_with("strat_combo_") or metric_name.begins_with("strat_duo_") or metric_name.begins_with("strat_ult_") or metric_name.begins_with("strat_slancio_"):
+					print("     DETTAGLIO STRATEGIA · %s = %.0f" % [metric_name.trim_prefix("strat_"), float(st[metric_name])])
 			for resource in ["energy", "gauge", "hype", "ammo", "reserve", "ardore"]:
 				var source_line: String = "     FONTI " + resource + ":"
 				var prefix: String = "res_" + resource + "_source_"
