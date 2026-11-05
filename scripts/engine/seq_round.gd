@@ -226,6 +226,7 @@ static func finish(state: Dictionary) -> Array:
 		BattleResolver._end_of_round(state, events)
 	BattleResolver._check_winner(state, events)
 	_log(state, events, resource_before, "round_end")
+	var phase_resource_before: Dictionary = ResourceTelemetry.snapshot(state)
 	var all: Array = state["seq"]["events"]
 	Tactics.track(state, all)
 	Tactics.end_round(state, all)
@@ -239,6 +240,7 @@ static func finish(state: Dictionary) -> Array:
 		BattleResolver._check_phase(state, events)
 		BattleResolver.begin_round(state)
 		_apply_carry(state, carry, events)
+	ResourceTelemetry.record(state, phase_resource_before, events, "phase_transition")
 	state.erase("seq")
 	return events
 
