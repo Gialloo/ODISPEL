@@ -327,30 +327,32 @@
       {
         "chi": "echo",
         "col": "#3fe0ff",
-        "espr": "felice",
+        "espr": "neutro",
         "testo": "Istruttrice Echo, telecamera 07."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
-        "espr": "felice",
-        "testo": "Scontro vero ma piccolo: un Frammento, un pezzetto d'Anomalia."
+        "espr": "neutro",
+        "testo": "Scontro vero, ma piccolo: questo è un Frammento. Un pezzetto d'Anomalia."
       },
       {
-        "chi": "zecca",
-        "espr": "sfotto",
-        "testo": "Raga, io non leggo le istruzioni. Io ho il feeling."
+        "chi": "rio",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Raga, io non leggo le istruzioni. Vado a sentimento."
       },
       {
         "chi": "saul",
+        "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Io le leggo solo se in fondo c'è il prezzo."
+        "testo": "Per una volta ti do ragione, coso."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "In alto il nemico: i suoi PV e la barra bianca EQUILIBRIO."
+        "testo": "In alto vedete il nemico: i suoi PV e la barra bianca, EQUILIBRIO."
       },
       {
         "chi": "echo",
@@ -362,18 +364,19 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "In basso le vostre schede: PV, ENERGIA e la barra dell'ULTIMATE."
+        "testo": "In basso ci sono le vostre schede: PV, ENERGIA e la barra dell'ULTIMATE."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
-        "espr": "serio",
-        "testo": "Sono le 21:04, domande?"
+        "espr": "neutro",
+        "testo": "Sono le 21:04. Domande?"
       },
       {
         "chi": "nox",
+        "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Una. Posso saltare la lezione?"
+        "testo": "Una. Posso saltare la lezione? Grazie."
       }
     ]
   },
