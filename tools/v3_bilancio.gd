@@ -488,7 +488,8 @@ func _count_reaction_opportunity(state: Dictionary, st: Dictionary, seen: Dictio
 		return
 	# cycle_index identifica la carica annunciata: BattleFlow.finish lo ripristina
 	# quando la stessa mossa resta in attesa oltre la fine del round.
-	var key: String = "%d|%d|%s|%s" % [int(state.get("phase", 1)), int(state.get("cycle_index", 0)), move_id, str(tele.get("target", ""))]
+	# Il bersaglio puo' cambiare se il personaggio annunciato cade: resta la stessa carica.
+	var key: String = "%d|%d|%s" % [int(state.get("phase", 1)), int(state.get("cycle_index", 0)), move_id]
 	if not bool(seen.get(key + "|heavy", false)):
 		_add(st, "occasioni_carica", 1.0)
 		seen[key + "|heavy"] = true
@@ -620,7 +621,7 @@ func _init() -> void:
 			_vel_table()
 			quit()
 			return
-	print("%-18s %3s %5s %5s %5s %6s %6s %5s %5s %6s %6s %6s %5s %6s %5s" % ["scontro", "liv", "vitt%", "KO", "round", "bossG", "bossP", "ross", "slan", "Saul%", "Nox%", "NoxCP", "vegl", "occas", "reaz"])
+	print("%-18s %3s %5s %5s %5s %6s %6s %5s %5s %6s %6s %6s %5s %6s %5s" % ["scontro", "liv", "vitt%", "KO", "round", "bossG", "bossP", "ross", "slan", "Saul%", "Nox%", "ripNox", "vegl", "occas", "reaz"])
 	var tot: Dictionary = {}
 	var n_boss: int = 0
 	for enc in ENC:
