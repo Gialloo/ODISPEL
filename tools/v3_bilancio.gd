@@ -255,7 +255,12 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "res_ammo_requested", float(e.get("requested", 0)))
 				_add(st, "res_ammo_effective", float(e.get("effective", 0)))
 				_add(st, "res_ammo_wasted", float(e.get("wasted", 0)))
-				_add(st, "res_ammo_net_" + ammo_char, float(e.get("effective", 0)))
+				var ammo_effective: float = float(e.get("effective", 0))
+				_add(st, "res_ammo_net_" + ammo_char, ammo_effective)
+				if ammo_effective > 0.0:
+					_add(st, "res_ammo_gain_gross", ammo_effective)
+				elif ammo_effective < 0.0:
+					_add(st, "res_ammo_spend_gross", -ammo_effective)
 			"reserve":
 				var reserve_delta: float = float(e.get("delta", 0))
 				_add(st, "res_reserve_net", reserve_delta)
@@ -443,15 +448,19 @@ func _init() -> void:
 		print("     REAZIONI · cariche pesanti %d | occasioni valide %d | usate %d | schivate %d | intercettazioni %d | interruzioni %d | soccorsi %d | timeout %d" % [
 			int(st.get("occasioni_carica", 0.0)), int(st.get("occasioni", 0.0)), int(st.get("react", 0.0)) + int(st.get("rescue_count", 0.0)),
 			int(st.get("react_dodge", 0.0)), int(st.get("react_intercept", 0.0)), int(st.get("react_interrupt", 0.0)), int(st.get("rescue_count", 0.0)), int(st.get("timeouts", 0.0))])
-		print("     RISORSE · EN netto %+.1f | costi lordi %.1f | saldo finale %.1f" % [
-			float(st.get("res_energy_net", 0.0)) / r, float(st.get("res_energy_cost", 0.0)) / r, float(st.get("res_energy_final", 0.0)) / r])
-		print("                GAUGE netto %+.1f | costi Ultimate %.1f | saldo finale %.1f" % [
-			float(st.get("res_gauge_net", 0.0)) / r, float(st.get("res_gauge_cost", 0.0)) / r, float(st.get("res_gauge_final", 0.0)) / r])
-		print("                HYPE netto %+.1f | consumato %.1f | spreco guadagni %.1f | saldo finale %.1f" % [
-			float(st.get("res_hype_net", 0.0)) / r, float(st.get("res_hype_cost", 0.0)) / r, float(st.get("res_hype_wasted", 0.0)) / r, float(st.get("res_hype_final", 0.0)) / r])
-		print("                MUNIZIONI nette %+.1f | richieste %+.1f | effettive %+.1f | spreco %.1f | saldo finale %.1f" % [
+		print("     RISORSE · EN +%.1f / -%.1f | netto %+.1f | spreco %.1f | saldo iniziale/finale %.1f / %.1f" % [
+			float(st.get("res_energy_gain_gross", 0.0)) / r, float(st.get("res_energy_spend_gross", 0.0)) / r, float(st.get("res_energy_net", 0.0)) / r,
+			float(st.get("res_energy_wasted", 0.0)) / r, float(st.get("res_energy_start", 0.0)) / r, float(st.get("res_energy_final", 0.0)) / r])
+		print("                GAUGE +%.1f / -%.1f | netto %+.1f | spreco %.1f | saldo iniziale/finale %.1f / %.1f" % [
+			float(st.get("res_gauge_gain_gross", 0.0)) / r, float(st.get("res_gauge_spend_gross", 0.0)) / r, float(st.get("res_gauge_net", 0.0)) / r,
+			float(st.get("res_gauge_wasted", 0.0)) / r, float(st.get("res_gauge_start", 0.0)) / r, float(st.get("res_gauge_final", 0.0)) / r])
+		print("                HYPE +%.1f / -%.1f | netto %+.1f | spreco %.1f | saldo iniziale/finale %.1f / %.1f" % [
+			float(st.get("res_hype_gain_gross", 0.0)) / r, float(st.get("res_hype_spend_gross", 0.0)) / r, float(st.get("res_hype_net", 0.0)) / r,
+			float(st.get("res_hype_wasted", 0.0)) / r, float(st.get("res_hype_start", 0.0)) / r, float(st.get("res_hype_final", 0.0)) / r])
+		print("                MUNIZIONI +%.1f / -%.1f | netto %+.1f | spreco %.1f | saldo iniziale/finale %.1f / %.1f" % [
+			float(st.get("res_ammo_gain_gross", 0.0)) / r, float(st.get("res_ammo_spend_gross", 0.0)) / r,
 			float(st.get("res_ammo_net_ferri", 0.0) + st.get("res_ammo_net_nox", 0.0) + st.get("res_ammo_net_zecca", 0.0) + st.get("res_ammo_net_saul", 0.0)) / r,
-			float(st.get("res_ammo_requested", 0.0)) / r, float(st.get("res_ammo_effective", 0.0)) / r, float(st.get("res_ammo_wasted", 0.0)) / r, float(st.get("res_ammo_final", 0.0)) / r])
+			float(st.get("res_ammo_wasted", 0.0)) / r, float(st.get("res_ammo_start", 0.0)) / r, float(st.get("res_ammo_final", 0.0)) / r])
 		print("                RISERVA +%.1f / -%.1f | spreco %.1f | saldo netto %+.1f" % [
 			float(st.get("res_reserve_gain", 0.0)) / r, float(st.get("res_reserve_spend", 0.0)) / r,
 			float(st.get("res_reserve_wasted", 0.0)) / r, float(st.get("res_reserve_net", 0.0)) / r])
