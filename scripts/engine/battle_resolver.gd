@@ -821,12 +821,14 @@ static func _drain_balance(boss: Dictionary, pts: int, attacker: Dictionary, eve
 static func _change_ammo(u: Dictionary, delta: int, events: Array) -> void:
 	if delta == 0 or int(u["ammo_max"]) <= 0:
 		return
-	var now: int = clampi(int(u["ammo"]) + delta, 0, int(u["ammo_max"]))
-	if now < int(u["ammo"]):
-		Atypical.on_ammo_spent(u, int(u["ammo"]) - now)
-	if now != int(u["ammo"]):
+	var before: int = int(u["ammo"])
+	var now: int = clampi(before + delta, 0, int(u["ammo_max"]))
+	var effective: int = now - before
+	if now < before:
+		Atypical.on_ammo_spent(u, before - now)
+	if now != before:
 		u["ammo"] = now
-		events.append({"t": "ammo", "resource": "ammo", "unit": u["id"], "value": now, "requested": delta, "effective": now - int(u["ammo"]) + (int(u["ammo"]) - now), "delta": now - (now - delta), "wasted": delta - (now - (now - delta))})
+	events.append({"t": "ammo", "resource": "ammo", "unit": u["id"], "value": now, "requested": delta, "effective": effective, "delta": effective, "wasted": delta - effective})
 
 
 # Protocollo (LibraCorp): chi viene colpito dal boss e resta in piedi, con una munizione, risponde al fuoco.
