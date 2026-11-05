@@ -205,6 +205,8 @@ static func before_act(state: Dictionary, actor: Dictionary, move_id: String, mo
 			var hype: int = int(actor.get("hype", 0))
 			out["mult"] = float(out["mult"]) * (FINALE_BASE + FINALE_PER_HYPE * float(hype) / float(HYPE_MAX))
 			events.append({"t": "finale", "unit": actor["id"], "hype": hype})
+			if hype > 0:
+				events.append({"t": "resource_cost", "resource": "hype", "unit": actor["id"], "amount": hype, "source": "finale"})
 			actor["hype"] = 0
 			# HYPE con scelta: speso presto (sotto FINALE_EARLY) il colpo e' piu' debole ma il pubblico carica la squadra:
 			# +1 energia e un po' di Ultimate ai compagni. Pieno resta il colpo grosso. Un effetto diverso, non solo meno forte.
