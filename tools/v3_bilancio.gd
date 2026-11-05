@@ -13,8 +13,8 @@ extends SceneTree
 #   kit         anche senza ng, la squadra usa Progress (sblocchi del livello) invece del kit base
 #   giro        senza Timeline: il giro a round della Fase 0 (per confrontare)  · vel  tabella VEL / ΔT / azioni ai livelli (Fase 1)
 # Gli scontri e le scale PV/attacco replicano battle3d.gd (pv_k, atk_k, livello); la squadra e' quella dell'atto 1 con ultimate al 60%.
-# Metriche: vittorie, KO, round, turni del boss giocati/persi, quota di danno di Saul e di Nox, uso di cure/scudi/Veglia di Nox,
-# occasioni di reazione (carica annunciata + Riserva disponibile) e reazioni fatte.
+# Metriche: esito, KO, turni boss, danno diretto/indiretto, cure effettive, scudi, reazioni e timeout.
+# Le occasioni sono conteggiate solo quando un eroe ha un turno prima della carica e una reazione difensiva valida.
 
 const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
 # (boss, livello, pv, atk, minore)
@@ -125,6 +125,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				if source_player and dst == BattleState.BOSS_ID:
 					if bool(e.get("thorns", false)):
 						_add(st, "dmg_reflected_boss", amount)
+						_add(st, "dmg_boss_pressure", amount)
 					else:
 						var attacker: String = _char_of(src)
 						_add(st, "dmg_" + attacker, amount)
@@ -181,7 +182,6 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "rest_nox", 1.0)
 				_add(st, "heal_nox", 1.0)
 			"shield":
-				var shield_src: String = str(e.get("src", ""))
 				var shield_dst: String = str(e.get("dst", ""))
 				var shield_target: Dictionary = state.get("units", {}).get(shield_dst, {})
 				var shield_amount: float = float(e.get("amount", 0))
@@ -334,6 +334,7 @@ func _init() -> void:
 			100.0 * float(st.get("dmg_saul", 0.0)) / tot_dmg, 100.0 * float(st.get("dmg_nox", 0.0)) / tot_dmg,
 			float(st.get("heal_nox", 0.0)) / r, float(st.get("veglia", 0.0)) / r,
 			float(st.get("occasioni", 0.0)) / r, float(st.get("react", 0.0)) / r])
+		print("     ESITO · vittorie %d | sconfitte %d | timeout %d" % [int(st.get("wins", 0.0)), int(st.get("losses", 0.0)), int(st.get("timeouts", 0.0))])
 		print("     DANNI · boss PV %.0f | assorbiti %.0f | pressione %.0f | Eco PV %.0f | indiretti %.0f | Scheggia PV %.0f | riflessi %.0f" % [
 			float(st.get("dmg_boss_direct_hp", 0.0)), float(st.get("dmg_boss_absorbed", 0.0)), float(st.get("dmg_boss_pressure", 0.0)),
 			float(st.get("dmg_arena_boss_hp", 0.0)), float(st.get("dmg_indirect_enemy_hp", 0.0)), float(st.get("dmg_gregario_hp", 0.0)), float(st.get("dmg_reflected_boss", 0.0))])
