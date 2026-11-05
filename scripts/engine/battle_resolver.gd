@@ -1412,7 +1412,11 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 				events.append({"t": "heal", "src": uid, "dst": uid, "amount": int(pu["hp"]) - before_hp})
 		var rs: float = Signatures.value(pu, "round_shield")
 		if rs > 0.0:
+			var before_shield: int = int(pu["shield"])
 			pu["shield"] = int(round(float(pu["max_hp"]) * rs))
+			var gained_shield: int = int(pu["shield"]) - before_shield
+			if gained_shield > 0:
+				events.append({"t": "shield", "src": pu["id"], "dst": pu["id"], "amount": gained_shield, "source": "round_regen"})
 		var gr: float = Signatures.value(pu, "gauge_regen")
 		if gr > 0.0:
 			pu["gauge"] = mini(BattleTypes.GAUGE_MAX, int(pu["gauge"]) + int(round(gr)))
