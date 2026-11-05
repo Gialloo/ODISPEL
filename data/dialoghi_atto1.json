@@ -434,34 +434,35 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Secondo comando: GUARDIA. Subisci meno danni e guadagni 1 ENERGIA."
+        "testo": "Secondo comando: GUARDIA. Subisci meno danni e recuperi 1 ENERGIA."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "L'ENERGIA serve per l'ABILITÀ, che vediamo adesso."
+        "testo": "L'ENERGIA serve per usare le ABILITÀ. Ci arriviamo tra poco."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "serio",
-        "testo": "Quindi la GUARDIA non è tempo perso."
-      },
-      {
-        "chi": "nox",
-        "espr": "felice",
-        "testo": "La GUARDIA è la mia mossa preferita. Non fare niente, ma con stile."
-      },
-      {
-        "chi": "ferri",
-        "espr": "arrabbiato",
-        "testo": "Non è «niente». È una difesa attiva. C'è un articolo."
+        "testo": "Quindi, quando non vuoi esporti a un attacco, puoi difenderti e preparare la prossima mossa."
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Sì. Ed è un articolo che amo."
+        "testo": "Finalmente un comando che non mi chiede di correre."
+      },
+      {
+        "chi": "lance",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Non è una pausa."
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Peccato."
       }
     ]
   },
