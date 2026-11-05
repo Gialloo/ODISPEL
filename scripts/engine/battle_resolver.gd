@@ -1113,7 +1113,9 @@ static func _player_act(state: Dictionary, actor: Dictionary, move_id: String, t
 					_hit(state, actor, t, m_total, events, int(move.get("pierce", 0)), bonus, ammo_hit, int(move.get("crit_pm", 0)) + emp_crit + int(kit_fx["crit_pm"]), boost)
 					if str(t["id"]) == BattleState.BOSS_ID:
 						var pressure: float = float(hp_before_hit - int(t["hp"]) + shield_before_hit - int(t["shield"]))
-						events.append({"t": "strategy_hit", "unit": actor["id"], "move": move_id, "pressure": pressure, "link_mult": link_mult, "combo_mult": combo_mult, "other_mult": float(move["mult"]) * awake_mult * emp_mult * mark_mult, "effective_mult": m_total})
+						var strategy_hits: Array = state.get("strategy_hits", [])
+						strategy_hits.append({"unit": actor["id"], "move": move_id, "pressure": pressure, "link_mult": link_mult, "combo_mult": combo_mult, "other_mult": float(move["mult"]) * awake_mult * emp_mult * mark_mult, "effective_mult": m_total})
+						state["strategy_hits"] = strategy_hits
 			if move.has("consume_marks"):
 				Marks.consume(t, events)
 		if move.has("heal"):
