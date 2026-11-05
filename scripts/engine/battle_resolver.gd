@@ -884,7 +884,7 @@ static func _rescue(state: Dictionary, actor: Dictionary, move_id: String, event
 	_spend_reserve(state, reaction_cost(state, move_id), "react", events)
 	events.append({"t": "act", "unit": actor["id"], "move": move_id})
 	# minigioco del battito (battle3d): a tempo rialza con piu' PV, sbagliato con meno. Nox «Reperibile»: di piu' ancora.
-	var rk: float = BattleTypes.RESCUE_HP + react_bonus(state, actor, "rescue")
+	var rk: float = BattleTypes.RESCUE_HP + react_bonus(state, actor, "rescue", events)
 	var hp: int = maxi(1, int(round(float(u["max_hp"]) * rk)))
 	u["hp"] = hp
 	u["rescued"] = true
@@ -903,7 +903,7 @@ static func react_grade(state: Dictionary, u: Dictionary) -> String:
 
 
 # PV in piu' (frazione) del Soccorso: esito del minigioco e reazione personale di Nox
-static func react_bonus(state: Dictionary, actor: Dictionary, kind: String) -> float:
+static func react_bonus(state: Dictionary, actor: Dictionary, kind: String, events: Array = []) -> float:
 	var g: String = react_grade(state, actor)
 	var k: float = 0.15 if g == "great" else (-0.1 if g == "fail" else 0.0)
 	if kind == "rescue" and str(actor.get("react_mod", "")) == "reperibile":
