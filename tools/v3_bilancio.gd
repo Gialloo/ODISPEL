@@ -260,6 +260,7 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				_add(st, "res_ammo_effective", float(e.get("effective", 0)))
 				_add(st, "res_ammo_wasted", float(e.get("wasted", 0)))
 				var ammo_effective: float = float(e.get("effective", 0))
+				_add(st, "res_ammo_net", ammo_effective)
 				_add(st, "res_ammo_net_" + ammo_char, ammo_effective)
 				var ammo_source: String = str(e.get("source", "unknown"))
 				_add(st, "res_ammo_source_" + ammo_source + "_net", ammo_effective)
@@ -287,12 +288,14 @@ func _scan(ev: Array, st: Dictionary, state: Dictionary) -> void:
 				var ardore_gain: float = float(e.get("effective", e.get("amount", 0)))
 				var ardore_source: String = str(e.get("src", "unknown"))
 				_add(st, "res_ardore_gain", ardore_gain)
+				_add(st, "res_ardore_net", ardore_gain)
 				_add(st, "res_ardore_wasted", float(e.get("wasted", 0)))
 				_add(st, "res_ardore_source_" + ardore_source + "_gain", ardore_gain)
 			"ritmo_loss":
 				var ardore_spend: float = float(e.get("effective", e.get("amount", 0)))
 				var ardore_why: String = str(e.get("why", "unknown"))
 				_add(st, "res_ardore_spend", ardore_spend)
+				_add(st, "res_ardore_net", -ardore_spend)
 				_add(st, "res_ardore_wasted", float(e.get("wasted", 0)))
 				_add(st, "res_ardore_source_" + ardore_why + "_spend", ardore_spend)
 			"hype":
@@ -487,6 +490,13 @@ func _init() -> void:
 			float(st.get("res_reserve_wasted", 0.0)) / r, float(st.get("res_reserve_net", 0.0)) / r])
 		print("                ARDORE +%.1f / -%.1f | spreco %.1f" % [
 			float(st.get("res_ardore_gain", 0.0)) / r, float(st.get("res_ardore_spend", 0.0)) / r, float(st.get("res_ardore_wasted", 0.0)) / r])
+		print("                RICONCILIAZIONE · EN %+.1f | GAUGE %+.1f | HYPE %+.1f | munizioni %+.1f | Riserva %+.1f | Ardore %+.1f (atteso 0)" % [
+			(float(st.get("res_energy_net", 0.0)) - float(st.get("res_energy_gain_gross", 0.0)) + float(st.get("res_energy_spend_gross", 0.0))) / r,
+			(float(st.get("res_gauge_net", 0.0)) - float(st.get("res_gauge_gain_gross", 0.0)) + float(st.get("res_gauge_spend_gross", 0.0))) / r,
+			(float(st.get("res_hype_net", 0.0)) - float(st.get("res_hype_gain_gross", 0.0)) + float(st.get("res_hype_spend_gross", 0.0))) / r,
+			(float(st.get("res_ammo_net", 0.0)) - float(st.get("res_ammo_gain_gross", 0.0)) + float(st.get("res_ammo_spend_gross", 0.0))) / r,
+			(float(st.get("res_reserve_net", 0.0)) - float(st.get("res_reserve_gain", 0.0)) + float(st.get("res_reserve_spend", 0.0))) / r,
+			(float(st.get("res_ardore_net", 0.0)) - float(st.get("res_ardore_gain", 0.0)) + float(st.get("res_ardore_spend", 0.0))) / r])
 		if dettaglio:
 			var parts: String = "     quota danno diretto ai PV del boss:"
 			for c in PARTY:
