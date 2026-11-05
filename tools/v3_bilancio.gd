@@ -458,6 +458,7 @@ func _init() -> void:
 	var solo: String = ""
 	var dettaglio: bool = false
 	var confronto: bool = false
+	var use_stability: bool = true
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("semi="):
 			seeds = int(a.substr(5))
@@ -479,7 +480,7 @@ func _init() -> void:
 		elif a == "giro":
 			BattleFlow.timeline = false
 		elif a == "nostab":
-			Stability.enabled = false     # Fase 3 spenta: BREAK del 0.54 (per il confronto prima/dopo)
+			use_stability = false     # Fase 3 spenta: BREAK classico per il confronto
 		elif a == "confronto":
 			confronto = true
 		elif a == "vel":
@@ -510,7 +511,7 @@ func _init() -> void:
 				float(st.get("break_latent_pressure", 0.0)) / sr,
 				float(st.get("break_phases", 0.0)) / sr - float(legacy.get("break_phases", 0.0)) / lr])
 		else:
-			st = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds, greg)
+			st = _run(str(enc[0]), int(enc[1]), float(enc[2]), float(enc[3]), bool(enc[4]), seeds, greg, use_stability)
 		var r: float = float(st["runs"])
 		var tot_dmg: float = maxf(1.0, float(st.get("dmg_tot", 0.0)))
 		var label: String = str(enc[0]) if greg == "" else "%s+%s" % [str(enc[0]).trim_prefix("frammento_"), str(greg).trim_prefix("frammento_")]
