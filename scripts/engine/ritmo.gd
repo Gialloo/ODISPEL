@@ -122,8 +122,10 @@ static func gain(state: Dictionary, n: int, src: String, unit: String, events: A
 static func drain(state: Dictionary, n: int, why: String, events: Array, keep_level: bool = false) -> void:
 	var r: Dictionary = st(state)
 	var before: int = int(r["ardore"])
-	r["ardore"] = maxi(0, before - maxi(0, n))
-	events.append({"t": "ritmo_loss", "amount": before - int(r["ardore"]), "value": int(r["ardore"]), "why": why})
+	var requested: int = maxi(0, n)
+	r["ardore"] = maxi(0, before - requested)
+	var effective: int = before - int(r["ardore"])
+	events.append({"t": "ritmo_loss", "resource": "ardore", "requested": requested, "amount": effective, "effective": effective, "value": int(r["ardore"]), "why": why, "wasted": requested - effective})
 	if keep_level:
 		r["hold"] = true
 		return
