@@ -5,7 +5,7 @@ extends SceneTree
 # Uso: godot --headless --path . --script tools/v3_bilancio.gd -- [semi=40] [minori] [dettaglio] [replica=N] [solo=distributore]
 #   semi=N      quanti semi per scontro (default 40)
 #   replica=N   Replica della diretta: nemici +15% PV e attacco per giro
-#   dettaglio   sotto ogni scontro la quota di danno di tutti e quattro
+#   dettaglio   sotto ogni scontro la quota di danno e il dettaglio risorse per personaggio/fonte
 #   minori      include anche i frammenti (nemici minori), compresi quelli con la scheggia (due nemici, Gregario)
 #   solo=ID     un solo scontro
 #   ng=N        New Game+ N: nemici al livello di BattleTypes.replica_level, squadra da Progress (sblocchi migliori equipaggiati)
@@ -13,7 +13,9 @@ extends SceneTree
 #   kit         anche senza ng, la squadra usa Progress (sblocchi del livello) invece del kit base
 #   giro        senza Timeline: il giro a round della Fase 0 (per confrontare)  · vel  tabella VEL / ΔT / azioni ai livelli (Fase 1)
 # Gli scontri e le scale PV/attacco replicano battle3d.gd (pv_k, atk_k, livello); la squadra e' quella dell'atto 1 con ultimate al 60%.
-# Metriche: esito, KO, turni boss, danno diretto/indiretto, cure effettive, scudi, reazioni e timeout.
+# Metriche: esito, KO, turni boss, danno diretto/indiretto, cure/scudi, reazioni, timeout ed economia risorse.
+# Risorse: EN, Gauge, HYPE, munizioni, Riserva e Ardore; flussi lordi/netti, sprechi, fonti e saldi iniziali/finali.
+# Le righe di riconciliazione devono restare a 0: confrontano eventi di flusso e saldi dello stato.
 # Le occasioni sono conteggiate solo quando un eroe ha un turno prima della carica e una reazione difensiva valida.
 
 const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
