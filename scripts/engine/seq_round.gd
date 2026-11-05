@@ -67,6 +67,7 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary, qu
 	if str(state["winner"]) != "":
 		return events
 	state["events"] = events
+	var resource_before: Dictionary = ResourceTelemetry.snapshot(state)
 	var p: Dictionary = BattleState.player(state, pid)
 	if p.is_empty() or not BattleState.player_alive(state, p):
 		return events
@@ -95,7 +96,7 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary, qu
 		# ha gia' dato il suo turno a una tecnica combinata del compagno
 		events.append({"t": "duo_rest", "unit": actor["id"]})
 		p["choice"] = null
-		_log(state, events)
+		_log(state, events, resource_before, "player_action")
 		return events
 	if BattleState.is_alive(actor):
 		BattleResolver._player_act(state, actor, str(p["choice"]["move"]), str(p["choice"]["target"]), events)
@@ -109,7 +110,7 @@ static func player_action(state: Dictionary, pid: String, choice: Dictionary, qu
 		if not quick:
 			_check_slancio(state, actor, events)
 	p["choice"] = null
-	_log(state, events)
+	_log(state, events, resource_before, "player_action")
 	return events
 
 
@@ -185,11 +186,12 @@ static func boss_action(state: Dictionary, unit_id: String = BattleState.BOSS_ID
 	if str(state["winner"]) != "":
 		return events
 	state["events"] = events
+	var resource_before: Dictionary = ResourceTelemetry.snapshot(state)
 	if unit_id == Gregario.ID:
 		Gregario.act(state, events)
 		BattleResolver._check_winner(state, events)
 		Kits.after_events(state, events)
-		_log(state, events)
+		_log(state, events, resource_before, "gregario_action")
 		return events
 	var boss: Dictionary = BattleState.boss(state)
 	if BattleState.is_alive(boss):
@@ -207,7 +209,7 @@ static func boss_action(state: Dictionary, unit_id: String = BattleState.BOSS_ID
 		Kits.after_events(state, events)
 	state["seq"]["boss_acted"] = true
 	state["seq"]["snap"] = _snapshot(state)
-	_log(state, events)
+	_log(state, events, resource_before, "boss_action")
 	return events
 
 
@@ -215,6 +217,7 @@ static func boss_action(state: Dictionary, unit_id: String = BattleState.BOSS_ID
 static func finish(state: Dictionary) -> Array:
 	var events: Array = []
 	state["events"] = events
+	var resource_before: Dictionary = ResourceTelemetry.snapshot(state)
 	var carry: Array = _carry(state)
 	if str(state["winner"]) == "":
 		Arena.resolve(state, events)
@@ -222,7 +225,7 @@ static func finish(state: Dictionary) -> Array:
 	if str(state["winner"]) == "":
 		BattleResolver._end_of_round(state, events)
 	BattleResolver._check_winner(state, events)
-	_log(state, events)
+	_log(state, events, resource_before, "round_end")
 	var all: Array = state["seq"]["events"]
 	Tactics.track(state, all)
 	Tactics.end_round(state, all)
@@ -242,8 +245,9 @@ static func finish(state: Dictionary) -> Array:
 
 # ---------- interni ----------
 
-static func _log(state: Dictionary, events: Array) -> void:
+static func _log(state: Dictionary, events: Array, resource_before: Dictionary = {}, phase: String = "action") -> void:
 	Ritmo.after_events(state, events)      # RITMO di squadra (fase R1): legge gli eventi di ogni passo e aggiunge i suoi in coda
+	ResourceTelemetry.record(state, resource_before, events, phase)
 	if state.has("seq"):
 		(state["seq"]["events"] as Array).append_array(events)
 
