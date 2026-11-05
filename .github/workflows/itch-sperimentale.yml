@@ -1,52 +1,47 @@
-# Pubblica su itch.io le build SPERIMENTALI, su canali separati: la versione stabile (android-v3, windows-v3) non si tocca.
-#   releases_sperimentali/*.apk -> canale experimental-android
-#   releases_sperimentali/*.zip -> canale experimental-pc
-# Parte solo con un push su un branch experiment/** che cambia i file in releases_sperimentali/ (aggiungerli = pubblicare:
-# serve il via dell'autore). La pagina di destinazione NON e' scritta qui: sta nella variabile del repository ITCH_LAB_TARGET
-# (es. boomeranza/odispel-lab, pagina in bozza o ad accesso ristretto). Se la variabile manca il workflow si ferma senza caricare.
-name: Pubblica build sperimentale su itch.io
+# Pubblica su itch.io l'APK di TEST sulla stessa pagina della demo (boomeranza/odispel), su un canale suo: test-android.
+# Decisione dell'autore (05/11/2026): «stessa pagina di itch.io con un apk separato chiamato "test V 0.1.0"».
+#   releases_sperimentali/test V X.Y.Z.apk -> canale test-android, versione X.Y.Z
+# I canali stabili (android-v3, windows-v3) e quelli della V2 (android-mobile, windows-pc) non si toccano mai da qui.
+# Parte solo con un push su un branch experiment/** che cambia un APK in releases_sperimentali/ (aggiungerlo = pubblicare:
+# serve il via dell'autore), oppure a mano.
+name: Pubblica APK di test su itch.io
 
 on:
   push:
     branches: ['experiment/**']
     paths:
       - 'releases_sperimentali/*.apk'
-      - 'releases_sperimentali/*.zip'
+  workflow_dispatch:
 
 jobs:
   itch:
     runs-on: ubuntu-latest
     env:
       BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
-      ITCH_TARGET: ${{ vars.ITCH_LAB_TARGET }}
+      ITCH_TARGET: boomeranza/odispel
+      ITCH_CHANNEL: test-android
     steps:
       - uses: actions/checkout@v4
-      - name: Controlla destinazione e chiave
+      - name: Controlla canale e chiave
         run: |
-          if [ -z "$ITCH_TARGET" ]; then echo "::error::Manca la variabile ITCH_LAB_TARGET: nessun caricamento"; exit 1; fi
-          if [ "$ITCH_TARGET" = "boomeranza/odispel" ]; then echo "::error::ITCH_LAB_TARGET non puo' essere la pagina stabile"; exit 1; fi
+          case "$ITCH_CHANNEL" in android-v3|windows-v3|android-mobile|windows-pc) echo "::error::canale stabile vietato"; exit 1;; esac
           if [ -z "$BUTLER_API_KEY" ]; then echo "::error::Manca il segreto ITCH_API_KEY"; exit 1; fi
       - name: Controlla la firma dell'APK
         run: |
-          apk=$(ls releases_sperimentali/*.apk | sort -V | tail -1)
+          apk=$(ls releases_sperimentali/test\ V\ *.apk | sort -V | tail -1)
           signer=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
           "$signer" verify --verbose --min-sdk-version 24 "$apk"
       - name: Installa butler
         run: |
           curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
           unzip -q butler.zip -d butler && chmod +x butler/butler
-      - name: Carica sui canali sperimentali
+      - name: Carica l'APK di test
         run: |
-          push() {   # file canale versione
-            for n in 1 2 3 4; do
-              if ./butler/butler push "$1" "$ITCH_TARGET:$2" --userversion "$3" > out.txt 2>&1; then cat out.txt; return 0; fi
-              cat out.txt; sleep 45
-            done
-            echo "::error::butler push $2 fallito: $(tail -c 400 out.txt | tr '\n' ' ')"
-            return 1
-          }
-          apk=$(ls releases_sperimentali/*.apk | sort -V | tail -1)
-          zip=$(ls releases_sperimentali/*.zip | sort -V | tail -1)
-          ver="$(grep -m1 'config/version=' project.godot | cut -d'"' -f2)-exp.${GITHUB_REF_NAME##*/}+${GITHUB_SHA::7}"
-          push "$apk" experimental-android "$ver"
-          push "$zip" experimental-pc "$ver"
+          apk=$(ls releases_sperimentali/test\ V\ *.apk | sort -V | tail -1)
+          ver=$(basename "$apk" .apk | sed 's/test V //')
+          for n in 1 2 3 4; do
+            if ./butler/butler push "$apk" "$ITCH_TARGET:$ITCH_CHANNEL" --userversion "$ver" > out.txt 2>&1; then cat out.txt; exit 0; fi
+            cat out.txt; sleep 45
+          done
+          echo "::error::butler push fallito: $(tail -c 400 out.txt | tr '\n' ' ')"
+          exit 1
