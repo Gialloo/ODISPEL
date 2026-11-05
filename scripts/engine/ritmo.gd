@@ -110,7 +110,7 @@ static func gain(state: Dictionary, n: int, src: String, unit: String, events: A
 	after = maxi(after, before)
 	r["ardore"] = after
 	r["hold"] = false
-	events.append({"t": "ritmo_gain", "src": src, "unit": unit, "amount": after - before, "value": after, "wasted": n - (after - before)})
+	events.append({"t": "ritmo_gain", "resource": "ardore", "src": src, "unit": unit, "requested": n, "amount": after - before, "effective": after - before, "value": after, "wasted": n - (after - before)})
 	if after > before and unit != "":
 		(r["helpers"] as Dictionary)[unit] = true
 	return after - before
