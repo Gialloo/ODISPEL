@@ -3581,7 +3581,7 @@
     ]
   },
   "varco": {
-    "riassunto": "In piazza si apre un varco. Echo confessa: li ha incastrati lei perché erano quattro persone compromesse, che nessuno avrebbe creduto, e le promesse erano false. Ognuno la sente come un tradimento personale.",
+    "riassunto": "In piazza si apre un varco. Echo rivela di aver manipolato il gruppo per chiudere le Anomalie. Le promesse erano false, ma il legame nato durante il viaggio era autentico.",
     "righe": [
       {
         "chi": "echo",
@@ -3604,13 +3604,7 @@
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "triste",
-        "testo": "..."
-      },
-      {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "triste",
-        "testo": "Non esistono. Le ho cancellate io, alle tre e un minuto."
+        "testo": "...Non esistono. Le ho cancellate io.."
       },
       {
         "chi": "echo",
