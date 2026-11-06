@@ -775,3 +775,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test implementati e funzionamento:** la fixture ConfigFile viene salvata prima con capitolo conclusivo e passo 1 (deve essere rifiutata), poi con lo stesso capitolo e passo 0 (deve essere accettata). Il test usa il numero di capitoli caricato dai dati reali, quindi non codifica a mano il numero dell'Atto.
 - **Risultato atteso:** gli stati terminali prodotti dal gioco restano caricabili; checkpoint terminali inventati/corrotti non superano la validazione.
 - **Verifica effettiva:** controllo statico di Story.advance() e aggiornamento del test. Nessuna esecuzione Godot effettuata.
+
+
+### 2026-11-06 — Comandi di regressione aggiornati nel README
+
+- **File modificato:** README.md.
+- **Miglioria:** aggiunto il comando headless per eseguire test_v3_integrita_salvataggio.gd accanto ai comandi unitari già documentati.
+- **Perché:** un test nuovo ma non facilmente individuabile rischia di non entrare nella routine di verifica locale. Il comando rende esplicito come lanciarlo con la stessa modalità usata dagli altri test SceneTree.
+- **Cosa esegue:** controlli dei tipi dello stato area, rifiuto dei dati malformati, coerenza del checkpoint conclusivo e recupero del backup dopo corruzione del file principale. Usa un file user:// dedicato.
+- **Risultato atteso:** uscita con codice 0 e messaggio test_v3_integrita_salvataggio: OK se tutti gli assert passano; codice 1 e messaggi FAIL in caso contrario.
+- **Verifica effettiva:** verificata la coerenza del comando con la convenzione degli altri test nel README. Non eseguito perché questa sessione non dispone del runtime Godot del progetto.
