@@ -728,10 +728,12 @@ scene("c4_inventario", "Un inventario dei sequestri LibraCorp rivela il nome di 
     L("ferri/serio", "Sta' zitto Saul."),
     L("saul/neutro", "Okay, okay, ricevuto capo."))
 
-scene("c4_combinazione", "Indizio: la cassaforte teme il rosso.",
-    L("saul/neutro", "La serratura ha una spia. Si sblocca col ROSSO. Difetto di fabbrica."),
-    L("ferri/sfotto", "Il rosso sono io. Per una volta il ladro sono io."),
-    L("saul/neutro", "Sei il grimaldello, capo."))
+scene("c4_combinazione", "Indizio: la cassaforte reagisce al rosso.",
+    L("saul/neutro", "Aspettate... La serratura reagisce al rosso."),
+    L("ferri/sfotto", "Incredibile."),
+    L("saul/neutro", "Guarda un po'. Per una volta sei tu ad aprire una porta per me."),
+    L("ferri/neutro", "Incredibile."),
+    L("saul/neutro", "Tranquillo, capo. Non capita spesso che un poliziotto mi sia così utile."))
 
 scene("c4_boss", "La Cassaforte si apre: dentro c'è il colpo della vita. La porta blindata si chiude su Rio e Saul la tiene aperta col proprio corpo.",
     L("CASSAFORTE", "COMBINAZIONE RICHIESTA. LA COMBINAZIONE È: TUTTO QUELLO CHE HAI."),
