@@ -390,6 +390,10 @@ func _process(delta: float) -> void:
 		_enemy_t += delta
 		_grace = maxf(0.0, _grace - delta)
 	else:
+		# Dialoghi e pausa non inoltrano i rilasci touch al controller.
+		# Libera una sola volta gli input rimasti acquisiti entrando in uno stato non esplorabile.
+		if _touch != null and _touch.has_active_input():
+			_touch.release_all()
 		player.move_speed = 0.0
 	_follow(delta)
 	_animate_world(delta)
