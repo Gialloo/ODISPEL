@@ -67,6 +67,10 @@ func take_cam_drag() -> Vector2:
 	return d
 
 
+func has_active_input() -> bool:
+	return _stick_idx >= 0 or _cam_idx >= 0 or stick != Vector2.ZERO or cam_drag != Vector2.ZERO or _knob != Vector2.ZERO
+
+
 func release_all() -> void:
 	_stick_idx = -1
 	_cam_idx = -1
