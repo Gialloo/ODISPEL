@@ -256,6 +256,15 @@ static func preview(state: Dictionary, n: int) -> Array:
 		var e0: Dictionary = _entry(state, sim[cur])
 		if tl.has("cur_quick"):
 			e0 = (tl["cur_quick"] as Dictionary).duplicate()
+			# Lo SLANCIO normale aggiunge +15 al recupero dopo l'azione rapida.
+			# La preview viene spesso letta prima che l'azione venga risolta: anticipiamo
+			# il costo nella sola copia simulata, non nello slot reale.
+			var quick_slot: Dictionary = sim[cur]
+			var quick_entry: Dictionary = tl["cur_quick"]
+			if bool(quick_entry.get("slancio", false)) and not bool(quick_entry.get("waive", false)):
+				quick_slot["at"] = int(quick_slot.get("at", 0)) + BattleTypes.TL_SLANCIO_EXTRA * 100
+				st += 1
+				quick_slot["stamp"] = st
 		else:
 			# Il turno corrente e' gia' mostrato: simula anche il suo completamento,
 			# altrimenti _pick() lo seleziona di nuovo come se non avesse ancora agito.
