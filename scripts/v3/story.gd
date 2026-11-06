@@ -139,6 +139,10 @@ static func _read_valid_save(path: String) -> ConfigFile:
 		var steps: Array = chs[loaded_chapter].get("passi", [])
 		if loaded_step >= steps.size():
 			return null
+	else:
+		# Lo stato conclusivo e' rappresentato solo da capitolo == numero capitoli, passo 0.
+		if loaded_step != 0:
+			return null
 	var saved: Variant = cfg.get_value("storia", "flag", {})
 	var st: Variant = cfg.get_value("storia", "area", {})
 	if not (saved is Dictionary) or not validate_area_state(st):
