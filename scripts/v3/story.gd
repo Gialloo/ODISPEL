@@ -93,7 +93,7 @@ static func start_chapter(i: int) -> void:
 
 
 static func has_save() -> bool:
-	return FileAccess.file_exists(save_path)
+	return FileAccess.file_exists(save_path) or FileAccess.file_exists(save_path + ".bak")
 
 
 static func _read_valid_save(path: String) -> ConfigFile:
@@ -162,18 +162,31 @@ static func save() -> bool:
 	if cfg.save(temp_path) != OK:
 		return false
 	var had_save: bool = FileAccess.file_exists(save_path)
-	if had_save:
-		if FileAccess.file_exists(backup_path):
-			DirAccess.remove_absolute(backup_abs)
+	var main_valid: bool = had_save and _read_valid_save(save_path) != null
+	if main_valid:
+		# Conserva il file principale valido come backup. Non sovrascrivere mai un backup
+		# recuperabile con un file principale che la validazione ha appena rifiutato.
+		if FileAccess.file_exists(backup_path) and DirAccess.remove_absolute(backup_abs) != OK:
+			DirAccess.remove_absolute(temp_abs)
+			return false
 		if DirAccess.rename_absolute(save_abs, backup_abs) != OK:
 			DirAccess.remove_absolute(temp_abs)
 			return false
+	elif had_save:
+		# Il file principale e' gia' invalido: lo sposta da parte, ma lascia intatto l'eventuale .bak.
+		var bad_abs: String = ProjectSettings.globalize_path(save_path + ".bad")
+		if FileAccess.file_exists(save_path + ".bad") and DirAccess.remove_absolute(bad_abs) != OK:
+			DirAccess.remove_absolute(temp_abs)
+			return false
+		if DirAccess.rename_absolute(save_abs, bad_abs) != OK:
+			DirAccess.remove_absolute(temp_abs)
+			return false
 	if DirAccess.rename_absolute(temp_abs, save_abs) != OK:
-		if had_save:
+		if main_valid and FileAccess.file_exists(backup_path):
 			DirAccess.rename_absolute(backup_abs, save_abs)
 		DirAccess.remove_absolute(temp_abs)
 		return false
-	if had_save and FileAccess.file_exists(backup_path):
+	if FileAccess.file_exists(backup_path):
 		DirAccess.remove_absolute(backup_abs)
 	return true
 
