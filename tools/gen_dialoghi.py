@@ -732,7 +732,6 @@ scene("c4_combinazione", "Indizio: la cassaforte reagisce al rosso.",
     L("saul/neutro", "Aspettate... La serratura reagisce al rosso."),
     L("ferri/sfotto", "Incredibile."),
     L("saul/neutro", "Guarda un po'. Per una volta sei tu ad aprire una porta per me."),
-    L("ferri/neutro", "Incredibile."),
     L("saul/neutro", "Tranquillo, capo. Non capita spesso che un poliziotto mi sia così utile."))
 
 scene("c4_boss", "La Cassaforte si apre: dentro c'è il colpo della vita. La porta blindata si chiude su Rio e Saul la tiene aperta col proprio corpo.",
