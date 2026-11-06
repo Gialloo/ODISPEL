@@ -849,3 +849,18 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test:** nessun test automatizzato specifico aggiunto; la modifica consiste in guardie di uscita anticipata. Verifica statica dei due percorsi e dei casi limite descritti sopra. Test runtime Godot non eseguito in questa sessione.
 - **Verifiche manuali richieste:** ruota nascosta/visibile durante apertura e chiusura; riflettore durante la dissolvenza; cartellino Gregario nascosto/visibile; pulsante MIRA visibile con cartellino nascosto; cambio bersaglio e movimento camera.
 - **Limite:** beneficio quantitativo non misurato; non attribuire guadagni FPS senza benchmark.
+
+
+### 2026-11-06 — Analisi profonda di battle3d.gd e dei visual collegati
+
+- **File analizzati:** `scripts/v3/battle3d.gd` (circa 4.915 righe); `character_visual.gd`; `vending_visual.gd`; `cmd_wheel.gd`; `reticle.gd`; `broken_cam.gd`.
+- **Metodo:** lettura statica di `_process()`, funzioni di proiezione HUD, costruzione unità, animazioni e componenti grafici. Nessun benchmark runtime.
+- **Rilievo 1 — proiezioni HUD:** `_process()` richiama ogni frame `_update_wheel()`, `_place_boss_tag()` e `_place_greg_tag()`. Le funzioni proiettano punti 3D in coordinate UI, interrogano dimensioni dei controlli e applicano layout. Le proiezioni sono necessarie quando camera/personaggio si muovono; non è sicuro ridurle con un timer fisso. La prima ottimizzazione sicura è evitare il percorso quando i controlli interessati sono tutti nascosti.
+- **Rilievo 2 — animazione personaggi:** `CharacterVisual._process()` aggiorna gambe, braccia, busto, testa, respiro, posizione corpo, accessori e ombra. Parte del lavoro è idle intenzionale. Una modalità sospendibile richiede prima di mappare ogni proprietà scritta da Tween, hit, stance, hop, fall, props e movimento.
+- **Rilievo 3 — animazione nemici:** `VendingVisual._process()` aggiorna posizione/rotazione/scala e, quando presenti, cubi orbitanti; idle, awake, stunned e down hanno semantiche visive diverse. Non sospendere genericamente senza mappare i tipi e le transizioni.
+- **Rilievo 4 — componenti già efficienti:** `Reticle` disabilita il process quando nascosto; `CmdWheel` esce quando invisibile e limita il redraw; `BrokenCam` condivide lo shader e non aggiorna i parametri quando il rettangolo è invisibile. `_refresh_hud()` riusa le righe ordine e limita alcuni redraw tramite firme.
+- **Rilievo 5 — HUD aggiornato:** `_refresh_hud()` esegue molte assegnazioni di valori e testo; per priorità, prima conviene misurare il costo delle proiezioni e delle animazioni continue, evitando una riscrittura del refresh che potrebbe introdurre stati UI non aggiornati.
+- **Decisione:** nessun throttling arbitrario, nessuna sospensione generale di animazioni e nessun cambiamento alle formule di proiezione. Sono state aggiunte solo guardie di uscita anticipata quando ruota/riflettore e cartellino/pulsante MIRA sono entrambi nascosti.
+- **Test:** controllo statico dei percorsi nascosti e visibili; nessun test Godot eseguito. Verifiche manuali richieste: apertura/chiusura ruota, dissolvenza riflettore, cartellino Gregario, pulsante MIRA indipendente, cambio bersaglio, movimento camera e resize viewport.
+- **Risultato atteso:** evitare lavoro GDScript non necessario nei frame senza UI pertinente, mantenendo aggiornamento completo quando un elemento è visibile. Il guadagno quantitativo non è misurato.
+- **Passi successivi:** mappare tutte le scritture a proprietà animate di CharacterVisual/VendingVisual; aggiungere benchmark ripetibili con battaglia standard, gregario, QTE, cut-in e BREAK; misurare frame time medio/p95/max, CPU, memoria e draw calls su PC e Android.
