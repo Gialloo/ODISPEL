@@ -493,12 +493,17 @@ scene("c2_sera_saul_zecca", "Rio propone a Saul una diretta insieme. Saul gli sp
 scene("c2_sera_ferri_zecca", "Lance e Rio, entrambi con la magia addosso, si allenano. Legame Lance e Rio.",
     L("ferri/serio", "Guardia alta. Se combatti come posti, sei morto in due secondi."),
     L("zecca/sfotto", "Tu combatti come uno che scrive i manuali."),
-    L("ferri/serio", "Li ho scritti. Il capitolo tre è mio."),
+    L("ferri/serio", "Li ho scritti."),
     L("zecca/sorpreso", "...Davvero?"),
     L("ferri/serio", "«Postura e dignità». Quaranta pagine."),
-    L("zecca/serio", "La mia maschera, il tuo braccio. Roba strana che ci è caduta addosso. Siamo uguali, no?"),
+    L("zecca/serio", "La mia maschera, il tuo braccio."),
+    L("zecca/serio", "Roba strana che ci è capitata. Siamo uguali, no?"),
     L("ferri/neutro", "No. Ma ci copriamo le spalle. Guardia alta."),
-    L("zecca/felice", "TITOLO: «Mi alleno con Lance. Ho pianto».", imposta="legame_ferri_zecca"))
+    L("zecca/triste", "Sniff, Sniff. Si..."),
+    L("ferri/sorpreso", "Stai.. piangendo?"),
+    L("zecca/triste", "Sniff, Sniff. Si..."),
+    L("ferri/neutro", "Per oggi chiudiamola qui.."),
+    L("zecca/triste", "Sniff, Sniff, si...", imposta="legame_ferri_zecca"))
 
 scene("c2_sera_nox_echo", "Nox fa il turno di guardia e parla con Echo, che non dorme mai. Diventano quasi amiche.",
     L("echo/neutro", "Nox. Sono le tre e dodici."),
