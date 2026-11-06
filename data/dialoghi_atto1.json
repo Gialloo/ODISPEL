@@ -3725,7 +3725,7 @@
     ]
   },
   "varco_crollo": {
-    "riassunto": "Il Committente ruba il varco a Echo, la cupola crolla e Lance usa il braccio per salvare Rio. Echo inceppa le telecamere della piazza: il braccio lo vede solo il gruppo. Ora li cerca il paese intero.",
+    "riassunto": "Il Committente ruba il varco a Echo, la cupola crolla e Lance salva Rio mostrando il braccio. Echo blocca le telecamere della piazza. Le Civette danno la caccia al gruppo in tutto il paese; Rio sceglie di portare Echo con sé.",
     "righe": [
       {
         "chi": "VOCE SENZA VOLTO",
@@ -3734,7 +3734,6 @@
       },
       {
         "chi": "echo",
-        "col": "#3fe0ff",
         "espr": "sorpreso",
         "testo": "Tu... il Committente. No. No, no. Il varco si chiude!"
       },
@@ -3770,20 +3769,18 @@
       },
       {
         "chi": "echo",
-        "col": "#3fe0ff",
         "espr": "serio",
         "testo": "Piazza Centrale, telecamere dalla uno alla dodici: inceppate."
       },
       {
         "chi": "echo",
-        "col": "#3fe0ff",
         "espr": "serio",
         "testo": "Come all'Incrocio Nove."
       },
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "...Non ti ringrazio. Rio. Alzati. Correte."
+        "testo": "...Non ti ringrazio. Rio, alzati. Correte."
       },
       {
         "chi": "STRIX",
@@ -3812,7 +3809,6 @@
       },
       {
         "chi": "echo",
-        "col": "#3fe0ff",
         "espr": "triste",
         "testo": "...Portatemi con voi. Non ho più una casa. Per rimediare."
       },
