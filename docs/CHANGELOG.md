@@ -1,5 +1,11 @@
 # Novità
 
+## 0.58.0 · Dialoghi dell'Atto 1
+
+- **Revisione narrativa**: integrate le battute approvate e gli ampliamenti dei personaggi nell'Atto 1, compreso il finale del Capitolo 4 (Il Varco e Il Crollo).
+- **Continuità del cast**: le scene aggiornate riportano gli interlocutori e le battute nell'ordine approvato; JSON e generatore restano sincronizzati.
+
+
 ## 0.57.0 · Lance e Saul disegnati dall'autore nell'HUD
 
 - **Nuovi ritratti di Lance e Saul** nell'HUD di battaglia e nel volto piccolo della squadra, disegnati a mano dall'autore. Sono fermi: niente respiro né animazioni, entrano con la lastra e restano immobili.
