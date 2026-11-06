@@ -167,8 +167,27 @@ func _per_unit_source() -> void:
 	check(mixed_source == "mista", "piu' azioni della stessa unita' non vengono attribuite arbitrariamente")
 
 
+func _phase_transition_source() -> void:
+	var state: Dictionary = _fresh()
+	var u: Dictionary = BattleState.active_unit(state, "p1")
+	var before: Dictionary = ResourceTelemetry.snapshot(state)
+	var events: Array = [
+		{"t": "resource_change", "unit": str(u["id"]), "resource": "energy", "source": "azione:precedente"}
+	]
+	ResourceTelemetry.spend_unit(u, "energy", 1, events, "phase_change")
+	ResourceTelemetry.gain_unit(u, "gauge", 7, BattleTypes.GAUGE_MAX, events, "phase_change")
+	ResourceTelemetry.record(state, before, events, "phase_transition")
+	var sources: Dictionary = {}
+	for e in events:
+		if str(e.get("t", "")) == "resource_delta":
+			sources[str(e.get("resource", ""))] = str(e.get("source", ""))
+	check(str(sources.get("energy", "")) == "phase_change", "la spesa EN del cambio fase conserva la fonte diretta")
+	check(str(sources.get("gauge", "")) == "phase_change", "il guadagno barra del cambio fase conserva la fonte diretta")
+
+
 func _init() -> void:
 	_per_unit_source()
+	_phase_transition_source()
 	_unit_resources()
 	_net_snapshot()
 	_hype_and_ammo()
