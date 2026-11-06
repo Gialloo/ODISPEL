@@ -307,6 +307,24 @@ func _ingresso() -> void:
 			check(heroes == 4, "vantaggio: prima tutti e quattro gli eroi (%d)" % heroes)
 
 
+func _carry_difese_e_reazioni() -> void:
+	# Un round puo' chiudersi prima della prossima azione del boss: difese e reazioni devono attendere il colpo annunciato.
+	var s: Dictionary = _fresh("semaforo", 12)
+	BattleFlow.start_round(s)
+	var pid: String = _pid(s, "ferri")
+	var hero: Dictionary = BattleState.active_unit(s, pid)
+	hero["statuses"]["guard"] = 2
+	hero["shield"] = 25
+	s["reactions"] = [{"unit": str(hero["id"]), "react": "dodge"}]
+	s["react_grade"] = {str(hero["id"]): "perfect"}
+	BattleFlow.finish(s)
+	check(int(hero["statuses"].get("guard", 0)) == 2, "Timeline: uno stato difensivo guadagnato prima del boss viene conservato")
+	check(int(hero["shield"]) == 25, "Timeline: lo scudo resta disponibile per la prossima mossa del boss")
+	BattleFlow.start_round(s)
+	check((s["reactions"] as Array).size() == 1, "Timeline: la reazione scelta sopravvive al cambio round senza azione del boss")
+	check(str(s["react_grade"].get(str(hero["id"]), "")) == "perfect", "Timeline: il grado del minigioco resta associato alla reazione conservata")
+
+
 func _scontri_interi() -> void:
 	var n: int = 0
 	var wins: int = 0
@@ -375,6 +393,7 @@ func _init() -> void:
 	_interruzione()
 	_slancio_costo()
 	_ingresso()
+	_carry_difese_e_reazioni()
 	_scontri_interi()
 	if fails == 0:
 		print("test_v3_timeline: OK")
