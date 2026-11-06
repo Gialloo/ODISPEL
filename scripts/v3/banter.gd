@@ -25,11 +25,13 @@ var _gap: float = 2.0
 var _rand_t: float = 20.0
 var _idle_t: float = 0.0
 var _stack: VBoxContainer
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var paused: bool = false
 var set_key: String = "strada"     # quale gruppo di chiacchiere usare (una per area)
 
 
 func _ready() -> void:
+	_rng.randomize()
 	Ui.place(self, 0, 0, 1, 1)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stack = VBoxContainer.new()
@@ -38,7 +40,7 @@ func _ready() -> void:
 	Ui.place(_stack, 0, 0, 0, 0, 20, 120, 640, 560)
 	add_child(_stack)
 	_all = DialogData.banter(set_key)
-	_rand_t = randf_range(RANDOM_EVERY.x, RANDOM_EVERY.y)
+	_rand_t = _rng.randf_range(RANDOM_EVERY.x, RANDOM_EVERY.y)
 
 
 func busy() -> bool:
@@ -94,7 +96,7 @@ func _play_random(tipo: String) -> bool:
 			pool.append(b)
 	if pool.is_empty():
 		return false
-	_play(pool[randi() % pool.size()])
+	_play(pool[_rng.randi() % pool.size()])
 	return true
 
 
