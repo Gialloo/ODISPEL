@@ -769,24 +769,25 @@ scene("c4_dopo", "Dopo aver chiuso la cassaforte, Nox si occupa delle costole di
     L("echo/felice", "Quattro Anomalie. Riposate."),
     L("echo/felice", "All'alba, in piazza: vi porto le registrazioni. Promesso."))
 
-scene("c4_vigilia", "L'ultima notte al rifugio. Ognuno dice cosa farà con quello che Echo gli ha promesso. Echo chiede di essere salvata tra i contatti di Rio, e quasi confessa qualcosa.",
-    L("nox/neutro", "Ultima notte. Domani la cupola cade e ognuno a casa sua."),
+scene("c4_vigilia", "È l'ultima notte al rifugio. Il gruppo parla del futuro dopo la caduta della cupola. Rio salva Echo tra i contatti e lei quasi confessa qualcosa.",
+    L("nox/neutro", "Ultima notte. Domani la cupola cade e ognuno torna a casa sua."),
     L("zecca/felice", "La live della cupola è tutta nel telefono. Quando torna la rete la carico. Milioni, raga."),
-    L("zecca/serio", "...Però a casa ho trentadue follower. Qui ho voi."),
+    L("zecca/serio", "...Però a casa ho trentadue follower.. Qui ho voi."),
     L("saul/neutro", "Noi non ti seguiamo. Ti sopportiamo."),
     L("ferri/serio", "Io torno in servizio. Col grado. E poi dico la verità. Sul braccio, su Astrid, su tutto."),
     L("saul/neutro", "Ti arresteranno."),
-    L("ferri/neutro", "Con l'uniforme in ordine."),
+    L("ferri/neutro", "Non importa."),
     L("nox/neutro", "Dodici settimane di ferie. Le prime tre dormo. Poi forse torno alle Civette. Forse rispondo al telefono."),
     L("saul/neutro", "Io apro un negozio. Roba usata. Onesta. Quasi tutta."),
-    L("zecca/sorpreso", "Saul onesto? Questo è il vero colpo di scena."),
-    L("echo/neutro", "Rio. Mi salvi tra i contatti? Con un nome. Ho sempre avuto solo numeri di telecamera."),
-    L("zecca/felice", "Fatto. «Echo». Con la telecamera accanto. E il cuore. No, il cuore lo tolgo. ...No, lo lascio."),
+    L("echo/neutro", "Rio. Mi salvi tra i contatti? Con un nome."),
+    L("echo/neutro", "Ho sempre avuto solo numeri di telecamera."),
+    L("zecca/felice", "Fatto. «Echo». Con la telecamera accanto. ( E il cuore. No, forse il cuore lo tolgo, no lo lascio..)"),
     L("echo/triste", "...Grazie."),
     L("echo/serio", "Se un giorno scopriste che vi ho detto una cosa non vera... all'inizio..."),
     L("nox/neutro", "Echo?"),
     L("echo/neutro", "Niente. Una domanda per un film. Dormite."),
     L("ferri/serio", "...Ha cambiato discorso. Di nuovo."))
+
 # ================================================================== FINALE · IL VARCO
 # Il tradimento. Ognuno viene colpito nel punto in cui si era legato a Echo. Poi la cupola cade e Lance usa il braccio per
 # salvare Rio. Echo inceppa le telecamere della piazza come all'Incrocio Nove: il braccio lo vede solo il gruppo. Mostrarlo
