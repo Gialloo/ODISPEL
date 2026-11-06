@@ -108,7 +108,44 @@ func _reserve_and_ardore() -> void:
 	check(Ritmo.ardore(state) == 0 and int(ardore_loss.get("effective", -1)) == 100 and int(ardore_loss.get("wasted", -1)) == 20, "Ardore registra la perdita effettiva e la quota non applicabile")
 
 
+func _per_unit_source() -> void:
+	var state: Dictionary = {
+		"units": {
+			"lance": {"id": "lance", "side": "player", "char": "ferri", "energy": 3, "gauge": 10, "hype": 0, "ammo": 0},
+			"nox": {"id": "nox", "side": "player", "char": "nox", "energy": 2, "gauge": 5, "hype": 0, "ammo": 0}
+		}
+	}
+	var before: Dictionary = ResourceTelemetry.snapshot(state)
+	state["units"]["lance"]["energy"] = 4
+	state["units"]["nox"]["energy"] = 3
+	var events: Array = [
+		{"t": "act", "unit": "lance", "move": "firma"},
+		{"t": "duo", "unit": "nox", "id": "copertura"}
+	]
+	ResourceTelemetry.record(state, before, events, "player_action")
+	var sources: Dictionary = {}
+	for e in events:
+		if str(e.get("t", "")) == "resource_delta":
+			sources[str(e["unit"])] = str(e["source"])
+	check(str(sources.get("lance", "")) == "azione:firma", "la risorsa di Lance usa la sua azione")
+	check(str(sources.get("nox", "")) == "duo:copertura", "la risorsa di Nox usa la sua tecnica combinata")
+
+	before = ResourceTelemetry.snapshot(state)
+	state["units"]["lance"]["energy"] = 5
+	var mixed_events: Array = [
+		{"t": "act", "unit": "lance", "move": "attacco"},
+		{"t": "act", "unit": "lance", "move": "guardia"}
+	]
+	ResourceTelemetry.record(state, before, mixed_events, "player_action")
+	var mixed_source: String = ""
+	for e in mixed_events:
+		if str(e.get("t", "")) == "resource_delta":
+			mixed_source = str(e["source"])
+	check(mixed_source == "mista", "piu' azioni della stessa unita' non vengono attribuite arbitrariamente")
+
+
 func _init() -> void:
+	_per_unit_source()
 	_unit_resources()
 	_net_snapshot()
 	_hype_and_ammo()
