@@ -96,6 +96,36 @@ static func has_save() -> bool:
 	return FileAccess.file_exists(save_path) or FileAccess.file_exists(save_path + ".bak")
 
 
+static func validate_area_state(v: Variant) -> bool:
+	if not (v is Dictionary):
+		return false
+	var area: Dictionary = v
+	if area.has("pos"):
+		if not (area["pos"] is Vector3):
+			return false
+		var pos: Vector3 = area["pos"]
+		if not is_finite(pos.x) or not is_finite(pos.y) or not is_finite(pos.z):
+			return false
+	if area.has("yaw"):
+		if not (area["yaw"] is int or area["yaw"] is float) or not is_finite(float(area["yaw"])):
+			return false
+	for key in ["clues", "defeated"]:
+		if not area.has(key):
+			continue
+		if not (area[key] is Array):
+			return false
+		for item in area[key]:
+			if not (item is String) or str(item).is_empty():
+				return false
+	if area.has("banter_used"):
+		if not (area["banter_used"] is Dictionary):
+			return false
+		for key in area["banter_used"]:
+			if not (key is String) or str(key).is_empty() or not (area["banter_used"][key] is bool):
+				return false
+	return true
+
+
 static func _read_valid_save(path: String) -> ConfigFile:
 	var cfg := ConfigFile.new()
 	if cfg.load(path) != OK:
@@ -111,7 +141,7 @@ static func _read_valid_save(path: String) -> ConfigFile:
 			return null
 	var saved: Variant = cfg.get_value("storia", "flag", {})
 	var st: Variant = cfg.get_value("storia", "area", {})
-	if not (saved is Dictionary) or not (st is Dictionary):
+	if not (saved is Dictionary) or not validate_area_state(st):
 		return null
 	if cfg.has_section("squadra"):
 		if not Progress.validate_save(cfg.get_value("squadra", "dati", null)):
