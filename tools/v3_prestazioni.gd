@@ -92,9 +92,11 @@ func _measure(label: String, screen: String, args: Dictionary) -> void:
 
 func _run() -> void:
 	await _frames(10)
-	print("BENCHMARK ODISPEL | Godot %s | OS %s | viewport %s | FPS target progetto %d | warmup %d | campioni %d" % [
+	print("BENCHMARK ODISPEL | Godot %s | OS %s | dispositivo %s | GPU %s | viewport %s | limite FPS progetto %d | campionamento senza cap | warmup %d | campioni %d" % [
 		str(Engine.get_version_info().get("string", "sconosciuta")),
 		OS.get_name(),
+		OS.get_model_name(),
+		RenderingServer.get_video_adapter_name(),
 		str(root.get_viewport().get_visible_rect().size),
 		GameConfig.MAX_FPS,
 		WARMUP_FRAMES,
