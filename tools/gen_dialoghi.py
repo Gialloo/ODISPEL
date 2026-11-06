@@ -1397,6 +1397,33 @@ BAT = {
         "saul": [[R("saul", "Non ero a terra. Trattavo.")]],
         "nox": [[R("nox", "Cinque minuti in più non li avevo chiesti.")]],
     },
+    # PRESENTAZIONE DEL QTE (6/11/2026, feedback dei tester): prima del minigioco di una reazione chi agisce dice una riga
+    # (scripts/v3/qte_intro.gd), poi sotto compaiono cosa premere e perche'. PROPOSTE da far approvare all'autore.
+    # La riga di Saul sulla schivata e' quella proposta dall'autore stesso.
+    "qte_schiva": {
+        "lance": [[R("lance", "Traiettoria prevista. Mi sposto.")]],
+        "saul": [[R("saul", "Vuoi colpirmi? Vediamo se riesci a prendermi, intanto.")]],
+        "rio": [[R("rio", "Schivata al rallentatore. Raga, guardate.")]],
+        "nox": [[R("nox", "Di lato. Costa meno che prenderla.")]],
+    },
+    "qte_copri": {
+        "lance": [[R("lance", "Fermo lì. Questo lo reggo io.")]],
+        "saul": [[R("saul", "Questo te lo metto in conto. A rate.")]],
+        "rio": [[R("rio", "Inquadratura frontale. Lo prendo IN PIENO.")]],
+        "nox": [[R("nox", "Stare ferma mi riesce bene.")]],
+    },
+    "qte_ferma": {
+        "lance": [[R("lance", "Alt. Non hai la precedenza.")]],
+        "saul": [[R("saul", "Aspetta. Parliamone.")]],
+        "rio": [[R("rio", "STOP! Rifacciamo la scena.")]],
+        "nox": [[R("nox", "No. Oggi no.")]],
+    },
+    "qte_soccorri": {
+        "lance": [[R("lance", "In piedi. Conto fino a tre.")]],
+        "saul": [[R("saul", "Su. Mi devi ancora dei soldi.")]],
+        "rio": [[R("rio", "Non mollare, ci guardano TUTTI.")]],
+        "nox": [[R("nox", "Svegliati. Non lo ripeto.")]],
+    },
 }
 
 out = {"_nota": "Testi dell'atto 1 (PROVVISORI). Generati da tools/gen_dialoghi (vedi docs/STORIA.md per voci e arco). Scene: righe + riassunto. Una riga puo' avere 'se' o 'se_non' (vale solo se una scelta e' stata fatta o no) e 'scelte' (lista di {testo, imposta, vai}). 'chiacchiere': battute durante l'esplorazione, per area. 'battaglia': fumetti brevi della squadra in combattimento (critico, ko_nemico, compagno_ko, copre, rialzato). Gli id dei personaggi restano lance/rio (file e ritratti); i nomi sono Lance e Rio."}
