@@ -1,5 +1,14 @@
 # Novità
 
+## 0.60.0 · Feedback degli amici e Nox disegnata a mano
+
+- **Ritratto di Nox**: nell'HUD di battaglia c'è il disegno a mano dell'autore, fermo come Lance e Saul; anche il volto piccolo della squadra viene dal nuovo disegno.
+- **HUD di battaglia**: la tendina delle abilità sta sopra le barre del boss, cartellino compatto, chat di Rio leggibile.
+- **Camera**: regia morbida in battaglia, meno giri e scatti (feedback dei tester).
+- **QTE**: presentazione cinematica prima dei minigiochi, con le battute approvate.
+- **Impostazioni**: il pannello non si rimpicciolisce più quando premi un tasto.
+- **Prove**: 32 test su 33 verdi (resta il test dei dialoghi, già rosso nella 0.59.0: espressioni «sorpresa»/«sorriso» e colori di Echo e del Distributore).
+
 ## 0.59.0 · Lance e Rio anche nel codice
 
 - **Id canonici**: nel codice, nei dati, nei dialoghi e nei file dei ritratti i personaggi si chiamano `lance` e `rio` (prima `ferri` e `zecca`). Le battute di Lance che usavano già il nome nuovo ora mostrano il suo ritratto.

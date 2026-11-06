@@ -555,6 +555,8 @@ func _col(u: Dictionary) -> Color:
 
 func _cam_set(pos: Vector3, look: Vector3, rate: float = 3.0, snap: bool = false) -> void:
 	pos = _cam_fit(pos, look)
+	if Settings.cam_calm and not snap:
+		pos = _cam_tame(pos, look)
 	_cam_want_pos = pos
 	_cam_want_look = look
 	_cam_rate = rate
@@ -564,6 +566,7 @@ func _cam_set(pos: Vector3, look: Vector3, rate: float = 3.0, snap: bool = false
 		_glide_t = _glide_len           # uno stacco voluto (parata, fermo, primo piano) interrompe la carrellata
 		_cam_vel = Vector3.ZERO
 		_look_vel = Vector3.ZERO
+		_view_dir = Vector3.ZERO        # stacco voluto: la regia morbida non frena la rotazione di un taglio
 	elif _glide_t < _glide_len and _glide_t > 0.0:
 		# meta nuova a carrellata in corso: si riparte da dove si e', col tempo che restava (mai meno di 0,35 s), senza strappi
 		var left: float = maxf(0.35, _glide_len - _glide_t)
@@ -585,6 +588,94 @@ func _cam_fit(pos: Vector3, look: Vector3) -> Vector3:
 	pos.z += away * lost * 0.8
 	pos.y += lost * 0.35
 	return pos
+
+
+# REGIA MORBIDA (6/11/2026, feedback dei tester da PC: «se scegli veloce i cambi di camera sono drastici, dall'alto al basso
+# di lato, mal di testa»). Tre attenzioni, spettacolo intatto: 1) le inquadrature restano in una fascia di altezza e di
+# inclinazione comune (niente drone a 8 m ne' camera a terra: si capisce sempre dov'e' il pavimento); 2) la camera non
+# ruota piu' veloce di CAM_TURN_MAX gradi al secondo, anche se le mete cambiano a raffica; 3) le carrellate durano di
+# piu' quando il giro e' ampio. Con «Regia della camera: DINAMICA» nelle impostazioni si torna alle inquadrature di prima.
+const CAM_TURN_MAX: float = 150.0      # gradi al secondo: oltre si perde l'orientamento (prima, scegliendo veloce, si passavano i 400)
+const CAM_GLIDE_TURN: float = 140.0    # gradi al secondo di una carrellata: un giro di 120 gradi dura almeno 0,85 s
+const CAM_GLIDE_MAX: float = 1.0       # ma mai piu' di cosi': il ritmo dei turni resta svelto
+const CAM_PITCH_UP: float = 20.0       # quanto si puo' guardare in su (il controluce di Nox resta dal basso, ma non da terra)
+const CAM_PITCH_DOWN: float = 46.0     # quanto si puo' guardare in giu' (il drone di Saul resta dall'alto, ma non a picco)
+const CAM_Y_MIN: float = 0.75
+const CAM_Y_MAX: float = 5.2
+var _view_dir: Vector3 = Vector3.ZERO  # direzione dello sguardo all'ultimo fotogramma (per frenare le rotazioni brusche)
+
+
+# Valore della regia morbida o di quella dinamica (le inquadrature originali restano, scelte dalle impostazioni)
+func _rg(calm: Variant, wild: Variant) -> Variant:
+	return calm if Settings.cam_calm else wild
+
+
+# Porta una meta nella fascia comune: altezza tra CAM_Y_MIN e CAM_Y_MAX, inclinazione tra +CAM_PITCH_UP e -CAM_PITCH_DOWN.
+# Si corregge solo l'altezza della camera: il soggetto e il lato restano quelli scelti dall'inquadratura.
+func _cam_tame(pos: Vector3, look: Vector3) -> Vector3:
+	pos.y = clampf(pos.y, CAM_Y_MIN, CAM_Y_MAX)
+	var h: float = Vector2(look.x - pos.x, look.z - pos.z).length()
+	if h < 0.5:
+		# a picco sul soggetto: ci si sposta un po' verso la squadra, cosi' lo sguardo ha sempre un orizzonte
+		pos.z += 0.5 - h
+		h = 0.5
+	var up: float = look.y - pos.y
+	var max_up: float = tan(deg_to_rad(CAM_PITCH_UP)) * h
+	var max_dn: float = tan(deg_to_rad(CAM_PITCH_DOWN)) * h
+	if up > max_up:
+		pos.y = look.y - max_up
+	elif -up > max_dn:
+		pos.y = look.y + max_dn
+	pos.y = clampf(pos.y, CAM_Y_MIN, CAM_Y_MAX)
+	return pos
+
+
+# Frena la rotazione: lo sguardo insegue la meta al massimo a CAM_TURN_MAX gradi al secondo (solo con la regia morbida).
+func _calm_look(pos: Vector3, look: Vector3, dt: float) -> Vector3:
+	var to: Vector3 = look - pos
+	var dist: float = to.length()
+	if dist < 0.01:
+		return look
+	var nd: Vector3 = _pitch_clamp(to / dist, 4.0)
+	if not Settings.cam_calm or _view_dir == Vector3.ZERO:
+		_view_dir = nd
+		return look
+	var ang: float = _view_dir.angle_to(nd)
+	var mx: float = deg_to_rad(CAM_TURN_MAX) * dt
+	if ang > mx and ang > 0.0001:
+		_view_dir = _view_dir.slerp(nd, mx / ang).normalized()
+	else:
+		_view_dir = nd
+	return pos + _view_dir * dist
+
+
+# Direzione con l'inclinazione riportata nella fascia comune (piu' un margine in gradi): nemmeno a meta' di un movimento
+# la camera guarda il pavimento o il cielo.
+func _pitch_clamp(d: Vector3, margin: float) -> Vector3:
+	if not Settings.cam_calm:
+		return d
+	var h: float = Vector2(d.x, d.z).length()
+	if h < 0.0001:
+		return d
+	var pitch: float = clampf(atan2(d.y, h), -deg_to_rad(CAM_PITCH_DOWN + margin), deg_to_rad(CAM_PITCH_UP + margin))
+	return Vector3(d.x / h * cos(pitch), sin(pitch), d.z / h * cos(pitch))
+
+
+# Sguardo durante una carrellata della regia morbida: invece di far scorrere il punto guardato (che a meta' strada puo'
+# passare sotto la camera e farla guardare a picco), si fanno scorrere direzione orizzontale, inclinazione e distanza.
+func _glide_look(e: float) -> Vector3:
+	var a: Vector3 = _glide_from_look - _glide_from
+	var c: Vector3 = _cam_want_look - _cam_want_pos
+	if a.length() < 0.01 or c.length() < 0.01:
+		return _glide_from_look.lerp(_cam_want_look, e)
+	var ya: float = atan2(a.x, a.z)
+	var yc: float = atan2(c.x, c.z)
+	var pa: float = atan2(a.y, Vector2(a.x, a.z).length())
+	var pc: float = atan2(c.y, Vector2(c.x, c.z).length())
+	var yaw: float = lerp_angle(ya, yc, e)
+	var pitch: float = lerpf(pa, pc, e)
+	var dist: float = lerpf(a.length(), c.length(), e)
+	return _cam_pos + Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * dist
 
 
 func _cam_overview(snap: bool = false) -> void:
@@ -635,7 +726,8 @@ func _cam_side(a: Vector3, bpos: Vector3) -> void:
 		# vicolo stretto: di lato si finirebbe nel muro, quindi tre quarti alle spalle di chi attacca, verso il centro
 		_cam_set(a + Vector3(-side * 0.9, 2.1, 3.0), mid + Vector3(0, 1.15, 0), 4.0)
 		return
-	_cam_set(mid + Vector3(side * 5.2, 2.0, 0.8), mid + Vector3(0, 1.1, 0), 4.0)
+	# regia morbida: tre quarti dal lato della squadra (piu' simile all'inquadratura della scelta) invece che di lato pieno
+	_cam_set(mid + _rg(Vector3(side * 4.3, 2.2, 2.6), Vector3(side * 5.2, 2.0, 0.8)), mid + Vector3(0, 1.1, 0), _rg(3.2, 4.0))
 
 
 # Inquadratura firmata delle ABILITA' (idea 4): ognuno ha il suo modo di essere ripreso (cam_hud.look)
@@ -648,13 +740,13 @@ func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
 			_cam_set(a + Vector3(side * 1.1, 1.35, 1.7), mid + Vector3(0, 1.3, 0), 5.0)
 			_cam_hud.look("diretta", col)
 		"lance":       # Lance: dal palo dell'autovelox, alto di lato
-			_cam_set(mid + Vector3(side * 3.0, 3.6, -2.4), mid + Vector3(0, 1.0, 0), 4.0)      # vicino: piu' in la' si finiva dentro le facciate
+			_cam_set(mid + _rg(Vector3(side * 3.0, 3.1, -0.9), Vector3(side * 3.0, 3.6, -2.4)), mid + Vector3(0, 1.0, 0), _rg(3.4, 4.0))      # vicino: piu' in la' si finiva dentro le facciate; morbida: meno controcampo
 			_cam_hud.look("autovelox", col)
 		"nox":         # Nox: dal basso, controluce
-			_cam_set(a + Vector3(-side * 1.6, 0.45, -1.4), a + Vector3(0, 1.9, -0.6), 4.5)
+			_cam_set(a + _rg(Vector3(-side * 1.6, 0.9, -1.0), Vector3(-side * 1.6, 0.45, -1.4)), a + _rg(Vector3(0, 1.75, -0.6), Vector3(0, 1.9, -0.6)), _rg(3.6, 4.5))
 			_cam_hud.look("controluce", col)
 		"saul":        # Saul: dall'alto, come un drone
-			_cam_set(mid + Vector3(0.0, 8.0, 1.2), mid + Vector3(0, 0.6, 0), 3.5)
+			_cam_set(mid + _rg(Vector3(0.0, 5.0, 3.6), Vector3(0.0, 8.0, 1.2)), mid + Vector3(0, _rg(0.8, 0.6), 0), 3.5)      # morbida: alto di tre quarti, non a picco
 			_cam_hud.look("drone", col)
 		_:
 			_cam_side(a, tpos)
@@ -663,7 +755,8 @@ func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
 
 
 func _cam_boss() -> void:
-	_cam_set(ENEMY_POS + Vector3(1.8, 3.3, -4.2), Vector3(0, 1.0, 3.0), 3.0)
+	# morbida: alle spalle del nemico ma di tre quarti, cosi' il passaggio dal turno della squadra non e' un controcampo pieno
+	_cam_set(ENEMY_POS + _rg(Vector3(3.0, 3.0, -2.6), Vector3(1.8, 3.3, -4.2)), _rg(Vector3(0, 1.0, 2.4), Vector3(0, 1.0, 3.0)), 3.0)
 
 
 func _cam_front(uid: String) -> void:
@@ -691,6 +784,8 @@ func _process(delta: float) -> void:
 		var e2: float = q * q * q * (q * (q * 6.0 - 15.0) + 10.0)
 		_cam_pos = _glide_from.lerp(_cam_want_pos, e2) + Vector3(0, sin(PI * q) * _glide_lift, 0)
 		_cam_look = _glide_from_look.lerp(_cam_want_look, e2)
+		if Settings.cam_calm:
+			_cam_look = _glide_look(e2)
 		_cam_vel = Vector3.ZERO           # la carrellata finisce ferma: la molla riparte da zero, senza strappo
 		_look_vel = Vector3.ZERO
 	else:
@@ -710,7 +805,7 @@ func _process(delta: float) -> void:
 	elif _pinched:
 		cam.fov = FOV_BASE
 		_pinched = false
-	var look: Vector3 = _cam_look
+	var look: Vector3 = _calm_look(_cam_pos, _cam_look, rd)
 	if _dzoom_t > 0.0:
 		# ZOOM DIGITALE della telecamera di Echo sul punto debole: scatto dentro, tiene, poi riapre negli ultimi 0,25 s
 		_dzoom_t = maxf(0.0, _dzoom_t - rd)
@@ -790,10 +885,21 @@ func _place_boss_tag() -> void:
 		var fp: Vector2 = cam.unproject_position(bv.global_position)
 		var half: float = maxf(60.0, absf(fp.y - hp.y) * 0.4)
 		var cx: float = (hp.x + fp.x) * 0.5
-		want.y = maxf(64.0, hp.y)
+		# HUD piu' pulito (feedback dei tester, 6/11/2026): accanto al boss il cartellino sta nella fascia alta dello schermo,
+		# sul cielo, non piu' all'altezza della testa dove finiva sopra la squadra
+		want.y = 64.0
 		want.x = cx + half + 24.0 if cx + half + 24.0 + sz.x <= vs.x - 16.0 - rm else cx - half - 24.0 - sz.x
 	want.x = clampf(want.x, 16.0, vs.x - sz.x - 16.0 - rm)
 	want.y = clampf(want.y, 64.0, vs.y * 0.5)
+	# FEEDBACK DEI TESTER (6/11/2026): con la tendina delle ABILITA' aperta le barre del boss coprivano nome e costo delle
+	# mosse. Ora il cartellino si sposta a destra della tendina; se non c'e' posto sparisce finche' la tendina e' aperta.
+	if _skill_menu != null:
+		var mr: float = _skill_menu.area().end.x + 20.0
+		if want.x < mr:
+			want.x = mr
+		_boss_panel.modulate.a = 1.0 if want.x + sz.x <= vs.x - 16.0 - rm else 0.0
+	else:
+		_boss_panel.modulate.a = 1.0
 	_boss_panel.position = _boss_panel.position.lerp(want, 0.3) if _boss_panel.position.y > 1.0 else want
 	_boss_panel.size = sz
 
@@ -1197,9 +1303,10 @@ func _boss_turn() -> void:
 					b["react_grade"] = {}
 				(b["react_grade"] as Dictionary)[str(ru["id"])] = g
 			if not played:
+				var told: bool = false
 				if tutorial or lezioni:
-					await _tut("tut_qte")
-				var grade: String = await _timed_guard()
+					told = await _tut("tut_qte")
+				var grade: String = await _timed_guard(not told)      # se la lezione l'ha appena spiegata, niente presentazione
 				if not is_inside_tree() or ended:
 					return
 				if grade == "good" or grade == "perfect":
@@ -1376,7 +1483,11 @@ func _guardable(mv: Dictionary) -> bool:
 
 # Il cerchio sta sempre al centro dello schermo: dalla camera del boss il bersaglio puo' essere coperto dal nemico.
 # Ritorna "", early, good o perfect.
-func _timed_guard() -> String:
+func _timed_guard(intro: bool = true) -> String:
+	if intro:
+		await _qte_intro_guard()
+		if not is_inside_tree() or ended:
+			return ""
 	_qte_ring = QteRing.new()
 	_fx_layer.add_child(_qte_ring)
 	_hide_stamps(true)
@@ -1436,6 +1547,9 @@ var _games_seen: Dictionary = {}
 
 # Minigioco di una reazione (ReactGame). La prima volta di ogni tipo c'e' piu' tempo per leggere.
 func _react_game(game: String, u: Dictionary) -> String:
+	await _qte_intro_react(game, u)
+	if not is_inside_tree() or ended:
+		return "fail"
 	var g := ReactGame.new(game, str(u.get("name", "")).to_upper(), _col(u), not _games_seen.has(game))
 	_games_seen[game] = true
 	# sotto il minigioco niente comandi ne' suggerimenti: si legge solo lui
@@ -1450,6 +1564,70 @@ func _react_game(game: String, u: Dictionary) -> String:
 		if is_instance_valid(n):
 			(n as CanvasItem).visible = true
 	return grade
+
+
+# PRESENTAZIONE DEL QTE (QteIntro, feedback dei tester sulla 0.59, 6/11/2026): prima della guardia a tempo e di ogni
+# reazione un paio di secondi di respiro con chi agisce, cosa premere e perche'. La prima volta di ogni tipo in questa
+# battaglia si legge tutta, dopo e' breve; un tocco la chiude prima. Sotto, comandi e suggerimenti spariscono.
+var _intro_seen: Dictionary = {}
+const QTE_LINES: Dictionary = {"arrow": "qte_schiva", "hold": "qte_copri", "mash": "qte_ferma", "beat": "qte_soccorri"}
+
+
+func _qte_intro_full(kind: String) -> bool:
+	var full: bool = not _intro_seen.has(kind) and not Settings.skip_cutin
+	_intro_seen[kind] = true
+	return full
+
+
+func _qte_intro_play(q: QteIntro) -> void:
+	var hide: Array = []
+	# anche le barre del nemico, l'ordine dei turni e la scheggia: coprivano il cartellino (tester 0.59: troppo HUD)
+	for n in [_cmd_box, _kit_lbl, _react_box, _turn_lbl, _hint, _boss_panel, _order_panel, _greg_tag]:
+		if n != null and (n as CanvasItem).visible:
+			(n as CanvasItem).visible = false
+			hide.append(n)
+	_fx_layer.add_child(q)
+	await q.done
+	for n in hide:
+		if is_instance_valid(n):
+			(n as CanvasItem).visible = true
+	await get_tree().process_frame          # il tocco che chiude la presentazione non vale gia' per il QTE
+
+
+func _qte_intro_guard() -> void:
+	if auto_on or _fx_layer == null:
+		return
+	var tele: Dictionary = b.get("telegraph", {})
+	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	var tgt: String = ""
+	if str(mv.get("target", "one")) != "all":
+		var tu: Dictionary = BattleState.active_unit(b, str(tele.get("target", "")))
+		tgt = str(tu.get("name", "")).to_upper()
+	var bd: Dictionary = BattleContent.BOSSES.get(boss_id, {})
+	var bcol: Color = Ui.BATTLE_COLORS.get(str(bd.get("color", "")), Ui.YELLOW)
+	var q := QteIntro.new()
+	q.setup_guard(_bname(), str(mv.get("name", "?")).to_upper(), tgt, bcol, _qte_intro_full("guard"))
+	await _qte_intro_play(q)
+
+
+func _qte_intro_react(game: String, u: Dictionary) -> void:
+	if auto_on or _fx_layer == null:
+		return
+	var ch: String = str(u.get("char", ""))
+	var quote: String = ""
+	var bat: Dictionary = DialogData.all().get("battaglia", {})
+	var opts: Array = (bat.get(str(QTE_LINES.get(game, "")), {}) as Dictionary).get(ch, [])
+	if not opts.is_empty():
+		var righe: Array = opts[randi() % opts.size()]
+		if not righe.is_empty():
+			quote = str((righe[0] as Dictionary).get("testo", ""))
+	var face: String = "res://assets/portraits/%s_%s.png" % [ch, str(QteIntro.FACE.get(game, "neutro"))]
+	if not ResourceLoader.exists(face):
+		face = "res://assets/portraits/%s_neutro.png" % ch
+	var tex: Texture2D = load(face) if ResourceLoader.exists(face) else null
+	var q := QteIntro.new()
+	q.setup_react(game, str(u.get("name", "")).to_upper(), quote, tex, _col(u), _qte_intro_full(game))
+	await _qte_intro_play(q)
 
 
 # Il colpo annunciato finira' su Lance? (bersaglio lui, oppure copre il bersaglio)
@@ -2306,6 +2484,13 @@ func _cam_glide(secs: float) -> void:
 	_glide_from_look = _cam_look
 	_glide_t = 0.0
 	_glide_len = maxf(0.05, secs)
+	if Settings.cam_calm:
+		# giro ampio (dalla squadra al nemico, dall'alto al basso): la carrellata si prende il tempo per farlo seguire all'occhio
+		var a0: Vector3 = _cam_look - _cam_pos
+		var a1: Vector3 = _cam_want_look - _cam_want_pos
+		if a0.length() > 0.01 and a1.length() > 0.01:
+			var turn: float = rad_to_deg(a0.angle_to(a1))
+			_glide_len = clampf(maxf(_glide_len, turn / CAM_GLIDE_TURN), _glide_len, maxf(_glide_len, CAM_GLIDE_MAX))
 	_glide_lift = clampf(_cam_pos.distance_to(_cam_want_pos) * 0.08, 0.0, 0.7)
 
 
@@ -3049,7 +3234,12 @@ func _build_ui() -> void:
 	_boss_name = Ui.label(_bname(), 22, Ui.CREAM, Ui.display(), 0)
 	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_boss_name.add_theme_stylebox_override("normal", Ui.plate(Color(0.02, 0.01, 0.03, 0.92), Color("#ff2340"), -0.18, 5))
-	bp.add_child(_boss_name)
+	# nome e DEBOLE A sulla stessa riga (HUD piu' pulito, 6/11/2026): il cartellino perde una riga e copre meno scena
+	var bhead := HBoxContainer.new()
+	bhead.add_theme_constant_override("separation", 10)
+	bhead.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bp.add_child(bhead)
+	bhead.add_child(_boss_name)
 	_boss_hp = _bar(Color("#ff4b6e"), 22)
 	bp.add_child(_boss_hp)
 	_boss_ghost = _ghost_bar(_boss_hp)
@@ -3072,7 +3262,8 @@ func _build_ui() -> void:
 	_weak_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_weak_row.add_theme_constant_override("separation", 2)
 	_weak_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bp.add_child(_weak_row)
+	_weak_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bhead.add_child(_weak_row)
 	_weak_k = Ui.plate_label("DEBOLE A", HudLayers.MIN_TEXT, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
 	_weak_row.add_child(_weak_k)
 	_weak_v = Ui.plate_label("???", HudLayers.MIN_TEXT, Ui.INK, Color("#9a94a8"), Ui.INK)
@@ -3969,7 +4160,9 @@ func _open_skills() -> void:
 		_close_skills()
 		_command("skill"))
 	_skill_menu.closed.connect(_close_skills)
-	_fx_layer.add_child(_skill_menu)
+	# la tendina sta SOPRA a tutto l'HUD di battaglia (prima era sotto al cartellino del nemico, che la copriva)
+	_root.add_child(_skill_menu)
+	_skill_menu.move_to_front()
 	Settings.buzz(12)
 
 

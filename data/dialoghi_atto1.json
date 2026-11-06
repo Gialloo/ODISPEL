@@ -7785,6 +7785,142 @@
           }
         ]
       ]
+    },
+    "qte_schiva": {
+      "lance": [
+        [
+          {
+            "chi": "lance",
+            "testo": "Traiettoria prevista. Mi sposto."
+          }
+        ]
+      ],
+      "saul": [
+        [
+          {
+            "chi": "saul",
+            "testo": "Vuoi colpirmi? Vediamo se riesci a prendermi, intanto."
+          }
+        ]
+      ],
+      "rio": [
+        [
+          {
+            "chi": "rio",
+            "testo": "Schivata al rallentatore. Raga, guardate."
+          }
+        ]
+      ],
+      "nox": [
+        [
+          {
+            "chi": "nox",
+            "testo": "Di lato. Costa meno che prenderla."
+          }
+        ]
+      ]
+    },
+    "qte_copri": {
+      "lance": [
+        [
+          {
+            "chi": "lance",
+            "testo": "Fermo lì. Questo lo reggo io."
+          }
+        ]
+      ],
+      "saul": [
+        [
+          {
+            "chi": "saul",
+            "testo": "Questo te lo metto in conto. A rate."
+          }
+        ]
+      ],
+      "rio": [
+        [
+          {
+            "chi": "rio",
+            "testo": "Inquadratura frontale. Lo prendo IN PIENO."
+          }
+        ]
+      ],
+      "nox": [
+        [
+          {
+            "chi": "nox",
+            "testo": "Stare ferma mi riesce bene."
+          }
+        ]
+      ]
+    },
+    "qte_ferma": {
+      "lance": [
+        [
+          {
+            "chi": "lance",
+            "testo": "Alt. Non hai la precedenza."
+          }
+        ]
+      ],
+      "saul": [
+        [
+          {
+            "chi": "saul",
+            "testo": "Aspetta. Parliamone."
+          }
+        ]
+      ],
+      "rio": [
+        [
+          {
+            "chi": "rio",
+            "testo": "STOP! Rifacciamo la scena."
+          }
+        ]
+      ],
+      "nox": [
+        [
+          {
+            "chi": "nox",
+            "testo": "No. Oggi no."
+          }
+        ]
+      ]
+    },
+    "qte_soccorri": {
+      "lance": [
+        [
+          {
+            "chi": "lance",
+            "testo": "In piedi. Conto fino a tre."
+          }
+        ]
+      ],
+      "saul": [
+        [
+          {
+            "chi": "saul",
+            "testo": "Su. Mi devi ancora dei soldi."
+          }
+        ]
+      ],
+      "rio": [
+        [
+          {
+            "chi": "rio",
+            "testo": "Non mollare, ci guardano TUTTI."
+          }
+        ]
+      ],
+      "nox": [
+        [
+          {
+            "chi": "nox",
+            "testo": "Svegliati. Non lo ripeto."
+          }
+        ]
+      ]
     }
   }
 }

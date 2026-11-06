@@ -153,48 +153,130 @@ const RIO_COL: Color = Color("#8e3df0")
 var _chat: Array = []                # [indice in CHAT, millisecondi di nascita]
 var _chat_next: float = 0.6
 var _chat_i: int = 0
+# FEEDBACK DEI TESTER (6/11/2026): «la chat di Rio e' geniale, deve restare un secondo in piu' per leggerla e va fatta meglio».
+# Prima un messaggio viveva 3 secondi e spariva di colpo appena si tornava a scegliere: non si leggeva mai per intero.
+# Ora: ogni messaggio resta CHAT_LIFE secondi; mentre si sceglie non ne arrivano di nuovi (livello 3, HudLayers) ma quelli
+# gia' a schermo finiscono di farsi leggere; il primo arriva subito all'inizio della mossa. Grafica da vera diretta:
+# scheda «LIVE @RIO» con gli spettatori, avatar tondo con l'iniziale, nome colorato, testo a capo, cuori che salgono.
+const CHAT_LIFE: float = 5.5         # secondi di lettura di un messaggio (prima 3)
+const CHAT_GAP: float = 1.6          # un messaggio nuovo ogni tanto: tre insieme al massimo, si leggono tutti
+const CHAT_W: float = 360.0          # larghezza della scheda della chat, a destra sopra la squadra
+# la chat vive in una fascia a destra tra il contatore COMBO (in alto, a 0.42 dell'altezza) e la squadra (in basso): non
+# copre mai i timbri al centro (DEBOLEZZA, SLANCIO), il COMBO ne' i ritratti. I messaggi che non ci stanno aspettano fuori.
+const CHAT_TOP: float = 0.445
+const CHAT_BOTTOM: float = 0.775
+const CHAT_COLS: Array = [Color("#ff6fa8"), Color("#5fd4ff"), Color("#ffd23f"), Color("#7dff9a"), Color("#ff8f4a"), Color("#c99bff")]
+var _was_quiet: bool = true
+
+
+func _chat_col(who: String) -> Color:
+	return CHAT_COLS[absi(who.hash()) % CHAT_COLS.size()]
 
 
 func _chat_tick(delta: float) -> void:
 	# anche nelle Anomalie: Rio trasmette lo stesso (3/11/2026, contro i boss deve esserci tutto)
-	if live < 25 or quiet:
+	var now: int = Time.get_ticks_msec()
+	while not _chat.is_empty() and now - int(_chat[0][1]) > int(CHAT_LIFE * 1000.0):
+		_chat.pop_front()
+	if live < 25:
 		if not _chat.is_empty():
 			_chat.clear()
+		_was_quiet = true
 		return
+	if quiet:
+		_was_quiet = true
+		return          # si sceglie: niente messaggi nuovi, quelli gia' a schermo restano da leggere
+	if _was_quiet:
+		_was_quiet = false
+		_chat_next = minf(_chat_next, 0.2)      # la mossa comincia: la chat risponde subito
 	_chat_next -= delta
 	if _chat_next <= 0.0:
-		_chat_next = 2.6 if Settings.light_fx else 1.4
+		_chat_next = 2.6 if Settings.light_fx else CHAT_GAP
 		_chat_i = (_chat_i + 1 + int(_t * 7.0) % 3) % CHAT.size()
-		_chat.append([_chat_i, Time.get_ticks_msec()])
+		_chat.append([_chat_i, now])
 		if _chat.size() > 3:
 			_chat.pop_front()
-	var now: int = Time.get_ticks_msec()
-	while not _chat.is_empty() and now - int(_chat[0][1]) > 3000:
-		_chat.pop_front()
+
+
+func _chat_box(r: Rect2, bg: Color, edge: Color, rad: int) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.set_corner_radius_all(rad)
+	sb.border_color = edge
+	sb.set_border_width_all(0)
+	sb.border_width_left = 4
+	sb.anti_aliasing = true
+	draw_style_box(sb, r)
+
+
+func _heart(c: Vector2, r: float, col: Color) -> void:
+	draw_circle(c + Vector2(-r * 0.5, 0), r * 0.55, col)
+	draw_circle(c + Vector2(r * 0.5, 0), r * 0.55, col)
+	draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 1.02, r * 0.18), c + Vector2(r * 1.02, r * 0.18), c + Vector2(0, r * 1.25)]), col)
 
 
 func _draw_chat(sz: Vector2) -> void:
 	if _chat.is_empty():
 		return
 	var fb: Font = Ui.body()
-	var fs: int = 22
+	var fd: Font = Ui.display()
+	var fs: int = 21                     # testo del messaggio
+	var fn: int = 17                     # nome dell'utente
 	var now: int = Time.get_ticks_msec()
-	var y: float = sz.y * 0.74
+	var x0: float = sz.x - 24.0 - CHAT_W
+	var y: float = sz.y * CHAT_BOTTOM    # fondo della pila: il messaggio piu' nuovo sta in basso, come nelle dirette vere
+	var top_a: float = 0.0
 	for i in range(_chat.size() - 1, -1, -1):
 		var e: Array = _chat[i]
 		var age: float = float(now - int(e[1])) / 1000.0
-		var a: float = clampf(age / 0.15, 0.0, 1.0) * clampf((3.0 - age) / 0.4, 0.0, 1.0)
-		var who: String = str(CHAT[int(e[0])][0]) + "  "
+		var inn: float = clampf(age / 0.2, 0.0, 1.0)
+		var a: float = inn * clampf((CHAT_LIFE - age) / 0.5, 0.0, 1.0)
+		top_a = maxf(top_a, a)
+		var who: String = str(CHAT[int(e[0])][0])
 		var txt: String = str(CHAT[int(e[0])][1])
-		var ww: float = fb.get_string_size(who, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var tw: float = fb.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var x: float = sz.x - 28.0 - ww - tw + (1.0 - clampf(age / 0.15, 0.0, 1.0)) * 40.0
-		draw_rect(Rect2(x - 12.0, y - fs - 6.0, ww + tw + 24.0, fs + 16.0), Color(Ui.INK.r, Ui.INK.g, Ui.INK.b, 0.72 * a))
-		draw_rect(Rect2(x - 12.0, y - fs - 6.0, 4.0, fs + 16.0), Color(RIO_COL.r, RIO_COL.g, RIO_COL.b, a))
-		var wc: Color = RIO_COL.lightened(0.45)
-		draw_string(fb, Vector2(x, y), who, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(wc.r, wc.g, wc.b, a))
-		draw_string(fb, Vector2(x + ww, y), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, a))
-		y -= fs + 22.0
+		var uc: Color = _chat_col(who)
+		var lines: Array = CmdWheel.wrap(fb, txt, fs, CHAT_W - 78.0).slice(0, 2)
+		var h: float = 30.0 + float(lines.size()) * (fs + 5.0) + 6.0
+		if y - h - 44.0 < sz.y * CHAT_TOP:
+			break          # non ci sta sotto il COMBO: il messaggio piu' vecchio lascia il posto ai nuovi
+		var x: float = x0 + (1.0 - inn) * 60.0      # entra scivolando da destra
+		var r := Rect2(x, y - h, CHAT_W, h)
+		_chat_box(r, Color(0.04, 0.02, 0.07, 0.86 * a), Color(uc.r, uc.g, uc.b, a), 10)
+		# avatar: cerchio del colore dell'utente con l'iniziale del nickname
+		var av := Vector2(x + 30.0, y - h + 26.0)
+		draw_circle(av, 16.0, Color(uc.r, uc.g, uc.b, a))
+		draw_arc(av, 16.5, 0, TAU, 24, Color(1, 1, 1, 0.5 * a), 1.5, true)
+		var ini: String = who.substr(who.length() - 2) if who.begins_with("utente_") else who.substr(0, 1).to_upper()
+		var iw: float = fd.get_string_size(ini, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+		draw_string(fd, av + Vector2(-iw * 0.5, 6.0), ini, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(Ui.INK.r, Ui.INK.g, Ui.INK.b, a))
+		draw_string(fd, Vector2(x + 58.0, y - h + 24.0), "@" + who, HORIZONTAL_ALIGNMENT_LEFT, CHAT_W - 70.0, fn, Color(uc.lightened(0.25).r, uc.lightened(0.25).g, uc.lightened(0.25).b, a))
+		var ly: float = y - h + 30.0 + fs
+		for ln in lines:
+			draw_string(fb, Vector2(x + 58.0, ly), str(ln), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, a))
+			ly += fs + 5.0
+		y -= h + 8.0
+	# testata della diretta: pillola rossa LIVE, il canale di Rio e gli spettatori (salgono con l'Hype)
+	var hy: float = y - 36.0
+	var ha: float = top_a
+	_chat_box(Rect2(x0, hy, CHAT_W, 32.0), Color(0.04, 0.02, 0.07, 0.86 * ha), Color(RIO_COL.r, RIO_COL.g, RIO_COL.b, ha), 8)
+	var pill := StyleBoxFlat.new()
+	pill.bg_color = Color(REC_RED.r, REC_RED.g, REC_RED.b, ha)
+	pill.set_corner_radius_all(6)
+	draw_style_box(pill, Rect2(x0 + 10.0, hy + 5.0, 64.0, 22.0))
+	var blink: float = 1.0 if fmod(_t, 1.0) < 0.6 else 0.35
+	draw_circle(Vector2(x0 + 21.0, hy + 16.0), 4.0, Color(1, 1, 1, ha * blink))
+	draw_string(fd, Vector2(x0 + 29.0, hy + 23.0), "LIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 1, 1, ha))
+	draw_string(fd, Vector2(x0 + 86.0, hy + 23.0), "@RIO", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(RIO_COL.lightened(0.5).r, RIO_COL.lightened(0.5).g, RIO_COL.lightened(0.5).b, ha))
+	var views: int = 1200 + live * 140 + int(_t * 3.0) % 90
+	var vt: String = "%d,%dK spettatori" % [views / 1000, (views % 1000) / 100]
+	var vw: float = fb.get_string_size(vt, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+	draw_string(fb, Vector2(x0 + CHAT_W - 12.0 - vw, hy + 22.0), vt, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(Ui.CREAM.r, Ui.CREAM.g, Ui.CREAM.b, 0.85 * ha))
+	# cuori che salgono sul bordo della scheda, come i «mi piace» di una diretta (forme piatte, costano niente)
+	if not Settings.light_fx:
+		for k in 3:
+			var ph: float = fmod(_t * 0.7 + k * 0.33, 1.0)
+			var hp := Vector2(x0 - 16.0 + sin(_t * 3.0 + k * 2.0) * 6.0, sz.y * CHAT_BOTTOM - ph * 150.0)
+			_heart(hp, 7.0, Color(1.0, 0.35, 0.55, ha * (1.0 - ph) * 0.9))
 
 
 # FERMO IMMAGINE del colpo finale: va a tempo reale (durante il fermo il gioco e' a tempo zero).
