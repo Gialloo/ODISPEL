@@ -2530,7 +2530,7 @@
     ]
   },
   "c3_boss": {
-    "riassunto": "Il Manichino vuole la faccia di Rio. La maschera si incrina, ma Rio la tiene su e si tiene la faccia.",
+    "riassunto": "Il Manichino vuole la faccia di Rio. La maschera si incrina, ma Rio la tiene su.",
     "righe": [
       {
         "chi": "MANICHINO",
@@ -2544,38 +2544,23 @@
       },
       {
         "chi": "saul",
-        "espr": "arrabbiato",
-        "testo": "Ragazzino. Guarda me."
-      },
-      {
-        "chi": "saul",
-        "espr": "arrabbiato",
-        "testo": "Ho mentito a mezza città e la faccia ce l'ho ancora. Tienitela."
+        "espr": "serio",
+        "testo": "Coso. Guardami. Io ho passato anni a fingere di essere qualcuno che non ero. Non per questo ho lasciato che fossero gli altri a scegliere chi dovevo essere."
       },
       {
         "chi": "nox",
         "espr": "serio",
-        "testo": "Rio. Ti abbiamo visto dormire con la bocca aperta e la maschera storta."
-      },
-      {
-        "chi": "nox",
-        "espr": "serio",
-        "testo": "Sei tu. Basta."
+        "testo": "Rio, ti abbiamo visto anche quando non c'era nessuno a guardarti. Sei sempre tu. Con o senza quella maschera."
       },
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "E russi."
-      },
-      {
-        "chi": "zecca",
-        "espr": "sfotto",
-        "testo": "...Questa faccia è mia. Brutta, ma MIA. Tu non te la prendi."
+        "testo": "E russi. Non credo che una maschera possa nasconderlo."
       },
       {
         "chi": "zecca",
         "espr": "serio",
-        "testo": "E la maschera me la tolgo quando decido io. Non quando lo dici tu."
+        "testo": "La maschera me la tolgo quando decido io. Non quando lo dici tu. Lance che dicevi sul fatto che russo?"
       }
     ]
   },
