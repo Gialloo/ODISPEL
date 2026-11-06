@@ -13,6 +13,8 @@ var solid := MeshBatch.new()
 var glow_v := PackedVector3Array()
 var glow_c := PackedColorArray()
 var rng := RandomNumberGenerator.new()
+# I colori della scenografia ricorrono in molti edifici e arredi: evita di riparsare lo stesso HEX.
+var _color_cache: Dictionary = {}
 var road_col: Color = Color("#141b24")
 var colliders: Array = []          # [{"c": Vector2(x,z), "r": raggio}] oppure [{"rect": Rect2 su x,z}]
 
@@ -24,7 +26,11 @@ func _init(seed_value: int = 29) -> void:
 
 
 func _c(hex: String) -> Color:
-	return Color(hex)
+	if _color_cache.has(hex):
+		return _color_cache[hex]
+	var parsed: Color = Color(hex)
+	_color_cache[hex] = parsed
+	return parsed
 
 
 # ---------- pezzi ----------
