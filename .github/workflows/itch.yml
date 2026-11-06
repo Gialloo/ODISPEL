@@ -33,15 +33,15 @@ jobs:
             echo "::error::Manca l'APK o lo ZIP Windows nella cartella releases"
             exit 1
           fi
-          apk=$(printf '%s\\n' "${apks[@]}" | sort -V | tail -1)
-          zip=$(printf '%s\\n' "${zips[@]}" | sort -V | tail -1)
+          apk=$(printf '%s\n' "${apks[@]}" | sort -V | tail -1)
+          zip=$(printf '%s\n' "${zips[@]}" | sort -V | tail -1)
           apk_version=$(basename "$apk" .apk | sed 's/^OFFICIAL DEMO ODISPEL mobile v//')
           zip_version=$(basename "$zip" .zip | sed 's/^OFFICIAL DEMO ODISPEL pc v//')
-          if [[ ! "$apk_version" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+$ || "$apk_version" != "$zip_version" ]]; then
+          if [[ ! "$apk_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || "$apk_version" != "$zip_version" ]]; then
             echo "::error::Versioni APK ($apk_version) e ZIP ($zip_version) assenti o non corrispondenti"
             exit 1
           fi
-          if ! unzip -Z1 "$zip" | grep -Eq '\\.exe$' || ! unzip -Z1 "$zip" | grep -Eq '\\.pck$'; then
+          if ! unzip -Z1 "$zip" | grep -Eq '\.exe$' || ! unzip -Z1 "$zip" | grep -Eq '\.pck$'; then
             echo "::error::Lo ZIP Windows deve contenere sia EXE sia PCK"
             exit 1
           fi
@@ -70,7 +70,7 @@ jobs:
               if ./butler/butler push "$1" "$ITCH_TARGET:$2" --userversion "$3" > out.txt 2>&1; then cat out.txt; return 0; fi
               cat out.txt; sleep 45
             done
-            echo "::error::butler push $2 fallito: $(tail -c 400 out.txt | tr '\\n' ' ')"
+            echo "::error::butler push $2 fallito: $(tail -c 400 out.txt | tr '\n' ' ')"
             return 1
           }
           push "${{ steps.artifacts.outputs.apk }}" android-v3 "${{ steps.artifacts.outputs.version }}"
