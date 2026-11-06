@@ -76,6 +76,7 @@ func _build() -> void:
 			Settings.skip_cutin = true
 		else:
 			Settings.cutin_once = true)
+	_row("Regia della camera", "MORBIDA" if Settings.cam_calm else "DINAMICA", func() -> void: Settings.cam_calm = not Settings.cam_calm)
 	_row("Telecamera rotta (PV bassi)", "SÌ" if Settings.broken_cam else "NO", func() -> void: Settings.broken_cam = not Settings.broken_cam)
 	_row("Effetti ridotti", "SÌ" if Settings.light_fx else "NO", func() -> void: Settings.light_fx = not Settings.light_fx)
 	_row("Vibrazione", "SÌ" if Settings.vibration else "NO", func() -> void: Settings.vibration = not Settings.vibration)
