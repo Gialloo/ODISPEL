@@ -1232,6 +1232,16 @@
         "testo": "Affare."
       },
       {
+        "chi": "zecca",
+        "espr": "neutro",
+        "testo": "Aspetta, stai già dormendo?"
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Se stai zitto riesco."
+      },
+      {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
@@ -1247,6 +1257,28 @@
         "col": "#3fe0ff",
         "espr": "neutro",
         "testo": "Io ne tengo aperti centoquarantadue."
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Funziona?"
+      },
+      {
+        "chi": "echo",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Non so dirtelo con certezza."
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "A cosa servi esattamente?"
+      },
+      {
+        "chi": "echo",
+        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Non so dirtelo con certezza."
       },
       {
         "chi": "echo",
