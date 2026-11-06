@@ -34,10 +34,12 @@ var _bubbles: Dictionary = {}       # id -> Label del sussurro
 var _talk: Dictionary = {}          # id -> Tween del sussurro in corso (una battuta nuova copre la vecchia)
 var _busy: bool = false
 var _squad_save: bool = true
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 # exit_text: la terza voce (in esplorazione si torna al menu, in battaglia si esce); exit_hint la riga sotto.
 func _init(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint: String = "Saul conosce un'uscita", squad_save: bool = true) -> void:
+	_rng.randomize()
 	_squad_save = squad_save
 	color = Color(0.02, 0.01, 0.05, 0.82)
 	Ui.place(self, 0, 0, 1, 1)
@@ -121,7 +123,7 @@ func _build(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint
 	for i in order.size():
 		var id: String = order[i]
 		var lines: Array = WHISPERS[id]
-		_say(id, str(lines[randi() % lines.size()]), 0.35 + 0.9 * float(i))
+		_say(id, str(lines[_rng.randi() % lines.size()]), 0.35 + 0.9 * float(i))
 
 
 func _add_member(stage: Control, spec: Dictionary) -> void:
@@ -145,7 +147,7 @@ func _add_member(stage: Control, spec: Dictionary) -> void:
 	stage.add_child(tr)
 	# si chinano verso il centro, piano, come chi bisbiglia
 	var lean := tr.create_tween().set_loops().set_ignore_time_scale(true).set_trans(Tween.TRANS_SINE)
-	lean.tween_property(tr, "rotation_degrees", float(spec["rot"]) * 1.5, 1.4 + randf() * 0.5)
+	lean.tween_property(tr, "rotation_degrees", float(spec["rot"]) * 1.5, 1.4 + _rng.randf() * 0.5)
 	lean.tween_property(tr, "rotation_degrees", float(spec["rot"]), 1.4 + randf() * 0.5)
 	# fumetto del sussurro sopra la testa
 	var b := Ui.label("", 22, Ui.CREAM, null, 5)
@@ -203,7 +205,9 @@ func _say_then(id: String, text: String, then: Callable) -> void:
 
 # Alla ripresa si rialzano convinti di avere un piano. Mezzo secondo dopo, qualcuno rovina tutto.
 static func quip(parent: Control) -> void:
-	var q: Array = QUIPS[randi() % QUIPS.size()]
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var q: Array = QUIPS[rng.randi() % QUIPS.size()]
 	var who: String = str(CastVisual.spec(str(q[0]))["name"]).to_upper()
 	var l := Ui.label("%s: «%s»" % [who, str(q[1])], 22, Ui.CREAM, null, 6)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
