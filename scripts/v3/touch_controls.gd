@@ -79,7 +79,7 @@ func release_all() -> void:
 func _notification(what: int) -> void:
 	# Android/iOS possono interrompere la scena mentre un dito e' ancora premuto.
 	# Se il rilascio non arriva, evita stick bloccato o trascinamento camera fantasma.
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
 		release_all()
 
 
