@@ -288,7 +288,17 @@ func make_instance(node_name: String = "Batch") -> MeshInstance3D:
 # ---------- forme trasparenti (bagliori e ombre a macchia): mesh a parte, materiale glow o shadow ----------
 
 # Disco orizzontale con sfumatura radiale: centro col, bordo trasparente
+# Le stesse geometrie piatte (ombre, bagliori, marcatori) ricorrono in molte istanze.
+# Cache limitata: evita di ricostruire ArrayMesh identiche durante la creazione delle aree,
+# senza consentire a strumenti/editor con parametri variabili di farla crescere all'infinito.
+static var _disc_cache: Dictionary = {}
+const DISC_CACHE_MAX: int = 128
+
+
 static func disc(radius: float, col: Color, segs: int = 16, y: float = 0.02) -> ArrayMesh:
+	var cache_key: String = var_to_str([radius, col, segs, y])
+	if _disc_cache.has(cache_key):
+		return _disc_cache[cache_key] as ArrayMesh
 	var v := PackedVector3Array()
 	var c := PackedColorArray()
 	var edge := Color(col.r, col.g, col.b, 0.0)
@@ -303,4 +313,7 @@ static func disc(radius: float, col: Color, segs: int = 16, y: float = 0.02) -> 
 	arr[Mesh.ARRAY_COLOR] = c
 	var m := ArrayMesh.new()
 	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	if _disc_cache.size() >= DISC_CACHE_MAX:
+		_disc_cache.clear()
+	_disc_cache[cache_key] = m
 	return m
