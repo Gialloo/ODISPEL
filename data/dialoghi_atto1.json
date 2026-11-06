@@ -3220,32 +3220,47 @@
     ]
   },
   "c4_inventario": {
-    "riassunto": "L'inventario LibraCorp elenca il sequestro di un braccio prototipo, assegnato all'agente Lance. Firmato: Astrid.",
+    "riassunto": "Un inventario dei sequestri LibraCorp rivela il nome di Lance accanto a un prototipo magico.",
     "righe": [
       {
         "chi": "saul",
         "espr": "sorpreso",
-        "testo": "Inventario dei sequestri. Braccio prototipo, magico."
+        "testo": "Inventario dei sequestri. Braccio Magico. Prototipo in fase sperimentale."
       },
       {
         "chi": "saul",
         "espr": "sorpreso",
-        "testo": "In prova all'agente Lance. Firmato: Astrid."
+        "testo": "Assegnato all'agente Lance. Test sul campo. Firma: Astrid."
       },
       {
         "chi": "ferri",
         "espr": "sorpreso",
-        "testo": "...Astrid. Sapeva tutto. Mi ha fatto da cavia e mi chiamava «ragazzo mio»."
+        "testo": "...Astrid. Sapeva del prototipo. Sapeva cosa mi stavano facendo."
       },
       {
         "chi": "nox",
         "espr": "serio",
-        "testo": "LibraCorp contiene la magia di giorno e la monta ai suoi di notte. Che sorpresa."
+        "testo": "E ti ha lasciato credere che fosse un normale incarico?"
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "Non era un incarico. Ero il test."
       },
       {
         "chi": "zecca",
         "espr": "serio",
-        "testo": "Lance... stai bene?"
+        "testo": "Lance...?"
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "Sto bene."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Non te l'ha chiesto nessuno."
       },
       {
         "chi": "ferri",
@@ -3260,7 +3275,22 @@
       {
         "chi": "ferri",
         "espr": "neutro",
-        "testo": "...Lo so. Per questo sto in piedi."
+        "testo": "...Lo so."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Dici è peggio visto che ci siamo noi?"
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "Sta' zitto Saul."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Okay, okay, ricevuto capo."
       }
     ]
   },
