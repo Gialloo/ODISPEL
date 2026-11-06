@@ -2505,27 +2505,27 @@
     ]
   },
   "c3_soglia": {
-    "riassunto": "Nella vetrina c'è un manichino che copia la squadra. Rio ci guarda dentro.",
+    "riassunto": "Un manichino in vetrina assume la stessa posa di Rio.",
     "righe": [
       {
         "chi": "zecca",
         "espr": "sorpreso",
-        "testo": "Il manichino in vetrina si è messo in posa come me."
+        "testo": "Ehi. Quel manichino mi copia."
       },
       {
         "chi": "nox",
         "espr": "serio",
-        "testo": "Non guardarlo troppo. Ti prende così."
+        "testo": "Non fissarlo troppo, potrebbe attaccarci di sorpresa."
       },
       {
         "chi": "zecca",
-        "espr": "sfotto",
-        "testo": "Io vivo di gente che mi guarda troppo. Entriamo."
+        "espr": "serio",
+        "testo": "...Lo so. Ma non riesco a smettere di guardarlo."
       },
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "Insieme. Articolo... lascia stare. Insieme."
+        "testo": "Restiamo vicini. Articolo... lascia stare. Restiamo vicini."
       }
     ]
   },
