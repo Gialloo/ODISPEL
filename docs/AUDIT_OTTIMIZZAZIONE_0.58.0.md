@@ -465,3 +465,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Pubblicazione itch:** il workflow ora seleziona i pacchetti e richiede che APK e ZIP Windows abbiano la stessa versione numerica; verifica inoltre che lo ZIP contenga almeno un `.exe` e un `.pck`. Gli stessi percorsi/versione selezionati vengono usati per firma e upload, evitando che l'APK più recente venga abbinato a uno ZIP di versione diversa.
 - **Test eseguiti:** controllo statico dei sorgenti e dei diff GitHub. I test GDScript sono stati aggiunti ma **non eseguiti**; workflow YAML/GitHub Actions non è stato lanciato. Nessun pacchetto è stato caricato su itch.
 - **Rischi residui:** la validazione deve essere provata con salvataggi reali di tutte le versioni legacy. Il recupero dal backup non riscrive automaticamente il file principale: il gioco può continuare dal backup, ma la riparazione persistente avviene al successivo salvataggio. Verificare il comportamento di sostituzione file su Android e Windows. Il workflow continua a usare il primo APK/ZIP più recente per ciascun tipo, ma ora blocca il caricamento se le versioni non corrispondono.
+
+
+### 2026-11-06 — Ridisegno touch su richiesta e test multitouch
+
+- **File modificati:** `scripts/v3/touch_controls.gd`, nuovo `tests/unit/test_v3_touch_controls.gd`, `README.md`.
+- **Ottimizzazione:** rimosso il `queue_redraw()` incondizionato a ogni frame quando i controlli touch sono fermi. Il ridisegno continuo resta attivo solo per pulsanti animati o stick trascinato; modifiche alle etichette e agli stati dei pulsanti, inizio/fine/trascinamento dello stick e reset richiedono il disegno esplicitamente.
+- **Correzione inclusa:** al rilascio del dito dello stick viene centrata anche la manopola grafica, non solo azzerato il vettore.
+- **Test aggiunto:** due dita contemporanee, movimento stick, delta camera, rilascio generale e azzeramento degli indici. Comando documentato nel README: `godot --headless --path . -s tests/unit/test_v3_touch_controls.gd`.
+- **Test eseguiti:** revisione statica e verifica commit. Test GDScript non eseguito; nessuna prova su touchscreen reale.
+- **Rischio residuo:** verificare che gli aggiornamenti visivi restino immediati su dispositivi Android e che il comportamento del setter GDScript sia compatibile con Godot 4.7.2. Il risparmio effettivo di CPU/GPU/batteria va misurato sul telefono.
