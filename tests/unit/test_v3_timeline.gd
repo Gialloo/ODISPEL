@@ -277,6 +277,23 @@ func _interruzione() -> void:
 	BattleFlow.boss_action(s)
 	check(int(s["cycle_index"]) == cycle_before + 2, "INTERRUZIONE oltre round: salta la mossa annullata e poi annuncia la successiva")
 
+	# Se nel frattempo il boss cambia fase, il ciclo nuovo deve partire dalla sua prima mossa.
+	var p: Dictionary = _fresh("semaforo", 19)
+	BattleFlow.start_round(p)
+	var ptl: Dictionary = p["tl"]
+	var pe: Dictionary = BattleFlow.next(p)
+	_play(p, pe)
+	BattleFlow.interrupt(p, "boss", 120)
+	var pb: Dictionary = BattleState.boss(p)
+	pb["hp"] = int(float(pb["max_hp"]) * 0.40)
+	ptl["slots"]["boss"]["at"] = int(ptl["now"]) + 999999
+	BattleFlow.finish(p)
+	check(int(p["phase"]) == 2, "INTERRUZIONE + cambio fase: il boss entra nella fase 2")
+	check(not bool(ptl["tele_used"]), "INTERRUZIONE + cambio fase: il flag della fase precedente viene scartato")
+	BattleFlow.start_round(p)
+	BattleFlow.boss_action(p)
+	check(int(p["cycle_index"]) == 1, "la fase nuova esegue la prima mossa del proprio ciclo, senza saltarla")
+
 
 func _slancio_costo() -> void:
 	var s: Dictionary = _fresh("semaforo", 10)
