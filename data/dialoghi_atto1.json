@@ -3295,22 +3295,32 @@
     ]
   },
   "c4_combinazione": {
-    "riassunto": "Indizio: la cassaforte teme il rosso.",
+    "riassunto": "Indizio: la cassaforte reagisce al rosso.",
     "righe": [
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "La serratura ha una spia. Si sblocca col ROSSO. Difetto di fabbrica."
+        "testo": "Aspettate... La serratura reagisce al rosso."
       },
       {
         "chi": "ferri",
         "espr": "sfotto",
-        "testo": "Il rosso sono io. Per una volta il ladro sono io."
+        "testo": "Il mio colore."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Sei il grimaldello, capo."
+        "testo": "Guarda un po'. Per una volta sei tu ad aprire una porta per me."
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Incredibile."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Tranquillo, capo. Non capita spesso che un poliziotto mi sia così utile."
       }
     ]
   },
