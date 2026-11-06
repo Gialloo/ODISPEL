@@ -40,7 +40,7 @@ func _ready() -> void:
 	Ui.place(_stack, 0, 0, 0, 0, 20, 120, 640, 560)
 	add_child(_stack)
 	_all = DialogData.banter(set_key)
-	_rand_t = _rng._rng.randf_range(RANDOM_EVERY.x, RANDOM_EVERY.y)
+	_rand_t = _rng.randf_range(RANDOM_EVERY.x, RANDOM_EVERY.y)
 
 
 func busy() -> bool:
@@ -96,7 +96,7 @@ func _play_random(tipo: String) -> bool:
 			pool.append(b)
 	if pool.is_empty():
 		return false
-	_play(pool[_rng._rng.randi() % pool.size()])
+	_play(pool[_rng.randi() % pool.size()])
 	return true
 
 
