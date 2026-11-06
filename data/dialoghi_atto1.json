@@ -3320,7 +3320,7 @@
     ]
   },
   "c4_boss": {
-    "riassunto": "La Cassaforte si apre: dentro c'è il colpo della vita. La porta blindata si chiude su Rio e Saul la tiene aperta col proprio corpo.",
+    "riassunto": "La cassaforte si apre. Quando Rio resta intrappolato dalla porta blindata, Saul rinuncia alla via d'uscita promessa dal Committente e lo salva.",
     "righe": [
       {
         "chi": "CASSAFORTE",
@@ -3330,18 +3330,18 @@
       {
         "chi": "saul",
         "espr": "serio",
-        "testo": "(Lì dietro c'è l'uscita che mi ha promesso. Basterebbe correre.)",
+        "testo": "(Lì dietro c'è l'uscita che mi ha promesso il Committente. Basterebbe correre e sono fuori.)",
         "se": "saul_tentato"
       },
       {
         "chi": "zecca",
         "espr": "sorpreso",
-        "testo": "La porta! Si chiude! Sono dalla parte sbagliata!"
+        "testo": "La porta! Sono rimasto fuori!"
       },
       {
         "chi": "saul",
         "espr": "arrabbiato",
-        "testo": "Ragazzino. Fermo lì."
+        "testo": "Rio! Fermo lì!"
       },
       {
         "chi": "nox",
@@ -3351,7 +3351,7 @@
       {
         "chi": "saul",
         "espr": "serio",
-        "testo": "Probabile. Rio, passa. Non farmelo ripetere, parlare fa male."
+        "testo": "Lo so! Rio, passa!"
       },
       {
         "chi": "zecca",
@@ -3361,12 +3361,17 @@
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Tutto quello che hai, diceva. Ho voi. Pessimo affare."
+        "testo": "Perso un'uscita pulita e ho guadagnato voi, pessimo affare."
       },
       {
-        "chi": "ferri",
+        "chi": "zecca",
         "espr": "felice",
-        "testo": "Era quasi un complimento. Lo metto a verbale. Poi lo nego."
+        "testo": "Saul mi ha salvato la vita, e mi ha chiamato per nome!"
+      },
+      {
+        "chi": "saul",
+        "espr": "serio",
+        "testo": "Pessimo. Forse il Committente ha ragione dicendo che non sono più quello di una volta?"
       }
     ]
   },
