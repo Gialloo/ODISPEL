@@ -40,12 +40,16 @@ var _mat: ShaderMaterial
 var _meshes: Array = []
 
 
-func _init(tint: Color = Color(0.66, 0.6, 1.0)) -> void:
+static func shader() -> Shader:
 	if _shader == null:
 		_shader = Shader.new()
 		_shader.code = SHADER
+	return _shader
+
+
+func _init(tint: Color = Color(0.66, 0.6, 1.0)) -> void:
 	_mat = ShaderMaterial.new()
-	_mat.shader = _shader
+	_mat.shader = shader()
 	_mat.set_shader_parameter("tint", tint)
 
 
