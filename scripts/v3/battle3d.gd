@@ -109,6 +109,7 @@ var _cam_want_pos: Vector3
 var _cam_want_look: Vector3
 var _cam_rate: float = 3.0
 var _shake: float = 0.0
+var _presentation_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 # interfaccia
 var _ui: CanvasLayer
@@ -248,6 +249,7 @@ func _exit_tree() -> void:
 
 
 func _ready() -> void:
+	_presentation_rng.randomize()
 	Breadcrumb.mark("battaglia_carico")
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
@@ -396,8 +398,8 @@ func _build_arena() -> void:
 		for side in [-1.0, 1.0]:
 			var z: float = 16.0
 			while z > -20.0:
-				var l: float = cb.rng.randf_range(6.0, 9.0)
-				cb.building(side, z, l - 0.3, 8.0, cb.rng.randf_range(8.0, 17.0))
+				var l: float = cb.rng._presentation_rng.randf_range(6.0, 9.0)
+				cb.building(side, z, l - 0.3, 8.0, cb.rng._presentation_rng.randf_range(8.0, 17.0))
 				z -= l
 		cb.backdrop(-22.0)
 		cb.lamp(4.45, 4.0)
@@ -701,7 +703,7 @@ func _process(delta: float) -> void:
 	if _shake > 0.0:
 		_shake = maxf(0.0, _shake - rd * 3.0)
 		var k: float = _shake * Settings.shake * 0.22
-		sh = Vector3(randf_range(-k, k), randf_range(-k, k), randf_range(-k, k) * 0.5)
+		sh = Vector3(_presentation_rng.randf_range(-k, k), _presentation_rng.randf_range(-k, k), _presentation_rng.randf_range(-k, k) * 0.5)
 		# colpo forte: il campo visivo si stringe appena e poi si riapre, insieme alla scossa
 		cam.fov = FOV_BASE - _shake * Settings.shake * 3.5
 		_pinched = true
@@ -1927,7 +1929,7 @@ func _ono(uid: String, word: String, col: Color, delay: float, big: bool) -> voi
 	var sz: Vector2 = get_viewport().get_visible_rect().size
 	# vicino al punto d'impatto, in misure dello schermo (le parole sono piccole: non coprono personaggi ne' interfaccia)
 	var u: float = sz.y * 0.01
-	var at: Vector2 = cam.unproject_position(p3) + Vector2(randf_range(5.0, 9.0) * u * (1.0 if randi() % 2 == 0 else -1.0), randf_range(-6.0, -1.0) * u)
+	var at: Vector2 = cam.unproject_position(p3) + Vector2(_presentation_rng.randf_range(5.0, 9.0) * u * (1.0 if _presentation_rng.randi() % 2 == 0 else -1.0), _presentation_rng.randf_range(-6.0, -1.0) * u)
 	at = Vector2(clampf(at.x, sz.y * 0.2, sz.x - sz.y * 0.35), clampf(at.y, sz.y * 0.2, sz.y * 0.75))
 	Onomato.pop(_fx_layer, at, word, col, big)
 
@@ -1998,9 +2000,9 @@ func _number(uid: String, text: String, col: Color, size: int, delay: float, yof
 	var l := Ui.label(text, size, col, Ui.display(), 10)
 	l.modulate.a = 0.0
 	_fx_layer.add_child(l)
-	var jitter := Vector2(randf_range(-30, 30), randf_range(-10, 10))
+	var jitter := Vector2(_presentation_rng.randf_range(-30, 30), _presentation_rng.randf_range(-10, 10))
 	if yoff != 0.0:
-		jitter = Vector2(randf_range(-8, 8), yoff)
+		jitter = Vector2(_presentation_rng.randf_range(-8, 8), yoff)
 	var tw := l.create_tween()
 	tw.tween_interval(delay)
 	tw.tween_callback(func() -> void:
@@ -2808,7 +2810,7 @@ func _victory_cover() -> void:
 	var tt: Array
 	match ch:
 		"ferri":
-			tt = [["OBIETTIVO NEUTRALIZZATO", "MINACCIA NEUTRALIZZATA"][randi() % 2], nm]
+			tt = [["OBIETTIVO NEUTRALIZZATO", "MINACCIA NEUTRALIZZATA"][_presentation_rng.randi() % 2], nm]
 		"nox":
 			tt = ["CE L'HO FATTA!", "ORA UN MERITATO RIPOSO"]
 		"saul":
