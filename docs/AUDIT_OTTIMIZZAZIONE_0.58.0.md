@@ -963,3 +963,17 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test effettivamente eseguiti:** verifica statica del diff e rilettura del file aggiornato su GitHub. Nessun test Godot o replay runtime eseguito in questa sessione.
 - **Limite noto:** la sequenza visiva specifica dei lampi non è più legata al generatore globale e quindi può differire rispetto alle versioni precedenti; è intenzionale perché la variazione è cosmetica. `randomize()` rende inoltre la sequenza non riproducibile tra esecuzioni, come già consentito dal carattere puramente decorativo dell'effetto.
 - **Prossimo passo:** valutare l'isolamento delle estrazioni in `VendingVisual` e `battle3d.gd` solo dopo aver mappato i punti di ingresso e aver verificato che siano esclusivamente presentazionali.
+
+
+
+### 2026-11-06 — RNG locale per gli effetti di VendingVisual
+
+- **File modificato:** `scripts/v3/vending_visual.gd`.
+- **Mappatura:** le estrazioni casuali erano concentrate in `_burst()` (velocità, spinta verticale, dispersione e rotazione dei frammenti) e `_fin_frammento()` (rotazione iniziale dei tre cubi). Entrambi i percorsi alimentano esclusivamente la presentazione del colpo finale dell'Anomalia; non assegnano danni, stati, turni, ricompense o risultati del resolver.
+- **Correzione:** aggiunto un `RandomNumberGenerator` privato per istanza, inizializzato in `_ready()`. Tutte le estrazioni casuali del file ora usano `_rng.randf_range()`.
+- **Comportamento atteso:** frammenti e cubi continuano a essere distribuiti con gli stessi intervalli e la stessa logica, ma l'effetto non consuma più valori del generatore globale condiviso. Ogni istanza di VendingVisual ha una sequenza visiva indipendente.
+- **Cosa non cambia:** numero dei frammenti, riduzione effetti tramite `Settings.light_fx`, mesh, velocità nominali, gravità, rimbalzi, durata, animazioni, tempi del colpo finale e chiamate a `LightFx.sparks()`.
+- **Test consigliati:** verificare il colpo finale di ciascun tipo di Anomalia, con effetti normali e ridotti; controllare in particolare cassaforte, telecamera, cabina, distributore e frammento; ripetere un combattimento con e senza effetti finali e confrontare gli eventi del resolver.
+- **Test effettivamente eseguiti:** lettura completa del file, mappatura delle chiamate casuali e verifica statica del file aggiornato su GitHub. Nessun test Godot, scena runtime o replay è stato eseguito.
+- **Limite noto:** i dettagli casuali dei frammenti non sono più riproducibili tramite il seed globale della partita. È una scelta intenzionale per effetti cosmetici; non viene introdotto un seed persistente per la presentazione.
+- **Prossimo passo:** completare la mappatura delle chiamate casuali in `battle3d.gd`, distinguendo jitter/camera/testi da eventuali scelte che influenzano contenuto o progressione, prima di intervenire.
