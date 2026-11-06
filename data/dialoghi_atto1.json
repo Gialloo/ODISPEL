@@ -2175,7 +2175,7 @@
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "Li ho scritti. Il capitolo tre è mio."
+        "testo": "Li ho scritti."
       },
       {
         "chi": "zecca",
@@ -2195,7 +2195,7 @@
       {
         "chi": "zecca",
         "espr": "serio",
-        "testo": "Roba strana che ci è caduta addosso. Siamo uguali, no?"
+        "testo": "Roba strana che ci è capitata. Siamo uguali, no?"
       },
       {
         "chi": "ferri",
@@ -2204,8 +2204,28 @@
       },
       {
         "chi": "zecca",
-        "espr": "felice",
-        "testo": "TITOLO: «Mi alleno con Lance. Ho pianto».",
+        "espr": "triste",
+        "testo": "Sniff, Sniff. Si..."
+      },
+      {
+        "chi": "ferri",
+        "espr": "sorpreso",
+        "testo": "Stai.. piangendo?"
+      },
+      {
+        "chi": "zecca",
+        "espr": "triste",
+        "testo": "Sniff, Sniff. Si..."
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Per oggi chiudiamola qui.."
+      },
+      {
+        "chi": "zecca",
+        "espr": "triste",
+        "testo": "Sniff, Sniff, si...",
         "imposta": "legame_ferri_zecca"
       }
     ]
