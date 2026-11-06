@@ -734,16 +734,17 @@ scene("c4_combinazione", "Indizio: la cassaforte reagisce al rosso.",
     L("saul/neutro", "Guarda un po'. Per una volta sei tu ad aprire una porta per me."),
     L("saul/neutro", "Tranquillo, capo. Non capita spesso che un poliziotto mi sia così utile."))
 
-scene("c4_boss", "La Cassaforte si apre: dentro c'è il colpo della vita. La porta blindata si chiude su Rio e Saul la tiene aperta col proprio corpo.",
+scene("c4_boss", "La cassaforte si apre. Quando Rio resta intrappolato dalla porta blindata, Saul rinuncia alla via d'uscita promessa dal Committente e lo salva.",
     L("CASSAFORTE", "COMBINAZIONE RICHIESTA. LA COMBINAZIONE È: TUTTO QUELLO CHE HAI."),
-    L("saul/serio", "(Lì dietro c'è l'uscita che mi ha promesso. Basterebbe correre.)", se="saul_tentato"),
-    L("zecca/sorpreso", "La porta! Si chiude! Sono dalla parte sbagliata!"),
-    L("saul/arrabbiato", "Ragazzino. Fermo lì."),
+    L("saul/serio", "(Lì dietro c'è l'uscita che mi ha promesso il Committente. Basterebbe correre e sono fuori.)", se="saul_tentato"),
+    L("zecca/sorpreso", "La porta! Sono rimasto fuori!"),
+    L("saul/arrabbiato", "Rio! Fermo lì!"),
     L("nox/sorpreso", "Saul! Ti schiaccia!"),
-    L("saul/serio", "Probabile. Rio, passa. Non farmelo ripetere, parlare fa male."),
+    L("saul/serio", "Lo so! Rio, passa!"),
     L("zecca/serio", "...Sono passato. Saul, esci!"),
-    L("saul/neutro", "Tutto quello che hai, diceva. Ho voi. Pessimo affare."),
-    L("ferri/felice", "Era quasi un complimento. Lo metto a verbale. Poi lo nego."))
+    L("saul/neutro", "Perso un'uscita pulita e ho guadagnato voi, pessimo affare."),
+    L("zecca/felice", "Saul mi ha salvato la vita, e mi ha chiamato per nome!"),
+    L("saul/serio", "Pessimo. Forse il Committente ha ragione dicendo che non sono più quello di una volta?"))
 
 scene("c4_agguato", "La Cassaforte attacca per prima.",
     L("CASSAFORTE", "TENTATIVO DI SCASSO RILEVATO. CONFISCA IN CORSO."),
