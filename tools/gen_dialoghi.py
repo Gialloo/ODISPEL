@@ -712,14 +712,21 @@ scene("c4_committente", "Durante una pausa, il Committente contatta Saul e gli o
     L("saul/neutro", "Ehi! Là fuori c'è gente che lavora sodo, Nox.", se="saul_tentato"),
     L("nox/neutro", "Lo so bene, tu non ne fai parte.", se="saul_tentato"))
 
-scene("c4_inventario", "L'inventario LibraCorp elenca il sequestro di un braccio prototipo, assegnato all'agente Lance. Firmato: Astrid.",
-    L("saul/sorpreso", "Inventario dei sequestri. Braccio prototipo, magico. In prova all'agente Lance. Firmato: Astrid."),
-    L("ferri/sorpreso", "...Astrid. Sapeva tutto. Mi ha fatto da cavia e mi chiamava «ragazzo mio»."),
-    L("nox/serio", "LibraCorp contiene la magia di giorno e la monta ai suoi di notte. Che sorpresa."),
-    L("zecca/serio", "Lance... stai bene?"),
+scene("c4_inventario", "Un inventario dei sequestri LibraCorp rivela il nome di Lance accanto a un prototipo magico.",
+    L("saul/sorpreso", "Inventario dei sequestri. Braccio Magico. Prototipo in fase sperimentale."),
+    L("saul/sorpreso", "Assegnato all'agente Lance. Test sul campo. Firma: Astrid."),
+    L("ferri/sorpreso", "...Astrid. Sapeva del prototipo. Sapeva cosa mi stavano facendo."),
+    L("nox/serio", "E ti ha lasciato credere che fosse un normale incarico?"),
+    L("ferri/serio", "Non era un incarico. Ero il test."),
+    L("zecca/serio", "Lance...?"),
+    L("ferri/serio", "Sto bene."),
+    L("saul/neutro", "Non te l'ha chiesto nessuno."),
     L("ferri/serio", "Sono in servizio."),
     L("saul/neutro", "Non sei in servizio, capo. Sei con noi."),
-    L("ferri/neutro", "...Lo so. Per questo sto in piedi."))
+    L("ferri/neutro", "...Lo so."),
+    L("saul/neutro", "Dici è peggio visto che ci siamo noi?"),
+    L("ferri/serio", "Sta' zitto Saul."),
+    L("saul/neutro", "Okay, okay, ricevuto capo."))
 
 scene("c4_combinazione", "Indizio: la cassaforte teme il rosso.",
     L("saul/neutro", "La serratura ha una spia. Si sblocca col ROSSO. Difetto di fabbrica."),
