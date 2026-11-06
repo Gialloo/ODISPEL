@@ -2397,7 +2397,7 @@
     ]
   },
   "c3_chat": {
-    "riassunto": "La chat della diretta di Rio chiede di vedergli la faccia. Rio ha paura di non essere nessuno senza maschera.",
+    "riassunto": "Durante la diretta, alcuni utenti insistono perché Rio mostri il volto.",
     "righe": [
       {
         "chi": "zecca",
@@ -2407,32 +2407,32 @@
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "«Senza maschera sei nessuno.» Simpatici."
+        "testo": "E poi: «Senza maschera sei nessuno». Simpatici."
       },
       {
         "chi": "saul",
         "espr": "serio",
-        "testo": "Chi sono?"
+        "testo": "Chi l'ha scritto?"
       },
       {
         "chi": "zecca",
         "espr": "neutro",
-        "testo": "Gente. Uno si chiama «Pane_Fritto_92»."
+        "testo": "Gente. Uno si chiama «Persona97»."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Non si dà la faccia a uno che si chiama Pane Fritto."
+        "testo": "Non mi farei dare consigli da uno che si chiama Persona97."
       },
       {
         "chi": "zecca",
         "espr": "triste",
-        "testo": "Prima della maschera avevo trentadue follower. Tutti parenti."
+        "testo": "Prima della maschera non mi conosceva nessuno, avevo trentadue follower. Tutti parenti."
       },
       {
         "chi": "saul",
         "espr": "serio",
-        "testo": "Io ne ho zero. Mi riconoscono in tre province."
+        "testo": "Io ne ho zero e mi riconoscono in tre stati."
       }
     ]
   },
