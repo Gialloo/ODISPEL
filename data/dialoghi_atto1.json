@@ -2580,38 +2580,53 @@
     ]
   },
   "c3_faccia": {
-    "riassunto": "La maschera di Rio ha una crepa: da lì si vede un occhio. Rio non è ancora pronto a toglierla, e nessuno insiste. I volti tornano alla gente. Tre Anomalie chiuse.",
+    "riassunto": "La maschera di Rio ha una crepa: da lì si vede un occhio. Rio non è ancora pronto a toglierla. I passanti tornano alla normalità e ad avere un volto. Tre Anomalie chiuse.",
     "righe": [
+      {
+        "chi": "nox",
+        "espr": "sorpreso",
+        "testo": "Rio! Ti sei fatto male?"
+      },
       {
         "chi": "zecca",
         "espr": "sorpreso",
-        "testo": "Raga. La maschera. Si è crepata. Da qui si vede... un occhio. Il mio."
-      },
-      {
-        "chi": "nox",
-        "espr": "neutro",
-        "testo": "Un occhio basta. Si vede che hai paura. Va bene così."
+        "testo": "No. Cioè... non credo, ma la maschera.. Si è crepata.."
       },
       {
         "chi": "ferri",
         "espr": "neutro",
-        "testo": "La crepa non la metto a verbale. Quando vorrai toglierla, ci saremo."
+        "testo": "Non toccarla. Potresti peggiorare la crepa."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Hai l'occhio di uno che non sa mentire. Un giorno ti servirà."
+        "testo": "Per una volta, ascolta il capo moccioso"
       },
       {
         "chi": "zecca",
-        "espr": "felice",
-        "testo": "Signore e signori... un occhio di Rio. Quello vero. Il resto arriva."
+        "espr": "arrabbiato",
+        "testo": "Moccioso a chi?"
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Vedi? Sei ancora capace di rispondere. Buon segno."
+      },
+      {
+        "chi": "zecca",
+        "espr": "serio",
+        "testo": "...Non posso toglierla. Non ancora."
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Nessuno te l'ha chiesto."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "felice",
-        "testo": "Trentatré follower. Mi sono iscritta. Telecamera quattordici."
+        "testo": "Sei stato bravo Rio! hai guadagnato una nuova follower! Echo!"
       },
       {
         "chi": "zecca",
@@ -2627,10 +2642,10 @@
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "A un ladro non si dice «ti piacerà». Si dice «non toccare niente»."
+        "testo": "Non si dice «ti piacerà». Si dice «non toccare niente»."
       }
     ]
-  },
+  }
   "c3_serata": {
     "riassunto": "Una serata al rifugio.",
     "righe": [
