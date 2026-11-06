@@ -641,7 +641,7 @@ scene("c3_sera_nox_zecca", "Nox e Rio guardano vecchie fotografie. Tra le prese 
     L("nox/neutro", "Certo. Ma stavolta scegli tu il posto."),
     L("zecca/sorpreso", "O-Okay allora! E ti porterò a cena fuori e andremo in giro e..."),
     L("nox/sfotto", "Rio, mi basta un caffè."),
-    L("zecca/imbarazzato", "Nox, non penso che un caffè solo basti."),
+    L("zecca/sorpreso", "Nox, non penso che un caffè solo basti."),
     L("nox/neutro", "Hai ragione, ma è un inizio.", imposta="legame_nox_zecca"))
 scene("c3_sera_echo", "La squadra parla con Echo, che evita di dire cosa farà quando la cupola si aprirà.",
     L("zecca/felice", "Echo! Quando si apre la cupola, vieni a vivere nel mio telefono?"),
