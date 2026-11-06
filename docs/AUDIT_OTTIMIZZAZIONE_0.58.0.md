@@ -492,3 +492,14 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Piano di refactoring sicuro (futuro):** prima inventario delle variabili condivise e dei segnali; poi test di caratterizzazione su una battaglia completa; estrarre prima componenti con confini chiari (HUD/notifiche e camera), lasciando in `battle3d.gd` il coordinamento del turno; un gruppo alla volta, con test prima/dopo e confronto visivo.
 - **Miglioria attuale:** mappatura documentata, nessuna modifica architetturale rischiosa.
 - **Test eseguiti:** conteggio statico righe/funzioni e lettura delle intestazioni. Nessun refactoring o test runtime.
+
+
+### 2026-11-06 — Ulteriore hardening progressione e recupero salvataggi
+
+- **File modificati:** `scripts/v3/progress.gd`, `scripts/v3/story.gd`, `tests/unit/test_v3_engine.gd`.
+- **Progressione:** la validazione ora confronta ogni equipaggiamento con gli sblocchi effettivamente raggiunti dal personaggio; verifica anche che uno slot abilità contenga una mossa di tipo `skill` e lo slot Ultimate una mossa di tipo `ult`. Le mosse rubate sono ammesse nello slot abilità solo se presenti nell'elenco dei furti.
+- **Menu Continua:** `Story.has_save()` riconosce anche il solo backup `.bak`, quindi un'interruzione dopo lo spostamento del file principale non nasconde più la possibilità di recuperare la partita.
+- **Scrittura dopo recupero:** se il file principale è invalido, la nuova scrittura lo mette da parte come `.bad` senza sovrascrivere il backup recuperabile prima che il nuovo file sia stato scritto. Se la sostituzione fallisce, il backup valido resta disponibile.
+- **Test aggiunti:** equipaggiamento non ancora sbloccato; Ultimate collocata nello slot abilità; recupero quando il file principale manca; rilevamento del solo backup nel menu; conservazione separata del file corrotto durante il successivo salvataggio.
+- **Test eseguiti:** lettura statica delle funzioni e confronto dei file su GitHub. I test GDScript non sono stati eseguiti in Godot.
+- **Rischi residui:** la validazione degli equipaggiamenti deve essere verificata con salvataggi reali di tutte le build storiche; l'uso di `.bad` conserva il file danneggiato ma non lo ripara. Verificare errori di permessi e interruzioni reali su Windows e Android.
