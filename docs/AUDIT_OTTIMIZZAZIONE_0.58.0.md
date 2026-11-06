@@ -401,3 +401,21 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test eseguiti:** lettura dei sorgenti e confronto degli elenchi; nessuna esecuzione Godot.
 - **Prossimo test necessario:** avvio a freddo, primo utilizzo di ogni effetto e registrazione dei frame time su PC e Android, confrontando warmup attivo/disattivo.
 - **Modifiche runtime:** nessuna in questa verifica.
+
+
+### 2026-11-06 — Verifica statica motore di combattimento
+
+- **File esaminati:** `scripts/engine/battle_flow.gd`, `scripts/engine/battle_resolver.gd`, `scripts/engine/battle_state.gd`, `tests/unit/test_v3_flusso.gd`, `tests/unit/test_v3_timeline.gd`, `tests/unit/test_v3_slancio.gd`, `tests/unit/test_v3_engine.gd`.
+- **Architettura:** il flusso dei turni, la risoluzione delle azioni e lo stato serializzabile sono separati. La Timeline ha un percorso dedicato; il giro a round conserva test di equivalenza con il flusso precedente.
+- **Copertura test presente nel repository:** equivalenza su 180 scontri nel test del flusso; test dedicati a Timeline, Slancio (incluso Slancio protetto), combattimento completo e varie interazioni. Questi sono test definiti nel codice, non eseguiti durante questa verifica.
+- **Criticità confermate:** nessun errore logico dimostrabile dalla sola lettura dei file esaminati. Non applicate modifiche speculative al resolver o alle regole di combattimento.
+- **Miglioria proposta:** eseguire la suite su Godot e aggiungere casi combinati mirati per cambio fase + BREAK + interruzione + Slancio protetto + KO, controllando risorse, ordine eventi e telegraph.
+- **Test eseguiti:** ispezione statica dei sorgenti e dei test; nessuna esecuzione Godot.
+
+### 2026-11-06 — Correzione input touch al rilascio globale
+
+- **File modificato:** `scripts/v3/touch_controls.gd`.
+- **Criticità:** `release_all()` liberava gli indici delle dita e azzerava lo stick, ma lasciava intatto `cam_drag` e la posizione del pomello. Dopo pausa, cambio schermata o perdita del focus, il trascinamento residuo poteva essere consumato successivamente dalla camera.
+- **Correzione:** `release_all()` ora azzera anche `cam_drag` e `_knob`, quindi richiede un ridisegno immediato.
+- **Test eseguiti:** confronto statico prima/dopo e verifica del commit su GitHub. Non eseguiti test touch su dispositivo né test Godot.
+- **Rischio residuo:** verificare su Android la ripresa dopo pausa, cambio schermata e multitouch; assicurarsi che il chiamante invochi `release_all()` in tutti i passaggi che devono annullare gli input.
