@@ -752,20 +752,22 @@ scene("c4_agguato", "La Cassaforte attacca per prima. Lance difende Saul e Saul 
     L("ferri/serio", "Per una volta, è innocente."),
     L("saul/neutro", "Echo sei ci sei per favore registra questo momento. Non ricapiterà."))
 
-scene("c4_dopo", "La cassaforte è chiusa: quattro Anomalie chiuse. Saul ha due costole incrinate e non se ne pente. Echo li manda a riposare: all'alba, in piazza.",
-    L("zecca/felice", "Quattro su quattro! Avete visto QUELLO CHE HO FATTO? ...Cioè, Saul. Ma io ero nell'inquadratura."),
+scene("c4_dopo", "Dopo aver chiuso la cassaforte, Nox si occupa delle costole di Saul. Tra battute e una domanda di Rio, Saul lascia intravedere perché è rimasto con la squadra.",
+    L("zecca/felice", "Quattro su quattro! Avete visto QUELLO CHE HO FATTO?"),
+    L("zecca/felice", "...Cioè, Saul. Ma io ero nell'inquadratura."),
     L("nox/neutro", "Saul. Le costole."),
     L("saul/neutro", "Sono a posto."),
-    L("nox/neutro", "Due incrinate. Zitto, respira piano, e stanotte il divano è tuo."),
-    L("saul/sorpreso", "Il divano."),
-    L("nox/neutro", "Solo stanotte."),
+    L("nox/neutro", "Due incrinate. Zitto, respira piano. Stanotte il divano è tuo."),
+    L("saul/sorpreso", "Puoi farmi da infermiera e rimboccarmi le coperte?"),
+    L("nox/neutro", "Ritiro tutto quello che ho detto. Può morire qui per me ragazzi."),
     L("zecca/serio", "Saul... perché l'hai fatto?"),
-    L("saul/neutro", "Non lo so. Di solito so sempre quanto ci guadagno."),
+    L("saul/neutro", "Non lo so. Di solito ho sempre un tornaconto preciso."),
     L("saul/serio", "Stavolta niente. Credo di essere malato."),
-    L("saul/neutro", "Prima mi ha chiamato il tizio del pacco. Un'uscita, solo per me. Non ve l'avevo detto.", se="saul_tentato"),
+    L("saul/neutro", "Prima mi ha chiamato il Committente: è il tizio del pacco che sta dietro tutta questa faccenda. Mi ha offerto un'uscita, non ve l'avevo detto.", se="saul_tentato"),
     L("ferri/serio", "E sei rimasto. A tenere una porta blindata con le costole.", se="saul_tentato"),
-    L("saul/neutro", "Fuori, chi vi sopportava?", se="saul_tentato"),
-    L("echo/felice", "Quattro Anomalie. Riposate. All'alba, in piazza: vi porto le registrazioni. Promesso."))
+    L("saul/neutro", "Non è stato il massimo ma è servito a qualcosa.", se="saul_tentato"),
+    L("echo/felice", "Quattro Anomalie. Riposate."),
+    L("echo/felice", "All'alba, in piazza: vi porto le registrazioni. Promesso."))
 
 scene("c4_vigilia", "L'ultima notte al rifugio. Ognuno dice cosa farà con quello che Echo gli ha promesso. Echo chiede di essere salvata tra i contatti di Rio, e quasi confessa qualcosa.",
     L("nox/neutro", "Ultima notte. Domani la cupola cade e ognuno a casa sua."),
