@@ -3103,27 +3103,27 @@
     ]
   },
   "c4_committente": {
-    "riassunto": "Una voce senza volto chiama Saul: è il Committente, chi gli aveva affidato il pacco. Gli offre il colpo della vita se abbandona gli altri.",
+    "riassunto": "Durante una pausa, il Committente contatta Saul e gli offre una via d'uscita. Saul deve decidere se dirlo agli altri o tenere la proposta per sé.",
     "righe": [
       {
         "chi": "saul",
         "espr": "sorpreso",
-        "testo": "Numero sconosciuto."
+        "testo": "Numero sconosciuto... Che giornata fortunata."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "...Pronto."
+        "testo": "...Pronto?"
       },
       {
         "chi": "VOCE SENZA VOLTO",
         "col": "#c9c3d6",
-        "testo": "Ciao, Saul. Hai consegnato bene il mio pacco."
+        "testo": "Ciao, Saul. Hai fatto un bel lavoro stavolta."
       },
       {
         "chi": "saul",
         "espr": "serio",
-        "testo": "Tu. Quel pacco ha chiuso una città. Mi avevi detto «documenti»."
+        "testo": "Tu.. Quel pacco ha chiuso una città. Mi avevi detto che era un lavoro pulito, documenti e basta!"
       },
       {
         "chi": "VOCE SENZA VOLTO",
@@ -3131,19 +3131,34 @@
         "testo": "Erano documenti. Di un certo tipo."
       },
       {
-        "chi": "VOCE SENZA VOLTO",
-        "col": "#c9c3d6",
-        "testo": "Nel caveau c'è quello che ti avevo promesso."
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Sai, di solito quando qualcuno mi mente cerco almeno di farmi pagare di più."
       },
       {
         "chi": "VOCE SENZA VOLTO",
         "col": "#c9c3d6",
-        "testo": "E di più. Prendilo e vattene. Loro non ti servono."
+        "testo": "Nel caveau c'è quello che ti avevo promesso. Anzi, molto di più."
       },
       {
         "chi": "VOCE SENZA VOLTO",
         "col": "#c9c3d6",
-        "testo": "Ti apro un'uscita. Solo per te. Una volta ci avresti già pensato."
+        "testo": "Prendilo e vattene. Loro non ti servono."
+      },
+      {
+        "chi": "saul",
+        "espr": "serio",
+        "testo": "E dovrei fidarmi di te?"
+      },
+      {
+        "chi": "VOCE SENZA VOLTO",
+        "col": "#c9c3d6",
+        "testo": "Non devi fidarti. Devi solo ricordare quanto hai desiderato arrivare fin qui."
+      },
+      {
+        "chi": "VOCE SENZA VOLTO",
+        "col": "#c9c3d6",
+        "testo": "Ti apro un'uscita. Solo per te. Vediamo se sei ancora come ti ricordavo."
       },
       {
         "chi": "saul",
@@ -3163,19 +3178,19 @@
       {
         "chi": "saul",
         "espr": "serio",
-        "testo": "Il tizio del pacco. Ci vuole divisi. Quindi restiamo insieme. Per dispetto.",
+        "testo": "Era Il Committente, il tizio del pacco. Ci vuole divisi. Quindi restiamo insieme. Finito qui, andrò a fare due chiacchiere con lui in privato, ho degli interessi da riscattare.",
         "se": "saul_leale"
       },
       {
         "chi": "ferri",
         "espr": "sorpreso",
-        "testo": "...L'hai detto senza che te lo chiedessimo.",
+        "testo": "Il committente, nei file ne ho sentito parlare. Hai lavorato per lui e sei ancora vivo? Mi sorprendi.",
         "se": "saul_leale"
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Incidente. Non abituarti.",
+        "testo": "Te l'ho detto che sono il migliore.",
         "se": "saul_leale"
       },
       {
@@ -3193,7 +3208,13 @@
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Gente che lavora sodo.",
+        "testo": "Ehi! Là fuori c'è gente che lavora sodo, Nox.",
+        "se": "saul_tentato"
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Lo so bene, tu non ne fai parte.",
         "se": "saul_tentato"
       }
     ]
