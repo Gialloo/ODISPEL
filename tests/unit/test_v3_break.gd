@@ -130,14 +130,11 @@ func _fase_saltate() -> void:
 	var old_shield: int = int(boss["shield"])
 	var alive: Array = BattleState.alive_players(s)
 	var energy_before: Dictionary = {}
-	var gauge_before: Dictionary = {}
 	for p in alive:
 		var u: Dictionary = BattleState.active_unit(s, str(p["id"]))
 		energy_before[str(u["id"])] = int(u["energy"])
-		gauge_before[str(u["id"])] = int(u["gauge"])
 		# Evita che il limite della barra nasconda il secondo premio di fase.
 		u["gauge"] = 0
-		gauge_before[str(u["id"])] = 0
 	boss["hp"] = int(ceil(float(boss["max_hp"]) * 0.20))
 	var events: Array = []
 	BattleResolver._check_phase(s, events)
