@@ -144,7 +144,7 @@ func _per_unit_source() -> void:
 	check(duo_source == "duo:duo_protezione", "la tecnica a due prevale sull'evento act generico dello stesso attore")
 
 	before = ResourceTelemetry.snapshot(state)
-	state["units"]["lance"]["energy"] = 5
+	state["units"]["lance"]["energy"] = 6
 	var mixed_events: Array = [
 		{"t": "act", "unit": "lance", "move": "attacco"},
 		{"t": "act", "unit": "lance", "move": "guardia"}
