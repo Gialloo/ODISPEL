@@ -47,7 +47,8 @@ func _process(_delta: float) -> void:
 
 func _fit() -> void:
 	var vp: Vector2 = get_viewport_rect().size
-	var sz: Vector2 = get_combined_minimum_size().max(size)
+	# Solo la misura minima, mai la vecchia: con .max(size) il pannello poteva crescere e non tornava piu' indietro.
+	var sz: Vector2 = get_combined_minimum_size()
 	if sz.x < 1.0 or vp.x < 1.0:
 		return
 	var k: float = minf(1.0, minf((vp.x - 24.0) / sz.x, (vp.y - 24.0) / sz.y))
@@ -59,7 +60,10 @@ func _fit() -> void:
 
 
 func _build() -> void:
+	# Le righe vecchie si staccano subito: con il solo queue_free restavano nella griglia fino a fine fotogramma,
+	# l'altezza raddoppiava e il pannello si rimpiccioliva (bug «cambia risoluzione» su PC, 6/11/2026).
 	for c in _rows.get_children():
+		_rows.remove_child(c)
 		c.queue_free()
 	_row("Musica", Settings.volume_text(Settings.music_volume), func() -> void: Settings.music_volume = Settings.next_volume(Settings.music_volume))
 	_row("Effetti sonori", Settings.volume_text(Settings.sfx_volume), func() -> void:
