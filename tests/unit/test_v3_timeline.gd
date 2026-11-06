@@ -344,11 +344,14 @@ func _preview_turno_corrente() -> void:
 	var current: Dictionary = BattleFlow.next(s)
 	check(not bool(current.get("end", false)) and not bool(current.get("boss", false)), "preview corrente: il test parte da un turno eroe")
 	var pid: String = str(current.get("player", ""))
+	var stamp_before: int = int(s["tl"]["stamp"])
+	var at_before: int = int(s["tl"]["slots"][pid]["at"])
 	var preview: Array = BattleFlow.preview(s, 5)
 	check(not preview.is_empty() and str(preview[0].get("player", "")) == pid, "preview corrente: mantiene il turno attualmente selezionato in testa")
 	if preview.size() > 1:
 		check(str(preview[1].get("player", "")) != pid, "preview corrente: non duplica il turno ordinario appena iniziato")
 	check(str(s["tl"]["cur"]) == pid and not bool(s["tl"]["done"].get(pid, false)), "preview corrente: non modifica la Timeline reale")
+	check(int(s["tl"]["stamp"]) == stamp_before and int(s["tl"]["slots"][pid]["at"]) == at_before, "preview corrente: non modifica timbri o tempi reali")
 
 
 func _preview_bonus_coerente() -> void:
