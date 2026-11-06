@@ -615,3 +615,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 
 - **Ulteriore discrepanza rilevata nello stesso controllo:** quando tutti gli slot ordinari erano già completati e non restavano turni extra validi, `preview()` continuava a simulare gli slot riprogrammati del round successivo. `next()`, invece, termina il round. La previsione ora si ferma quando `_all_done()` è vero e non esiste un bonus giocabile; se i bonus presenti sono invalidi, li scarta e termina senza mostrare turni ordinari fuori dal round.
 - **Test esteso:** dopo aver marcato completati tutti gli slot, la previsione contiene soltanto lo SLANCIO protetto già pronto e non inventa turni ordinari oltre la fine del round.
+
+
+### 2026-11-06 — Telemetria delle risorse nel cambio fase
+
+- **File modificati:** `scripts/engine/resource_telemetry.gd`, `tests/unit/test_v3_resource_telemetry.gd`.
+- **Criticità trovata:** durante il cambio fase, `BattleResolver._check_phase()` registra direttamente spese EN e guadagni barra con fonte `phase_change`; tuttavia `ResourceTelemetry.record(..., "phase_transition")` saltava interamente l'analisi degli eventi diretti e attribuiva i delta alla fase generica. La lista eventi contiene anche eventi del round precedente, quindi non era corretto riutilizzare indiscriminatamente le fonti delle azioni precedenti.
+- **Correzione:** nel solo percorso `phase_transition`, la telemetria considera esclusivamente gli eventi `resource_change` la cui fonte è esattamente `phase_change`. Le altre fonti già presenti nella lista vengono ignorate per questa attribuzione.
+- **Test aggiunto:** la spesa EN e il guadagno gauge del cambio fase mantengono la fonte `phase_change`, anche quando la stessa lista contiene un evento risorsa precedente con fonte diversa.
+- **Verifiche:** lettura statica di `BattleResolver._check_phase()`, `SeqRound.finish()` e `ResourceTelemetry.record()`; test aggiunto ma non eseguito con Godot.
+- **Impatto:** solo qualità della telemetria; nessuna modifica ai valori o all'applicazione delle risorse.
