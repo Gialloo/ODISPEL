@@ -122,6 +122,7 @@ const GRIT_BELOW: float = 0.3         # GRINTA (era ARDORE, rinominata dall'auto
 const GRIT_BONUS: float = 1.15
 const PHASE_2_BELOW: float = 0.5
 const PHASE_3_BELOW: float = 0.25
+const PHASE_NO_SKIP: bool = true     # 2C, decisione dell'autore 6/11/2026: i boss non saltano le fasi (BattleResolver.phase_capped_loss)
 const PHASE_SHIELD: float = 0.05       # scudo del boss a ogni cambio di fase (in % dei PV massimi)
 const PHASE_GAUGE: int = 25            # carica ultimate regalata alla squadra a ogni fase (rimonta)
 

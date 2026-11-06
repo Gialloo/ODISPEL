@@ -535,6 +535,26 @@ static func _phase_of(boss: Dictionary) -> int:
 	return 1
 
 
+# FASI SEMPRE VISIBILI (decisione dell'autore 6/11/2026, opzione 2C): un boss vero non salta una fase con un colpo solo.
+# Finche' la fase nuova non e' registrata (a fine round), i PV non scendono sotto la soglia della fase dopo:
+# in fase 1 si fermano al 25% (si entra in fase 2), in fase 2 a 1 PV (la fase 3, il culmine, si vede sempre).
+# Ritorna la perdita di PV ammessa per questo colpo. I frammenti (comuni) e gli eroi non hanno soglia.
+static func phase_capped_loss(state: Dictionary, unit: Dictionary, lost: int) -> int:
+	if not BattleTypes.PHASE_NO_SKIP or lost <= 0 or str(unit.get("id", "")) != BattleState.BOSS_ID:
+		return lost
+	if Stability.category(unit) != "boss":
+		return lost
+	var floor_hp: int = 0
+	var phase: int = int(state.get("phase", 1))
+	if phase <= 1:
+		floor_hp = int(ceil(float(unit["max_hp"]) * BattleTypes.PHASE_3_BELOW))
+	elif phase == 2:
+		floor_hp = 1
+	if int(unit["hp"]) < floor_hp:
+		return lost      # PV gia' sotto la soglia (stato preparato da fuori, es. test o scena): nessun blocco
+	return mini(lost, int(unit["hp"]) - floor_hp)
+
+
 static func _check_phase(state: Dictionary, events: Array) -> void:
 	var boss: Dictionary = BattleState.boss(state)
 	if not BattleState.is_alive(boss):
@@ -544,9 +564,11 @@ static func _check_phase(state: Dictionary, events: Array) -> void:
 	if ph <= previous_phase:
 		return
 	state["cycle_index"] = 0
-	# Un singolo colpo puo' attraversare entrambe le soglie: applica ogni transizione
-	# raggiunta, senza saltare gli effetti intermedi della fase 2.
-	for next_phase in range(previous_phase + 1, ph + 1):
+	# Decisione dell'autore (6/11/2026, opzione 2C): i boss veri non saltano fasi, phase_capped_loss() ferma i PV sulla soglia,
+	# quindi qui arriva una fase alla volta. Per i comuni (frammenti), che possono ancora saltare, vale la regola della 0.58.0:
+	# un solo passaggio e gli effetti una volta sola (niente doppio scudo).
+	var steps: Array = range(previous_phase + 1, ph + 1) if Stability.category(boss) == "boss" else [ph]
+	for next_phase in steps:
 		state["phase"] = next_phase
 		boss["balance_max"] = int(boss["balance_max"]) + BattleTypes.BREAK_PER_PHASE
 		if next_phase == 2 and int(state.get("reserve", 0)) > 0 and BattleTypes.PHASE_DRAINS_RESERVE:
@@ -707,6 +729,7 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		defender["tenacity_used"] = true
 		lost = maxi(0, int(defender["hp"]) - 1)
 		ResourceTelemetry.gain_unit(defender, "gauge", BattleTypes.GAUGE_MAX - int(defender["gauge"]), BattleTypes.GAUGE_MAX, events, "tenacity")
+	lost = phase_capped_loss(state, defender, lost)
 	defender["hp"] = maxi(0, int(defender["hp"]) - lost)
 	var hit_event: Dictionary = {"t": "damage", "src": attacker["id"], "dst": defender["id"], "amount": lost, "absorbed": absorbed}
 	if crit:
@@ -721,7 +744,7 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		_change_ammo(attacker, Atypical.fx(attacker, "crit_ammo"), events, "critical_trait")
 	var reflect: int = Atypical.fx(defender, "reflect_shield")
 	if reflect > 0 and absorbed > 0 and str(attacker["side"]) == "boss" and str(defender["side"]) == "player":
-		var returned: int = maxi(1, int(round(float(absorbed) * float(reflect) / 1000.0)))
+		var returned: int = phase_capped_loss(state, attacker, maxi(1, int(round(float(absorbed) * float(reflect) / 1000.0))))
 		attacker["hp"] = maxi(0, int(attacker["hp"]) - returned)
 		events.append({"t": "damage", "src": defender["id"], "dst": attacker["id"], "amount": returned, "absorbed": 0, "thorns": true})
 		if int(attacker["hp"]) <= 0:
@@ -744,7 +767,7 @@ static func _hit(state: Dictionary, attacker: Dictionary, defender: Dictionary, 
 		Factions.on_hit_taken(state, defender, events)
 		var thorn: float = Signatures.value(defender, "thorns")
 		if thorn > 0.0 and str(attacker["side"]) == "boss" and str(defender["side"]) == "player":
-			var back: int = maxi(1, int(round(float(defender["atk"]) * thorn)))
+			var back: int = phase_capped_loss(state, attacker, maxi(1, int(round(float(defender["atk"]) * thorn))))
 			attacker["hp"] = maxi(0, int(attacker["hp"]) - back)
 			events.append({"t": "damage", "src": defender["id"], "dst": attacker["id"], "amount": back, "absorbed": 0, "thorns": true})
 			if int(attacker["hp"]) <= 0:
@@ -799,7 +822,7 @@ static func _chip_balance(boss: Dictionary, attacker: Dictionary, mult: float, e
 				if str(e.get("t", "")) == "break_rule":
 					said = true
 			if not said:
-				events.append({"t": "break_rule", "mult": rm, "name": str(BreakRules.of(boss).get("name", "CARICA"))})
+				events.append({"t": "break_rule", "mult_pm": int(round(rm * 1000.0)), "name": str(BreakRules.of(boss).get("name", "CARICA"))})      # in millesimi: lo stato resta JSON di soli interi
 	var sm: float = Stability.pressure_mult(boss)      # SBILANCIAMENTO (Fase 3): +20% di pressione per i colpi dopo l'Interruzione
 	if sm != 1.0:
 		pts = maxi(1, int(round(float(pts) * sm)))
@@ -1410,7 +1433,7 @@ static func _end_of_round(state: Dictionary, events: Array) -> void:
 	for uid in units:
 		var u: Dictionary = units[uid]
 		if BattleState.is_alive(u) and u["statuses"].has("bleed"):
-			var dmg: int = maxi(1, int(float(u["max_hp"]) * BattleTypes.BLEED_FRACTION))
+			var dmg: int = phase_capped_loss(state, u, maxi(1, int(float(u["max_hp"]) * BattleTypes.BLEED_FRACTION)))
 			u["hp"] = maxi(0, int(u["hp"]) - dmg)
 			events.append({"t": "bleed", "unit": uid, "amount": dmg})
 			if int(u["hp"]) <= 0:

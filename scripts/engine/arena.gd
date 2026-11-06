@@ -112,7 +112,7 @@ static func resolve(state: Dictionary, events: Array) -> void:
 			var before_hp: int = int(boss["hp"])
 			shield_part = mini(int(boss["shield"]), echo_dmg)
 			boss["shield"] = int(boss["shield"]) - shield_part
-			boss["hp"] = maxi(0, before_hp - (echo_dmg - shield_part))
+			boss["hp"] = maxi(0, before_hp - BattleResolver.phase_capped_loss(state, boss, echo_dmg - shield_part))      # 2C: niente fasi saltate
 			hp_lost = before_hp - int(boss["hp"])
 			if int(boss["hp"]) <= 0:
 				BattleResolver._on_down(boss, events)

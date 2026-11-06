@@ -26,6 +26,7 @@ func _init() -> void:
 	_test_reject_invalid_progression_save()
 	_test_backup_recovery()
 	_test_reject_malformed_area()
+	_test_repair_progression()
 	_remove_save_files()
 	print("test_v3_integrita_salvataggio: " + ("OK" if fails == 0 else "%d FALLITI" % fails))
 	quit(1 if fails > 0 else 0)
@@ -133,3 +134,55 @@ func _test_reject_malformed_area() -> void:
 	check(Story._read_valid_save(path) == null, "passo NaN rifiutato")
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+# Opzione 1B (decisione dell'autore 6/11/2026): in lettura la progressione riparabile si ripara invece di perdere la partita.
+func _test_repair_progression() -> void:
+	Progress.reset()
+	Progress.grant(400)
+	var good: Dictionary = Progress.data.duplicate(true)
+	# 1. equipaggiamento non piu' valido (Ultimate di livello 100 a un livello basso, mossa inesistente)
+	var bad_equip: Dictionary = good.duplicate(true)
+	bad_equip["equip"]["ferri"]["ult"] = "u_ferri_ult5"
+	bad_equip["equip"]["nox"]["skill"] = "mossa_che_non_esiste"
+	check(not Progress.validate_save(bad_equip), "il validatore severo resta severo")
+	var fixed: Variant = Progress.repair_save(bad_equip)
+	check(fixed != null, "equipaggiamento non valido: la partita si ripara")
+	if fixed != null:
+		check(str(fixed["equip"]["ferri"]["ult"]) == str(Progress.default_equip("ferri")["ult"]), "lo slot non valido torna a quello di partenza")
+		check(str(fixed["equip"]["nox"]["skill"]) == str(Progress.default_equip("nox")["skill"]), "la mossa inesistente torna a quella di partenza")
+		check(int(fixed["lv"]["ferri"]) == int(good["lv"]["ferri"]), "il livello resta quello salvato")
+		check(str(fixed["equip"]["zecca"]["skill"]) == str(good["equip"]["zecca"]["skill"]), "gli slot validi restano com'erano")
+	# 2. chiavi e personaggi mancanti (salvataggio di una versione diversa)
+	var partial: Dictionary = {"lv": {"ferri": 4}, "exp": {"ferri": 10}, "equip": {}}
+	var fixed2: Variant = Progress.repair_save(partial)
+	check(fixed2 != null and int(fixed2["lv"]["ferri"]) == 4 and int(fixed2["lv"]["saul"]) == 1, "chiavi e personaggi mancanti tornano ai valori di partenza")
+	# 3. valori fuori limite rientrano, mosse rubate sconosciute si tolgono
+	var out_of_range: Dictionary = good.duplicate(true)
+	out_of_range["lv"]["ferri"] = Progress.MAX_LEVEL + 5
+	out_of_range["exp"]["nox"] = 999999
+	out_of_range["stolen"] = ["mossa_rubata_sparita"]
+	out_of_range["stolen_from"] = {"mossa_rubata_sparita": "Nessuno"}
+	var fixed3: Variant = Progress.repair_save(out_of_range)
+	check(fixed3 != null and int(fixed3["lv"]["ferri"]) == Progress.MAX_LEVEL and int(fixed3["exp"]["ferri"]) == 0, "livello oltre il massimo riportato al massimo")
+	check(fixed3 != null and int(fixed3["exp"]["nox"]) < Progress.exp_need(int(fixed3["lv"]["nox"])), "esperienza oltre la soglia riportata sotto")
+	check(fixed3 != null and (fixed3["stolen"] as Array).is_empty() and (fixed3["stolen_from"] as Dictionary).is_empty(), "mosse rubate sconosciute tolte")
+	# 4. dati davvero rotti: si rifiuta (il caricatore prova il backup)
+	var broken: Dictionary = good.duplicate(true)
+	broken["lv"]["ferri"] = "dieci"
+	check(Progress.repair_save(broken) == null, "livello testuale: dato rotto, rifiutato")
+	broken["lv"]["ferri"] = NAN
+	check(Progress.repair_save(broken) == null, "livello non finito: rifiutato")
+	check(Progress.repair_save("non un dizionario") == null, "progressione non dizionario: rifiutata")
+	# 5. intero file: si carica riparato invece di "SALVATAGGIO NON LEGGIBILE"
+	_remove_save_files()
+	var cfg := ConfigFile.new()
+	cfg.set_value("storia", "capitolo", 1)
+	cfg.set_value("storia", "passo", 0)
+	cfg.set_value("storia", "flag", {})
+	cfg.set_value("squadra", "dati", bad_equip)
+	cfg.save(Story.save_path)
+	check(Story.load_game(), "un salvataggio con equipaggiamento non valido si carica")
+	check(Progress.level("ferri") == int(good["lv"]["ferri"]), "dopo il caricamento il livello e' quello salvato")
+	check(str(Progress.data["equip"]["ferri"]["ult"]) == str(Progress.default_equip("ferri")["ult"]), "dopo il caricamento lo slot e' riparato")
+	Progress.reset()

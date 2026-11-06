@@ -1080,3 +1080,21 @@ Resoconto completo: `odispel/v3/combat_system/AUDIT_CHATGPT_0.58.md` nella carte
 - Il doppio cambio di fase in un colpo (`_check_phase`) cambia il bilanciamento. Misurato con `v3_bilancio`: cambi di fase per scontro 1,1→1,3 Distributore, 1,6→2,0 Cabina, 1,1→1,9 Manichino; Cabina passa da 4,0 a 3,8 round. Spesso la fase 2 viene saltata del tutto: decide l'autore.
 - La validazione dei salvataggi è «tutto o niente». Proposta: riparare i dati non validi (equipaggiamento → quello di partenza) invece di rifiutare la partita.
 - CharacterVisual/VendingVisual: costo misurato 2,5 µs e 0,8 µs per istanza a frame (circa l'1% del frame anche su un telefono 10 volte più lento). Sospendere le animazioni non conviene; il costo vero sono le draw call.
+
+
+## Decisioni dell'autore 1B e 2C (6/11/2026, applicate da Claude)
+
+### 2C · I boss non saltano le fasi
+- **Regola:** `BattleResolver.phase_capped_loss()`. Finché la fase nuova non è registrata a fine round, un boss vero (categoria «boss») non scende sotto la soglia della fase successiva. In fase 1 si ferma al 25% (si entra in fase 2), in fase 2 a 1 PV (la fase 3, il culmine, si vede sempre, U18). Vale per il colpo, il riflesso, le spine, il sanguinamento e l'Eco dell'arena. Si spegne con `BattleTypes.PHASE_NO_SKIP`.
+- I frammenti (comuni) non hanno soglia e tornano alla regola della 0.58.0: un salto di fase applica gli effetti una sola volta. Il tutorial resta di un round.
+- **Misura** (`tools/v3_bilancio.gd`, eseguito): cambi di fase per scontro **2,0 per ogni boss** (prima 1,1-1,9). Durata media dei boss da 4,5 a **5,0 round**: Distributore da 3,6 a 4,5, Manichino da 4,2 a 5,0, Autovelox da 5,2 a 5,7. Percentuale di vittorie invariata.
+- **Correzioni emerse dai test:** l'evento `break_rule` scriveva un moltiplicatore decimale nello stato, che deve restare JSON di soli interi. Ora scrive `mult_pm` in millesimi e `battle3d.gd` legge entrambi i formati. In `test_v3_break` i turni bonus (`extra`) non contano più come turni ordinari, come già fa il motore: prima non capitavano mai con la finestra BREAK aperta.
+- **Test nuovo:** `tests/unit/test_v3_fasi.gd`.
+
+### 1B · I salvataggi si riparano
+- `Progress.repair_save()`: si rifiutano solo i dati davvero rotti (tipi sbagliati, numeri non finiti o frazionari, una progressione che non è un dizionario). Il resto si ripara: chiavi o personaggi mancanti tornano ai valori di partenza, livello ed esperienza rientrano nei limiti, uno slot non più valido torna a quello di partenza, le mosse rubate sconosciute si tolgono.
+- In lettura `Story._read_valid_save()` accetta la progressione riparabile. In scrittura (`strict = true`) il temporaneo deve restare perfetto: `validate_save()` è invariato e severo.
+- **Test:** nuovo `_test_repair_progression` in `test_v3_integrita_salvataggio.gd`, che copre anche un file intero caricato e riparato.
+
+### Test eseguiti (Godot 4.7.2)
+31 test su 32 OK. Resta `test_v3_dialoghi`, come nella release.
