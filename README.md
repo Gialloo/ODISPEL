@@ -14,7 +14,7 @@ Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STO
   Dalla 0.35: `progress.gd` (livelli, esperienza, sblocchi, sinergie, mosse rubate da Saul; si salva in "squadra"), `squad_menu.gd` (menu SQUADRA della pausa), `react_game.gd` (i quattro minigiochi delle reazioni).
 - `data/` — `atto1.json` (capitoli, passi, aree, nemici, boss), `dialoghi_atto1.json` (testi, generati da `tools/gen_dialoghi.py`: si corregge lo script e si rigenera) + `dialoghi.json`, `cast_visual.gd` (colori e proporzioni dei segnaposto).
 - `tests/unit/` — `test_v3_engine.gd` + test del motore portati dalla V2.  `tools/v3_atto1.gd` — gioca da solo l'atto 1 (battaglie in AUTO) e fa gli screenshot.
-  `test_v3_progressione.gd` (livelli, kit di Saul e Nox, esiti dei minigiochi). `tools/v3_novita.gd` — schermate delle novità 0.35 senza giocare. `tools/v3_stress_battaglia.gd` — boss in AUTO con i tempi dei fotogrammi (sotto xvfb i numeri valgono solo come confronto).
+  `test_v3_progressione.gd` (livelli, kit di Saul e Nox, esiti dei minigiochi). `tools/v3_novita.gd` — schermate delle novità 0.35 senza giocare. `tools/v3_stress_battaglia.gd` — boss in AUTO con i tempi dei fotogrammi (sotto xvfb i numeri valgono solo come confronto). `tools/v3_regia.gd` — regia della camera MORBIDA contro DINAMICA (rotazione in gradi/s, altezza, inclinazione; `--fixed-fps 60`).
 
 ## Rendering (per cercare eventuali crash)
 Shader spatial **unshaded** fatti a mano (toon a due toni e nebbia dentro lo shader), contorni a guscio rovesciato come

@@ -555,6 +555,8 @@ func _col(u: Dictionary) -> Color:
 
 func _cam_set(pos: Vector3, look: Vector3, rate: float = 3.0, snap: bool = false) -> void:
 	pos = _cam_fit(pos, look)
+	if Settings.cam_calm and not snap:
+		pos = _cam_tame(pos, look)
 	_cam_want_pos = pos
 	_cam_want_look = look
 	_cam_rate = rate
@@ -564,6 +566,7 @@ func _cam_set(pos: Vector3, look: Vector3, rate: float = 3.0, snap: bool = false
 		_glide_t = _glide_len           # uno stacco voluto (parata, fermo, primo piano) interrompe la carrellata
 		_cam_vel = Vector3.ZERO
 		_look_vel = Vector3.ZERO
+		_view_dir = Vector3.ZERO        # stacco voluto: la regia morbida non frena la rotazione di un taglio
 	elif _glide_t < _glide_len and _glide_t > 0.0:
 		# meta nuova a carrellata in corso: si riparte da dove si e', col tempo che restava (mai meno di 0,35 s), senza strappi
 		var left: float = maxf(0.35, _glide_len - _glide_t)
@@ -585,6 +588,94 @@ func _cam_fit(pos: Vector3, look: Vector3) -> Vector3:
 	pos.z += away * lost * 0.8
 	pos.y += lost * 0.35
 	return pos
+
+
+# REGIA MORBIDA (6/11/2026, feedback dei tester da PC: «se scegli veloce i cambi di camera sono drastici, dall'alto al basso
+# di lato, mal di testa»). Tre attenzioni, spettacolo intatto: 1) le inquadrature restano in una fascia di altezza e di
+# inclinazione comune (niente drone a 8 m ne' camera a terra: si capisce sempre dov'e' il pavimento); 2) la camera non
+# ruota piu' veloce di CAM_TURN_MAX gradi al secondo, anche se le mete cambiano a raffica; 3) le carrellate durano di
+# piu' quando il giro e' ampio. Con «Regia della camera: DINAMICA» nelle impostazioni si torna alle inquadrature di prima.
+const CAM_TURN_MAX: float = 150.0      # gradi al secondo: oltre si perde l'orientamento (prima, scegliendo veloce, si passavano i 400)
+const CAM_GLIDE_TURN: float = 140.0    # gradi al secondo di una carrellata: un giro di 120 gradi dura almeno 0,85 s
+const CAM_GLIDE_MAX: float = 1.0       # ma mai piu' di cosi': il ritmo dei turni resta svelto
+const CAM_PITCH_UP: float = 20.0       # quanto si puo' guardare in su (il controluce di Nox resta dal basso, ma non da terra)
+const CAM_PITCH_DOWN: float = 46.0     # quanto si puo' guardare in giu' (il drone di Saul resta dall'alto, ma non a picco)
+const CAM_Y_MIN: float = 0.75
+const CAM_Y_MAX: float = 5.2
+var _view_dir: Vector3 = Vector3.ZERO  # direzione dello sguardo all'ultimo fotogramma (per frenare le rotazioni brusche)
+
+
+# Valore della regia morbida o di quella dinamica (le inquadrature originali restano, scelte dalle impostazioni)
+func _rg(calm: Variant, wild: Variant) -> Variant:
+	return calm if Settings.cam_calm else wild
+
+
+# Porta una meta nella fascia comune: altezza tra CAM_Y_MIN e CAM_Y_MAX, inclinazione tra +CAM_PITCH_UP e -CAM_PITCH_DOWN.
+# Si corregge solo l'altezza della camera: il soggetto e il lato restano quelli scelti dall'inquadratura.
+func _cam_tame(pos: Vector3, look: Vector3) -> Vector3:
+	pos.y = clampf(pos.y, CAM_Y_MIN, CAM_Y_MAX)
+	var h: float = Vector2(look.x - pos.x, look.z - pos.z).length()
+	if h < 0.5:
+		# a picco sul soggetto: ci si sposta un po' verso la squadra, cosi' lo sguardo ha sempre un orizzonte
+		pos.z += 0.5 - h
+		h = 0.5
+	var up: float = look.y - pos.y
+	var max_up: float = tan(deg_to_rad(CAM_PITCH_UP)) * h
+	var max_dn: float = tan(deg_to_rad(CAM_PITCH_DOWN)) * h
+	if up > max_up:
+		pos.y = look.y - max_up
+	elif -up > max_dn:
+		pos.y = look.y + max_dn
+	pos.y = clampf(pos.y, CAM_Y_MIN, CAM_Y_MAX)
+	return pos
+
+
+# Frena la rotazione: lo sguardo insegue la meta al massimo a CAM_TURN_MAX gradi al secondo (solo con la regia morbida).
+func _calm_look(pos: Vector3, look: Vector3, dt: float) -> Vector3:
+	var to: Vector3 = look - pos
+	var dist: float = to.length()
+	if dist < 0.01:
+		return look
+	var nd: Vector3 = _pitch_clamp(to / dist, 4.0)
+	if not Settings.cam_calm or _view_dir == Vector3.ZERO:
+		_view_dir = nd
+		return look
+	var ang: float = _view_dir.angle_to(nd)
+	var mx: float = deg_to_rad(CAM_TURN_MAX) * dt
+	if ang > mx and ang > 0.0001:
+		_view_dir = _view_dir.slerp(nd, mx / ang).normalized()
+	else:
+		_view_dir = nd
+	return pos + _view_dir * dist
+
+
+# Direzione con l'inclinazione riportata nella fascia comune (piu' un margine in gradi): nemmeno a meta' di un movimento
+# la camera guarda il pavimento o il cielo.
+func _pitch_clamp(d: Vector3, margin: float) -> Vector3:
+	if not Settings.cam_calm:
+		return d
+	var h: float = Vector2(d.x, d.z).length()
+	if h < 0.0001:
+		return d
+	var pitch: float = clampf(atan2(d.y, h), -deg_to_rad(CAM_PITCH_DOWN + margin), deg_to_rad(CAM_PITCH_UP + margin))
+	return Vector3(d.x / h * cos(pitch), sin(pitch), d.z / h * cos(pitch))
+
+
+# Sguardo durante una carrellata della regia morbida: invece di far scorrere il punto guardato (che a meta' strada puo'
+# passare sotto la camera e farla guardare a picco), si fanno scorrere direzione orizzontale, inclinazione e distanza.
+func _glide_look(e: float) -> Vector3:
+	var a: Vector3 = _glide_from_look - _glide_from
+	var c: Vector3 = _cam_want_look - _cam_want_pos
+	if a.length() < 0.01 or c.length() < 0.01:
+		return _glide_from_look.lerp(_cam_want_look, e)
+	var ya: float = atan2(a.x, a.z)
+	var yc: float = atan2(c.x, c.z)
+	var pa: float = atan2(a.y, Vector2(a.x, a.z).length())
+	var pc: float = atan2(c.y, Vector2(c.x, c.z).length())
+	var yaw: float = lerp_angle(ya, yc, e)
+	var pitch: float = lerpf(pa, pc, e)
+	var dist: float = lerpf(a.length(), c.length(), e)
+	return _cam_pos + Vector3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch)) * dist
 
 
 func _cam_overview(snap: bool = false) -> void:
@@ -635,7 +726,8 @@ func _cam_side(a: Vector3, bpos: Vector3) -> void:
 		# vicolo stretto: di lato si finirebbe nel muro, quindi tre quarti alle spalle di chi attacca, verso il centro
 		_cam_set(a + Vector3(-side * 0.9, 2.1, 3.0), mid + Vector3(0, 1.15, 0), 4.0)
 		return
-	_cam_set(mid + Vector3(side * 5.2, 2.0, 0.8), mid + Vector3(0, 1.1, 0), 4.0)
+	# regia morbida: tre quarti dal lato della squadra (piu' simile all'inquadratura della scelta) invece che di lato pieno
+	_cam_set(mid + _rg(Vector3(side * 4.3, 2.2, 2.6), Vector3(side * 5.2, 2.0, 0.8)), mid + Vector3(0, 1.1, 0), _rg(3.2, 4.0))
 
 
 # Inquadratura firmata delle ABILITA' (idea 4): ognuno ha il suo modo di essere ripreso (cam_hud.look)
@@ -648,13 +740,13 @@ func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
 			_cam_set(a + Vector3(side * 1.1, 1.35, 1.7), mid + Vector3(0, 1.3, 0), 5.0)
 			_cam_hud.look("diretta", col)
 		"lance":       # Lance: dal palo dell'autovelox, alto di lato
-			_cam_set(mid + Vector3(side * 3.0, 3.6, -2.4), mid + Vector3(0, 1.0, 0), 4.0)      # vicino: piu' in la' si finiva dentro le facciate
+			_cam_set(mid + _rg(Vector3(side * 3.0, 3.1, -0.9), Vector3(side * 3.0, 3.6, -2.4)), mid + Vector3(0, 1.0, 0), _rg(3.4, 4.0))      # vicino: piu' in la' si finiva dentro le facciate; morbida: meno controcampo
 			_cam_hud.look("autovelox", col)
 		"nox":         # Nox: dal basso, controluce
-			_cam_set(a + Vector3(-side * 1.6, 0.45, -1.4), a + Vector3(0, 1.9, -0.6), 4.5)
+			_cam_set(a + _rg(Vector3(-side * 1.6, 0.9, -1.0), Vector3(-side * 1.6, 0.45, -1.4)), a + _rg(Vector3(0, 1.75, -0.6), Vector3(0, 1.9, -0.6)), _rg(3.6, 4.5))
 			_cam_hud.look("controluce", col)
 		"saul":        # Saul: dall'alto, come un drone
-			_cam_set(mid + Vector3(0.0, 8.0, 1.2), mid + Vector3(0, 0.6, 0), 3.5)
+			_cam_set(mid + _rg(Vector3(0.0, 5.0, 3.6), Vector3(0.0, 8.0, 1.2)), mid + Vector3(0, _rg(0.8, 0.6), 0), 3.5)      # morbida: alto di tre quarti, non a picco
 			_cam_hud.look("drone", col)
 		_:
 			_cam_side(a, tpos)
@@ -663,7 +755,8 @@ func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
 
 
 func _cam_boss() -> void:
-	_cam_set(ENEMY_POS + Vector3(1.8, 3.3, -4.2), Vector3(0, 1.0, 3.0), 3.0)
+	# morbida: alle spalle del nemico ma di tre quarti, cosi' il passaggio dal turno della squadra non e' un controcampo pieno
+	_cam_set(ENEMY_POS + _rg(Vector3(3.0, 3.0, -2.6), Vector3(1.8, 3.3, -4.2)), _rg(Vector3(0, 1.0, 2.4), Vector3(0, 1.0, 3.0)), 3.0)
 
 
 func _cam_front(uid: String) -> void:
@@ -691,6 +784,8 @@ func _process(delta: float) -> void:
 		var e2: float = q * q * q * (q * (q * 6.0 - 15.0) + 10.0)
 		_cam_pos = _glide_from.lerp(_cam_want_pos, e2) + Vector3(0, sin(PI * q) * _glide_lift, 0)
 		_cam_look = _glide_from_look.lerp(_cam_want_look, e2)
+		if Settings.cam_calm:
+			_cam_look = _glide_look(e2)
 		_cam_vel = Vector3.ZERO           # la carrellata finisce ferma: la molla riparte da zero, senza strappo
 		_look_vel = Vector3.ZERO
 	else:
@@ -710,7 +805,7 @@ func _process(delta: float) -> void:
 	elif _pinched:
 		cam.fov = FOV_BASE
 		_pinched = false
-	var look: Vector3 = _cam_look
+	var look: Vector3 = _calm_look(_cam_pos, _cam_look, rd)
 	if _dzoom_t > 0.0:
 		# ZOOM DIGITALE della telecamera di Echo sul punto debole: scatto dentro, tiene, poi riapre negli ultimi 0,25 s
 		_dzoom_t = maxf(0.0, _dzoom_t - rd)
@@ -2317,6 +2412,13 @@ func _cam_glide(secs: float) -> void:
 	_glide_from_look = _cam_look
 	_glide_t = 0.0
 	_glide_len = maxf(0.05, secs)
+	if Settings.cam_calm:
+		# giro ampio (dalla squadra al nemico, dall'alto al basso): la carrellata si prende il tempo per farlo seguire all'occhio
+		var a0: Vector3 = _cam_look - _cam_pos
+		var a1: Vector3 = _cam_want_look - _cam_want_pos
+		if a0.length() > 0.01 and a1.length() > 0.01:
+			var turn: float = rad_to_deg(a0.angle_to(a1))
+			_glide_len = clampf(maxf(_glide_len, turn / CAM_GLIDE_TURN), _glide_len, maxf(_glide_len, CAM_GLIDE_MAX))
 	_glide_lift = clampf(_cam_pos.distance_to(_cam_want_pos) * 0.08, 0.0, 0.7)
 
 

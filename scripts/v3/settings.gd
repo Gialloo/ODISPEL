@@ -20,6 +20,7 @@ static var text_speed: int = 0          # velocita' del testo nei dialoghi: 0 NO
 static var auto_text: bool = false      # dialoghi automatici (AUTO alla Persona): la battuta va avanti da sola dopo una pausa
 static var music_volume: float = 1.0    # volume della musica, 0..1 (4/11/2026: il combattimento ha il suono)
 static var sfx_volume: float = 1.0      # volume degli effetti sonori, 0..1
+static var cam_calm: bool = true        # regia MORBIDA in battaglia (6/11/2026, tester: «cambi di camera drastici, mal di testa»); false = DINAMICA, le inquadrature di prima
 static var _loaded: bool = false
 
 const LEVELS: Array = [1.0, 0.5, 0.0]
@@ -55,6 +56,7 @@ static func load_settings() -> void:
 	hud_ritratto = bool(cfg.get_value("video", "hud_ritratto", hud_ritratto))
 	music_volume = clampf(float(cfg.get_value("audio", "music", music_volume)), 0.0, 1.0)
 	sfx_volume = clampf(float(cfg.get_value("audio", "sfx", sfx_volume)), 0.0, 1.0)
+	cam_calm = bool(cfg.get_value("video", "cam_calm", cam_calm))
 
 
 static func save() -> void:
@@ -75,6 +77,7 @@ static func save() -> void:
 	cfg.set_value("video", "hud_ritratto", hud_ritratto)
 	cfg.set_value("audio", "music", music_volume)
 	cfg.set_value("audio", "sfx", sfx_volume)
+	cfg.set_value("video", "cam_calm", cam_calm)
 	cfg.save(path)
 
 
