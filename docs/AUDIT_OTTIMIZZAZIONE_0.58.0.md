@@ -601,3 +601,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunti:** livello frazionario, esperienza frazionaria e fonte orfana/non valida.
 - **Verifica:** controllo statico del flusso di validazione e aggiornamento dei test. Godot non è stato eseguito; non si dichiara superamento.
 - **Rischio residuo:** verificare la disponibilità di `is_finite()` nella versione Godot 4.7.2 e l'esecuzione del test engine sul progetto completo. I salvataggi legacy con metadati di fonte non stringa o riferimenti orfani verranno rifiutati e tentato il recupero dal backup.
+
+
+### 2026-11-06 — Coerenza della previsione Timeline con i turni bonus
+
+- **File modificati:** `scripts/engine/battle_flow.gd`, `tests/unit/test_v3_timeline.gd`.
+- **Criticità trovata:** `BattleFlow.preview()` non rispecchiava completamente `BattleFlow.next()`. Non mostrava gli SLANCI protetti già pronti, benché `next()` li esegua prima del prossimo slot ordinario. Inoltre aggiungeva alla previsione tutti i turni extra di `tl.extra` senza verificare se il personaggio potesse ancora giocare: un personaggio KO poteva quindi comparire nella Timeline mostrata pur venendo correttamente saltato dall'esecuzione.
+- **Correzione:** la previsione include gli SLANCI protetti pronti, ordinandoli in base al prossimo istante dello slot; controlla l'idoneità dei turni extra con la stessa `_can_play()` usata dal motore. La lettura degli SLANCI protetti è volutamente non mutante: non usa `Slancio.ready_kept()`, che elimina dal dizionario i bersagli sconfitti.
+- **Test aggiunti:** SLANCIO protetto presente in prima posizione della previsione; previsione senza consumo/modifica dello stato salvato; turno extra di un personaggio KO escluso.
+- **Verifiche:** confronto statico dei percorsi `preview → _pick` e `next → ready_kept/_can_play`; test aggiunti ma non eseguiti con Godot.
+- **Impatto:** solo accuratezza della Timeline mostrata; nessuna modifica a costi, danni, risorse o regole di combattimento.
