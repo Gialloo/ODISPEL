@@ -879,3 +879,17 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Verifica effettiva:** confronto statico del percorso hit/miss e dell'ordine di eviction; aggiornato il test per coprire il limite. **Il test Godot non è stato eseguito in questa sessione**, quindi la correttezza runtime e il beneficio prestazionale restano da confermare.
 - **Misure ancora necessarie:** eseguire `godot --headless --path . -s tests/unit/test_v3_mesh_batch.gd`; confrontare tempi di costruzione e numero di mesh ricostruite con una sequenza ripetuta di oltre 128 varianti; verificare memoria e tempi di caricamento su PC e Android.
 - **Nessuna modifica:** geometria del disco, parametri visivi, materiali, draw call, gameplay e dati narrativi.
+
+
+
+### 2026-11-06 — Cache delle conversioni HEX in CityBuilder
+
+- **File modificati:** `scripts/v3/city_builder.gd`; nuovo `tests/unit/test_v3_city_builder.gd`; `README.md`.
+- **Audit della costruzione aree:** `LayoutBuilder` delega la geometria urbana a `CityBuilder`. La scenografia solida viene già aggregata in una mesh tramite `MeshBatch`; i bagliori sono raccolti in una mesh separata; le ripetizioni della galleria usano `MultiMesh`. Non sono stati aggiunti nodi o mesh per singolo elemento e non è stato modificato il batching esistente.
+- **Criticità circoscritta:** `CityBuilder._c(hex)` eseguiva `Color(hex)` a ogni chiamata, anche quando la stessa stringa colore veniva già convertita più volte durante la generazione di edifici, arredi e dettagli.
+- **Correzione:** aggiunto un dizionario `_color_cache` per istanza di CityBuilder. La prima chiamata converte il valore HEX e lo memorizza; le successive restituiscono il Color già convertito.
+- **Perché:** evitare parsing ripetuto di stringhe colore durante la costruzione procedurale. La cache è locale all'istanza e i valori usati dal generatore provengono da un insieme piccolo e controllato di colori.
+- **Test implementato:** nuovo test standalone `tests/unit/test_v3_city_builder.gd`. Verifica che due richieste dello stesso HEX restituiscano lo stesso valore e che la seconda richiesta non aggiunga una nuova voce alla cache; verifica inoltre che un HEX differente produca un colore differente e una nuova voce.
+- **Risultato atteso:** identico colore e identica scenografia rispetto alla conversione diretta; una sola conversione per stringa HEX per istanza di CityBuilder.
+- **Verifica effettiva:** controllo statico del percorso cache-hit/cache-miss e del fatto che la cache non modifica il seed o il flusso del generatore. Test Godot non eseguito in questa sessione; nessuna misura di tempo di caricamento o CPU disponibile.
+- **Limiti:** il risparmio assoluto potrebbe essere modesto rispetto alla triangolazione e alla creazione delle mesh; va misurato prima di attribuire un miglioramento percepibile. La cache non cambia geometria, colori, RNG, ordine delle chiamate casuali o layout.
