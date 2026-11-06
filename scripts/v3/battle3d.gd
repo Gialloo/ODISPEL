@@ -1303,9 +1303,10 @@ func _boss_turn() -> void:
 					b["react_grade"] = {}
 				(b["react_grade"] as Dictionary)[str(ru["id"])] = g
 			if not played:
+				var told: bool = false
 				if tutorial or lezioni:
-					await _tut("tut_qte")
-				var grade: String = await _timed_guard()
+					told = await _tut("tut_qte")
+				var grade: String = await _timed_guard(not told)      # se la lezione l'ha appena spiegata, niente presentazione
 				if not is_inside_tree() or ended:
 					return
 				if grade == "good" or grade == "perfect":
@@ -1482,7 +1483,11 @@ func _guardable(mv: Dictionary) -> bool:
 
 # Il cerchio sta sempre al centro dello schermo: dalla camera del boss il bersaglio puo' essere coperto dal nemico.
 # Ritorna "", early, good o perfect.
-func _timed_guard() -> String:
+func _timed_guard(intro: bool = true) -> String:
+	if intro:
+		await _qte_intro_guard()
+		if not is_inside_tree() or ended:
+			return ""
 	_qte_ring = QteRing.new()
 	_fx_layer.add_child(_qte_ring)
 	_hide_stamps(true)
@@ -1542,6 +1547,9 @@ var _games_seen: Dictionary = {}
 
 # Minigioco di una reazione (ReactGame). La prima volta di ogni tipo c'e' piu' tempo per leggere.
 func _react_game(game: String, u: Dictionary) -> String:
+	await _qte_intro_react(game, u)
+	if not is_inside_tree() or ended:
+		return "fail"
 	var g := ReactGame.new(game, str(u.get("name", "")).to_upper(), _col(u), not _games_seen.has(game))
 	_games_seen[game] = true
 	# sotto il minigioco niente comandi ne' suggerimenti: si legge solo lui
@@ -1556,6 +1564,70 @@ func _react_game(game: String, u: Dictionary) -> String:
 		if is_instance_valid(n):
 			(n as CanvasItem).visible = true
 	return grade
+
+
+# PRESENTAZIONE DEL QTE (QteIntro, feedback dei tester sulla 0.59, 6/11/2026): prima della guardia a tempo e di ogni
+# reazione un paio di secondi di respiro con chi agisce, cosa premere e perche'. La prima volta di ogni tipo in questa
+# battaglia si legge tutta, dopo e' breve; un tocco la chiude prima. Sotto, comandi e suggerimenti spariscono.
+var _intro_seen: Dictionary = {}
+const QTE_LINES: Dictionary = {"arrow": "qte_schiva", "hold": "qte_copri", "mash": "qte_ferma", "beat": "qte_soccorri"}
+
+
+func _qte_intro_full(kind: String) -> bool:
+	var full: bool = not _intro_seen.has(kind) and not Settings.skip_cutin
+	_intro_seen[kind] = true
+	return full
+
+
+func _qte_intro_play(q: QteIntro) -> void:
+	var hide: Array = []
+	# anche le barre del nemico, l'ordine dei turni e la scheggia: coprivano il cartellino (tester 0.59: troppo HUD)
+	for n in [_cmd_box, _kit_lbl, _react_box, _turn_lbl, _hint, _boss_panel, _order_panel, _greg_tag]:
+		if n != null and (n as CanvasItem).visible:
+			(n as CanvasItem).visible = false
+			hide.append(n)
+	_fx_layer.add_child(q)
+	await q.done
+	for n in hide:
+		if is_instance_valid(n):
+			(n as CanvasItem).visible = true
+	await get_tree().process_frame          # il tocco che chiude la presentazione non vale gia' per il QTE
+
+
+func _qte_intro_guard() -> void:
+	if auto_on or _fx_layer == null:
+		return
+	var tele: Dictionary = b.get("telegraph", {})
+	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
+	var tgt: String = ""
+	if str(mv.get("target", "one")) != "all":
+		var tu: Dictionary = BattleState.active_unit(b, str(tele.get("target", "")))
+		tgt = str(tu.get("name", "")).to_upper()
+	var bd: Dictionary = BattleContent.BOSSES.get(boss_id, {})
+	var bcol: Color = Ui.BATTLE_COLORS.get(str(bd.get("color", "")), Ui.YELLOW)
+	var q := QteIntro.new()
+	q.setup_guard(_bname(), str(mv.get("name", "?")).to_upper(), tgt, bcol, _qte_intro_full("guard"))
+	await _qte_intro_play(q)
+
+
+func _qte_intro_react(game: String, u: Dictionary) -> void:
+	if auto_on or _fx_layer == null:
+		return
+	var ch: String = str(u.get("char", ""))
+	var quote: String = ""
+	var bat: Dictionary = DialogData.all().get("battaglia", {})
+	var opts: Array = (bat.get(str(QTE_LINES.get(game, "")), {}) as Dictionary).get(ch, [])
+	if not opts.is_empty():
+		var righe: Array = opts[randi() % opts.size()]
+		if not righe.is_empty():
+			quote = str((righe[0] as Dictionary).get("testo", ""))
+	var face: String = "res://assets/portraits/%s_%s.png" % [ch, str(QteIntro.FACE.get(game, "neutro"))]
+	if not ResourceLoader.exists(face):
+		face = "res://assets/portraits/%s_neutro.png" % ch
+	var tex: Texture2D = load(face) if ResourceLoader.exists(face) else null
+	var q := QteIntro.new()
+	q.setup_react(game, str(u.get("name", "")).to_upper(), quote, tex, _col(u), _qte_intro_full(game))
+	await _qte_intro_play(q)
 
 
 # Il colpo annunciato finira' su Lance? (bersaglio lui, oppure copre il bersaglio)
