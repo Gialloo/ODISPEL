@@ -13,7 +13,7 @@ func check(cond: bool, msg: String) -> void:
 
 func _init() -> void:
 	var team: Array = []
-	for id in ["ferri", "nox", "zecca", "saul"]:
+	for id in ["lance", "nox", "rio", "saul"]:
 		check(BattleContent.CHARACTERS.has(id), "manca il personaggio " + id)
 		team.append(BattleContent.default_entry(id))
 	check(BattleContent.CHARACTERS.has("kira"), "i dati V2 servono ancora alle abilita' uniche")
@@ -76,10 +76,10 @@ func _init() -> void:
 	var valid_progress: Dictionary = Progress.data.duplicate(true)
 	check(Progress.validate_save(valid_progress), "progressione valida riconosciuta")
 	var invalid_progress: Dictionary = valid_progress.duplicate(true)
-	invalid_progress["lv"]["ferri"] = 101
+	invalid_progress["lv"]["lance"] = 101
 	check(not Progress.validate_save(invalid_progress), "livello fuori limite rifiutato")
 	invalid_progress = valid_progress.duplicate(true)
-	invalid_progress["lv"]["ferri"] = 1.5
+	invalid_progress["lv"]["lance"] = 1.5
 	check(not Progress.validate_save(invalid_progress), "livello frazionario rifiutato")
 	invalid_progress = valid_progress.duplicate(true)
 	invalid_progress["exp"]["nox"] = 0.5
@@ -91,13 +91,13 @@ func _init() -> void:
 	invalid_progress["stolen_from"]["mossa_inesistente"] = "Nemico"
 	check(not Progress.validate_save(invalid_progress), "fonte di mossa rubata senza mossa corrispondente rifiutata")
 	invalid_progress = valid_progress.duplicate(true)
-	invalid_progress["equip"]["ferri"]["skill"] = "mossa_inesistente"
+	invalid_progress["equip"]["lance"]["skill"] = "mossa_inesistente"
 	check(not Progress.validate_save(invalid_progress), "abilità equipaggiata inesistente rifiutata")
 	invalid_progress = valid_progress.duplicate(true)
-	invalid_progress["equip"]["ferri"]["skill"] = "u_ferri_b"
+	invalid_progress["equip"]["lance"]["skill"] = "u_lance_b"
 	check(not Progress.validate_save(invalid_progress), "abilità non ancora sbloccata rifiutata")
 	invalid_progress = valid_progress.duplicate(true)
-	invalid_progress["equip"]["ferri"]["skill"] = "u_ferri_ult"
+	invalid_progress["equip"]["lance"]["skill"] = "u_lance_ult"
 	check(not Progress.validate_save(invalid_progress), "Ultimate nello slot abilità rifiutata")
 	Story.area_state = {}
 	check(Story.load_game(), "salvataggio valido caricato")
@@ -218,24 +218,24 @@ func _kits(team: Array) -> void:
 	# Lance · Copertura: prende lui il colpo annunciato su Nox
 	var s: Dictionary = _fresh(team)
 	s["telegraph"] = {"move": "scarica", "target": _pid(s, "nox")}
-	_u(s, "ferri")["energy"] = 6
-	SeqRound.player_action(s, _pid(s, "ferri"), {"swap": "", "move": "u_ferri_a", "target": ""})
+	_u(s, "lance")["energy"] = 6
+	SeqRound.player_action(s, _pid(s, "lance"), {"swap": "", "move": "u_lance_a", "target": ""})
 	var ev: Array = SeqRound.boss_action(s)
 	check(_has(ev, "cover_hit"), "Copertura: Lance si mette davanti")
-	check(_dmg_to(ev, str(_u(s, "nox")["id"])) == 0 and _dmg_to(ev, str(_u(s, "ferri")["id"])) > 0, "Copertura: il colpo su Nox lo prende Lance")
-	check(not _u(s, "ferri").has("cover"), "Copertura: vale un solo colpo")
+	check(_dmg_to(ev, str(_u(s, "nox")["id"])) == 0 and _dmg_to(ev, str(_u(s, "lance")["id"])) > 0, "Copertura: il colpo su Nox lo prende Lance")
+	check(not _u(s, "lance").has("cover"), "Copertura: vale un solo colpo")
 	# Lance · Copertura quando il colpo e' per lui: guardia
 	s = _fresh(team)
-	s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
-	_u(s, "ferri")["energy"] = 6
-	SeqRound.player_action(s, _pid(s, "ferri"), {"swap": "", "move": "u_ferri_a", "target": ""})
-	check(_u(s, "ferri")["statuses"].has("guard"), "Copertura su di se': Lance in guardia")
+	s["telegraph"] = {"move": "scarica", "target": _pid(s, "lance")}
+	_u(s, "lance")["energy"] = 6
+	SeqRound.player_action(s, _pid(s, "lance"), {"swap": "", "move": "u_lance_a", "target": ""})
+	check(_u(s, "lance")["statuses"].has("guard"), "Copertura su di se': Lance in guardia")
 	# Lance · Braccio della Legge toglie molto equilibrio
 	s = _fresh(team)
 	var boss: Dictionary = BattleState.boss(s)
 	var bal: int = int(boss["balance"])
-	_u(s, "ferri")["gauge"] = 100
-	SeqRound.player_action(s, _pid(s, "ferri"), {"swap": "", "move": "u_ferri_ult", "target": ""})
+	_u(s, "lance")["gauge"] = 100
+	SeqRound.player_action(s, _pid(s, "lance"), {"swap": "", "move": "u_lance_ult", "target": ""})
 	check(bal - int(boss["balance"]) >= Kits.ARM_BALANCE or int(boss.get("stun", 0)) > 0, "Braccio della Legge: equilibrio -%d" % (bal - int(boss["balance"])))
 	# Saul · Testa o croce: escono tutte e due, con il loro effetto
 	var heads: int = 0
@@ -243,7 +243,7 @@ func _kits(team: Array) -> void:
 	for sd in range(1, 30):
 		s = _fresh(team, sd)
 		_u(s, "saul")["energy"] = 6
-		s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
+		s["telegraph"] = {"move": "scarica", "target": _pid(s, "lance")}
 		ev = SeqRound.player_action(s, _pid(s, "saul"), {"swap": "", "move": "u_saul_a", "target": ""})
 		for e in ev:
 			if str(e.get("t", "")) == "coin":
@@ -259,7 +259,7 @@ func _kits(team: Array) -> void:
 	check(heads > 3 and tails > 3, "la moneta esce da tutte e due le parti (%d testa, %d croce)" % [heads, tails])
 	# Saul · Fuori dalla luce
 	s = _fresh(team)
-	s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
+	s["telegraph"] = {"move": "scarica", "target": _pid(s, "lance")}
 	ev = SeqRound.player_action(s, _pid(s, "saul"), {"swap": "", "move": "attack", "target": ""})
 	check(_has(ev, "kit_trait"), "Fuori dalla luce quando il boss guarda Lance")
 	# Saul · Il colpo grosso ruba lo scudo
@@ -273,18 +273,18 @@ func _kits(team: Array) -> void:
 	var dmg: Array = []
 	for hype in [0, 100]:
 		s = _fresh(team)
-		_u(s, "zecca")["gauge"] = 100
-		_u(s, "zecca")["hype"] = hype
-		ev = SeqRound.player_action(s, _pid(s, "zecca"), {"swap": "", "move": "u_zecca_ult", "target": ""})
+		_u(s, "rio")["gauge"] = 100
+		_u(s, "rio")["hype"] = hype
+		ev = SeqRound.player_action(s, _pid(s, "rio"), {"swap": "", "move": "u_rio_ult", "target": ""})
 		dmg.append(_dmg_to(ev, BattleState.BOSS_ID))
-		check(int(_u(s, "zecca").get("hype", 0)) < hype or hype == 0, "Gran finale consuma l'Hype")
+		check(int(_u(s, "rio").get("hype", 0)) < hype or hype == 0, "Gran finale consuma l'Hype")
 	check(dmg[1] > dmg[0] * 3, "Gran finale con Hype pieno fa molto di piu' (%d contro %d)" % [dmg[1], dmg[0]])
 	# Rio · Hype dalla parata perfetta di un compagno
 	s = _fresh(team)
-	s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
+	s["telegraph"] = {"move": "scarica", "target": _pid(s, "lance")}
 	s["timed_guard"] = "perfect"
 	SeqRound.boss_action(s)
-	check(int(_u(s, "zecca").get("hype", 0)) >= Kits.HYPE_GAIN["perfect"], "Hype dalla parata perfetta")
+	check(int(_u(s, "rio").get("hype", 0)) >= Kits.HYPE_GAIN["perfect"], "Hype dalla parata perfetta")
 	# Rio · con la maschera attira i colpi singoli
 	var on_rio: int = 0
 	var n: int = 0
@@ -293,13 +293,13 @@ func _kits(team: Array) -> void:
 		var mv: Dictionary = BattleContent.BOSS_MOVES[str(s["telegraph"]["move"])]
 		if str(mv["target"]) == "one":
 			n += 1
-			if str(s["telegraph"]["target"]) == _pid(s, "zecca"):
+			if str(s["telegraph"]["target"]) == _pid(s, "rio"):
 				on_rio += 1
 	check(n > 10 and float(on_rio) / float(n) > 0.35, "la maschera attira i colpi su Rio (%d su %d)" % [on_rio, n])
 	# Nox · Pausa caffe' con tutti in salute: riposo e doppio turno
 	s = _fresh(team)
 	_u(s, "nox")["energy"] = 4
-	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "u_nox_a", "target": _pid(s, "ferri")})
+	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "u_nox_a", "target": _pid(s, "lance")})
 	check(_has(ev, "rest") and int(_u(s, "nox")["energy"]) == 4, "Pausa caffe': Nox si riposa senza spendere")
 	SeqRound.finish(s)
 	SeqRound.begin(s)
@@ -317,7 +317,7 @@ func _kits(team: Array) -> void:
 	check(_has(ev, "heal") and int(_u(s, "saul")["energy"]) > en_before, "Pausa caffe': cura e da' energia")
 	# Nox · Veglia per ultima
 	s = _fresh(team)
-	for c in ["ferri", "zecca", "saul"]:
+	for c in ["lance", "rio", "saul"]:
 		SeqRound.player_action(s, _pid(s, c), {"swap": "", "move": "attack", "target": ""})
 	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "attack", "target": ""})
 	check(_has(ev, "kit_trait"), "Veglia: Nox ultima del round")
@@ -330,10 +330,10 @@ func _kits(team: Array) -> void:
 	check(int(saul["hp"]) > 0, "Rispondo io rianima chi e' KO")
 	s = _fresh(team)
 	_u(s, "nox")["gauge"] = 100
-	s["telegraph"] = {"move": "scarica", "target": _pid(s, "ferri")}
+	s["telegraph"] = {"move": "scarica", "target": _pid(s, "lance")}
 	SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "u_nox_ult", "target": ""})
 	ev = SeqRound.boss_action(s)
-	check(_has(ev, "nullified") and _dmg_to(ev, str(_u(s, "ferri")["id"])) == 0, "Rispondo io annulla il colpo")
+	check(_has(ev, "nullified") and _dmg_to(ev, str(_u(s, "lance")["id"])) == 0, "Rispondo io annulla il colpo")
 
 
 # Fase 2: RITMO per categoria, Guardia di slancio, Gran finale anticipato
@@ -354,25 +354,25 @@ func _fase2(team: Array) -> void:
 	# Guardia di slancio: scudo a tutti e +1 energia in piu' rispetto alla guardia normale
 	s = _fresh(team)
 	var en0: int = int(_u(s, "nox")["energy"])
-	var sh0: int = int(_u(s, "ferri")["shield"])
+	var sh0: int = int(_u(s, "lance")["shield"])
 	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "guard", "target": ""}, true)
 	check(_has(ev, "slancio_guard"), "guardia rapida = guardia di slancio")
-	check(int(_u(s, "ferri")["shield"]) > sh0, "scudo anche ai compagni")
+	check(int(_u(s, "lance")["shield"]) > sh0, "scudo anche ai compagni")
 	check(int(_u(s, "nox")["energy"]) >= mini(BattleTypes.MAX_ENERGY, en0 + 2), "guardia di slancio: +2 energia")
 	s = _fresh(team)
 	ev = SeqRound.player_action(s, _pid(s, "nox"), {"swap": "", "move": "guard", "target": ""})
 	check(not _has(ev, "slancio_guard"), "guardia normale: niente scudo a tutti")
 	# Gran finale anticipato: i compagni ricevono energia e Ultimate
 	s = _fresh(team)
-	_u(s, "zecca")["gauge"] = 100
-	_u(s, "zecca")["hype"] = 30
+	_u(s, "rio")["gauge"] = 100
+	_u(s, "rio")["hype"] = 30
 	_u(s, "saul")["energy"] = 0
 	_u(s, "saul")["gauge"] = 0
-	ev = SeqRound.player_action(s, _pid(s, "zecca"), {"swap": "", "move": "u_zecca_ult", "target": ""})
+	ev = SeqRound.player_action(s, _pid(s, "rio"), {"swap": "", "move": "u_rio_ult", "target": ""})
 	check(_has(ev, "finale_early"), "Gran finale sotto il 50% = anteprima")
 	check(int(_u(s, "saul")["energy"]) >= 1 and int(_u(s, "saul")["gauge"]) >= 15, "anteprima: energia e Ultimate ai compagni")
 	s = _fresh(team)
-	_u(s, "zecca")["gauge"] = 100
-	_u(s, "zecca")["hype"] = 80
-	ev = SeqRound.player_action(s, _pid(s, "zecca"), {"swap": "", "move": "u_zecca_ult", "target": ""})
+	_u(s, "rio")["gauge"] = 100
+	_u(s, "rio")["hype"] = 80
+	ev = SeqRound.player_action(s, _pid(s, "rio"), {"swap": "", "move": "u_rio_ult", "target": ""})
 	check(not _has(ev, "finale_early"), "Gran finale pieno: niente anteprima, solo il colpo grosso")

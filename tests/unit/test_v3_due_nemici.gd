@@ -12,7 +12,7 @@ func check(ok: bool, what: String) -> void:
 
 func _team() -> Array:
 	var t: Array = []
-	for id in ["ferri", "nox", "zecca", "saul"]:
+	for id in ["lance", "nox", "rio", "saul"]:
 		t.append(BattleContent.default_entry(id))
 	return t
 
@@ -53,7 +53,7 @@ func _init() -> void:
 	check(n_greg == 1, "un turno della scheggia nel round")
 
 	# bersaglio scelto: la scheggia prende il colpo, il principale no (e il suo equilibrio non scende)
-	var pid: String = _slot_of_char(s, "ferri")
+	var pid: String = _slot_of_char(s, "lance")
 	var hp_main: int = int(main["hp"])
 	var bal_main: int = int(main["balance"])
 	var hp_g: int = int(g["hp"])
@@ -100,12 +100,12 @@ func _init() -> void:
 	SeqRound.begin(s2)
 	BattleState.boss(s2)["hp"] = 1
 	BattleState.boss(s2)["shield"] = 0
-	SeqRound.player_action(s2, _slot_of_char(s2, "ferri"), {"swap": "", "move": "attack", "target": ""})
+	SeqRound.player_action(s2, _slot_of_char(s2, "lance"), {"swap": "", "move": "attack", "target": ""})
 	check(str(s2["winner"]) == "players", "cade il principale: vittoria anche con la scheggia in piedi")
 
 	# IA: Ultimate sul principale; Lance (rosso) contro principale verde e scheggia blu: sul principale (colore vincente)
 	var s3: Dictionary = _fresh("frammento_verde", "frammento_blu")
-	var lance: String = _slot_of_char(s3, "ferri")
+	var lance: String = _slot_of_char(s3, "lance")
 	var c1: Dictionary = Gregario.with_target(s3, lance, {"swap": "", "move": "attack", "target": ""})
 	check(str(c1["target"]) == "", "Lance forte sul verde: colpisce il principale")
 	var nox: String = _slot_of_char(s3, "nox")

@@ -13,7 +13,7 @@ func check(ok: bool, what: String) -> void:
 
 func _team() -> Array:
 	var t: Array = []
-	for id in ["ferri", "nox", "zecca", "saul"]:
+	for id in ["lance", "nox", "rio", "saul"]:
 		t.append(BattleContent.default_entry(id))
 	return t
 

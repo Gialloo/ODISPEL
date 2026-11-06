@@ -20,7 +20,7 @@ extends SceneTree
 # Le righe di riconciliazione devono restare a 0: confrontano eventi di flusso e saldi dello stato.
 # Le occasioni sono conteggiate solo quando un eroe ha un turno prima della carica e una reazione difensiva valida.
 
-const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
+const PARTY: Array = ["lance", "nox", "rio", "saul"]
 # (boss, livello, pv, atk, minore)
 const ENC: Array = [
 	["frammento_giallo", 1, 1.0, 1.0, true], ["frammento_rosso", 3, 1.0, 1.0, true], ["frammento_blu", 5, 1.0, 1.0, true], ["frammento_verde", 7, 1.0, 1.0, true],
@@ -698,7 +698,7 @@ func _init() -> void:
 			float(st.get("res_hype_wasted", 0.0)) / r, float(st.get("res_hype_start", 0.0)) / r, float(st.get("res_hype_final", 0.0)) / r])
 		print("                MUNIZIONI +%.1f / -%.1f | netto %+.1f | spreco %.1f | saldo iniziale/finale %.1f / %.1f" % [
 			float(st.get("res_ammo_gain_gross", 0.0)) / r, float(st.get("res_ammo_spend_gross", 0.0)) / r,
-			float(st.get("res_ammo_net_ferri", 0.0) + st.get("res_ammo_net_nox", 0.0) + st.get("res_ammo_net_zecca", 0.0) + st.get("res_ammo_net_saul", 0.0)) / r,
+			float(st.get("res_ammo_net_lance", 0.0) + st.get("res_ammo_net_nox", 0.0) + st.get("res_ammo_net_rio", 0.0) + st.get("res_ammo_net_saul", 0.0)) / r,
 			float(st.get("res_ammo_wasted", 0.0)) / r, float(st.get("res_ammo_start", 0.0)) / r, float(st.get("res_ammo_final", 0.0)) / r])
 		print("                RISERVA +%.1f / -%.1f | spreco %.1f | saldo netto %+.1f" % [
 			float(st.get("res_reserve_gain", 0.0)) / r, float(st.get("res_reserve_spend", 0.0)) / r,

@@ -16,7 +16,7 @@ func check(ok: bool, what: String) -> void:
 
 func _team() -> Array:
 	var t: Array = []
-	for id in ["ferri", "nox", "zecca", "saul"]:
+	for id in ["lance", "nox", "rio", "saul"]:
 		t.append(BattleContent.default_entry(id))
 	return t
 
@@ -95,11 +95,11 @@ func _ordine_iniziale() -> void:
 func _doppio_turno() -> void:
 	# D1: Rio velocissimo, Lance lentissimo: Rio gioca subito il turno che gli torna prima che Lance abbia fatto il suo
 	var s: Dictionary = _fresh("semaforo", 2)
-	_set_spd(s, "zecca", 400)
-	_set_spd(s, "ferri", 40)
+	_set_spd(s, "rio", 400)
+	_set_spd(s, "lance", 40)
 	BattleFlow.start_round(s)
-	var rio: String = _pid(s, "zecca")
-	var lance: String = _pid(s, "ferri")
+	var rio: String = _pid(s, "rio")
+	var lance: String = _pid(s, "lance")
 	var rio_n: int = 0
 	var lance_seen: bool = false
 	var rio_before_lance: int = 0
@@ -182,7 +182,7 @@ func _boss_due_volte() -> void:
 
 func _ko_consuma() -> void:
 	var s: Dictionary = _fresh("semaforo", 5)
-	var lance: String = _pid(s, "ferri")
+	var lance: String = _pid(s, "lance")
 	BattleState.active_unit(s, lance)["hp"] = 0
 	BattleFlow.start_round(s)
 	var seen: bool = false
@@ -204,7 +204,7 @@ func _pareggi() -> void:
 	# stessa VEL per tutti gli eroi: il primo giro segue l'id dell'unita'; poi vince chi era programmato prima. Nessun caso.
 	var a: Dictionary = _fresh("semaforo", 6)
 	var b: Dictionary = _fresh("semaforo", 7)
-	for ch in ["ferri", "nox", "zecca", "saul"]:
+	for ch in ["lance", "nox", "rio", "saul"]:
 		_set_spd(a, ch, 100)
 		_set_spd(b, ch, 100)
 	BattleState.boss(a)["spd"] = 100
@@ -336,7 +336,7 @@ func _preview_quick_slancio_recupero() -> void:
 	var s: Dictionary = _fresh("semaforo", 24)
 	BattleFlow.start_round(s)
 	var tl: Dictionary = s["tl"]
-	var pid: String = _pid(s, "ferri")
+	var pid: String = _pid(s, "lance")
 	var other: String = _pid(s, "nox")
 	# Lo slot del personaggio che ha appena ottenuto SLANCIO e' il primo senza il +15.
 	tl["now"] = 0
@@ -380,7 +380,7 @@ func _preview_bonus_coerente() -> void:
 	# La previsione deve riflettere gli SLANCI protetti che next() eseguira' prima degli slot normali.
 	var s: Dictionary = _fresh("semaforo", 21)
 	BattleFlow.start_round(s)
-	var pid: String = _pid(s, "ferri")
+	var pid: String = _pid(s, "lance")
 	var uid: String = str(BattleState.active_unit(s, pid)["id"])
 	s["slancio_kept"] = {uid: {"player": pid, "dst": BattleState.BOSS_ID, "waive": true}}
 	var before: Dictionary = (s["slancio_kept"] as Dictionary).duplicate(true)
@@ -428,7 +428,7 @@ func _carry_difese_e_reazioni() -> void:
 	# Un round puo' chiudersi prima della prossima azione del boss: difese e reazioni devono attendere il colpo annunciato.
 	var s: Dictionary = _fresh("semaforo", 12)
 	BattleFlow.start_round(s)
-	var pid: String = _pid(s, "ferri")
+	var pid: String = _pid(s, "lance")
 	var hero: Dictionary = BattleState.active_unit(s, pid)
 	hero["statuses"]["guard"] = 2
 	hero["shield"] = 25

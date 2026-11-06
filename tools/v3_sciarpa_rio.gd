@@ -16,7 +16,7 @@ func _init() -> void:
 	root.add_child(bg)
 	hud = PortraitHud.new()
 	root.add_child(hud)
-	hud.set_who("zecca")
+	hud.set_who("rio")
 	hud.setup("RIO", Color("#3fd6c4"), [
 		{"kind": "attack", "name": "ATTACCO", "ok": true, "desc": ""},
 		{"kind": "skill", "name": "ABILITA'", "ok": true, "desc": ""},

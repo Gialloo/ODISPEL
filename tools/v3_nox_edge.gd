@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Prova del cut-in "alla Edgerunners" di Nox: una schermata per ogni passo della ricetta e tre momenti dell'animazione.
-# Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_nox_edge.gd -- <cartella> [touch|-] [ferri|nox|zecca|saul]
+# Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_nox_edge.gd -- <cartella> [touch|-] [lance|nox|rio|saul]
 
 var out: String = "/tmp/v3noxedge"
 var who: String = "nox"                  # quale dei quattro (stessa ricetta, colore suo)

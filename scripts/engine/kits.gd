@@ -11,9 +11,9 @@ extends RefCounted
 #
 # Regola del gruppo: Lance organizza, Saul sfrutta, Rio spettacolarizza, Nox evita il lavoro inutile.
 
-const LANCE: String = "ferri"
+const LANCE: String = "lance"
 const SAUL: String = "saul"
-const RIO: String = "zecca"
+const RIO: String = "rio"
 const NOX: String = "nox"
 
 const COVER_GUARD_TURNS: int = 1        # Copertura senza nessuno da coprire: Lance si mette in guardia

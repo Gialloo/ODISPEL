@@ -38,7 +38,7 @@ const LABEL: Dictionary = {"skill": "SKILL"}
 const KEYS: Dictionary = {"attack": "1", "skill": "2", "ult": "3", "guard": "4"}
 const GREY: Color = Color("#8a8496")
 
-var who_id: String = ""                       # id del personaggio (ferri, zecca, nox, saul...): sceglie il ritratto
+var who_id: String = ""                       # id del personaggio (lance, rio, nox, saul...): sceglie il ritratto
 var _tex: Texture2D
 var _tex_real: bool = false
 var _usz: int = 30          # grandezza comune delle scritte dei comandi
@@ -62,19 +62,19 @@ var _born: float = 0.0                         # tempo dell'ultima entrata (per 
 # PRESTAZIONI: 12x9 quadrati = 216 triangoli in una sola chiamata, ricalcolati al fotogramma (pochi microsecondi).
 const SCIARPA: Dictionary = {
 	# id -> [rettangolo del ritaglio sul foglio 1536x2048 del ritratto, punto fermo (collo) sullo stesso foglio]
-	"zecca": [Rect2(117, 656, 1146, 896), Vector2(790, 960)],
+	"rio": [Rect2(117, 656, 1146, 896), Vector2(790, 960)],
 	# Lance: le falde del colletto rosso (bozza approvata dall'autore, 4/11/2026): vicine al collo, quasi ferme e precise
-	"ferri": [Rect2(766, 1046, 510, 278), Vector2(1015, 1060)],
+	"lance": [Rect2(766, 1046, 510, 278), Vector2(1015, 1060)],
 }
 # TESTA CHE VIVE (testa di Rio come livello a parte, autore 4/11/2026): stesso sistema. La testa ruota appena attorno al
 # collo (inclinazione lenta, scatto all'indietro quando sceglie e si riassesta), i capelli lontani dal volto ondeggiano
 # e arrivano in ritardo sullo scatto. Si disegna prima della sciarpa, che copre il mento come nel disegno.
 const TESTA: Dictionary = {
 	# id -> [ritaglio sul foglio 1536x2048, perno (collo), centro del volto (i capelli oltre ~280 px si muovono)]
-	"zecca": [Rect2(258, 0, 1278, 1004), Vector2(800, 930), Vector2(830, 520)],
+	"rio": [Rect2(258, 0, 1278, 1004), Vector2(800, 930), Vector2(830, 520)],
 	# bozze vettoriali approvate dall'autore (4/11/2026, «vanno bene, usa questi»). Il cappuccio di Nox e il berretto di
 	# Saul stanno nella testa, cosi' la seguono: le orecchie da civetta e la punta del berretto, lontane dal volto, ondeggiano
-	"ferri": [Rect2(844, 264, 582, 702), Vector2(1015, 960), Vector2(1130, 640)],
+	"lance": [Rect2(844, 264, 582, 702), Vector2(1015, 960), Vector2(1130, 640)],
 	"nox": [Rect2(816, 92, 668, 1020), Vector2(1015, 960), Vector2(1150, 650)],
 	"saul": [Rect2(862, 210, 644, 760), Vector2(1015, 960), Vector2(1150, 660)],
 }
@@ -82,7 +82,7 @@ var _head: Texture2D
 # RITRATTI FERMI (autore, 5/11/2026: Lance e Saul disegnati a mano, «come Rio ma senza animazioni»): per questi niente
 # testa, sciarpa e busto a livelli, niente respiro ne' scatti; il ritratto entra con la lastra e poi resta immobile.
 # Le bozze vettoriali di prima sono nella cartella del progetto, odispel/v3/ritratti_bozze_lance_saul/.
-const FERMI: Array = ["ferri", "saul"]
+const FERMI: Array = ["lance", "saul"]
 # RITRATTO A LIVELLI (busto dell'autore, 4/11/2026): se c'e' <id>_busto.png (il ritratto senza la testa) e c'e' la testa,
 # il ritratto normale si compone busto + testa + sciarpa invece del PNG intero, cosi' la testa si muove di piu' senza
 # lasciare la vecchia testa sotto. La testa porta con se' il suo alone (ritagliato dal ritratto intero). Le varianti

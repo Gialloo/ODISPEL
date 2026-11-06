@@ -16,7 +16,7 @@ func check(ok: bool, what: String) -> void:
 
 func _team() -> Array:
 	var t: Array = []
-	for id in ["ferri", "nox", "zecca", "saul"]:
+	for id in ["lance", "nox", "rio", "saul"]:
 		t.append(BattleContent.default_entry(id))
 	return t
 
@@ -439,7 +439,7 @@ func _bonus_livelli() -> void:
 	var s: Dictionary = _fresh()
 	var boss: Dictionary = BattleState.boss(s)
 	var h: Dictionary = _hero(s, true)
-	var lance: Dictionary = _by_char(s, "ferri")
+	var lance: Dictionary = _by_char(s, "lance")
 	var nox: Dictionary = _by_char(s, "nox")
 	check(Ritmo.dmg_mult(s, h) == 1.0 and Ritmo.pressure_bonus(s, h) == 0 and Ritmo.heal_mult(s, nox) == 1.0, "R4: in CALMO nessun bonus")
 	# ACCESO: +1 Riserva quando si raggiunge
@@ -476,7 +476,7 @@ func _bonus_livelli() -> void:
 func _bonus_rio_saul() -> void:
 	var s: Dictionary = _fresh()
 	var boss: Dictionary = BattleState.boss(s)
-	var rio: Dictionary = _by_char(s, "zecca")
+	var rio: Dictionary = _by_char(s, "rio")
 	var saul: Dictionary = _by_char(s, "saul")
 	Ritmo.st(s)["level"] = Ritmo.APICE
 	_put(s, 80)
@@ -512,9 +512,9 @@ func _bonus_rio_saul() -> void:
 func _tecnica_apice() -> void:
 	var s: Dictionary = _fresh()
 	var hit: Dictionary = {"kind": "skill", "target": "enemy", "mult": 1.0}
-	var lance: Dictionary = _by_char(s, "ferri")
+	var lance: Dictionary = _by_char(s, "lance")
 	var saul: Dictionary = _by_char(s, "saul")
-	var rio: Dictionary = _by_char(s, "zecca")
+	var rio: Dictionary = _by_char(s, "rio")
 	var nox: Dictionary = _by_char(s, "nox")
 	var evs: Array = []
 	Ritmo.st(s)["level"] = Ritmo.INCANDESCENTE

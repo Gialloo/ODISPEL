@@ -17,7 +17,7 @@ func _init() -> void:
 	Settings.ensure_loaded()
 	Progress.reset()
 	for c in Progress.CAST:
-		Progress.data["lv"][c] = 100 if c != "zecca" else 62
+		Progress.data["lv"][c] = 100 if c != "rio" else 62
 		for u in Progress.UNLOCKS[c]:
 			if int(u[0]) <= int(Progress.data["lv"][c]):
 				Progress.equip(c, str(u[1]), str(u[2]))
@@ -47,12 +47,12 @@ func _run() -> void:
 	layer.add_child(sm)
 	await _secs(0.5)
 	await _shot("01_squadra_lance_100")
-	sm.call("_open_picker", "ferri", "ult")
+	sm.call("_open_picker", "lance", "ult")
 	await _secs(0.3)
 	await _shot("02_lance_ultimate")
-	sm.set("_sel", "zecca")
+	sm.set("_sel", "rio")
 	sm.call("_refresh")
-	sm.call("_open_picker", "zecca", "react")
+	sm.call("_open_picker", "rio", "react")
 	await _secs(0.3)
 	await _shot("03_rio_reazioni_lv62")
 	sm.set("_sel", "saul")

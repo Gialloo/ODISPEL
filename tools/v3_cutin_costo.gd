@@ -2,7 +2,7 @@ extends SceneTree
 
 # Costo del cut-in Edgerunners da solo (senza battaglia): tempo medio e massimo di un fotogramma durante la sua durata.
 # Software rendering (llvmpipe): i numeri assoluti non valgono per il telefono, il confronto prima/dopo si'.
-# Uso: xvfb-run -a -s "-screen 0 1280x576x24" godot --path . --resolution 1280x576 -s tools/v3_cutin_costo.gd -- <ferri|nox|zecca|saul>
+# Uso: xvfb-run -a -s "-screen 0 1280x576x24" godot --path . --resolution 1280x576 -s tools/v3_cutin_costo.gd -- <lance|nox|rio|saul>
 
 
 func _init() -> void:

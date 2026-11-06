@@ -10,7 +10,7 @@ extends RefCounted
 # accent = dettagli (profili, lacci, fodera); il colore di battaglia resta quello del motore (rosso, blu, viola, verde).
 # metal = parti metalliche (shader toon a bande, alpha 0.4) · gold = anelli e fibbie.
 const CAST: Dictionary = {
-	"ferri": {
+	"lance": {
 		"name": "Lance", "faction": "LibraCorp", "height": 1.80, "build": 1.08, "kit": "tattico",
 		"skin": "#e9b996", "hair": "#1d1a22", "top": "#25324f", "bottom": "#1b2236", "accent": "#e8343f", "shoes": "#14121a",
 		"metal": "#aab0c0", "gold": "#d9b44a", "glove": "#18161e",
@@ -22,7 +22,7 @@ const CAST: Dictionary = {
 		"metal": "#aeb4c4", "gold": "#d9b44a", "glove": "#2a2734",
 		"hair_style": "owl", "extra": "coat", "fem": true, "eyes": "#3f6dff", "brow": -0.6, "lid": 0.45, "smirk": 0.0,
 	},
-	"zecca": {
+	"rio": {
 		"name": "Rio", "faction": "Masca", "height": 1.66, "build": 0.9, "kit": "streamer",
 		"skin": "#d79f7c", "hair": "#f0e6ff", "top": "#8e3df0", "bottom": "#2a2140", "accent": "#ffd23f", "shoes": "#f2f2f2",
 		"metal": "#b8bccb", "gold": "#e0b54a", "glove": "#f2f0f6",
@@ -36,7 +36,7 @@ const CAST: Dictionary = {
 	},
 }
 
-const ORDER: Array = ["ferri", "nox", "zecca", "saul"]
+const ORDER: Array = ["lance", "nox", "rio", "saul"]
 
 
 static func spec(id: String) -> Dictionary:
@@ -67,6 +67,6 @@ static func expression(id: String, expr: String) -> Dictionary:
 	var base: Dictionary = spec(id)
 	if id == "nox" and expr != "sorpreso":
 		o["lid"] = minf(0.7, float(o.get("lid", base["lid"])) + 0.25)
-	if id == "zecca" and expr != "maschera":
+	if id == "rio" and expr != "maschera":
 		o["nomask"] = true
 	return o

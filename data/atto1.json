@@ -76,7 +76,7 @@
 			"segreto": {"id": "osservatore", "tipo": "telecamera", "pos": [-3.5, -40.0], "rot": 0, "livello": 1, "pv": 1.0, "atk": 1.0, "arena": "strada", "dialogo": "segreto_avviso", "_nota": "BOSS SEGRETO DI PROVA (PROVVISORIO): porta un personaggio al 50% e poi al 25% per vedere la telecamera rotta"}
 		},
 		"incrocio": {
-			"layout": "incrocio", "seme": 41, "capo": "ferri", "chiacchiere": "incrocio",
+			"layout": "incrocio", "seme": 41, "capo": "lance", "chiacchiere": "incrocio",
 			"obiettivo": "Raggiungete l'Incrocio Nove. Il semaforo al centro è fermo sul rosso da ore.",
 			"telecamera": [6.2, -8.0],
 			"indizi": [
@@ -88,7 +88,7 @@
 			"uscita": {"pos": [0.0, -33.0], "etichetta": "ENTRA NELL'ANOMALIA", "tasto": "ENTRA", "dialogo": "c1_soglia", "tipo": "semaforo"}
 		},
 		"dentro_semaforo": {
-			"layout": "anomalia", "seme": 7, "capo": "ferri", "chiacchiere": "dentro_rosso", "tema": "rosso",
+			"layout": "anomalia", "seme": 7, "capo": "lance", "chiacchiere": "dentro_rosso", "tema": "rosso",
 			"obiettivo": "Dentro l'Anomalia. Raggiungete il cuore del semaforo.",
 			"nemici": [{"id": "f1", "pos": [0.0, -10.0], "boss": "frammento_rosso", "livello": 3}],
 			"boss": {"id": "semaforo", "tipo": "semaforo", "pos": [0.0, -24.0], "rot": 0, "dialogo": "c1_boss", "agguato": "c1_agguato", "livello": 3, "arena": "anomalia_rossa", "pv": 0.9, "atk": 0.9}
@@ -112,7 +112,7 @@
 			"boss": {"id": "cabina", "tipo": "cabina", "pos": [0.0, -24.0], "rot": 0, "dialogo": "c2_boss", "agguato": "c2_agguato", "livello": 5, "arena": "anomalia_blu", "pv": 0.8, "atk": 0.9}
 		},
 		"galleria": {
-			"layout": "galleria", "seme": 67, "capo": "zecca", "chiacchiere": "galleria",
+			"layout": "galleria", "seme": 67, "capo": "rio", "chiacchiere": "galleria",
 			"obiettivo": "Galleria Lumière. Chi entra esce senza faccia.",
 			"telecamera": [5.6, -14.0],
 			"indizi": [
@@ -124,7 +124,7 @@
 			"uscita": {"pos": [0.0, -35.0], "etichetta": "GUARDA NELLA VETRINA", "tasto": "GUARDA", "dialogo": "c3_soglia", "tipo": "manichino"}
 		},
 		"dentro_vetrina": {
-			"layout": "anomalia", "seme": 13, "capo": "zecca", "chiacchiere": "dentro_verde", "tema": "verde",
+			"layout": "anomalia", "seme": 13, "capo": "rio", "chiacchiere": "dentro_verde", "tema": "verde",
 			"obiettivo": "Dietro il vetro. Qualcuno vi sta copiando.",
 			"nemici": [{"id": "f1", "pos": [-0.5, -11.0], "boss": "frammento_verde", "livello": 7}],
 			"boss": {"id": "manichino", "tipo": "manichino", "pos": [0.0, -24.0], "rot": 0, "dialogo": "c3_boss", "agguato": "c3_agguato", "livello": 7, "arena": "anomalia_verde", "pv": 0.8, "atk": 0.85}
@@ -142,7 +142,7 @@
 			"boss": {"id": "cassaforte", "tipo": "cassaforte", "pos": [0.0, -34.0], "rot": 0, "dialogo": "c4_boss", "agguato": "c4_agguato", "livello": 9, "arena": "caveau", "pv": 0.6, "atk": 0.75}
 		},
 		"tangenziale": {
-			"layout": "tangenziale", "seme": 91, "capo": "ferri", "chiacchiere": "tangenziale",
+			"layout": "tangenziale", "seme": 91, "capo": "lance", "chiacchiere": "tangenziale",
 			"obiettivo": "La tangenziale all'alba. Il casello in fondo è l'unica uscita che non porta in cella.",
 			"punti": [{"id": "angolo_panorama", "pos": [-4.2, 11.0]}, {"id": "angolo_piazzola", "pos": [4.2, -6.0]}, {"id": "angolo_pannello", "pos": [-4.2, -24.0]}],
 			"telecamera": [-4.9, -14.0],
@@ -157,11 +157,11 @@
 	},
 
 	"legami": {
-		"legame_ferri_saul": {"chi": ["ferri", "saul"], "nome": "Lance e Saul"},
-		"legame_nox_zecca": {"chi": ["nox", "zecca"], "nome": "Nox e Rio"},
-		"legame_ferri_nox": {"chi": ["ferri", "nox"], "nome": "Lance e Nox"},
-		"legame_saul_zecca": {"chi": ["saul", "zecca"], "nome": "Saul e Rio"},
-		"legame_ferri_zecca": {"chi": ["ferri", "zecca"], "nome": "Lance e Rio"},
+		"legame_lance_saul": {"chi": ["lance", "saul"], "nome": "Lance e Saul"},
+		"legame_nox_rio": {"chi": ["nox", "rio"], "nome": "Nox e Rio"},
+		"legame_lance_nox": {"chi": ["lance", "nox"], "nome": "Lance e Nox"},
+		"legame_saul_rio": {"chi": ["saul", "rio"], "nome": "Saul e Rio"},
+		"legame_lance_rio": {"chi": ["lance", "rio"], "nome": "Lance e Rio"},
 		"legame_nox_saul": {"chi": ["nox", "saul"], "nome": "Nox e Saul"}
 	}
 }

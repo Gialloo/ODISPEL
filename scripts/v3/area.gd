@@ -10,7 +10,7 @@ extends Node3D
 const SPEED: float = 4.6
 const R_PLAYER: float = 0.35
 const AMBUSH_TIME: float = 4.5
-const ORDER: Array = ["saul", "ferri", "nox", "zecca"]
+const ORDER: Array = ["saul", "lance", "nox", "rio"]
 
 var area_id: String = "strada"
 var cfg: Dictionary = {}

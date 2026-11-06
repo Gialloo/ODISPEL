@@ -27,6 +27,7 @@ func _init() -> void:
 	_test_backup_recovery()
 	_test_reject_malformed_area()
 	_test_repair_progression()
+	_test_old_ids()
 	_remove_save_files()
 	print("test_v3_integrita_salvataggio: " + ("OK" if fails == 0 else "%d FALLITI" % fails))
 	quit(1 if fails > 0 else 0)
@@ -74,11 +75,11 @@ func _test_reject_invalid_progression_save() -> void:
 	Story.area_state = {}
 	Progress.reset()
 	check(Story.save(), "checkpoint con progressione valida scritto")
-	Progress.data["lv"]["ferri"] = Progress.MAX_LEVEL + 1
+	Progress.data["lv"]["lance"] = Progress.MAX_LEVEL + 1
 	check(not Story.save(), "progressione con livello oltre il massimo rifiutata")
 	check(Story._read_valid_save(Story.save_path) != null, "il checkpoint precedente resta valido dopo errore progressione")
 	check(Story.load_game(), "checkpoint precedente ancora caricabile dopo errore progressione")
-	check(Progress.level("ferri") == 1, "il livello precedente viene ripristinato")
+	check(Progress.level("lance") == 1, "il livello precedente viene ripristinato")
 	Progress.reset()
 
 
@@ -143,35 +144,35 @@ func _test_repair_progression() -> void:
 	var good: Dictionary = Progress.data.duplicate(true)
 	# 1. equipaggiamento non piu' valido (Ultimate di livello 100 a un livello basso, mossa inesistente)
 	var bad_equip: Dictionary = good.duplicate(true)
-	bad_equip["equip"]["ferri"]["ult"] = "u_ferri_ult5"
+	bad_equip["equip"]["lance"]["ult"] = "u_lance_ult5"
 	bad_equip["equip"]["nox"]["skill"] = "mossa_che_non_esiste"
 	check(not Progress.validate_save(bad_equip), "il validatore severo resta severo")
 	var fixed: Variant = Progress.repair_save(bad_equip)
 	check(fixed != null, "equipaggiamento non valido: la partita si ripara")
 	if fixed != null:
-		check(str(fixed["equip"]["ferri"]["ult"]) == str(Progress.default_equip("ferri")["ult"]), "lo slot non valido torna a quello di partenza")
+		check(str(fixed["equip"]["lance"]["ult"]) == str(Progress.default_equip("lance")["ult"]), "lo slot non valido torna a quello di partenza")
 		check(str(fixed["equip"]["nox"]["skill"]) == str(Progress.default_equip("nox")["skill"]), "la mossa inesistente torna a quella di partenza")
-		check(int(fixed["lv"]["ferri"]) == int(good["lv"]["ferri"]), "il livello resta quello salvato")
-		check(str(fixed["equip"]["zecca"]["skill"]) == str(good["equip"]["zecca"]["skill"]), "gli slot validi restano com'erano")
+		check(int(fixed["lv"]["lance"]) == int(good["lv"]["lance"]), "il livello resta quello salvato")
+		check(str(fixed["equip"]["rio"]["skill"]) == str(good["equip"]["rio"]["skill"]), "gli slot validi restano com'erano")
 	# 2. chiavi e personaggi mancanti (salvataggio di una versione diversa)
-	var partial: Dictionary = {"lv": {"ferri": 4}, "exp": {"ferri": 10}, "equip": {}}
+	var partial: Dictionary = {"lv": {"lance": 4}, "exp": {"lance": 10}, "equip": {}}
 	var fixed2: Variant = Progress.repair_save(partial)
-	check(fixed2 != null and int(fixed2["lv"]["ferri"]) == 4 and int(fixed2["lv"]["saul"]) == 1, "chiavi e personaggi mancanti tornano ai valori di partenza")
+	check(fixed2 != null and int(fixed2["lv"]["lance"]) == 4 and int(fixed2["lv"]["saul"]) == 1, "chiavi e personaggi mancanti tornano ai valori di partenza")
 	# 3. valori fuori limite rientrano, mosse rubate sconosciute si tolgono
 	var out_of_range: Dictionary = good.duplicate(true)
-	out_of_range["lv"]["ferri"] = Progress.MAX_LEVEL + 5
+	out_of_range["lv"]["lance"] = Progress.MAX_LEVEL + 5
 	out_of_range["exp"]["nox"] = 999999
 	out_of_range["stolen"] = ["mossa_rubata_sparita"]
 	out_of_range["stolen_from"] = {"mossa_rubata_sparita": "Nessuno"}
 	var fixed3: Variant = Progress.repair_save(out_of_range)
-	check(fixed3 != null and int(fixed3["lv"]["ferri"]) == Progress.MAX_LEVEL and int(fixed3["exp"]["ferri"]) == 0, "livello oltre il massimo riportato al massimo")
+	check(fixed3 != null and int(fixed3["lv"]["lance"]) == Progress.MAX_LEVEL and int(fixed3["exp"]["lance"]) == 0, "livello oltre il massimo riportato al massimo")
 	check(fixed3 != null and int(fixed3["exp"]["nox"]) < Progress.exp_need(int(fixed3["lv"]["nox"])), "esperienza oltre la soglia riportata sotto")
 	check(fixed3 != null and (fixed3["stolen"] as Array).is_empty() and (fixed3["stolen_from"] as Dictionary).is_empty(), "mosse rubate sconosciute tolte")
 	# 4. dati davvero rotti: si rifiuta (il caricatore prova il backup)
 	var broken: Dictionary = good.duplicate(true)
-	broken["lv"]["ferri"] = "dieci"
+	broken["lv"]["lance"] = "dieci"
 	check(Progress.repair_save(broken) == null, "livello testuale: dato rotto, rifiutato")
-	broken["lv"]["ferri"] = NAN
+	broken["lv"]["lance"] = NAN
 	check(Progress.repair_save(broken) == null, "livello non finito: rifiutato")
 	check(Progress.repair_save("non un dizionario") == null, "progressione non dizionario: rifiutata")
 	# 5. intero file: si carica riparato invece di "SALVATAGGIO NON LEGGIBILE"
@@ -183,6 +184,43 @@ func _test_repair_progression() -> void:
 	cfg.set_value("squadra", "dati", bad_equip)
 	cfg.save(Story.save_path)
 	check(Story.load_game(), "un salvataggio con equipaggiamento non valido si carica")
-	check(Progress.level("ferri") == int(good["lv"]["ferri"]), "dopo il caricamento il livello e' quello salvato")
-	check(str(Progress.data["equip"]["ferri"]["ult"]) == str(Progress.default_equip("ferri")["ult"]), "dopo il caricamento lo slot e' riparato")
+	check(Progress.level("lance") == int(good["lv"]["lance"]), "dopo il caricamento il livello e' quello salvato")
+	check(str(Progress.data["equip"]["lance"]["ult"]) == str(Progress.default_equip("lance")["ult"]), "dopo il caricamento lo slot e' riparato")
+	Progress.reset()
+
+
+# 0.59: gli id di Lance e Rio erano "ferri" e "zecca". Un salvataggio di prima si carica con gli id nuovi.
+func _test_old_ids() -> void:
+	Progress.reset()
+	Progress.grant(400)
+	var d: Dictionary = Progress.data.duplicate(true)
+	var old: Dictionary = {}
+	for k in d:
+		if d[k] is Dictionary:
+			var m: Dictionary = {}
+			for c in d[k]:
+				var key: String = "ferri" if c == "lance" else ("zecca" if c == "rio" else str(c))
+				var val: Variant = d[k][c]
+				if val is Dictionary:
+					var eq: Dictionary = {}
+					for slot in val:
+						eq[slot] = str(val[slot]).replace("lance", "ferri").replace("rio", "zecca") if val[slot] is String else val[slot]
+					val = eq
+				m[key] = val
+			old[k] = m
+		else:
+			old[k] = d[k]
+	_remove_save_files()
+	var cfg := ConfigFile.new()
+	cfg.set_value("storia", "capitolo", 1)
+	cfg.set_value("storia", "passo", 0)
+	cfg.set_value("storia", "flag", {"visto_ferri": true, "parla": "zecca"})
+	cfg.set_value("squadra", "dati", old)
+	cfg.save(Story.save_path)
+	check(old["lv"].has("ferri") and not old["lv"].has("lance"), "la prova usa davvero gli id vecchi")
+	check(Story.load_game(), "un salvataggio con gli id vecchi si carica")
+	check(Progress.level("lance") == int(d["lv"]["lance"]) and Progress.level("rio") == int(d["lv"]["rio"]), "i livelli di Lance e Rio passano agli id nuovi")
+	check(str(Progress.data["equip"]["lance"]["ult"]) == str(d["equip"]["lance"]["ult"]), "l'equipaggiamento di Lance resta quello salvato")
+	check(Story.flags.has("visto_lance") and str(Story.flags.get("parla", "")) == "rio", "anche i flag della storia usano gli id nuovi")
+	check(str(Story.migrate_ids("ferrivecchi")) == "ferrivecchi", "le parole che contengono il vecchio id non cambiano")
 	Progress.reset()

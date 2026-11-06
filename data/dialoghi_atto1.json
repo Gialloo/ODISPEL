@@ -1,5 +1,5 @@
 {
-  "_nota": "Testi dell'atto 1 (PROVVISORI). Generati da tools/gen_dialoghi (vedi docs/STORIA.md per voci e arco). Scene: righe + riassunto. Una riga puo' avere 'se' o 'se_non' (vale solo se una scelta e' stata fatta o no) e 'scelte' (lista di {testo, imposta, vai}). 'chiacchiere': battute durante l'esplorazione, per area. 'battaglia': fumetti brevi della squadra in combattimento (critico, ko_nemico, compagno_ko, copre, rialzato). Gli id dei personaggi restano ferri/zecca (file e ritratti); i nomi sono Lance e Rio.",
+  "_nota": "Testi dell'atto 1 (PROVVISORI). Generati da tools/gen_dialoghi (vedi docs/STORIA.md per voci e arco). Scene: righe + riassunto. Una riga puo' avere 'se' o 'se_non' (vale solo se una scelta e' stata fatta o no) e 'scelte' (lista di {testo, imposta, vai}). 'chiacchiere': battute durante l'esplorazione, per area. 'battaglia': fumetti brevi della squadra in combattimento (critico, ko_nemico, compagno_ko, copre, rialzato). Gli id dei personaggi restano lance/rio (file e ritratti); i nomi sono Lance e Rio.",
   "segreto_avviso": {
     "riassunto": "Un boss segreto troppo forte per voi: lo avete lasciato stare.",
     "righe": [
@@ -9,7 +9,7 @@
         "testo": "Quella telecamera è grande quanto un lampione. E ci fissa."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Raga, è il boss segreto. Si vede."
       },
@@ -44,7 +44,7 @@
         "testo": "Telecamera sette. Piazza Centrale. Ore tre."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Raga... il cielo è ROSA. Non è un filtro. Ho riavviato due volte."
       },
@@ -66,7 +66,7 @@
         "testo": "«RESPONSABILI DEL SIGILLO. RICERCATI.»"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sorpreso",
         "testo": "...Hanno messo la foto del tesserino."
       }
@@ -111,12 +111,12 @@
         "col": "#3fe0ff"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Ore 2:58 e quaranta. La ragazza sulla panchina si sta addormentando."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "E quello sta parlando da solo."
       },
@@ -127,7 +127,7 @@
         "col": "#3fe0ff"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Buonasera raga, oggi altra live per la rubrica UNA NOTTE DA RIO!"
       },
@@ -170,22 +170,22 @@
         "testo": "Le telecamere non girano la testa."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Allora smettete di guardarla. Non date nell'occhio."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "CIAO! Salutate, raga! Magari è un fan."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "arrabbiato",
         "testo": "Rio."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Che c'è? È la mia routine!"
       },
@@ -205,7 +205,7 @@
         "testo": "Uno scontrino... Prezzo: un'anima. E guarda qui: «Resto non disponibile. VIOLA»."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Viola? È il MIO colore!"
       },
@@ -260,7 +260,7 @@
         "testo": "Ehi! Stavo solo guardando la vetrina!"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Aspettate, mi serve un'entrata ad effetto!"
       },
@@ -270,7 +270,7 @@
         "testo": "No."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpresa",
         "testo": "Ma non ho ancora—"
       },
@@ -285,7 +285,7 @@
     "riassunto": "L'Anomalia è chiusa.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Clip salvata! Trentadue visualizzazioni. E il botto si sente benissimo!"
       },
@@ -295,7 +295,7 @@
         "testo": "Un colpetto sul fianco. Due merendine. Non male."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Le hai appena rubate."
       },
@@ -842,7 +842,7 @@
         "testo": "Bel lavoro. Quel distributore mi doveva dei soldi."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Aspetta. Sei tu la voce che ci ha guidati durante lo scontro?"
       },
@@ -853,7 +853,7 @@
         "testo": "In persona. O meglio, in camera. Sono Echo."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Quindi parlavamo davvero con una telecamera."
       },
@@ -864,7 +864,7 @@
         "testo": "Già. Sono un Kairos. Vengo da un altro posto e vivo nei circuiti. Questa telecamera è casa mia."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "E ci stavi osservando?"
       },
@@ -891,7 +891,7 @@
         "testo": "Sul pacco c'era scritto «Documenti». Con il punto esclamativo. Mi sono fidato."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Ma che razza di documenti porti in giro?!"
       },
@@ -918,7 +918,7 @@
         "testo": "La cupola cade."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Le Anomalie sono un problema di LibraCorp. Se ne occupano loro."
       },
@@ -940,7 +940,7 @@
         "testo": "Ho le registrazioni della piazza. Mostrano quello che è successo davvero. Posso consegnarvele quando la cupola sarà caduta."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Quindi dovremmo fidarci di una telecamera e andare a caccia di quattro Anomalie."
       },
@@ -983,7 +983,7 @@
         "testo": "Lance. Se chiudete il caso, posso aiutarti a tornare in servizio. Nome pulito. E il grado."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sorpreso",
         "testo": "...Il grado."
       },
@@ -1010,7 +1010,7 @@
         "testo": "Rio. Una città sotto una cupola rosa, quattro mostri e tu in diretta."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "La live del DECENNIO. Aspetta, posso davvero riprendere tutto?"
       },
@@ -1043,17 +1043,17 @@
         "testo": "...Hai fatto i compiti."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Raga, una telecamera che ci offre un lavoro. È letteralmente un tutorial."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Basta. Dobbiamo decidere."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Votiamo. Articolo quarantuno: senza superiori decide la squadra."
       },
@@ -1063,7 +1063,7 @@
         "testo": "Esiste davvero un articolo quarantuno?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "No. Adesso sì."
       },
@@ -1073,7 +1073,7 @@
         "testo": "E da quando siamo una squadra?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Non lo siamo. È un'emergenza."
       },
@@ -1112,7 +1112,7 @@
     "riassunto": "Echo porta la squadra in un deposito della metro abbandonato: sarà il loro rifugio. Nessuno si fida di nessuno.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Raga, room tour: topi, muffa e... un divano!"
       },
@@ -1122,7 +1122,7 @@
         "testo": "Il divano è mio. L'ho visto per primo."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Il divano va a turni. Articolo ventidue: per anzianità di servizio."
       },
@@ -1132,7 +1132,7 @@
         "testo": "Allora è mio. Ho più anni di galera io di tutti voi."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "arrabbiato",
         "testo": "La galera non è servizio."
       },
@@ -1147,37 +1147,37 @@
         "testo": "Mentre discutevate mi ci sono sdraiata. Parlate piano."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Turni di guardia. Due ore a testa. Il primo lo faccio io. Il secondo pure."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "neutro",
         "testo": "Posso fare il primo turno?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "No."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "neutro",
         "testo": "Perché?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Perché poco fa hai salutato le telecamere mentre stavamo scappando."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "neutro",
         "testo": "È successo solo una volta."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Ed è troppo."
       },
@@ -1187,7 +1187,7 @@
         "testo": "Quindi fai tutti i turni."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Sì."
       },
@@ -1197,7 +1197,7 @@
         "testo": "Io dormo col pacco sotto la testa. Chi lo tocca, lo compra."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Nove per cento."
       },
@@ -1207,7 +1207,7 @@
         "testo": "Che è comunque più alta della tua probabilità di sopravvivere là fuori."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "neutro",
         "testo": "Grazie Saul, sei il massimo..."
       },
@@ -1232,7 +1232,7 @@
         "testo": "Affare."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "neutro",
         "testo": "Aspetta, stai già dormendo?"
       },
@@ -1287,12 +1287,12 @@
         "testo": "Domani tocca a un semaforo. In un quartiere che uno di voi conosce bene."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "...L'Incrocio Nove."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Siamo già in ritardo, seguitemi. E niente colpi di testa."
       }
@@ -1308,7 +1308,7 @@
         "testo": "Incrocio Nove. Rosso da sei ore. Le auto ferme. La gente dentro, anche."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Il mio vecchio giro. Trecentododici multe."
       },
@@ -1318,7 +1318,7 @@
         "testo": "Te le ricordi tutte?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Una era tua."
       },
@@ -1328,7 +1328,7 @@
         "testo": "Mi avete portato via la macchina."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Doppia fila davanti a una gioielleria. Motore acceso. Bagagliaio aperto."
       },
@@ -1338,12 +1338,12 @@
         "testo": "Faceva caldo."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "TITOLO: «La guardia e il ladro: la reunion». Abbracciatevi!"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "No."
       },
@@ -1359,7 +1359,7 @@
         "testo": "Lance. Ci saranno pattuglie LibraCorp. Gente che conosci."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Siamo in ritardo di quattro secondi. In fila. E nessuno attraversa col rosso."
       }
@@ -1379,17 +1379,17 @@
         "testo": "Qui Astrid. L'agente Lance lo voglio io. Vivo. E in ordine."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "triste",
         "testo": "La Comandante Astrid. Mi ha insegnato a rifare la branda. E tutto il resto."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Però ti vuole vivo. È buono, no?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Con Astrid «vivo» è la parte brutta."
       },
@@ -1404,7 +1404,7 @@
         "testo": "Ci penso io per stavolta, poi ricambi il favore."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "...Non è un brutto ragionamento."
       }
@@ -1414,7 +1414,7 @@
     "riassunto": "Indizio: il semaforo teme il blu dei lampeggianti.",
     "righe": [
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Una multa: passaggio col rosso. Attesa: per sempre."
       },
@@ -1429,7 +1429,7 @@
         "testo": "Io non sono un soccorso. Sono una dipendente pubblica che non dorme."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sfotto",
         "testo": "Oggi sei un lampeggiante, collega."
       },
@@ -1439,7 +1439,7 @@
         "testo": "Collega."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "...Errore di battitura."
       }
@@ -1449,7 +1449,7 @@
     "riassunto": "Il semaforo è il cuore dell'Anomalia: la squadra ci entra.",
     "righe": [
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Da vicino il rosso sembra un occhio."
       },
@@ -1460,7 +1460,7 @@
         "testo": "È la soglia. Lì dentro le mie telecamere non arrivano. Non vi vedrò."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Niente regia, si improvvisa. Il mio genere!"
       },
@@ -1470,7 +1470,7 @@
         "testo": "Il tuo genere è cadere dalle scale in diretta."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Ventimila visualizzazioni!"
       },
@@ -1501,7 +1501,7 @@
         "testo": "Capo, parla come te."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Lo so."
       }
@@ -1516,7 +1516,7 @@
         "testo": "INFRAZIONE RILEVATA. SANZIONE IN CORSO."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sorpreso",
         "testo": "Eravamo fermi! Col rosso!"
       },
@@ -1531,12 +1531,12 @@
     "riassunto": "Nella lotta il guanto di Lance si strappa: il suo braccio è tecnologia magica di contrabbando. Gli altri lo vedono e decidono di tacere. È il primo segreto che custodiscono insieme.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Lance... il tuo braccio. Brilla. Perché brilla?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "arrabbiato",
         "testo": "Non avete visto niente."
       },
@@ -1551,7 +1551,7 @@
         "testo": "Wow, quindi questo fa di te... uno sbirro magico?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "SBIRRO MAGICO. Raga, no. AHAHAH."
       },
@@ -1561,12 +1561,12 @@
         "testo": "Pff..."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "arrabbiato",
         "testo": "Smettetela."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "triste",
         "testo": "Se lo scoprono mi contengono. Come un'Anomalia. Fine."
       },
@@ -1591,17 +1591,17 @@
         "testo": "...Gratis. Che schifo."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Raga. Telefono giù. Questa non la registro."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "...Grazie, minorenne."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "arrabbiato",
         "testo": "HO DICIANNOVE ANNI."
       },
@@ -1618,7 +1618,7 @@
         "testo": "E il braccio di Lance non è nelle mie registrazioni. Telecamera inceppata."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sorpreso",
         "testo": "...Davvero?"
       },
@@ -1646,21 +1646,21 @@
         "scelte": [
           {
             "testo": "Lance e Saul, che non si sopportano",
-            "vai": "c1_sera_ferri_saul"
+            "vai": "c1_sera_lance_saul"
           },
           {
             "testo": "Nox e Rio, sul divano rotto",
-            "vai": "c1_sera_nox_zecca"
+            "vai": "c1_sera_nox_rio"
           },
           {
             "testo": "Lance e Nox, al turno di guardia",
-            "vai": "c1_sera_ferri_nox"
+            "vai": "c1_sera_lance_nox"
           }
         ]
       }
     ]
   },
-  "c1_sera_ferri_saul": {
+  "c1_sera_lance_saul": {
     "riassunto": "Lance e Saul litigano, poi quasi si capiscono. Legame Lance e Saul.",
     "righe": [
       {
@@ -1669,7 +1669,7 @@
         "testo": "Capo. Il braccio. Dove l'hai preso? Chiedo per un cliente."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "arrabbiato",
         "testo": "Me l'hanno messo dopo un incidente. Senza chiedermelo."
       },
@@ -1679,7 +1679,7 @@
         "testo": "A me hanno messo in gabbia senza chiedermelo. Tre anni."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Per cosa?"
       },
@@ -1689,7 +1689,7 @@
         "testo": "Un pacco."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Quello di stanotte. Sapevi cosa c'era dentro?"
       },
@@ -1699,18 +1699,18 @@
         "testo": "No. Ed è la prima volta che vorrei saperlo."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "...Stanotte dormi senza manette. Svista mia.",
-        "imposta": "legame_ferri_saul"
+        "imposta": "legame_lance_saul"
       }
     ]
   },
-  "c1_sera_nox_zecca": {
+  "c1_sera_nox_rio": {
     "riassunto": "Nox e Rio parlano di maschere e di lavoro. Legame Nox e Rio.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Nox! Intervista esclusiva. Domanda uno: perché sei sempre stanca?"
       },
@@ -1720,7 +1720,7 @@
         "testo": "Passo."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Domanda due: perché sei sempre stanca, ma detta meglio?"
       },
@@ -1730,7 +1730,7 @@
         "testo": "Faccio un lavoro che nessuno vede. Per gente che non lo saprà mai."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "...Io il contrario. Mi guardano tutti e nessuno sa chi sono."
       },
@@ -1740,7 +1740,7 @@
         "testo": "Due disastri."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "È un complimento?"
       },
@@ -1748,15 +1748,15 @@
         "chi": "nox",
         "espr": "sfotto",
         "testo": "È una diagnosi. Spegni quella lucina rossa.",
-        "imposta": "legame_nox_zecca"
+        "imposta": "legame_nox_rio"
       }
     ]
   },
-  "c1_sera_ferri_nox": {
+  "c1_sera_lance_nox": {
     "riassunto": "Lance e Nox, una guardia e un'Odispeller, scoprono di avere lo stesso tipo di capo. Legame Lance e Nox.",
     "righe": [
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "LibraCorp e Civette. Da regolamento dovremmo odiarci."
       },
@@ -1766,12 +1766,12 @@
         "testo": "Io odio i turni di notte e il mio capoturno, Strix. Tu sei terzo."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Strix. Lavorava in coppia con Astrid, dieci anni fa."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Poi è andata male. Nessuno ne parla."
       },
@@ -1781,7 +1781,7 @@
         "testo": "Due capi orribili con un passato. Brindiamo. Col caffè, siamo in servizio."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Siamo latitanti."
       },
@@ -1789,7 +1789,7 @@
         "chi": "nox",
         "espr": "neutro",
         "testo": "Allora doppio.",
-        "imposta": "legame_ferri_nox"
+        "imposta": "legame_lance_nox"
       }
     ]
   },
@@ -1814,7 +1814,7 @@
         "testo": "...Le tre e dodici."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Nox? Sei più bianca del solito. E il tuo solito è già un fantasma."
       },
@@ -1871,7 +1871,7 @@
         "testo": "«3:12, chiamata di soccorso. Nessuna risposta. Turno: Nox.»"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Nox..."
       },
@@ -1896,7 +1896,7 @@
         "testo": "Consegnati a noi prima che ti trovi LibraCorp. Loro non chiedono: contengono."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Su LibraCorp ha ragione. Mi costa dirlo."
       },
@@ -1926,7 +1926,7 @@
         "testo": "Giubbotto verde. Mi sento chiamato in causa."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Saul, sei la soluzione!"
       },
@@ -1946,7 +1946,7 @@
         "testo": "Squilla. È per me."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Non sei obbligata a rispondere. Articolo..."
       },
@@ -1956,7 +1956,7 @@
         "testo": "Lance. Non adesso."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "...Nessun articolo. Ti copro."
       },
@@ -1966,7 +1966,7 @@
         "testo": "Ti copriamo. Gratis. Non abituarti."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Io ti tengo la mano. Se ti va. Se no la tengo a Saul."
       },
@@ -2016,7 +2016,7 @@
         "testo": "CHIAMATA A CARICO DEL DESTINATARIO."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Raga, non abbiamo accettato niente!"
       },
@@ -2046,12 +2046,12 @@
         "testo": "Era l'Anomalia che la imitava. Ho risposto lo stesso. Mi serviva."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Nox ha fatto una cosa coraggiosa! Segnatevi la data!"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Pagina quattordici."
       },
@@ -2073,7 +2073,7 @@
         "testo": "Le mie telecamere guardano tutte in basso. Me la raccontate?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "È... sottile. Bianca. Come una porta che si apre in una stanza buia."
       },
@@ -2089,17 +2089,17 @@
     "riassunto": "Una serata al rifugio.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Serata libera! Con chi la passi?",
         "scelte": [
           {
             "testo": "Saul e Rio, a parlare di affari",
-            "vai": "c2_sera_saul_zecca"
+            "vai": "c2_sera_saul_rio"
           },
           {
             "testo": "Lance e Rio, ad allenarsi",
-            "vai": "c2_sera_ferri_zecca"
+            "vai": "c2_sera_lance_rio"
           },
           {
             "testo": "Nox ed Echo, nel turno di notte",
@@ -2113,11 +2113,11 @@
       }
     ]
   },
-  "c2_sera_saul_zecca": {
+  "c2_sera_saul_rio": {
     "riassunto": "Rio propone a Saul una diretta insieme. Saul gli spiega chi è la merce. Legame Saul e Rio.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Saul! Collab! «Il contrabbandiere racconta». Facciamo i numeri!"
       },
@@ -2127,7 +2127,7 @@
         "testo": "Quanti?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Tipo... cento. Centocinquanta se piove."
       },
@@ -2137,7 +2137,7 @@
         "testo": "A centocinquanta persone vendo centocinquanta orologi falsi. Tu cosa vendi?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Io... niente. Mi guardano."
       },
@@ -2147,7 +2147,7 @@
         "testo": "Allora la merce sei tu."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "...Mi hai fatto la morale col sorriso da truffatore."
       },
@@ -2155,78 +2155,78 @@
         "chi": "saul",
         "espr": "sfotto",
         "testo": "Ne ho uno solo.",
-        "imposta": "legame_saul_zecca"
+        "imposta": "legame_saul_rio"
       }
     ]
   },
-  "c2_sera_ferri_zecca": {
+  "c2_sera_lance_rio": {
     "riassunto": "Lance e Rio, entrambi con la magia addosso, si allenano. Legame Lance e Rio.",
     "righe": [
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Guardia alta. Se combatti come posti, sei morto in due secondi."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sfotto",
         "testo": "Tu combatti come uno che scrive i manuali."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Li ho scritti."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "...Davvero?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "«Postura e dignità». Quaranta pagine."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "La mia maschera, il tuo braccio."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Roba strana che ci è capitata. Siamo uguali, no?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "No. Ma ci copriamo le spalle. Guardia alta."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "triste",
         "testo": "Sniff, Sniff. Si..."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sorpreso",
         "testo": "Stai.. piangendo?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "triste",
         "testo": "Sniff, Sniff. Si..."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Per oggi chiudiamola qui.."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "triste",
         "testo": "Sniff, Sniff, si...",
-        "imposta": "legame_ferri_zecca"
+        "imposta": "legame_lance_rio"
       }
     ]
   },
@@ -2385,7 +2385,7 @@
     "riassunto": "Nella Galleria Lumière chi entra perde la faccia e diventa un manichino. I video sono ovunque. Rio si offre di guidare la squadra.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Raga, i video della Galleria Lumière. La gente si fa un selfie e... non ha più la faccia. Guardateli, sono immobili!"
       },
@@ -2396,7 +2396,7 @@
         "testo": "Restano in posa. Manichini. Nelle mie telecamere ne ho già individuati dieci."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Guido io. Lì dentro serve uno che sa stare davanti a un obiettivo."
       },
@@ -2406,7 +2406,7 @@
         "testo": "Cerca di non fare gaffe allora."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "neutro",
         "testo": "Ci provo.."
       },
@@ -2416,7 +2416,7 @@
         "testo": "Ragazzino. Se hai paura, dillo. Costa meno che fingere."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Paura? Io? Raga, io sono nato in diretta!"
       },
@@ -2427,7 +2427,7 @@
         "testo": "I battiti al minuto di Rio sono aumentati di 40."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "arrabbiato",
         "testo": "ECHO!"
       },
@@ -2443,12 +2443,12 @@
     "riassunto": "Durante la diretta, alcuni utenti insistono perché Rio mostri il volto.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "La chat è impazzita. «Facci vedere la faccia.»"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "E poi: «Senza maschera sei nessuno». Simpatici."
       },
@@ -2458,7 +2458,7 @@
         "testo": "Chi l'ha scritto?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "neutro",
         "testo": "Gente. Uno si chiama «Persona97»."
       },
@@ -2468,7 +2468,7 @@
         "testo": "Non mi farei dare consigli da uno che si chiama Persona97."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "triste",
         "testo": "Prima della maschera non mi conosceva nessuno, avevo trentadue follower. Tutti parenti."
       },
@@ -2483,12 +2483,12 @@
     "riassunto": "Un cartellino rivela un dettaglio curioso sulla Collezione Nessuno.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Guardate il cartellino. «Collezione *******». E qui dice: «Il ROSSO non è di stagione»."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sfotto",
         "testo": "Fortunatamente non seguo la moda."
       },
@@ -2498,7 +2498,7 @@
         "testo": "Lance ha appena fatto una battuta, mi sento male."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Zitto ragazzino."
       }
@@ -2508,7 +2508,7 @@
     "riassunto": "Un manichino in vetrina assume la stessa posa di Rio.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Ehi. Quel manichino mi copia."
       },
@@ -2518,12 +2518,12 @@
         "testo": "Non fissarlo troppo, potrebbe attaccarci di sorpresa."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "...Lo so. Ma non riesco a smettere di guardarlo."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Restiamo vicini. Articolo... lascia stare. Restiamo vicini."
       }
@@ -2538,7 +2538,7 @@
         "testo": "Dammi la tua faccia. Tanto non la usi. Hai sempre la maschera."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "triste",
         "testo": "...Forse hai ragione. Senza maschera non sono nessuno."
       },
@@ -2553,12 +2553,12 @@
         "testo": "Rio, ti abbiamo visto anche quando non c'era nessuno a guardarti. Sei sempre tu. Con o senza quella maschera."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "E russi. Non credo che una maschera possa nasconderlo."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "La maschera me la tolgo quando decido io. Non quando lo dici tu. Lance che dicevi sul fatto che russo?"
       }
@@ -2573,7 +2573,7 @@
         "testo": "Sorridete. Non muovetevi. Clic."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Non ero pronto! Rifacciamola!"
       }
@@ -2588,12 +2588,12 @@
         "testo": "Rio! Ti sei fatto male?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "No. Cioè... non credo, ma la maschera.. Si è crepata.."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Non toccarla. Potresti peggiorare la crepa."
       },
@@ -2603,7 +2603,7 @@
         "testo": "Per una volta, ascolta il capo moccioso"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "arrabbiato",
         "testo": "Moccioso a chi?"
       },
@@ -2613,12 +2613,12 @@
         "testo": "Vedi? Sei ancora capace di rispondere. Buon segno."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "...Non posso toglierla. Non ancora."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Nessuno te l'ha chiesto."
       },
@@ -2629,7 +2629,7 @@
         "testo": "Sei stato bravo Rio! hai guadagnato una nuova follower! Echo!"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "...La mia follower più strana."
       },
@@ -2656,11 +2656,11 @@
         "scelte": [
           {
             "testo": "Lance e Saul, sul tetto",
-            "vai": "c3_sera_ferri_saul"
+            "vai": "c3_sera_lance_saul"
           },
           {
             "testo": "Nox e Rio, con le foto vecchie",
-            "vai": "c3_sera_nox_zecca"
+            "vai": "c3_sera_nox_rio"
           },
           {
             "testo": "Tutti insieme, con Echo",
@@ -2670,11 +2670,11 @@
       }
     ]
   },
-  "c3_sera_ferri_saul": {
+  "c3_sera_lance_saul": {
     "riassunto": "La sera prima del colpo, Lance e Saul restano sul tetto del rifugio. Domani dovranno fidarsi l'uno dell'altro.",
     "righe": [
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Domani entriamo in un caveau pieno di cose che hai sempre desiderato. Non ti chiederò di fingere che non ti interessi."
       },
@@ -2684,7 +2684,7 @@
         "testo": "Finalmente qualcuno che mi capisce. Cominciavo a preoccuparmi."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Ma se domani ti viene voglia di scappare con il bottino, dovrai passare su di me."
       },
@@ -2694,7 +2694,7 @@
         "testo": "È una minaccia o una promessa?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Una promessa. Se scappi, ti vengo a riprendere io. Non Astrid. Io."
       },
@@ -2704,7 +2704,7 @@
         "testo": "...Ti stai preoccupando per me? Lance, che schifo, non me lo aspettavo da uno come te."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Non abituarti."
       },
@@ -2714,7 +2714,7 @@
         "testo": "Tranquillo. Come disse il saggio, \"diffida degli amici troppo affettuosi.\""
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Non siamo amici Saul."
       },
@@ -2724,7 +2724,7 @@
         "testo": "Complici?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Non ho commesso nessun crimine, quindi no."
       },
@@ -2734,7 +2734,7 @@
         "testo": "Conoscenti."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Si, purtroppo."
       },
@@ -2744,7 +2744,7 @@
         "testo": "Quando tutto questo sarà finito ci faremo una bevuta insieme."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Quando tutto questo sarà finito sarò in servizio."
       },
@@ -2754,7 +2754,7 @@
         "testo": "Anche io."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Non bevo in servizio."
       },
@@ -2764,7 +2764,7 @@
         "testo": "Ecco qui si vedea differenza tra le nostre carriere."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Non hai una carriera Saul, hai un record criminale."
       },
@@ -2774,7 +2774,7 @@
         "testo": "Puoi dirlo forte capo, un record! Che nessuno ha ancora superato tra l'altro."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Sei senza speranza Saul."
       },
@@ -2784,7 +2784,7 @@
         "testo": "Hai parlato con Nox recentemente?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "No, perché?"
       },
@@ -2792,15 +2792,15 @@
         "chi": "saul",
         "espr": "neutro",
         "testo": "Niente, curiosità.",
-        "imposta": "legame_ferri_saul"
+        "imposta": "legame_lance_saul"
       }
     ]
   },
-  "c3_sera_nox_zecca": {
+  "c3_sera_nox_rio": {
     "riassunto": "Nox e Rio guardano vecchie fotografie. Tra le prese in giro e la promessa di rivedersi, Rio comincia a mostrare un interesse diverso per Nox.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Guarda questa! Io a dodici anni, con l'apparecchio. Questa non deve uscire da qui."
       },
@@ -2810,7 +2810,7 @@
         "testo": "Aspetta... posso vederla meglio?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "arrabbiato",
         "testo": "Assolutamente no!"
       },
@@ -2820,7 +2820,7 @@
         "testo": "Peccato. Avevo già pensato a dove appenderla."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "neutro",
         "testo": "Nox, sei una strega."
       },
@@ -2830,7 +2830,7 @@
         "testo": "Lo so. So fare incantesimi spaventosi."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "...Ti capita mai di guardare queste foto e pensare a com'era tutto prima?"
       },
@@ -2840,7 +2840,7 @@
         "testo": "A volte. Ma non sempre mi manca quello che c'era."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Già... Quando finisce tutto, ci rivediamo?"
       },
@@ -2850,7 +2850,7 @@
         "testo": "Certo. Ma stavolta scegli tu il posto."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "O-Okay allora! E ti porterò a cena fuori e andremo in giro e..."
       },
@@ -2860,7 +2860,7 @@
         "testo": "Rio, mi basta un caffè."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Nox, non penso che un caffè solo basti."
       },
@@ -2868,7 +2868,7 @@
         "chi": "nox",
         "espr": "neutro",
         "testo": "Hai ragione, ma è un inizio.",
-        "imposta": "legame_nox_zecca"
+        "imposta": "legame_nox_rio"
       }
     ]
   },
@@ -2876,7 +2876,7 @@
     "riassunto": "La squadra scherza con Echo sul futuro dopo l'apertura della Cupola. Quando le chiedono come tornerà a casa, evita di rispondere.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Echo! Quando si apre la Cupola, vieni a vivere nel mio telefono?"
       },
@@ -2886,7 +2886,7 @@
         "testo": "Il tuo telefono ha il quattro per cento di batteria e sessanta foto di te."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "...Sessantadue."
       },
@@ -2896,7 +2896,7 @@
         "testo": "Peggio."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Ehi! Sono ricordi importanti!"
       },
@@ -2906,7 +2906,7 @@
         "testo": "Sono sessantadue fotografie dello stesso viso."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Un viso molto fotogenico."
       },
@@ -2916,7 +2916,7 @@
         "testo": "Su questo non mi esprimo."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Tradimento. Da te non me l'aspettavo."
       },
@@ -2926,7 +2926,7 @@
         "testo": "Io invece torno a casa."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Hai una casa?"
       },
@@ -2971,7 +2971,7 @@
         "testo": "Piano impeccabile."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "neutro",
         "testo": "Comunque... se non trovi la strada, puoi sempre restare con noi."
       },
@@ -2981,7 +2981,7 @@
         "testo": "Lo so, Rio."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Davvero?"
       },
@@ -2991,7 +2991,7 @@
         "testo": "Certo. Ho già scelto dove mettere le tue sessantadue fotografie."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "arrabbiato",
         "testo": "NON LE METTERAI NEL MIO TELEFONO!"
       },
@@ -3006,7 +3006,7 @@
         "testo": "Perché ho la sensazione che non sarà una giornata rilassante?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Perché non lo sarà."
       },
@@ -3031,7 +3031,7 @@
         "testo": "Dieci anni. Ci ho messo dieci anni ad arrivare fin qui. Direi che è il momento di godermi la visita. Guido io, ovviamente."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Si entra, si neutralizza l'Anomalia e si esce. Niente deviazioni. Niente bottino."
       },
@@ -3041,7 +3041,7 @@
         "testo": "Capo, mi ferisci. Davvero pensi che confonderei una missione così importante con una gita al centro commerciale?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Sì."
       },
@@ -3076,7 +3076,7 @@
         "testo": "Tutti?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Titolo della diretta: «Rapina in banca, ma legale»!"
       },
@@ -3091,7 +3091,7 @@
         "testo": "Allora direi che siamo tutti prontissimi. Si va in scena!"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Ehi! Dovevo dirla io questa!"
       },
@@ -3182,7 +3182,7 @@
         "se": "saul_leale"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sorpreso",
         "testo": "Il committente, nei file ne ho sentito parlare. Hai lavorato per lui e sei ancora vivo? Mi sorprendi.",
         "se": "saul_leale"
@@ -3233,7 +3233,7 @@
         "testo": "Assegnato all'agente Lance. Test sul campo. Firma: Astrid."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sorpreso",
         "testo": "...Astrid. Sapeva del prototipo. Sapeva cosa mi stavano facendo."
       },
@@ -3243,17 +3243,17 @@
         "testo": "E ti ha lasciato credere che fosse un normale incarico?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Non era un incarico. Ero il test."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Lance...?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Sto bene."
       },
@@ -3263,7 +3263,7 @@
         "testo": "Non te l'ha chiesto nessuno."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Sono in servizio."
       },
@@ -3273,7 +3273,7 @@
         "testo": "Non sei in servizio, capo. Sei con noi."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "...Lo so."
       },
@@ -3283,7 +3283,7 @@
         "testo": "Dici è peggio visto che ci siamo noi?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Sta' zitto Saul."
       },
@@ -3303,7 +3303,7 @@
         "testo": "Aspettate... La serratura reagisce al rosso."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sfotto",
         "testo": "Incredibile."
       },
@@ -3334,7 +3334,7 @@
         "se": "saul_tentato"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "La porta! Sono rimasto fuori!"
       },
@@ -3354,7 +3354,7 @@
         "testo": "Lo so! Rio, passa!"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "...Sono passato. Saul, esci!"
       },
@@ -3364,7 +3364,7 @@
         "testo": "Perso un'uscita pulita e ho guadagnato voi, pessimo affare."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Saul mi ha salvato la vita, e mi ha chiamato per nome!"
       },
@@ -3389,7 +3389,7 @@
         "testo": "Non ho ancora toccato niente."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Per una volta, è innocente."
       },
@@ -3404,12 +3404,12 @@
     "riassunto": "Dopo aver chiuso la cassaforte, Nox si occupa delle costole di Saul. Tra battute e una domanda di Rio, Saul lascia intravedere perché è rimasto con la squadra.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Quattro su quattro! Avete visto QUELLO CHE HO FATTO?"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "...Cioè, Saul. Ma io ero nell'inquadratura."
       },
@@ -3439,7 +3439,7 @@
         "testo": "Ritiro tutto quello che ho detto. Può morire qui per me ragazzi."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Saul... perché l'hai fatto?"
       },
@@ -3460,7 +3460,7 @@
         "se": "saul_tentato"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "E sei rimasto. A tenere una porta blindata con le costole.",
         "se": "saul_tentato"
@@ -3494,12 +3494,12 @@
         "testo": "Ultima notte. Domani la cupola cade e ognuno torna a casa sua."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "La live della cupola è tutta nel telefono. Quando torna la rete la carico. Milioni, raga."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "...Però a casa ho trentadue follower.. Qui ho voi."
       },
@@ -3509,7 +3509,7 @@
         "testo": "Noi non ti seguiamo. Ti sopportiamo."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Io torno in servizio. Col grado. E poi dico la verità. Sul braccio, su Astrid, su tutto."
       },
@@ -3519,7 +3519,7 @@
         "testo": "Ti arresteranno."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Non importa."
       },
@@ -3546,7 +3546,7 @@
         "testo": "Ho sempre avuto solo numeri di telecamera."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Fatto. «Echo». Con la telecamera accanto. ( E il cuore. No, forse il cuore lo tolgo, no lo lascio..)"
       },
@@ -3574,7 +3574,7 @@
         "testo": "Niente. Una domanda per un film. Dormite."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "...Ha cambiato discorso. Di nuovo."
       }
@@ -3596,7 +3596,7 @@
         "testo": "Porta a casa mia. Grazie. Davvero."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Echo. Le registrazioni. Dove sono?"
       },
@@ -3643,7 +3643,7 @@
         "testo": "Se aveste detto la verità, nessuno vi avrebbe creduto. Vi ho scelti per questo."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Il grado. Il nome pulito. Non c'era nessun caso. C'eravamo noi da usare."
       },
@@ -3669,7 +3669,7 @@
         "testo": "Su quelle si reggeva il resto."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "triste",
         "testo": "La live. L'ho registrata per te. Per noi. Era il mio video più bello."
       },
@@ -3697,17 +3697,17 @@
         "testo": "...Ti odio. E mi dispiace che sia così facile."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Prove cancellate, facce sugli schermi, promesse su misura."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Hai fatto quello che LibraCorp fa tutti i giorni."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "triste",
         "testo": "Ti tolgo dai contatti."
       },
@@ -3718,7 +3718,7 @@
         "testo": "...Lo capisco."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "triste",
         "testo": "Non riesco a premere il tasto. Perché non riesco?"
       }
@@ -3743,27 +3743,27 @@
         "testo": "Per te. Per me si è appena aperto."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Raga... la cupola viene giù! Il tabellone! Sopra di me!"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "arrabbiato",
         "testo": "RIO!"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "...Preso. Sta' giù."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Lance... il braccio. Ci sono telecamere ovunque."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Lo so."
       },
@@ -3778,7 +3778,7 @@
         "testo": "Come all'Incrocio Nove."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "...Non ti ringrazio. Rio, alzati. Correte."
       },
@@ -3803,7 +3803,7 @@
         "testo": "E abbiamo un agente col braccio che brilla."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Ex agente. Fa meno male se lo dico io."
       },
@@ -3813,12 +3813,12 @@
         "testo": "...Portatemi con voi. Non ho più una casa. Per rimediare."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "..."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Corri."
       }
@@ -3828,7 +3828,7 @@
     "riassunto": "All'alba, sulla rampa della tangenziale, la squadra decide cosa fare di Echo. Lei conosce l'unico casello che non porta in prigione.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "triste",
         "testo": "L'alba. È bruttissima. È bellissima."
       },
@@ -3838,17 +3838,17 @@
         "testo": "Cinquantasei ore sveglia. Vedo due soli."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Situazione. Ore 6:02 e undici. Ricercati da tutti."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Risorse: un manganello, un caffè freddo, un telefono al tre per cento."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Due."
       },
@@ -3863,7 +3863,7 @@
         "testo": "Lance. Il braccio?"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Brilla. L'hanno visto tre persone e una telecamera inceppata. Per ora."
       },
@@ -3880,7 +3880,7 @@
         "testo": "Il cartello «RALLENTARE» è mio, adesso."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "arrabbiato",
         "testo": "Zitta."
       },
@@ -3918,7 +3918,7 @@
         "testo": "Ma l'uscita è un'uscita."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Quale nonna?"
       },
@@ -3928,7 +3928,7 @@
         "testo": "Quella cinica."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Echo... sei ancora nei miei contatti. Non ci sono riuscito."
       },
@@ -3962,12 +3962,12 @@
         "se": "echo_rancore"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Tangenziale, poi casello."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Guido io: i posti di blocco LibraCorp li ho montati io. Male, a quanto pare."
       }
@@ -3977,12 +3977,12 @@
     "riassunto": "Il cartellone dei ricercati: le quattro facce, con descrizioni poco lusinghiere.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Il cartellone dei ricercati! Siamo famosi! «RIO. Giovane, viola, molesto.»"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "arrabbiato",
         "testo": "MOLESTO?"
       },
@@ -3997,17 +3997,17 @@
         "testo": "«NOX. Pericolosa se svegliata.» Giusto."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "triste",
         "testo": "«LANCE. Disertore.» Ieri c'era scritto «uniforme in ordine»."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "La tua uniforme è ancora molto in ordine, Lance."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "È l'unica cosa in ordine che mi resta."
       },
@@ -4022,12 +4022,12 @@
     "riassunto": "Indizio: l'autovelox teme il viola.",
     "righe": [
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Un verbale sul cruscotto. Foto annullata: flash VIOLA."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "Il flash del mio telefono è viola! Cover coi brillantini!"
       },
@@ -4037,7 +4037,7 @@
         "testo": "Ci salverà la vita una cover di cattivo gusto."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "TITOLO: «La cover che ha salvato il mondo»."
       }
@@ -4082,7 +4082,7 @@
         "testo": "...Strix mi ha difesa. Davanti ad Astrid."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "«L'ho costruito io.» L'ha detto davvero."
       },
@@ -4114,7 +4114,7 @@
         "testo": "VELOCITÀ RILEVATA: TROPPA. FUGA RILEVATA: TOTALE. SANZIONE: TUTTO."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Articolo uno del codice della strada: chi scappa non si ferma per le multe."
       },
@@ -4124,7 +4124,7 @@
         "testo": "Non è l'articolo uno."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Oggi sì."
       }
@@ -4139,7 +4139,7 @@
         "testo": "FLASH. FLASH. FOTO SCATTATA. VERBALE IN ARRIVO."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Sono venuto malissimo! Cancellala!"
       }
@@ -4149,12 +4149,12 @@
     "riassunto": "Al casello aspettano Astrid e Strix con le loro squadre. Echo spegne ogni telecamera e ogni luce della città per farli scappare, anche se per lei è come chiudere gli occhi.",
     "righe": [
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "La sbarra è alzata! Raga, siamo fuori!"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "sorpreso",
         "testo": "No. Fermi. Fari. Due colonne di fari."
       },
@@ -4164,7 +4164,7 @@
         "testo": "(dal megafono) Lance. Torna a casa. Ti sistemiamo noi. Ti aggiustiamo."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Non sono rotto, Comandante. Sono cambiato."
       },
@@ -4194,7 +4194,7 @@
         "testo": "Ragazzi. Mia nonna diceva: quando due cani litigano per l'osso..."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "...l'osso scappa?"
       },
@@ -4210,7 +4210,7 @@
         "testo": "Aspettate. Lasciate fare a me."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Echo? Cosa fai?"
       },
@@ -4290,12 +4290,12 @@
         "testo": "...Niente. Sbagliato io."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Giù dalla scarpata. Saul, appoggiati a me."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "serio",
         "testo": "Rio, la mano di Nox. Nessuno resta indietro."
       },
@@ -4303,16 +4303,16 @@
         "chi": "saul",
         "espr": "neutro",
         "testo": "Capo. La promessa sul tetto. Se scappo, mi insegui tu.",
-        "se": "legame_ferri_saul"
+        "se": "legame_lance_saul"
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Stavolta scappiamo insieme. Non conta.",
-        "se": "legame_ferri_saul"
+        "se": "legame_lance_saul"
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Raga... il telefono è morto. Zero. Echo era lì dentro."
       },
@@ -4322,7 +4322,7 @@
         "testo": "Tieni. Batteria esterna. Te la vendo."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "serio",
         "testo": "Saul."
       },
@@ -4332,7 +4332,7 @@
         "testo": "...Te la regalo. Non dirlo in giro."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Si accende. Echo? Ci sei?"
       },
@@ -4343,7 +4343,7 @@
         "testo": "...Vi vedo. Male. Sgranati. Siete bellissimi."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Echo... sul display c'è solo un puntino di luce. Trema."
       },
@@ -4411,12 +4411,12 @@
         "testo": "E sono felice. Non ditelo a nessuno."
       },
       {
-        "chi": "ferri",
+        "chi": "lance",
         "espr": "neutro",
         "testo": "Pagina uno di un taccuino nuovo: riportare Echo intera."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "felice",
         "testo": "TITOLO: «La mia famiglia è assurda». ...No. Questa non la posto. La tengo."
       },
@@ -4426,7 +4426,7 @@
         "testo": "Famiglia. Mia nonna diceva che costa tantissimo."
       },
       {
-        "chi": "zecca",
+        "chi": "rio",
         "espr": "sorpreso",
         "testo": "Quale nonna?"
       },
@@ -4457,7 +4457,7 @@
             "testo": "La fontana. Il telefono doveva finire lì dentro."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Lancialo! Faccio lo slow motion!"
           },
@@ -4481,7 +4481,7 @@
             "testo": "Una gioielleria con la saracinesca alzata. Alle tre di notte."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Non ci pensare."
           },
@@ -4500,7 +4500,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Un'altra foto mia. Di profilo, stavolta."
           },
@@ -4510,7 +4510,7 @@
             "testo": "Il profilo buono?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Non ne ho uno buono."
           }
@@ -4524,7 +4524,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Io non scappo dalla mia squadra. Vado e spiego."
           },
@@ -4557,7 +4557,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Raga, seguiamo quello col pacco. Ha la faccia di uno che sa scappare!"
           },
@@ -4567,7 +4567,7 @@
             "testo": "Non seguirmi. Porto sfortuna."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Allora siamo in due!"
           }
@@ -4581,7 +4581,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "arrabbiato",
             "testo": "...Articolo nove: in mancanza di ordini si seguono i sospettati."
           },
@@ -4604,7 +4604,7 @@
             "testo": "Capo, che ore sono?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Tre e ventuno. E quaranta secondi."
           },
@@ -4614,7 +4614,7 @@
             "testo": "Non ti ho chiesto i secondi."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Omaggio."
           }
@@ -4628,7 +4628,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Formazione. Io davanti, voi dietro, nessuno parla."
           },
@@ -4638,7 +4638,7 @@
             "testo": "Tu davanti, con quella divisa? Ci vedono da tre isolati."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Raga, lui è Lance. Salutate Lance. ...Lance non saluta."
           }
@@ -4676,17 +4676,17 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Attraversate sulle strisce."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "C'è una cupola sopra la città e tu pensi ancora alle strisce pedonali?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Sì."
           }
@@ -4724,7 +4724,7 @@
             "testo": "Questa la apro in quattro secondi."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "arrabbiato",
             "testo": "E io ti arresto in tre."
           }
@@ -4738,7 +4738,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Raga, storia davanti a questa macchina. Luce perfetta!"
           },
@@ -4748,7 +4748,7 @@
             "testo": "Niente impronte sul cofano."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "...E tu come lo sai?"
           },
@@ -4772,7 +4772,7 @@
             "testo": "La mia panchina. Dieci minuti fa avevo una vita."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Anch'io."
           },
@@ -4796,7 +4796,7 @@
             "testo": "Viola. Il colore del ragazzino. Povero distributore."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Lo metto nella bio!"
           }
@@ -4810,7 +4810,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Se ci sta guardando, mi rifaccio il ciuffo."
           },
@@ -4828,7 +4828,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Siamo a tre milioni di visualizzazioni... ah no. Trenta."
           },
@@ -4851,7 +4851,7 @@
             "testo": "Capo, quanto vale il tuo distintivo al mercato nero?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "arrabbiato",
             "testo": "Più dei tuoi denti."
           },
@@ -4869,12 +4869,12 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Nessuno tocchi il mio guanto."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Nessuno l'ha toccato!"
           }
@@ -4887,7 +4887,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Saul, che c'è nel pacco?"
           },
@@ -4897,7 +4897,7 @@
             "testo": "Niente."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "E perché lo tieni come un neonato?"
           },
@@ -4920,7 +4920,7 @@
             "testo": "Lance. Se ci prendono, tu cosa dici?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "La verità."
           },
@@ -4930,7 +4930,7 @@
             "testo": "E se la verità non ti crede?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "..."
           }
@@ -4956,12 +4956,12 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Raga, se stiamo fermi faccio una live. Tre... due..."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Cammina."
           }
@@ -4977,17 +4977,17 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "neutro",
             "testo": "L'edicola di Gino. Mi teneva il giornale ogni mattina."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "E tu che gli davi?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Una multa al mese. Per affetto."
           }
@@ -5025,22 +5025,22 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Raga, un cane fermo a metà salto. È il mio nuovo sfondo."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Briciola. L'ho multato due volte."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "...Un CANE?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Senza guinzaglio."
           }
@@ -5053,12 +5053,12 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Lance, Saul, quella di prima la rifacciamo? Non stavo registrando."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "No."
           },
@@ -5082,7 +5082,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Qui ho fermato un ladro di biciclette."
           },
@@ -5092,7 +5092,7 @@
             "testo": "Mio cugino. Ti saluta."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Tuo cugino aveva sessant'anni."
           },
@@ -5117,7 +5117,7 @@
             "testo": "Lance. Telecamera ventisei. Un tuo collega al chiosco. Sta mangiando un panino."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Marino. Mangia in servizio. Lo segnalavo ogni settimana."
           },
@@ -5142,7 +5142,7 @@
             "testo": "Respirano. Ma non sbattono le palpebre."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "triste",
             "testo": "Ho i brividi. E non sto nemmeno registrando."
           }
@@ -5156,7 +5156,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "sorpreso",
             "testo": "Una barriera LibraCorp. Montata male. Chi l'ha montata verrà richiamato."
           },
@@ -5166,7 +5166,7 @@
             "testo": "Sei ricercato."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Lui di più."
           }
@@ -5185,7 +5185,7 @@
             "testo": "Con me «vivo» è un buon inizio di trattativa."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Con Astrid non si tratta."
           }
@@ -5199,7 +5199,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Nox è un lampeggiante! Nox, fai «niinoo»."
           },
@@ -5209,7 +5209,7 @@
             "testo": "No."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Una volta!"
           },
@@ -5238,7 +5238,7 @@
             "testo": "Capo, la precedenza la dai anche a noi?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "A te mai."
           }
@@ -5264,12 +5264,12 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Lance che guida è come un tutorial: lento, ma ti spiega tutto."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Grazie."
           }
@@ -5331,7 +5331,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Non si sosta in mezzo all'incrocio. Neanche con la fine del mondo."
           }
@@ -5351,7 +5351,7 @@
             "testo": "Capo. Ti ho tolto un pugno dalla faccia. Sono venti."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Non pago."
           },
@@ -5370,12 +5370,12 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "È tutto rosso. Anche il cielo. Anche i pensieri."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Vicini. Qui le regole le fa lui."
           }
@@ -5389,7 +5389,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Raga, è strano senza Echo. Non ci guarda nessuno."
           },
@@ -5412,7 +5412,7 @@
             "testo": "Auto che galleggiano. Mettilo nel rapporto, capo."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Ho finito le pagine."
           }
@@ -5430,7 +5430,7 @@
             "testo": "Questo rosso mi ricorda i miei occhi. Ventotto ore sveglia."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Sei un meme vivente."
           }
@@ -5443,7 +5443,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Saul, se restassimo bloccati qui per sempre?"
           },
@@ -5461,7 +5461,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Sei e zero zero. E zero secondi. Ancora."
           },
@@ -5479,7 +5479,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Fermi al rosso. Bravi."
           },
@@ -5524,7 +5524,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Raga, su questo muro c'è scritto «NOX TORNA»."
           },
@@ -5534,7 +5534,7 @@
             "testo": "Vecchia."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "La vernice è fresca."
           },
@@ -5553,7 +5553,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Vicolo cieco. Articolo diciotto: mai entrare in un vicolo cieco."
           },
@@ -5563,7 +5563,7 @@
             "testo": "E allora perché ci siamo?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Per controllare che fosse cieco."
           }
@@ -5576,7 +5576,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Echo. Mi sta guardando qualcuno?"
           },
@@ -5587,7 +5587,7 @@
             "testo": "Io."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "A parte te."
           },
@@ -5604,7 +5604,7 @@
             "testo": "...Colpetto sul fianco. Due merendine. Come Saul."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "neutro",
             "testo": "Non è a verbale."
           }
@@ -5617,22 +5617,22 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Raga. Emergenza. Quattro per cento."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Ho un cavo."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "triste",
             "testo": "Connettore sbagliato."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Regolamentare."
           },
@@ -5642,7 +5642,7 @@
             "testo": "Io ho un adattatore."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Da dove viene?"
           },
@@ -5666,7 +5666,7 @@
             "testo": "Il mio vecchio posto. Mangiavo su quel gradino. Panino e silenzio."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Che vita glamour, le Civette."
           },
@@ -5721,7 +5721,7 @@
             "testo": "Squillano tutte. Nessuno risponda."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sfotto",
             "testo": "Neanche se è uno sponsor?"
           },
@@ -5740,7 +5740,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "I nostri manifesti. Già stampati. Che efficienza."
           },
@@ -5750,7 +5750,7 @@
             "testo": "Io sono venuto benissimo. Tu sembri un frigorifero."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Regolamentare."
           }
@@ -5764,7 +5764,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Nox... va tutto bene?"
           },
@@ -5774,7 +5774,7 @@
             "testo": "No. Ma cammino."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Posso camminarti vicino?"
           },
@@ -5793,7 +5793,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Saul, il verde sei tu."
           },
@@ -5811,17 +5811,17 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Nox guida in silenzio. La migliore squadra che abbia mai avuto."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Lance ha detto una cosa carina! Screenshot!"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Tecnica."
           }
@@ -5857,7 +5857,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Echo, quando una cosa fa ridere si scrive «AHAHAH»."
           },
@@ -5868,7 +5868,7 @@
             "testo": "AHAHAH."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "...Detta così fa paura."
           }
@@ -5887,7 +5887,7 @@
             "testo": "Lance. Tu non ridi mai. È un guasto?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "È un regolamento."
           },
@@ -5898,7 +5898,7 @@
             "testo": "Che articolo?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "..."
           }
@@ -5931,7 +5931,7 @@
             "testo": "Chi ha toccato il thermos."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Io no! Cioè, l'ho spostato. Per l'inquadratura."
           },
@@ -5941,7 +5941,7 @@
             "testo": "Manca un sorso."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "triste",
             "testo": "...Piccolo."
           },
@@ -5970,17 +5970,17 @@
             "testo": "Copriamolo. Capo, una barzelletta."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Articolo quattordici: vietato raccontare barzellette in servizio."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "...Era quella, la barzelletta?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Sì."
           }
@@ -5993,7 +5993,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Nox, dimmi una cosa bella."
           },
@@ -6034,7 +6034,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Un telefono coi gettoni. Dove si mette il caricatore?"
           },
@@ -6052,7 +6052,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Ore tre e dodici. Di nuovo."
           },
@@ -6062,7 +6062,7 @@
             "testo": "Non dirmi l'ora qui dentro."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "neutro",
             "testo": "...Ricevuto."
           }
@@ -6091,17 +6091,17 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Una cabina per le fototessere! Raga, tutti dentro!"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Siamo ricercati."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Appunto. Ci servono foto nuove."
           }
@@ -6127,7 +6127,7 @@
             "testo": "Desiderano quasi tutti la stessa cosa."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Soldi?"
           },
@@ -6138,7 +6138,7 @@
             "testo": "Che qualcuno li guardi."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "...Ah."
           }
@@ -6157,7 +6157,7 @@
             "testo": "Un negozio di maschere. Rio, vuoi un ricambio?"
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "La mia non si cambia."
           },
@@ -6175,17 +6175,17 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Galleria piena di gente. Non dobbiamo dare nell'occhio."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sfotto",
             "testo": "Lance, con quel cappotto sembri un armadio triste."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Anonimo."
           },
@@ -6200,7 +6200,7 @@
             "testo": "Io ho scambiato la giacca con un manichino. Ci ha guadagnato lui."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Io non mi travesto. Un profilo così non si nasconde."
           },
@@ -6219,12 +6219,12 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "La Galleria Lumière! Qui ho girato il mio primo video."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Tre like. Uno era mia madre."
           },
@@ -6234,7 +6234,7 @@
             "testo": "E gli altri due?"
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "triste",
             "testo": "Mia madre."
           }
@@ -6254,7 +6254,7 @@
             "testo": "Rio. Il tuo primo video l'ho visto. Telecamera nove. Undici volte."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "...Bellissimo. E inquietante."
           }
@@ -6282,17 +6282,17 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Non guardateli negli occhi."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sfotto",
             "testo": "Non hanno occhi, Lance."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Appunto."
           }
@@ -6311,7 +6311,7 @@
             "testo": "Spegni quel telefono, Rio. Ogni tanto."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "triste",
             "testo": "Se lo spengo smetto di esistere."
           },
@@ -6335,12 +6335,12 @@
             "testo": "Capo, la collezione dice che sei fuori moda."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "L'uniforme non va mai fuori moda."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Questa frase sì."
           }
@@ -6358,7 +6358,7 @@
             "testo": "Guida Rio e siamo passati davanti a tre negozi di cappelli."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Ricerca sul campo!"
           }
@@ -6371,7 +6371,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Saul, insegnami a mentire."
           },
@@ -6381,7 +6381,7 @@
             "testo": "Prima regola: non chiederlo davanti a un poliziotto."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Ho sentito."
           }
@@ -6430,7 +6430,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Raga, se restiamo fermi i manichini ci copiano."
           }
@@ -6445,12 +6445,12 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Raga, dal boss entro io per primo. Al rallentatore."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "In formazione."
           },
@@ -6460,7 +6460,7 @@
             "testo": "Lascialo entrare. Il primo colpo lo prende lui."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "...In formazione."
           }
@@ -6474,7 +6474,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Mille me in posa. Nessuno ha la faccia."
           },
@@ -6492,7 +6492,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Contate i manichini. Se sono pari, va tutto bene."
           },
@@ -6502,7 +6502,7 @@
             "testo": "E se sono dispari?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Volevo solo che contaste qualcosa."
           }
@@ -6520,7 +6520,7 @@
             "testo": "Rio. Stammi vicino."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Hai paura?"
           },
@@ -6543,7 +6543,7 @@
             "testo": "Rio, questi manichini ti somigliano."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Perché sono belli?"
           },
@@ -6561,12 +6561,12 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Articolo trenta: vietato specchiarsi in servizio."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Non mi specchio. Controllo che ci sono."
           }
@@ -6600,7 +6600,7 @@
             "testo": "Cassette di sicurezza. Ognuna è il segreto di qualcuno."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "E la tua qual è?"
           },
@@ -6619,7 +6619,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Un quadro rubato. È nel registro dal 2019."
           },
@@ -6629,7 +6629,7 @@
             "testo": "Dal 2018."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "sorpreso",
             "testo": "...Come lo sai?"
           },
@@ -6653,7 +6653,7 @@
             "testo": "Una brandina nell'ufficio del direttore. Svegliatemi fra cinque minuti."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Siamo in mezzo a un colpo."
           },
@@ -6676,7 +6676,7 @@
             "testo": "Capo, che ore sono?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Quattro e diciassette. Siamo in ritardo di quattro secondi."
           },
@@ -6686,7 +6686,7 @@
             "testo": "Mia nonna diceva: chi conta i secondi non si gode i minuti."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Quale nonna?"
           },
@@ -6710,7 +6710,7 @@
             "testo": "Il caveau. Sentite l'odore? Soldi vecchi e cattive intenzioni."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Mani in vista, Saul."
           },
@@ -6770,7 +6770,7 @@
             "testo": "Tocca e ti tagliamo la mano. Lance ha già quella di ricambio."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "arrabbiato",
             "testo": "Nox."
           }
@@ -6784,7 +6784,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Laser! Come nei film! Saul, fai la capriola!"
           },
@@ -6803,17 +6803,17 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Lance... vuoi un abbraccio?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "No."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Te lo do lo stesso. Mentalmente."
           }
@@ -6844,7 +6844,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Saul, se potessi rubare una cosa sola?"
           },
@@ -6854,7 +6854,7 @@
             "testo": "Il tempo. Ne avete sprecato tanto, con me. Ve lo restituirei."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "...Questa era bella."
           },
@@ -6878,7 +6878,7 @@
             "testo": "Quando la cupola cade, vi rivedrò?"
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Certo! Sei nei miei contatti!"
           },
@@ -6913,12 +6913,12 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Da qui si vede tutta la città."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "neutro",
             "testo": "Trecentododici multe. Da quassù sembrano poche."
           }
@@ -6937,12 +6937,12 @@
             "testo": "Piazzola. Un distributore."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Faccio io."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "..."
           },
@@ -6986,12 +6986,12 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Fuori città servono nomi falsi."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Io sono Luca Bianchi. Impiegato. Documenti in ordine."
           },
@@ -7001,7 +7001,7 @@
             "testo": "Troppo in ordine. Nessun impiegato ha i documenti in ordine."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Io sono Rio Tempesta!"
           },
@@ -7034,7 +7034,7 @@
             "testo": "Capo, siamo a trentuno."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Nel caveau ti ho tirato fuori io da sotto la porta."
           },
@@ -7057,7 +7057,7 @@
             "testo": "Cinque minuti. Mangiamo tranquilli."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Perché l'hai detto."
           },
@@ -7082,7 +7082,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Sei corsie, nessuna auto, il sole in faccia. Il posto peggiore per nascondersi."
           },
@@ -7112,7 +7112,7 @@
             "testo": "Lance. La telecamera del ponte. La giro?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Fa' quello che devi."
           },
@@ -7123,7 +7123,7 @@
             "testo": "...La giro."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "neutro",
             "testo": "Grazie. Non ti ho perdonata. Grazie."
           }
@@ -7137,7 +7137,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Le macchine sono vuote. Con le chiavi dentro."
           },
@@ -7147,7 +7147,7 @@
             "testo": "Non guardatemi."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Ti guardiamo tutti."
           },
@@ -7171,7 +7171,7 @@
             "testo": "Le nostre facce, alte cinque metri."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Il mio primo cartellone! Piango."
           }
@@ -7185,7 +7185,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Il casello. Se c'è un posto di blocco, è lì."
           },
@@ -7209,7 +7209,7 @@
             "testo": "«Sguardo onesto: non fidarsi.» Me lo faccio stampare sulle magliette."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "felice",
             "testo": "Io su quelle «MOLESTO»! Merch!"
           }
@@ -7237,7 +7237,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Astrid e Strix sullo stesso canale. Non succedeva da dieci anni."
           },
@@ -7247,7 +7247,7 @@
             "testo": "Litigano come una vecchia coppia."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Lo erano. Di pattuglia."
           },
@@ -7257,7 +7257,7 @@
             "testo": "...Non lo sapevo."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "neutro",
             "testo": "Nessuno."
           }
@@ -7270,7 +7270,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Raga, adesso che siamo fuori, dove andiamo?"
           },
@@ -7280,7 +7280,7 @@
             "testo": "Dove nessuno ci cerca."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "E dov'è?"
           },
@@ -7303,7 +7303,7 @@
             "testo": "Cinquantotto ore sveglia. Se crollo, lasciatemi qui. Col cartello NON SVEGLIARE."
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Non si lascia indietro nessuno. Articolo uno."
           },
@@ -7321,7 +7321,7 @@
         },
         "righe": [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "serio",
             "testo": "Saul... Echo la perdoniamo?"
           },
@@ -7331,7 +7331,7 @@
             "testo": "Io non perdono. Faccio i conti."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "triste",
             "testo": "E?"
           },
@@ -7349,7 +7349,7 @@
         },
         "righe": [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "espr": "serio",
             "testo": "Nox. Grazie per il turno di guardia di stanotte."
           },
@@ -7359,7 +7359,7 @@
             "testo": "Era di Rio."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "Mi sono addormentato al terzo minuto."
           }
@@ -7407,7 +7407,7 @@
             "testo": "Non fermatevi in tangenziale. Mia nonna è morta così."
           },
           {
-            "chi": "zecca",
+            "chi": "rio",
             "espr": "sorpreso",
             "testo": "DAVVERO?"
           },
@@ -7422,22 +7422,22 @@
   },
   "battaglia": {
     "critico": {
-      "ferri": [
+      "lance": [
         [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Colpo regolamentare."
           }
         ],
         [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Articolo tre: si mira al centro."
           }
         ],
         [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Zero virgola sei secondi."
           },
           {
@@ -7461,7 +7461,7 @@
         ],
         [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "testo": "Rifallo! Non stavo registrando!"
           },
           {
@@ -7470,26 +7470,26 @@
           }
         ]
       ],
-      "zecca": [
+      "rio": [
         [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "testo": "Raga, CLIP DELL'ANNO!"
           }
         ],
         [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "testo": "Ditemi che qualcuno l'ha vista."
           }
         ],
         [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "testo": "Avete visto QUELLO CHE HO FATTO?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Sì. Torna in formazione."
           }
         ]
@@ -7520,22 +7520,22 @@
       ]
     },
     "ko_nemico": {
-      "ferri": [
+      "lance": [
         [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Neutralizzato."
           }
         ],
         [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Uno in meno. In orario."
           }
         ],
         [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Resta a terra. È un ordine."
           }
         ]
@@ -7554,16 +7554,16 @@
           }
         ]
       ],
-      "zecca": [
+      "rio": [
         [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "testo": "E con questo... SIPARIO!"
           }
         ],
         [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "testo": "Saluta il pubblico! ...Non saluta."
           }
         ]
@@ -7581,26 +7581,26 @@
             "testo": "Ha lasciato qualcosa? Monete, chiavi, rimpianti?"
           },
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Saul."
           }
         ]
       ]
     },
     "compagno_ko": {
-      "ferri": {
+      "lance": {
         "nox": [
           [
             {
-              "chi": "ferri",
+              "chi": "lance",
               "testo": "Nox! ...Coprite il lato sinistro."
             }
           ]
         ],
-        "zecca": [
+        "rio": [
           [
             {
-              "chi": "ferri",
+              "chi": "lance",
               "testo": "Rio, resta giù. Ci penso io."
             }
           ]
@@ -7608,14 +7608,14 @@
         "saul": [
           [
             {
-              "chi": "ferri",
+              "chi": "lance",
               "testo": "Saul, in piedi. Non ti ho dato il permesso."
             }
           ]
         ]
       },
       "nox": {
-        "ferri": [
+        "lance": [
           [
             {
               "chi": "nox",
@@ -7623,7 +7623,7 @@
             }
           ]
         ],
-        "zecca": [
+        "rio": [
           [
             {
               "chi": "nox",
@@ -7640,11 +7640,11 @@
           ]
         ]
       },
-      "zecca": {
-        "ferri": [
+      "rio": {
+        "lance": [
           [
             {
-              "chi": "zecca",
+              "chi": "rio",
               "testo": "LANCE! No no no, questa non va in onda!"
             }
           ]
@@ -7652,7 +7652,7 @@
         "nox": [
           [
             {
-              "chi": "zecca",
+              "chi": "rio",
               "testo": "Nox?! Chi mi dice adesso se vado bene?"
             }
           ]
@@ -7660,14 +7660,14 @@
         "saul": [
           [
             {
-              "chi": "zecca",
+              "chi": "rio",
               "testo": "Saul! Sveglia, ti stavo riprendendo!"
             }
           ]
         ]
       },
       "saul": {
-        "ferri": [
+        "lance": [
           [
             {
               "chi": "saul",
@@ -7683,7 +7683,7 @@
             }
           ]
         ],
-        "zecca": [
+        "rio": [
           [
             {
               "chi": "saul",
@@ -7694,16 +7694,16 @@
       }
     },
     "copre": {
-      "ferri": [
+      "lance": [
         [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Dietro di me."
           }
         ],
         [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Il colpo lo prendo io. Procedura."
           }
         ]
@@ -7722,10 +7722,10 @@
           }
         ]
       ],
-      "zecca": [
+      "rio": [
         [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "testo": "Inquadrate qui: IL SALVATAGGIO!"
           }
         ]
@@ -7738,14 +7738,14 @@
           }
         ],
         {
-          "se": "ferri",
+          "se": "lance",
           "righe": [
             {
               "chi": "saul",
               "testo": "Ti ho salvato. Il conto arriva domani."
             },
             {
-              "chi": "ferri",
+              "chi": "lance",
               "testo": "Rifiuto."
             }
           ]
@@ -7753,18 +7753,18 @@
       ]
     },
     "rialzato": {
-      "ferri": [
+      "lance": [
         [
           {
-            "chi": "ferri",
+            "chi": "lance",
             "testo": "Ero in pausa tattica."
           }
         ]
       ],
-      "zecca": [
+      "rio": [
         [
           {
-            "chi": "zecca",
+            "chi": "rio",
             "testo": "Il protagonista torna sempre!"
           }
         ]

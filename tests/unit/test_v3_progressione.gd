@@ -34,7 +34,7 @@ func _init() -> void:
 	check(Progress.level("saul") == 1, "si parte dal livello 1")
 	check(Progress.equipped("saul", "skill") == "u_saul_b", "Saul parte con Mano lesta")
 	var rep: Array = Progress.grant(Progress.exp_need(1) + Progress.exp_need(2))
-	check(Progress.level("ferri") == 3, "due livelli in una volta (livello %d)" % Progress.level("ferri"))
+	check(Progress.level("lance") == 3, "due livelli in una volta (livello %d)" % Progress.level("lance"))
 	var news: int = 0
 	for r in rep:
 		news += (r["news"] as Array).size()
@@ -52,9 +52,9 @@ func _init() -> void:
 	Progress.reset()
 	for c in Progress.CAST:
 		Progress.data["lv"][c] = 12
-	Progress.equip("ferri", "syn", "turno_di_notte")
+	Progress.equip("lance", "syn", "turno_di_notte")
 	var b0: Dictionary = _battle()
-	var lance: Dictionary = Kits.unit_of_char(b0, "ferri")
+	var lance: Dictionary = Kits.unit_of_char(b0, "lance")
 	check(not (lance.get("mods", []) as Array).is_empty(), "la sinergia da' un bonus a Lance")
 
 	# --- Saul: Mano lesta ruba lo scudo
@@ -96,7 +96,7 @@ func _init() -> void:
 			hurt.append(u)
 	var nox: Dictionary = Kits.unit_of_char(b2, "nox")
 	nox["energy"] = 5
-	var ev2: Array = SeqRound.player_action(b2, _slot(b2, "nox"), {"swap": "", "move": "u_nox_a", "target": _slot(b2, "ferri")})
+	var ev2: Array = SeqRound.player_action(b2, _slot(b2, "nox"), {"swap": "", "move": "u_nox_a", "target": _slot(b2, "lance")})
 	var heals: int = 0
 	for e in ev2:
 		if str(e.get("t", "")) == "heal" and int(e.get("amount", 0)) > 0:

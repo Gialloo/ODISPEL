@@ -32,7 +32,7 @@ func _run() -> void:
 	cam.current = true
 	for id in CastVisual.ORDER:
 		var list: Array = CastVisual.EXPR_ORDER.duplicate()
-		if id == "zecca":
+		if id == "rio":
 			list.append("maschera")
 		for expr in list:
 			var cv := CharacterVisual.new()
@@ -43,7 +43,7 @@ func _run() -> void:
 			cv.rotation.y = PI + 0.64
 			var s: float = float(CastVisual.spec(id)["height"]) / 1.75
 			# i copricapi forti (elmo, cappuccio con orecchie, cappello da giullare) alzano la cima
-			var top: float = float({"ferri": 2.06, "nox": 2.08, "zecca": 2.16, "saul": 2.04}.get(id, 2.0)) * s
+			var top: float = float({"lance": 2.06, "nox": 2.08, "rio": 2.16, "saul": 2.04}.get(id, 2.0)) * s
 			var bottom: float = 1.16 * s
 			cam.size = (top - bottom) * 1.04
 			cam.position = Vector3(0.02, (top + bottom) * 0.5, 6.0)
