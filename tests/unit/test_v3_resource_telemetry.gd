@@ -170,6 +170,8 @@ func _per_unit_source() -> void:
 func _phase_transition_source() -> void:
 	var state: Dictionary = _fresh()
 	var u: Dictionary = BattleState.active_unit(state, "p1")
+	u["energy"] = 2
+	u["gauge"] = 3
 	var before: Dictionary = ResourceTelemetry.snapshot(state)
 	var events: Array = [
 		{"t": "resource_change", "unit": str(u["id"]), "resource": "energy", "source": "azione:precedente"}
