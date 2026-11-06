@@ -419,3 +419,20 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Correzione:** `release_all()` ora azzera anche `cam_drag` e `_knob`, quindi richiede un ridisegno immediato.
 - **Test eseguiti:** confronto statico prima/dopo e verifica del commit su GitHub. Non eseguiti test touch su dispositivo né test Godot.
 - **Rischio residuo:** verificare su Android la ripresa dopo pausa, cambio schermata e multitouch; assicurarsi che il chiamante invochi `release_all()` in tutti i passaggi che devono annullare gli input.
+
+
+### 2026-11-06 — Struttura progetto e persistenza: approfondimento statico
+
+- **Struttura:** cartelle distinte per motore (`scripts/engine`), presentazione V3 (`scripts/v3`), dati, test e strumenti. La separazione tra BattleFlow/BattleResolver/BattleState e scena 3D è un punto positivo.
+- **Debito tecnico individuato:** `scripts/v3/battle3d.gd` conta 4.915 righe. È un coordinatore molto grande; estrazioni future possibili: presentazione HUD, animazioni/effetti, gestione input e sequenza delle scene. Non spezzarlo in questa fase senza test d'integrazione: molti riferimenti condivisi rendono rischiosa una divisione meccanica.
+- **Salvataggi:** `Story.load_game()` controlla il risultato di `ConfigFile.load`, ma assegna i dati senza validare gli indici capitolo/passo contro la struttura narrativa corrente. `Story.save()` ignora il valore di ritorno di `ConfigFile.save`. Il pulsante CONTINUA nel menu non controlla il booleano restituito da `Story.load_game()` prima di proseguire.
+- **Test già presenti:** `test_v3_engine.gd` copre il salvataggio e ripristino dello stato area; è un test presente nel repository, non eseguito in questa sessione.
+- **Interventi runtime in questa sottosezione:** nessuno. La correzione richiede una politica esplicita per salvataggi corrotti/vecchi e un messaggio UI di errore; non applicata alla cieca per non rischiare progressi dell'utente.
+- **Test eseguiti:** ispezione statica dei file e dei call site; nessuna esecuzione Godot.
+
+### Prossime migliorie pianificate (senza modifiche premature)
+
+1. Salvataggi: validazione capitolo/passo, risultato di scrittura propagato, backup recuperabile e test di file assente/corrotto/vecchio.
+2. Touch: test multi-dito, pausa/ripresa, perdita focus e cambi schermata; rivedere il ridisegno continuo solo dopo aver verificato aggiornamenti visuali e animazioni.
+3. Struttura: estrazione graduale di responsabilità da `battle3d.gd`, una per volta, con test di regressione.
+4. Pubblicazione: controllo coerenza versione/nome artefatto, firma Android e corrispondenza pacchetto prima di avviare Butler.
