@@ -703,3 +703,17 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Risultato atteso:** dopo ognuna delle tre notifiche nessun dito resta acquisito, nessun input residuo viene consumato e il successivo gesto parte da uno stato neutro. Il test segnala ogni singola condizione fallita, così è possibile identificare quale stato non è stato ripristinato.
 - **Verifica effettiva in questa sessione:** ispezione statica della gestione input e aggiornamento del test. Il test GDScript non è stato eseguito con Godot; i risultati sopra sono criteri attesi, non un esito dichiarato.
 - **Limiti ancora aperti:** coordinate e scaling sono coerenti solo se gli eventi e il Control condividono il medesimo spazio viewport; il controllo statico ha rilevato che il Control è ancorato a tutto il viewport tramite `Ui.place(self, 0, 0, 1, 1)`, ma non sostituisce una prova su dispositivi con aspect ratio, notch e safe area differenti. Non è stato possibile individuare un collegamento diretto a `TouchControls.handle()` nei file esaminati di `battle3d.gd`; il punto d'ingresso effettivo va tracciato prima di modificare coordinate o hitbox.
+
+
+## Fase 4 — Struttura progetto e protezione della pubblicazione
+
+### 2026-11-06 — Blocco del workflow itch.io sui branch non di release
+
+- **File modificato:** `.github/workflows/itch.yml`.
+- **Criticità trovata:** il trigger automatico `push` era già limitato a `claude/v3-prologo`, ma `workflow_dispatch` è disponibile anche quando si apre il workflow da un altro branch. Il job di pubblicazione non controllava il branch di esecuzione: un avvio manuale accidentale dalla branch sperimentale avrebbe potuto caricare su itch.io gli artefatti presenti in quel branch.
+- **Correzione:** aggiunta una condizione al job `itch` che lo esegue soltanto se `github.ref` è esattamente `refs/heads/claude/v3-prologo`. I trigger e i controlli di firma/versione già esistenti restano invariati.
+- **Perché:** separare in modo esplicito audit e sperimentazione dalla pubblicazione, riducendo il rischio di distribuire una build non approvata. La modifica non avvia workflow, non carica file e non pubblica nulla.
+- **Test/controlli implementati e funzionamento:** non è stato aggiunto un test applicativo. La verifica è una condizione di sicurezza CI: GitHub valuta il riferimento del branch prima di avviare il job. Sul branch autorizzato la condizione è vera; su qualsiasi altro branch, incluso `experiment/0.58.0-audit-ottimizzazione`, il job viene saltato.
+- **Risultato atteso:** un push o un dispatch eseguito dal branch sperimentale non può eseguire il job di upload itch.io; il branch di release conserva il comportamento previsto.
+- **Verifica effettiva:** controllo statico del trigger, del nome del branch configurato e della condizione inserita. Non è stato avviato un workflow GitHub Actions e non è stata effettuata alcuna pubblicazione.
+- **Rischio residuo:** la condizione protegge il job, ma non sostituisce le protezioni GitHub sul branch di release né una revisione umana degli artefatti. Prima di una release reale va verificato il comportamento con un dispatch autorizzato sul branch corretto, senza usare pacchetti non approvati.
