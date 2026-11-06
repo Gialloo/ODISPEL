@@ -281,11 +281,17 @@ static func preview(state: Dictionary, n: int) -> Array:
 	var guard: int = 0
 	while out.size() < n and guard < 64:
 		guard += 1
-		if _all_done(state, done) and not extra.is_empty():
-			var bonus: Dictionary = extra.pop_front()
-			if _can_play(state, bonus):
-				out.append(bonus)
-			continue
+		if _all_done(state, done):
+			var found_bonus: bool = false
+			while not extra.is_empty():
+				var bonus: Dictionary = extra.pop_front()
+				if _can_play(state, bonus):
+					out.append(bonus)
+					found_bonus = true
+					break
+			if found_bonus:
+				continue
+			break
 		var k: String = _pick(sim)
 		if k == "":
 			break
