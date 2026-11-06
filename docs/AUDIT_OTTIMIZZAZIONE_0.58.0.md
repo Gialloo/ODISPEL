@@ -585,3 +585,10 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Verifiche eseguite:** confronto statico del percorso `save → backup → rename` e aggiornamento del test automatico. Il test non è stato eseguito con Godot; non si dichiara superato.
 - **Rischi residui:** il backup è un singolo checkpoint, non una cronologia; non sostituisce backup esterni. Le operazioni di rinomina e rimozione dipendono dal filesystem della piattaforma e devono essere collaudate su Android e Windows.
 - **Prossimo test locale:** eseguire `godot --headless --path . -s tests/unit/test_v3_engine.gd`; poi simulare una chiusura forzata tra la rotazione del file e il rename finale, su una copia del salvataggio di test.
+
+### 2026-11-06 — Benchmark 3D: identificazione dell'hardware
+
+- **File modificato:** `tools/v3_prestazioni.gd`.
+- **Miglioria:** l'intestazione del report ora registra anche modello del dispositivo e nome della GPU, oltre a versione Godot, sistema operativo, viewport, limite FPS configurato, warm-up e numero di campioni.
+- **Motivo:** i risultati di frame time e draw call non sono confrontabili in modo affidabile se manca l'identificazione del dispositivo/driver. Il report specifica inoltre che il campionamento avviene senza cap FPS, per distinguere il limite di progetto dalla misurazione del margine prestazionale.
+- **Verifica:** modifica statica controllata sul formato della stringa e sugli argomenti. Benchmark non eseguito; i valori reali restano da raccogliere su PC e Android.
