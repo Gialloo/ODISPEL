@@ -27,6 +27,7 @@ nessuna luce, nessuna ombra in tempo reale, nessun Label3D/Sprite3D (tutto il te
 export PATH=/root/bin:$PATH
 godot --headless --path . --import
 godot --headless --path . -s tests/unit/test_v3_engine.gd
+godot --headless --path . -s tests/unit/test_v3_touch_controls.gd  # stick, camera e multitouch
 godot --headless --path . -s tests/unit/test_v3_dialoghi.gd
 godot --headless --path . -s tests/unit/test_v3_timeline.gd       # Timeline del combattimento (Fase 1): ordine per VEL, round, pareggi
 godot --headless --path . -s tests/unit/test_v3_slancio.gd        # SLANCIO per personaggio (Fase 2): uno a round per eroe, debolezze, KO, SLANCIO protetto
