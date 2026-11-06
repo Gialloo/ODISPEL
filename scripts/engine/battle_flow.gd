@@ -298,15 +298,30 @@ static func preview(state: Dictionary, n: int) -> Array:
 		var s: Dictionary = sim[k]
 		var t: int = int(s["at"])
 		s["at"] = t + delta_t(BattleTypes.TL_ENEMY_COST if bool(s["boss"]) else int(BattleTypes.TL_COST["attacco"]), _spd_of(state, s))
+		s["a"] = 0
+		s["r"] = 0
+		s.erase("prio")
 		st += 1
 		s["stamp"] = st
 		if bool(s["boss"]):
-			if (k == "greg" and not Gregario.alive(state)) or not BattleState.is_alive(BattleState.unit(state, str(_entry(state, s)["unit"]))):
+			if k == "greg" and not Gregario.alive(state):
+				sim.erase(k) # come _tl_next: un gregario sconfitto esce dalla Timeline
+				continue
+			if not BattleState.is_alive(BattleState.unit(state, str(_entry(state, s)["unit"]))):
+				sim.erase(k)
 				continue
 			out.append(_entry(state, s))
 			continue
 		if not _hero_can_play(state, k):
+			# Lo slot KO/ceduto non agisce, ma viene riprogrammato: senza questo
+			# passaggio _pick lo riseleziona all'infinito e nasconde gli altri turni.
 			done[k] = true
+			s["at"] = t + delta_t(int(BattleTypes.TL_COST["attacco"]), _spd_of(state, s))
+			s["a"] = 0
+			s["r"] = 0
+			s.erase("prio")
+			st += 1
+			s["stamp"] = st
 			continue
 		done[k] = true
 		out.append(_entry(state, s))
