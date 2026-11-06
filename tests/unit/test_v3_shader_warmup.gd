@@ -17,10 +17,14 @@ func _init() -> void:
 	check(mesh.get_surface_count() == 1, "la mesh contiene una superficie")
 	if mesh.get_surface_count() == 1:
 		var arrays: Array = mesh.surface_get_arrays(0)
-		check((arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() == 6, "sei vertici per i due triangoli")
-		check((arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array).size() == 6, "sei normali")
-		check((arrays[Mesh.ARRAY_COLOR] as PackedColorArray).size() == 6, "sei colori")
-		check((arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array).size() == 6, "sei coordinate UV")
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+		var colors: PackedColorArray = arrays[Mesh.ARRAY_COLOR]
+		var uvs: PackedVector2Array = arrays[Mesh.ARRAY_TEX_UV]
+		check(vertices.size() == 6, "sei vertici per i due triangoli")
+		check(normals.size() == 6, "sei normali")
+		check(colors.size() == 6, "sei colori")
+		check(uvs.size() == 6, "sei coordinate UV")
 
 	if fails == 0:
 		print("test_v3_shader_warmup: OK (%d verifiche)" % checks)
