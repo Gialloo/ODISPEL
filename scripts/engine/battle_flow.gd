@@ -144,6 +144,8 @@ static func finish(state: Dictionary) -> Array:
 	elif str(state["winner"]) == "" and int(state.get("phase", 1)) != phase and (tl["slots"] as Dictionary).has("boss"):
 		# CAMBIO DI FASE: la trasformazione occupa il boss come un'azione, rientra nella Timeline da adesso. Cosi' la prima mossa
 		# della fase nuova (annunciata ora) arriva dopo i turni degli eroi e si puo' rispondere (nel 0.52 il boss agiva per ultimo).
+		# Un'eventuale interruzione della fase precedente non deve saltare la prima mossa del nuovo ciclo.
+		tl["tele_used"] = false
 		_schedule(tl, tl["slots"]["boss"], BattleTypes.TL_ENEMY_COST, _spd_of(state, tl["slots"]["boss"]))
 	# Non azzerare tele_used qui: se un'INTERRUZIONE ha cancellato la mossa e il boss
 	# rientra solo nel round successivo, il flag deve arrivare a boss_action(), che annuncera' il nuovo attacco.
