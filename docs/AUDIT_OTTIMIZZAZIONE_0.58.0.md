@@ -454,3 +454,14 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **File modificati:** `docs/ISTRUZIONI_INSTALLAZIONE.md`, `README.md`.
 - **Correzioni:** rimosse istruzioni obsolete sulle vecchie versioni; chiarito che gli aggiornamenti Android richiedono la stessa chiave di firma e che disinstallare può cancellare i salvataggi; aggiornati i riferimenti alla versione di riferimento 0.58.0 e al branch sperimentale.
 - **Test eseguiti:** controllo statico dei testi e verifica dei file nel branch. Nessuna pubblicazione o prova di installazione eseguita.
+
+
+### 2026-11-06 — Validazione approfondita della progressione e recupero backup
+
+- **File modificati:** `scripts/v3/progress.gd`, `scripts/v3/story.gd`, `tests/unit/test_v3_engine.gd`.
+- **Progressione:** aggiunta `Progress.validate_save`. Controlla la presenza e il tipo delle sezioni, i quattro personaggi, livelli 1–100, esperienza coerente con il livello, struttura degli slot, ID delle abilità/Ultimate/reazioni/tratti/sinergie e mosse rubate esistenti e non duplicate.
+- **Caricamento:** `Story._read_valid_save` valida prima i dati narrativi e la progressione; se il file principale non è leggibile o non supera la validazione, prova `salvataggio.cfg.bak`. La progressione viene applicata soltanto dopo che il file scelto è stato validato.
+- **Test aggiunti:** progressione valida; livello oltre il massimo; esperienza oltre la soglia; abilità equipaggiata inesistente; copia di backup; file principale corrotto; recupero degli indizi dal backup; caricamento dopo avanzamento.
+- **Pubblicazione itch:** il workflow ora seleziona i pacchetti e richiede che APK e ZIP Windows abbiano la stessa versione numerica; verifica inoltre che lo ZIP contenga almeno un `.exe` e un `.pck`. Gli stessi percorsi/versione selezionati vengono usati per firma e upload, evitando che l'APK più recente venga abbinato a uno ZIP di versione diversa.
+- **Test eseguiti:** controllo statico dei sorgenti e dei diff GitHub. I test GDScript sono stati aggiunti ma **non eseguiti**; workflow YAML/GitHub Actions non è stato lanciato. Nessun pacchetto è stato caricato su itch.
+- **Rischi residui:** la validazione deve essere provata con salvataggi reali di tutte le versioni legacy. Il recupero dal backup non riscrive automaticamente il file principale: il gioco può continuare dal backup, ma la riparazione persistente avviene al successivo salvataggio. Verificare il comportamento di sostituzione file su Android e Windows. Il workflow continua a usare il primo APK/ZIP più recente per ciascun tipo, ma ora blocca il caricamento se le versioni non corrispondono.
