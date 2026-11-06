@@ -358,6 +358,7 @@ func _preview_bonus_coerente() -> void:
 		if bool(entry.get("extra", false)) and str(entry.get("player", "")) == dead:
 			leaked = true
 	check(not leaked, "preview: non mostra turni extra di un personaggio KO")
+	check(p2.size() == 1 and bool(p2[0].get("kept", false)), "preview: dopo gli SLANCI e i bonus non inventa turni ordinari oltre la fine del round")
 
 
 func _carry_difese_e_reazioni() -> void:
