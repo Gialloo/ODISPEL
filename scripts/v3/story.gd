@@ -96,31 +96,45 @@ static func has_save() -> bool:
 	return FileAccess.file_exists(save_path)
 
 
-static func load_game() -> bool:
+static func _read_valid_save(path: String) -> ConfigFile:
 	var cfg := ConfigFile.new()
-	if cfg.load(save_path) != OK:
-		return false
+	if cfg.load(path) != OK:
+		return null
 	var loaded_chapter: int = int(cfg.get_value("storia", "capitolo", -1))
 	var loaded_step: int = int(cfg.get_value("storia", "passo", -1))
 	var chs: Array = chapters()
 	if loaded_chapter < 0 or loaded_chapter > chs.size() or loaded_step < 0:
-		return false
+		return null
 	if loaded_chapter < chs.size():
 		var steps: Array = chs[loaded_chapter].get("passi", [])
 		if loaded_step >= steps.size():
-			return false
+			return null
 	var saved: Variant = cfg.get_value("storia", "flag", {})
 	var st: Variant = cfg.get_value("storia", "area", {})
 	if not (saved is Dictionary) or not (st is Dictionary):
+		return null
+	if cfg.has_section("squadra"):
+		if not Progress.validate_save(cfg.get_value("squadra", "dati", null)):
+			return null
+	return cfg
+
+
+static func load_game() -> bool:
+	var cfg: ConfigFile = _read_valid_save(save_path)
+	if cfg == null:
+		# Se l'app si è interrotta tra lo spostamento del vecchio file e quello del temporaneo,
+		# prova il backup prima di dichiarare persa la partita.
+		cfg = _read_valid_save(save_path + ".bak")
+	if cfg == null:
 		return false
-	# Applica lo stato solo dopo aver validato i campi narrativi: un file malformato non deve
-	# lasciare la partita corrente parzialmente sovrascritta.
-	chapter = loaded_chapter
-	step = loaded_step
-	flags = saved
-	area_state = st
-	Progress.from_save(cfg.get_value("squadra", "dati", {}))
-	if not cfg.has_section("squadra"):
+	chapter = int(cfg.get_value("storia", "capitolo", 0))
+	step = int(cfg.get_value("storia", "passo", 0))
+	flags = cfg.get_value("storia", "flag", {})
+	area_state = cfg.get_value("storia", "area", {})
+	if cfg.has_section("squadra"):
+		Progress.from_save(cfg.get_value("squadra", "dati", {}))
+	else:
+		Progress.reset()
 		# salvataggio di prima dei livelli: la squadra parte dal livello previsto per il capitolo (1, 3, 5, 7, 9, 11)
 		for c in Progress.CAST:
 			Progress.data["lv"][c] = 1 + 2 * clampi(chapter, 0, 5)
@@ -128,7 +142,6 @@ static func load_game() -> bool:
 				if int(u[0]) <= int(Progress.data["lv"][c]):
 					Progress._auto_equip(c, str(u[1]), str(u[2]))
 	return true
-
 
 static func save() -> bool:
 	var cfg := ConfigFile.new()
