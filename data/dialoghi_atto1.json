@@ -2291,7 +2291,7 @@
     ]
   },
   "c2_sera_nox_saul": {
-    "riassunto": "Nox e Saul trattano su tutto. Legame Nox e Saul.",
+    "riassunto": "Nox e Saul parlano del fascicolo di Saul e del cammello. Il loro rapporto si approfondisce.",
     "righe": [
       {
         "chi": "saul",
@@ -2301,32 +2301,42 @@
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Fascicolo duemiladuecentodiciannove."
+        "testo": "Ho qui il tuo fascicolo guardacaso: fascicolo diciannove."
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Saul, ventidue anni. Ricettazione, truffa, un cammello."
+        "testo": "Saul, ventidue anni."
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Ricettazione, truffa, appropriazione indebita, violazione di proprietà privata, sequestro di persona, furto d'identità, contrabbando e traffico illegale di oggetti magici.."
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "e di un cammello..?"
       },
       {
         "chi": "saul",
         "espr": "sorpreso",
-        "testo": "Il cammello era un malinteso."
+        "testo": "I cammello è innocente maledizione, è un cammello!"
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Il cammello aveva i documenti falsi."
+        "testo": "Qui dice che hai provato a farlo passare in un portale con un impermeabile spacciandolo per un tuo parente, e il cammello aveva i documenti falsi."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Ottimi documenti."
+        "testo": "Degli ottimi documenti. E un ottimo cammello.. Mi manca a volte, sai?"
       },
       {
         "chi": "nox",
         "espr": "sfotto",
-        "testo": "Il prezzo è caffè. Tanto."
+        "testo": "Inizia a mettere da parte del caffè e ne riparleremo."
       },
       {
         "chi": "saul",
@@ -2336,7 +2346,37 @@
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Ho visto mostri veri. Tu sei un idiota col giubbotto. Con affetto.",
+        "testo": "Ho visto mostri veri. Tu sei un idiota con la giacca."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Non so se prenderlo come un insulto o un complimento, sai?"
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Prendila come ti pare."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Se Toe fosse stato qui l'avrei presa bene."
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Chi è Toe?"
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Il cammello."
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Sei senza speranza, Saul.",
         "imposta": "legame_nox_saul"
       }
     ]
