@@ -358,7 +358,25 @@ func _preview_bonus_coerente() -> void:
 		if bool(entry.get("extra", false)) and str(entry.get("player", "")) == dead:
 			leaked = true
 	check(not leaked, "preview: non mostra turni extra di un personaggio KO")
+
 	check(p2.size() == 1 and bool(p2[0].get("kept", false)), "preview: dopo gli SLANCI e i bonus non inventa turni ordinari oltre la fine del round")
+
+	# Uno slot senza personaggi in vita deve essere riprogrammato, non riselezionato all'infinito.
+	var skipped: Dictionary = _fresh("semaforo", 22)
+	BattleFlow.start_round(skipped)
+	var dead_pid: String = str(skipped["players"][0]["id"])
+	for member in BattleState.party_of(skipped, BattleState.player(skipped, dead_pid)):
+		BattleState.unit(skipped, str(member))["hp"] = 0
+	skipped["tl"]["cur"] = ""
+	skipped["tl"]["now"] = 0
+	skipped["tl"]["slots"][dead_pid]["at"] = 0
+	var after_ko: Array = BattleFlow.preview(skipped, 8)
+	var found_alive: bool = false
+	for entry in after_ko:
+		if not bool(entry.get("boss", false)) and str(entry.get("player", "")) != dead_pid:
+			found_alive = true
+	check(found_alive, "preview: salta lo slot KO e continua con gli altri turni")
+
 
 
 func _carry_difese_e_reazioni() -> void:
