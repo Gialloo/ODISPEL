@@ -3486,27 +3486,22 @@
     ]
   },
   "c4_vigilia": {
-    "riassunto": "L'ultima notte al rifugio. Ognuno dice cosa farà con quello che Echo gli ha promesso. Echo chiede di essere salvata tra i contatti di Rio, e quasi confessa qualcosa.",
+    "riassunto": "È l'ultima notte al rifugio. Il gruppo parla del futuro dopo la caduta della cupola. Rio salva Echo tra i contatti e lei quasi confessa qualcosa.",
     "righe": [
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Ultima notte. Domani la cupola cade e ognuno a casa sua."
+        "testo": "Ultima notte. Domani la cupola cade e ognuno torna a casa sua."
       },
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "La live della cupola è tutta nel telefono."
-      },
-      {
-        "chi": "zecca",
-        "espr": "felice",
-        "testo": "Quando torna la rete la carico. Milioni, raga."
+        "testo": "La live della cupola è tutta nel telefono. Quando torna la rete la carico. Milioni, raga."
       },
       {
         "chi": "zecca",
         "espr": "serio",
-        "testo": "...Però a casa ho trentadue follower. Qui ho voi."
+        "testo": "...Però a casa ho trentadue follower.. Qui ho voi."
       },
       {
         "chi": "saul",
@@ -3516,12 +3511,7 @@
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "Io torno in servizio. Col grado. E poi dico la verità."
-      },
-      {
-        "chi": "ferri",
-        "espr": "serio",
-        "testo": "Sul braccio, su Astrid, su tutto."
+        "testo": "Io torno in servizio. Col grado. E poi dico la verità. Sul braccio, su Astrid, su tutto."
       },
       {
         "chi": "saul",
@@ -3531,27 +3521,17 @@
       {
         "chi": "ferri",
         "espr": "neutro",
-        "testo": "Con l'uniforme in ordine."
+        "testo": "Non importa."
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Dodici settimane di ferie. Le prime tre dormo."
-      },
-      {
-        "chi": "nox",
-        "espr": "neutro",
-        "testo": "Poi forse torno alle Civette. Forse rispondo al telefono."
+        "testo": "Dodici settimane di ferie. Le prime tre dormo. Poi forse torno alle Civette. Forse rispondo al telefono."
       },
       {
         "chi": "saul",
         "espr": "neutro",
         "testo": "Io apro un negozio. Roba usata. Onesta. Quasi tutta."
-      },
-      {
-        "chi": "zecca",
-        "espr": "sorpreso",
-        "testo": "Saul onesto? Questo è il vero colpo di scena."
       },
       {
         "chi": "echo",
@@ -3568,12 +3548,7 @@
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "Fatto. «Echo». Con la telecamera accanto."
-      },
-      {
-        "chi": "zecca",
-        "espr": "felice",
-        "testo": "E il cuore. No, il cuore lo tolgo. ...No, lo lascio."
+        "testo": "Fatto. «Echo». Con la telecamera accanto. ( E il cuore. No, forse il cuore lo tolgo, no lo lascio..)"
       },
       {
         "chi": "echo",
