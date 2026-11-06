@@ -727,6 +727,9 @@ func _process(delta: float) -> void:
 func _update_wheel() -> void:
 	if _wheel == null or _spot == null:
 		return
+	# Nessun elemento visibile e nessuna dissolvenza da completare: non servono calcoli per questo frame.
+	if not _wheel.visible and not _spot.visible:
+		return
 	var e: float = smoothstep(0.0, 1.0, _wheel.sel) if _wheel.visible else 0.0
 	var uid: String = str(_unit_of(cur_pid).get("id", "")) if cur_pid != "" else ""
 	if _wheel.visible and vis.has(uid):
@@ -4862,7 +4865,10 @@ func _greg_refresh() -> void:
 
 
 func _place_greg_tag() -> void:
-	if _greg_tag == null or not vis.has(Gregario.ID) or cam == null:
+	# Il cartellino e il pulsante di mira seguono la camera solo quando almeno uno e' visibile.
+	if (_greg_tag == null or not _greg_tag.visible) and (_aim_btn == null or not _aim_btn.visible):
+		return
+	if not vis.has(Gregario.ID) or cam == null:
 		return
 	var gv: Node3D = vis[Gregario.ID]
 	if _greg_tag.visible:
