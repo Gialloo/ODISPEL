@@ -1,7 +1,7 @@
 # OFFICIAL DEMO ODISPEL · V3, atto 1 (standalone)
 
 Progetto Godot 4.7.2 separato dalla V2 (`Gialloo/ODISPEL`), renderer **gl_compatibility**, landscape 1280×720.
-Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. **Stile visivo: `docs/STILE_VISIVO.md`** — conta l'aggiornamento in cima: urbano di oggi, niente look medievale. Stato attuale: **0.33.0 = atto 1 rivisto con la bibbia di lavoro** (climax al loro posto, finale con Echo ridotta a nucleo, ripresa a metà area). Regole: `BIBBIA_DI_LAVORO.md` nella cartella del progetto.
+Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. **Stile visivo: `docs/STILE_VISIVO.md`** — conta l'aggiornamento in cima: urbano di oggi, niente look medievale. Stato di riferimento del branch di release: **0.58.0**. L'audit e gli interventi sperimentali successivi sono registrati nel branch `experiment/0.58.0-audit-ottimizzazione` e nel documento `docs/AUDIT_OTTIMIZZAZIONE_0.58.0.md`; non considerarli parte della release finché non vengono integrati e testati. Regole: `BIBBIA_DI_LAVORO.md` nella cartella del progetto.
 
 ## Struttura
 - `scripts/engine/` — motore di combattimento **copiato** dalla V2 (BattleState, SeqRound, BattleResolver e dipendenze).
@@ -27,11 +27,18 @@ nessuna luce, nessuna ombra in tempo reale, nessun Label3D/Sprite3D (tutto il te
 export PATH=/root/bin:$PATH
 godot --headless --path . --import
 godot --headless --path . -s tests/unit/test_v3_engine.gd
+godot --headless --path . -s tests/unit/test_v3_touch_controls.gd  # stick, camera, multitouch e reset su pausa/focus
+godot --headless --path . -s tests/unit/test_v3_mesh_batch.gd             # cache delle mesh piatte riutilizzate
+godot --headless --path . -s tests/unit/test_v3_city_builder.gd          # cache dei colori della scenografia
+godot --headless --path . -s tests/unit/test_v3_shader_warmup.gd        # geometria condivisa per il warm-up shader
+godot --headless --path . -s tests/unit/test_v3_integrita_salvataggio.gd  # validazione area, checkpoint finale e recupero backup
 godot --headless --path . -s tests/unit/test_v3_dialoghi.gd
 godot --headless --path . -s tests/unit/test_v3_timeline.gd       # Timeline del combattimento (Fase 1): ordine per VEL, round, pareggi
 godot --headless --path . -s tests/unit/test_v3_slancio.gd        # SLANCIO per personaggio (Fase 2): uno a round per eroe, debolezze, KO, SLANCIO protetto
 godot --headless --path . -s tests/unit/test_v3_ritmo.gd          # RITMO di squadra (R1-R2-R4): Ardore, livelli, condizioni, perdite, salvataggio con la parata, bonus dei livelli e di APICE, tecnica APICE per personaggio
-godot --headless --path . -s tests/unit/test_v3_break.gd          # BREAK (Fase 3): regole dei boss, finestra di azioni alleate, recupero, pressione latente, comuni/elite/boss
+godot --headless --path . -s tests/unit/test_v3_fasi.gd            # FASI: i boss non saltano le fasi (2C), i frammenti si come nella 0.58.0
+godot --headless --path . -s tests/unit/test_v3_break.gd           # BREAK (Fase 3): regole dei boss, finestra di azioni alleate, recupero, pressione latente, comuni/elite/boss
+godot --headless --path . -s tests/unit/test_v3_resource_telemetry.gd  # telemetria delle risorse
 godot --headless --path . -s tools/v3_bilancio.gd -- vel           # VEL e azioni per livello; senza "vel": bilancio dell'atto (con "giro": senza Timeline; con "nostab": BREAK del 0.54)
 xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_atto1.gd -- /tmp/atto1 [tutte] [capitolo=N]
 xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_atto1.gd -- /tmp/atto1_t touch

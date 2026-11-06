@@ -38,14 +38,20 @@ var _show: bool = false
 var _t: float = 0.0
 var _mat: ShaderMaterial
 var _meshes: Array = []
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
-func _init(tint: Color = Color(0.66, 0.6, 1.0)) -> void:
+static func shader() -> Shader:
 	if _shader == null:
 		_shader = Shader.new()
 		_shader.code = SHADER
+	return _shader
+
+
+func _init(tint: Color = Color(0.66, 0.6, 1.0)) -> void:
+	_rng.randomize()
 	_mat = ShaderMaterial.new()
-	_mat.shader = _shader
+	_mat.shader = shader()
 	_mat.set_shader_parameter("tint", tint)
 
 
@@ -78,7 +84,7 @@ func _collect() -> void:
 
 
 func _apply() -> void:
-	_mat.set_shader_parameter("cover", randf_range(0.65, 1.0))
+	_mat.set_shader_parameter("cover", _rng.randf_range(0.65, 1.0))
 	for mi in _meshes:
 		if is_instance_valid(mi):
 			(mi as MeshInstance3D).material_overlay = _mat if _show else null
@@ -92,5 +98,5 @@ func _process(delta: float) -> void:
 		return
 	_show = not _show
 	# lampi brevi e pause irregolari: un disturbo, non un effetto fisso
-	_t = randf_range(0.06, 0.24) if _show else randf_range(0.15, 0.75)
+	_t = _rng.randf_range(0.06, 0.24) if _show else _rng.randf_range(0.15, 0.75)
 	_apply()

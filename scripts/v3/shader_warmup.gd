@@ -17,12 +17,17 @@ func _ready() -> void:
 	cam.position = Vector3(0, 0, 3)
 	add_child(cam)
 	cam.current = true
+	var static_fx_mat := ShaderMaterial.new()
+	static_fx_mat.shader = StaticFx.shader()
 	var mats: Array = [Toon.body(), Toon.ink(), Toon.ink_grow(), Toon.glow(), Toon.shadow(), Toon.hit_flash(),
-		Toon.body_tex(load("res://icon.png") as Texture2D), Toon.body_world(), NightFx.rain_material()]
-	var x: float = -1.2
+		Toon.body_tex(load("res://icon.png") as Texture2D), Toon.body_world(), NightFx.rain_material(), static_fx_mat]
+	# La geometria e' identica per tutti i materiali: una sola mesh condivisa evita
+	# allocazioni ArrayMesh ripetute durante il warm-up.
+	var warmup_mesh: ArrayMesh = _quad()
+	var x: float = -1.8
 	for m in mats:
 		var mi := MeshInstance3D.new()
-		mi.mesh = _quad()
+		mi.mesh = warmup_mesh
 		mi.material_override = m
 		mi.position = Vector3(x, 0, 0)
 		x += 0.4

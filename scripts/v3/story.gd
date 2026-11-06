@@ -93,21 +93,98 @@ static func start_chapter(i: int) -> void:
 
 
 static func has_save() -> bool:
-	return FileAccess.file_exists(save_path)
+	return FileAccess.file_exists(save_path) or FileAccess.file_exists(save_path + ".bak")
+
+
+static func validate_area_state(v: Variant) -> bool:
+	if not (v is Dictionary):
+		return false
+	var area: Dictionary = v
+	if area.has("pos"):
+		if not (area["pos"] is Vector3):
+			return false
+		var pos: Vector3 = area["pos"]
+		if not is_finite(pos.x) or not is_finite(pos.y) or not is_finite(pos.z):
+			return false
+	if area.has("yaw"):
+		if not (area["yaw"] is int or area["yaw"] is float) or not is_finite(float(area["yaw"])):
+			return false
+	for key in ["clues", "defeated"]:
+		if not area.has(key):
+			continue
+		if not (area[key] is Array):
+			return false
+		for item in area[key]:
+			if not (item is String) or str(item).is_empty():
+				return false
+	if area.has("banter_used"):
+		if not (area["banter_used"] is Dictionary):
+			return false
+		for key in area["banter_used"]:
+			if not (key is String) or str(key).is_empty() or not (area["banter_used"][key] is bool):
+				return false
+	return true
+
+
+static func _is_valid_save_integer(v: Variant) -> bool:
+	if not (v is int or v is float):
+		return false
+	var number: float = float(v)
+	return is_finite(number) and number >= 0.0 and number == floor(number)
+
+
+# strict = true quando si SCRIVE (il temporaneo deve essere perfetto); in lettura (strict = false) la progressione
+# riparabile si accetta e Progress.from_save() la ripara (decisione dell'autore 6/11/2026, opzione 1B: non perdere la partita).
+static func _read_valid_save(path: String, strict: bool = false) -> ConfigFile:
+	var cfg := ConfigFile.new()
+	if cfg.load(path) != OK:
+		return null
+	var raw_chapter: Variant = cfg.get_value("storia", "capitolo", -1)
+	var raw_step: Variant = cfg.get_value("storia", "passo", -1)
+	if not _is_valid_save_integer(raw_chapter) or not _is_valid_save_integer(raw_step):
+		return null
+	var loaded_chapter: int = int(raw_chapter)
+	var loaded_step: int = int(raw_step)
+	var chs: Array = chapters()
+	if loaded_chapter < 0 or loaded_chapter > chs.size() or loaded_step < 0:
+		return null
+	if loaded_chapter < chs.size():
+		var steps: Array = chs[loaded_chapter].get("passi", [])
+		if loaded_step >= steps.size():
+			return null
+	else:
+		# Lo stato conclusivo e' rappresentato solo da capitolo == numero capitoli, passo 0.
+		if loaded_step != 0:
+			return null
+	var saved: Variant = cfg.get_value("storia", "flag", {})
+	var st: Variant = cfg.get_value("storia", "area", {})
+	if not (saved is Dictionary) or not validate_area_state(st):
+		return null
+	if cfg.has_section("squadra"):
+		var team: Variant = cfg.get_value("squadra", "dati", null)
+		if strict and not Progress.validate_save(team):
+			return null
+		if not strict and Progress.repair_save(team) == null:
+			return null
+	return cfg
 
 
 static func load_game() -> bool:
-	var cfg := ConfigFile.new()
-	if cfg.load(save_path) != OK:
+	var cfg: ConfigFile = _read_valid_save(save_path)
+	if cfg == null:
+		# Se l'app si è interrotta tra lo spostamento del vecchio file e quello del temporaneo,
+		# prova il backup prima di dichiarare persa la partita.
+		cfg = _read_valid_save(save_path + ".bak")
+	if cfg == null:
 		return false
 	chapter = int(cfg.get_value("storia", "capitolo", 0))
 	step = int(cfg.get_value("storia", "passo", 0))
-	var saved: Variant = cfg.get_value("storia", "flag", {})
-	flags = saved if saved is Dictionary else {}
-	var st: Variant = cfg.get_value("storia", "area", {})
-	area_state = st if st is Dictionary else {}
-	Progress.from_save(cfg.get_value("squadra", "dati", {}))
-	if not cfg.has_section("squadra"):
+	flags = cfg.get_value("storia", "flag", {})
+	area_state = cfg.get_value("storia", "area", {})
+	if cfg.has_section("squadra"):
+		Progress.from_save(cfg.get_value("squadra", "dati", {}))
+	else:
+		Progress.reset()
 		# salvataggio di prima dei livelli: la squadra parte dal livello previsto per il capitolo (1, 3, 5, 7, 9, 11)
 		for c in Progress.CAST:
 			Progress.data["lv"][c] = 1 + 2 * clampi(chapter, 0, 5)
@@ -116,8 +193,7 @@ static func load_game() -> bool:
 					Progress._auto_equip(c, str(u[1]), str(u[2]))
 	return true
 
-
-static func save() -> void:
+static func save() -> bool:
 	var cfg := ConfigFile.new()
 	cfg.set_value("storia", "capitolo", chapter)
 	cfg.set_value("storia", "passo", step)
@@ -126,7 +202,47 @@ static func save() -> void:
 		cfg.set_value("storia", "area", area_state)
 	Progress.ensure()
 	cfg.set_value("squadra", "dati", Progress.data)
-	cfg.save(save_path)
+	var temp_path: String = save_path + ".tmp"
+	var backup_path: String = save_path + ".bak"
+	var temp_abs: String = ProjectSettings.globalize_path(temp_path)
+	var save_abs: String = ProjectSettings.globalize_path(save_path)
+	var backup_abs: String = ProjectSettings.globalize_path(backup_path)
+	if FileAccess.file_exists(temp_path):
+		DirAccess.remove_absolute(temp_abs)
+	if cfg.save(temp_path) != OK:
+		return false
+	# Non sostituire mai un salvataggio valido con uno che il caricatore stesso rifiuterebbe.
+	if _read_valid_save(temp_path, true) == null:
+		DirAccess.remove_absolute(temp_abs)
+		return false
+	var had_save: bool = FileAccess.file_exists(save_path)
+	var main_valid: bool = had_save and _read_valid_save(save_path) != null
+	if main_valid:
+		# Conserva il file principale valido come backup. Non sovrascrivere mai un backup
+		# recuperabile con un file principale che la validazione ha appena rifiutato.
+		if FileAccess.file_exists(backup_path) and DirAccess.remove_absolute(backup_abs) != OK:
+			DirAccess.remove_absolute(temp_abs)
+			return false
+		if DirAccess.rename_absolute(save_abs, backup_abs) != OK:
+			DirAccess.remove_absolute(temp_abs)
+			return false
+	elif had_save:
+		# Il file principale e' gia' invalido: lo sposta da parte, ma lascia intatto l'eventuale .bak.
+		var bad_abs: String = ProjectSettings.globalize_path(save_path + ".bad")
+		if FileAccess.file_exists(save_path + ".bad") and DirAccess.remove_absolute(bad_abs) != OK:
+			DirAccess.remove_absolute(temp_abs)
+			return false
+		if DirAccess.rename_absolute(save_abs, bad_abs) != OK:
+			DirAccess.remove_absolute(temp_abs)
+			return false
+	if DirAccess.rename_absolute(temp_abs, save_abs) != OK:
+		if main_valid and FileAccess.file_exists(backup_path):
+			DirAccess.rename_absolute(backup_abs, save_abs)
+		DirAccess.remove_absolute(temp_abs)
+		return false
+	# Il .bak e' il punto di recupero dell'ultimo salvataggio valido precedente.
+	# Non eliminarlo dopo la scrittura: deve restare disponibile se il nuovo file si corrompe.
+	return true
 
 
 static func set_flag(f: String) -> void:

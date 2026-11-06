@@ -55,7 +55,15 @@ func _net_snapshot() -> void:
 	var net: Dictionary = _has_event(events, "resource_delta")
 	check(not net.is_empty(), "lo snapshot genera un delta netto")
 	check(str(net.get("resource", "")) == "gauge" and int(net.get("delta", 0)) == 12, "il delta netto coincide con la variazione effettiva")
-	check(str(net.get("source", "")) == "test_action", "il delta conserva la fase quando manca un evento azione")
+	# Regola del secondo controllo telemetria (audit 6/11): la fonte diretta della risorsa prevale sulla fase.
+	check(str(net.get("source", "")) == "snapshot_test", "il delta usa la fonte diretta della risorsa quando c'e'")
+	# Senza evento diretto ne' azione, il delta conserva la fase.
+	var before2: Dictionary = ResourceTelemetry.snapshot(state)
+	u["gauge"] = int(u["gauge"]) - 5
+	var events2: Array = []
+	ResourceTelemetry.record(state, before2, events2, "test_action")
+	var net2: Dictionary = _has_event(events2, "resource_delta")
+	check(str(net2.get("source", "")) == "test_action", "il delta conserva la fase quando manca un evento azione")
 
 
 func _hype_and_ammo() -> void:
@@ -108,7 +116,88 @@ func _reserve_and_ardore() -> void:
 	check(Ritmo.ardore(state) == 0 and int(ardore_loss.get("effective", -1)) == 100 and int(ardore_loss.get("wasted", -1)) == 20, "Ardore registra la perdita effettiva e la quota non applicabile")
 
 
+func _per_unit_source() -> void:
+	var state: Dictionary = {
+		"units": {
+			"lance": {"id": "lance", "side": "player", "char": "ferri", "energy": 3, "gauge": 10, "hype": 0, "ammo": 0},
+			"nox": {"id": "nox", "side": "player", "char": "nox", "energy": 2, "gauge": 5, "hype": 0, "ammo": 0}
+		}
+	}
+	var before: Dictionary = ResourceTelemetry.snapshot(state)
+	state["units"]["lance"]["energy"] = 4
+	state["units"]["nox"]["energy"] = 3
+	var events: Array = [
+		{"t": "act", "unit": "lance", "move": "firma"},
+		{"t": "duo", "unit": "nox", "id": "copertura"}
+	]
+	ResourceTelemetry.record(state, before, events, "player_action")
+	var sources: Dictionary = {}
+	for e in events:
+		if str(e.get("t", "")) == "resource_delta":
+			sources[str(e["unit"])] = str(e["source"])
+	check(str(sources.get("lance", "")) == "azione:firma", "la risorsa di Lance usa la sua azione")
+	check(str(sources.get("nox", "")) == "duo:copertura", "la risorsa di Nox usa la sua tecnica combinata")
+
+	before = ResourceTelemetry.snapshot(state)
+	state["units"]["lance"]["energy"] = 5
+	var duo_events: Array = [
+		{"t": "act", "unit": "lance", "move": "duo_protezione"},
+		{"t": "duo", "unit": "lance", "id": "duo_protezione", "with": "nox"}
+	]
+	ResourceTelemetry.record(state, before, duo_events, "player_action")
+	var duo_source: String = ""
+	for e in duo_events:
+		if str(e.get("t", "")) == "resource_delta":
+			duo_source = str(e["source"])
+	check(duo_source == "duo:duo_protezione", "la tecnica a due prevale sull'evento act generico dello stesso attore")
+
+	before = ResourceTelemetry.snapshot(state)
+	var team_gain_events: Array = []
+	ResourceTelemetry.gain_unit(state["units"]["nox"], "energy", 1, 10, team_gain_events, "duo_team")
+	ResourceTelemetry.record(state, before, team_gain_events, "player_action")
+	var team_gain_source: String = ""
+	for e in team_gain_events:
+		if str(e.get("t", "")) == "resource_delta":
+			team_gain_source = str(e["source"])
+	check(team_gain_source == "duo_team", "il delta netto eredita la fonte diretta del guadagno energia di squadra")
+
+	before = ResourceTelemetry.snapshot(state)
+	state["units"]["lance"]["energy"] = 6
+	var mixed_events: Array = [
+		{"t": "act", "unit": "lance", "move": "attacco"},
+		{"t": "act", "unit": "lance", "move": "guardia"}
+	]
+	ResourceTelemetry.record(state, before, mixed_events, "player_action")
+	var mixed_source: String = ""
+	for e in mixed_events:
+		if str(e.get("t", "")) == "resource_delta":
+			mixed_source = str(e["source"])
+	check(mixed_source == "mista", "piu' azioni della stessa unita' non vengono attribuite arbitrariamente")
+
+
+func _phase_transition_source() -> void:
+	var state: Dictionary = _fresh()
+	var u: Dictionary = BattleState.active_unit(state, "p1")
+	u["energy"] = 2
+	u["gauge"] = 3
+	var before: Dictionary = ResourceTelemetry.snapshot(state)
+	var events: Array = [
+		{"t": "resource_change", "unit": str(u["id"]), "resource": "energy", "source": "azione:precedente"}
+	]
+	ResourceTelemetry.spend_unit(u, "energy", 1, events, "phase_change")
+	ResourceTelemetry.gain_unit(u, "gauge", 7, BattleTypes.GAUGE_MAX, events, "phase_change")
+	ResourceTelemetry.record(state, before, events, "phase_transition")
+	var sources: Dictionary = {}
+	for e in events:
+		if str(e.get("t", "")) == "resource_delta":
+			sources[str(e.get("resource", ""))] = str(e.get("source", ""))
+	check(str(sources.get("energy", "")) == "phase_change", "la spesa EN del cambio fase conserva la fonte diretta")
+	check(str(sources.get("gauge", "")) == "phase_change", "il guadagno barra del cambio fase conserva la fonte diretta")
+
+
 func _init() -> void:
+	_per_unit_source()
+	_phase_transition_source()
 	_unit_resources()
 	_net_snapshot()
 	_hype_and_ammo()

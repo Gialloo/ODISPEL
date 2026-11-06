@@ -37,7 +37,8 @@ static var enabled: bool = BattleTypes.STAB_ON     # come BattleFlow.timeline: i
 
 
 static func on(boss: Dictionary) -> bool:
-	return BattleTypes.STAB_ON and bool(boss.get("stab", false))
+	# enabled e' il selettore runtime usato da test e bilanciamento; STAB_ON resta il selettore di build.
+	return enabled and BattleTypes.STAB_ON and bool(boss.get("stab", false))
 
 
 static func mark(state: Dictionary) -> void:

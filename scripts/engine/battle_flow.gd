@@ -144,7 +144,12 @@ static func finish(state: Dictionary) -> Array:
 	elif str(state["winner"]) == "" and int(state.get("phase", 1)) != phase and (tl["slots"] as Dictionary).has("boss"):
 		# CAMBIO DI FASE: la trasformazione occupa il boss come un'azione, rientra nella Timeline da adesso. Cosi' la prima mossa
 		# della fase nuova (annunciata ora) arriva dopo i turni degli eroi e si puo' rispondere (nel 0.52 il boss agiva per ultimo).
+		# Un'eventuale interruzione della fase precedente non deve saltare la prima mossa del nuovo ciclo.
+		tl["tele_used"] = false
 		_schedule(tl, tl["slots"]["boss"], BattleTypes.TL_ENEMY_COST, _spd_of(state, tl["slots"]["boss"]))
+	# tele_used si azzera qui (come nella 0.58.0): dopo un'INTERRUZIONE, SeqRound.finish() ha gia' fatto avanzare il ciclo
+	# (keep falso: la mossa persa e' saltata e quella nuova e' annunciata). Lasciarlo vero lo faceva avanzare una seconda
+	# volta in boss_action() e il boss saltava anche la mossa dopo (verificato con Godot: +3 invece di +2, audit 6/11).
 	tl["tele_used"] = false
 	tl["greg_used"] = false
 	return ev
@@ -245,39 +250,102 @@ static func preview(state: Dictionary, n: int) -> Array:
 	var out: Array = []
 	var cur: String = str(tl.get("cur", ""))
 	var sim: Dictionary = {}
+	var done: Dictionary = (tl.get("done", {}) as Dictionary).duplicate()
+	var st: int = int(tl.get("stamp", 0))
 	for k in tl["slots"]:
 		sim[k] = (tl["slots"][k] as Dictionary).duplicate()
 	if cur != "" and sim.has(cur):
 		var e0: Dictionary = _entry(state, sim[cur])
 		if tl.has("cur_quick"):
 			e0 = (tl["cur_quick"] as Dictionary).duplicate()
+			# Lo SLANCIO normale aggiunge +15 al recupero dopo l'azione rapida.
+			# La preview viene spesso letta prima che l'azione venga risolta: anticipiamo
+			# il costo nella sola copia simulata, non nello slot reale.
+			var quick_slot: Dictionary = sim[cur]
+			var quick_entry: Dictionary = tl["cur_quick"]
+			if bool(quick_entry.get("slancio", false)) and not bool(quick_entry.get("waive", false)):
+				quick_slot["at"] = int(quick_slot.get("at", 0)) + BattleTypes.TL_SLANCIO_EXTRA * 100
+				st += 1
+				quick_slot["stamp"] = st
+		else:
+			# Il turno corrente e' gia' mostrato: simula anche il suo completamento,
+			# altrimenti _pick() lo seleziona di nuovo come se non avesse ancora agito.
+			var current_slot: Dictionary = sim[cur]
+			var current_cost: int = BattleTypes.TL_ENEMY_COST if bool(current_slot.get("boss", false)) else int(BattleTypes.TL_COST["attacco"])
+			current_slot["at"] = int(tl.get("now", current_slot.get("at", 0))) + delta_t(current_cost, _spd_of(state, current_slot))
+			current_slot["a"] = 0
+			current_slot["r"] = 0
+			current_slot.erase("prio")
+			st += 1
+			current_slot["stamp"] = st
+			if not bool(current_slot.get("boss", false)):
+				done[cur] = true
 		out.append(e0)
 	for q in (tl.get("quick", []) as Array):
-		out.append((q as Dictionary).duplicate())
-	var done: Dictionary = (tl.get("done", {}) as Dictionary).duplicate()
+		out.append((q as Dictionary).duplicate(true))
+	# La previsione deve mostrare anche gli SLANCI protetti gia' pronti: next() li esegue
+	# prima di scegliere il prossimo slot ordinario. Qui non chiamiamo ready_kept(), perche'
+	# quella funzione ripulisce lo stato eliminando i bersagli sconfitti.
+	var kept: Array = []
+	if str(state.get("winner", "")) == "" and state.has("slancio_kept"):
+		for uid in state["slancio_kept"]:
+			var saved: Dictionary = state["slancio_kept"][uid]
+			var target: Dictionary = BattleState.unit(state, str(saved.get("dst", "")))
+			var actor: Dictionary = BattleState.unit(state, str(uid))
+			if target.is_empty() or actor.is_empty() or not BattleState.is_alive(target) or not BattleState.is_alive(actor) or Slancio.blocked(target):
+				continue
+			var slot: String = BattleState.slot_of(state, str(uid))
+			var saved_slot: Dictionary = (tl["slots"] as Dictionary).get(slot, {})
+			kept.append({"unit": str(uid), "player": str(saved.get("player", slot)), "boss": false, "spd": -1, "extra": true, "quick": true, "slancio": true, "kept": true, "waive": bool(saved.get("waive", false)), "_at": int(saved_slot.get("at", 0))})
+	kept.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["_at"]) < int(b["_at"]))
+	for q in kept:
+		q.erase("_at")
+		out.append(q)
 	var extra: Array = (tl.get("extra", []) as Array).duplicate()
-	var st: int = int(tl.get("stamp", 0))
 	var guard: int = 0
 	while out.size() < n and guard < 64:
 		guard += 1
-		if _all_done(state, done) and not extra.is_empty():
-			out.append(extra.pop_front())
-			continue
+		if _all_done(state, done):
+			var found_bonus: bool = false
+			while not extra.is_empty():
+				var bonus: Dictionary = extra.pop_front()
+				if _can_play(state, bonus):
+					out.append(bonus)
+					found_bonus = true
+					break
+			if found_bonus:
+				continue
+			break
 		var k: String = _pick(sim)
 		if k == "":
 			break
 		var s: Dictionary = sim[k]
 		var t: int = int(s["at"])
 		s["at"] = t + delta_t(BattleTypes.TL_ENEMY_COST if bool(s["boss"]) else int(BattleTypes.TL_COST["attacco"]), _spd_of(state, s))
+		s["a"] = 0
+		s["r"] = 0
+		s.erase("prio")
 		st += 1
 		s["stamp"] = st
 		if bool(s["boss"]):
-			if (k == "greg" and not Gregario.alive(state)) or not BattleState.is_alive(BattleState.unit(state, str(_entry(state, s)["unit"]))):
+			if k == "greg" and not Gregario.alive(state):
+				sim.erase(k) # come _tl_next: un gregario sconfitto esce dalla Timeline
+				continue
+			if not BattleState.is_alive(BattleState.unit(state, str(_entry(state, s)["unit"]))):
+				sim.erase(k)
 				continue
 			out.append(_entry(state, s))
 			continue
 		if not _hero_can_play(state, k):
+			# Lo slot KO/ceduto non agisce, ma viene riprogrammato: senza questo
+			# passaggio _pick lo riseleziona all'infinito e nasconde gli altri turni.
 			done[k] = true
+			s["at"] = t + delta_t(int(BattleTypes.TL_COST["attacco"]), _spd_of(state, s))
+			s["a"] = 0
+			s["r"] = 0
+			s.erase("prio")
+			st += 1
+			s["stamp"] = st
 			continue
 		done[k] = true
 		out.append(_entry(state, s))

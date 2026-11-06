@@ -23,13 +23,53 @@ static func snapshot(state: Dictionary) -> Dictionary:
 static func record(state: Dictionary, before: Dictionary, events: Array, phase: String) -> void:
 	if before.is_empty():
 		return
-	var source: String = phase
+	# La fonte e' attribuita per personaggio: una singola lista eventi puo' contenere
+	# azioni/reazioni di piu' unita'. Non usare l'ultima azione vista per tutte le risorse.
+	var source_by_unit: Dictionary = {}
+	var source_by_unit_resource: Dictionary = {}
 	if phase != "phase_transition":
+		# Le tecniche a due emettono sia "act" sia "duo" per lo stesso attore:
+		# la seconda etichetta e' piu' specifica e deve prevalere sulla prima.
+		var duo_by_unit: Dictionary = {}
 		for e in events:
-			if str(e.get("t", "")) == "act":
-				source = "azione:" + str(e.get("move", "unknown"))
 			if str(e.get("t", "")) == "duo":
-				source = "duo:" + str(e.get("id", "unknown"))
+				var duo_uid: String = str(e.get("unit", ""))
+				if duo_uid != "":
+					duo_by_unit[duo_uid] = str(e.get("id", "unknown"))
+		for e in events:
+			var kind: String = str(e.get("t", ""))
+			var uid: String = str(e.get("unit", ""))
+			if uid == "":
+				continue
+			if kind == "resource_change":
+				var resource_key: String = uid + "|" + str(e.get("resource", ""))
+				var resource_source: String = str(e.get("source", phase))
+				if source_by_unit_resource.has(resource_key) and str(source_by_unit_resource[resource_key]) != resource_source:
+					source_by_unit_resource[resource_key] = "mista"
+				else:
+					source_by_unit_resource[resource_key] = resource_source
+				continue
+			var candidate: String = ""
+			if kind == "act":
+				var move_id: String = str(e.get("move", "unknown"))
+				candidate = "duo:" + move_id if str(duo_by_unit.get(uid, "")) == move_id else "azione:" + move_id
+			elif kind == "duo":
+				candidate = "duo:" + str(e.get("id", "unknown"))
+			if candidate == "":
+				continue
+			if source_by_unit.has(uid) and str(source_by_unit[uid]) != candidate:
+				source_by_unit[uid] = "mista"
+			else:
+				source_by_unit[uid] = candidate
+	else:
+		# La lista eventi di fine round contiene anche azioni precedenti. In transizione
+		# attribuiamo soltanto le mutazioni esplicitamente generate dal cambio fase.
+		for e in events:
+			if str(e.get("t", "")) != "resource_change" or str(e.get("source", "")) != "phase_change":
+				continue
+			var resource_key: String = str(e.get("unit", "")) + "|" + str(e.get("resource", ""))
+			if resource_key != "|":
+				source_by_unit_resource[resource_key] = "phase_change"
 	for uid in before:
 		var old: Dictionary = before[uid]
 		var current: Dictionary = state.get("units", {}).get(str(uid), {})
@@ -51,7 +91,7 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 				"delta": delta,
 				"before": was,
 				"after": now,
-				"source": source,
+				"source": str(source_by_unit_resource.get(str(uid) + "|" + resource, source_by_unit.get(str(uid), phase))),
 				"phase": phase
 			})
 

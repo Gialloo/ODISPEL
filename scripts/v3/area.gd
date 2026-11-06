@@ -56,6 +56,7 @@ var _pause_btn: Button
 var _pause: Control
 var _mouse_drag: bool = false
 var _shake: float = 0.0
+var _presentation_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _cam_pos: Vector3
 var _env: Environment
 var _dome: MeshInstance3D
@@ -96,6 +97,7 @@ static func _v3(a: Variant, y: float = 0.14) -> Vector3:
 
 
 func _ready() -> void:
+	_presentation_rng.randomize()
 	Breadcrumb.mark("strada_carico")
 	cfg = Story.area(area_id)
 	clues = (resume.get("clues", []) as Array).duplicate()
@@ -192,7 +194,7 @@ func _build_enemies() -> void:
 		v.awake = true
 		v.position = _v3(e["pos"], 0.0)
 		add_child(v)
-		_enemies[id] = {"node": v, "cfg": e, "home": v.position, "phase": randf() * TAU}
+		_enemies[id] = {"node": v, "cfg": e, "home": v.position, "phase": _presentation_rng.randf() * TAU}
 
 
 func _build_boss_and_exit() -> void:
@@ -390,6 +392,10 @@ func _process(delta: float) -> void:
 		_enemy_t += delta
 		_grace = maxf(0.0, _grace - delta)
 	else:
+		# Dialoghi e pausa non inoltrano i rilasci touch al controller.
+		# Libera una sola volta gli input rimasti acquisiti entrando in uno stato non esplorabile.
+		if _touch != null and _touch.has_active_input():
+			_touch.release_all()
 		player.move_speed = 0.0
 	_follow(delta)
 	_animate_world(delta)
@@ -547,7 +553,7 @@ func _update_camera(delta: float, snap: bool) -> void:
 	if _shake > 0.0:
 		_shake = maxf(0.0, _shake - delta * 2.5)
 		var k2: float = _shake * Settings.shake * 0.25
-		sh = Vector3(randf_range(-k2, k2), randf_range(-k2, k2), 0)
+		sh = Vector3(_presentation_rng.randf_range(-k2, k2), _presentation_rng.randf_range(-k2, k2), 0)
 	cam.position = _cam_pos + sh
 	cam.look_at(look + sh * 0.5, Vector3.UP)
 
