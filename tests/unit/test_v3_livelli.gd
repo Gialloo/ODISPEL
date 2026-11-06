@@ -52,6 +52,12 @@ func _run() -> void:
 	ch.quiet = false
 	ch.call("_chat_tick", 2.0)
 	_chk(not (ch.get("_chat") as Array).is_empty(), "la chat torna durante la mossa")
+	# feedback dei tester (6/11/2026): i messaggi gia' a schermo restano da leggere anche quando si torna a scegliere
+	var n_prima: int = (ch.get("_chat") as Array).size()
+	ch.quiet = true
+	ch.call("_chat_tick", 2.0)
+	_chk((ch.get("_chat") as Array).size() == n_prima, "mentre si sceglie la chat non aggiunge messaggi ma non cancella quelli da leggere")
+	_chk(CamHud.CHAT_LIFE >= 5.0, "ogni messaggio della diretta resta almeno 5 secondi")
 	ch.free()
 	print("test_v3_livelli: ", "OK" if fails == 0 else "%d FALLITI" % fails)
 	quit(1 if fails > 0 else 0)

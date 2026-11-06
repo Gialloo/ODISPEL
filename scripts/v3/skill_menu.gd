@@ -182,6 +182,11 @@ func _list_rect() -> Rect2:
 	return Rect2(LEFT - 40.0, TOP - 20.0, WIDTH + 120.0, float(_rows_vis) * ROW_H + 40.0)
 
 
+# Spazio occupato dalla tendina (lista, frecce e spiegazione): il cartellino del nemico ci sta fuori (battle3d._place_boss_tag)
+func area() -> Rect2:
+	return Rect2(0.0, 0.0, LEFT + WIDTH + 100.0, size.y if size.y > 1.0 else get_viewport_rect().size.y)
+
+
 func _row_at(p: Vector2) -> int:
 	for k in _rows.size():
 		if (_rows[k] as Rect2).has_point(p):
