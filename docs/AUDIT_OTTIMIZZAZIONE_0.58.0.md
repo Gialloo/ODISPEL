@@ -992,3 +992,27 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test effettivamente eseguiti:** lettura dei quattro contesti, verifica delle chiamate casuali nel file e rilettura statica della modifica su GitHub. Nessun test Godot, replay o benchmark runtime eseguito.
 - **Limite noto:** la posizione esatta degli elementi grafici e la variante testuale possono differire rispetto a una versione precedente o fra esecuzioni. La casualità di presentazione non è sincronizzata né salvata: è intenzionale, perché questi valori non devono influenzare la simulazione.
 - **Prossimo passo:** controllare gli altri file del percorso battaglia e i punti di creazione degli effetti, per assicurarsi che non restino chiamate globali che alimentano indirettamente decisioni di gameplay o dati persistenti.
+
+
+### 2026-11-06 — Inventario esteso e isolamento RNG dei sistemi secondari
+
+- **Ambito della scansione:** inventario ricorsivo del branch e scansione statica dei file GDScript in `scripts/engine/` e `scripts/v3/` (80 file); controllo aggiuntivo di `data/cast_visual.gd`. Non sono stati inclusi nella conclusione i file di test e gli strumenti di sviluppo, che non partecipano al normale runtime del gioco.
+- **Risultato sul motore:** nei file `scripts/engine/` esaminati non sono state trovate chiamate dirette alle funzioni casuali globali standard (`randf`, `randf_range`, `randi`, `randi_range`, `randfn`, `rand_from_array`, `pick_random`). `BattleResolver` continua a usare `RNGState`; la generazione dell'arena in `battle3d.gd` continua a usare `cb.rng`; `CityBuilder` e `NightFx` mantengono i propri generatori locali.
+- **Consumatori globali individuati e isolati:**
+  - `scripts/v3/area.gd`: fase iniziale delle anomalie e tremolio della camera, ora su `_presentation_rng`.
+  - `scripts/v3/banter.gd`: intervalli e scelta delle chiacchiere casuali, ora su RNG dell'istanza.
+  - `scripts/v3/glitch_fx.gd`: seed dello shader glitch, ora su RNG dell'istanza.
+  - `scripts/v3/light_fx.gd`: seed, arco del tratto e direzione/velocità/durata delle scintille, ora su RNG privato di ciascun effetto.
+  - `scripts/v3/onomato.gd`: inclinazione, deformazione, saetta e jitter delle onomatopee, ora su RNG dell'istanza.
+  - `scripts/v3/ritratto_lampo.gd`: seed del ritratto, ora generato da RNG locale; il disegno continua a usare il seed per la propria sequenza ripetibile.
+  - `scripts/v3/huddle_menu.gd`: scelta dei sussurri e delle battute, più durata delle oscillazioni, ora su RNG del menu; la funzione statica `quip()` usa un RNG locale.
+  - `scripts/v3/sfx.gd`: variazione di pitch delle parole a fumetto, ora su RNG locale alla chiamata.
+  - `scripts/v3/react_game.gd`: direzione iniziale della freccia del minigioco, ora su RNG dell'istanza. La direzione resta casuale; non cambia il calcolo del grado della reazione.
+- **Decisione sui dialoghi:** le estrazioni di Banter e HuddleMenu selezionano battute già presenti nei dati e non modificano progressione o stato di combattimento. Sono state isolate senza cambiare pool, condizioni, testi, frequenza o regole `una_volta`.
+- **Comportamento atteso complessivo:** gli effetti grafici, i suoni, le animazioni ambientali, le chiacchiere e la direzione della freccia non consumano più la sequenza casuale globale condivisa. Restano distinti RNG del resolver, RNG di generazione arena e generatori di presentazione.
+- **Cosa non cambia:** seed/stato persistente del combattimento, formule di danno, turni, QTE grade, ricompense, progressione, dati narrativi, pool di battute, intervalli visivi e valori di pitch. Non sono stati modificati `BattleResolver`, `RNGState`, formato dei salvataggi o contenuti di dialogo.
+- **Verifica statica post-modifica:** i nove file modificati sono stati riletti da GitHub e controllati per assenza di chiamate dirette alle funzioni casuali globali standard; tutti mostrano riferimenti ai generatori locali previsti. La scansione del motore non ha trovato chiamate globali dirette nei file `scripts/engine/`.
+- **Test consigliati:** eseguire la suite unità completa; provare reazioni `arrow` e tutte le altre modalità; ripetere battaglie con stesso seed e confrontare eventi/stato del resolver; verificare effetti visivi, suoni, banter e riunione di pausa con effetti ridotti e normali.
+- **Test effettivamente eseguiti:** inventario Git ricorsivo, scansione testuale statica dei sorgenti runtime indicati, rilettura dei nove file modificati e controllo delle chiamate globali residue. Nessun test Godot, replay, benchmark o verifica audio/video runtime è stato eseguito.
+- **Limiti della scansione:** è una ricerca statica delle API casuali standard, non un'analisi semantica completa; non certifica chiamate indirette tramite wrapper o metodi dinamici, né il comportamento a runtime. File in `tests/` e `tools/` non sono inclusi in questa conclusione.
+- **Prossimo passo:** esaminare i test di determinismo e i punti che inizializzano/caricano `RNGState`, poi verificare se i test esistenti coprono l'indipendenza tra presentazione e simulazione senza introdurre modifiche al formato dei salvataggi.
