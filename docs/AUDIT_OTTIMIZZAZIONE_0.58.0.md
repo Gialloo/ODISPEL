@@ -664,3 +664,5 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunto:** con velocità uniformi verifica che il turno corrente resti in testa, che il prossimo slot non duplichi il personaggio corrente e che la chiamata non modifichi lo stato reale.
 - **Verifiche:** controllo statico di `_tl_next()`, `_schedule_from()` e `_tl_player()`; test aggiunto ma non eseguito con Godot.
 - **Impatto:** solo visualizzazione/anteprima della Timeline; nessuna modifica all'ordine reale, al bilanciamento o alle azioni di combattimento.
+
+- **Controllo aggiuntivo della correzione:** la riprogrammazione della copia simulata usa un contatore `stamp` locale; non richiama il mutatore `_schedule_from()` sulla Timeline reale. Il test ora controlla anche che `tl.stamp` e il tempo dello slot corrente restino invariati dopo `preview()`. Setup del test reso deterministico (eroi VEL 120, boss VEL 60).
