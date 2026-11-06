@@ -186,8 +186,8 @@ static func save() -> bool:
 			DirAccess.rename_absolute(backup_abs, save_abs)
 		DirAccess.remove_absolute(temp_abs)
 		return false
-	if FileAccess.file_exists(backup_path):
-		DirAccess.remove_absolute(backup_abs)
+	# Il .bak e' il punto di recupero dell'ultimo salvataggio valido precedente.
+	# Non eliminarlo dopo la scrittura: deve restare disponibile se il nuovo file si corrompe.
 	return true
 
 
