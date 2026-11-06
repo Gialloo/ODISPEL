@@ -268,6 +268,15 @@ func _interruzione() -> void:
 	check(int(ev.get("to", -1)) == BattleFlow.delta_t(60, spd), "INTERRUZIONE: rientra col 50%% del costo interrotto (%d)" % int(ev.get("to", -1)))
 	check(bool(tl["tele_used"]), "INTERRUZIONE: la mossa annunciata e' persa, la prossima azione ne annuncia una nuova")
 
+	# Simula il caso limite: l'azione interrotta rientra oltre il confine del round.
+	var cycle_before: int = int(s["cycle_index"])
+	tl["slots"]["boss"]["at"] = int(tl["now"]) + 999999
+	BattleFlow.finish(s)
+	check(bool(tl["tele_used"]), "INTERRUZIONE: il flag della mossa persa sopravvive alla fine del round")
+	BattleFlow.start_round(s)
+	BattleFlow.boss_action(s)
+	check(int(s["cycle_index"]) == cycle_before + 2, "INTERRUZIONE oltre round: salta la mossa annullata e poi annuncia la successiva")
+
 
 func _slancio_costo() -> void:
 	var s: Dictionary = _fresh("semaforo", 10)
