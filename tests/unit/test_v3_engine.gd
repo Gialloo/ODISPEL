@@ -79,8 +79,17 @@ func _init() -> void:
 	invalid_progress["lv"]["ferri"] = 101
 	check(not Progress.validate_save(invalid_progress), "livello fuori limite rifiutato")
 	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["lv"]["ferri"] = 1.5
+	check(not Progress.validate_save(invalid_progress), "livello frazionario rifiutato")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["exp"]["nox"] = 0.5
+	check(not Progress.validate_save(invalid_progress), "esperienza frazionaria rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
 	invalid_progress["exp"]["nox"] = Progress.exp_need(int(invalid_progress["lv"]["nox"]))
 	check(not Progress.validate_save(invalid_progress), "esperienza oltre soglia rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["stolen_from"]["mossa_inesistente"] = "Nemico"
+	check(not Progress.validate_save(invalid_progress), "fonte di mossa rubata senza mossa corrispondente rifiutata")
 	invalid_progress = valid_progress.duplicate(true)
 	invalid_progress["equip"]["ferri"]["skill"] = "mossa_inesistente"
 	check(not Progress.validate_save(invalid_progress), "abilità equipaggiata inesistente rifiutata")
