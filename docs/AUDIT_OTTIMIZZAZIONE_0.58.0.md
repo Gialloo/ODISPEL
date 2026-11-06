@@ -355,6 +355,20 @@ Nessuna modifica a regole di gioco, dialoghi, bilanciamento o contenuti narrativ
 - **Rischi residui:** un campione di 180 frame migliora la lettura dei picchi ma resta breve per sessioni lunghe; il tempo totale del frame è una misura osservata dal loop, non una misura isolata della GPU.
 - **Espansioni future:** esportazione CSV/JSON, più ripetizioni per scenario e confronto automatico tra baseline e build ottimizzata.
 
+### 2026-11-06 — Copertura shader warmup: disturbo StaticFx
+
+- **Branch:** `experiment/0.58.0-audit-ottimizzazione`.
+- **File coinvolti:** `scripts/v3/static_fx.gd`, `scripts/v3/shader_warmup.gd`.
+- **Criticità osservata:** il warmup includeva i materiali Toon, pioggia, telecamera rotta e glitch, ma non lo shader spaziale personalizzato di `StaticFx`, usato per il disturbo visivo durante BREAK/KO.
+- **Evidenza:** nell'elenco `mats` di `ShaderWarmup._ready()` non era presente alcun materiale costruito con `StaticFx.SHADER`; `StaticFx` creava lo shader solo quando veniva istanziato per la prima volta.
+- **Modifica effettuata:** aggiunto `StaticFx.shader()` come accessor statico con inizializzazione lazy condivisa; il warmup crea un `ShaderMaterial` con quello shader e lo inserisce nella lista dei materiali da disegnare.
+- **Obiettivo:** anticipare la compilazione del disturbo al warmup, evitando che il primo BREAK/KO paghi il costo della prima compilazione.
+- **Test eseguiti:** controllo statico delle due modifiche e verifica della presenza dello shader nel materiale del warmup.
+- **Esito:** modifica salvata nel branch sperimentale.
+- **Test non eseguiti / limiti:** non è stato possibile eseguire Godot, verificare la compilazione GDScript/shader o misurare lo stutter prima/dopo; l'efficacia effettiva va confermata su PC e Android.
+- **Rischi residui:** il warmup deve effettivamente renderizzare il quad con il materiale nel SubViewport; la verifica runtime resta necessaria. Il nuovo materiale aggiunge un solo shader al breve warmup.
+- **Espansioni future:** inventario automatico degli shader usati dalle scene e test a freddo che verifichi che ogni shader critico sia compilato prima del primo utilizzo.
+
 ## 11. Modello per gli aggiornamenti futuri
 
 Per ogni intervento aggiungere una voce con questo schema:
