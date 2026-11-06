@@ -2671,41 +2671,131 @@
     ]
   },
   "c3_sera_ferri_saul": {
-    "riassunto": "Sul tetto Lance e Saul si fanno una promessa. Legame Lance e Saul.",
+    "riassunto": "La sera prima del colpo, Lance e Saul restano sul tetto del rifugio. Domani dovranno fidarsi l'uno dell'altro.",
     "righe": [
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "Domani entri in un caveau pieno di cose che hai sempre voluto. So cosa pensi."
+        "testo": "Domani entriamo in un caveau pieno di cose che hai sempre desiderato. Non ti chiederò di fingere che non ti interessi."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Penso che tu stia diventando un amico. È disgustoso."
+        "testo": "Finalmente qualcuno che mi capisce. Cominciavo a preoccuparmi."
       },
       {
         "chi": "ferri",
         "espr": "neutro",
-        "testo": "Se scappi, ti inseguo io. Non Astrid. Io."
-      },
-      {
-        "chi": "saul",
-        "espr": "serio",
-        "testo": "...Affare fatto. Mia nonna diceva: fidati di chi promette di inseguirti."
-      },
-      {
-        "chi": "ferri",
-        "espr": "serio",
-        "testo": "Quale nonna?"
+        "testo": "Ma se domani ti viene voglia di scappare con il bottino, dovrai passare su di me."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Ne ho tre.",
+        "testo": "È una minaccia o una promessa?"
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "Una promessa. Se scappi, ti vengo a riprendere io. Non Astrid. Io."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "...Ti stai preoccupando per me? Lance, che schifo, non me lo aspettavo da uno come te."
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Non abituarti."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Tranquillo. Come disse il saggio, \"diffida degli amici troppo affettuosi.\""
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Non siamo amici Saul."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Complici?"
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Non ho commesso nessun crimine, quindi no."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Conoscenti."
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Si, purtroppo."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Quando tutto questo sarà finito ci faremo una bevuta insieme."
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Quando tutto questo sarà finito sarò in servizio."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Anche io."
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Non bevo in servizio."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Ecco qui si vedea differenza tra le nostre carriere."
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Non hai una carriera Saul, hai un record criminale."
+      },
+      {
+        "chi": "saul",
+        "espr": "felice",
+        "testo": "Puoi dirlo forte capo, un record! Che nessuno ha ancora superato tra l'altro."
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "Sei senza speranza Saul."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Hai parlato con Nox recentemente?"
+      },
+      {
+        "chi": "ferri",
+        "espr": "neutro",
+        "testo": "No, perché?"
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Niente, curiosità.",
         "imposta": "legame_ferri_saul"
       }
     ]
-  },
+  }
   "c3_sera_nox_zecca": {
     "riassunto": "Nox e Rio guardano le foto di prima della cupola. Legame Nox e Rio.",
     "righe": [
