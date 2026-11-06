@@ -22,6 +22,7 @@ func _init() -> void:
 	left.pressed = true
 	check(controls.handle(left), "il dito sinistro attiva lo stick")
 	check(controls._stick_idx == 0, "indice del dito stick registrato")
+	check(controls.has_active_input(), "il controller rileva input touch attivo")
 
 	var right := InputEventScreenTouch.new()
 	right.index = 1
@@ -46,6 +47,7 @@ func _init() -> void:
 	check(controls._stick_idx == -1 and controls._cam_idx == -1, "release_all libera entrambe le dita")
 	check(controls.stick == Vector2.ZERO and controls.cam_drag == Vector2.ZERO, "release_all azzera movimento e camera")
 	check(controls._knob == Vector2.ZERO, "release_all centra la manopola")
+	check(not controls.has_active_input(), "release_all porta il controller in stato inattivo")
 
 	# Anche una perdita di focus deve liberare i tocchi se il sistema operativo
 	# non invia i normali eventi di rilascio.
