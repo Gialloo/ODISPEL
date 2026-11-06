@@ -575,3 +575,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunto:** caso interruzione oltre round, boss portato sotto la soglia della fase 2, verifica del reset del flag e controllo che la prima azione del nuovo ciclo porti l'indice a 1 (non 2).
 - **Verifiche eseguite:** ispezione di `BattleResolver._check_phase()` e della sequenza `finish → start_round → boss_action`; test aggiunto. Nessuna esecuzione Godot/headless.
 - **Impatto:** evita che un'interruzione del vecchio ciclo alteri il primo attacco della fase successiva. Nessuna variazione a danni o parametri di fase.
+
+### 2026-11-06 — Salvataggi: mantenimento del checkpoint di recupero
+
+- **File modificati:** `scripts/v3/story.gd`, `tests/unit/test_v3_engine.gd`.
+- **Criticità concreta trovata nel secondo audit:** la routine `Story.save()` ruotava correttamente il salvataggio valido precedente in `.bak`, ma subito dopo eliminava il backup appena creato. Il recupero funzionava solo se l'app si interrompeva durante la sostituzione del file; non restava invece un checkpoint valido dopo un salvataggio completato, quindi una corruzione successiva del file principale non avrebbe avuto un backup aggiornato.
+- **Correzione applicata:** il backup precedente viene conservato dopo il completamento della scrittura. Al salvataggio successivo, se il file principale è valido, il backup più vecchio viene sostituito dal precedente principale valido. Se il principale è invalido, viene isolato in `.bad` e l'eventuale backup valido non viene sovrascritto.
+- **Test di regressione aggiunti:** dopo un avanzamento, verificare che `.bak` esista ancora, sia leggibile e contenga il passo precedente al nuovo salvataggio.
+- **Verifiche eseguite:** confronto statico del percorso `save → backup → rename` e aggiornamento del test automatico. Il test non è stato eseguito con Godot; non si dichiara superato.
+- **Rischi residui:** il backup è un singolo checkpoint, non una cronologia; non sostituisce backup esterni. Le operazioni di rinomina e rimozione dipendono dal filesystem della piattaforma e devono essere collaudate su Android e Windows.
+- **Prossimo test locale:** eseguire `godot --headless --path . -s tests/unit/test_v3_engine.gd`; poi simulare una chiusura forzata tra la rotazione del file e il rename finale, su una copia del salvataggio di test.
