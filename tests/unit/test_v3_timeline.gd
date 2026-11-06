@@ -335,11 +335,11 @@ func _ingresso() -> void:
 
 func _preview_turno_corrente() -> void:
 	var s: Dictionary = _fresh("semaforo", 23)
-	# Velocita' uguali: dopo il turno corrente devono comparire gli altri slot,
-	# non una copia del personaggio che sta gia' agendo.
+	# Gli eroi sono piu' veloci del boss: il primo slot e' sicuramente un eroe.
+	# Dopo il turno corrente devono comparire gli altri slot, non una sua copia.
 	for player in s["players"]:
-		BattleState.active_unit(s, str(player["id"]))["spd"] = 100
-	BattleState.boss(s)["spd"] = 100
+		BattleState.active_unit(s, str(player["id"]))["spd"] = 120
+	BattleState.boss(s)["spd"] = 60
 	BattleFlow.start_round(s)
 	var current: Dictionary = BattleFlow.next(s)
 	check(not bool(current.get("end", false)) and not bool(current.get("boss", false)), "preview corrente: il test parte da un turno eroe")
