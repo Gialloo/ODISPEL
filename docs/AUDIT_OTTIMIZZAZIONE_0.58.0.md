@@ -611,3 +611,7 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunti:** SLANCIO protetto presente in prima posizione della previsione; previsione senza consumo/modifica dello stato salvato; turno extra di un personaggio KO escluso.
 - **Verifiche:** confronto statico dei percorsi `preview → _pick` e `next → ready_kept/_can_play`; test aggiunti ma non eseguiti con Godot.
 - **Impatto:** solo accuratezza della Timeline mostrata; nessuna modifica a costi, danni, risorse o regole di combattimento.
+
+
+- **Ulteriore discrepanza rilevata nello stesso controllo:** quando tutti gli slot ordinari erano già completati e non restavano turni extra validi, `preview()` continuava a simulare gli slot riprogrammati del round successivo. `next()`, invece, termina il round. La previsione ora si ferma quando `_all_done()` è vero e non esiste un bonus giocabile; se i bonus presenti sono invalidi, li scarta e termina senza mostrare turni ordinari fuori dal round.
+- **Test esteso:** dopo aver marcato completati tutti gli slot, la previsione contiene soltanto lo SLANCIO protetto già pronto e non inventa turni ordinari oltre la fine del round.
