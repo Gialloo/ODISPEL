@@ -1016,3 +1016,24 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test effettivamente eseguiti:** inventario Git ricorsivo, scansione testuale statica dei sorgenti runtime indicati, rilettura dei nove file modificati e controllo delle chiamate globali residue. Nessun test Godot, replay, benchmark o verifica audio/video runtime è stato eseguito.
 - **Limiti della scansione:** è una ricerca statica delle API casuali standard, non un'analisi semantica completa; non certifica chiamate indirette tramite wrapper o metodi dinamici, né il comportamento a runtime. File in `tests/` e `tools/` non sono inclusi in questa conclusione.
 - **Prossimo passo:** esaminare i test di determinismo e i punti che inizializzano/caricano `RNGState`, poi verificare se i test esistenti coprono l'indipendenza tra presentazione e simulazione senza introdurre modifiche al formato dei salvataggi.
+
+
+
+### 2026-11-06 — Ulteriore isolamento RNG nei sistemi secondari V3
+
+- **File modificati:** `scripts/v3/area.gd`, `banter.gd`, `glitch_fx.gd`, `light_fx.gd`, `onomato.gd`, `ritratto_lampo.gd`, `huddle_menu.gd`, `sfx.gd`.
+- **Perimetro:** verifica mirata dei consumatori casuali in questi otto file del percorso V3. Non equivale a una prova formale che ogni file della repository sia privo di RNG globale.
+- **Area:** aggiunto RNG privato per le fasi iniziali degli Anomaly/Vending e per il tremolio della telecamera esplorativa. Le fasi e lo shake restano cosmetici; posizioni, collisioni, incontri e progressione non vengono estratti da questo generatore.
+- **Banter:** intervallo fra battute e scelta casuale della battuta ora usano un RNG privato del controller. Il testo e le condizioni che consentono la battuta non cambiano; la scelta resta casuale e non è sincronizzata con il seed della battaglia.
+- **GlitchFx:** seed dei parametri shader di pulse/transmit ora provengono da RNG privato dell'effetto.
+- **LightFx:** ogni effetto creato tramite `_make()` inizializza il proprio RNG; seed grafico, curvatura della pennellata e direzioni/velocità/durate delle scintille usano quell'istanza. Gli effetti sono solo presentazione; le chiamate statiche `stroke()` e `sparks()` ottengono l'istanza già inizializzata da `_make()`.
+- **Onomato:** rotazione, dispersione, scala e jitter delle lettere ora usano RNG privato per ogni onomatopea.
+- **RitrattoLampo:** il valore iniziale usato per il seed grafico è generato da RNG privato; il disegno continua a usare un RNG locale inizializzato da `_seed` e dal tempo normalizzato, mantenendo stabile la composizione fra redraw equivalenti.
+- **HuddleMenu:** selezione delle battute e variazione dei tempi di inclinazione usano RNG privato dell'istanza; la funzione statica `quip()` usa un RNG locale perché non dispone di un'istanza proprietaria.
+- **Sfx:** la variazione minima del pitch dei suoni-parola usa un RNG locale; non cambia il suono selezionato né la mappa delle parole.
+- **Correzione durante verifica:** l'ispezione post-modifica ha individuato riferimenti duplicati `_rng._rng` in Banter, GlitchFx e Onomato; sono stati corretti in `_rng` e i tre file sono stati riletti. Questo controllo è stato necessario prima di considerare la modifica verificata.
+- **Comportamento atteso complessivo:** questi sistemi non consumano più la sequenza casuale globale per gli usi elencati. Il resolver e il formato RNG dei salvataggi non sono stati modificati.
+- **Test consigliati:** avvio area e movimento con shake; attesa delle battute contestuali; attivazione glitch e scintille in combattimento; visualizzazione onomatopee e cut-in; apertura/chiusura menu Huddle e riproduzione suoni-parola. Ripetere un combattimento con presentazione attiva/disattiva e confrontare eventi e stato finale del resolver.
+- **Test effettivamente eseguiti:** recupero e lettura dei file interessati, ricerca statica delle chiamate globali nei file modificati, controllo dei riferimenti RNG locali e verifica delle correzioni duplicate tramite fetch GitHub. Nessun test Godot, test unitario, prova audio/visiva o replay runtime eseguito.
+- **Limiti e rischi residui:** le battute contestuali e quelle dell'Huddle possono seguire sequenze diverse rispetto alle versioni precedenti, pur mantenendo pool e condizioni. I sistemi cosmetici non sono riproducibili dal seed della partita. L'RNG locale creato in `Sfx.word()` e `HuddleMenu.quip()` ha un piccolo costo di allocazione; da misurare prima di ottimizzarlo ulteriormente. Non è stata eseguita una scansione completa e certificata di tutti i file GDScript della repository.
+- **Prossimo passo:** eseguire una revisione statica finale dei chiamanti rimasti e dei punti di creazione/distruzione di questi nodi; quindi preparare una lista di test runtime mirati per Claude/Godot, senza modificare il resolver.
