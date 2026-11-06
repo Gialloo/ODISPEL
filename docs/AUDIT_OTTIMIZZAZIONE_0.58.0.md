@@ -475,3 +475,20 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunto:** due dita contemporanee, movimento stick, delta camera, rilascio generale e azzeramento degli indici. Comando documentato nel README: `godot --headless --path . -s tests/unit/test_v3_touch_controls.gd`.
 - **Test eseguiti:** revisione statica e verifica commit. Test GDScript non eseguito; nessuna prova su touchscreen reale.
 - **Rischio residuo:** verificare che gli aggiornamenti visivi restino immediati su dispositivi Android e che il comportamento del setter GDScript sia compatibile con Godot 4.7.2. Il risparmio effettivo di CPU/GPU/batteria va misurato sul telefono.
+
+
+### 2026-11-06 — Mappatura strutturale di battle3d.gd
+
+- **File esaminato:** `scripts/v3/battle3d.gd` (4.915 righe, circa 130 funzioni).
+- **Aree individuate nella lettura statica:**
+  - bootstrap e arena: `configure`, `_ready`, `_build_arena`, `_setup_battle`, `_build_units`;
+  - camera e inquadrature: `_cam_*`, `_cam_fit`, `_cam_glide`, `_damp`;
+  - ciclo combattimento e input: `_start_round`, `_advance`, `_command`, `_do_action`, `_boss_turn`, tutorial e guardia a tempo;
+  - presentazione degli eventi: `_show_events`, numeri, anelli, scintille, combo, cut-in e animazioni di BREAK;
+  - regia narrativa e boss: intro, fasi, battute, telecamera rotta, vittoria e ricompense;
+  - HUD e comandi: `_build_ui`, ruota comandi, abilità, HUD, indicatori di minaccia, banner e notifiche;
+  - pausa e input globale: `_unhandled_input`, `back`, pausa.
+- **Decisione tecnica:** nessuna estrazione automatica in questa fase. Le funzioni condividono molte variabili di scena e riferimenti UI; spostarle in Node/RefCounted separati senza una mappa delle dipendenze rischia regressioni di ordine, tween, segnali e stato.
+- **Piano di refactoring sicuro (futuro):** prima inventario delle variabili condivise e dei segnali; poi test di caratterizzazione su una battaglia completa; estrarre prima componenti con confini chiari (HUD/notifiche e camera), lasciando in `battle3d.gd` il coordinamento del turno; un gruppo alla volta, con test prima/dopo e confronto visivo.
+- **Miglioria attuale:** mappatura documentata, nessuna modifica architetturale rischiosa.
+- **Test eseguiti:** conteggio statico righe/funzioni e lettura delle intestazioni. Nessun refactoring o test runtime.
