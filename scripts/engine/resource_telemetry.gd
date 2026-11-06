@@ -61,6 +61,15 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 				source_by_unit[uid] = "mista"
 			else:
 				source_by_unit[uid] = candidate
+	else:
+		# La lista eventi di fine round contiene anche azioni precedenti. In transizione
+		# attribuiamo soltanto le mutazioni esplicitamente generate dal cambio fase.
+		for e in events:
+			if str(e.get("t", "")) != "resource_change" or str(e.get("source", "")) != "phase_change":
+				continue
+			var resource_key: String = str(e.get("unit", "")) + "|" + str(e.get("resource", ""))
+			if resource_key != "|":
+				source_by_unit_resource[resource_key] = "phase_change"
 	for uid in before:
 		var old: Dictionary = before[uid]
 		var current: Dictionary = state.get("units", {}).get(str(uid), {})
