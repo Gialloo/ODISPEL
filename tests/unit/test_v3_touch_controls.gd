@@ -47,6 +47,18 @@ func _init() -> void:
 	check(controls.stick == Vector2.ZERO and controls.cam_drag == Vector2.ZERO, "release_all azzera movimento e camera")
 	check(controls._knob == Vector2.ZERO, "release_all centra la manopola")
 
+	# Anche una perdita di focus deve liberare i tocchi se il sistema operativo
+	# non invia i normali eventi di rilascio.
+	controls._stick_idx = 2
+	controls._cam_idx = 3
+	controls.stick = Vector2(0.8, -0.4)
+	controls.cam_drag = Vector2(45, -20)
+	controls._knob = Vector2(30, -15)
+	controls._notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	check(controls._stick_idx == -1 and controls._cam_idx == -1, "focus out libera entrambe le dita")
+	check(controls.stick == Vector2.ZERO and controls.cam_drag == Vector2.ZERO, "focus out azzera movimento e camera")
+	check(controls._knob == Vector2.ZERO, "focus out centra la manopola")
+
 	TouchUi.force = false
 	print("test_v3_touch_controls: " + ("OK" if fails == 0 else "%d errori" % fails))
 	quit(1 if fails > 0 else 0)
