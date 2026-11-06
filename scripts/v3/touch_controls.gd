@@ -58,6 +58,9 @@ func release_all() -> void:
 	_stick_idx = -1
 	_cam_idx = -1
 	stick = Vector2.ZERO
+	cam_drag = Vector2.ZERO
+	_knob = Vector2.ZERO
+	queue_redraw()
 
 
 # Da chiamare da _input della scena (cosi' riceve i tocchi anche sopra il 3D)
