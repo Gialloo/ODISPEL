@@ -16,6 +16,9 @@ on:
 
 jobs:
   itch:
+    # La pubblicazione e' consentita soltanto dal branch di release V3.
+    # Evita che un dispatch manuale da branch sperimentali carichi pacchetti su itch.io.
+    if: github.ref == 'refs/heads/claude/v3-prologo'
     runs-on: ubuntu-latest
     env:
       BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
