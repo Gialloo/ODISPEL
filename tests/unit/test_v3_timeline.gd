@@ -268,6 +268,31 @@ func _interruzione() -> void:
 	check(int(ev.get("to", -1)) == BattleFlow.delta_t(60, spd), "INTERRUZIONE: rientra col 50%% del costo interrotto (%d)" % int(ev.get("to", -1)))
 	check(bool(tl["tele_used"]), "INTERRUZIONE: la mossa annunciata e' persa, la prossima azione ne annuncia una nuova")
 
+	# Simula il caso limite: l'azione interrotta rientra oltre il confine del round.
+	var cycle_before: int = int(s["cycle_index"])
+	tl["slots"]["boss"]["at"] = int(tl["now"]) + 999999
+	BattleFlow.finish(s)
+	BattleFlow.start_round(s)
+	BattleFlow.boss_action(s)
+	check(int(s["cycle_index"]) == cycle_before + 2, "INTERRUZIONE oltre round: salta la mossa annullata e poi annuncia la successiva")
+
+	# Se nel frattempo il boss cambia fase, il ciclo nuovo deve partire dalla sua prima mossa.
+	var p: Dictionary = _fresh("semaforo", 19)
+	BattleFlow.start_round(p)
+	var ptl: Dictionary = p["tl"]
+	var pe: Dictionary = BattleFlow.next(p)
+	_play(p, pe)
+	BattleFlow.interrupt(p, "boss", 120)
+	var pb: Dictionary = BattleState.boss(p)
+	pb["hp"] = int(float(pb["max_hp"]) * 0.40)
+	ptl["slots"]["boss"]["at"] = int(ptl["now"]) + 999999
+	BattleFlow.finish(p)
+	check(int(p["phase"]) == 2, "INTERRUZIONE + cambio fase: il boss entra nella fase 2")
+	check(not bool(ptl["tele_used"]), "INTERRUZIONE + cambio fase: il flag della fase precedente viene scartato")
+	BattleFlow.start_round(p)
+	BattleFlow.boss_action(p)
+	check(int(p["cycle_index"]) == 1, "la fase nuova esegue la prima mossa del proprio ciclo, senza saltarla")
+
 
 func _slancio_costo() -> void:
 	var s: Dictionary = _fresh("semaforo", 10)
@@ -305,6 +330,116 @@ func _ingresso() -> void:
 				_play(s, e)
 				e = BattleFlow.next(s)
 			check(heroes == 4, "vantaggio: prima tutti e quattro gli eroi (%d)" % heroes)
+
+
+func _preview_quick_slancio_recupero() -> void:
+	var s: Dictionary = _fresh("semaforo", 24)
+	BattleFlow.start_round(s)
+	var tl: Dictionary = s["tl"]
+	var pid: String = _pid(s, "ferri")
+	var other: String = _pid(s, "nox")
+	# Lo slot del personaggio che ha appena ottenuto SLANCIO e' il primo senza il +15.
+	tl["now"] = 0
+	tl["cur"] = pid
+	tl["done"] = {}
+	tl["slots"][pid]["at"] = 1000
+	tl["slots"][other]["at"] = 2000
+	tl["cur_quick"] = {"unit": str(BattleState.active_unit(s, pid)["id"]), "player": pid, "boss": false, "spd": -1, "extra": true, "quick": true, "slancio": true, "waive": false}
+	var real_at: int = int(tl["slots"][pid]["at"])
+	var preview: Array = BattleFlow.preview(s, 4)
+	check(preview.size() > 1 and str(preview[1].get("player", "")) == other, "preview SLANCIO: applica il +15 simulato prima di scegliere il prossimo slot")
+	check(int(tl["slots"][pid]["at"]) == real_at, "preview SLANCIO: non applica il +15 alla Timeline reale")
+	# Lo SLANCIO protetto con costo azzerato non deve ricevere il +15.
+	tl["cur_quick"]["waive"] = true
+	var waived: Array = BattleFlow.preview(s, 4)
+	check(waived.size() > 1 and str(waived[1].get("player", "")) == pid, "preview SLANCIO protetto: rispetta l'esenzione dal +15")
+
+
+func _preview_turno_corrente() -> void:
+	var s: Dictionary = _fresh("semaforo", 23)
+	# Gli eroi sono piu' veloci del boss: il primo slot e' sicuramente un eroe.
+	# Dopo il turno corrente devono comparire gli altri slot, non una sua copia.
+	for player in s["players"]:
+		BattleState.active_unit(s, str(player["id"]))["spd"] = 120
+	BattleState.boss(s)["spd"] = 60
+	BattleFlow.start_round(s)
+	var current: Dictionary = BattleFlow.next(s)
+	check(not bool(current.get("end", false)) and not bool(current.get("boss", false)), "preview corrente: il test parte da un turno eroe")
+	var pid: String = str(current.get("player", ""))
+	var stamp_before: int = int(s["tl"]["stamp"])
+	var at_before: int = int(s["tl"]["slots"][pid]["at"])
+	var preview: Array = BattleFlow.preview(s, 5)
+	check(not preview.is_empty() and str(preview[0].get("player", "")) == pid, "preview corrente: mantiene il turno attualmente selezionato in testa")
+	if preview.size() > 1:
+		check(str(preview[1].get("player", "")) != pid, "preview corrente: non duplica il turno ordinario appena iniziato")
+	check(str(s["tl"]["cur"]) == pid and not bool(s["tl"]["done"].get(pid, false)), "preview corrente: non modifica la Timeline reale")
+	check(int(s["tl"]["stamp"]) == stamp_before and int(s["tl"]["slots"][pid]["at"]) == at_before, "preview corrente: non modifica timbri o tempi reali")
+
+
+func _preview_bonus_coerente() -> void:
+	# La previsione deve riflettere gli SLANCI protetti che next() eseguira' prima degli slot normali.
+	var s: Dictionary = _fresh("semaforo", 21)
+	BattleFlow.start_round(s)
+	var pid: String = _pid(s, "ferri")
+	var uid: String = str(BattleState.active_unit(s, pid)["id"])
+	s["slancio_kept"] = {uid: {"player": pid, "dst": BattleState.BOSS_ID, "waive": true}}
+	var before: Dictionary = (s["slancio_kept"] as Dictionary).duplicate(true)
+	var preview: Array = BattleFlow.preview(s, 8)
+	check(not preview.is_empty() and bool(preview[0].get("kept", false)) and str(preview[0].get("unit", "")) == uid, "preview: mostra lo SLANCIO protetto pronto prima del turno ordinario")
+	check(s["slancio_kept"] == before, "preview: non consuma ne' modifica gli SLANCI protetti")
+
+	# I turni extra non giocabili (per esempio dopo un KO) vanno saltati come fa next().
+	var dead: String = _pid(s, "nox")
+	BattleState.active_unit(s, dead)["hp"] = 0
+	s["tl"]["done"] = {}
+	for player in s["players"]:
+		s["tl"]["done"][str(player["id"])] = true
+	s["tl"]["extra"] = [{"unit": str(BattleState.active_unit(s, dead)["id"]), "player": dead, "boss": false, "spd": -1, "extra": true}]
+	var p2: Array = BattleFlow.preview(s, 8)
+	var leaked: bool = false
+	for entry in p2:
+		if bool(entry.get("extra", false)) and str(entry.get("player", "")) == dead:
+			leaked = true
+	check(not leaked, "preview: non mostra turni extra di un personaggio KO")
+
+	check(p2.size() == 1 and bool(p2[0].get("kept", false)), "preview: dopo gli SLANCI e i bonus non inventa turni ordinari oltre la fine del round")
+
+	# Uno slot senza personaggi in vita deve essere riprogrammato, non riselezionato all'infinito.
+	var skipped: Dictionary = _fresh("semaforo", 22)
+	BattleFlow.start_round(skipped)
+	var dead_pid: String = str(skipped["players"][0]["id"])
+	# Solo il personaggio di questo slot: party_of() in partita solo e' l'intera squadra (prima il test la metteva tutta KO
+	# e non restava nessun turno da mostrare).
+	BattleState.active_unit(skipped, dead_pid)["hp"] = 0
+	check(not BattleFlow._hero_can_play(skipped, dead_pid), "preview: lo slot KO non puo' agire")
+	skipped["tl"]["cur"] = ""
+	skipped["tl"]["now"] = 0
+	skipped["tl"]["slots"][dead_pid]["at"] = 0
+	var after_ko: Array = BattleFlow.preview(skipped, 8)
+	var found_alive: bool = false
+	for entry in after_ko:
+		if not bool(entry.get("boss", false)) and str(entry.get("player", "")) != dead_pid:
+			found_alive = true
+	check(found_alive, "preview: salta lo slot KO e continua con gli altri turni")
+
+
+
+func _carry_difese_e_reazioni() -> void:
+	# Un round puo' chiudersi prima della prossima azione del boss: difese e reazioni devono attendere il colpo annunciato.
+	var s: Dictionary = _fresh("semaforo", 12)
+	BattleFlow.start_round(s)
+	var pid: String = _pid(s, "ferri")
+	var hero: Dictionary = BattleState.active_unit(s, pid)
+	hero["statuses"]["guard"] = 2
+	hero["shield"] = 25
+	s["reactions"] = [{"unit": str(hero["id"]), "react": "dodge"}]
+	s["react_grade"] = {str(hero["id"]): "perfect"}
+	BattleFlow.finish(s)
+	check(int(hero["statuses"].get("guard", 0)) == 2, "Timeline: uno stato difensivo guadagnato prima del boss viene conservato")
+	check(int(hero["shield"]) == 25, "Timeline: lo scudo resta disponibile per la prossima mossa del boss")
+	BattleFlow.start_round(s)
+	check((s["reactions"] as Array).size() == 1, "Timeline: la reazione scelta sopravvive al cambio round senza azione del boss")
+	check(str(s["react_grade"].get(str(hero["id"]), "")) == "perfect", "Timeline: il grado del minigioco resta associato alla reazione conservata")
 
 
 func _scontri_interi() -> void:
@@ -375,6 +510,10 @@ func _init() -> void:
 	_interruzione()
 	_slancio_costo()
 	_ingresso()
+	_carry_difese_e_reazioni()
+	_preview_quick_slancio_recupero()
+	_preview_turno_corrente()
+	_preview_bonus_coerente()
 	_scontri_interi()
 	if fails == 0:
 		print("test_v3_timeline: OK")

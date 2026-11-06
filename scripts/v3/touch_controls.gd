@@ -13,9 +13,18 @@ signal action2_pressed
 const R: float = 95.0
 var stick: Vector2 = Vector2.ZERO          # -1..1 (y negativa = avanti)
 var cam_drag: Vector2 = Vector2.ZERO       # pixel trascinati dall'ultimo fotogramma (si azzera dopo la lettura)
-var act_label: String = ""
-var act_live: bool = false
-var act2_label: String = ""            # secondo tasto (es. ATTACCA), piu' piccolo, a sinistra del primo
+var act_label: String = "":
+	set(value):
+		act_label = value
+		queue_redraw()
+var act_live: bool = false:
+	set(value):
+		act_live = value
+		queue_redraw()
+var act2_label: String = "":           # secondo tasto (es. ATTACCA), piu' piccolo, a sinistra del primo
+	set(value):
+		act2_label = value
+		queue_redraw()
 
 var _stick_idx: int = -1
 var _cam_idx: int = -1
@@ -43,8 +52,12 @@ func act_center() -> Vector2:
 
 
 func _process(delta: float) -> void:
-	_t += delta
-	if TouchUi.active():
+	if not TouchUi.active():
+		return
+	# Ridisegna continuamente soltanto durante le animazioni o mentre lo stick si muove.
+	# A controlli fermi, i setter e gli eventi touch aggiornano il disegno su richiesta.
+	if act_live or act2_label != "" or _stick_idx >= 0:
+		_t += delta
 		queue_redraw()
 
 
@@ -54,10 +67,24 @@ func take_cam_drag() -> Vector2:
 	return d
 
 
+func has_active_input() -> bool:
+	return _stick_idx >= 0 or _cam_idx >= 0 or stick != Vector2.ZERO or cam_drag != Vector2.ZERO or _knob != Vector2.ZERO
+
+
 func release_all() -> void:
 	_stick_idx = -1
 	_cam_idx = -1
 	stick = Vector2.ZERO
+	cam_drag = Vector2.ZERO
+	_knob = Vector2.ZERO
+	queue_redraw()
+
+
+func _notification(what: int) -> void:
+	# Android/iOS possono interrompere la scena mentre un dito e' ancora premuto.
+	# Se il rilascio non arriva, evita stick bloccato o trascinamento camera fantasma.
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		release_all()
 
 
 # Da chiamare da _input della scena (cosi' riceve i tocchi anche sopra il 3D)
@@ -78,6 +105,7 @@ func handle(event: InputEvent) -> bool:
 				_base = e.position
 				_knob = Vector2.ZERO
 				stick = Vector2.ZERO
+				queue_redraw()
 				return true
 			if e.position.x >= size.x * 0.45 and _cam_idx < 0:
 				_cam_idx = e.index
@@ -87,6 +115,8 @@ func handle(event: InputEvent) -> bool:
 			if e.index == _stick_idx:
 				_stick_idx = -1
 				stick = Vector2.ZERO
+				_knob = Vector2.ZERO
+				queue_redraw()
 				return true
 			if e.index == _cam_idx:
 				_cam_idx = -1
@@ -100,6 +130,7 @@ func handle(event: InputEvent) -> bool:
 				off = d.position - _base
 			_knob = off.limit_length(R)
 			stick = _knob / R
+			queue_redraw()
 			return true
 		if d.index == _cam_idx:
 			cam_drag += d.position - _cam_last

@@ -38,6 +38,7 @@ static var _shader: Shader = null
 var _rect: ColorRect
 var _mat: ShaderMaterial
 var _tw: Tween
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 static func shader() -> Shader:
@@ -48,6 +49,7 @@ static func shader() -> Shader:
 
 
 func _init() -> void:
+	_rng.randomize()
 	layer = 5
 	_rect = ColorRect.new()
 	_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -65,7 +67,7 @@ func pulse(k: float = 1.0, secs: float = 0.26) -> void:
 		return
 	if _tw != null and _tw.is_valid():
 		_tw.kill()
-	_mat.set_shader_parameter("seed", randf() * 10.0)
+	_mat.set_shader_parameter("seed", _rng.randf() * 10.0)
 	_mat.set_shader_parameter("roll", 0.0)
 	_mat.set_shader_parameter("amt", k * Settings.flash)
 	_rect.visible = true
@@ -80,7 +82,7 @@ func transmit(col: Color, secs: float = 0.9) -> void:
 		return
 	if _tw != null and _tw.is_valid():
 		_tw.kill()
-	_mat.set_shader_parameter("seed", randf())
+	_mat.set_shader_parameter("seed", _rng.randf())
 	_mat.set_shader_parameter("tint", col)
 	_rect.visible = true
 	_tw = create_tween()

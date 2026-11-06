@@ -16,17 +16,49 @@ on:
 
 jobs:
   itch:
+    # La pubblicazione e' consentita soltanto dal branch di release V3.
+    # Evita che un dispatch manuale da branch sperimentali carichi pacchetti su itch.io.
+    if: github.ref == 'refs/heads/claude/v3-prologo'
     runs-on: ubuntu-latest
     env:
       BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
       ITCH_TARGET: boomeranza/odispel
     steps:
       - uses: actions/checkout@v4
-      - name: Controlla la firma dell'APK
+      - name: Verifica e abbina i pacchetti della stessa versione
+        id: artifacts
+        shell: bash
         run: |
-          apk=$(ls releases/OFFICIAL\ DEMO\ ODISPEL\ mobile\ v.*.apk | sort -V | tail -1)
+          shopt -s nullglob
+          apks=(releases/OFFICIAL\ DEMO\ ODISPEL\ mobile\ v.*.apk)
+          zips=(releases/OFFICIAL\ DEMO\ ODISPEL\ pc\ v*.zip)
+          if (( ${#apks[@]} == 0 || ${#zips[@]} == 0 )); then
+            echo "::error::Manca l'APK o lo ZIP Windows nella cartella releases"
+            exit 1
+          fi
+          apk=$(printf '%s\n' "${apks[@]}" | sort -V | tail -1)
+          zip=$(printf '%s\n' "${zips[@]}" | sort -V | tail -1)
+          apk_version=$(basename "$apk" .apk | sed 's/^OFFICIAL DEMO ODISPEL mobile v\.\{0,1\}//')      # l'APK si chiama "mobile v.X.Y.Z": anche il punto va tolto
+          zip_version=$(basename "$zip" .zip | sed 's/^OFFICIAL DEMO ODISPEL pc v//')
+          if [[ ! "$apk_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || "$apk_version" != "$zip_version" ]]; then
+            echo "::error::Versioni APK ($apk_version) e ZIP ($zip_version) assenti o non corrispondenti"
+            exit 1
+          fi
+          if ! unzip -Z1 "$zip" | grep -Eq '\.exe$' || ! unzip -Z1 "$zip" | grep -Eq '\.pck$'; then
+            echo "::error::Lo ZIP Windows deve contenere sia EXE sia PCK"
+            exit 1
+          fi
+          echo "apk=$apk" >> "$GITHUB_OUTPUT"
+          echo "zip=$zip" >> "$GITHUB_OUTPUT"
+          echo "version=$apk_version" >> "$GITHUB_OUTPUT"
+          echo "Pacchetti selezionati: versione $apk_version"
+
+      - name: Controlla la firma dell'APK
+        env:
+          APK_FILE: ${{ steps.artifacts.outputs.apk }}
+        run: |
           signer=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
-          "$signer" verify --verbose --min-sdk-version 24 "$apk"
+          "$signer" verify --verbose --min-sdk-version 24 "$APK_FILE"
       - name: Controlla che la chiave ci sia
         run: |
           if [ -z "$BUTLER_API_KEY" ]; then echo "::error::Manca il segreto ITCH_API_KEY"; exit 1; fi
@@ -44,8 +76,5 @@ jobs:
             echo "::error::butler push $2 fallito: $(tail -c 400 out.txt | tr '\n' ' ')"
             return 1
           }
-          apk=$(ls releases/OFFICIAL\ DEMO\ ODISPEL\ mobile\ v.*.apk | sort -V | tail -1)
-          zip=$(ls releases/OFFICIAL\ DEMO\ ODISPEL\ pc\ v*.zip | sort -V | tail -1)
-          ver=$(basename "$apk" .apk | sed 's/OFFICIAL DEMO ODISPEL mobile v\.//')
-          push "$apk" android-v3 "$ver"
-          push "$zip" windows-v3 "$ver"
+          push "${{ steps.artifacts.outputs.apk }}" android-v3 "${{ steps.artifacts.outputs.version }}"
+          push "${{ steps.artifacts.outputs.zip }}" windows-v3 "${{ steps.artifacts.outputs.version }}"

@@ -100,6 +100,8 @@ func _init() -> void:
 	hp0 = int(boss["hp"])
 	BreakRules.round_end(s, ev)
 	check(int(boss["hp"]) == hp0, "Radici: rotto non ricresce")
+	_interruzione_sbilanciamento()
+	_fase_saltate()
 	_fase3()
 	_fase3_scontro()
 	if fails == 0:
@@ -122,11 +124,80 @@ func _has(ev: Array, t: String) -> bool:
 	return false
 
 
+func _interruzione_sbilanciamento() -> void:
+	var s: Dictionary = _broken("semaforo")
+	var boss: Dictionary = BattleState.boss(s)
+	var actor: Dictionary = BattleState.active_unit(s, str(s["players"][0]["id"]))
+	s["telegraph"] = {"move": _heavy_move("semaforo"), "target": str(s["players"][1]["id"])}
+	s["reserve"] = 3
+	s["react_grade"] = {str(actor["id"]): "great"}
+	var gauge_before: int = int(actor["gauge"])
+	var reserve_before: int = int(s["reserve"])
+	var ev: Array = []
+	check(BattleResolver._react(s, actor, "interruzione", ev), "Interruzione riuscita: reazione accettata")
+	check(int(boss.get("sbil", 0)) == BattleTypes.SBIL_HITS, "Interruzione riuscita: applica i colpi di SBILANCIAMENTO")
+	check(int(actor["gauge"]) == mini(BattleTypes.GAUGE_MAX, gauge_before + 10), "Interruzione: carica Ultimate")
+	check(int(s["reserve"]) == reserve_before - BattleResolver.reaction_cost(s, "interruzione"), "Interruzione: spende la Riserva una sola volta")
+	var reserve_after: int = int(s["reserve"])
+	check(not BattleResolver._react(s, actor, "interruzione", []), "Interruzione: una sola per round")
+	check(int(s["reserve"]) == reserve_after, "seconda Interruzione rifiutata: nessuna spesa aggiuntiva")
+
+	s = _broken("semaforo")
+	boss = BattleState.boss(s)
+	actor = BattleState.active_unit(s, str(s["players"][0]["id"]))
+	s["telegraph"] = {"move": _heavy_move("semaforo"), "target": str(s["players"][1]["id"])}
+	s["reserve"] = 3
+	s["react_grade"] = {str(actor["id"]): "fail"}
+	var balance_before: int = int(boss["balance"])
+	ev = []
+	check(BattleResolver._react(s, actor, "interruzione", ev), "Interruzione fallita al QTE: la reazione resta valida")
+	check(int(boss.get("sbil", 0)) == 0, "Interruzione fallita: niente SBILANCIAMENTO")
+	check(balance_before - int(boss["balance"]) == maxi(1, BattleTypes.INTERRUPT_PTS - 2), "Interruzione fallita: pressione ridotta ma non annullata")
+
+
+func _fase_saltate() -> void:
+	var s: Dictionary = _fresh("distributore")
+	var boss: Dictionary = BattleState.boss(s)
+	var old_balance_max: int = int(boss["balance_max"])
+	var old_shield: int = int(boss["shield"])
+	var alive: Array = BattleState.alive_players(s)
+	var energy_before: Dictionary = {}
+	for p in alive:
+		var u: Dictionary = BattleState.active_unit(s, str(p["id"]))
+		energy_before[str(u["id"])] = int(u["energy"])
+		# Evita che il limite della barra nasconda il secondo premio di fase.
+		u["gauge"] = 0
+	boss["hp"] = int(ceil(float(boss["max_hp"]) * 0.20))
+	var events: Array = []
+	BattleResolver._check_phase(s, events)
+	var phase_events: Array = []
+	var shield_events: int = 0
+	for e in events:
+		if str(e.get("t", "")) == "phase":
+			phase_events.append(int(e.get("phase", 0)))
+		elif str(e.get("t", "")) == "shield" and str(e.get("dst", "")) == BattleState.BOSS_ID:
+			shield_events += 1
+	check(int(s["phase"]) == 3, "salto soglie: il boss raggiunge la fase 3")
+	check(phase_events == [2, 3], "salto soglie: vengono registrate entrambe le transizioni in ordine")
+	check(int(boss["balance_max"]) == old_balance_max + BattleTypes.BREAK_PER_PHASE * 2, "salto soglie: la barra BREAK cresce per entrambe le fasi")
+	var expected_shield: int = int(round(float(boss["max_hp"]) * BattleTypes.PHASE_SHIELD)) * 2
+	check(shield_events == 2 and int(boss["shield"]) == old_shield + expected_shield, "salto soglie: entrambi gli scudi di fase vengono applicati")
+	for p in alive:
+		var u: Dictionary = BattleState.active_unit(s, str(p["id"]))
+		check(int(u["gauge"]) == mini(BattleTypes.GAUGE_MAX, BattleTypes.PHASE_GAUGE * 2), "salto soglie: premio Ultimate per ogni fase")
+		check(int(u["energy"]) == maxi(0, int(energy_before[str(u["id"])]) - 2), "salto soglie: costo EN per ogni fase")
+
+
 func _fase3() -> void:
 	var s: Dictionary = _broken("semaforo")
 	var boss: Dictionary = BattleState.boss(s)
 	var hero: Dictionary = BattleState.active_unit(s, str(s["players"][0]["id"]))
 	check(Stability.on(boss), "fase 3: il nemico di BattleFlow ha la stabilita'")
+	var enabled_before: bool = Stability.enabled
+	Stability.enabled = false
+	check(not Stability.on(boss), "selettore runtime disattiva davvero la stabilita' su uno stato gia' marcato")
+	Stability.enabled = enabled_before
+	check(Stability.on(boss), "riattivando il selettore runtime la stabilita' torna attiva")
 	check(Stability.category(boss) == "boss" and Stability.category(BattleState.boss(_fresh("frammento_rosso"))) == "comune", "categorie: boss e frammento comune")
 	var mx: int = int(boss["balance_max"])
 	var ev: Array = []
@@ -249,11 +320,13 @@ func _fase3_scontro() -> void:
 				else:
 					var pid: String = str(e["player"])
 					var q: bool = bool(e.get("quick", false))
+					# i turni bonus ("extra", dopo che tutti hanno agito) non sono turni ordinari: come nel motore non consumano la finestra
+					var bonus: bool = bool(e.get("extra", false))
 					ev = BattleFlow.player_action(s, pid, BattleAI.choose_quick(s, pid) if q else BattleAI.choose(s, pid), q)
-					if open0 and not q and not _has(ev, "duo_rest") and str(s["winner"]) == "":
+					if open0 and not q and not bonus and not _has(ev, "duo_rest") and str(s["winner"]) == "":
 						if int(boss.get("brk_left", 0)) != left0 - 1:
 							bad += 1
-					if open0 and q and int(boss.get("brk_left", 0)) != left0:
+					if open0 and (q or bonus) and int(boss.get("brk_left", 0)) != left0:
 						bad += 1
 				if bool(e["boss"]) and open0 and int(boss.get("brk_left", 0)) != left0:
 					bad += 1

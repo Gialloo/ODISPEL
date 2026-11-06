@@ -73,14 +73,62 @@ func _init() -> void:
 	Story.new_game()
 	Story.area_state = {"pos": Vector3(1, 0.14, -7), "yaw": 0.5, "clues": ["scontrino"], "defeated": ["f1"], "banter_used": {}}
 	Story.save()
+	var valid_progress: Dictionary = Progress.data.duplicate(true)
+	check(Progress.validate_save(valid_progress), "progressione valida riconosciuta")
+	var invalid_progress: Dictionary = valid_progress.duplicate(true)
+	invalid_progress["lv"]["ferri"] = 101
+	check(not Progress.validate_save(invalid_progress), "livello fuori limite rifiutato")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["lv"]["ferri"] = 1.5
+	check(not Progress.validate_save(invalid_progress), "livello frazionario rifiutato")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["exp"]["nox"] = 0.5
+	check(not Progress.validate_save(invalid_progress), "esperienza frazionaria rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["exp"]["nox"] = Progress.exp_need(int(invalid_progress["lv"]["nox"]))
+	check(not Progress.validate_save(invalid_progress), "esperienza oltre soglia rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["stolen_from"]["mossa_inesistente"] = "Nemico"
+	check(not Progress.validate_save(invalid_progress), "fonte di mossa rubata senza mossa corrispondente rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["equip"]["ferri"]["skill"] = "mossa_inesistente"
+	check(not Progress.validate_save(invalid_progress), "abilità equipaggiata inesistente rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["equip"]["ferri"]["skill"] = "u_ferri_b"
+	check(not Progress.validate_save(invalid_progress), "abilità non ancora sbloccata rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["equip"]["ferri"]["skill"] = "u_ferri_ult"
+	check(not Progress.validate_save(invalid_progress), "Ultimate nello slot abilità rifiutata")
 	Story.area_state = {}
-	Story.load_game()
+	check(Story.load_game(), "salvataggio valido caricato")
 	check((Story.area_state.get("clues", []) as Array).has("scontrino"), "indizi salvati a meta' area")
 	check(Story.area_state.get("pos", Vector3.ZERO) == Vector3(1, 0.14, -7), "posizione salvata a meta' area")
+	var save_abs: String = ProjectSettings.globalize_path(Story.save_path)
+	var backup_abs: String = ProjectSettings.globalize_path(Story.save_path + ".bak")
+	check(DirAccess.copy_absolute(save_abs, backup_abs) == OK, "backup di test creato")
+	check(DirAccess.remove_absolute(save_abs) == OK, "file principale rimosso per simulare interruzione")
+	check(Story.has_save(), "il menu rileva il backup anche senza file principale")
+	Story.area_state = {}
+	check(Story.load_game(), "backup recuperato quando il file principale manca")
+	check((Story.area_state.get("clues", []) as Array).has("scontrino"), "backup senza principale conserva gli indizi")
+	var broken_save := FileAccess.open(Story.save_path, FileAccess.WRITE)
+	if broken_save != null:
+		broken_save.store_string("file danneggiato")
+		broken_save.close()
+	Story.area_state = {}
+	check(Story.load_game(), "backup recuperato quando il file principale e' corrotto")
+	check((Story.area_state.get("clues", []) as Array).has("scontrino"), "backup conserva gli indizi")
 	Story.advance()
-	Story.load_game()
+	check(Story.load_game(), "salvataggio dopo avanzamento caricato")
 	check(Story.area_state.is_empty(), "passando al passo dopo lo stato dell'area si azzera")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(Story.save_path))
+	check(FileAccess.file_exists(ProjectSettings.globalize_path(Story.save_path + ".bad")), "il file corrotto viene conservato separatamente durante il recupero")
+	check(FileAccess.file_exists(backup_abs), "il backup valido precedente resta disponibile dopo un nuovo salvataggio")
+	var previous_save := ConfigFile.new()
+	check(previous_save.load(Story.save_path + ".bak") == OK, "il backup persistente resta leggibile")
+	check(int(previous_save.get_value("storia", "passo", -1)) == 0, "il backup conserva il punto precedente all'ultimo avanzamento")
+	DirAccess.remove_absolute(save_abs)
+	DirAccess.remove_absolute(backup_abs)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(Story.save_path + ".bad"))
 	check(UpdateCheck.newer("0.33.2", "0.33.1") and UpdateCheck.newer("0.34.0", "0.33.9") and not UpdateCheck.newer("0.33.1", "0.33.1")
 		and not UpdateCheck.newer("0.32.9", "0.33.0") and UpdateCheck.newer("1.0", "0.99.9"), "confronto delle versioni per l'aggiornamento")
 	check(BrokenCam.level_for(0.9) == 0.0 and BrokenCam.level_for(0.5) > 0.0 and BrokenCam.level_for(0.25) >= 0.99, "livelli della telecamera rotta")

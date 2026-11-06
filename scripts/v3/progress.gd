@@ -124,16 +124,164 @@ static func ensure() -> void:
 		reset()
 
 
+static func validate_save(v: Variant) -> bool:
+	if not (v is Dictionary):
+		return false
+	var d: Dictionary = v
+	for key in ["lv", "exp", "equip", "stolen_from"]:
+		if not (d.get(key) is Dictionary):
+			return false
+	var levels: Dictionary = d["lv"]
+	var experience: Dictionary = d["exp"]
+	var equipment: Dictionary = d["equip"]
+	for c in CAST:
+		if not levels.has(c) or not experience.has(c) or not (equipment.get(c) is Dictionary):
+			return false
+		if not (levels[c] is int or levels[c] is float) or not (experience[c] is int or experience[c] is float):
+			return false
+		var raw_lv: float = float(levels[c])
+		var raw_xp: float = float(experience[c])
+		# ConfigFile puo' contenere float: i campi di progressione pero' sono interi.
+		# Rifiuta NaN/Inf e valori frazionari invece di troncarli silenziosamente.
+		if not is_finite(raw_lv) or not is_finite(raw_xp) or raw_lv != floor(raw_lv) or raw_xp != floor(raw_xp):
+			return false
+		var lv: int = int(raw_lv)
+		var xp: int = int(raw_xp)
+		if lv < 1 or lv > MAX_LEVEL or xp < 0 or (lv == MAX_LEVEL and xp != 0):
+			return false
+		if lv < MAX_LEVEL and xp >= exp_need(lv):
+			return false
+		var eq: Dictionary = equipment[c]
+		for kind in ["skill", "ult", "react", "trait", "syn"]:
+			if not eq.has(kind) or not (eq[kind] is String):
+				return false
+	if not (d["stolen"] is Array):
+		return false
+	var stolen: Array = d["stolen"]
+	for move_id in stolen:
+		if not (move_id is String) or not BattleContent.BOSS_MOVES.has(move_id) or stolen.count(move_id) > 1:
+			return false
+	var stolen_from: Dictionary = d["stolen_from"]
+	for source_id in stolen_from:
+		if not (source_id is String) or not stolen.has(source_id) or not (stolen_from[source_id] is String):
+			return false
+	for c in CAST:
+		var eq: Dictionary = equipment[c]
+		var lv: int = int(levels[c])
+		var unlocked: Dictionary = {"skill": [], "ult": [], "react": [], "trait": [], "syn": []}
+		for item in UNLOCKS[c]:
+			if int(item[0]) <= lv:
+				(unlocked[str(item[1])] as Array).append(str(item[2]))
+		for kind in ["skill", "ult", "react", "trait", "syn"]:
+			var id: String = str(eq[kind])
+			if id == "":
+				continue
+			match kind:
+				"skill":
+					if id.begins_with("r_"):
+						if not stolen.has(id.substr(2)):
+							return false
+					else:
+						var move: Dictionary = BattleContent.MOVES.get(id, {})
+						if not unlocked[kind].has(id) or str(move.get("kind", "")) != "skill":
+							return false
+				"ult":
+					var ultimate: Dictionary = BattleContent.MOVES.get(id, {})
+					if not unlocked[kind].has(id) or str(ultimate.get("kind", "")) != "ult":
+						return false
+				"react":
+					if not unlocked[kind].has(id) or not REACT_MODS.has(id):
+						return false
+				"trait":
+					if not unlocked[kind].has(id) or not TRAIT_DESC.has(id):
+						return false
+				"syn":
+					if not unlocked[kind].has(id) or not SYNERGIES.has(id):
+						return false
+	return true
+
+
+# SALVATAGGI CHE SI RIPARANO (decisione dell'autore 6/11/2026, opzione 1B): validate_save() resta severo, ma in lettura
+# si scarta la partita solo se i dati sono davvero rotti (tipi sbagliati, numeri non finiti o frazionari). Il resto si ripara:
+# chiavi o personaggi mancanti tornano ai valori di partenza, livello ed esperienza rientrano nei limiti, un equipaggiamento
+# non piu' valido (sblocco spostato, mossa rinominata) torna a quello di partenza dello slot, le mosse rubate sconosciute si tolgono.
+# Ritorna il dizionario riparato (che supera validate_save) oppure null.
+static func repair_save(v: Variant) -> Variant:
+	if not (v is Dictionary):
+		return null
+	var d: Dictionary = v
+	var out: Dictionary = {"lv": {}, "exp": {}, "equip": {}, "stolen": [], "stolen_from": {}}
+	for key in ["lv", "exp", "equip", "stolen_from"]:
+		if d.has(key) and not (d[key] is Dictionary):
+			return null
+	if d.has("stolen") and not (d["stolen"] is Array):
+		return null
+	var levels: Dictionary = d.get("lv", {})
+	var experience: Dictionary = d.get("exp", {})
+	var equipment: Dictionary = d.get("equip", {})
+	for raw in d.get("stolen", []):
+		if raw is String and BattleContent.BOSS_MOVES.has(raw) and not (out["stolen"] as Array).has(raw):
+			(out["stolen"] as Array).append(raw)
+	var from: Dictionary = d.get("stolen_from", {})
+	for k in from:
+		if k is String and (out["stolen"] as Array).has(k) and from[k] is String:
+			out["stolen_from"][k] = from[k]
+	for c in CAST:
+		var lv: int = 1
+		var xp: int = 0
+		for pair in [[levels, "lv"], [experience, "exp"]]:
+			var src: Dictionary = pair[0]
+			if not src.has(c):
+				continue
+			var raw_v: Variant = src[c]
+			if not (raw_v is int or raw_v is float):
+				return null
+			var f: float = float(raw_v)
+			if not is_finite(f) or f != floor(f):
+				return null
+			if str(pair[1]) == "lv":
+				lv = int(f)
+			else:
+				xp = int(f)
+		lv = clampi(lv, 1, MAX_LEVEL)
+		xp = 0 if lv >= MAX_LEVEL else clampi(xp, 0, exp_need(lv) - 1)
+		out["lv"][c] = lv
+		out["exp"][c] = xp
+		var base: Dictionary = default_equip(c)
+		var eq: Dictionary = base.duplicate()
+		var saved_eq: Variant = equipment.get(c, {})
+		if saved_eq is Dictionary:
+			for kind in eq:
+				if (saved_eq as Dictionary).get(kind) is String:
+					eq[kind] = str(saved_eq[kind])
+		out["equip"][c] = eq
+	# Ogni slot non valido torna a quello di partenza (che e' sempre sbloccato dal livello 1).
+	for c in CAST:
+		for kind in ["skill", "ult", "react", "trait", "syn"]:
+			if str(out["equip"][c][kind]) != "" and not _slot_ok(out, c, kind):
+				out["equip"][c][kind] = default_equip(c)[kind]
+	return out if validate_save(out) else null
+
+
+# Lo slot kind del personaggio c e' valido? (stessa regola di validate_save, su un solo slot)
+static func _slot_ok(d: Dictionary, c: String, kind: String) -> bool:
+	var probe: Dictionary = d.duplicate(true)
+	for c2 in CAST:
+		for k2 in ["skill", "ult", "react", "trait", "syn"]:
+			if c2 != c or k2 != kind:
+				probe["equip"][c2][k2] = ""
+	return validate_save(probe)
+
+
 static func from_save(v: Variant) -> void:
 	reset()
-	if not (v is Dictionary):
+	var fixed: Variant = repair_save(v)
+	if fixed == null:
 		return
-	var d: Dictionary = v
+	var d: Dictionary = fixed
 	for k in ["lv", "exp", "equip", "stolen_from"]:
-		if d.get(k) is Dictionary:
-			(data[k] as Dictionary).merge(d[k], true)
-	if d.get("stolen") is Array:
-		data["stolen"] = (d["stolen"] as Array).duplicate()
+		(data[k] as Dictionary).merge(d[k], true)
+	data["stolen"] = (d["stolen"] as Array).duplicate()
 	register_stolen()
 
 

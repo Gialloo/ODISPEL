@@ -28,6 +28,7 @@ var t: float = 0.0
 var _frame_us: int = 0      # quando e' stato aggiornato t: al tocco si aggiunge il tempo vero passato da allora
 var limit: float = 1.2
 var _dir: int = 1                     # freccia: -1 sinistra, 1 destra
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _fill: float = 0.0
 var _holding: bool = false
 var _held_once: bool = false
@@ -40,13 +41,14 @@ var _sub: Label
 
 
 func _init(m: String, name_txt: String, c: Color, first_time: bool = false) -> void:
+	_rng.randomize()
 	mode = m
 	who = name_txt
 	col = c
 	slow = first_time
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	Ui.place(self, 0, 0, 1, 1)
-	_dir = -1 if randf() < 0.5 else 1
+	_dir = -1 if _rng.randf() < 0.5 else 1
 	match mode:
 		"arrow":
 			limit = 1.9 if slow else 1.1

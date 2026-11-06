@@ -35,14 +35,16 @@ var _stopping: bool = false
 var _im: ImmediateMesh
 var _vv: PackedVector3Array = PackedVector3Array()
 var _vc: PackedColorArray = PackedColorArray()
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 static func _make(parent: Node, k: String, c: Color, d: float) -> LightFx:
 	var fx := LightFx.new()
+	fx._rng.randomize()
 	fx.kind = k
 	fx.col = c
 	fx.dur = d
-	fx.seed_v = randf() * 100.0
+	fx.seed_v = fx._rng.randf() * 100.0
 	fx.top_level = true
 	fx.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	fx._im = ImmediateMesh.new()
@@ -59,7 +61,7 @@ static func stroke(parent: Node, from: Vector3, to: Vector3, c: Color, w: float 
 	fx.b = to
 	var dir: Vector3 = (to - from)
 	var side: Vector3 = dir.cross(Vector3.UP).normalized()
-	fx.bow = Vector3.UP * (0.6 + 0.25 * dir.length() * 0.25) + side * randf_range(-1.0, 1.0) * 0.9
+	fx.bow = Vector3.UP * (0.6 + 0.25 * dir.length() * 0.25) + side * fx._rng.randf_range(-1.0, 1.0) * 0.9
 	fx.width = w
 	return fx
 
@@ -71,8 +73,8 @@ static func sparks(parent: Node, at: Vector3, c: Color = IMPACT, n: int = 10, d:
 	if Settings.light_fx:
 		n = n / 2
 	for i in n:
-		var dir := Vector3(randf_range(-1, 1), randf_range(-0.4, 1.0), randf_range(-1, 1)).normalized()
-		fx._sparks.append([dir, randf_range(2.5, 5.0), randf_range(0.25, 0.5)])
+		var dir := Vector3(fx._rng.randf_range(-1, 1), fx._rng.randf_range(-0.4, 1.0), fx._rng.randf_range(-1, 1)).normalized()
+		fx._sparks.append([dir, fx._rng.randf_range(2.5, 5.0), fx._rng.randf_range(0.25, 0.5)])
 	return fx
 
 
