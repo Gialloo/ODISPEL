@@ -592,3 +592,12 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Miglioria:** l'intestazione del report ora registra anche modello del dispositivo e nome della GPU, oltre a versione Godot, sistema operativo, viewport, limite FPS configurato, warm-up e numero di campioni.
 - **Motivo:** i risultati di frame time e draw call non sono confrontabili in modo affidabile se manca l'identificazione del dispositivo/driver. Il report specifica inoltre che il campionamento avviene senza cap FPS, per distinguere il limite di progetto dalla misurazione del margine prestazionale.
 - **Verifica:** modifica statica controllata sul formato della stringa e sugli argomenti. Benchmark non eseguito; i valori reali restano da raccogliere su PC e Android.
+
+### 2026-11-06 — Validazione progressione: valori interi e metadati delle mosse rubate
+
+- **File modificati:** `scripts/v3/progress.gd`, `tests/unit/test_v3_engine.gd`.
+- **Criticità trovata:** la validazione accettava livelli ed esperienza di tipo float e li convertiva a intero con `int()`. Un valore corrotto come livello `1.5` poteva quindi essere accettato come livello 1. Inoltre `stolen_from` veniva controllato solo come tipo Dictionary: poteva contenere riferimenti a mosse inesistenti/non possedute o fonti con tipo errato.
+- **Correzione:** rifiutati valori NaN/Inf e valori frazionari per livello/esperienza; i numeri interi restano accettati anche se serializzati come float integrale. I metadati `stolen_from` vengono verificati: ogni chiave deve essere una mossa effettivamente presente in `stolen` e ogni fonte deve essere una stringa. Non viene imposto che ogni mossa abbia una fonte, per mantenere compatibilità con eventuali salvataggi storici incompleti.
+- **Test aggiunti:** livello frazionario, esperienza frazionaria e fonte orfana/non valida.
+- **Verifica:** controllo statico del flusso di validazione e aggiornamento dei test. Godot non è stato eseguito; non si dichiara superamento.
+- **Rischio residuo:** verificare la disponibilità di `is_finite()` nella versione Godot 4.7.2 e l'esecuzione del test engine sul progetto completo. I salvataggi legacy con metadati di fonte non stringa o riferimenti orfani verranno rifiutati e tentato il recupero dal backup.
