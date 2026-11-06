@@ -29,6 +29,7 @@ var _letters: Array = []           # per lettera: [x, y, rot, skew, scale]
 var _t: float = 0.0
 var _next_jit: float = 0.0
 var _font: Font
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 static func em_px(layer: Control, is_big: bool) -> int:
@@ -77,6 +78,7 @@ static func warm(layer: Control) -> void:
 
 
 func _start(at: Vector2) -> void:
+	_rng.randomize()
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_font = Ui.body()
 	var sz: Vector2 = _font.get_string_size(word, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize)
@@ -84,7 +86,7 @@ func _start(at: Vector2) -> void:
 	size = sz + Vector2(pad * 2.0, pad * 1.4)
 	pivot_offset = size * 0.5
 	position = at - size * 0.5
-	rotation = deg_to_rad(randf_range(-9.0, 9.0))
+	rotation = deg_to_rad(_rng.randf_range(-9.0, 9.0))
 	z_index = 20
 	# lettere «a mano»: ognuna un po' storta, piu' alta o piu' bassa, con inclinazione costante (corsivo a pennarello)
 	var x: float = 0.0
@@ -96,7 +98,7 @@ func _start(at: Vector2) -> void:
 		x += adv * 0.97
 	# saetta a mano sul colpo grosso: 4 segmenti, zig-zag corto, esce da un lato della parola
 	if big and not Settings.light_fx:
-		var sgn: float = 1.0 if randi() % 2 == 0 else -1.0
+		var sgn: float = 1.0 if _rng.randi() % 2 == 0 else -1.0
 		var u: float = float(fsize) * 0.28
 		var p: Vector2 = size * 0.5 + Vector2(sgn * (sz.x * 0.5 + u * 0.4), -u * 0.2)
 		bolt.append(p)
