@@ -127,6 +127,11 @@ func _fase3() -> void:
 	var boss: Dictionary = BattleState.boss(s)
 	var hero: Dictionary = BattleState.active_unit(s, str(s["players"][0]["id"]))
 	check(Stability.on(boss), "fase 3: il nemico di BattleFlow ha la stabilita'")
+	var enabled_before: bool = Stability.enabled
+	Stability.enabled = false
+	check(not Stability.on(boss), "selettore runtime disattiva davvero la stabilita' su uno stato gia' marcato")
+	Stability.enabled = enabled_before
+	check(Stability.on(boss), "riattivando il selettore runtime la stabilita' torna attiva")
 	check(Stability.category(boss) == "boss" and Stability.category(BattleState.boss(_fresh("frammento_rosso"))) == "comune", "categorie: boss e frammento comune")
 	var mx: int = int(boss["balance_max"])
 	var ev: Array = []
