@@ -582,16 +582,19 @@ scene("c3_agguato", "Il Manichino attacca per primo.",
     L("MANICHINO", "Sorridete. Non muovetevi. Clic."),
     L("zecca/sorpreso", "Non ero pronto! Rifacciamola!"))
 
-scene("c3_faccia", "La maschera di Rio ha una crepa: da lì si vede un occhio. Rio non è ancora pronto a toglierla, e nessuno insiste. I volti tornano alla gente. Tre Anomalie chiuse.",
-    L("zecca/sorpreso", "Raga. La maschera. Si è crepata. Da qui si vede... un occhio. Il mio."),
-    L("nox/neutro", "Un occhio basta. Si vede che hai paura. Va bene così."),
-    L("ferri/neutro", "La crepa non la metto a verbale. Quando vorrai toglierla, ci saremo."),
-    L("saul/neutro", "Hai l'occhio di uno che non sa mentire. Un giorno ti servirà."),
-    L("zecca/felice", "Signore e signori... un occhio di Rio. Quello vero. Il resto arriva."),
-    L("echo/felice", "Trentatré follower. Mi sono iscritta. Telecamera quattordici."),
+scene("c3_faccia", "La maschera di Rio ha una crepa: da lì si vede un occhio. Rio non è ancora pronto a toglierla. I passanti tornano alla normalità e ad avere un volto. Tre Anomalie chiuse.",
+    L("nox/sorpreso", "Rio! Ti sei fatto male?"),
+    L("zecca/sorpreso", "No. Cioè... non credo, ma la maschera.. Si è crepata.."),
+    L("ferri/neutro", "Non toccarla. Potresti peggiorare la crepa."),
+    L("saul/neutro", "Per una volta, ascolta il capo moccioso"),
+    L("zecca/arrabbiato", "Moccioso a chi?"),
+    L("saul/neutro", "Vedi? Sei ancora capace di rispondere. Buon segno."),
+    L("zecca/serio", "...Non posso toglierla. Non ancora."),
+    L("ferri/neutro", "Nessuno te l'ha chiesto."),
+    L("echo/felice", "Sei stato bravo Rio! hai guadagnato una nuova follower! Echo!"),
     L("zecca/sorpreso", "...La mia follower più strana."),
     L("echo/neutro", "Tre su quattro. L'ultima è sotto la Banca Centrale. Saul, ti piacerà."),
-    L("saul/neutro", "A un ladro non si dice «ti piacerà». Si dice «non toccare niente»."))
+    L("saul/neutro", "Non si dice «ti piacerà». Si dice «non toccare niente»."))
 
 scene("c3_serata", "Una serata al rifugio.",
     scelta("saul/neutro", "Ultima sera prima del colpo. Con chi la passi?",
