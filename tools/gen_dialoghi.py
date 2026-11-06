@@ -746,9 +746,11 @@ scene("c4_boss", "La cassaforte si apre. Quando Rio resta intrappolato dalla por
     L("zecca/felice", "Saul mi ha salvato la vita, e mi ha chiamato per nome!"),
     L("saul/serio", "Pessimo. Forse il Committente ha ragione dicendo che non sono più quello di una volta?"))
 
-scene("c4_agguato", "La Cassaforte attacca per prima.",
+scene("c4_agguato", "La Cassaforte attacca per prima. Lance difende Saul e Saul chiede a Echo di registrare il momento.",
     L("CASSAFORTE", "TENTATIVO DI SCASSO RILEVATO. CONFISCA IN CORSO."),
-    L("saul/neutro", "Non ho ancora toccato niente."))
+    L("saul/neutro", "Non ho ancora toccato niente."),
+    L("ferri/serio", "Per una volta, è innocente."),
+    L("saul/neutro", "Echo sei ci sei per favore registra questo momento. Non ricapiterà."))
 
 scene("c4_dopo", "La cassaforte è chiusa: quattro Anomalie chiuse. Saul ha due costole incrinate e non se ne pente. Echo li manda a riposare: all'alba, in piazza.",
     L("zecca/felice", "Quattro su quattro! Avete visto QUELLO CHE HO FATTO? ...Cioè, Saul. Ma io ero nell'inquadratura."),
