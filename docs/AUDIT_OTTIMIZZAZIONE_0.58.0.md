@@ -785,3 +785,14 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Cosa esegue:** controlli dei tipi dello stato area, rifiuto dei dati malformati, coerenza del checkpoint conclusivo e recupero del backup dopo corruzione del file principale. Usa un file user:// dedicato.
 - **Risultato atteso:** uscita con codice 0 e messaggio test_v3_integrita_salvataggio: OK se tutti gli assert passano; codice 1 e messaggi FAIL in caso contrario.
 - **Verifica effettiva:** verificata la coerenza del comando con la convenzione degli altri test nel README. Non eseguito perché questa sessione non dispone del runtime Godot del progetto.
+
+
+### 2026-11-06 — Validazione stretta dei numeri di capitolo e passo
+
+- **File modificati:** scripts/v3/story.gd; tests/unit/test_v3_integrita_salvataggio.gd.
+- **Criticità trovata:** _read_valid_save() convertiva direttamente capitolo e passo con int(...). Una stringa numerica o un float frazionario potevano essere convertiti/troncati prima del controllo dei limiti, nascondendo un dato salvato con tipo o valore non valido.
+- **Correzione:** aggiunto _is_valid_save_integer(): accetta soltanto int o float finiti, non negativi e senza parte frazionaria. La conversione a int avviene soltanto dopo la validazione.
+- **Perché:** il checkpoint deve essere un indice intero reale; una conversione permissiva può trasformare dati corrotti in un checkpoint diverso da quello scritto.
+- **Test implementati e funzionamento:** esteso il test di integrità con tre fixture ConfigFile: capitolo memorizzato come stringa, passo frazionario 0.5 e passo NaN. Ogni fixture viene caricata tramite _read_valid_save() e deve essere rifiutata. Le fixture sono scritte nel percorso temporaneo dedicato del test.
+- **Risultato atteso:** nessun valore testuale, frazionario o non finito viene silenziosamente convertito in indice di progressione; i valori interi validi continuano a essere accettati.
+- **Verifica effettiva:** controllo statico del formato scritto da Story.save() e aggiornamento di validatore e regressione. Test non eseguiti con Godot in questa sessione.
