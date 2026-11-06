@@ -43,7 +43,7 @@ func _run() -> void:
 		await process_frame
 	# il ritratto e' quello di chi e' di turno: per fotografarli tutti si cambia solo il disegno, il resto resta uguale
 	var w: Node = bt.get("_wheel")
-	for id in ["ferri", "nox", "saul", "zecca"]:
+	for id in ["lance", "nox", "saul", "rio"]:
 		w.call("set_who", id)
 		w.set("appear", 0.0)
 		await _rec(id, 50)                      # entrata e respiro

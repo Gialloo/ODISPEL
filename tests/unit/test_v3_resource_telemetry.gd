@@ -11,7 +11,7 @@ func check(ok: bool, what: String) -> void:
 
 func _team() -> Array:
 	var team: Array = []
-	for id in ["ferri", "nox", "zecca", "saul"]:
+	for id in ["lance", "nox", "rio", "saul"]:
 		team.append(BattleContent.default_entry(id))
 	return team
 
@@ -67,7 +67,7 @@ func _net_snapshot() -> void:
 
 
 func _hype_and_ammo() -> void:
-	var u: Dictionary = {"id": "IO:zecca", "char": "zecca", "hype": Kits.HYPE_MAX - 5}
+	var u: Dictionary = {"id": "IO:rio", "char": "rio", "hype": Kits.HYPE_MAX - 5}
 	var events: Array = []
 	Kits.add_hype(u, 20, events, "test_hype")
 	var hype: Dictionary = _has_event(events, "hype")
@@ -119,7 +119,7 @@ func _reserve_and_ardore() -> void:
 func _per_unit_source() -> void:
 	var state: Dictionary = {
 		"units": {
-			"lance": {"id": "lance", "side": "player", "char": "ferri", "energy": 3, "gauge": 10, "hype": 0, "ammo": 0},
+			"lance": {"id": "lance", "side": "player", "char": "lance", "energy": 3, "gauge": 10, "hype": 0, "ammo": 0},
 			"nox": {"id": "nox", "side": "player", "char": "nox", "energy": 2, "gauge": 5, "hype": 0, "ammo": 0}
 		}
 	}

@@ -7,7 +7,7 @@ extends Node3D
 # Rendering usato: come la strada (unshaded + toon nello shader, contorni a guscio, bagliori additivi, sfondo a colore,
 # niente luci/ombre/cielo/Label3D). I numeri del danno sono Label 2D proiettati dalla camera.
 
-const PARTY: Array = ["ferri", "nox", "zecca", "saul"]
+const PARTY: Array = ["lance", "nox", "rio", "saul"]
 const START_GAUGE: int = 60          # PROVVISORIO (test): ultimate gia' a buon punto, cosi' si vede nel mini combattimento
 const ENEMY_POS := Vector3(0, 0.14, -3.4)
 const GREG_POS := Vector3(2.7, 0.14, -2.4)   # la scheggia (due nemici) sta di fianco al nemico principale, un passo avanti
@@ -644,10 +644,10 @@ func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
 	var mid: Vector3 = (a + tpos) * 0.5
 	var side: float = 1.0 if a.x >= 0.0 else -1.0
 	match ch:
-		"zecca":       # Rio: di spalla, stretta e bassa come un telefono in mano
+		"rio":       # Rio: di spalla, stretta e bassa come un telefono in mano
 			_cam_set(a + Vector3(side * 1.1, 1.35, 1.7), mid + Vector3(0, 1.3, 0), 5.0)
 			_cam_hud.look("diretta", col)
-		"ferri":       # Lance: dal palo dell'autovelox, alto di lato
+		"lance":       # Lance: dal palo dell'autovelox, alto di lato
 			_cam_set(mid + Vector3(side * 3.0, 3.6, -2.4), mid + Vector3(0, 1.0, 0), 4.0)      # vicino: piu' in la' si finiva dentro le facciate
 			_cam_hud.look("autovelox", col)
 		"nox":         # Nox: dal basso, controluce
@@ -2804,12 +2804,12 @@ func _victory_cover() -> void:
 		if not Gregario.is_enemy(b, str(uid)):
 			_face(vis[uid], Vector3(0, 0, PARTY_Z - 8.0))
 	var who: Dictionary = b["units"].get(str(_last_act.get("unit", "")), {})
-	var ch: String = str(who.get("char", "zecca"))
+	var ch: String = str(who.get("char", "rio"))
 	var nm: String = _bname()
 	# il titolo e' la frase di chi da' il colpo finale (scelte dall'autore, 4/11/2026); sotto, il nemico battuto
 	var tt: Array
 	match ch:
-		"ferri":
+		"lance":
 			tt = [["OBIETTIVO NEUTRALIZZATO", "MINACCIA NEUTRALIZZATA"][_presentation_rng.randi() % 2], nm]
 		"nox":
 			tt = ["CE L'HO FATTA!", "ORA UN MERITATO RIPOSO"]

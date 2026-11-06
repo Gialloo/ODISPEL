@@ -3,7 +3,7 @@ extends SceneTree
 # Battute a fumetto della squadra in battaglia: ci sono per tutti, sono corte, rispettano le voci, escono con misura.
 
 var fails: int = 0
-const CAST: Array = ["ferri", "nox", "zecca", "saul"]
+const CAST: Array = ["lance", "nox", "rio", "saul"]
 
 
 func check(cond: bool, msg: String) -> void:
@@ -34,13 +34,13 @@ func _init() -> void:
 	q.rng.seed = 7
 	q.now_msec = 0
 	# il K.O. di un compagno si dice sempre, anche subito dopo un'altra battuta
-	var ko: Array = q.pick("compagno_ko", "zecca", ["ferri", "nox", "saul"])
-	check(ko.size() == 1 and str(ko[0]["chi"]) != "zecca", "chi cade non parla, parla un compagno in piedi")
-	check(not q.pick("rialzato", "zecca", CAST).is_empty(), "chi si rialza parla anche dentro la pausa")
+	var ko: Array = q.pick("compagno_ko", "rio", ["lance", "nox", "saul"])
+	check(ko.size() == 1 and str(ko[0]["chi"]) != "rio", "chi cade non parla, parla un compagno in piedi")
+	check(not q.pick("rialzato", "rio", CAST).is_empty(), "chi si rialza parla anche dentro la pausa")
 	# dentro la pausa le battute normali tacciono
 	var quiet: bool = true
 	for i in 30:
-		if not q.pick("critico", "ferri", CAST).is_empty():
+		if not q.pick("critico", "lance", CAST).is_empty():
 			quiet = false
 	check(quiet, "pausa tra due battute rispettata")
 	# niente ripetizioni nella stessa battaglia
@@ -48,7 +48,7 @@ func _init() -> void:
 	var rep: bool = false
 	for i in 200:
 		q.now_msec += 10000
-		var r: Array = q.pick("ko_nemico", "ferri", CAST)
+		var r: Array = q.pick("ko_nemico", "lance", CAST)
 		if r.is_empty():
 			continue
 		var k: String = str(r[0]["testo"])
@@ -58,9 +58,9 @@ func _init() -> void:
 	# la risposta esce solo se chi risponde e' in piedi; la voce con "se" solo per quel compagno
 	for i in 200:
 		q.now_msec += 10000
-		var r: Array = q.pick("critico", "zecca", ["zecca", "nox"])
+		var r: Array = q.pick("critico", "rio", ["rio", "nox"])
 		for row in r:
-			check(str(row["chi"]) != "ferri", "Lance a terra non risponde")
+			check(str(row["chi"]) != "lance", "Lance a terra non risponde")
 	var q2 := BattleQuips.new(bat)
 	q2.now_msec = 0
 	for i in 200:

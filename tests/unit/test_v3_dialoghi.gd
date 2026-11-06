@@ -59,7 +59,7 @@ func _init() -> void:
 	for id in CastVisual.ORDER:
 		for expr in CastVisual.EXPR_ORDER:
 			check(ResourceLoader.exists("res://assets/portraits/%s_%s.png" % [id, expr]), "ritratto %s_%s" % [id, expr])
-	check(ResourceLoader.exists("res://assets/portraits/zecca_maschera.png"), "ritratto zecca_maschera")
+	check(ResourceLoader.exists("res://assets/portraits/rio_maschera.png"), "ritratto rio_maschera")
 	print("test_v3_dialoghi: " + ("OK" if fails == 0 else "%d errori" % fails))
 	quit(1 if fails > 0 else 0)
 

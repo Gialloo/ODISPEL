@@ -41,7 +41,7 @@ func _run() -> void:
 	var ch: Node = bt.get("_cam_hud")
 	if ch != null:
 		ch.call("set_live", 60)
-	bt.call("_quip_show", [{"chi": "zecca", "testo": "Chat, guardate qua: questo semaforo non sa con chi ha a che fare!"}], 0.0)
+	bt.call("_quip_show", [{"chi": "rio", "testo": "Chat, guardate qua: questo semaforo non sa con chi ha a che fare!"}], 0.0)
 	bt.call("_toast", "ROSSO FISSO · equilibrio x2", Ui.YELLOW, 4.0)
 	await create_timer(2.2).timeout
 	await _shot("1_scelta_caso_peggiore")

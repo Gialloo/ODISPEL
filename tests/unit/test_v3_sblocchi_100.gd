@@ -58,18 +58,18 @@ func _init() -> void:
 		for u in Progress.UNLOCKS[c]:
 			Progress.equip(c, str(u[1]), str(u[2]))
 	# il tratto del 75 conta nelle statistiche
-	var base: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("ferri", 100))
-	var with_t: Dictionary = BattleContent.compute_stats(Progress.entry_for("ferri"))
+	var base: Dictionary = BattleContent.compute_stats(BattleContent.default_entry("lance", 100))
+	var with_t: Dictionary = BattleContent.compute_stats(Progress.entry_for("lance"))
 	_chk(int(with_t["def"]) > int(base["def"]), "Veterano LibraCorp alza la difesa")
 	# il rituale della notte (tutti e quattro): +15% e Ultimate piu' carica
 	var b: Dictionary = _battle()
-	var lance: Dictionary = _unit(b, "ferri")
+	var lance: Dictionary = _unit(b, "lance")
 	_chk(int(lance.get("syn_gauge", 0)) >= 20, "la sinergia a quattro carica l'Ultimate")
 	# Ora zero: toglie equilibrio e ricarica l'Ultimate a tutti
 	var nox: Dictionary = _unit(b, "nox")
 	nox["gauge"] = 0
 	var ev: Array = []
-	Kits.extras(b, lance, BattleContent.MOVES["u_ferri_ult5"], ev)
+	Kits.extras(b, lance, BattleContent.MOVES["u_lance_ult5"], ev)
 	_chk(int(nox["gauge"]) >= 20, "Ora zero ricarica l'Ultimate della squadra")
 	# Interessi composti: esperienza in piu' fino a +100%
 	var saul: Dictionary = _unit(b, "saul")

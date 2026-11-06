@@ -32,7 +32,7 @@ func _shot(n: String) -> void:
 func _rio() -> Dictionary:
 	for uid in bt.b["units"]:
 		var u: Dictionary = bt.b["units"][uid]
-		if str(u.get("char", "")) == "zecca":
+		if str(u.get("char", "")) == "rio":
 			return u
 	return {}
 
@@ -45,7 +45,7 @@ func _turno_di_rio() -> bool:
 			guard += 1
 			await process_frame
 		var u: Dictionary = bt.call("_unit_of", bt.get("cur_pid"))
-		if str(u.get("char", "")) == "zecca":
+		if str(u.get("char", "")) == "rio":
 			return true
 		bt.call("_pick", "guard")
 		await create_timer(0.1).timeout

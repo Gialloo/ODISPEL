@@ -252,7 +252,7 @@ var _carico: Control
 
 func _build_carico() -> void:
 	# per ora solo la scritta (autore, 3/11/2026): il disegno «ricordo» torna con RitrattoVarianti.attive
-	var t: Texture2D = RitrattoVarianti.tex("zecca", "ricordo")
+	var t: Texture2D = RitrattoVarianti.tex("rio", "ricordo")
 	_carico = Control.new()
 	Ui.place(_carico, 0, 0, 1, 1)
 	_carico.mouse_filter = Control.MOUSE_FILTER_IGNORE

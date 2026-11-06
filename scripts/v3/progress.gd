@@ -11,29 +11,29 @@ extends RefCounted
 # Dopo l'atto 1 si continua nella Replica della diretta (New Game+, fino a NG+10): nemici dal livello 14 in su e molta piu'
 # esperienza, e gli sblocchi proseguono fino al livello 100 (una cosa nuova ogni 5 livelli circa, a turno per tipo).
 
-const CAST: Array = ["ferri", "nox", "zecca", "saul"]
+const CAST: Array = ["lance", "nox", "rio", "saul"]
 const MAX_LEVEL: int = 100
 
 # kind: skill | ult | react | trait | syn
 const UNLOCKS: Dictionary = {
-	"ferri": [[1, "skill", "u_ferri_a"], [1, "ult", "u_ferri_ult"], [3, "skill", "u_ferri_b"], [5, "react", "muro"],
-		[6, "syn", "turno_di_notte"], [8, "trait", "t_pelle_dura"], [9, "syn", "vecchie_conoscenze"], [11, "ult", "u_ferri_ult2"],
-		[14, "skill", "u_ferri_c"], [18, "trait", "t_ora_esatta"], [20, "react", "scorta"], [25, "ult", "u_ferri_ult3"],
-		[30, "syn", "risultato_operativo"], [35, "skill", "u_ferri_d"], [40, "trait", "t_manuale"], [45, "react", "al_secondo_netto"],
-		[50, "syn", "riunione_sul_divano"], [55, "ult", "u_ferri_ult4"], [65, "skill", "u_ferri_e"], [75, "trait", "t_veterano"],
-		[80, "react", "muro_libracorp"], [90, "syn", "rituale_della_notte"], [100, "ult", "u_ferri_ult5"]],
+	"lance": [[1, "skill", "u_lance_a"], [1, "ult", "u_lance_ult"], [3, "skill", "u_lance_b"], [5, "react", "muro"],
+		[6, "syn", "turno_di_notte"], [8, "trait", "t_pelle_dura"], [9, "syn", "vecchie_conoscenze"], [11, "ult", "u_lance_ult2"],
+		[14, "skill", "u_lance_c"], [18, "trait", "t_ora_esatta"], [20, "react", "scorta"], [25, "ult", "u_lance_ult3"],
+		[30, "syn", "risultato_operativo"], [35, "skill", "u_lance_d"], [40, "trait", "t_manuale"], [45, "react", "al_secondo_netto"],
+		[50, "syn", "riunione_sul_divano"], [55, "ult", "u_lance_ult4"], [65, "skill", "u_lance_e"], [75, "trait", "t_veterano"],
+		[80, "react", "muro_libracorp"], [90, "syn", "rituale_della_notte"], [100, "ult", "u_lance_ult5"]],
 	"nox": [[1, "skill", "u_nox_a"], [1, "ult", "u_nox_ult"], [3, "skill", "u_nox_b"], [5, "react", "reperibile"],
 		[6, "syn", "diretta_notturna"], [8, "trait", "t_sonno_leggero"], [9, "syn", "turno_di_notte"], [11, "ult", "u_nox_ult2"],
 		[14, "skill", "u_nox_c"], [18, "trait", "t_thermos_pieno"], [20, "react", "reperibile_h24"], [25, "ult", "u_nox_ult3"],
 		[30, "syn", "tre_snack"], [35, "skill", "u_nox_d"], [40, "trait", "t_divano_migliore"], [45, "react", "ci_penso_io"],
 		[50, "syn", "appello_0601"], [55, "ult", "u_nox_ult4"], [65, "skill", "u_nox_e"], [75, "trait", "t_civetta"],
 		[80, "react", "sveglia_per_tutti"], [90, "syn", "rituale_della_notte"], [100, "ult", "u_nox_ult5"]],
-	"zecca": [[1, "skill", "u_zecca_a"], [1, "ult", "u_zecca_ult"], [3, "skill", "u_zecca_b"], [5, "react", "cambio_scena"],
-		[6, "syn", "il_pubblico_paga"], [8, "trait", "t_follower"], [9, "syn", "diretta_notturna"], [11, "ult", "u_zecca_ult2"],
-		[14, "skill", "u_zecca_c"], [18, "trait", "t_specchietto"], [20, "react", "controcampo"], [25, "ult", "u_zecca_ult3"],
-		[30, "syn", "risultato_operativo"], [35, "skill", "u_zecca_d"], [40, "trait", "t_kit_professionale"], [45, "react", "ralenti"],
-		[50, "syn", "seconda_ripresa"], [55, "ult", "u_zecca_ult4"], [65, "skill", "u_zecca_e"], [75, "trait", "t_ospite_fisso"],
-		[80, "react", "standing_ovation"], [90, "syn", "rituale_della_notte"], [100, "ult", "u_zecca_ult5"]],
+	"rio": [[1, "skill", "u_rio_a"], [1, "ult", "u_rio_ult"], [3, "skill", "u_rio_b"], [5, "react", "cambio_scena"],
+		[6, "syn", "il_pubblico_paga"], [8, "trait", "t_follower"], [9, "syn", "diretta_notturna"], [11, "ult", "u_rio_ult2"],
+		[14, "skill", "u_rio_c"], [18, "trait", "t_specchietto"], [20, "react", "controcampo"], [25, "ult", "u_rio_ult3"],
+		[30, "syn", "risultato_operativo"], [35, "skill", "u_rio_d"], [40, "trait", "t_kit_professionale"], [45, "react", "ralenti"],
+		[50, "syn", "seconda_ripresa"], [55, "ult", "u_rio_ult4"], [65, "skill", "u_rio_e"], [75, "trait", "t_ospite_fisso"],
+		[80, "react", "standing_ovation"], [90, "syn", "rituale_della_notte"], [100, "ult", "u_rio_ult5"]],
 	"saul": [[1, "skill", "u_saul_b"], [1, "skill", "u_saul_a"], [1, "ult", "u_saul_ult"], [3, "skill", "u_saul_c"], [5, "react", "sgattaiolare"],
 		[6, "syn", "vecchie_conoscenze"], [7, "skill", "u_saul_d"], [8, "trait", "t_guanti_velluto"], [9, "syn", "il_pubblico_paga"],
 		[11, "ult", "u_saul_ult2"],
@@ -66,25 +66,25 @@ const REACT_MODS: Dictionary = {
 
 # Sinergie: basta che uno dei due la equipaggi; finche' sono in squadra entrambi hanno +8% attacco e difesa
 const SYNERGIES: Dictionary = {
-	"turno_di_notte": {"name": "Turno di notte", "pair": ["ferri", "nox"], "desc": "Lance e Nox: +8% attacco e difesa a entrambi."},
-	"vecchie_conoscenze": {"name": "Vecchie conoscenze", "pair": ["ferri", "saul"], "desc": "Lance e Saul: +8% attacco e difesa a entrambi."},
-	"diretta_notturna": {"name": "Diretta notturna", "pair": ["nox", "zecca"], "desc": "Nox e Rio: +8% attacco e difesa a entrambi."},
-	"il_pubblico_paga": {"name": "Il pubblico paga", "pair": ["zecca", "saul"], "desc": "Rio e Saul: +8% attacco e difesa a entrambi."},
+	"turno_di_notte": {"name": "Turno di notte", "pair": ["lance", "nox"], "desc": "Lance e Nox: +8% attacco e difesa a entrambi."},
+	"vecchie_conoscenze": {"name": "Vecchie conoscenze", "pair": ["lance", "saul"], "desc": "Lance e Saul: +8% attacco e difesa a entrambi."},
+	"diretta_notturna": {"name": "Diretta notturna", "pair": ["nox", "rio"], "desc": "Nox e Rio: +8% attacco e difesa a entrambi."},
+	"il_pubblico_paga": {"name": "Il pubblico paga", "pair": ["rio", "saul"], "desc": "Rio e Saul: +8% attacco e difesa a entrambi."},
 	# oltre l'atto 1: coppie che mancavano (livello 30), terzetti (50) e tutti e quattro (90). "pm" = per mille, "gauge" = Ultimate di partenza.
 	# I nomi vengono dalle gag del gruppo (odispel/PERSONAGGI_E_UMORISMO.md), mai dai loro payoff.
-	"risultato_operativo": {"name": "Risultato operativo", "pair": ["ferri", "zecca"], "pm": 120,
+	"risultato_operativo": {"name": "Risultato operativo", "pair": ["lance", "rio"], "pm": 120,
 		"desc": "Lance e Rio (lui vuole il rapporto, Rio ci scrive le visualizzazioni): +12% attacco e difesa a entrambi."},
 	"tre_snack": {"name": "Tre snack", "pair": ["nox", "saul"], "pm": 120,
 		"desc": "Nox e Saul (lei sa quale macchinetta dà il resto, lui la combinazione): +12% attacco e difesa a entrambi."},
-	"riunione_sul_divano": {"name": "Riunione sul divano", "pair": ["ferri", "nox", "zecca"], "pm": 120, "gauge": 10,
+	"riunione_sul_divano": {"name": "Riunione sul divano", "pair": ["lance", "nox", "rio"], "pm": 120, "gauge": 10,
 		"desc": "Lance, Nox e Rio: +12% attacco e difesa ai tre e Ultimate un po' più carica a inizio scontro."},
-	"appello_0601": {"name": "Appello alle 06:01", "pair": ["ferri", "nox", "saul"], "pm": 120, "gauge": 10,
+	"appello_0601": {"name": "Appello alle 06:01", "pair": ["lance", "nox", "saul"], "pm": 120, "gauge": 10,
 		"desc": "Lance, Nox e Saul: +12% attacco e difesa ai tre e Ultimate un po' più carica a inizio scontro."},
-	"seconda_ripresa": {"name": "Seconda ripresa", "pair": ["zecca", "ferri", "saul"], "pm": 120, "gauge": 10,
+	"seconda_ripresa": {"name": "Seconda ripresa", "pair": ["rio", "lance", "saul"], "pm": 120, "gauge": 10,
 		"desc": "Rio, Lance e Saul: +12% attacco e difesa ai tre e Ultimate un po' più carica a inizio scontro."},
-	"altoparlante": {"name": "L'altoparlante", "pair": ["saul", "nox", "zecca"], "pm": 120, "gauge": 10,
+	"altoparlante": {"name": "L'altoparlante", "pair": ["saul", "nox", "rio"], "pm": 120, "gauge": 10,
 		"desc": "Saul, Nox e Rio: +12% attacco e difesa ai tre e Ultimate un po' più carica a inizio scontro."},
-	"rituale_della_notte": {"name": "Il rituale della notte", "pair": ["ferri", "nox", "zecca", "saul"], "pm": 150, "gauge": 20,
+	"rituale_della_notte": {"name": "Il rituale della notte", "pair": ["lance", "nox", "rio", "saul"], "pm": 150, "gauge": 20,
 		"desc": "Chi fa la guardia, chi dorme, chi va a prendere da mangiare: +15% attacco e difesa a tutti e Ultimate più carica."},
 }
 const SYN_PM: int = 80

@@ -23,7 +23,7 @@ func _frames(n: int) -> void:
 
 func _run() -> void:
 	var lines: Array = [
-		{"chi": "ferri", "testo": "Prima."},
+		{"chi": "lance", "testo": "Prima."},
 		{"chi": "nox", "testo": "Seconda."},
 		{"chi": "saul", "testo": "Terza."},
 	]
@@ -71,10 +71,10 @@ func _run() -> void:
 		DialogBox.history.append({"nome": "X", "col": "ffffff", "testo": str(i)})
 	Settings.auto_text = false
 	Settings.text_speed = 2
-	dlg.play([{"chi": "zecca", "testo": "Ultima."}])
+	dlg.play([{"chi": "rio", "testo": "Ultima."}])
 	await _frames(1)
 	_chk(DialogBox.history.size() == DialogBox.LOG_MAX, "registro con tetto (%d)" % DialogBox.history.size())
-	_chk(str(DialogBox.history[-1]["nome"]) == "RIO", "id zecca mostrato come Rio")
+	_chk(str(DialogBox.history[-1]["nome"]) == "RIO", "id rio mostrato come Rio")
 	dlg.skip()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(Settings.path))
 	print("test_v3_registro: " + ("OK" if fails == 0 else "%d FALLITI" % fails))

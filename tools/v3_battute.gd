@@ -33,7 +33,7 @@ func _run(id: String, ar: String) -> void:
 	while not bool(bt.get("waiting")) and Time.get_ticks_msec() - t0 < 15000:
 		await process_frame
 	# 1) a comando: botta e risposta (Rio fa il critico, Lance risponde)
-	var rows: Array = [{"chi": "zecca", "testo": "Avete visto QUELLO CHE HO FATTO?"}, {"chi": "ferri", "testo": "Sì. Torna in formazione."}]
+	var rows: Array = [{"chi": "rio", "testo": "Avete visto QUELLO CHE HO FATTO?"}, {"chi": "lance", "testo": "Sì. Torna in formazione."}]
 	bt.call("_quip_show", rows, 0.0)
 	await create_timer(0.7).timeout
 	await _shot("1_battuta")

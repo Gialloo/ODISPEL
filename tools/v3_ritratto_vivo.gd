@@ -41,14 +41,14 @@ func _run() -> void:
 	for i in 3:
 		await process_frame
 	for uid in bt.b["units"]:
-		if str(bt.b["units"][uid].get("char", "")) == "zecca":
+		if str(bt.b["units"][uid].get("char", "")) == "rio":
 			bt.b["units"][uid]["gauge"] = BattleTypes.GAUGE_MAX      # ULTIMATE pronta, per poterla scegliere
 	for k in 40:
 		var g: int = 0
 		while not bool(bt.get("waiting")) and g < 2000:
 			g += 1
 			await process_frame
-		if str(bt.call("_unit_of", bt.get("cur_pid")).get("char", "")) == "zecca":
+		if str(bt.call("_unit_of", bt.get("cur_pid")).get("char", "")) == "rio":
 			break
 		bt.call("_pick", "guard")
 		for i in 3:

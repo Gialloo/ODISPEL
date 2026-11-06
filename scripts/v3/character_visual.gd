@@ -49,7 +49,7 @@ var _swing: float = 0.0              # 0..1 durante l'attacco: la mazza vola in 
 func setup(char_id: String, override: Dictionary = {}) -> void:
 	id = char_id
 	var sp: Dictionary = CastVisual.spec(char_id).duplicate()
-	if char_id == "zecca" and mask_cracked():
+	if char_id == "rio" and mask_cracked():
 		sp["mask_crack"] = true          # la crepa resta per il resto dell'atto (un ritratto puo' toglierla con l'override)
 	sp.merge(override, true)            # espressioni dei portrait: sopracciglia, palpebre, bocca...
 	_scale = float(sp["height"]) / 1.75
@@ -222,7 +222,7 @@ func hit() -> Tween:
 	_flash(true)
 	var tw := create_tween()
 	match id:
-		"ferri":
+		"lance":
 			tw.tween_property(self, "lean", -0.14, 0.06)
 			tw.parallel().tween_property(self, "arm_l_x", -1.5, 0.06)
 			tw.parallel().tween_property(self, "arm_r_x", -1.3, 0.06)
@@ -242,7 +242,7 @@ func hit() -> Tween:
 			tw.parallel().tween_property(self, "hop", 0.0, 0.35)
 			tw.parallel().tween_property(self, "arm_l_x", 0.0, 0.35)
 			tw.parallel().tween_property(self, "arm_r_x", 0.0, 0.35)
-		"zecca":
+		"rio":
 			tw.tween_property(self, "lean", -0.6, 0.07)
 			tw.parallel().tween_property(self, "hop", 0.12, 0.07)
 			tw.tween_callback(_flash.bind(false))

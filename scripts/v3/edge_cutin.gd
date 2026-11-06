@@ -46,7 +46,7 @@ const PAL_SAUL: Dictionary = {
 	"flames": [Color("#ffe21f"), Color("#ff8a1a"), Color("#ff3d9e")],
 	"solids": PAL_NOX["solids"],
 }
-const PALETTES: Dictionary = {"nox": PAL_NOX, "ferri": PAL_LANCE, "zecca": PAL_RIO, "saul": PAL_SAUL}
+const PALETTES: Dictionary = {"nox": PAL_NOX, "lance": PAL_LANCE, "rio": PAL_RIO, "saul": PAL_SAUL}
 
 
 static func pal_for(char_id: String) -> Dictionary:

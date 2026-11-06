@@ -422,7 +422,7 @@ static func pressure_bonus(state: Dictionary, attacker: Dictionary) -> int:
 	var b: int = 0
 	if lv >= INCANDESCENTE:
 		b += int(BattleTypes.RITMO_BONUS["incandescente_pressione"])
-	if lv >= APICE and str(attacker.get("char", "")) == "ferri":
+	if lv >= APICE and str(attacker.get("char", "")) == "lance":
 		b += int(BattleTypes.RITMO_BONUS["apice_lance_pressione"])
 	return b
 
@@ -437,7 +437,7 @@ static func _rio_apice(state: Dictionary, e: Dictionary, events: Array) -> void:
 	if level(state) < APICE or str(e.get("why", "")) == "apice":
 		return
 	var u: Dictionary = BattleState.unit(state, str(e.get("unit", "")))
-	if u.is_empty() or str(u.get("char", "")) != "zecca":
+	if u.is_empty() or str(u.get("char", "")) != "rio":
 		return
 	var extra: int = int(floor(float(int(e.get("amount", 0))) * float(BattleTypes.RITMO_BONUS["apice_rio_hype"])))
 	Kits.add_hype(u, extra, events, "apice")
@@ -471,7 +471,7 @@ static func apice_tech(state: Dictionary, actor: Dictionary, move_id: String, mo
 	var hits_enemy: bool = move.has("mult") and str(move.get("target", "")) == "enemy"
 	var tech: Dictionary = BattleTypes.RITMO_TECH[c]
 	match c:
-		"ferri":
+		"lance":
 			var boss: Dictionary = BattleState.boss(state)
 			if not hits_enemy or boss.is_empty():
 				return out
@@ -481,7 +481,7 @@ static func apice_tech(state: Dictionary, actor: Dictionary, move_id: String, mo
 				return out
 			out["mult"] = float(tech["mult"])
 			out["crit_pm"] = 1000
-		"zecca":
+		"rio":
 			Kits.add_hype(actor, int(tech["hype"]), events, "apice")
 		"nox":
 			for p in BattleState.alive_players(state):

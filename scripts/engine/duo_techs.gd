@@ -7,26 +7,26 @@ extends RefCounted
 # Non e' un bonus in percento: e' un'azione diversa, con un effetto che nessuno dei due fa da solo.
 const COST: int = 2
 
-# a / b = personaggi (id del codice: ferri = Lance, zecca = Rio). hits: [chi colpisce, moltiplicatore].
+# a / b = personaggi (id del codice: lance, rio, nox, saul; fino alla 0.58 Lance e Rio erano "ferri" e "zecca"). hits: [chi colpisce, moltiplicatore].
 const DUOS: Dictionary = {
-	"duo_ferri_nox": {"name": "Turno di notte", "a": "ferri", "b": "nox",
+	"duo_lance_nox": {"name": "Turno di notte", "a": "lance", "b": "nox",
 		"desc": "Lance fa da muro e Nox passa col thermos: scudo del 25% e cura del 20% a tutta la squadra.",
 		"team_shield": 0.25, "team_heal": 0.20, "icon": "guard"},
-	"duo_ferri_zecca": {"name": "Primo piano", "a": "ferri", "b": "zecca",
+	"duo_lance_rio": {"name": "Primo piano", "a": "lance", "b": "rio",
 		"desc": "Rio inquadra, Lance colpisce in primo piano: colpo pesante di Lance, uno di Rio e +25 Hype.",
-		"hits": [["ferri", 2.4], ["zecca", 1.1]], "hype": 25, "icon": "attack"},
-	"duo_ferri_saul": {"name": "Scorta", "a": "ferri", "b": "saul",
+		"hits": [["lance", 2.4], ["rio", 1.1]], "hype": 25, "icon": "attack"},
+	"duo_lance_saul": {"name": "Scorta", "a": "lance", "b": "saul",
 		"desc": "Lance apre la strada, Saul passa dietro: due colpi e -10 equilibrio al nemico.",
-		"hits": [["ferri", 1.4], ["saul", 1.6]], "balance": 10, "icon": "attack"},
-	"duo_nox_zecca": {"name": "Fuori onda", "a": "nox", "b": "zecca",
+		"hits": [["lance", 1.4], ["saul", 1.6]], "balance": 10, "icon": "attack"},
+	"duo_nox_rio": {"name": "Fuori onda", "a": "nox", "b": "rio",
 		"desc": "Rio stacca la diretta e Nox rimette in piedi tutti: cura del 30% e +1 energia a tutta la squadra.",
 		"team_heal": 0.30, "team_energy": 1, "icon": "guard"},
 	"duo_nox_saul": {"name": "Caffè corretto", "a": "nox", "b": "saul",
 		"desc": "Nox distrae, Saul sfila: lo scudo del nemico passa alla squadra e i due colpiscono.",
 		"hits": [["saul", 1.3], ["nox", 1.0]], "steal_shield": true, "icon": "attack"},
-	"duo_saul_zecca": {"name": "Gioco di prestigio", "a": "saul", "b": "zecca",
+	"duo_saul_rio": {"name": "Gioco di prestigio", "a": "saul", "b": "rio",
 		"desc": "Saul fa sparire la carta, Rio la riprende: due colpi, -5 equilibrio e +15 Hype.",
-		"hits": [["saul", 1.7], ["zecca", 1.4]], "balance": 5, "hype": 15, "icon": "attack"},
+		"hits": [["saul", 1.7], ["rio", 1.4]], "balance": 5, "hype": 15, "icon": "attack"},
 }
 
 
@@ -91,7 +91,7 @@ static func error(state: Dictionary, actor: Dictionary, duo_id: String) -> Strin
 
 
 static func _who(char_id: String) -> String:
-	return {"ferri": "Lance", "zecca": "Rio", "nox": "Nox", "saul": "Saul"}.get(char_id, char_id.capitalize())
+	return {"lance": "Lance", "rio": "Rio", "nox": "Nox", "saul": "Saul"}.get(char_id, char_id.capitalize())
 
 
 static func _unit_of_char(actor: Dictionary, mate: Dictionary, char_id: String) -> Dictionary:
@@ -152,7 +152,7 @@ static func run(state: Dictionary, actor: Dictionary, duo_id: String, events: Ar
 	if str(d["icon"]) == "guard":
 		state["duo_support_round"] = int(state.get("round", 0))
 	if int(d.get("hype", 0)) > 0:
-		Kits.add_hype(_unit_of_char(actor, mate, "zecca"), int(d["hype"]), events, "duo")
+		Kits.add_hype(_unit_of_char(actor, mate, "rio"), int(d["hype"]), events, "duo")
 	BattleResolver._check_winner(state, events)
 
 

@@ -72,12 +72,12 @@ func _run() -> void:
 	Story.chapter = 4
 	await _stage()
 	var rio := CharacterVisual.new()
-	rio.setup("zecca")
+	rio.setup("rio")
 	stage.add_child(rio)
 	rio.rotation.y = PI - 0.35
 	cam.position = Vector3(0, 1.62, 1.1)
 	cam.look_at(Vector3(0, 1.58, 0))
-	await _shot("primo_piano_zecca_crepa")
+	await _shot("primo_piano_rio_crepa")
 	Story.chapter = 0
 	# nemici
 	var kinds: Array = ["distributore", "semaforo", "cabina", "manichino", "cassaforte", "autovelox", "telecamera", "frammento_giallo"]
@@ -138,7 +138,7 @@ func _run() -> void:
 	var ui := Control.new()
 	ui.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(ui)
-	LightFx.blackout(ui, CastVisual.col("zecca", "top"))
+	LightFx.blackout(ui, CastVisual.col("rio", "top"))
 	await process_frame
 	await _shot("effetti_ultimate_nero")
 	ui.queue_free()

@@ -14,12 +14,12 @@ func _init() -> void:
 	Story.save_path = "user://salvataggio_replica.cfg"     # mai il salvataggio vero
 	Story.new_game()
 	_chk(Story.replica() == 0, "partita nuova senza replica")
-	Story.set_flag("legame_ferri_saul")
+	Story.set_flag("legame_lance_saul")
 	Story.set_flag("saul_tentato")
 	Story.chapter = 3
 	Story.new_replica()
 	_chk(Story.replica() == 1, "prima replica")
-	_chk(Story.has_flag("legame_ferri_saul"), "il legame resta")
+	_chk(Story.has_flag("legame_lance_saul"), "il legame resta")
 	_chk(not Story.has_flag("saul_tentato"), "le scelte si rifanno")
 	_chk(Story.chapter == 0 and Story.step == 0, "si riparte dall'inizio")
 	Story.chapter = 1     # il capitolo 1 si apre con un cartello
@@ -29,10 +29,10 @@ func _init() -> void:
 	Story.new_replica()
 	_chk(Story.replica() == 2, "seconda replica")
 	# NEW GAME+: la squadra resta com'e', fino a NG+10, nemici tarati sul 14 e poi +9 a giro, molta piu' esperienza
-	Progress.data["lv"]["ferri"] = 27
+	Progress.data["lv"]["lance"] = 27
 	Progress.add_stolen("scarica", "prova")
 	Story.new_replica()
-	_chk(Progress.level("ferri") == 27 and (Progress.data["stolen"] as Array).has("scarica"), "la squadra resta com'e' nella replica")
+	_chk(Progress.level("lance") == 27 and (Progress.data["stolen"] as Array).has("scarica"), "la squadra resta com'e' nella replica")
 	for _i in 20:
 		Story.new_replica()
 	_chk(Story.replica() == BattleTypes.REPLICA_MAX, "non si va oltre NG+10")
@@ -49,8 +49,8 @@ func _init() -> void:
 	_chk(e1 >= e0 * 2 - 1, "NG+1: almeno il doppio dell'esperienza")
 	_chk(Progress.battle_exp(14, true, 0, 10) > e1, "a ogni giro ancora di piu'")
 	Story.new_game()
-	_chk(Story.replica() == 0 and not Story.has_flag("legame_ferri_saul"), "nuova partita azzera tutto")
-	_chk(Progress.level("ferri") == 1, "nuova partita: squadra da capo")
+	_chk(Story.replica() == 0 and not Story.has_flag("legame_lance_saul"), "nuova partita azzera tutto")
+	_chk(Progress.level("lance") == 1, "nuova partita: squadra da capo")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(Story.save_path))
 	print("test_v3_replica: " + ("OK" if fails == 0 else "FALLITO (%d)" % fails))
 	quit(1 if fails > 0 else 0)

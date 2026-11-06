@@ -5,8 +5,8 @@ extends Control
 # fumetto obliquo con il nome in una targhetta del colore del personaggio, espressione che cambia a ogni battuta.
 #
 # Battuta: {"chi": "saul", "espr": "sfotto", "lato": "sx", "testo": "..."}
-#   chi  = id del personaggio (ferri, nox, zecca, saul) oppure un nome libero ("DISTRIBUTORE", "???") senza ritratto
-#   espr = neutro, felice, arrabbiato, triste, sorpreso, sfotto, serio (zecca anche: maschera)
+#   chi  = id del personaggio (lance, nox, rio, saul) oppure un nome libero ("DISTRIBUTORE", "???") senza ritratto
+#   espr = neutro, felice, arrabbiato, triste, sorpreso, sfotto, serio (rio anche: maschera)
 #   lato = sx o dx (se manca: il primo che parla a sinistra, il secondo a destra)
 # Ritratti: res://assets/portraits/<chi>_<espr>.png (girati verso destra; a destra si specchiano).
 # SALTA chiude tutto e mostra per qualche secondo il riassunto della scena, cosi' chi salta non si perde.

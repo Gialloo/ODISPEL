@@ -13,7 +13,7 @@ func check(cond: bool, msg: String) -> void:
 
 func _battle() -> Dictionary:
 	var team: Array = []
-	for id in ["ferri", "nox", "zecca", "saul"]:
+	for id in ["lance", "nox", "rio", "saul"]:
 		team.append(BattleContent.default_entry(id))
 	return BattleState.create_solo("IO", team, [], "distributore", 3)
 

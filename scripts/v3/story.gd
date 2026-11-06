@@ -133,12 +133,52 @@ static func _is_valid_save_integer(v: Variant) -> bool:
 	return is_finite(number) and number >= 0.0 and number == floor(number)
 
 
+# NOMI NUOVI DEGLI ID (0.59, richiesta dell'autore 6/11/2026): nel codice Lance e Rio si chiamavano "ferri" e "zecca".
+# I salvataggi di prima si convertono in lettura: chiavi e testi come "ferri", "u_ferri_ult2", "zecca" diventano
+# "lance", "u_lance_ult2", "rio". Solo la parola intera (non dentro altre parole). Al primo salvataggio il file e' gia' nuovo.
+const ID_RENAMES: Array = [["ferri", "lance"], ["zecca", "rio"]]
+static var _id_res: Array = []
+
+
+static func migrate_ids(v: Variant) -> Variant:
+	if _id_res.is_empty():
+		for pair in ID_RENAMES:
+			var re := RegEx.new()
+			re.compile("(?<![A-Za-z])" + str(pair[0]) + "(?![a-z])")
+			_id_res.append([re, str(pair[1])])
+	if v is String:
+		var t: String = v
+		for r in _id_res:
+			t = (r[0] as RegEx).sub(t, str(r[1]), true)
+		return t
+	if v is StringName:
+		return StringName(migrate_ids(String(v)))
+	if v is Array:
+		var out_a: Array = []
+		for x in v:
+			out_a.append(migrate_ids(x))
+		return out_a
+	if v is Dictionary:
+		var out_d: Dictionary = {}
+		for k in v:
+			out_d[migrate_ids(k)] = migrate_ids(v[k])
+		return out_d
+	return v
+
+
+static func _migrate_ids(cfg: ConfigFile) -> void:
+	for section in cfg.get_sections():
+		for key in cfg.get_section_keys(section):
+			cfg.set_value(section, key, migrate_ids(cfg.get_value(section, key)))
+
+
 # strict = true quando si SCRIVE (il temporaneo deve essere perfetto); in lettura (strict = false) la progressione
 # riparabile si accetta e Progress.from_save() la ripara (decisione dell'autore 6/11/2026, opzione 1B: non perdere la partita).
 static func _read_valid_save(path: String, strict: bool = false) -> ConfigFile:
 	var cfg := ConfigFile.new()
 	if cfg.load(path) != OK:
 		return null
+	_migrate_ids(cfg)
 	var raw_chapter: Variant = cfg.get_value("storia", "capitolo", -1)
 	var raw_step: Variant = cfg.get_value("storia", "passo", -1)
 	if not _is_valid_save_integer(raw_chapter) or not _is_valid_save_integer(raw_step):

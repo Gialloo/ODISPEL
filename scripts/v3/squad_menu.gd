@@ -12,7 +12,7 @@ const KINDS: Array = ["skill", "ult", "react", "trait", "syn"]
 const KIND_NAMES: Dictionary = {"skill": "Abilità firma", "ult": "Ultimate", "react": "Reazione", "trait": "Tratto", "syn": "Sinergia"}
 const PORTRAIT_DIR: String = "res://assets/portraits/"
 
-var _sel: String = "ferri"
+var _sel: String = "lance"
 var _in_battle: bool = false
 var _list: VBoxContainer
 var _detail: Control

@@ -11,21 +11,21 @@ const PORTRAIT_DIR: String = "res://assets/portraits/"
 # chi, espressione, specchiato, posizione rispetto al centro, rotazione (gradi), scala. Dal fondo al davanti.
 const RING: Array = [
 	{"id": "nox", "espr": "neutro", "flip": false, "pos": Vector2(-95, -150), "rot": 5.0, "scale": 0.82},
-	{"id": "ferri", "espr": "serio", "flip": false, "pos": Vector2(-235, -60), "rot": 9.0, "scale": 1.0},
+	{"id": "lance", "espr": "serio", "flip": false, "pos": Vector2(-235, -60), "rot": 9.0, "scale": 1.0},
 	{"id": "saul", "espr": "sfotto", "flip": true, "pos": Vector2(235, -60), "rot": -9.0, "scale": 1.0},
-	{"id": "zecca", "espr": "maschera", "flip": true, "pos": Vector2(45, -25), "rot": -4.0, "scale": 1.08},
+	{"id": "rio", "espr": "maschera", "flip": true, "pos": Vector2(45, -25), "rot": -4.0, "scale": 1.08},
 ]
 
 const WHISPERS: Dictionary = {
-	"ferri": ["Bene. Nessuno si muova. Valutiamo le opzioni.", "Sottovoce. Ho detto sottovoce.", "Siamo in ritardo di quattro secondi."],
+	"lance": ["Bene. Nessuno si muova. Valutiamo le opzioni.", "Sottovoce. Ho detto sottovoce.", "Siamo in ritardo di quattro secondi."],
 	"saul": ["Io un'opzione ce l'ho. Ma costa.", "Conosco un tizio. Non chiedete quale.", "Tecnicamente non è un furto se nessuno se ne accorge."],
-	"zecca": ["Aspettate. Questa luce mi fa sembrare stanco.", "Raga, se la riunione la filmo viene benissimo.", "TITOLO: «Riunione segretissima». Non la posto. Forse."],
+	"rio": ["Aspettate. Questa luce mi fa sembrare stanco.", "Raga, se la riunione la filmo viene benissimo.", "TITOLO: «Riunione segretissima». Non la posto. Forse."],
 	"nox": ["Possiamo essere morti quando riprendiamo?", "E se ce ne andassimo e basta?", "Svegliatemi quando avete deciso."],
 }
 
 const QUIPS: Array = [
-	["zecca", "Aspettate. Quindi chi fa cosa?"],
-	["ferri", "Saul. L'uscita è dall'altra parte."],
+	["rio", "Aspettate. Quindi chi fa cosa?"],
+	["lance", "Saul. L'uscita è dall'altra parte."],
 	["nox", "Bene. Benissimo. Nessuno ha capito il piano."],
 	["saul", "Sapevo che sarebbe andata così."],
 ]
@@ -61,7 +61,7 @@ func _build(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint
 
 	# Rio, scuro e calmo, sul lato destro: guarda la riunione dal bordo dell'inquadratura (variante "pausa", 3/11/2026).
 	# Sta sotto a tutto, tagliato dal bordo in basso; la luce su di lui respira piano. Senza il disegno non c'e' e il menu resta com'era.
-	var pt: Texture2D = RitrattoVarianti.tex("zecca", "pausa")
+	var pt: Texture2D = RitrattoVarianti.tex("rio", "pausa")
 	if pt != null:
 		var fig := TextureRect.new()
 		fig.texture = pt
@@ -103,7 +103,7 @@ func _build(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint
 	Ui.place(notes, 0.5, 1, 0.5, 1, -620, -122, 620, -30)
 	add_child(notes)
 	notes.add_child(_note("RIPRENDI", "Lance ha la mappa", -3.0, func() -> void:
-		_say_then("ferri", "Piano deciso. Si va.", on_resume)))
+		_say_then("lance", "Piano deciso. Si va.", on_resume)))
 	notes.add_child(_note("IMPOSTAZIONI", "Nox abbassa il volume", 2.0, func() -> void:
 		_say("nox", "Abbassate. Qualcuno sta cercando di dormire.")
 		# con le impostazioni aperte i foglietti sotto si nascondono: non si sovrappongono al pannello
@@ -113,13 +113,13 @@ func _build(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint
 		add_child(sp)))
 	# SQUADRA (livelli e cosa equipaggiare): e' la voce di Rio, che finalmente si mette al centro
 	notes.add_child(_note("SQUADRA", "Rio si mette al centro", 3.0, func() -> void:
-		_say("zecca", "Finalmente. Inquadrate me. Poi gli altri.")
+		_say("rio", "Finalmente. Inquadrate me. Poi gli altri.")
 		add_child(SquadMenu.new(Engine.time_scale == 0.0, _squad_save))))
 	notes.add_child(_note(exit_text, exit_hint, -2.0, func() -> void:
 		_say_then("saul", "Conosco un'uscita. Per voi, gratis. Stavolta.", on_exit)))
 
 	# i sussurri partono uno dopo l'altro
-	var order: Array = ["ferri", "saul", "zecca", "nox"]
+	var order: Array = ["lance", "saul", "rio", "nox"]
 	for i in order.size():
 		var id: String = order[i]
 		var lines: Array = WHISPERS[id]
