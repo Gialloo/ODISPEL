@@ -97,6 +97,11 @@ func _init() -> void:
 	var save_abs: String = ProjectSettings.globalize_path(Story.save_path)
 	var backup_abs: String = ProjectSettings.globalize_path(Story.save_path + ".bak")
 	check(DirAccess.copy_absolute(save_abs, backup_abs) == OK, "backup di test creato")
+	check(DirAccess.remove_absolute(save_abs) == OK, "file principale rimosso per simulare interruzione")
+	check(Story.has_save(), "il menu rileva il backup anche senza file principale")
+	Story.area_state = {}
+	check(Story.load_game(), "backup recuperato quando il file principale manca")
+	check((Story.area_state.get("clues", []) as Array).has("scontrino"), "backup senza principale conserva gli indizi")
 	var broken_save := FileAccess.open(Story.save_path, FileAccess.WRITE)
 	if broken_save != null:
 		broken_save.store_string("file danneggiato")
@@ -107,8 +112,10 @@ func _init() -> void:
 	Story.advance()
 	check(Story.load_game(), "salvataggio dopo avanzamento caricato")
 	check(Story.area_state.is_empty(), "passando al passo dopo lo stato dell'area si azzera")
+	check(FileAccess.file_exists(ProjectSettings.globalize_path(Story.save_path + ".bad")), "il file corrotto viene conservato separatamente durante il recupero")
 	DirAccess.remove_absolute(save_abs)
 	DirAccess.remove_absolute(backup_abs)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(Story.save_path + ".bad"))
 	check(UpdateCheck.newer("0.33.2", "0.33.1") and UpdateCheck.newer("0.34.0", "0.33.9") and not UpdateCheck.newer("0.33.1", "0.33.1")
 		and not UpdateCheck.newer("0.32.9", "0.33.0") and UpdateCheck.newer("1.0", "0.99.9"), "confronto delle versioni per l'aggiornamento")
 	check(BrokenCam.level_for(0.9) == 0.0 and BrokenCam.level_for(0.5) > 0.0 and BrokenCam.level_for(0.25) >= 0.99, "livelli della telecamera rotta")
