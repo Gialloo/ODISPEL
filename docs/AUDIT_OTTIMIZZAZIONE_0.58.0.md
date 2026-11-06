@@ -921,3 +921,16 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Risultato atteso:** stessa copertura del warm-up con una sola allocazione di `ArrayMesh` invece di una per materiale.
 - **Verifica effettiva:** controllo statico della condivisione della stessa variabile `warmup_mesh` in tutto il ciclo. Il test Godot non è stato eseguito in questa sessione; non sono disponibili misure di memoria, frame-time o compilazione shader su dispositivo.
 - **Limiti:** il risparmio riguarda una fase di avvio, non il frame loop durante il gioco. Non dimostra da solo una riduzione percepibile dello stutter.
+
+
+
+### 2026-11-06 — Audit del ciclo di vita degli effetti StaticFx
+
+- **File analizzato:** `scripts/v3/static_fx.gd`; riferimenti e ciclo di vita delle istanze verificati in `scripts/v3/area.gd` e `scripts/v3/battle3d.gd`.
+- **Obiettivo:** controllare che gli overlay dei materiali vengano applicati e rimossi senza trattenere riferimenti a mesh non più valide e verificare se l'effetto visivo consuma risorse casuali condivise.
+- **Risultato — riferimenti alle mesh:** `StaticFx._collect()` ricostruisce l'elenco delle mesh quando l'effetto viene attivato; `_apply()` verifica `is_instance_valid()` prima di assegnare `material_overlay`. La lista viene svuotata a ogni nuova raccolta. Non emerge una prova statica di un riferimento persistente a nodi liberati.
+- **Osservazione da approfondire — RNG globale:** `StaticFx._apply()` esegue `randf_range(0.65, 1.0)` ogni volta che applica o rimuove l'overlay, perché il parametro `cover` viene aggiornato anche quando `_show` è falso. Questo consuma il generatore casuale globale anche durante lo spegnimento dell'effetto. L'impatto sul gameplay non è dimostrato: prima di cambiare il codice occorre mappare gli usi di `randf()`, `randf_range()` e `randi()` nei percorsi di combattimento, generazione e presentazione, distinguendo il generatore globale dai `RandomNumberGenerator` locali.
+- **Decisione tecnica:** nessuna modifica applicata in questa fase. Non si sostituisce il generatore casuale e non si cambia il comportamento dell'effetto senza aver verificato se esistano dipendenze dalla sequenza globale.
+- **Verifiche effettuate:** lettura statica di `StaticFx._collect()`, `StaticFx._apply()` e `StaticFx._process()`; controllo della guardia `is_instance_valid()` e del momento in cui viene ricostruito l'elenco delle mesh.
+- **Test non eseguiti:** nessun test Godot, nessuna prova di attivazione/disattivazione ripetuta, nessun confronto di sequenze RNG e nessuna profilazione runtime.
+- **Prossimo controllo:** inventario degli usi del generatore casuale globale nel motore di combattimento e nelle scene. Se la sequenza globale influenza risultati di gioco, separare in modo circoscritto la casualità puramente visiva dalla casualità di gameplay, con test di regressione prima e dopo.
