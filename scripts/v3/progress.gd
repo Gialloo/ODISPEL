@@ -151,9 +151,32 @@ static func validate_save(v: Variant) -> bool:
 				return false
 	if not (d["stolen"] is Array):
 		return false
-	for move_id in d["stolen"]:
-		if not (move_id is String) or not BattleContent.BOSS_MOVES.has(move_id):
+	var stolen: Array = d["stolen"]
+	for move_id in stolen:
+		if not (move_id is String) or not BattleContent.BOSS_MOVES.has(move_id) or stolen.count(move_id) > 1:
 			return false
+	for c in CAST:
+		var eq: Dictionary = equipment[c]
+		for kind in ["skill", "ult", "react", "trait", "syn"]:
+			var id: String = str(eq[kind])
+			if id == "":
+				continue
+			match kind:
+				"skill":
+					if not BattleContent.MOVES.has(id) and not (id.begins_with("r_") and stolen.has(id.substr(2))):
+						return false
+				"ult":
+					if not BattleContent.MOVES.has(id):
+						return false
+				"react":
+					if not REACT_MODS.has(id):
+						return false
+				"trait":
+					if not TRAIT_DESC.has(id):
+						return false
+				"syn":
+					if not SYNERGIES.has(id):
+						return false
 	return true
 
 
