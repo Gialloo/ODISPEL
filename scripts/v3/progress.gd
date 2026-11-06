@@ -157,25 +157,36 @@ static func validate_save(v: Variant) -> bool:
 			return false
 	for c in CAST:
 		var eq: Dictionary = equipment[c]
+		var lv: int = int(levels[c])
+		var unlocked: Dictionary = {"skill": [], "ult": [], "react": [], "trait": [], "syn": []}
+		for item in UNLOCKS[c]:
+			if int(item[0]) <= lv:
+				(unlocked[str(item[1])] as Array).append(str(item[2]))
 		for kind in ["skill", "ult", "react", "trait", "syn"]:
 			var id: String = str(eq[kind])
 			if id == "":
 				continue
 			match kind:
 				"skill":
-					if not BattleContent.MOVES.has(id) and not (id.begins_with("r_") and stolen.has(id.substr(2))):
-						return false
+					if id.begins_with("r_"):
+						if not stolen.has(id.substr(2)):
+							return false
+					else:
+						var move: Dictionary = BattleContent.MOVES.get(id, {})
+						if not unlocked[kind].has(id) or str(move.get("kind", "")) != "skill":
+							return false
 				"ult":
-					if not BattleContent.MOVES.has(id):
+					var ultimate: Dictionary = BattleContent.MOVES.get(id, {})
+					if not unlocked[kind].has(id) or str(ultimate.get("kind", "")) != "ult":
 						return false
 				"react":
-					if not REACT_MODS.has(id):
+					if not unlocked[kind].has(id) or not REACT_MODS.has(id):
 						return false
 				"trait":
-					if not TRAIT_DESC.has(id):
+					if not unlocked[kind].has(id) or not TRAIT_DESC.has(id):
 						return false
 				"syn":
-					if not SYNERGIES.has(id):
+					if not unlocked[kind].has(id) or not SYNERGIES.has(id):
 						return false
 	return true
 
