@@ -908,3 +908,16 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test e verifiche:** ispezione statica dei percorsi di ingresso/uscita e dei punti di creazione/liberazione. Non sono stati eseguiti test Godot, profiler GPU, monitoraggio memoria o prove su Android.
 - **Verifiche runtime raccomandate:** ripetere almeno 20 cicli area → battaglia → area, includendo vittoria, sconfitta, boss multi-fase, ritorno al menu e riapertura di una nuova area; osservare memoria RAM/GPU dopo ogni ciclo; verificare che non compaiano due scene 3D attive contemporaneamente; misurare il frame hitch della cattura VHS separatamente dal tempo di caricamento della scena; controllare nebbia e materiali dopo transizioni tra aree con palette diverse.
 - **Criterio per un futuro intervento:** intervenire soltanto se il profiler mostra crescita progressiva della memoria, risorse GPU non rilasciate o un costo di transizione ripetibile e attribuibile a un punto specifico.
+
+
+### 2026-11-06 — Geometria condivisa nel warm-up degli shader
+
+- **File modificati:** `scripts/v3/shader_warmup.gd`; nuovo `tests/unit/test_v3_shader_warmup.gd`; `README.md`.
+- **Audit:** il warm-up crea un `MeshInstance3D` per ogni materiale, ma assegnava a ciascuno il risultato di una nuova chiamata a `_quad()`. La geometria (vertici, normali, colori e UV) è identica per tutti i materiali; cambiano soltanto `material_override` e posizione.
+- **Criticità:** allocazione e popolamento di più `ArrayMesh` equivalenti in una procedura di avvio che deve limitare il lavoro prima della scena giocabile.
+- **Correzione:** `_quad()` viene chiamata una sola volta prima del ciclo; tutti i `MeshInstance3D` condividono la stessa risorsa mesh. Restano distinti i nodi e i materiali, quindi ciascuno shader viene comunque presentato al renderer per il warm-up.
+- **Perché è sicuro:** le mesh sono risorse condivisibili e non vengono modificate nel ciclo. Il codice cambia soltanto l'assegnazione della risorsa, senza cambiare coordinate, ordine, materiali, numero di istanze o attese di rendering.
+- **Test implementato:** il test standalone controlla che la mesh helper contenga una superficie triangolare con sei vertici, sei normali, sei colori e sei UV, preservando la geometria attesa.
+- **Risultato atteso:** stessa copertura del warm-up con una sola allocazione di `ArrayMesh` invece di una per materiale.
+- **Verifica effettiva:** controllo statico della condivisione della stessa variabile `warmup_mesh` in tutto il ciclo. Il test Godot non è stato eseguito in questa sessione; non sono disponibili misure di memoria, frame-time o compilazione shader su dispositivo.
+- **Limiti:** il risparmio riguarda una fase di avvio, non il frame loop durante il gioco. Non dimostra da solo una riduzione percepibile dello stutter.
