@@ -3018,53 +3018,87 @@
     ]
   },
   "c4_briefing": {
-    "riassunto": "L'ultima Anomalia è la Cassaforte nel caveau LibraCorp sotto la Banca Centrale. Guida Saul.",
+    "riassunto": "L'ultima Anomalia si trova nel caveau LibraCorp, sotto la Banca Centrale. Per Saul è un posto fin troppo familiare.",
     "righe": [
       {
         "chi": "echo",
-        "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Il caveau LibraCorp sotto la Banca Centrale. L'ultima Anomalia è la cassaforte."
+        "testo": "Il caveau LibraCorp. Sotto la Banca Centrale. L'ultima Anomalia è la cassaforte."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Ci penso da dieci anni. Guido io. Ovviamente."
+        "testo": "Dieci anni. Ci ho messo dieci anni ad arrivare fin qui. Direi che è il momento di godermi la visita. Guido io, ovviamente."
       },
       {
         "chi": "ferri",
         "espr": "serio",
-        "testo": "Si entra, si chiude, si esce. Niente tasche piene."
+        "testo": "Si entra, si neutralizza l'Anomalia e si esce. Niente deviazioni. Niente bottino."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Le mie tasche sono sempre piene, capo. È un problema di sartoria."
+        "testo": "Capo, mi ferisci. Davvero pensi che confonderei una missione così importante con una gita al centro commerciale?"
       },
       {
-        "chi": "nox",
+        "chi": "ferri",
         "espr": "neutro",
-        "testo": "Quanto è sicuro, da uno a dieci?"
+        "testo": "Sì."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Non ho detto che è sicuro. Ho detto che è improbabile che moriamo tutti."
+        "testo": "Almeno potevi fingere di pensarci."
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Tutti."
+        "testo": "Domanda pratica: quanto è sicuro?"
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Da uno a dieci?"
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Esatto."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Diciamo che è improbabile che moriamo tutti."
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Tutti?"
       },
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "TITOLO: «Rapina in banca, ma legale»!"
+        "testo": "Titolo della diretta: «Rapina in banca, ma legale»!"
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Non è legale. Quarantadue ore sveglia."
+        "testo": "Non è legale. E sono quarantadue ore che non dormo."
+      },
+      {
+        "chi": "saul",
+        "espr": "felice",
+        "testo": "Allora direi che siamo tutti prontissimi. Si va in scena!"
+      },
+      {
+        "chi": "zecca",
+        "espr": "sorpreso",
+        "testo": "Ehi! Dovevo dirla io questa!"
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Troppo tardi ragazzino, conduco io qui."
       }
     ]
   },
