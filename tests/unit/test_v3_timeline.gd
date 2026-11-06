@@ -333,6 +333,24 @@ func _ingresso() -> void:
 			check(heroes == 4, "vantaggio: prima tutti e quattro gli eroi (%d)" % heroes)
 
 
+func _preview_turno_corrente() -> void:
+	var s: Dictionary = _fresh("semaforo", 23)
+	# Velocita' uguali: dopo il turno corrente devono comparire gli altri slot,
+	# non una copia del personaggio che sta gia' agendo.
+	for player in s["players"]:
+		BattleState.active_unit(s, str(player["id"]))["spd"] = 100
+	BattleState.boss(s)["spd"] = 100
+	BattleFlow.start_round(s)
+	var current: Dictionary = BattleFlow.next(s)
+	check(not bool(current.get("end", false)) and not bool(current.get("boss", false)), "preview corrente: il test parte da un turno eroe")
+	var pid: String = str(current.get("player", ""))
+	var preview: Array = BattleFlow.preview(s, 5)
+	check(not preview.is_empty() and str(preview[0].get("player", "")) == pid, "preview corrente: mantiene il turno attualmente selezionato in testa")
+	if preview.size() > 1:
+		check(str(preview[1].get("player", "")) != pid, "preview corrente: non duplica il turno ordinario appena iniziato")
+	check(str(s["tl"]["cur"]) == pid and not bool(s["tl"]["done"].get(pid, false)), "preview corrente: non modifica la Timeline reale")
+
+
 func _preview_bonus_coerente() -> void:
 	# La previsione deve riflettere gli SLANCI protetti che next() eseguira' prima degli slot normali.
 	var s: Dictionary = _fresh("semaforo", 21)
@@ -466,6 +484,7 @@ func _init() -> void:
 	_slancio_costo()
 	_ingresso()
 	_carry_difese_e_reazioni()
+	_preview_turno_corrente()
 	_preview_bonus_coerente()
 	_scontri_interi()
 	if fails == 0:
