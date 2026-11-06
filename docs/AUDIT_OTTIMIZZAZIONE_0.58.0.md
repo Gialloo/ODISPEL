@@ -838,3 +838,14 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test implementato e funzionamento:** test_v3_mesh_batch.gd chiama MeshBatch.disc() due volte con gli stessi parametri e confronta gli instance ID; verifica inoltre che una variazione di raggio o colore produca una risorsa distinta e che la mesh abbia la superficie attesa. Il test è standalone e non carica una scena completa.
 - **Risultato atteso:** geometrie ricorrenti condivise fra istanze, varianti visive non mischiate, cache limitata.
 - **Verifica effettiva:** lettura statica di tutti gli usi di MeshBatch.disc() e implementazione della cache/test. Non sono stati misurati FPS, memoria o tempi di caricamento; il test non è stato eseguito con Godot in questa sessione. Il beneficio quantitativo va misurato con tools/v3_prestazioni.gd su PC e Android prima di considerarlo confermato.
+
+
+### 2026-11-06 — Guardie anticipate per HUD nascosto in battle3d.gd
+
+- **Modifica:** `_update_wheel()` termina subito quando sia la ruota sia il riflettore sono nascosti. `_place_greg_tag()` termina subito quando sia il cartellino del Gregario sia il pulsante MIRA sono nulli o nascosti.
+- **Motivazione:** entrambe le funzioni sono richiamate dal loop `_process()`. Nei frame in cui i rispettivi elementi UI non sono visibili, prima venivano comunque eseguiti controlli e recuperi di stato non necessari.
+- **Sicurezza funzionale:** il controllo della ruota considera anche `_spot.visible`, così non interrompe l'aggiornamento di un eventuale riflettore ancora in dissolvenza. Il controllo Gregario considera separatamente cartellino e pulsante MIRA: basta che uno sia visibile perché il posizionamento continui.
+- **Impatto atteso:** riduzione minima ma certa del lavoro CPU/GDScript nei frame con questi elementi nascosti. Non modifica formule di proiezione, coordinate, interpolazione, animazioni, input o regole di combattimento.
+- **Test:** nessun test automatizzato specifico aggiunto; la modifica consiste in guardie di uscita anticipata. Verifica statica dei due percorsi e dei casi limite descritti sopra. Test runtime Godot non eseguito in questa sessione.
+- **Verifiche manuali richieste:** ruota nascosta/visibile durante apertura e chiusura; riflettore durante la dissolvenza; cartellino Gregario nascosto/visibile; pulsante MIRA visibile con cartellino nascosto; cambio bersaglio e movimento camera.
+- **Limite:** beneficio quantitativo non misurato; non attribuire guadagni FPS senza benchmark.
