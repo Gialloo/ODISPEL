@@ -864,3 +864,18 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test:** controllo statico dei percorsi nascosti e visibili; nessun test Godot eseguito. Verifiche manuali richieste: apertura/chiusura ruota, dissolvenza riflettore, cartellino Gregario, pulsante MIRA indipendente, cambio bersaglio, movimento camera e resize viewport.
 - **Risultato atteso:** evitare lavoro GDScript non necessario nei frame senza UI pertinente, mantenendo aggiornamento completo quando un elemento è visibile. Il guadagno quantitativo non è misurato.
 - **Passi successivi:** mappare tutte le scritture a proprietà animate di CharacterVisual/VendingVisual; aggiungere benchmark ripetibili con battaglia standard, gregario, QTE, cut-in e BREAK; misurare frame time medio/p95/max, CPU, memoria e draw calls su PC e Android.
+
+
+
+### 2026-11-06 — Evizione LRU della cache MeshBatch.disc()
+
+- **File modificati:** `scripts/v3/mesh_batch.gd`; `tests/unit/test_v3_mesh_batch.gd`.
+- **Criticità trovata:** la cache precedente eliminava tutte le 128 voci al raggiungimento del limite. Con un insieme di geometrie ricorrenti appena superiore a 128, questo comportamento poteva causare ricostruzioni a gruppi e perdere anche le varianti usate continuamente.
+- **Correzione:** introdotto un ordine LRU (Least Recently Used). Ogni cache hit sposta la chiave in fondo alla lista; quando la cache è piena viene rimossa soltanto la chiave meno recentemente usata. Il limite resta 128. Se la lista d'ordine risultasse vuota mentre il dizionario è pieno, un percorso difensivo riallinea lo stato svuotando il dizionario.
+- **Perché:** mantenere in cache le geometrie più richieste e ridurre il rischio di thrashing quando il numero di varianti supera il limite, senza permettere crescita illimitata.
+- **Sicurezza delle risorse:** l'espulsione rimuove il riferimento dal dizionario, ma non invalida le `ArrayMesh` già assegnate a `MeshInstance3D` o conservate da altri riferimenti. Una variante espulsa viene ricostruita soltanto se richiesta di nuovo.
+- **Test implementato e funzionamento:** esteso `tests/unit/test_v3_mesh_batch.gd`. Dopo aver creato e riutilizzato una variante, il test riempie la cache con 125 chiavi aggiuntive, inserisce un'ulteriore variante oltre il limite, verifica che la chiave recentemente usata restituisca la stessa istanza e che la chiave meno recente espulsa venga ricostruita con un nuovo instance ID. Restano anche i controlli di riuso, superficie e separazione di raggio/colore.
+- **Risultato atteso:** dimensione massima invariata (128); le voci calde sopravvivono all'inserimento di nuove varianti; viene espulsa una sola voce per inserimento oltre il limite.
+- **Verifica effettiva:** confronto statico del percorso hit/miss e dell'ordine di eviction; aggiornato il test per coprire il limite. **Il test Godot non è stato eseguito in questa sessione**, quindi la correttezza runtime e il beneficio prestazionale restano da confermare.
+- **Misure ancora necessarie:** eseguire `godot --headless --path . -s tests/unit/test_v3_mesh_batch.gd`; confrontare tempi di costruzione e numero di mesh ricostruite con una sequenza ripetuta di oltre 128 varianti; verificare memoria e tempi di caricamento su PC e Android.
+- **Nessuna modifica:** geometria del disco, parametri visivi, materiali, draw call, gameplay e dati narrativi.
