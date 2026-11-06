@@ -517,15 +517,22 @@ scene("c2_sera_nox_echo", "Durante il turno di guardia, Nox ed Echo parlano dell
     L("echo/felice", "Niente orari. A verbale. Come dice Lance."),
     L("nox/neutro", "Per favore non iniziare anche tu."))
 
-scene("c2_sera_nox_saul", "Nox e Saul trattano su tutto. Legame Nox e Saul.",
+scene("c2_sera_nox_saul", "Nox e Saul parlano del fascicolo di Saul e del cammello. Il loro rapporto si approfondisce.",
     L("saul/neutro", "Agente Nox. Quanto costa che ti scordi di avermi visto, quando sarà finita?"),
-    L("nox/neutro", "Fascicolo duemiladuecentodiciannove. Saul, ventidue anni. Ricettazione, truffa, un cammello."),
-    L("saul/sorpreso", "Il cammello era un malinteso."),
-    L("nox/neutro", "Il cammello aveva i documenti falsi."),
-    L("saul/neutro", "Ottimi documenti."),
-    L("nox/sfotto", "Il prezzo è caffè. Tanto."),
+    L("nox/neutro", "Ho qui il tuo fascicolo guardacaso: fascicolo diciannove."),
+    L("nox/neutro", "Saul, ventidue anni. Ricettazione, truffa, appropriazione indebita, violazione di proprietà privata, sequestro di persona, furto d'identità, contrabbando e traffico illegale di oggetti magici.. e di un cammello..?"),
+    L("saul/sorpreso", "I cammello è innocente maledizione, è un cammello!"),
+    L("nox/neutro", "Qui dice che hai provato a farlo passare in un portale con un impermeabile spacciandolo per un tuo parente, e il cammello aveva i documenti falsi."),
+    L("saul/neutro", "Degli ottimi documenti. E un ottimo cammello.. Mi manca a volte, sai?"),
+    L("nox/sfotto", "Inizia a mettere da parte del caffè e ne riparleremo."),
     L("saul/serio", "Sei l'unica guardia che non mi ha mai guardato come un mostro."),
-    L("nox/neutro", "Ho visto mostri veri. Tu sei un idiota col giubbotto. Con affetto.", imposta="legame_nox_saul"))
+    L("nox/neutro", "Ho visto mostri veri. Tu sei un idiota con la giacca."),
+    L("saul/neutro", "Non so se prenderlo come un insulto o un complimento, sai?"),
+    L("nox/neutro", "Prendila come ti pare."),
+    L("saul/neutro", "Se Toe fosse stato qui l'avrei presa bene."),
+    L("nox/neutro", "Chi è Toe?"),
+    L("saul/neutro", "Il cammello."),
+    L("nox/neutro", "Sei senza speranza, Saul.", imposta="legame_nox_saul"))
 # ================================================================== CAPITOLO 3 · VETRINA (Rio)
 # Collaborazione: Saul parla sul serio a Rio. La maschera si incrina e da li' si vede un occhio: Rio non e' ancora pronto
 # a toglierla e nessuno insiste. Toglierla e' il climax del suo arco, piu' avanti.
