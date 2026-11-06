@@ -503,3 +503,14 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunti:** equipaggiamento non ancora sbloccato; Ultimate collocata nello slot abilità; recupero quando il file principale manca; rilevamento del solo backup nel menu; conservazione separata del file corrotto durante il successivo salvataggio.
 - **Test eseguiti:** lettura statica delle funzioni e confronto dei file su GitHub. I test GDScript non sono stati eseguiti in Godot.
 - **Rischi residui:** la validazione degli equipaggiamenti deve essere verificata con salvataggi reali di tutte le build storiche; l'uso di `.bad` conserva il file danneggiato ma non lo ripara. Verificare errori di permessi e interruzioni reali su Windows e Android.
+
+
+### 2026-11-06 — Audit interazioni combattimento: selettore runtime Stabilità/BREAK
+
+- **File modificati:** `scripts/engine/stability.gd`, `tests/unit/test_v3_break.gd`.
+- **Criticità concreta trovata:** `Stability.mark()` rispettava la variabile statica `Stability.enabled`, descritta nel commento del modulo come selettore runtime per test e bilanciamento; `Stability.on()` invece controllava soltanto la costante di build `BattleTypes.STAB_ON` e il flag sul boss. Disattivando il selettore runtime dopo che uno stato era già stato marcato, il sistema continuava quindi a considerare attiva la nuova Stabilità.
+- **Correzione:** `Stability.on()` ora richiede sia `enabled` sia `BattleTypes.STAB_ON` e il flag `boss.stab`. La costante continua a decidere se la funzione è inclusa nella build; la variabile statica consente di disattivarla temporaneamente durante test e bilanciamento.
+- **Test aggiunto:** stato marcato → selettore runtime OFF → Stabilità inattiva; riattivazione → Stabilità nuovamente attiva.
+- **Verifiche eseguite:** ispezione statica delle chiamate a `Stability.mark/on` e della gestione BREAK; aggiunta del test automatico. Nessun test GDScript è stato lanciato con Godot in questa sessione.
+- **Copertura già presente rilevata:** test esistenti coprono finestra BREAK in azioni alleate, pressione latente, recupero, cambio fase durante recupero, elite ritardato/indebolito, SBILANCIAMENTO, Slancio protetto e determinismo Timeline. Non sono stati cambiati i valori di bilanciamento o le regole del combattimento.
+- **Da verificare a runtime:** esecuzione di `test_v3_break.gd`, `test_v3_timeline.gd`, `test_v3_slancio.gd`, `test_v3_ritmo.gd`; poi stress integrato con cambi fase, KO, scudi e reazioni persistenti tra round.
