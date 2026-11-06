@@ -148,7 +148,7 @@ func _add_member(stage: Control, spec: Dictionary) -> void:
 	# si chinano verso il centro, piano, come chi bisbiglia
 	var lean := tr.create_tween().set_loops().set_ignore_time_scale(true).set_trans(Tween.TRANS_SINE)
 	lean.tween_property(tr, "rotation_degrees", float(spec["rot"]) * 1.5, 1.4 + _rng.randf() * 0.5)
-	lean.tween_property(tr, "rotation_degrees", float(spec["rot"]), 1.4 + randf() * 0.5)
+	lean.tween_property(tr, "rotation_degrees", float(spec["rot"]), 1.4 + _rng.randf() * 0.5)
 	# fumetto del sussurro sopra la testa
 	var b := Ui.label("", 22, Ui.CREAM, null, 5)
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
