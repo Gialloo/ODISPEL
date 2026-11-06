@@ -540,27 +540,33 @@ static func _check_phase(state: Dictionary, events: Array) -> void:
 	if not BattleState.is_alive(boss):
 		return
 	var ph: int = _phase_of(boss)
-	if ph <= int(state.get("phase", 1)):
+	var previous_phase: int = int(state.get("phase", 1))
+	if ph <= previous_phase:
 		return
-	state["phase"] = ph
 	state["cycle_index"] = 0
-	boss["balance_max"] = int(boss["balance_max"]) + BattleTypes.BREAK_PER_PHASE
+	# Un singolo colpo puo' attraversare entrambe le soglie: applica ogni transizione
+	# raggiunta, senza saltare gli effetti intermedi della fase 2.
+	for next_phase in range(previous_phase + 1, ph + 1):
+		state["phase"] = next_phase
+		boss["balance_max"] = int(boss["balance_max"]) + BattleTypes.BREAK_PER_PHASE
+		if next_phase == 2 and int(state.get("reserve", 0)) > 0 and BattleTypes.PHASE_DRAINS_RESERVE:
+			_spend_reserve(state, BattleTypes.RESERVE_DRAIN_PHASE, "boss", events)
+		events.append({"t": "phase", "phase": next_phase})
+		var sh: int = int(round(float(boss["max_hp"]) * BattleTypes.PHASE_SHIELD))
+		boss["shield"] = int(boss["shield"]) + sh
+		events.append({"t": "shield", "src": boss["id"], "dst": boss["id"], "amount": sh})
+		for uid in state["units"]:
+			var u: Dictionary = state["units"][uid]
+			if str(u["side"]) != "player" or not BattleState.is_alive(u):
+				continue
+			ResourceTelemetry.spend_unit(u, "energy", 1, events, "phase_change")
+			ResourceTelemetry.gain_unit(u, "gauge", BattleTypes.PHASE_GAUGE, BattleTypes.GAUGE_MAX, events, "phase_change")
+	# La gestione BREAK/recupero avviene una sola volta dopo aver aggiornato il massimo
+	# della barra per tutte le fasi attraversate.
 	if Stability.on(boss) and Stability.recovering(boss):
 		Stability.on_phase(boss, events)     # Fase 3: il cambio di fase completa il recupero (la pressione latente resta)
 	elif not bool(boss.get("exposed", false)):
 		boss["balance"] = int(boss["balance_max"])
-	events.append({"t": "phase", "phase": ph})
-	if ph == 2 and int(state.get("reserve", 0)) > 0 and BattleTypes.PHASE_DRAINS_RESERVE:
-		_spend_reserve(state, BattleTypes.RESERVE_DRAIN_PHASE, "boss", events)
-	var sh: int = int(round(float(boss["max_hp"]) * BattleTypes.PHASE_SHIELD))
-	boss["shield"] = int(boss["shield"]) + sh
-	events.append({"t": "shield", "src": boss["id"], "dst": boss["id"], "amount": sh})
-	for uid in state["units"]:
-		var u: Dictionary = state["units"][uid]
-		if str(u["side"]) != "player" or not BattleState.is_alive(u):
-			continue
-		ResourceTelemetry.spend_unit(u, "energy", 1, events, "phase_change")
-		ResourceTelemetry.gain_unit(u, "gauge", BattleTypes.PHASE_GAUGE, BattleTypes.GAUGE_MAX, events, "phase_change")
 
 
 # Ordine in cui agiranno le unita' in questo round, anche prima che tutti abbiano scelto (per mostrarlo al giocatore).
