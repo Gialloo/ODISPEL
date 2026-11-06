@@ -537,17 +537,17 @@ scene("c2_sera_nox_saul", "Nox e Saul parlano del fascicolo di Saul e del cammel
 # Collaborazione: Saul parla sul serio a Rio. La maschera si incrina e da li' si vede un occhio: Rio non e' ancora pronto
 # a toglierla e nessuno insiste. Toglierla e' il climax del suo arco, piu' avanti.
 
-scene("c3_briefing", "Nella Galleria Lumière chi entra perde la faccia e diventa un manichino. I video sono ovunque. Guida Rio.",
-    L("zecca/sorpreso", "Raga, i video della Galleria Lumière. La gente si fa un selfie e... non ha più la faccia."),
-    L("echo/serio", "Restano in posa. Manichini. Nelle mie telecamere sono già ventitré."),
+scene("c3_briefing", "Nella Galleria Lumière chi entra perde la faccia e diventa un manichino. I video sono ovunque. Rio si offre di guidare la squadra.",
+    L("zecca/sorpreso", "Raga, i video della Galleria Lumière. La gente si fa un selfie e... non ha più la faccia. Guardateli, sono immobili!"),
+    L("echo/serio", "Restano in posa. Manichini. Nelle mie telecamere ne ho già individuati dieci."),
     L("zecca/serio", "Guido io. Lì dentro serve uno che sa stare davanti a un obiettivo."),
-    L("nox/neutro", "Tieni la maschera ben ferma, allora."),
-    L("zecca/triste", "...Ben ferma."),
+    L("nox/neutro", "Cerca di non fare gaffe allora."),
+    L("zecca/neutro", "Ci provo.."),
     L("saul/neutro", "Ragazzino. Se hai paura, dillo. Costa meno che fingere."),
     L("zecca/felice", "Paura? Io? Raga, io sono nato in diretta!"),
-    L("echo/neutro", "Il battito di Rio è salito del quaranta per cento."),
+    L("echo/neutro", "I battiti al minuto di Rio sono aumentati di 40."),
     L("zecca/arrabbiato", "ECHO!"),
-    L("echo/neutro", "Quarantadue."))
+    L("echo/neutro", "Hai ragione, 27."))
 
 scene("c3_chat", "La chat della diretta di Rio chiede di vedergli la faccia. Rio ha paura di non essere nessuno senza maschera.",
     L("zecca/felice", "La chat è impazzita. «Facci vedere la faccia.» «Senza maschera sei nessuno.» Simpatici."),
