@@ -100,6 +100,7 @@ func _init() -> void:
 	hp0 = int(boss["hp"])
 	BreakRules.round_end(s, ev)
 	check(int(boss["hp"]) == hp0, "Radici: rotto non ricresce")
+	_fase_saltate()
 	_fase3()
 	_fase3_scontro()
 	if fails == 0:
@@ -120,6 +121,42 @@ func _has(ev: Array, t: String) -> bool:
 		if str(e.get("t", "")) == t:
 			return true
 	return false
+
+
+func _fase_saltate() -> void:
+	var s: Dictionary = _fresh("distributore")
+	var boss: Dictionary = BattleState.boss(s)
+	var old_balance_max: int = int(boss["balance_max"])
+	var old_shield: int = int(boss["shield"])
+	var alive: Array = BattleState.alive_players(s)
+	var energy_before: Dictionary = {}
+	var gauge_before: Dictionary = {}
+	for p in alive:
+		var u: Dictionary = BattleState.active_unit(s, str(p["id"]))
+		energy_before[str(u["id"])] = int(u["energy"])
+		gauge_before[str(u["id"])] = int(u["gauge"])
+		# Evita che il limite della barra nasconda il secondo premio di fase.
+		u["gauge"] = 0
+		gauge_before[str(u["id"])] = 0
+	boss["hp"] = int(ceil(float(boss["max_hp"]) * 0.20))
+	var events: Array = []
+	BattleResolver._check_phase(s, events)
+	var phase_events: Array = []
+	var shield_events: int = 0
+	for e in events:
+		if str(e.get("t", "")) == "phase":
+			phase_events.append(int(e.get("phase", 0)))
+		elif str(e.get("t", "")) == "shield" and str(e.get("dst", "")) == BattleState.BOSS_ID:
+			shield_events += 1
+	check(int(s["phase"]) == 3, "salto soglie: il boss raggiunge la fase 3")
+	check(phase_events == [2, 3], "salto soglie: vengono registrate entrambe le transizioni in ordine")
+	check(int(boss["balance_max"]) == old_balance_max + BattleTypes.BREAK_PER_PHASE * 2, "salto soglie: la barra BREAK cresce per entrambe le fasi")
+	var expected_shield: int = int(round(float(boss["max_hp"]) * BattleTypes.PHASE_SHIELD)) * 2
+	check(shield_events == 2 and int(boss["shield"]) == old_shield + expected_shield, "salto soglie: entrambi gli scudi di fase vengono applicati")
+	for p in alive:
+		var u: Dictionary = BattleState.active_unit(s, str(p["id"]))
+		check(int(u["gauge"]) == mini(BattleTypes.GAUGE_MAX, BattleTypes.PHASE_GAUGE * 2), "salto soglie: premio Ultimate per ogni fase")
+		check(int(u["energy"]) == maxi(0, int(energy_before[str(u["id"])]) - 2), "salto soglie: costo EN per ogni fase")
 
 
 func _fase3() -> void:
