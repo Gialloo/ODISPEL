@@ -78,7 +78,7 @@ func _init() -> void:
 	controls.stick = Vector2(1.0, 1.0)
 	controls.cam_drag = Vector2(9, 9)
 	controls._knob = Vector2(40, 40)
-	controls._notification(NOTIFICATION_WM_WINDOW_FOCUS_OUT)
+	controls._notification(Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT)      # costante di Node: lo script estende SceneTree
 	check(controls._stick_idx == -1 and controls._cam_idx == -1, "window focus out libera entrambe le dita")
 	check(controls.stick == Vector2.ZERO and controls.cam_drag == Vector2.ZERO, "window focus out azzera movimento e camera")
 	check(controls._knob == Vector2.ZERO, "window focus out centra la manopola")

@@ -55,7 +55,15 @@ func _net_snapshot() -> void:
 	var net: Dictionary = _has_event(events, "resource_delta")
 	check(not net.is_empty(), "lo snapshot genera un delta netto")
 	check(str(net.get("resource", "")) == "gauge" and int(net.get("delta", 0)) == 12, "il delta netto coincide con la variazione effettiva")
-	check(str(net.get("source", "")) == "test_action", "il delta conserva la fase quando manca un evento azione")
+	# Regola del secondo controllo telemetria (audit 6/11): la fonte diretta della risorsa prevale sulla fase.
+	check(str(net.get("source", "")) == "snapshot_test", "il delta usa la fonte diretta della risorsa quando c'e'")
+	# Senza evento diretto ne' azione, il delta conserva la fase.
+	var before2: Dictionary = ResourceTelemetry.snapshot(state)
+	u["gauge"] = int(u["gauge"]) - 5
+	var events2: Array = []
+	ResourceTelemetry.record(state, before2, events2, "test_action")
+	var net2: Dictionary = _has_event(events2, "resource_delta")
+	check(str(net2.get("source", "")) == "test_action", "il delta conserva la fase quando manca un evento azione")
 
 
 func _hype_and_ammo() -> void:

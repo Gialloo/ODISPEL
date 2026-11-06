@@ -147,8 +147,10 @@ static func finish(state: Dictionary) -> Array:
 		# Un'eventuale interruzione della fase precedente non deve saltare la prima mossa del nuovo ciclo.
 		tl["tele_used"] = false
 		_schedule(tl, tl["slots"]["boss"], BattleTypes.TL_ENEMY_COST, _spd_of(state, tl["slots"]["boss"]))
-	# Non azzerare tele_used qui: se un'INTERRUZIONE ha cancellato la mossa e il boss
-	# rientra solo nel round successivo, il flag deve arrivare a boss_action(), che annuncera' il nuovo attacco.
+	# tele_used si azzera qui (come nella 0.58.0): dopo un'INTERRUZIONE, SeqRound.finish() ha gia' fatto avanzare il ciclo
+	# (keep falso: la mossa persa e' saltata e quella nuova e' annunciata). Lasciarlo vero lo faceva avanzare una seconda
+	# volta in boss_action() e il boss saltava anche la mossa dopo (verificato con Godot: +3 invece di +2, audit 6/11).
+	tl["tele_used"] = false
 	tl["greg_used"] = false
 	return ev
 
