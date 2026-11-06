@@ -747,3 +747,20 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
   4. lasciare in `battle3d.gd` il coordinamento della scena e le chiamate al motore, evitando un refactor simultaneo del motore.
 - **Test necessari prima/dopo ogni estrazione:** test unitari del motore già presenti; esecuzione completa dell'Atto 1 in AUTO; confronto degli eventi di battaglia e degli stati finali; verifica manuale di comandi touch/PC, QTE, cutin, BREAK, SLANCIO, vittoria e ritorno alla storia. I report/screenshot devono essere confrontati con la release 0.58.0.
 - **Risultato atteso del piano:** ridurre l'accoppiamento e rendere più sicuri gli interventi futuri, mantenendo invariati gameplay, tempi, UI e presentazione. Nessun risultato di refactor viene dichiarato perché in questa fase è stata prodotta soltanto la mappa delle responsabilità.
+
+## Fase 5 — Salvataggi e regressione
+
+### 2026-11-06 — Validazione dello stato dell'area e test di recupero backup
+
+- **File modificati:** scripts/v3/story.gd; nuovo test tests/unit/test_v3_integrita_salvataggio.gd.
+- **Criticità trovata:** Story._read_valid_save() controllava che storia.area fosse un Dictionary, ma non verificava i tipi dei suoi campi. L'area usa pos come Vector3, yaw come numero, clues e defeated come Array e banter_used come Dictionary. Un file leggibile ma con campi corrotti poteva superare il controllo iniziale e fallire più avanti durante la costruzione dell'area o ripristinare dati incoerenti.
+- **Correzione:** introdotta Story.validate_area_state(). Controlla il tipo della posizione e la finitezza delle coordinate, il tipo numerico e la finitezza di yaw, le liste di identificativi testuali per indizi/nemici e il dizionario booleano delle chiacchiere già usate. I campi restano opzionali per compatibilità con salvataggi precedenti; vengono controllati soltanto quando presenti. _read_valid_save() ora rifiuta un file con stato area malformato, così load_game() può tentare il backup.
+- **Perché:** intercettare la corruzione al confine di caricamento invece di lasciarla emergere più tardi in un punto del gioco difficile da diagnosticare. La validazione è strutturale e non impone limiti arbitrari alle coordinate o agli ID futuri.
+- **Test implementati e funzionamento:**
+  1. **Schema valido:** passa un dizionario con Vector3, yaw, indizi, nemici e chiacchiere nei tipi previsti; deve essere accettato.
+  2. **Campi malformati:** sostituisce un campo alla volta con tipo errato (posizione testuale, yaw testuale, lista non-array, ID numerico, registro non-dizionario e valore non booleano); ogni caso deve essere rifiutato.
+  3. **Recupero backup su file di test:** imposta Story.save_path su un file dedicato in user://, scrive due salvataggi validi e verifica che il secondo conservi il primo come .bak. Poi sovrascrive il principale con testo corrotto e invoca Story.load_game(): deve caricare il backup, ripristinare flag e posizione precedenti e non caricare il checkpoint successivo. I file di prova vengono rimossi al termine.
+  4. **Rifiuto prima dell'uso:** costruisce un ConfigFile con progressione valida ma area.pos testuale e verifica che _read_valid_save() lo rifiuti prima che l'area tenti di usarlo.
+- **Risultato atteso:** un salvataggio con dati area malformati non raggiunge il codice di gioco; se il principale è corrotto ma il backup è valido, la partita precedente resta recuperabile. I test usano un percorso dedicato e non devono sovrascrivere il salvataggio del giocatore.
+- **Verifica effettiva:** ispezionati Story.save/load_game, il ripristino in Area._build_party e Area._build_ui e la struttura effettiva di Banter._used; aggiunti validatore e test. I test non sono stati eseguiti con Godot in questa sessione.
+- **Limiti residui:** la validazione verifica struttura e tipi, non che ogni ID appartenga all'area corrente: tale controllo richiede di caricare i dati dell'area associata al passo corrente e va trattato separatamente per non rifiutare salvataggi di versioni precedenti o contenuti futuri.
