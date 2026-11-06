@@ -1,5 +1,11 @@
 # Novità
 
+## 0.59.0 · Lance e Rio anche nel codice
+
+- **Id canonici**: nel codice, nei dati, nei dialoghi e nei file dei ritratti i personaggi si chiamano `lance` e `rio` (prima `ferri` e `zecca`). Le battute di Lance che usavano già il nome nuovo ora mostrano il suo ritratto.
+- **Salvataggi**: le partite salvate con le versioni precedenti si caricano da sole con i nomi nuovi (livelli, equipaggiamento e storia restano).
+- **Prove**: 31 test su 32 verdi (resta il test dei dialoghi: espressioni «sorpresa»/«sorriso» e colori di Echo e del Distributore da sistemare); atto 1 completo in AUTO.
+
 ## 0.58.0 · Dialoghi dell'Atto 1
 
 - **Revisione narrativa**: integrate le battute approvate e gli ampliamenti dei personaggi nell'Atto 1, compreso il finale del Capitolo 4 (Il Varco e Il Crollo).
