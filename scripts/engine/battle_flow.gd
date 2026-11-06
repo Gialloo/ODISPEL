@@ -248,12 +248,21 @@ static func preview(state: Dictionary, n: int) -> Array:
 	var out: Array = []
 	var cur: String = str(tl.get("cur", ""))
 	var sim: Dictionary = {}
+	var done: Dictionary = (tl.get("done", {}) as Dictionary).duplicate()
 	for k in tl["slots"]:
 		sim[k] = (tl["slots"][k] as Dictionary).duplicate()
 	if cur != "" and sim.has(cur):
 		var e0: Dictionary = _entry(state, sim[cur])
 		if tl.has("cur_quick"):
 			e0 = (tl["cur_quick"] as Dictionary).duplicate()
+		else:
+			# Il turno corrente e' gia' mostrato: simula anche il suo completamento,
+			# altrimenti _pick() lo seleziona di nuovo come se non avesse ancora agito.
+			var current_slot: Dictionary = sim[cur]
+			var current_cost: int = BattleTypes.TL_ENEMY_COST if bool(current_slot.get("boss", false)) else int(BattleTypes.TL_COST["attacco"])
+			_schedule_from(tl, current_slot, int(tl.get("now", current_slot.get("at", 0))), current_cost, _spd_of(state, current_slot))
+			if not bool(current_slot.get("boss", false)):
+				done[cur] = true
 		out.append(e0)
 	for q in (tl.get("quick", []) as Array):
 		out.append((q as Dictionary).duplicate(true))
@@ -275,7 +284,6 @@ static func preview(state: Dictionary, n: int) -> Array:
 	for q in kept:
 		q.erase("_at")
 		out.append(q)
-	var done: Dictionary = (tl.get("done", {}) as Dictionary).duplicate()
 	var extra: Array = (tl.get("extra", []) as Array).duplicate()
 	var st: int = int(tl.get("stamp", 0))
 	var guard: int = 0
