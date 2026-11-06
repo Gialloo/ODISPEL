@@ -505,19 +505,17 @@ scene("c2_sera_ferri_zecca", "Lance e Rio, entrambi con la magia addosso, si all
     L("ferri/neutro", "Per oggi chiudiamola qui.."),
     L("zecca/triste", "Sniff, Sniff, si...", imposta="legame_ferri_zecca"))
 
-scene("c2_sera_nox_echo", "Nox fa il turno di guardia e parla con Echo, che non dorme mai. Diventano quasi amiche.",
+scene("c2_sera_nox_echo", "Durante il turno di guardia, Nox ed Echo parlano della notte nel vicolo e della possibilità di farsi compagnia.",
     L("echo/neutro", "Nox. Sono le tre e dodici."),
-    L("nox/neutro", "Lo so. Fisso l'orologio da un'ora."),
-    L("echo/neutro", "Anch'io guardo sempre. Guardare tutto e non poter fare niente."),
+    L("nox/neutro", "Lo so, Echo, ho un orologio."),
+    L("echo/neutro", "Anch'io guardo sempre l'orologio. Guardo tutto, ma non riesco a fare niente.."),
     L("nox/triste", "Era il mio lavoro."),
-    L("echo/serio", "Quella notte di due anni fa, nel vicolo, c'era una telecamera. Ero io."),
-    L("nox/sorpreso", "...Hai visto?"),
-    L("echo/triste", "Ho visto. Non potevo rispondere. Non ho le mani."),
-    L("nox/neutro", "Allora eravamo in due."),
+    L("nox/sorpreso", "Quella notte di due anni fa, nel vicolo, c'era una telecamera. Eri tu?"),
+    L("echo/triste", "Sì, ero io. Non ho potuto fare niente, come sempre.."),
     L("echo/neutro", "...Posso farti compagnia, le notti?"),
-    L("nox/neutro", "Puoi. Ma non dirmi mai che ore sono."),
+    L("nox/neutro", "Puoi. Ma non dirmi che ore sono."),
     L("echo/felice", "Niente orari. A verbale. Come dice Lance."),
-    L("nox/neutro", "Non diventare Lance."))
+    L("nox/neutro", "Per favore non iniziare anche tu."))
 
 scene("c2_sera_nox_saul", "Nox e Saul trattano su tutto. Legame Nox e Saul.",
     L("saul/neutro", "Agente Nox. Quanto costa che ti scordi di avermi visto, quando sarà finita?"),
