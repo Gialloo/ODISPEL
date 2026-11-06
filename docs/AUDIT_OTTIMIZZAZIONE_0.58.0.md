@@ -717,3 +717,18 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Risultato atteso:** un push o un dispatch eseguito dal branch sperimentale non può eseguire il job di upload itch.io; il branch di release conserva il comportamento previsto.
 - **Verifica effettiva:** controllo statico del trigger, del nome del branch configurato e della condizione inserita. Non è stato avviato un workflow GitHub Actions e non è stata effettuata alcuna pubblicazione.
 - **Rischio residuo:** la condizione protegge il job, ma non sostituisce le protezioni GitHub sul branch di release né una revisione umana degli artefatti. Prima di una release reale va verificato il comportamento con un dispatch autorizzato sul branch corretto, senza usare pacchetti non approvati.
+
+
+### 2026-11-06 — Controlli touch: rilascio forzato entrando in dialogo o pausa
+
+- **File modificati:** `scripts/v3/touch_controls.gd`, `scripts/v3/area.gd`, `tests/unit/test_v3_touch_controls.gd`.
+- **Criticità riprodotta tramite lettura del flusso:** `Area._input()` inoltra gli eventi a `TouchControls.handle()` soltanto quando `mode == "walk"` e la pausa non è aperta. In dialogo/pausa ritorna prima. Se un dito è stato acquisito dallo stick o dalla camera e il dialogo/la pausa si apre prima del rilascio, l'evento di rilascio può non raggiungere il controller. `Area._process()` smette correttamente di muovere il personaggio, ma senza pulizia lo stato touch può sopravvivere e bloccare l'acquisizione del gesto successivo o riattivare un input residuo al ritorno all'esplorazione.
+- **Correzione:** aggiunto `TouchControls.has_active_input()`, che rileva indici dito acquisiti e vettori/manopola non neutri. Nel ramo non esplorabile di `Area._process()`, se esiste input residuo viene chiamato `release_all()`. La pulizia avviene solo quando serve, non ogni frame, e riutilizza la stessa routine già usata per la perdita di focus/pausa del sistema.
+- **Perché:** i dialoghi e la pausa devono sospendere davvero i comandi di movimento e camera; alla chiusura il giocatore deve ripartire da input neutri e poter iniziare un nuovo gesto senza dover ripetere o sbloccare il precedente.
+- **Test implementati e funzionamento:**
+  1. Dopo la pressione dello stick il test verifica che `has_active_input()` riconosca lo stato acquisito.
+  2. Dopo `release_all()` verifica che lo stesso metodo ritorni falso, insieme agli indici a `-1` e ai vettori/manopola azzerati.
+  3. I test precedenti continuano a coprire stick, camera, multitouch e reset su pausa/focus. La logica di `Area._process()` è verificata staticamente: quando `exploring` è falso e lo stato è attivo deve eseguire il reset; quando è già neutro non richiama inutilmente la pulizia.
+- **Risultato atteso:** entrando in dialogo o pausa, qualsiasi input touch acquisito viene cancellato entro il successivo aggiornamento del frame; uscendo, il primo nuovo tocco viene riconosciuto normalmente e non produce movimento/camera fantasma.
+- **Verifica effettiva:** lettura incrociata di `Area._input()`, `Area._process()`, `Area._walk()` e del ciclo di vita di `TouchControls`; aggiornati codice e test. Nessun test Godot è stato eseguito in questa sessione.
+- **Rischi residui:** resta da provare su Android la sequenza fisica pressione-stick → apertura dialogo/pausa → rilascio durante overlay → chiusura → nuovo tocco, oltre alla stessa sequenza iniziata con il trascinamento camera.
