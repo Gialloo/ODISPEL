@@ -790,10 +790,21 @@ func _place_boss_tag() -> void:
 		var fp: Vector2 = cam.unproject_position(bv.global_position)
 		var half: float = maxf(60.0, absf(fp.y - hp.y) * 0.4)
 		var cx: float = (hp.x + fp.x) * 0.5
-		want.y = maxf(64.0, hp.y)
+		# HUD piu' pulito (feedback dei tester, 6/11/2026): accanto al boss il cartellino sta nella fascia alta dello schermo,
+		# sul cielo, non piu' all'altezza della testa dove finiva sopra la squadra
+		want.y = 64.0
 		want.x = cx + half + 24.0 if cx + half + 24.0 + sz.x <= vs.x - 16.0 - rm else cx - half - 24.0 - sz.x
 	want.x = clampf(want.x, 16.0, vs.x - sz.x - 16.0 - rm)
 	want.y = clampf(want.y, 64.0, vs.y * 0.5)
+	# FEEDBACK DEI TESTER (6/11/2026): con la tendina delle ABILITA' aperta le barre del boss coprivano nome e costo delle
+	# mosse. Ora il cartellino si sposta a destra della tendina; se non c'e' posto sparisce finche' la tendina e' aperta.
+	if _skill_menu != null:
+		var mr: float = _skill_menu.area().end.x + 20.0
+		if want.x < mr:
+			want.x = mr
+		_boss_panel.modulate.a = 1.0 if want.x + sz.x <= vs.x - 16.0 - rm else 0.0
+	else:
+		_boss_panel.modulate.a = 1.0
 	_boss_panel.position = _boss_panel.position.lerp(want, 0.3) if _boss_panel.position.y > 1.0 else want
 	_boss_panel.size = sz
 
@@ -3049,7 +3060,12 @@ func _build_ui() -> void:
 	_boss_name = Ui.label(_bname(), 22, Ui.CREAM, Ui.display(), 0)
 	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_boss_name.add_theme_stylebox_override("normal", Ui.plate(Color(0.02, 0.01, 0.03, 0.92), Color("#ff2340"), -0.18, 5))
-	bp.add_child(_boss_name)
+	# nome e DEBOLE A sulla stessa riga (HUD piu' pulito, 6/11/2026): il cartellino perde una riga e copre meno scena
+	var bhead := HBoxContainer.new()
+	bhead.add_theme_constant_override("separation", 10)
+	bhead.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bp.add_child(bhead)
+	bhead.add_child(_boss_name)
 	_boss_hp = _bar(Color("#ff4b6e"), 22)
 	bp.add_child(_boss_hp)
 	_boss_ghost = _ghost_bar(_boss_hp)
@@ -3072,7 +3088,8 @@ func _build_ui() -> void:
 	_weak_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_weak_row.add_theme_constant_override("separation", 2)
 	_weak_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bp.add_child(_weak_row)
+	_weak_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	bhead.add_child(_weak_row)
 	_weak_k = Ui.plate_label("DEBOLE A", HudLayers.MIN_TEXT, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
 	_weak_row.add_child(_weak_k)
 	_weak_v = Ui.plate_label("???", HudLayers.MIN_TEXT, Ui.INK, Color("#9a94a8"), Ui.INK)
@@ -3969,7 +3986,9 @@ func _open_skills() -> void:
 		_close_skills()
 		_command("skill"))
 	_skill_menu.closed.connect(_close_skills)
-	_fx_layer.add_child(_skill_menu)
+	# la tendina sta SOPRA a tutto l'HUD di battaglia (prima era sotto al cartellino del nemico, che la copriva)
+	_root.add_child(_skill_menu)
+	_skill_menu.move_to_front()
 	Settings.buzz(12)
 
 
