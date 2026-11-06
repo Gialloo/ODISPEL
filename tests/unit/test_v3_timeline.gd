@@ -333,6 +333,31 @@ func _ingresso() -> void:
 			check(heroes == 4, "vantaggio: prima tutti e quattro gli eroi (%d)" % heroes)
 
 
+func _preview_bonus_coerente() -> void:
+	# La previsione deve riflettere gli SLANCI protetti che next() eseguira' prima degli slot normali.
+	var s: Dictionary = _fresh("semaforo", 21)
+	BattleFlow.start_round(s)
+	var pid: String = _pid(s, "ferri")
+	var uid: String = str(BattleState.active_unit(s, pid)["id"])
+	s["slancio_kept"] = {uid: {"player": pid, "dst": BattleState.BOSS_ID, "waive": true}}
+	var before: Dictionary = (s["slancio_kept"] as Dictionary).duplicate(true)
+	var preview: Array = BattleFlow.preview(s, 8)
+	check(not preview.is_empty() and bool(preview[0].get("kept", false)) and str(preview[0].get("unit", "")) == uid, "preview: mostra lo SLANCIO protetto pronto prima del turno ordinario")
+	check(s["slancio_kept"] == before, "preview: non consuma ne' modifica gli SLANCI protetti")
+
+	# I turni extra non giocabili (per esempio dopo un KO) vanno saltati come fa next().
+	var dead: String = _pid(s, "nox")
+	BattleState.active_unit(s, dead)["hp"] = 0
+	s["tl"]["done"] = {}
+	s["tl"]["extra"] = [{"unit": str(BattleState.active_unit(s, dead)["id"]), "player": dead, "boss": false, "spd": -1, "extra": true}]
+	var p2: Array = BattleFlow.preview(s, 8)
+	var leaked: bool = false
+	for entry in p2:
+		if bool(entry.get("extra", false)) and str(entry.get("player", "")) == dead:
+			leaked = true
+	check(not leaked, "preview: non mostra turni extra di un personaggio KO")
+
+
 func _carry_difese_e_reazioni() -> void:
 	# Un round puo' chiudersi prima della prossima azione del boss: difese e reazioni devono attendere il colpo annunciato.
 	var s: Dictionary = _fresh("semaforo", 12)
@@ -420,6 +445,7 @@ func _init() -> void:
 	_slancio_costo()
 	_ingresso()
 	_carry_difese_e_reazioni()
+	_preview_bonus_coerente()
 	_scontri_interi()
 	if fails == 0:
 		print("test_v3_timeline: OK")
