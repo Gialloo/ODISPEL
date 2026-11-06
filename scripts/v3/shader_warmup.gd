@@ -17,8 +17,10 @@ func _ready() -> void:
 	cam.position = Vector3(0, 0, 3)
 	add_child(cam)
 	cam.current = true
+	var static_fx_mat := ShaderMaterial.new()
+	static_fx_mat.shader = StaticFx.shader()
 	var mats: Array = [Toon.body(), Toon.ink(), Toon.ink_grow(), Toon.glow(), Toon.shadow(), Toon.hit_flash(),
-		Toon.body_tex(load("res://icon.png") as Texture2D), Toon.body_world(), NightFx.rain_material()]
+		Toon.body_tex(load("res://icon.png") as Texture2D), Toon.body_world(), NightFx.rain_material(), static_fx_mat]
 	var x: float = -1.2
 	for m in mats:
 		var mi := MeshInstance3D.new()
