@@ -654,3 +654,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Timeline:** la finestra BREAK viene consumata dalle azioni ordinarie alleate, non dalle azioni rapide SLANCIO; la mossa del boss viene saltata tramite lo stordimento prodotto dal BREAK. La funzione `BattleFlow.interrupt()` è un'operazione distinta di riprogrammazione slot, già coperta dai test Timeline; non va invocata automaticamente dalla reazione `interruzione`, perché il suo effetto di perdita/ritardo della mossa è condizionato al BREAK.
 - **Test aggiunti:** QTE riuscito, QTE fallito, guadagno Ultimate, costo Riserva, blocco della seconda Interruzione nello stesso round e pressione ridotta in caso di fallimento.
 - **Esito:** nessuna modifica alle regole di combattimento; aumentata la copertura di regressione. Test scritto ma non eseguito con Godot.
+
+
+### 2026-11-06 — Previsione Timeline duplicava il turno corrente
+
+- **File modificati:** `scripts/engine/battle_flow.gd`, `tests/unit/test_v3_timeline.gd`.
+- **Criticità:** `preview()` aggiungeva il turno corrente all'anteprima, ma lasciava invariato lo slot nella simulazione. Il successivo `_pick()` poteva quindi selezionare nuovamente lo stesso slot come prossimo turno, prima che il personaggio avesse completato il turno corrente.
+- **Correzione:** la simulazione consuma il turno corrente ordinario e ne riprogramma lo slot usando il costo ATTACCO di riferimento, senza modificare la Timeline reale. Se il turno corrente è un'azione rapida già separata dallo slot ordinario, la simulazione non lo riprogramma una seconda volta. Per boss e gregario usa il costo nemico.
+- **Test aggiunto:** con velocità uniformi verifica che il turno corrente resti in testa, che il prossimo slot non duplichi il personaggio corrente e che la chiamata non modifichi lo stato reale.
+- **Verifiche:** controllo statico di `_tl_next()`, `_schedule_from()` e `_tl_player()`; test aggiunto ma non eseguito con Godot.
+- **Impatto:** solo visualizzazione/anteprima della Timeline; nessuna modifica all'ordine reale, al bilanciamento o alle azioni di combattimento.
