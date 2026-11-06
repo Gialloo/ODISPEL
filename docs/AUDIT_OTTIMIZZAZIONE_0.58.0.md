@@ -826,3 +826,15 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Perché:** verifica l'integrazione fra Story.save(), _read_valid_save() e Progress.validate_save(), non solo il validatore dell'area.
 - **Risultato atteso:** qualsiasi progressione che non supera la validazione impedisce la promozione del temporaneo e non distrugge il checkpoint valido.
 - **Verifica effettiva:** controllo statico del percorso di validazione e aggiunta del test. Nessuna esecuzione Godot effettuata.
+
+
+### 2026-11-06 — Cache limitata delle geometrie piatte ricorrenti
+
+- **File modificati:** scripts/v3/mesh_batch.gd; tests/unit/test_v3_mesh_batch.gd; README.md.
+- **Area audit:** prestazioni 3D e allocazioni durante la costruzione delle scene.
+- **Criticità trovata:** MeshBatch.disc() generava una nuova ArrayMesh a ogni chiamata, anche quando raggio, colore, numero di segmenti e altezza erano identici. La funzione viene usata per ombre dei personaggi, ombre e indicatori dei nemici, indizi e uscite. La geometria è immutabile dopo la costruzione e può essere condivisa fra più MeshInstance3D.
+- **Correzione:** introdotta una cache statica con chiave composta da tutti i parametri geometrici/visivi. Le chiamate con parametri identici riutilizzano la stessa ArrayMesh; le varianti diverse generano risorse separate. La cache ha un limite di 128 chiavi e viene svuotata prima di inserire una nuova variante quando raggiunge il limite.
+- **Perché:** ridurre costruzioni duplicate di mesh, allocazioni e memoria durante caricamento e creazione delle aree/combattimenti, senza modificare forma, materiali, draw call o logica di gioco. Il limite evita crescita illimitata in caso di strumenti che richiedano parametri sempre diversi.
+- **Test implementato e funzionamento:** test_v3_mesh_batch.gd chiama MeshBatch.disc() due volte con gli stessi parametri e confronta gli instance ID; verifica inoltre che una variazione di raggio o colore produca una risorsa distinta e che la mesh abbia la superficie attesa. Il test è standalone e non carica una scena completa.
+- **Risultato atteso:** geometrie ricorrenti condivise fra istanze, varianti visive non mischiate, cache limitata.
+- **Verifica effettiva:** lettura statica di tutti gli usi di MeshBatch.disc() e implementazione della cache/test. Non sono stati misurati FPS, memoria o tempi di caricamento; il test non è stato eseguito con Godot in questa sessione. Il beneficio quantitativo va misurato con tools/v3_prestazioni.gd su PC e Android prima di considerarlo confermato.
