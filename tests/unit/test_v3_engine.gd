@@ -84,6 +84,12 @@ func _init() -> void:
 	invalid_progress = valid_progress.duplicate(true)
 	invalid_progress["equip"]["ferri"]["skill"] = "mossa_inesistente"
 	check(not Progress.validate_save(invalid_progress), "abilità equipaggiata inesistente rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["equip"]["ferri"]["skill"] = "u_ferri_b"
+	check(not Progress.validate_save(invalid_progress), "abilità non ancora sbloccata rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["equip"]["ferri"]["skill"] = "u_ferri_ult"
+	check(not Progress.validate_save(invalid_progress), "Ultimate nello slot abilità rifiutata")
 	Story.area_state = {}
 	check(Story.load_game(), "salvataggio valido caricato")
 	check((Story.area_state.get("clues", []) as Array).has("scontrino"), "indizi salvati a meta' area")
