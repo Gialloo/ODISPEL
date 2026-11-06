@@ -635,3 +635,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunto:** con tutti i membri di uno slot KO e il suo turno in testa, la previsione deve comunque proseguire e mostrare un altro giocatore vivo.
 - **Verifiche:** confronto statico fra `preview()` e `_tl_next()`; test aggiunto ma non eseguito con Godot.
 - **Impatto:** accuratezza della previsione Timeline; nessuna modifica alle azioni realmente eseguite, al bilanciamento o alle risorse.
+
+
+### 2026-11-06 — Transizioni multiple delle fasi boss nello stesso round
+
+- **File modificati:** `scripts/engine/battle_resolver.gd`, `tests/unit/test_v3_break.gd`.
+- **Criticità trovata:** `_phase_of()` calcola correttamente la fase finale in base ai PV, ma `_check_phase()` applicava gli effetti una sola volta. Un singolo attacco che portava il boss sotto il 25% dei PV poteva passare direttamente dalla fase 1 alla 3, saltando gli effetti della fase 2.
+- **Correzione:** il cambio fase ora attraversa in ordine tutte le fasi mancanti. Per ogni transizione applica incremento della barra BREAK, evento fase, scudo, consumo Riserva se previsto dalla configurazione e variazioni EN/Ultimate alla squadra viva. La gestione di BREAK/recupero viene eseguita una sola volta dopo l'aggiornamento del massimo della barra, evitando di completare più volte il recupero.
+- **Test aggiunto:** boss portato direttamente al 20% dei PV; verifica fase finale 3, eventi fase 2 e 3 in ordine, doppio incremento BREAK, doppio scudo, doppio premio Ultimate e doppio costo EN.
+- **Verifiche:** ispezione statica delle soglie (`50%` e `25%`), delle costanti di fase e di `Stability.on_phase()`; test aggiunto ma non eseguito con Godot.
+- **Impatto:** ripristina gli effetti delle soglie effettivamente attraversate; non cambia le soglie, i valori per singola fase o il bilanciamento.
