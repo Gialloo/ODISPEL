@@ -949,3 +949,17 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Verifiche effettuate:** lettura statica del caricamento/salvataggio di `RNGState` in `BattleResolver`; inventario delle chiamate casuali nei sette file elencati; distinzione tra `RandomNumberGenerator` locale e funzioni globali.
 - **Test non eseguiti:** nessun test Godot, nessun test di replay con seed identico, nessun confronto degli eventi di battaglia prima/dopo e nessuna prova di ripetizione degli effetti.
 - **Prossimo passo:** completare la ricerca repository-wide delle chiamate globali e verificare i chiamanti dei metodi visivi. Solo dopo, valutare un RNG locale dedicato agli effetti temporanei, con test che dimostrino invariati gli eventi di combattimento a parità di stato iniziale.
+
+
+
+### 2026-11-06 — RNG locale per StaticFx
+
+- **File modificato:** `scripts/v3/static_fx.gd`.
+- **Criticità affrontata:** `StaticFx` usava `randf_range()` globale per variare copertura shader e durata dei lampi. Anche se il resolver di combattimento è isolato tramite `RNGState`, queste chiamate consumavano la sequenza casuale globale condivisa con altri sistemi.
+- **Correzione:** aggiunto un `RandomNumberGenerator` privato all'istanza `StaticFx`, inizializzato con `randomize()`; le tre estrazioni del parametro shader e degli intervalli temporali ora passano da `_rng.randf_range()`.
+- **Comportamento atteso:** StaticFx mantiene variazioni irregolari e non usa più il generatore globale durante i lampi. L'ordine o la frequenza di attivazione di StaticFx non dovrebbe più consumare valori dalla sequenza globale di altri sistemi.
+- **Cosa non cambia:** shader, tint, intervalli numerici, condizioni di attivazione, raccolta mesh, overlay e stato del combattimento.
+- **Test consigliati:** attivare/disattivare StaticFx ripetutamente su un personaggio in BREAK e su un compagno KO; verificare lampi e pause; eseguire due replay di combattimento con stato iniziale identico e confrontare gli eventi del resolver con e senza attivazioni StaticFx.
+- **Test effettivamente eseguiti:** verifica statica del diff e rilettura del file aggiornato su GitHub. Nessun test Godot o replay runtime eseguito in questa sessione.
+- **Limite noto:** la sequenza visiva specifica dei lampi non è più legata al generatore globale e quindi può differire rispetto alle versioni precedenti; è intenzionale perché la variazione è cosmetica. `randomize()` rende inoltre la sequenza non riproducibile tra esecuzioni, come già consentito dal carattere puramente decorativo dell'effetto.
+- **Prossimo passo:** valutare l'isolamento delle estrazioni in `VendingVisual` e `battle3d.gd` solo dopo aver mappato i punti di ingresso e aver verificato che siano esclusivamente presentazionali.
