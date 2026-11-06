@@ -349,6 +349,8 @@ func _preview_bonus_coerente() -> void:
 	var dead: String = _pid(s, "nox")
 	BattleState.active_unit(s, dead)["hp"] = 0
 	s["tl"]["done"] = {}
+	for player in s["players"]:
+		s["tl"]["done"][str(player["id"])] = true
 	s["tl"]["extra"] = [{"unit": str(BattleState.active_unit(s, dead)["id"]), "player": dead, "boss": false, "spd": -1, "extra": true}]
 	var p2: Array = BattleFlow.preview(s, 8)
 	var leaked: bool = false
