@@ -564,11 +564,11 @@ scene("c3_etichetta", "Un cartellino rivela un dettaglio curioso sulla Collezion
     L("nox/neutro", "Lance ha appena fatto una battuta, mi sento male."),
     L("ferri/serio", "Zitto ragazzino."))
 
-scene("c3_soglia", "Nella vetrina c'è un manichino che copia la squadra. Rio ci guarda dentro.",
-    L("zecca/sorpreso", "Il manichino in vetrina si è messo in posa come me."),
-    L("nox/serio", "Non guardarlo troppo. Ti prende così."),
-    L("zecca/sfotto", "Io vivo di gente che mi guarda troppo. Entriamo."),
-    L("ferri/serio", "Insieme. Articolo... lascia stare. Insieme."))
+scene("c3_soglia", "Un manichino in vetrina assume la stessa posa di Rio.",
+    L("zecca/sorpreso", "Ehi. Quel manichino mi copia."),
+    L("nox/serio", "Non fissarlo troppo, potrebbe attaccarci di sorpresa."),
+    L("zecca/serio", "...Lo so. Ma non riesco a smettere di guardarlo."),
+    L("ferri/serio", "Restiamo vicini. Articolo... lascia stare. Restiamo vicini."))
 
 scene("c3_boss", "Il Manichino vuole la faccia di Rio. La maschera si incrina, ma Rio la tiene su e si tiene la faccia.",
     L("MANICHINO", "Dammi la tua faccia. Tanto non la usi. Hai sempre la maschera."),
