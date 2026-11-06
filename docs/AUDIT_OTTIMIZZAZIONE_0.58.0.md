@@ -514,3 +514,15 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Verifiche eseguite:** ispezione statica delle chiamate a `Stability.mark/on` e della gestione BREAK; aggiunta del test automatico. Nessun test GDScript è stato lanciato con Godot in questa sessione.
 - **Copertura già presente rilevata:** test esistenti coprono finestra BREAK in azioni alleate, pressione latente, recupero, cambio fase durante recupero, elite ritardato/indebolito, SBILANCIAMENTO, Slancio protetto e determinismo Timeline. Non sono stati cambiati i valori di bilanciamento o le regole del combattimento.
 - **Da verificare a runtime:** esecuzione di `test_v3_break.gd`, `test_v3_timeline.gd`, `test_v3_slancio.gd`, `test_v3_ritmo.gd`; poi stress integrato con cambi fase, KO, scudi e reazioni persistenti tra round.
+
+
+### 2026-11-06 — Audit telemetria risorse: attribuzione per unità
+
+- **File modificati:** `scripts/engine/resource_telemetry.gd`, `tests/unit/test_v3_resource_telemetry.gd`, `README.md`.
+- **Criticità concreta trovata:** `ResourceTelemetry.record()` determinava una sola fonte per l'intera lista eventi, sovrascrivendola ogni volta che incontrava un evento `act` o `duo`. In un'azione che coinvolge più personaggi, il delta di energia/gauge/HYPE di un'unità poteva quindi essere etichettato con l'ultima azione di un altro personaggio. I dati restavano numericamente corretti, ma l'attribuzione per il bilanciamento era fuorviante.
+- **Correzione:** la fonte viene ora associata all'unità indicata dall'evento. Se la stessa unità ha più azioni differenti nella medesima lista, la fonte viene indicata come `mista` anziché attribuita arbitrariamente. Le tecniche a due emettono sia `act` sia `duo`: la loro etichetta specifica `duo:<id>` prevale sull'evento generico `act`.
+- **Test aggiunti:** attribuzione indipendente a due unità nella stessa lista; priorità dell'etichetta tecnica a due; fonte `mista` quando la stessa unità ha più azioni diverse.
+- **Documentazione:** aggiunto in README il comando headless per `test_v3_resource_telemetry.gd`.
+- **Verifiche eseguite:** ispezione statica di `ResourceTelemetry.record()` e del formato effettivo degli eventi prodotti da `DuoTechs.run()`; test aggiornati. Non è stato possibile eseguire Godot/headless in questa sessione.
+- **Impatto sulle regole:** nessuno. La correzione riguarda esclusivamente i metadati diagnostici `resource_delta.source`; quantità e mutazioni delle risorse non cambiano.
+- **Prossimo controllo:** verificare a runtime la suite telemetria e confrontare eventi grezzi e delta snapshot durante tecniche a due, reazioni e transizioni di fase.
