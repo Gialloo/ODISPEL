@@ -628,16 +628,21 @@ scene("c3_sera_ferri_saul", "La sera prima del colpo, Lance e Saul restano sul t
     L("ferri/neutro", "No, perché?"),
     L("saul/neutro", "Niente, curiosità.", imposta="legame_ferri_saul"))
 
-scene("c3_sera_nox_zecca", "Nox e Rio guardano le foto di prima della cupola. Legame Nox e Rio.",
-    L("zecca/felice", "Guarda. Io a dodici anni, con l'apparecchio. Non l'ha mai vista nessuno."),
-    L("nox/neutro", "Ora capisco la maschera."),
-    L("zecca/arrabbiato", "NOX."),
-    L("nox/sfotto", "La tengo io. Quando sarai famoso, mi paghi il caffè a vita."),
-    L("zecca/serio", "Nox... quando finisce tutto, ci rivediamo?"),
-    L("nox/neutro", "Se porti il caffè. Quello buono, non quello della macchinetta."),
-    L("zecca/sorpreso", "Ma è quello che bevi da tre giorni!"),
-    L("nox/neutro", "Appunto.", imposta="legame_nox_zecca"))
-
+scene("c3_sera_nox_zecca", "Nox e Rio guardano vecchie fotografie. Tra le prese in giro e la promessa di rivedersi, Rio comincia a mostrare un interesse diverso per Nox.",
+    L("zecca/felice", "Guarda questa! Io a dodici anni, con l'apparecchio. Questa non deve uscire da qui."),
+    L("nox/neutro", "Aspetta... posso vederla meglio?"),
+    L("zecca/arrabbiato", "Assolutamente no!"),
+    L("nox/sfotto", "Peccato. Avevo già pensato a dove appenderla."),
+    L("zecca/neutro", "Nox, sei una strega."),
+    L("nox/sfotto", "Lo so. So fare incantesimi spaventosi."),
+    L("zecca/serio", "...Ti capita mai di guardare queste foto e pensare a com'era tutto prima?"),
+    L("nox/neutro", "A volte. Ma non sempre mi manca quello che c'era."),
+    L("zecca/serio", "Già... Quando finisce tutto, ci rivediamo?"),
+    L("nox/neutro", "Certo. Ma stavolta scegli tu il posto."),
+    L("zecca/sorpreso", "O-Okay allora! E ti porterò a cena fuori e andremo in giro e..."),
+    L("nox/sfotto", "Rio, mi basta un caffè."),
+    L("zecca/imbarazzato", "Nox, non penso che un caffè solo basti."),
+    L("nox/neutro", "Hai ragione, ma è un inizio.", imposta="legame_nox_zecca"))
 scene("c3_sera_echo", "La squadra parla con Echo, che evita di dire cosa farà quando la cupola si aprirà.",
     L("zecca/felice", "Echo! Quando si apre la cupola, vieni a vivere nel mio telefono?"),
     L("echo/neutro", "Il tuo telefono ha il quattro per cento e sessanta foto di te."),
