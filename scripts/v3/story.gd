@@ -206,6 +206,10 @@ static func save() -> bool:
 		DirAccess.remove_absolute(temp_abs)
 	if cfg.save(temp_path) != OK:
 		return false
+	# Non sostituire mai un salvataggio valido con uno che il caricatore stesso rifiuterebbe.
+	if _read_valid_save(temp_path) == null:
+		DirAccess.remove_absolute(temp_abs)
+		return false
 	var had_save: bool = FileAccess.file_exists(save_path)
 	var main_valid: bool = had_save and _read_valid_save(save_path) != null
 	if main_valid:
