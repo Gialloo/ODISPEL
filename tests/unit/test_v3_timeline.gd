@@ -333,6 +333,29 @@ func _ingresso() -> void:
 			check(heroes == 4, "vantaggio: prima tutti e quattro gli eroi (%d)" % heroes)
 
 
+func _preview_quick_slancio_recupero() -> void:
+	var s: Dictionary = _fresh("semaforo", 24)
+	BattleFlow.start_round(s)
+	var tl: Dictionary = s["tl"]
+	var pid: String = _pid(s, "ferri")
+	var other: String = _pid(s, "nox")
+	# Lo slot del personaggio che ha appena ottenuto SLANCIO e' il primo senza il +15.
+	tl["now"] = 0
+	tl["cur"] = pid
+	tl["done"] = {}
+	tl["slots"][pid]["at"] = 1000
+	tl["slots"][other]["at"] = 2000
+	tl["cur_quick"] = {"unit": str(BattleState.active_unit(s, pid)["id"]), "player": pid, "boss": false, "spd": -1, "extra": true, "quick": true, "slancio": true, "waive": false}
+	var real_at: int = int(tl["slots"][pid]["at"])
+	var preview: Array = BattleFlow.preview(s, 4)
+	check(preview.size() > 1 and str(preview[1].get("player", "")) == other, "preview SLANCIO: applica il +15 simulato prima di scegliere il prossimo slot")
+	check(int(tl["slots"][pid]["at"]) == real_at, "preview SLANCIO: non applica il +15 alla Timeline reale")
+	# Lo SLANCIO protetto con costo azzerato non deve ricevere il +15.
+	tl["cur_quick"]["waive"] = true
+	var waived: Array = BattleFlow.preview(s, 4)
+	check(waived.size() > 1 and str(waived[1].get("player", "")) == pid, "preview SLANCIO protetto: rispetta l'esenzione dal +15")
+
+
 func _preview_turno_corrente() -> void:
 	var s: Dictionary = _fresh("semaforo", 23)
 	# Gli eroi sono piu' veloci del boss: il primo slot e' sicuramente un eroe.
@@ -487,6 +510,7 @@ func _init() -> void:
 	_slancio_costo()
 	_ingresso()
 	_carry_difese_e_reazioni()
+	_preview_quick_slancio_recupero()
 	_preview_turno_corrente()
 	_preview_bonus_coerente()
 	_scontri_interi()
