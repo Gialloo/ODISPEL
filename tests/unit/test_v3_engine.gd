@@ -81,6 +81,9 @@ func _init() -> void:
 	invalid_progress = valid_progress.duplicate(true)
 	invalid_progress["exp"]["nox"] = Progress.exp_need(int(invalid_progress["lv"]["nox"]))
 	check(not Progress.validate_save(invalid_progress), "esperienza oltre soglia rifiutata")
+	invalid_progress = valid_progress.duplicate(true)
+	invalid_progress["equip"]["ferri"]["skill"] = "mossa_inesistente"
+	check(not Progress.validate_save(invalid_progress), "abilità equipaggiata inesistente rifiutata")
 	Story.area_state = {}
 	check(Story.load_game(), "salvataggio valido caricato")
 	check((Story.area_state.get("clues", []) as Array).has("scontrino"), "indizi salvati a meta' area")
