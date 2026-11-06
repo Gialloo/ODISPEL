@@ -687,3 +687,19 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunto:** esteso il test touch già presente con una simulazione di perdita di focus e verifica del reset completo. La copertura preesistente di stick, multitouch e trascinamento camera è stata mantenuta.
 - **Non verificato:** comportamento su dispositivo Android/iOS reale, rotazione, notch/aree sicure, risoluzioni e frame-time. I test Godot non sono stati eseguiti in questa sessione.
 - **Prossimi controlli touch:** scaling coordinate/viewport, input cancellato durante pause e transizioni, hitbox e aree sicure.
+
+
+### 2026-11-06 — Controlli touch: reset anche alla pausa applicativa
+
+- **File modificati:** `scripts/v3/touch_controls.gd`, `tests/unit/test_v3_touch_controls.gd`.
+- **Ulteriore criticità considerata:** sui dispositivi mobili la sospensione dell'applicazione (per esempio passaggio in background, schermata di blocco o apertura di un'interfaccia di sistema) può essere notificata come pausa applicativa e non necessariamente come semplice perdita di focus. Affidarsi soltanto a `APPLICATION_FOCUS_OUT` lascia una dipendenza non necessaria dall'ordine/tipo di notifiche emesse dal sistema operativo.
+- **Correzione:** il reset dei controlli viene eseguito anche su `NOTIFICATION_APPLICATION_PAUSED`, oltre che su perdita di focus applicativa e della finestra. La routine resta centralizzata in `release_all()`: non introduce logica duplicata e non altera il comportamento durante il normale gioco.
+- **Perché questa correzione:** impedire che, tornando da una pausa di sistema, un dito precedentemente registrato continui a generare movimento o trascinamento camera senza un nuovo tocco.
+- **Test implementati e funzionamento:**
+  1. **Focus applicativo perso:** prepara indici touch e vettori non nulli, invoca la notifica e controlla che entrambi gli indici tornino a `-1`, stick e delta camera a `Vector2.ZERO`, manopola al centro.
+  2. **Applicazione messa in pausa:** ripete la stessa preparazione con valori diversi, invoca `NOTIFICATION_APPLICATION_PAUSED` e controlla gli stessi invarianti. Serve a verificare il percorso specifico di sospensione mobile.
+  3. **Finestra senza focus:** simula `NOTIFICATION_WM_WINDOW_FOCUS_OUT` e verifica che anche su desktop il reset sia completo.
+  4. **Regressione dei gesti:** i test già presenti continuano a simulare pressione/trascinamento simultaneo a sinistra e destra, controllo dello stick, delta camera e rilascio generale; non vengono sostituiti.
+- **Risultato atteso:** dopo ognuna delle tre notifiche nessun dito resta acquisito, nessun input residuo viene consumato e il successivo gesto parte da uno stato neutro. Il test segnala ogni singola condizione fallita, così è possibile identificare quale stato non è stato ripristinato.
+- **Verifica effettiva in questa sessione:** ispezione statica della gestione input e aggiornamento del test. Il test GDScript non è stato eseguito con Godot; i risultati sopra sono criteri attesi, non un esito dichiarato.
+- **Limiti ancora aperti:** coordinate e scaling sono coerenti solo se gli eventi e il Control condividono il medesimo spazio viewport; il controllo statico ha rilevato che il Control è ancorato a tutto il viewport tramite `Ui.place(self, 0, 0, 1, 1)`, ma non sostituisce una prova su dispositivi con aspect ratio, notch e safe area differenti. Non è stato possibile individuare un collegamento diretto a `TouchControls.handle()` nei file esaminati di `battle3d.gd`; il punto d'ingresso effettivo va tracciato prima di modificare coordinate o hitbox.
