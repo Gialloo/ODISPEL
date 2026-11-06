@@ -39,6 +39,9 @@ func _test_area_validation() -> void:
 		"banter_used": {"battuta_a": true}
 	}), "area salvata con tutti i campi attesi valida")
 	check(not Story.validate_area_state({"pos": "1,2,3"}), "posizione serializzata come testo rifiutata")
+	check(not Story.validate_area_state({"pos": Vector3(NAN, 0.0, 0.0)}), "coordinata NaN rifiutata")
+	check(not Story.validate_area_state({"pos": Vector3(0.0, INF, 0.0)}), "coordinata infinita rifiutata")
+	check(not Story.validate_area_state({"yaw": INF}), "yaw infinito rifiutato")
 	check(not Story.validate_area_state({"yaw": "non-un-numero"}), "yaw con tipo errato rifiutato")
 	check(not Story.validate_area_state({"clues": "indizio_a"}), "lista indizi con tipo errato rifiutata")
 	check(not Story.validate_area_state({"defeated": [12]}), "identificativo nemico non testuale rifiutato")
