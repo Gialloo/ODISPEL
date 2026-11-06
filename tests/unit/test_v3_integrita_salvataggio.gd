@@ -23,6 +23,7 @@ func _init() -> void:
 	_remove_save_files()
 	_test_area_validation()
 	_test_reject_invalid_new_save()
+	_test_reject_invalid_progression_save()
 	_test_backup_recovery()
 	_test_reject_malformed_area()
 	_remove_save_files()
@@ -63,6 +64,21 @@ func _test_reject_invalid_new_save() -> void:
 	check(not FileAccess.file_exists(Story.save_path + ".tmp"), "file temporaneo invalido rimosso")
 	check(Story.load_game(), "il salvataggio valido resta caricabile dopo il rifiuto")
 	check(Story.has_flag("salvataggio_valido"), "il checkpoint precedente resta disponibile")
+
+
+func _test_reject_invalid_progression_save() -> void:
+	Story.chapter = 0
+	Story.step = 0
+	Story.flags = {"progressione_valida": true}
+	Story.area_state = {}
+	Progress.reset()
+	check(Story.save(), "checkpoint con progressione valida scritto")
+	Progress.data["lv"]["ferri"] = Progress.MAX_LEVEL + 1
+	check(not Story.save(), "progressione con livello oltre il massimo rifiutata")
+	check(Story._read_valid_save(Story.save_path) != null, "il checkpoint precedente resta valido dopo errore progressione")
+	check(Story.load_game(), "checkpoint precedente ancora caricabile dopo errore progressione")
+	check(Progress.level("ferri") == 1, "il livello precedente viene ripristinato")
+	Progress.reset()
 
 
 func _test_backup_recovery() -> void:
