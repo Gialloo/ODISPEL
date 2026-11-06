@@ -436,3 +436,21 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 2. Touch: test multi-dito, pausa/ripresa, perdita focus e cambi schermata; rivedere il ridisegno continuo solo dopo aver verificato aggiornamenti visuali e animazioni.
 3. Struttura: estrazione graduale di responsabilità da `battle3d.gd`, una per volta, con test di regressione.
 4. Pubblicazione: controllo coerenza versione/nome artefatto, firma Android e corrispondenza pacchetto prima di avviare Butler.
+
+
+### 2026-11-06 — Protezione e validazione dei salvataggi
+
+- **File modificati:** `scripts/v3/story.gd`, `scripts/v3/menu.gd`.
+- **Problema riscontrato:** la scrittura ignorava il codice di errore di `ConfigFile.save`; il menu CONTINUA e il salto ai capitoli ignoravano il valore booleano di `Story.load_game()`. Un file danneggiato o un errore di scrittura potevano quindi produrre una prosecuzione non affidabile.
+- **Caricamento:** ora capitolo e passo vengono controllati rispetto alla struttura narrativa prima di applicare i dati; flag e stato area devono essere dizionari. Se la validazione fallisce, il metodo restituisce `false` senza applicare parzialmente i dati narrativi.
+- **Scrittura:** ora salva prima su un file temporaneo, sposta il salvataggio precedente in backup durante la sostituzione e ripristina il backup se la sostituzione fallisce. Il metodo restituisce `bool` per rendere visibile l'esito ai chiamanti futuri.
+- **Menu:** CONTINUA e salto ai capitoli non proseguono se il salvataggio presente non è leggibile; il pulsante mostra un messaggio e si disabilita.
+- **Compatibilità:** mantenuta la gestione dei salvataggi legacy senza sezione squadra.
+- **Test eseguiti:** revisione statica dei call site e verifica dei commit su GitHub. Non eseguiti test Godot, test su file corrotti, test di interruzione durante la scrittura o test di recupero backup.
+- **Rischio residuo:** la robustezza della sostituzione temporaneo/backup va verificata su Windows e Android; va aggiunta una suite che simuli errori di accesso e file malformati. I dati interni della squadra vengono ancora delegati a `Progress.from_save`, la cui validazione approfondita resta un'attività separata.
+
+### 2026-11-06 — Documentazione installazione e versione
+
+- **File modificati:** `docs/ISTRUZIONI_INSTALLAZIONE.md`, `README.md`.
+- **Correzioni:** rimosse istruzioni obsolete sulle vecchie versioni; chiarito che gli aggiornamenti Android richiedono la stessa chiave di firma e che disinstallare può cancellare i salvataggi; aggiornati i riferimenti alla versione di riferimento 0.58.0 e al branch sperimentale.
+- **Test eseguiti:** controllo statico dei testi e verifica dei file nel branch. Nessuna pubblicazione o prova di installazione eseguita.
