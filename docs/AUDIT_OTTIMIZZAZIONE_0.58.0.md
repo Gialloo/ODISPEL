@@ -805,3 +805,14 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test implementati e funzionamento:** aggiunti casi con Vector3(NAN, 0, 0), Vector3(0, INF, 0) e yaw INF. Ogni caso passa da Story.validate_area_state() e deve essere rifiutato. Non si modifica il validatore né il comportamento di gioco.
 - **Risultato atteso:** nessuna coordinata o rotazione non finita può superare il controllo del salvataggio.
 - **Verifica effettiva:** test aggiunti e confronto statico con i controlli is_finite già presenti; esecuzione Godot non effettuata.
+
+
+### 2026-11-06 — Validazione del temporaneo prima di sostituire il salvataggio principale
+
+- **File modificati:** scripts/v3/story.gd; tests/unit/test_v3_integrita_salvataggio.gd.
+- **Criticità trovata:** Story.save() scriveva il temporaneo e poi lo promuoveva a file principale senza verificare che il nuovo contenuto superasse _read_valid_save(). Il backup precedente restava disponibile, ma un errore nello stato in memoria poteva comunque sostituire il salvataggio principale con un file che il caricatore avrebbe subito rifiutato.
+- **Correzione:** dopo la scrittura del .tmp, Story.save() lo rilegge con lo stesso validatore del caricamento. Se non è valido, elimina il temporaneo e ritorna false prima di rinominare il file principale o il backup.
+- **Perché:** applicare la stessa regola in scrittura e lettura; non promuovere mai dati che il gioco non sarebbe in grado di caricare. Il controllo è prima della rotazione dei file, così il checkpoint valido resta intatto.
+- **Test implementati e funzionamento:** il test crea un salvataggio valido, modifica lo stato area in memoria inserendo una posizione testuale, tenta un secondo salvataggio e verifica: ritorno false, file principale ancora valido, temporaneo rimosso e checkpoint precedente ancora caricabile.
+- **Risultato atteso:** un errore nei dati in memoria non può rimpiazzare il salvataggio principale con un file non caricabile; il giocatore conserva il checkpoint precedente.
+- **Verifica effettiva:** confronto statico dell'ordine delle operazioni di scrittura/rinomina e aggiunta della regressione. Test non eseguito con Godot in questa sessione.
