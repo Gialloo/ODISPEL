@@ -645,3 +645,12 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunto:** boss portato direttamente al 20% dei PV; verifica fase finale 3, eventi fase 2 e 3 in ordine, doppio incremento BREAK, doppio scudo, doppio premio Ultimate e doppio costo EN.
 - **Verifiche:** ispezione statica delle soglie (`50%` e `25%`), delle costanti di fase e di `Stability.on_phase()`; test aggiunto ma non eseguito con Godot.
 - **Impatto:** ripristina gli effetti delle soglie effettivamente attraversate; non cambia le soglie, i valori per singola fase o il bilanciamento.
+
+
+### 2026-11-06 — Audit Interruzione e SBILANCIAMENTO
+
+- **File di test aggiornato:** `tests/unit/test_v3_break.gd`.
+- **Verifiche statiche:** la reazione `interruzione` è valida solo contro una carica pesante, non è disponibile se il boss è stordito, spende la Riserva, applica pressione alla barra e assegna SBILANCIAMENTO solo se il QTE non fallisce. Il limite di una Interruzione per round è applicato alla lista delle reazioni.
+- **Timeline:** la finestra BREAK viene consumata dalle azioni ordinarie alleate, non dalle azioni rapide SLANCIO; la mossa del boss viene saltata tramite lo stordimento prodotto dal BREAK. La funzione `BattleFlow.interrupt()` è un'operazione distinta di riprogrammazione slot, già coperta dai test Timeline; non va invocata automaticamente dalla reazione `interruzione`, perché il suo effetto di perdita/ritardo della mossa è condizionato al BREAK.
+- **Test aggiunti:** QTE riuscito, QTE fallito, guadagno Ultimate, costo Riserva, blocco della seconda Interruzione nello stesso round e pressione ridotta in caso di fallimento.
+- **Esito:** nessuna modifica alle regole di combattimento; aumentata la copertura di regressione. Test scritto ma non eseguito con Godot.
