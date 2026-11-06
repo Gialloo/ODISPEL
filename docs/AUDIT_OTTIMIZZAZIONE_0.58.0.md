@@ -537,3 +537,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Verifiche eseguite:** lettura del formato eventi di `DuoTechs.run()` e degli helper `gain_unit/spend_unit`; aggiunta del test. Non eseguito Godot/headless.
 - **Impatto:** sola qualità dei dati diagnostici, nessuna modifica a risorse, costi, regole o bilanciamento.
 - **Prossimo passo:** controllo della telemetria in caso di più fonti che modificano la stessa risorsa nello stesso passo e verifica integrata delle transizioni Timeline.
+
+
+### 2026-11-06 — Copertura regressione Timeline: difese e reazioni a cavallo del round
+
+- **File modificato:** `tests/unit/test_v3_timeline.gd`.
+- **Verifica statica:** `BattleFlow.finish()` conserva le reazioni selezionate se il round termina prima che il boss agisca; `SeqRound.finish()` usa uno snapshot vuoto quando la Timeline non ha ancora registrato un'azione del boss, così scudi e stati ottenuti nel frattempo vengono inclusi nel carry; `BattleFlow._tl_round()` ripristina reazioni e grado del minigioco dopo `SeqRound.begin()`.
+- **Copertura mancante individuata:** la suite Timeline esercitava già le azioni del boss e il normale ciclo dei turni, ma non verificava direttamente il caso in cui un round termina prima della prossima azione del boss e le difese devono restare disponibili.
+- **Test aggiunto:** avvio Timeline, assegnazione di uno stato difensivo e scudo, scelta di una reazione con grado `perfect`, fine round senza azione del boss e avvio del round successivo. Le asserzioni verificano durata dello stato, persistenza dello scudo, reazione e grado.
+- **Esito:** test scritto, non eseguito con Godot in questa sessione. Non si dichiara quindi verificato il comportamento runtime.
+- **Impatto sul gioco:** nessuna modifica alle regole; è stata aggiunta soltanto copertura di regressione.
