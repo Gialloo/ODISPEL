@@ -67,7 +67,7 @@ func pulse(k: float = 1.0, secs: float = 0.26) -> void:
 		return
 	if _tw != null and _tw.is_valid():
 		_tw.kill()
-	_mat.set_shader_parameter("seed", _rng.randf() * 10.0)
+	_mat.set_shader_parameter("seed", _rng._rng.randf() * 10.0)
 	_mat.set_shader_parameter("roll", 0.0)
 	_mat.set_shader_parameter("amt", k * Settings.flash)
 	_rect.visible = true
@@ -82,7 +82,7 @@ func transmit(col: Color, secs: float = 0.9) -> void:
 		return
 	if _tw != null and _tw.is_valid():
 		_tw.kill()
-	_mat.set_shader_parameter("seed", randf())
+	_mat.set_shader_parameter("seed", _rng.randf())
 	_mat.set_shader_parameter("tint", col)
 	_rect.visible = true
 	_tw = create_tween()
