@@ -2382,66 +2382,18 @@
     ]
   },
   "c3_briefing": {
-    "riassunto": "Nella Galleria Lumière chi entra perde la faccia e diventa un manichino. I video sono ovunque. Guida Rio.",
+    "riassunto": "Nella Galleria Lumière chi entra perde la faccia e diventa un manichino. I video sono ovunque. Rio si offre di guidare la squadra.",
     "righe": [
-      {
-        "chi": "zecca",
-        "espr": "sorpreso",
-        "testo": "Raga, i video della Galleria Lumière."
-      },
-      {
-        "chi": "zecca",
-        "espr": "sorpreso",
-        "testo": "La gente si fa un selfie e... non ha più la faccia."
-      },
-      {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "serio",
-        "testo": "Restano in posa. Manichini. Nelle mie telecamere sono già ventitré."
-      },
-      {
-        "chi": "zecca",
-        "espr": "serio",
-        "testo": "Guido io. Lì dentro serve uno che sa stare davanti a un obiettivo."
-      },
-      {
-        "chi": "nox",
-        "espr": "neutro",
-        "testo": "Tieni la maschera ben ferma, allora."
-      },
-      {
-        "chi": "zecca",
-        "espr": "triste",
-        "testo": "...Ben ferma."
-      },
-      {
-        "chi": "saul",
-        "espr": "neutro",
-        "testo": "Ragazzino. Se hai paura, dillo. Costa meno che fingere."
-      },
-      {
-        "chi": "zecca",
-        "espr": "felice",
-        "testo": "Paura? Io? Raga, io sono nato in diretta!"
-      },
-      {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "neutro",
-        "testo": "Il battito di Rio è salito del quaranta per cento."
-      },
-      {
-        "chi": "zecca",
-        "espr": "arrabbiato",
-        "testo": "ECHO!"
-      },
-      {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "neutro",
-        "testo": "Quarantadue."
-      }
+      {"chi":"zecca","espr":"sorpreso","testo":"Raga, i video della Galleria Lumière. La gente si fa un selfie e... non ha più la faccia. Guardateli, sono immobili!"},
+      {"chi":"echo","col":"#3fe0ff","espr":"serio","testo":"Restano in posa. Manichini. Nelle mie telecamere ne ho già individuati dieci."},
+      {"chi":"zecca","espr":"serio","testo":"Guido io. Lì dentro serve uno che sa stare davanti a un obiettivo."},
+      {"chi":"nox","espr":"neutro","testo":"Cerca di non fare gaffe allora."},
+      {"chi":"zecca","espr":"neutro","testo":"Ci provo.."},
+      {"chi":"saul","espr":"neutro","testo":"Ragazzino. Se hai paura, dillo. Costa meno che fingere."},
+      {"chi":"zecca","espr":"felice","testo":"Paura? Io? Raga, io sono nato in diretta!"},
+      {"chi":"echo","col":"#3fe0ff","espr":"neutro","testo":"I battiti al minuto di Rio sono aumentati di 40."},
+      {"chi":"zecca","espr":"arrabbiato","testo":"ECHO!"},
+      {"chi":"echo","col":"#3fe0ff","espr":"neutro","testo":"Hai ragione, 27."}
     ]
   },
   "c3_chat": {
