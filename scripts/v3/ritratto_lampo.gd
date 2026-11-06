@@ -21,6 +21,7 @@ var col: Color = Color.WHITE
 var _t0: int = 0
 var _seed: int = 0
 var _dur: float = 0.0          # durata data da chi lo lancia (cut-in dell'ULTIMATE: quanto dura la scena); 0 = DURATA
+var _seed_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 func _init() -> void:
@@ -29,12 +30,13 @@ func _init() -> void:
 
 
 func start(p_tex: Texture2D, p_mode: String, p_col: Color = Color.WHITE, p_dur: float = 0.0) -> void:
+	_seed_rng.randomize()
 	_dur = p_dur
 	tex = p_tex
 	mode = p_mode
 	col = p_col
 	_t0 = Time.get_ticks_msec()
-	_seed = randi()
+	_seed = _seed_rng.randi()
 	queue_redraw()
 
 
