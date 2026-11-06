@@ -86,24 +86,24 @@ func _start(at: Vector2) -> void:
 	size = sz + Vector2(pad * 2.0, pad * 1.4)
 	pivot_offset = size * 0.5
 	position = at - size * 0.5
-	rotation = deg_to_rad(_rng.randf_range(-9.0, 9.0))
+	rotation = deg_to_rad(_rng._rng.randf_range(-9.0, 9.0))
 	z_index = 20
 	# lettere «a mano»: ognuna un po' storta, piu' alta o piu' bassa, con inclinazione costante (corsivo a pennarello)
 	var x: float = 0.0
 	for i in word.length():
 		var ch: String = word.substr(i, 1)
 		var adv: float = _font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, fsize).x
-		var sc: float = randf_range(0.9, 1.12)
-		_letters.append([x, randf_range(-0.09, 0.09) * float(fsize), deg_to_rad(randf_range(-11.0, 11.0)), -0.28 + randf_range(-0.08, 0.08), sc])
+		var sc: float = _rng.randf_range(0.9, 1.12)
+		_letters.append([x, _rng.randf_range(-0.09, 0.09) * float(fsize), deg_to_rad(_rng.randf_range(-11.0, 11.0)), -0.28 + _rng.randf_range(-0.08, 0.08), sc])
 		x += adv * 0.97
 	# saetta a mano sul colpo grosso: 4 segmenti, zig-zag corto, esce da un lato della parola
 	if big and not Settings.light_fx:
-		var sgn: float = 1.0 if _rng.randi() % 2 == 0 else -1.0
+		var sgn: float = 1.0 if _rng._rng.randi() % 2 == 0 else -1.0
 		var u: float = float(fsize) * 0.28
 		var p: Vector2 = size * 0.5 + Vector2(sgn * (sz.x * 0.5 + u * 0.4), -u * 0.2)
 		bolt.append(p)
 		for k in 4:
-			p += Vector2(sgn * randf_range(0.7, 1.1) * u, (1.0 if k % 2 == 0 else -1.0) * randf_range(0.5, 0.9) * u)
+			p += Vector2(sgn * _rng.randf_range(0.7, 1.1) * u, (1.0 if k % 2 == 0 else -1.0) * _rng.randf_range(0.5, 0.9) * u)
 			bolt.append(p)
 	scale = Vector2(1.35, 1.35)
 	modulate.a = 0.0
@@ -125,7 +125,7 @@ func _process(d: float) -> void:
 	if _t >= _next_jit and _t < 0.3:
 		_next_jit = _t + 0.05
 		var j: float = float(fsize) * 0.03
-		jit = Vector2(randf_range(-j, j), randf_range(-j, j) * 0.6)
+		jit = Vector2(_rng.randf_range(-j, j), _rng.randf_range(-j, j) * 0.6)
 		queue_redraw()
 
 
