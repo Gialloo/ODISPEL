@@ -23,9 +23,11 @@ const YEL: Color = Color("#ffc93c")
 const HEADS: Dictionary = {"distributore": 2.5, "semaforo": 4.2, "cabina": 2.9, "manichino": 3.0, "cassaforte": 2.6, "frammento": 1.9, "telecamera": 3.4, "autovelox": 3.1}
 const FRAG_COLORS: Dictionary = {"giallo": Color(1.0, 0.82, 0.25, 0.0), "rosso": Color(1.0, 0.25, 0.3, 0.0), "blu": Color(0.3, 0.65, 1.0, 0.0), "verde": Color(0.3, 1.0, 0.5, 0.0), "viola": Color(0.75, 0.35, 1.0, 0.0)}
 var _cubes: Array = []
+var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	_rng.randomize()
 	_body = Node3D.new()
 	_body.name = "Body"
 	add_child(_body)
@@ -410,9 +412,9 @@ func _burst(mb: MeshBatch, from: Vector3, n: int, dir: Vector3, speed: float, up
 		var mi: MeshInstance3D = proto if i == 0 else proto.duplicate() as MeshInstance3D
 		mi.position = from
 		add_child(mi)
-		var v: Vector3 = dir * speed * randf_range(0.6, 1.1) + Vector3.UP * up * randf_range(0.7, 1.2)
-		v += Vector3(randf_range(-1, 1), randf_range(-0.2, 0.4), randf_range(-1, 1)) * spread
-		_bits.append([mi, v, Vector3(randf_range(-9, 9), randf_range(-9, 9), randf_range(-9, 9)), 0.0])
+		var v: Vector3 = dir * speed * _rng.randf_range(0.6, 1.1) + Vector3.UP * up * _rng.randf_range(0.7, 1.2)
+		v += Vector3(_rng.randf_range(-1, 1), _rng.randf_range(-0.2, 0.4), _rng.randf_range(-1, 1)) * spread
+		_bits.append([mi, v, Vector3(_rng.randf_range(-9, 9), _rng.randf_range(-9, 9), _rng.randf_range(-9, 9)), 0.0])
 
 
 func _bits_step(delta: float) -> void:
@@ -547,7 +549,7 @@ func _fin_frammento() -> Tween:
 		m.reparent(self)
 		m.global_position = p
 		var out: Vector3 = Vector3(m.position.x, 0, m.position.z).normalized()
-		_bits.append([m, out * 3.2 + Vector3.UP * 2.6, Vector3(randf_range(-8, 8), randf_range(-8, 8), 0), 0.0])
+		_bits.append([m, out * 3.2 + Vector3.UP * 2.6, Vector3(_rng.randf_range(-8, 8), _rng.randf_range(-8, 8), 0), 0.0])
 	_spark_at(Vector3(0, 1.1, 0), Color(col.r, col.g, col.b), 16, 0.5)
 	var tw := create_tween()
 	tw.tween_property(self, "squash", -0.6, 0.1)

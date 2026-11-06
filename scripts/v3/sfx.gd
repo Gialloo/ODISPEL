@@ -56,7 +56,9 @@ static func play(sfx_name: String, delay: float = 0.0, pitch: float = 1.0, db: f
 # la parola a fumetto che compare sul colpo decide il suono (TAP, ZAP, BAM, CLANG, ...)
 static func word(w: String, big: bool = false) -> void:
 	if WORDS.has(w):
-		play(str(WORDS[w]), 0.0, randf_range(0.95, 1.05), 1.5 if big else 0.0)
+		var rng := RandomNumberGenerator.new()
+		rng.randomize()
+		play(str(WORDS[w]), 0.0, rng.randf_range(0.95, 1.05), 1.5 if big else 0.0)
 
 
 # +1 COMBO: blip che sale di tono e musica che cresce

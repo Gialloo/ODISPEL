@@ -866,6 +866,196 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Passi successivi:** mappare tutte le scritture a proprietà animate di CharacterVisual/VendingVisual; aggiungere benchmark ripetibili con battaglia standard, gregario, QTE, cut-in e BREAK; misurare frame time medio/p95/max, CPU, memoria e draw calls su PC e Android.
 
 
+
+### 2026-11-06 — Evizione LRU della cache MeshBatch.disc()
+
+- **File modificati:** `scripts/v3/mesh_batch.gd`; `tests/unit/test_v3_mesh_batch.gd`.
+- **Criticità trovata:** la cache precedente eliminava tutte le 128 voci al raggiungimento del limite. Con un insieme di geometrie ricorrenti appena superiore a 128, questo comportamento poteva causare ricostruzioni a gruppi e perdere anche le varianti usate continuamente.
+- **Correzione:** introdotto un ordine LRU (Least Recently Used). Ogni cache hit sposta la chiave in fondo alla lista; quando la cache è piena viene rimossa soltanto la chiave meno recentemente usata. Il limite resta 128. Se la lista d'ordine risultasse vuota mentre il dizionario è pieno, un percorso difensivo riallinea lo stato svuotando il dizionario.
+- **Perché:** mantenere in cache le geometrie più richieste e ridurre il rischio di thrashing quando il numero di varianti supera il limite, senza permettere crescita illimitata.
+- **Sicurezza delle risorse:** l'espulsione rimuove il riferimento dal dizionario, ma non invalida le `ArrayMesh` già assegnate a `MeshInstance3D` o conservate da altri riferimenti. Una variante espulsa viene ricostruita soltanto se richiesta di nuovo.
+- **Test implementato e funzionamento:** esteso `tests/unit/test_v3_mesh_batch.gd`. Dopo aver creato e riutilizzato una variante, il test riempie la cache con 125 chiavi aggiuntive, inserisce un'ulteriore variante oltre il limite, verifica che la chiave recentemente usata restituisca la stessa istanza e che la chiave meno recente espulsa venga ricostruita con un nuovo instance ID. Restano anche i controlli di riuso, superficie e separazione di raggio/colore.
+- **Risultato atteso:** dimensione massima invariata (128); le voci calde sopravvivono all'inserimento di nuove varianti; viene espulsa una sola voce per inserimento oltre il limite.
+- **Verifica effettiva:** confronto statico del percorso hit/miss e dell'ordine di eviction; aggiornato il test per coprire il limite. **Il test Godot non è stato eseguito in questa sessione**, quindi la correttezza runtime e il beneficio prestazionale restano da confermare.
+- **Misure ancora necessarie:** eseguire `godot --headless --path . -s tests/unit/test_v3_mesh_batch.gd`; confrontare tempi di costruzione e numero di mesh ricostruite con una sequenza ripetuta di oltre 128 varianti; verificare memoria e tempi di caricamento su PC e Android.
+- **Nessuna modifica:** geometria del disco, parametri visivi, materiali, draw call, gameplay e dati narrativi.
+
+
+
+### 2026-11-06 — Cache delle conversioni HEX in CityBuilder
+
+- **File modificati:** `scripts/v3/city_builder.gd`; nuovo `tests/unit/test_v3_city_builder.gd`; `README.md`.
+- **Audit della costruzione aree:** `LayoutBuilder` delega la geometria urbana a `CityBuilder`. La scenografia solida viene già aggregata in una mesh tramite `MeshBatch`; i bagliori sono raccolti in una mesh separata; le ripetizioni della galleria usano `MultiMesh`. Non sono stati aggiunti nodi o mesh per singolo elemento e non è stato modificato il batching esistente.
+- **Criticità circoscritta:** `CityBuilder._c(hex)` eseguiva `Color(hex)` a ogni chiamata, anche quando la stessa stringa colore veniva già convertita più volte durante la generazione di edifici, arredi e dettagli.
+- **Correzione:** aggiunto un dizionario `_color_cache` per istanza di CityBuilder. La prima chiamata converte il valore HEX e lo memorizza; le successive restituiscono il Color già convertito.
+- **Perché:** evitare parsing ripetuto di stringhe colore durante la costruzione procedurale. La cache è locale all'istanza e i valori usati dal generatore provengono da un insieme piccolo e controllato di colori.
+- **Test implementato:** nuovo test standalone `tests/unit/test_v3_city_builder.gd`. Verifica che due richieste dello stesso HEX restituiscano lo stesso valore e che la seconda richiesta non aggiunga una nuova voce alla cache; verifica inoltre che un HEX differente produca un colore differente e una nuova voce.
+- **Risultato atteso:** identico colore e identica scenografia rispetto alla conversione diretta; una sola conversione per stringa HEX per istanza di CityBuilder.
+- **Verifica effettiva:** controllo statico del percorso cache-hit/cache-miss e del fatto che la cache non modifica il seed o il flusso del generatore. Test Godot non eseguito in questa sessione; nessuna misura di tempo di caricamento o CPU disponibile.
+- **Limiti:** il risparmio assoluto potrebbe essere modesto rispetto alla triangolazione e alla creazione delle mesh; va misurato prima di attribuire un miglioramento percepibile. La cache non cambia geometria, colori, RNG, ordine delle chiamate casuali o layout.
+
+
+### 2026-11-06 — Audit del ciclo di vita delle schermate e delle transizioni 3D
+
+- **File analizzati:** `scripts/v3/main.gd`, `scripts/v3/area.gd`, `scripts/v3/battle3d.gd`, `scripts/v3/scene_screen.gd`, `scripts/v3/toon.gd`, `scripts/v3/shader_warmup.gd`, `scripts/v3/sky_dome.gd`.
+- **Obiettivo:** individuare riferimenti persistenti, schermate 3D sovrapposte, caricamenti duplicati o risorse temporanee che sopravvivono inutilmente alle transizioni.
+- **Risultato dell'audit — gestore schermate:** `Main.go()` mantiene una sola schermata corrente. Chiama `queue_free()` sulla precedente, azzera `current`, attende due `process_frame` e solo dopo carica e istanzia la successiva. Questo intervallo è intenzionale: permette alla scena precedente di uscire dall'albero prima della costruzione della nuova area o arena.
+- **Risultato — transizioni concorrenti:** `_busy`, `_going` e `_pending` serializzano i cambi di schermata e conservano l'ultima richiesta differente ricevuta durante una transizione. Non è stata rilevata una richiesta di caricamento duplicata da correggere staticamente.
+- **Risultato — strappo VHS:** la cattura dello schermo è limitata all'ingresso cinematografico, è saltata in headless e quando `Settings.skip_cutin` è attivo. La texture viene assegnata al materiale del rettangolo temporaneo; il rettangolo viene liberato al termine dell'animazione. Il costo di lettura GPU può essere concentrato nel cambio, ma non viene eseguito durante il normale combattimento.
+- **Risultato — risorse condivise:** `Toon` conserva shader/materiali condivisi intenzionalmente. I materiali con texture vengono registrati tramite `WeakRef`; `Toon.set_fog()` elimina i riferimenti non più validi quando aggiorna la nebbia. Le scene area e battaglia applicano la nebbia all'ingresso e i cambi di fase del boss la aggiornano quando necessario.
+- **Risultato — effetti e shader:** `ShaderWarmup` è creato solo fuori da headless, riscalda gli shader per tre frame e poi si rimuove. La cupola e gli effetti di area sono figli della scena e quindi seguono il suo ciclo di vita.
+- **Decisione tecnica:** nessuna modifica al codice in questo passaggio. Non è stata trovata una perdita dimostrabile o un caricamento ridondante che giustifichi un intervento. Non si riduce l'attesa di due frame, non si cambia la cattura VHS e non si altera la cache globale dei materiali senza misure runtime.
+- **Test e verifiche:** ispezione statica dei percorsi di ingresso/uscita e dei punti di creazione/liberazione. Non sono stati eseguiti test Godot, profiler GPU, monitoraggio memoria o prove su Android.
+- **Verifiche runtime raccomandate:** ripetere almeno 20 cicli area → battaglia → area, includendo vittoria, sconfitta, boss multi-fase, ritorno al menu e riapertura di una nuova area; osservare memoria RAM/GPU dopo ogni ciclo; verificare che non compaiano due scene 3D attive contemporaneamente; misurare il frame hitch della cattura VHS separatamente dal tempo di caricamento della scena; controllare nebbia e materiali dopo transizioni tra aree con palette diverse.
+- **Criterio per un futuro intervento:** intervenire soltanto se il profiler mostra crescita progressiva della memoria, risorse GPU non rilasciate o un costo di transizione ripetibile e attribuibile a un punto specifico.
+
+
+### 2026-11-06 — Geometria condivisa nel warm-up degli shader
+
+- **File modificati:** `scripts/v3/shader_warmup.gd`; nuovo `tests/unit/test_v3_shader_warmup.gd`; `README.md`.
+- **Audit:** il warm-up crea un `MeshInstance3D` per ogni materiale, ma assegnava a ciascuno il risultato di una nuova chiamata a `_quad()`. La geometria (vertici, normali, colori e UV) è identica per tutti i materiali; cambiano soltanto `material_override` e posizione.
+- **Criticità:** allocazione e popolamento di più `ArrayMesh` equivalenti in una procedura di avvio che deve limitare il lavoro prima della scena giocabile.
+- **Correzione:** `_quad()` viene chiamata una sola volta prima del ciclo; tutti i `MeshInstance3D` condividono la stessa risorsa mesh. Restano distinti i nodi e i materiali, quindi ciascuno shader viene comunque presentato al renderer per il warm-up.
+- **Perché è sicuro:** le mesh sono risorse condivisibili e non vengono modificate nel ciclo. Il codice cambia soltanto l'assegnazione della risorsa, senza cambiare coordinate, ordine, materiali, numero di istanze o attese di rendering.
+- **Test implementato:** il test standalone controlla che la mesh helper contenga una superficie triangolare con sei vertici, sei normali, sei colori e sei UV, preservando la geometria attesa.
+- **Risultato atteso:** stessa copertura del warm-up con una sola allocazione di `ArrayMesh` invece di una per materiale.
+- **Verifica effettiva:** controllo statico della condivisione della stessa variabile `warmup_mesh` in tutto il ciclo. Il test Godot non è stato eseguito in questa sessione; non sono disponibili misure di memoria, frame-time o compilazione shader su dispositivo.
+- **Limiti:** il risparmio riguarda una fase di avvio, non il frame loop durante il gioco. Non dimostra da solo una riduzione percepibile dello stutter.
+
+
+
+### 2026-11-06 — Audit del ciclo di vita degli effetti StaticFx
+
+- **File analizzato:** `scripts/v3/static_fx.gd`; riferimenti e ciclo di vita delle istanze verificati in `scripts/v3/area.gd` e `scripts/v3/battle3d.gd`.
+- **Obiettivo:** controllare che gli overlay dei materiali vengano applicati e rimossi senza trattenere riferimenti a mesh non più valide e verificare se l'effetto visivo consuma risorse casuali condivise.
+- **Risultato — riferimenti alle mesh:** `StaticFx._collect()` ricostruisce l'elenco delle mesh quando l'effetto viene attivato; `_apply()` verifica `is_instance_valid()` prima di assegnare `material_overlay`. La lista viene svuotata a ogni nuova raccolta. Non emerge una prova statica di un riferimento persistente a nodi liberati.
+- **Osservazione da approfondire — RNG globale:** `StaticFx._apply()` esegue `randf_range(0.65, 1.0)` ogni volta che applica o rimuove l'overlay, perché il parametro `cover` viene aggiornato anche quando `_show` è falso. Questo consuma il generatore casuale globale anche durante lo spegnimento dell'effetto. L'impatto sul gameplay non è dimostrato: prima di cambiare il codice occorre mappare gli usi di `randf()`, `randf_range()` e `randi()` nei percorsi di combattimento, generazione e presentazione, distinguendo il generatore globale dai `RandomNumberGenerator` locali.
+- **Decisione tecnica:** nessuna modifica applicata in questa fase. Non si sostituisce il generatore casuale e non si cambia il comportamento dell'effetto senza aver verificato se esistano dipendenze dalla sequenza globale.
+- **Verifiche effettuate:** lettura statica di `StaticFx._collect()`, `StaticFx._apply()` e `StaticFx._process()`; controllo della guardia `is_instance_valid()` e del momento in cui viene ricostruito l'elenco delle mesh.
+- **Test non eseguiti:** nessun test Godot, nessuna prova di attivazione/disattivazione ripetuta, nessun confronto di sequenze RNG e nessuna profilazione runtime.
+- **Prossimo controllo:** inventario degli usi del generatore casuale globale nel motore di combattimento e nelle scene. Se la sequenza globale influenza risultati di gioco, separare in modo circoscritto la casualità puramente visiva dalla casualità di gameplay, con test di regressione prima e dopo.
+
+
+
+### 2026-11-06 — Mappatura RNG globale e isolamento della casualità di combattimento
+
+- **File analizzati:** `scripts/engine/rng_state.gd`, `scripts/engine/battle_resolver.gd`, `scripts/v3/static_fx.gd`, `scripts/v3/battle3d.gd`, `scripts/v3/vending_visual.gd`, `scripts/v3/city_builder.gd`, `scripts/v3/night_fx.gd`.
+- **Obiettivo:** verificare se gli effetti casuali possono alterare la sequenza casuale che determina gli esiti del combattimento e distinguere i generatori locali dal generatore globale di Godot.
+- **Risultato — motore di combattimento:** `BattleResolver` carica lo stato casuale da `rng_seed` e `rng_state` in un oggetto `RNGState`, usa quel generatore durante la risoluzione e salva nuovamente lo stato nella battaglia. Il percorso principale non chiama direttamente `randf()`, `randf_range()` o `randi()` globali. Questo è il confine deterministico da preservare.
+- **Risultato — generatori locali:** `CityBuilder` e `NightFx` possiedono istanze `RandomNumberGenerator` proprie per la generazione della scenografia; non consumano direttamente la sequenza globale nei punti ispezionati.
+- **Risultato — chiamate globali individuate:** `StaticFx` usa `randf_range()` per il parametro shader e per la durata dei lampi; `VendingVisual` usa funzioni casuali globali nella creazione dei frammenti; `battle3d.gd` usa funzioni globali per dispersione visiva, jitter di presentazione e scelta di una delle due diciture di vittoria. Sono usi collocati in script di presentazione, ma la verifica statica di questi file non dimostra che nessun altro sistema consumi il generatore globale.
+- **Criticità:** la casualità visiva globale può rendere dipendente dall'ordine degli effetti la sequenza casuale di altri sistemi che usano il generatore globale. Non è stata dimostrata una contaminazione del risultato di `BattleResolver`, che usa `RNGState`; resta però da verificare l'intero repository e gli eventuali sistemi esterni al resolver che usano la casualità globale.
+- **Decisione tecnica:** nessuna sostituzione automatica delle chiamate globali. Non si modifica `BattleResolver`, il formato di salvataggio RNG, i seed della scenografia o l'ordine delle chiamate casuali esistenti. Un cambio indiscriminato potrebbe alterare sequenze visive approvate e risultati di sistemi non ancora mappati.
+- **Verifiche effettuate:** lettura statica del caricamento/salvataggio di `RNGState` in `BattleResolver`; inventario delle chiamate casuali nei sette file elencati; distinzione tra `RandomNumberGenerator` locale e funzioni globali.
+- **Test non eseguiti:** nessun test Godot, nessun test di replay con seed identico, nessun confronto degli eventi di battaglia prima/dopo e nessuna prova di ripetizione degli effetti.
+- **Prossimo passo:** completare la ricerca repository-wide delle chiamate globali e verificare i chiamanti dei metodi visivi. Solo dopo, valutare un RNG locale dedicato agli effetti temporanei, con test che dimostrino invariati gli eventi di combattimento a parità di stato iniziale.
+
+
+
+### 2026-11-06 — RNG locale per StaticFx
+
+- **File modificato:** `scripts/v3/static_fx.gd`.
+- **Criticità affrontata:** `StaticFx` usava `randf_range()` globale per variare copertura shader e durata dei lampi. Anche se il resolver di combattimento è isolato tramite `RNGState`, queste chiamate consumavano la sequenza casuale globale condivisa con altri sistemi.
+- **Correzione:** aggiunto un `RandomNumberGenerator` privato all'istanza `StaticFx`, inizializzato con `randomize()`; le tre estrazioni del parametro shader e degli intervalli temporali ora passano da `_rng.randf_range()`.
+- **Comportamento atteso:** StaticFx mantiene variazioni irregolari e non usa più il generatore globale durante i lampi. L'ordine o la frequenza di attivazione di StaticFx non dovrebbe più consumare valori dalla sequenza globale di altri sistemi.
+- **Cosa non cambia:** shader, tint, intervalli numerici, condizioni di attivazione, raccolta mesh, overlay e stato del combattimento.
+- **Test consigliati:** attivare/disattivare StaticFx ripetutamente su un personaggio in BREAK e su un compagno KO; verificare lampi e pause; eseguire due replay di combattimento con stato iniziale identico e confrontare gli eventi del resolver con e senza attivazioni StaticFx.
+- **Test effettivamente eseguiti:** verifica statica del diff e rilettura del file aggiornato su GitHub. Nessun test Godot o replay runtime eseguito in questa sessione.
+- **Limite noto:** la sequenza visiva specifica dei lampi non è più legata al generatore globale e quindi può differire rispetto alle versioni precedenti; è intenzionale perché la variazione è cosmetica. `randomize()` rende inoltre la sequenza non riproducibile tra esecuzioni, come già consentito dal carattere puramente decorativo dell'effetto.
+- **Prossimo passo:** valutare l'isolamento delle estrazioni in `VendingVisual` e `battle3d.gd` solo dopo aver mappato i punti di ingresso e aver verificato che siano esclusivamente presentazionali.
+
+
+
+### 2026-11-06 — RNG locale per gli effetti di VendingVisual
+
+- **File modificato:** `scripts/v3/vending_visual.gd`.
+- **Mappatura:** le estrazioni casuali erano concentrate in `_burst()` (velocità, spinta verticale, dispersione e rotazione dei frammenti) e `_fin_frammento()` (rotazione iniziale dei tre cubi). Entrambi i percorsi alimentano esclusivamente la presentazione del colpo finale dell'Anomalia; non assegnano danni, stati, turni, ricompense o risultati del resolver.
+- **Correzione:** aggiunto un `RandomNumberGenerator` privato per istanza, inizializzato in `_ready()`. Tutte le estrazioni casuali del file ora usano `_rng.randf_range()`.
+- **Comportamento atteso:** frammenti e cubi continuano a essere distribuiti con gli stessi intervalli e la stessa logica, ma l'effetto non consuma più valori del generatore globale condiviso. Ogni istanza di VendingVisual ha una sequenza visiva indipendente.
+- **Cosa non cambia:** numero dei frammenti, riduzione effetti tramite `Settings.light_fx`, mesh, velocità nominali, gravità, rimbalzi, durata, animazioni, tempi del colpo finale e chiamate a `LightFx.sparks()`.
+- **Test consigliati:** verificare il colpo finale di ciascun tipo di Anomalia, con effetti normali e ridotti; controllare in particolare cassaforte, telecamera, cabina, distributore e frammento; ripetere un combattimento con e senza effetti finali e confrontare gli eventi del resolver.
+- **Test effettivamente eseguiti:** lettura completa del file, mappatura delle chiamate casuali e verifica statica del file aggiornato su GitHub. Nessun test Godot, scena runtime o replay è stato eseguito.
+- **Limite noto:** i dettagli casuali dei frammenti non sono più riproducibili tramite il seed globale della partita. È una scelta intenzionale per effetti cosmetici; non viene introdotto un seed persistente per la presentazione.
+- **Prossimo passo:** completare la mappatura delle chiamate casuali in `battle3d.gd`, distinguendo jitter/camera/testi da eventuali scelte che influenzano contenuto o progressione, prima di intervenire.
+
+
+
+### 2026-11-06 — RNG di presentazione isolato in battle3d
+
+- **File modificato:** `scripts/v3/battle3d.gd`.
+- **Mappatura delle chiamate globali:** le estrazioni trovate erano limitate a quattro usi di presentazione: tremolio casuale della camera durante lo shake (`_process`), spostamento laterale/verticale delle onomatopee (`_ono`), jitter dei numeri a schermo (`_number`) e scelta fra due diciture equivalenti di Ferri nella copertina di vittoria (`_victory_cover`). Nessuna di queste estrazioni decide bersagli, danni, turni, QTE, stati, ricompense o progressione.
+- **Percorso già separato:** la generazione dell'arena usa `cb.rng` per le dimensioni e le caratteristiche degli edifici; non è stata modificata.
+- **Correzione:** aggiunto `_presentation_rng`, un `RandomNumberGenerator` privato dell'istanza di battaglia e inizializzato in `_ready()`. Le estrazioni di camera, onomatopee, numeri e dicitura di vittoria ora usano questo generatore.
+- **Comportamento atteso:** la presentazione continua a variare negli stessi intervalli e con le stesse alternative, ma non consuma la sequenza casuale globale condivisa. Il generatore del resolver e quello della generazione arena restano distinti e invariati.
+- **Cosa non cambia:** ampiezza dello shake, distribuzione e posizione dei testi, contenuto delle due diciture di Ferri, logica di vittoria, seed della battaglia, RNGState, RNG della città e dati salvati.
+- **Test consigliati:** confrontare un replay identico con shake/onomatopee/numeri attivi e disattivati; verificare che eventi e stato finale del resolver coincidano; verificare che la copertina vittoria continui a mostrare una delle due diciture previste; provare più battaglie consecutive per confermare che ogni istanza inizializza il proprio RNG.
+- **Test effettivamente eseguiti:** lettura dei quattro contesti, verifica delle chiamate casuali nel file e rilettura statica della modifica su GitHub. Nessun test Godot, replay o benchmark runtime eseguito.
+- **Limite noto:** la posizione esatta degli elementi grafici e la variante testuale possono differire rispetto a una versione precedente o fra esecuzioni. La casualità di presentazione non è sincronizzata né salvata: è intenzionale, perché questi valori non devono influenzare la simulazione.
+- **Prossimo passo:** controllare gli altri file del percorso battaglia e i punti di creazione degli effetti, per assicurarsi che non restino chiamate globali che alimentano indirettamente decisioni di gameplay o dati persistenti.
+
+
+### 2026-11-06 — Inventario esteso e isolamento RNG dei sistemi secondari
+
+- **Ambito della scansione:** inventario ricorsivo del branch e scansione statica dei file GDScript in `scripts/engine/` e `scripts/v3/` (80 file); controllo aggiuntivo di `data/cast_visual.gd`. Non sono stati inclusi nella conclusione i file di test e gli strumenti di sviluppo, che non partecipano al normale runtime del gioco.
+- **Risultato sul motore:** nei file `scripts/engine/` esaminati non sono state trovate chiamate dirette alle funzioni casuali globali standard (`randf`, `randf_range`, `randi`, `randi_range`, `randfn`, `rand_from_array`, `pick_random`). `BattleResolver` continua a usare `RNGState`; la generazione dell'arena in `battle3d.gd` continua a usare `cb.rng`; `CityBuilder` e `NightFx` mantengono i propri generatori locali.
+- **Consumatori globali individuati e isolati:**
+  - `scripts/v3/area.gd`: fase iniziale delle anomalie e tremolio della camera, ora su `_presentation_rng`.
+  - `scripts/v3/banter.gd`: intervalli e scelta delle chiacchiere casuali, ora su RNG dell'istanza.
+  - `scripts/v3/glitch_fx.gd`: seed dello shader glitch, ora su RNG dell'istanza.
+  - `scripts/v3/light_fx.gd`: seed, arco del tratto e direzione/velocità/durata delle scintille, ora su RNG privato di ciascun effetto.
+  - `scripts/v3/onomato.gd`: inclinazione, deformazione, saetta e jitter delle onomatopee, ora su RNG dell'istanza.
+  - `scripts/v3/ritratto_lampo.gd`: seed del ritratto, ora generato da RNG locale; il disegno continua a usare il seed per la propria sequenza ripetibile.
+  - `scripts/v3/huddle_menu.gd`: scelta dei sussurri e delle battute, più durata delle oscillazioni, ora su RNG del menu; la funzione statica `quip()` usa un RNG locale.
+  - `scripts/v3/sfx.gd`: variazione di pitch delle parole a fumetto, ora su RNG locale alla chiamata.
+  - `scripts/v3/react_game.gd`: direzione iniziale della freccia del minigioco, ora su RNG dell'istanza. La direzione resta casuale; non cambia il calcolo del grado della reazione.
+- **Decisione sui dialoghi:** le estrazioni di Banter e HuddleMenu selezionano battute già presenti nei dati e non modificano progressione o stato di combattimento. Sono state isolate senza cambiare pool, condizioni, testi, frequenza o regole `una_volta`.
+- **Comportamento atteso complessivo:** gli effetti grafici, i suoni, le animazioni ambientali, le chiacchiere e la direzione della freccia non consumano più la sequenza casuale globale condivisa. Restano distinti RNG del resolver, RNG di generazione arena e generatori di presentazione.
+- **Cosa non cambia:** seed/stato persistente del combattimento, formule di danno, turni, QTE grade, ricompense, progressione, dati narrativi, pool di battute, intervalli visivi e valori di pitch. Non sono stati modificati `BattleResolver`, `RNGState`, formato dei salvataggi o contenuti di dialogo.
+- **Verifica statica post-modifica:** i nove file modificati sono stati riletti da GitHub e controllati per assenza di chiamate dirette alle funzioni casuali globali standard; tutti mostrano riferimenti ai generatori locali previsti. La scansione del motore non ha trovato chiamate globali dirette nei file `scripts/engine/`.
+- **Test consigliati:** eseguire la suite unità completa; provare reazioni `arrow` e tutte le altre modalità; ripetere battaglie con stesso seed e confrontare eventi/stato del resolver; verificare effetti visivi, suoni, banter e riunione di pausa con effetti ridotti e normali.
+- **Test effettivamente eseguiti:** inventario Git ricorsivo, scansione testuale statica dei sorgenti runtime indicati, rilettura dei nove file modificati e controllo delle chiamate globali residue. Nessun test Godot, replay, benchmark o verifica audio/video runtime è stato eseguito.
+- **Limiti della scansione:** è una ricerca statica delle API casuali standard, non un'analisi semantica completa; non certifica chiamate indirette tramite wrapper o metodi dinamici, né il comportamento a runtime. File in `tests/` e `tools/` non sono inclusi in questa conclusione.
+- **Prossimo passo:** esaminare i test di determinismo e i punti che inizializzano/caricano `RNGState`, poi verificare se i test esistenti coprono l'indipendenza tra presentazione e simulazione senza introdurre modifiche al formato dei salvataggi.
+
+
+
+### 2026-11-06 — Ulteriore isolamento RNG nei sistemi secondari V3
+
+- **File modificati:** `scripts/v3/area.gd`, `banter.gd`, `glitch_fx.gd`, `light_fx.gd`, `onomato.gd`, `ritratto_lampo.gd`, `huddle_menu.gd`, `sfx.gd`.
+- **Perimetro:** verifica mirata dei consumatori casuali in questi otto file del percorso V3. Non equivale a una prova formale che ogni file della repository sia privo di RNG globale.
+- **Area:** aggiunto RNG privato per le fasi iniziali degli Anomaly/Vending e per il tremolio della telecamera esplorativa. Le fasi e lo shake restano cosmetici; posizioni, collisioni, incontri e progressione non vengono estratti da questo generatore.
+- **Banter:** intervallo fra battute e scelta casuale della battuta ora usano un RNG privato del controller. Il testo e le condizioni che consentono la battuta non cambiano; la scelta resta casuale e non è sincronizzata con il seed della battaglia.
+- **GlitchFx:** seed dei parametri shader di pulse/transmit ora provengono da RNG privato dell'effetto.
+- **LightFx:** ogni effetto creato tramite `_make()` inizializza il proprio RNG; seed grafico, curvatura della pennellata e direzioni/velocità/durate delle scintille usano quell'istanza. Gli effetti sono solo presentazione; le chiamate statiche `stroke()` e `sparks()` ottengono l'istanza già inizializzata da `_make()`.
+- **Onomato:** rotazione, dispersione, scala e jitter delle lettere ora usano RNG privato per ogni onomatopea.
+- **RitrattoLampo:** il valore iniziale usato per il seed grafico è generato da RNG privato; il disegno continua a usare un RNG locale inizializzato da `_seed` e dal tempo normalizzato, mantenendo stabile la composizione fra redraw equivalenti.
+- **HuddleMenu:** selezione delle battute e variazione dei tempi di inclinazione usano RNG privato dell'istanza; la funzione statica `quip()` usa un RNG locale perché non dispone di un'istanza proprietaria.
+- **Sfx:** la variazione minima del pitch dei suoni-parola usa un RNG locale; non cambia il suono selezionato né la mappa delle parole.
+- **Correzione durante verifica:** l'ispezione post-modifica ha individuato riferimenti duplicati `_rng._rng` in Banter, GlitchFx e Onomato; sono stati corretti in `_rng` e i tre file sono stati riletti. Questo controllo è stato necessario prima di considerare la modifica verificata.
+- **Comportamento atteso complessivo:** questi sistemi non consumano più la sequenza casuale globale per gli usi elencati. Il resolver e il formato RNG dei salvataggi non sono stati modificati.
+- **Test consigliati:** avvio area e movimento con shake; attesa delle battute contestuali; attivazione glitch e scintille in combattimento; visualizzazione onomatopee e cut-in; apertura/chiusura menu Huddle e riproduzione suoni-parola. Ripetere un combattimento con presentazione attiva/disattiva e confrontare eventi e stato finale del resolver.
+- **Test effettivamente eseguiti:** recupero e lettura dei file interessati, ricerca statica delle chiamate globali nei file modificati, controllo dei riferimenti RNG locali e verifica delle correzioni duplicate tramite fetch GitHub. Nessun test Godot, test unitario, prova audio/visiva o replay runtime eseguito.
+- **Limiti e rischi residui:** le battute contestuali e quelle dell'Huddle possono seguire sequenze diverse rispetto alle versioni precedenti, pur mantenendo pool e condizioni. I sistemi cosmetici non sono riproducibili dal seed della partita. L'RNG locale creato in `Sfx.word()` e `HuddleMenu.quip()` ha un piccolo costo di allocazione; da misurare prima di ottimizzarlo ulteriormente. Non è stata eseguita una scansione completa e certificata di tutti i file GDScript della repository.
+- **Prossimo passo:** eseguire una revisione statica finale dei chiamanti rimasti e dei punti di creazione/distruzione di questi nodi; quindi preparare una lista di test runtime mirati per Claude/Godot, senza modificare il resolver.
+
+
+
+### 2026-11-06 — Audit esteso RNG globale: percorso di combattimento, V3 e script di supporto
+
+- **Perimetro verificato:** 147 file GDScript presenti nel branch. La scansione è stata suddivisa in 81 file del nucleo `scripts/engine/`, `scripts/v3/` e `data/`, più 66 file rimanenti fra test e strumenti. Nei file del percorso di combattimento e V3 sono state controllate anche le API alternative `rand_from_seed()`, `shuffle()` e `pick_random()`.
+- **Risultato principale:** nessuna chiamata diretta e non qualificata ai generatori globali `randf()`, `randf_range()`, `randi()`, `randi_range()`, `randfn()`, `rand_from_array()`, `rand_from_seed()`, `randomize()` o `seed()` è rimasta nei 147 script esaminati. Nessun uso di `shuffle()` o `pick_random()` è stato trovato nel perimetro engine/V3/data. Le chiamate casuali individuate sono metodi di istanze `RandomNumberGenerator` esplicite.
+- **Confine del gameplay:** `BattleState.create()` crea un `RNGState` dedicato con `setup(seed_value)`; seed e stato sono conservati in `rng_seed` e `rng_state` come stringhe. `BattleResolver` ricostruisce il generatore con `_load_rng()`, usa `random_index()` per le scelte casuali di bersaglio e riscrive lo stato con `_save_rng()`. Il generatore è quindi separato dai generatori di presentazione e il suo avanzamento fa parte dello stato della battaglia.
+- **Seed iniziale:** `battle3d.gd` passa a `BattleState.create_solo()` il seed `int(Time.get_ticks_msec()) % 100000 + 7`. Questo rende differenti due avvii indipendenti in momenti diversi, ma il valore non è ottenuto dal numero di effetti o dalle chiamate grafiche. Una volta creato lo stato, seed e stato RNG vengono mantenuti nel dizionario di battaglia. Per replay riproducibili fra avvii distinti servirà in futuro un seed esplicito/debug, non una modifica al generatore di presentazione.
+- **Presentazione della battaglia:** `battle3d.gd` usa `_presentation_rng` per shake camera, jitter delle onomatopee, numeri e variante della dicitura vittoria. `VendingVisual`, `StaticFx`, `LightFx`, `GlitchFx`, `Onomato`, `RitrattoLampo`, `Area` e `Banter` hanno generatori locali per i rispettivi effetti, variazioni e battute. Nessuno dei percorsi individuati chiama `BattleResolver` per ottenere valori casuali.
+- **Battute di combattimento:** `BattleQuips` possiede un RNG privato che determina probabilità e scelta delle battute; aggiorna soltanto il proprio insieme di battute usate e il tempo minimo fra battute. Le righe possono avere durate di lettura diverse e quindi variare il ritmo visivo/sonoro, ma non modificano danni, bersagli, turni, gauge, ricompense o stato del resolver.
+- **Altri generatori locali/deterministici:** `CityBuilder` riceve un seed e `LayoutBuilder` usa il suo generatore per costruire la scenografia; `NightFx` usa generatori locali per gli elementi ambientali; `BrokenCam` deriva il seed dal pattern/key; `CmdWheel` usa seed fissi per texture e decorazioni; `EdgeCutin` usa seed fisso 2077 per i solidi del cut-in. Questi percorsi non consumano il generatore del resolver.
+- **Decisione:** nessun'altra sostituzione di codice è giustificata dall'audit statico attuale. Non modificare `RNGState`, `BattleResolver`, il formato dei salvataggi o i seed della scenografia. Evitare una sostituzione indiscriminata: le estrazioni trovate sono già qualificate su generatori dedicati e alcune sono intenzionalmente deterministiche.
+- **Test runtime necessari per chiudere la verifica:** (1) avviare due battaglie da identico stato iniziale e seed esplicito, confrontando eventi del resolver e stato finale; (2) ripetere la prova attivando/disattivando shake, scintille, onomatopee, numeri, cut-in e frammenti; (3) verificare che la sequenza degli eventi e i valori di danno/bersagli/gauge siano identici; (4) ripristinare un salvataggio a metà battaglia e confrontare la continuazione con un replay dal medesimo stato RNG; (5) verificare separatamente che le battute possano variare senza alterare lo stato di combattimento.
+- **Verifiche effettivamente eseguite:** recupero dell'albero GitHub del branch; scansione statica di tutti i 147 file GDScript; scansione mirata dei 81 file engine/V3/data per le API casuali globali e alternative; lettura diretta di `RNGState`, `BattleState`, `BattleResolver`, `battle3d.gd` e `battle_quips.gd`; controllo dei punti di inizializzazione e dei consumatori. Nessun test Godot, replay, benchmark o confronto runtime eseguito.
+- **Limiti:** l'audit copre il codice GDScript presente nell'albero del branch, non il comportamento interno del motore Godot o di eventuali estensioni native esterne. L'assenza di chiamate globali nei sorgenti non sostituisce la prova runtime che gli effetti non introducano regressioni temporali o di presentazione.
+- **Conclusione:** nel codice GDScript esaminato non risultano più consumatori diretti del RNG globale che possano contaminare il flusso casuale del combattimento. Il resolver usa un RNG dedicato, serializzato nello stato della battaglia; gli effetti e i sistemi secondari individuati usano RNG locali o seed espliciti. La separazione statica è verificata; l'invarianza del risultato con effetti attivi/disattivi resta da confermare con i test runtime sopra elencati.
+
+
 ## Ripresa con Claude — prima verifica eseguita (6/11/2026)
 
 Resoconto completo: `odispel/v3/combat_system/AUDIT_CHATGPT_0.58.md` nella cartella del progetto.
