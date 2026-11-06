@@ -76,6 +76,13 @@ func release_all() -> void:
 	queue_redraw()
 
 
+func _notification(what: int) -> void:
+	# Android/iOS possono interrompere la scena mentre un dito e' ancora premuto.
+	# Se il rilascio non arriva, evita stick bloccato o trascinamento camera fantasma.
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		release_all()
+
+
 # Da chiamare da _input della scena (cosi' riceve i tocchi anche sopra il 3D)
 func handle(event: InputEvent) -> bool:
 	if not TouchUi.active():
