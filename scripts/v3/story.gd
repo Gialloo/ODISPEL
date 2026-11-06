@@ -100,12 +100,25 @@ static func load_game() -> bool:
 	var cfg := ConfigFile.new()
 	if cfg.load(save_path) != OK:
 		return false
-	chapter = int(cfg.get_value("storia", "capitolo", 0))
-	step = int(cfg.get_value("storia", "passo", 0))
+	var loaded_chapter: int = int(cfg.get_value("storia", "capitolo", -1))
+	var loaded_step: int = int(cfg.get_value("storia", "passo", -1))
+	var chs: Array = chapters()
+	if loaded_chapter < 0 or loaded_chapter > chs.size() or loaded_step < 0:
+		return false
+	if loaded_chapter < chs.size():
+		var steps: Array = chs[loaded_chapter].get("passi", [])
+		if loaded_step >= steps.size():
+			return false
 	var saved: Variant = cfg.get_value("storia", "flag", {})
-	flags = saved if saved is Dictionary else {}
 	var st: Variant = cfg.get_value("storia", "area", {})
-	area_state = st if st is Dictionary else {}
+	if not (saved is Dictionary) or not (st is Dictionary):
+		return false
+	# Applica lo stato solo dopo aver validato i campi narrativi: un file malformato non deve
+	# lasciare la partita corrente parzialmente sovrascritta.
+	chapter = loaded_chapter
+	step = loaded_step
+	flags = saved
+	area_state = st
 	Progress.from_save(cfg.get_value("squadra", "dati", {}))
 	if not cfg.has_section("squadra"):
 		# salvataggio di prima dei livelli: la squadra parte dal livello previsto per il capitolo (1, 3, 5, 7, 9, 11)
@@ -117,7 +130,7 @@ static func load_game() -> bool:
 	return true
 
 
-static func save() -> void:
+static func save() -> bool:
 	var cfg := ConfigFile.new()
 	cfg.set_value("storia", "capitolo", chapter)
 	cfg.set_value("storia", "passo", step)
@@ -126,7 +139,30 @@ static func save() -> void:
 		cfg.set_value("storia", "area", area_state)
 	Progress.ensure()
 	cfg.set_value("squadra", "dati", Progress.data)
-	cfg.save(save_path)
+	var temp_path: String = save_path + ".tmp"
+	var backup_path: String = save_path + ".bak"
+	var temp_abs: String = ProjectSettings.globalize_path(temp_path)
+	var save_abs: String = ProjectSettings.globalize_path(save_path)
+	var backup_abs: String = ProjectSettings.globalize_path(backup_path)
+	if FileAccess.file_exists(temp_path):
+		DirAccess.remove_absolute(temp_abs)
+	if cfg.save(temp_path) != OK:
+		return false
+	var had_save: bool = FileAccess.file_exists(save_path)
+	if had_save:
+		if FileAccess.file_exists(backup_path):
+			DirAccess.remove_absolute(backup_abs)
+		if DirAccess.rename_absolute(save_abs, backup_abs) != OK:
+			DirAccess.remove_absolute(temp_abs)
+			return false
+	if DirAccess.rename_absolute(temp_abs, save_abs) != OK:
+		if had_save:
+			DirAccess.rename_absolute(backup_abs, save_abs)
+		DirAccess.remove_absolute(temp_abs)
+		return false
+	if had_save and FileAccess.file_exists(backup_path):
+		DirAccess.remove_absolute(backup_abs)
+	return true
 
 
 static func set_flag(f: String) -> void:
