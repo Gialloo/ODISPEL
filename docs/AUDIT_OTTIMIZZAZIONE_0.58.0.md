@@ -666,3 +666,12 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Impatto:** solo visualizzazione/anteprima della Timeline; nessuna modifica all'ordine reale, al bilanciamento o alle azioni di combattimento.
 
 - **Controllo aggiuntivo della correzione:** la riprogrammazione della copia simulata usa un contatore `stamp` locale; non richiama il mutatore `_schedule_from()` sulla Timeline reale. Il test ora controlla anche che `tl.stamp` e il tempo dello slot corrente restino invariati dopo `preview()`. Setup del test reso deterministico (eroi VEL 120, boss VEL 60).
+
+
+### 2026-11-06 — Anteprima recupero dopo SLANCIO
+
+- **File:** `scripts/engine/battle_flow.gd`, `tests/unit/test_v3_timeline.gd`.
+- **Criticità:** quando la Timeline aveva già selezionato l'azione rapida dello SLANCIO, `preview()` mostrava correttamente l'azione corrente ma non anticipava nella copia simulata il +15 al recupero applicato da `_tl_player()` dopo la risoluzione. La previsione poteva quindi indicare un ordine successivo diverso da quello reale.
+- **Correzione:** per la voce corrente `cur_quick`, la simulazione aggiunge il costo solo se è uno SLANCIO e `waive` è falso. Gli SLANCI protetti con esenzione non ricevono il costo. La modifica avviene esclusivamente sulla copia degli slot.
+- **Test aggiunti:** ordine previsto con slot concorrente tra recupero base e recupero maggiorato; invarianza dello slot reale; rispetto dell'esenzione `waive`.
+- **Test Godot:** non eseguiti in questa sessione.
