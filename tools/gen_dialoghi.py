@@ -549,13 +549,14 @@ scene("c3_briefing", "Nella Galleria Lumière chi entra perde la faccia e divent
     L("zecca/arrabbiato", "ECHO!"),
     L("echo/neutro", "Hai ragione, 27."))
 
-scene("c3_chat", "La chat della diretta di Rio chiede di vedergli la faccia. Rio ha paura di non essere nessuno senza maschera.",
-    L("zecca/felice", "La chat è impazzita. «Facci vedere la faccia.» «Senza maschera sei nessuno.» Simpatici."),
-    L("saul/serio", "Chi sono?"),
-    L("zecca/neutro", "Gente. Uno si chiama «Pane_Fritto_92»."),
-    L("saul/neutro", "Non si dà la faccia a uno che si chiama Pane Fritto."),
-    L("zecca/triste", "Prima della maschera avevo trentadue follower. Tutti parenti."),
-    L("saul/serio", "Io ne ho zero. Mi riconoscono in tre province."))
+scene("c3_chat", "Durante la diretta, alcuni utenti insistono perché Rio mostri il volto.",
+    L("zecca/felice", "La chat è impazzita. «Facci vedere la faccia.»"),
+    L("zecca/felice", "E poi: «Senza maschera sei nessuno». Simpatici."),
+    L("saul/serio", "Chi l'ha scritto?"),
+    L("zecca/neutro", "Gente. Uno si chiama «Persona97»."),
+    L("saul/neutro", "Non mi farei dare consigli da uno che si chiama Persona97."),
+    L("zecca/triste", "Prima della maschera non mi conosceva nessuno, avevo trentadue follower. Tutti parenti."),
+    L("saul/serio", "Io ne ho zero e mi riconoscono in tre stati."))
 
 scene("c3_etichetta", "Indizio: il manichino teme il rosso.",
     L("zecca/sorpreso", "Il cartellino di un vestito. Collezione Nessuno. Il ROSSO non è di stagione."),
