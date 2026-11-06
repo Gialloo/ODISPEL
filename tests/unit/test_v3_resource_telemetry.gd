@@ -132,6 +132,19 @@ func _per_unit_source() -> void:
 
 	before = ResourceTelemetry.snapshot(state)
 	state["units"]["lance"]["energy"] = 5
+	var duo_events: Array = [
+		{"t": "act", "unit": "lance", "move": "duo_protezione"},
+		{"t": "duo", "unit": "lance", "id": "duo_protezione", "with": "nox"}
+	]
+	ResourceTelemetry.record(state, before, duo_events, "player_action")
+	var duo_source: String = ""
+	for e in duo_events:
+		if str(e.get("t", "")) == "resource_delta":
+			duo_source = str(e["source"])
+	check(duo_source == "duo:duo_protezione", "la tecnica a due prevale sull'evento act generico dello stesso attore")
+
+	before = ResourceTelemetry.snapshot(state)
+	state["units"]["lance"]["energy"] = 5
 	var mixed_events: Array = [
 		{"t": "act", "unit": "lance", "move": "attacco"},
 		{"t": "act", "unit": "lance", "move": "guardia"}
