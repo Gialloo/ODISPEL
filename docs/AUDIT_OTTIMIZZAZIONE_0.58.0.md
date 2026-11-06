@@ -675,3 +675,15 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Correzione:** per la voce corrente `cur_quick`, la simulazione aggiunge il costo solo se è uno SLANCIO e `waive` è falso. Gli SLANCI protetti con esenzione non ricevono il costo. La modifica avviene esclusivamente sulla copia degli slot.
 - **Test aggiunti:** ordine previsto con slot concorrente tra recupero base e recupero maggiorato; invarianza dello slot reale; rispetto dell'esenzione `waive`.
 - **Test Godot:** non eseguiti in questa sessione.
+
+
+## Fase 3 — Controlli touch (audit statico iniziale)
+
+### 2026-11-06 — Recupero input dopo perdita di focus
+
+- **File:** `scripts/v3/touch_controls.gd`; esteso il test esistente `tests/unit/test_v3_touch_controls.gd`.
+- **Criticità:** i controlli memorizzano l'indice del dito che controlla stick e camera. Se Android/iOS interrompe la scena o la finestra perde focus mentre il dito è premuto, il relativo evento di rilascio potrebbe non arrivare; gli indici resterebbero attivi e lo stick/camera potrebbero rimanere bloccati.
+- **Correzione:** `_notification()` intercetta la perdita di focus applicativa e della finestra e richiama `release_all()`, azzerando stick, delta camera e indici touch.
+- **Test aggiunto:** esteso il test touch già presente con una simulazione di perdita di focus e verifica del reset completo. La copertura preesistente di stick, multitouch e trascinamento camera è stata mantenuta.
+- **Non verificato:** comportamento su dispositivo Android/iOS reale, rotazione, notch/aree sicure, risoluzioni e frame-time. I test Godot non sono stati eseguiti in questa sessione.
+- **Prossimi controlli touch:** scaling coordinate/viewport, input cancellato durante pause e transizioni, hitbox e aree sicure.
