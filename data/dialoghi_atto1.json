@@ -2231,7 +2231,7 @@
     ]
   },
   "c2_sera_nox_echo": {
-    "riassunto": "Nox fa il turno di guardia e parla con Echo, che non dorme mai. Diventano quasi amiche.",
+    "riassunto": "Durante il turno di guardia, Nox ed Echo parlano della notte nel vicolo e della possibilità di farsi compagnia.",
     "righe": [
       {
         "chi": "echo",
@@ -2242,13 +2242,13 @@
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Lo so. Fisso l'orologio da un'ora."
+        "testo": "Lo so, Echo, ho un orologio."
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Anch'io guardo sempre. Guardare tutto e non poter fare niente."
+        "testo": "Anch'io guardo sempre l'orologio. Guardo tutto, ma non riesco a fare niente.."
       },
       {
         "chi": "nox",
@@ -2256,26 +2256,15 @@
         "testo": "Era il mio lavoro."
       },
       {
-        "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "serio",
-        "testo": "Quella notte di due anni fa, nel vicolo, c'era una telecamera. Ero io."
-      },
-      {
         "chi": "nox",
         "espr": "sorpreso",
-        "testo": "...Hai visto?"
+        "testo": "Quella notte di due anni fa, nel vicolo, c'era una telecamera. Eri tu?"
       },
       {
         "chi": "echo",
         "col": "#3fe0ff",
         "espr": "triste",
-        "testo": "Ho visto. Non potevo rispondere. Non ho le mani."
-      },
-      {
-        "chi": "nox",
-        "espr": "neutro",
-        "testo": "Allora eravamo in due."
+        "testo": "Sì, ero io. Non ho potuto fare niente, come sempre.."
       },
       {
         "chi": "echo",
@@ -2286,7 +2275,7 @@
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Puoi. Ma non dirmi mai che ore sono."
+        "testo": "Puoi. Ma non dirmi che ore sono."
       },
       {
         "chi": "echo",
@@ -2297,7 +2286,7 @@
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Non diventare Lance."
+        "testo": "Per favore non iniziare anche tu."
       }
     ]
   },
