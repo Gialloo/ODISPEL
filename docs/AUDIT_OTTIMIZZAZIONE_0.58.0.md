@@ -977,3 +977,18 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test effettivamente eseguiti:** lettura completa del file, mappatura delle chiamate casuali e verifica statica del file aggiornato su GitHub. Nessun test Godot, scena runtime o replay è stato eseguito.
 - **Limite noto:** i dettagli casuali dei frammenti non sono più riproducibili tramite il seed globale della partita. È una scelta intenzionale per effetti cosmetici; non viene introdotto un seed persistente per la presentazione.
 - **Prossimo passo:** completare la mappatura delle chiamate casuali in `battle3d.gd`, distinguendo jitter/camera/testi da eventuali scelte che influenzano contenuto o progressione, prima di intervenire.
+
+
+
+### 2026-11-06 — RNG di presentazione isolato in battle3d
+
+- **File modificato:** `scripts/v3/battle3d.gd`.
+- **Mappatura delle chiamate globali:** le estrazioni trovate erano limitate a quattro usi di presentazione: tremolio casuale della camera durante lo shake (`_process`), spostamento laterale/verticale delle onomatopee (`_ono`), jitter dei numeri a schermo (`_number`) e scelta fra due diciture equivalenti di Ferri nella copertina di vittoria (`_victory_cover`). Nessuna di queste estrazioni decide bersagli, danni, turni, QTE, stati, ricompense o progressione.
+- **Percorso già separato:** la generazione dell'arena usa `cb.rng` per le dimensioni e le caratteristiche degli edifici; non è stata modificata.
+- **Correzione:** aggiunto `_presentation_rng`, un `RandomNumberGenerator` privato dell'istanza di battaglia e inizializzato in `_ready()`. Le estrazioni di camera, onomatopee, numeri e dicitura di vittoria ora usano questo generatore.
+- **Comportamento atteso:** la presentazione continua a variare negli stessi intervalli e con le stesse alternative, ma non consuma la sequenza casuale globale condivisa. Il generatore del resolver e quello della generazione arena restano distinti e invariati.
+- **Cosa non cambia:** ampiezza dello shake, distribuzione e posizione dei testi, contenuto delle due diciture di Ferri, logica di vittoria, seed della battaglia, RNGState, RNG della città e dati salvati.
+- **Test consigliati:** confrontare un replay identico con shake/onomatopee/numeri attivi e disattivati; verificare che eventi e stato finale del resolver coincidano; verificare che la copertina vittoria continui a mostrare una delle due diciture previste; provare più battaglie consecutive per confermare che ogni istanza inizializza il proprio RNG.
+- **Test effettivamente eseguiti:** lettura dei quattro contesti, verifica delle chiamate casuali nel file e rilettura statica della modifica su GitHub. Nessun test Godot, replay o benchmark runtime eseguito.
+- **Limite noto:** la posizione esatta degli elementi grafici e la variante testuale possono differire rispetto a una versione precedente o fra esecuzioni. La casualità di presentazione non è sincronizzata né salvata: è intenzionale, perché questi valori non devono influenzare la simulazione.
+- **Prossimo passo:** controllare gli altri file del percorso battaglia e i punti di creazione degli effetti, per assicurarsi che non restino chiamate globali che alimentano indirettamente decisioni di gameplay o dati persistenti.
