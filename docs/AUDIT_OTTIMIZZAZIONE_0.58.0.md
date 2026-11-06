@@ -796,3 +796,12 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test implementati e funzionamento:** esteso il test di integrità con tre fixture ConfigFile: capitolo memorizzato come stringa, passo frazionario 0.5 e passo NaN. Ogni fixture viene caricata tramite _read_valid_save() e deve essere rifiutata. Le fixture sono scritte nel percorso temporaneo dedicato del test.
 - **Risultato atteso:** nessun valore testuale, frazionario o non finito viene silenziosamente convertito in indice di progressione; i valori interi validi continuano a essere accettati.
 - **Verifica effettiva:** controllo statico del formato scritto da Story.save() e aggiornamento di validatore e regressione. Test non eseguiti con Godot in questa sessione.
+
+
+### 2026-11-06 — Estensione regressione per coordinate e rotazioni non finite
+
+- **File modificato:** tests/unit/test_v3_integrita_salvataggio.gd.
+- **Perché:** il validatore di area rifiuta già NaN e infinito per posizione e yaw; i test precedenti coprivano i tipi errati ma non i valori numerici non finiti. Questi valori possono propagarsi in trasformazioni 3D e produrre posizioni/camera non valide.
+- **Test implementati e funzionamento:** aggiunti casi con Vector3(NAN, 0, 0), Vector3(0, INF, 0) e yaw INF. Ogni caso passa da Story.validate_area_state() e deve essere rifiutato. Non si modifica il validatore né il comportamento di gioco.
+- **Risultato atteso:** nessuna coordinata o rotazione non finita può superare il controllo del salvataggio.
+- **Verifica effettiva:** test aggiunti e confronto statico con i controlli is_finite già presenti; esecuzione Godot non effettuata.
