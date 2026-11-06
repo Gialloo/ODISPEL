@@ -625,3 +625,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunto:** la spesa EN e il guadagno gauge del cambio fase mantengono la fonte `phase_change`, anche quando la stessa lista contiene un evento risorsa precedente con fonte diversa.
 - **Verifiche:** lettura statica di `BattleResolver._check_phase()`, `SeqRound.finish()` e `ResourceTelemetry.record()`; test aggiunto ma non eseguito con Godot.
 - **Impatto:** solo qualità della telemetria; nessuna modifica ai valori o all'applicazione delle risorse.
+
+
+### 2026-11-06 — Timeline: slot non giocabili nella previsione
+
+- **File modificati:** `scripts/engine/battle_flow.gd`, `tests/unit/test_v3_timeline.gd`.
+- **Criticità trovata:** nella simulazione di `BattleFlow.preview()`, uno slot eroe non giocabile veniva marcato come completato ma non riprogrammato. `_pick()` continua a considerare tutti gli slot, quindi il medesimo slot restava il più vicino e veniva selezionato ripetutamente fino al limite di sicurezza del ciclo: la previsione poteva fermarsi e nascondere gli altri turni. La stessa simulazione non cancellava lo slot del gregario sconfitto, a differenza di `_tl_next()`.
+- **Correzione:** la previsione riprogramma lo slot non giocabile con il costo Attacco e la velocità correnti, azzerando modificatori temporanei e priorità come `_schedule_from()`; rimuove gli slot di gregari sconfitti. Anche la simulazione degli slot giocati ora azzera i modificatori `a/r` e la priorità dopo la riprogrammazione.
+- **Test aggiunto:** con tutti i membri di uno slot KO e il suo turno in testa, la previsione deve comunque proseguire e mostrare un altro giocatore vivo.
+- **Verifiche:** confronto statico fra `preview()` e `_tl_next()`; test aggiunto ma non eseguito con Godot.
+- **Impatto:** accuratezza della previsione Timeline; nessuna modifica alle azioni realmente eseguite, al bilanciamento o alle risorse.
