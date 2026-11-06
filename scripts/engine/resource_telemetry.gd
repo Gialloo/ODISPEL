@@ -26,6 +26,7 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 	# La fonte e' attribuita per personaggio: una singola lista eventi puo' contenere
 	# azioni/reazioni di piu' unita'. Non usare l'ultima azione vista per tutte le risorse.
 	var source_by_unit: Dictionary = {}
+	var source_by_unit_resource: Dictionary = {}
 	if phase != "phase_transition":
 		# Le tecniche a due emettono sia "act" sia "duo" per lo stesso attore:
 		# la seconda etichetta e' piu' specifica e deve prevalere sulla prima.
@@ -39,6 +40,14 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 			var kind: String = str(e.get("t", ""))
 			var uid: String = str(e.get("unit", ""))
 			if uid == "":
+				continue
+			if kind == "resource_change":
+				var resource_key: String = uid + "|" + str(e.get("resource", ""))
+				var resource_source: String = str(e.get("source", phase))
+				if source_by_unit_resource.has(resource_key) and str(source_by_unit_resource[resource_key]) != resource_source:
+					source_by_unit_resource[resource_key] = "mista"
+				else:
+					source_by_unit_resource[resource_key] = resource_source
 				continue
 			var candidate: String = ""
 			if kind == "act":
@@ -73,7 +82,7 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 				"delta": delta,
 				"before": was,
 				"after": now,
-				"source": str(source_by_unit.get(str(uid), phase)),
+				"source": str(source_by_unit_resource.get(str(uid) + "|" + resource, source_by_unit.get(str(uid), phase))),
 				"phase": phase
 			})
 
