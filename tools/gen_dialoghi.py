@@ -570,14 +570,13 @@ scene("c3_soglia", "Un manichino in vetrina assume la stessa posa di Rio.",
     L("zecca/serio", "...Lo so. Ma non riesco a smettere di guardarlo."),
     L("ferri/serio", "Restiamo vicini. Articolo... lascia stare. Restiamo vicini."))
 
-scene("c3_boss", "Il Manichino vuole la faccia di Rio. La maschera si incrina, ma Rio la tiene su e si tiene la faccia.",
+scene("c3_boss", "Il Manichino vuole la faccia di Rio. La maschera si incrina, ma Rio la tiene su.",
     L("MANICHINO", "Dammi la tua faccia. Tanto non la usi. Hai sempre la maschera."),
     L("zecca/triste", "...Forse hai ragione. Senza maschera non sono nessuno."),
-    L("saul/arrabbiato", "Ragazzino. Guarda me. Ho mentito a mezza città e la faccia ce l'ho ancora. Tienitela."),
-    L("nox/serio", "Rio. Ti abbiamo visto dormire con la bocca aperta e la maschera storta. Sei tu. Basta."),
-    L("ferri/serio", "E russi."),
-    L("zecca/sfotto", "...Questa faccia è mia. Brutta, ma MIA. Tu non te la prendi."),
-    L("zecca/serio", "E la maschera me la tolgo quando decido io. Non quando lo dici tu."))
+    L("saul/serio", "Coso. Guardami. Io ho passato anni a fingere di essere qualcuno che non ero. Non per questo ho lasciato che fossero gli altri a scegliere chi dovevo essere."),
+    L("nox/serio", "Rio, ti abbiamo visto anche quando non c'era nessuno a guardarti. Sei sempre tu. Con o senza quella maschera."),
+    L("ferri/serio", "E russi. Non credo che una maschera possa nasconderlo."),
+    L("zecca/serio", "La maschera me la tolgo quando decido io. Non quando lo dici tu. Lance che dicevi sul fatto che russo?"))
 
 scene("c3_agguato", "Il Manichino attacca per primo.",
     L("MANICHINO", "Sorridete. Non muovetevi. Clic."),
