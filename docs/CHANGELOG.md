@@ -1,5 +1,10 @@
 # Novità
 
+## 0.60.1 · Rio, design ufficiale
+
+- **Ritratto di Rio**: nell'HUD di battaglia e nella barra della squadra c'è il design ufficiale disegnato dall'autore (maschera a croce, maglia viola). Il ritratto è fermo come quelli di Lance, Nox e Saul; il disegno di prima, con testa, busto e sciarpa animati, è conservato nella cartella del progetto.
+- **Varianti di Rio** (ferito, ombra, K.O., pausa, caricamento...): restano spente come dalla 0.44 e sono ancora del disegno di prima; vanno ridisegnate prima di riaccenderle.
+
 ## 0.60.0 · Feedback degli amici e Nox disegnata a mano
 
 - **Ritratto di Nox**: nell'HUD di battaglia c'è il disegno a mano dell'autore, fermo come Lance e Saul; anche il volto piccolo della squadra viene dal nuovo disegno.

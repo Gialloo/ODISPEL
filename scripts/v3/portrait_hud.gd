@@ -83,7 +83,9 @@ var _head: Texture2D
 # testa, sciarpa e busto a livelli, niente respiro ne' scatti; il ritratto entra con la lastra e poi resta immobile.
 # Le bozze vettoriali di prima sono nella cartella del progetto, odispel/v3/ritratti_bozze_lance_saul/.
 # Nox disegnata a mano dall'autore (6/11/2026): entra tra i fermi come Lance e Saul; la bozza vettoriale e' nella stessa cartella.
-const FERMI: Array = ["lance", "saul", "nox"]
+# Rio, design ufficiale dell'autore (6/11/2026): fermo anche lui; testa, busto e sciarpa a livelli erano del disegno di prima
+# e sono conservati con il vecchio ritratto in odispel/v3/ritratti_bozze_lance_saul/rio_prima_del_design_ufficiale/.
+const FERMI: Array = ["lance", "saul", "nox", "rio"]
 # RITRATTO A LIVELLI (busto dell'autore, 4/11/2026): se c'e' <id>_busto.png (il ritratto senza la testa) e c'e' la testa,
 # il ritratto normale si compone busto + testa + sciarpa invece del PNG intero, cosi' la testa si muove di piu' senza
 # lasciare la vecchia testa sotto. La testa porta con se' il suo alone (ritagliato dal ritratto intero). Le varianti
