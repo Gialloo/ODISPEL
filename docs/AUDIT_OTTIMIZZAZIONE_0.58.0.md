@@ -764,3 +764,14 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Risultato atteso:** un salvataggio con dati area malformati non raggiunge il codice di gioco; se il principale è corrotto ma il backup è valido, la partita precedente resta recuperabile. I test usano un percorso dedicato e non devono sovrascrivere il salvataggio del giocatore.
 - **Verifica effettiva:** ispezionati Story.save/load_game, il ripristino in Area._build_party e Area._build_ui e la struttura effettiva di Banter._used; aggiunti validatore e test. I test non sono stati eseguiti con Godot in questa sessione.
 - **Limiti residui:** la validazione verifica struttura e tipi, non che ogni ID appartenga all'area corrente: tale controllo richiede di caricare i dati dell'area associata al passo corrente e va trattato separatamente per non rifiutare salvataggi di versioni precedenti o contenuti futuri.
+
+
+### 2026-11-06 — Coerenza del checkpoint conclusivo
+
+- **File modificati:** scripts/v3/story.gd; tests/unit/test_v3_integrita_salvataggio.gd.
+- **Criticità trovata:** il validatore accettava qualsiasi valore non negativo di passo quando capitolo era uguale al numero dei capitoli. Il flusso normale di Story.advance() produce invece un solo stato terminale canonico: capitolo == numero capitoli e passo == 0. Valori diversi non corrispondono ad alcun checkpoint realmente raggiungibile.
+- **Correzione:** _read_valid_save() rifiuta il salvataggio terminale se passo non è zero; non cambia la gestione dei capitoli intermedi.
+- **Perché:** impedire che dati incoerenti vengano trattati come una partita conclusa valida e rendere esplicita la forma dello stato finale.
+- **Test implementati e funzionamento:** la fixture ConfigFile viene salvata prima con capitolo conclusivo e passo 1 (deve essere rifiutata), poi con lo stesso capitolo e passo 0 (deve essere accettata). Il test usa il numero di capitoli caricato dai dati reali, quindi non codifica a mano il numero dell'Atto.
+- **Risultato atteso:** gli stati terminali prodotti dal gioco restano caricabili; checkpoint terminali inventati/corrotti non superano la validazione.
+- **Verifica effettiva:** controllo statico di Story.advance() e aggiornamento del test. Nessuna esecuzione Godot effettuata.
