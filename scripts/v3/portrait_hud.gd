@@ -82,7 +82,8 @@ var _head: Texture2D
 # RITRATTI FERMI (autore, 5/11/2026: Lance e Saul disegnati a mano, «come Rio ma senza animazioni»): per questi niente
 # testa, sciarpa e busto a livelli, niente respiro ne' scatti; il ritratto entra con la lastra e poi resta immobile.
 # Le bozze vettoriali di prima sono nella cartella del progetto, odispel/v3/ritratti_bozze_lance_saul/.
-const FERMI: Array = ["lance", "saul"]
+# Nox disegnata a mano dall'autore (6/11/2026): entra tra i fermi come Lance e Saul; la bozza vettoriale e' nella stessa cartella.
+const FERMI: Array = ["lance", "saul", "nox"]
 # RITRATTO A LIVELLI (busto dell'autore, 4/11/2026): se c'e' <id>_busto.png (il ritratto senza la testa) e c'e' la testa,
 # il ritratto normale si compone busto + testa + sciarpa invece del PNG intero, cosi' la testa si muove di piu' senza
 # lasciare la vecchia testa sotto. La testa porta con se' il suo alone (ritagliato dal ritratto intero). Le varianti
