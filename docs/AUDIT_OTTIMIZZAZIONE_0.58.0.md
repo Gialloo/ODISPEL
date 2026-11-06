@@ -565,3 +565,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test di regressione:** esteso `_interruzione()` per spostare il rientro del boss oltre il confine del round, terminare e riaprire il round, quindi verificare l'avanzamento del ciclo: una mossa annullata viene saltata e viene annunciata quella successiva dopo l'azione eseguita.
 - **Verifiche eseguite:** ispezione dei percorsi `interrupt → finish → start_round → boss_action`; test aggiunto. Non eseguito Godot/headless, quindi il test resta da eseguire localmente.
 - **Impatto:** corregge la sequenza delle mosse dei boss nella sola condizione di interruzione che attraversa un confine round. Nessuna variazione a costi, danni o bilanciamento.
+
+
+### 2026-11-06 — Estensione del fix Timeline: interruzione seguita da cambio fase
+
+- **File modificati:** `scripts/engine/battle_flow.gd`, `tests/unit/test_v3_timeline.gd`.
+- **Secondo caso limite:** se un'interruzione della mossa del boss attraversa il confine del round e il boss cambia fase nella risoluzione di fine round, `_check_phase()` azzera `cycle_index` a zero, ma il flag di interruzione della fase precedente potrebbe restare attivo. Al rientro, il motore avanzerebbe subito il nuovo ciclo e salterebbe la prima mossa della fase.
+- **Correzione:** nel ramo di cambio fase di `BattleFlow.finish()` viene azzerato `tele_used`: l'interruzione apparteneva al ciclo precedente e non deve contaminare quello nuovo. Il flag continua invece a sopravvivere ai normali confini round quando la fase non cambia.
+- **Test aggiunto:** caso interruzione oltre round, boss portato sotto la soglia della fase 2, verifica del reset del flag e controllo che la prima azione del nuovo ciclo porti l'indice a 1 (non 2).
+- **Verifiche eseguite:** ispezione di `BattleResolver._check_phase()` e della sequenza `finish → start_round → boss_action`; test aggiunto. Nessuna esecuzione Godot/headless.
+- **Impatto:** evita che un'interruzione del vecchio ciclo alteri il primo attacco della fase successiva. Nessuna variazione a danni o parametri di fase.
