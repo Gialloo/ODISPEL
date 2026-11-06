@@ -23,13 +23,24 @@ static func snapshot(state: Dictionary) -> Dictionary:
 static func record(state: Dictionary, before: Dictionary, events: Array, phase: String) -> void:
 	if before.is_empty():
 		return
-	var source: String = phase
+	# La fonte e' attribuita per personaggio: una singola lista eventi puo' contenere
+	# azioni/reazioni di piu' unita'. Non usare l'ultima azione vista per tutte le risorse.
+	var source_by_unit: Dictionary = {}
 	if phase != "phase_transition":
 		for e in events:
-			if str(e.get("t", "")) == "act":
-				source = "azione:" + str(e.get("move", "unknown"))
-			if str(e.get("t", "")) == "duo":
-				source = "duo:" + str(e.get("id", "unknown"))
+			var kind: String = str(e.get("t", ""))
+			var uid: String = str(e.get("unit", ""))
+			var candidate: String = ""
+			if kind == "act":
+				candidate = "azione:" + str(e.get("move", "unknown"))
+			elif kind == "duo":
+				candidate = "duo:" + str(e.get("id", "unknown"))
+			if uid == "" or candidate == "":
+				continue
+			if source_by_unit.has(uid) and str(source_by_unit[uid]) != candidate:
+				source_by_unit[uid] = "mista"
+			else:
+				source_by_unit[uid] = candidate
 	for uid in before:
 		var old: Dictionary = before[uid]
 		var current: Dictionary = state.get("units", {}).get(str(uid), {})
@@ -51,7 +62,7 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 				"delta": delta,
 				"before": was,
 				"after": now,
-				"source": source,
+				"source": str(source_by_unit.get(str(uid), phase)),
 				"phase": phase
 			})
 
