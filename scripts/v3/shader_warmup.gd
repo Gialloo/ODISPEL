@@ -21,7 +21,7 @@ func _ready() -> void:
 	static_fx_mat.shader = StaticFx.shader()
 	var mats: Array = [Toon.body(), Toon.ink(), Toon.ink_grow(), Toon.glow(), Toon.shadow(), Toon.hit_flash(),
 		Toon.body_tex(load("res://icon.png") as Texture2D), Toon.body_world(), NightFx.rain_material(), static_fx_mat]
-	var x: float = -1.2
+	var x: float = -1.8
 	for m in mats:
 		var mi := MeshInstance3D.new()
 		mi.mesh = _quad()
