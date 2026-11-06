@@ -77,5 +77,13 @@ func _test_reject_malformed_area() -> void:
 	var path: String = Story.save_path + ".malformed"
 	check(cfg.save(path) == OK, "fixture di salvataggio malformato scritta")
 	check(Story._read_valid_save(path) == null, "salvataggio con posizione area malformata rifiutato")
+	cfg.set_value("storia", "capitolo", Story.chapters().size())
+	cfg.set_value("storia", "passo", 1)
+	cfg.set_value("storia", "area", {})
+	check(cfg.save(path) == OK, "fixture con capitolo conclusivo e passo errato scritta")
+	check(Story._read_valid_save(path) == null, "stato conclusivo con passo diverso da zero rifiutato")
+	cfg.set_value("storia", "passo", 0)
+	check(cfg.save(path) == OK, "fixture conclusiva valida scritta")
+	check(Story._read_valid_save(path) != null, "stato conclusivo canonico accettato")
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
