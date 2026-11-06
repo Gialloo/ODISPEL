@@ -1398,7 +1398,7 @@ BAT = {
         "nox": [[R("nox", "Cinque minuti in più non li avevo chiesti.")]],
     },
     # PRESENTAZIONE DEL QTE (6/11/2026, feedback dei tester): prima del minigioco di una reazione chi agisce dice una riga
-    # (scripts/v3/qte_intro.gd), poi sotto compaiono cosa premere e perche'. PROPOSTE da far approvare all'autore.
+    # (scripts/v3/qte_intro.gd), poi sotto compaiono cosa premere e perche'. Approvate dall'autore il 6/11/2026.
     # La riga di Saul sulla schivata e' quella proposta dall'autore stesso.
     "qte_schiva": {
         "lance": [[R("lance", "Traiettoria prevista. Mi sposto.")]],
