@@ -256,7 +256,25 @@ static func preview(state: Dictionary, n: int) -> Array:
 			e0 = (tl["cur_quick"] as Dictionary).duplicate()
 		out.append(e0)
 	for q in (tl.get("quick", []) as Array):
-		out.append((q as Dictionary).duplicate())
+		out.append((q as Dictionary).duplicate(true))
+	# La previsione deve mostrare anche gli SLANCI protetti gia' pronti: next() li esegue
+	# prima di scegliere il prossimo slot ordinario. Qui non chiamiamo ready_kept(), perche'
+	# quella funzione ripulisce lo stato eliminando i bersagli sconfitti.
+	var kept: Array = []
+	if str(state.get("winner", "")) == "" and state.has("slancio_kept"):
+		for uid in state["slancio_kept"]:
+			var saved: Dictionary = state["slancio_kept"][uid]
+			var target: Dictionary = BattleState.unit(state, str(saved.get("dst", "")))
+			var actor: Dictionary = BattleState.unit(state, str(uid))
+			if target.is_empty() or actor.is_empty() or not BattleState.is_alive(target) or not BattleState.is_alive(actor) or Slancio.blocked(target):
+				continue
+			var slot: String = BattleState.slot_of(state, str(uid))
+			var saved_slot: Dictionary = (tl["slots"] as Dictionary).get(slot, {})
+			kept.append({"unit": str(uid), "player": str(saved.get("player", slot)), "boss": false, "spd": -1, "extra": true, "quick": true, "slancio": true, "kept": true, "waive": bool(saved.get("waive", false)), "_at": int(saved_slot.get("at", 0))})
+	kept.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["_at"]) < int(b["_at"]))
+	for q in kept:
+		q.erase("_at")
+		out.append(q)
 	var done: Dictionary = (tl.get("done", {}) as Dictionary).duplicate()
 	var extra: Array = (tl.get("extra", []) as Array).duplicate()
 	var st: int = int(tl.get("stamp", 0))
@@ -264,7 +282,9 @@ static func preview(state: Dictionary, n: int) -> Array:
 	while out.size() < n and guard < 64:
 		guard += 1
 		if _all_done(state, done) and not extra.is_empty():
-			out.append(extra.pop_front())
+			var bonus: Dictionary = extra.pop_front()
+			if _can_play(state, bonus):
+				out.append(bonus)
 			continue
 		var k: String = _pick(sim)
 		if k == "":
