@@ -816,3 +816,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test implementati e funzionamento:** il test crea un salvataggio valido, modifica lo stato area in memoria inserendo una posizione testuale, tenta un secondo salvataggio e verifica: ritorno false, file principale ancora valido, temporaneo rimosso e checkpoint precedente ancora caricabile.
 - **Risultato atteso:** un errore nei dati in memoria non può rimpiazzare il salvataggio principale con un file non caricabile; il giocatore conserva il checkpoint precedente.
 - **Verifica effettiva:** confronto statico dell'ordine delle operazioni di scrittura/rinomina e aggiunta della regressione. Test non eseguito con Godot in questa sessione.
+
+
+### 2026-11-06 — Regressione per progressione corrotta durante il salvataggio
+
+- **File modificato:** tests/unit/test_v3_integrita_salvataggio.gd.
+- **Audit:** il validatore del file completo delega la sezione squadra a Progress.validate_save(). Dopo aver aggiunto la validazione del temporaneo prima della rotazione, è importante coprire anche un errore nella progressione in memoria, non soltanto un'area malformata.
+- **Test implementato:** crea un checkpoint valido, imposta temporaneamente il livello di Lance oltre Progress.MAX_LEVEL, tenta il salvataggio e verifica che venga rifiutato. Poi verifica che il file principale resti valido, che il checkpoint precedente sia caricabile e che il livello precedente venga ripristinato. Infine ripristina Progress per isolare il resto del test.
+- **Perché:** verifica l'integrazione fra Story.save(), _read_valid_save() e Progress.validate_save(), non solo il validatore dell'area.
+- **Risultato atteso:** qualsiasi progressione che non supera la validazione impedisce la promozione del temporaneo e non distrugge il checkpoint valido.
+- **Verifica effettiva:** controllo statico del percorso di validazione e aggiunta del test. Nessuna esecuzione Godot effettuata.
