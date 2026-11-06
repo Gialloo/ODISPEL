@@ -2873,18 +2873,17 @@
     ]
   },
   "c3_sera_echo": {
-    "riassunto": "La squadra parla con Echo, che evita di dire cosa farà quando la cupola si aprirà.",
+    "riassunto": "La squadra scherza con Echo sul futuro dopo l'apertura della Cupola. Quando le chiedono come tornerà a casa, evita di rispondere.",
     "righe": [
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "Echo! Quando si apre la cupola, vieni a vivere nel mio telefono?"
+        "testo": "Echo! Quando si apre la Cupola, vieni a vivere nel mio telefono?"
       },
       {
         "chi": "echo",
-        "col": "#3fe0ff",
         "espr": "neutro",
-        "testo": "Il tuo telefono ha il quattro per cento e sessanta foto di te."
+        "testo": "Il tuo telefono ha il quattro per cento di batteria e sessanta foto di te."
       },
       {
         "chi": "zecca",
@@ -2893,15 +2892,48 @@
       },
       {
         "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "serio",
-        "testo": "Io torno a casa. Da dove vengo non ci sono telecamere."
+        "espr": "neutro",
+        "testo": "Peggio."
+      },
+      {
+        "chi": "zecca",
+        "espr": "felice",
+        "testo": "Ehi! Sono ricordi importanti!"
       },
       {
         "chi": "echo",
-        "col": "#3fe0ff",
+        "espr": "neutro",
+        "testo": "Sono sessantadue fotografie dello stesso viso."
+      },
+      {
+        "chi": "zecca",
+        "espr": "felice",
+        "testo": "Un viso molto fotogenico."
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Su questo non mi esprimo."
+      },
+      {
+        "chi": "zecca",
+        "espr": "sorpreso",
+        "testo": "Tradimento. Da te non me l'aspettavo."
+      },
+      {
+        "chi": "echo",
+        "espr": "neutro",
+        "testo": "Io invece torno a casa."
+      },
+      {
+        "chi": "zecca",
+        "espr": "sorpreso",
+        "testo": "Hai una casa?"
+      },
+      {
+        "chi": "echo",
         "espr": "serio",
-        "testo": "Non ci sono nemmeno le forme."
+        "testo": "Certo. Da dove vengo io non ci sono telecamere. Non ci sono nemmeno le forme."
       },
       {
         "chi": "nox",
@@ -2910,19 +2942,78 @@
       },
       {
         "chi": "echo",
-        "col": "#3fe0ff",
-        "espr": "triste",
-        "testo": "...Ve lo dico quando è il momento. Dormite. Domani è il giorno di Saul."
-      },
-      {
-        "chi": "ferri",
-        "espr": "serio",
-        "testo": "Ha cambiato discorso. A verbale."
+        "espr": "neutro",
+        "testo": "..."
       },
       {
         "chi": "saul",
         "espr": "neutro",
-        "testo": "Chi cambia discorso ha un prezzo che non ti ha ancora detto."
+        "testo": "Domanda interessante. Soprattutto perché non sembra che tu abbia un piano."
+      },
+      {
+        "chi": "echo",
+        "espr": "felice",
+        "testo": "Ce l'ho!"
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Ah, bene. Qual è?"
+      },
+      {
+        "chi": "echo",
+        "espr": "neutro",
+        "testo": "Non te lo dico."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Piano impeccabile."
+      },
+      {
+        "chi": "zecca",
+        "espr": "neutro",
+        "testo": "Comunque... se non trovi la strada, puoi sempre restare con noi."
+      },
+      {
+        "chi": "echo",
+        "espr": "neutro",
+        "testo": "Lo so, Rio."
+      },
+      {
+        "chi": "zecca",
+        "espr": "sorpreso",
+        "testo": "Davvero?"
+      },
+      {
+        "chi": "echo",
+        "espr": "felice",
+        "testo": "Certo. Ho già scelto dove mettere le tue sessantadue fotografie."
+      },
+      {
+        "chi": "zecca",
+        "espr": "arrabbiato",
+        "testo": "NON LE METTERAI NEL MIO TELEFONO!"
+      },
+      {
+        "chi": "echo",
+        "espr": "felice",
+        "testo": "Allora buonanotte, umani. Domani è il giorno di Saul."
+      },
+      {
+        "chi": "saul",
+        "espr": "sorpreso",
+        "testo": "Perché ho la sensazione che non sarà una giornata rilassante?"
+      },
+      {
+        "chi": "ferri",
+        "espr": "serio",
+        "testo": "Perché non lo sarà."
+      },
+      {
+        "chi": "saul",
+        "espr": "neutro",
+        "testo": "Ottimo. Adoro quando c'è entusiasmo."
       }
     ]
   },
