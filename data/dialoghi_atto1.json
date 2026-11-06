@@ -2797,47 +2797,77 @@
     ]
   },
   "c3_sera_nox_zecca": {
-    "riassunto": "Nox e Rio guardano le foto di prima della cupola. Legame Nox e Rio.",
+    "riassunto": "Nox e Rio guardano vecchie fotografie. Tra le prese in giro e la promessa di rivedersi, Rio comincia a mostrare un interesse diverso per Nox.",
     "righe": [
       {
         "chi": "zecca",
         "espr": "felice",
-        "testo": "Guarda. Io a dodici anni, con l'apparecchio. Non l'ha mai vista nessuno."
+        "testo": "Guarda questa! Io a dodici anni, con l'apparecchio. Questa non deve uscire da qui."
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Ora capisco la maschera."
+        "testo": "Aspetta... posso vederla meglio?"
       },
       {
         "chi": "zecca",
         "espr": "arrabbiato",
-        "testo": "NOX."
+        "testo": "Assolutamente no!"
       },
       {
         "chi": "nox",
         "espr": "sfotto",
-        "testo": "La tengo io. Quando sarai famoso, mi paghi il caffè a vita."
+        "testo": "Peccato. Avevo già pensato a dove appenderla."
+      },
+      {
+        "chi": "zecca",
+        "espr": "neutro",
+        "testo": "Nox, sei una strega."
+      },
+      {
+        "chi": "nox",
+        "espr": "sfotto",
+        "testo": "Lo so. So fare incantesimi spaventosi."
       },
       {
         "chi": "zecca",
         "espr": "serio",
-        "testo": "Nox... quando finisce tutto, ci rivediamo?"
+        "testo": "...Ti capita mai di guardare queste foto e pensare a com'era tutto prima?"
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Se porti il caffè. Quello buono, non quello della macchinetta."
+        "testo": "A volte. Ma non sempre mi manca quello che c'era."
+      },
+      {
+        "chi": "zecca",
+        "espr": "serio",
+        "testo": "Già... Quando finisce tutto, ci rivediamo?"
+      },
+      {
+        "chi": "nox",
+        "espr": "neutro",
+        "testo": "Certo. Ma stavolta scegli tu il posto."
       },
       {
         "chi": "zecca",
         "espr": "sorpreso",
-        "testo": "Ma è quello che bevi da tre giorni!"
+        "testo": "O-Okay allora! E ti porterò a cena fuori e andremo in giro e..."
+      },
+      {
+        "chi": "nox",
+        "espr": "sfotto",
+        "testo": "Rio, mi basta un caffè."
+      },
+      {
+        "chi": "zecca",
+        "espr": "imbarazzato",
+        "testo": "Nox, non penso che un caffè solo basti."
       },
       {
         "chi": "nox",
         "espr": "neutro",
-        "testo": "Appunto.",
+        "testo": "Hai ragione, ma è un inizio.",
         "imposta": "legame_nox_zecca"
       }
     ]
