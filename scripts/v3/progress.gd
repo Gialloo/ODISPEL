@@ -139,8 +139,14 @@ static func validate_save(v: Variant) -> bool:
 			return false
 		if not (levels[c] is int or levels[c] is float) or not (experience[c] is int or experience[c] is float):
 			return false
-		var lv: int = int(levels[c])
-		var xp: int = int(experience[c])
+		var raw_lv: float = float(levels[c])
+		var raw_xp: float = float(experience[c])
+		# ConfigFile puo' contenere float: i campi di progressione pero' sono interi.
+		# Rifiuta NaN/Inf e valori frazionari invece di troncarli silenziosamente.
+		if not is_finite(raw_lv) or not is_finite(raw_xp) or raw_lv != floor(raw_lv) or raw_xp != floor(raw_xp):
+			return false
+		var lv: int = int(raw_lv)
+		var xp: int = int(raw_xp)
 		if lv < 1 or lv > MAX_LEVEL or xp < 0 or (lv == MAX_LEVEL and xp != 0):
 			return false
 		if lv < MAX_LEVEL and xp >= exp_need(lv):
@@ -154,6 +160,10 @@ static func validate_save(v: Variant) -> bool:
 	var stolen: Array = d["stolen"]
 	for move_id in stolen:
 		if not (move_id is String) or not BattleContent.BOSS_MOVES.has(move_id) or stolen.count(move_id) > 1:
+			return false
+	var stolen_from: Dictionary = d["stolen_from"]
+	for source_id in stolen_from:
+		if not (source_id is String) or not stolen.has(source_id) or not (stolen_from[source_id] is String):
 			return false
 	for c in CAST:
 		var eq: Dictionary = equipment[c]
