@@ -133,7 +133,9 @@ static func _is_valid_save_integer(v: Variant) -> bool:
 	return is_finite(number) and number >= 0.0 and number == floor(number)
 
 
-static func _read_valid_save(path: String) -> ConfigFile:
+# strict = true quando si SCRIVE (il temporaneo deve essere perfetto); in lettura (strict = false) la progressione
+# riparabile si accetta e Progress.from_save() la ripara (decisione dell'autore 6/11/2026, opzione 1B: non perdere la partita).
+static func _read_valid_save(path: String, strict: bool = false) -> ConfigFile:
 	var cfg := ConfigFile.new()
 	if cfg.load(path) != OK:
 		return null
@@ -159,7 +161,10 @@ static func _read_valid_save(path: String) -> ConfigFile:
 	if not (saved is Dictionary) or not validate_area_state(st):
 		return null
 	if cfg.has_section("squadra"):
-		if not Progress.validate_save(cfg.get_value("squadra", "dati", null)):
+		var team: Variant = cfg.get_value("squadra", "dati", null)
+		if strict and not Progress.validate_save(team):
+			return null
+		if not strict and Progress.repair_save(team) == null:
 			return null
 	return cfg
 
@@ -207,7 +212,7 @@ static func save() -> bool:
 	if cfg.save(temp_path) != OK:
 		return false
 	# Non sostituire mai un salvataggio valido con uno che il caricatore stesso rifiuterebbe.
-	if _read_valid_save(temp_path) == null:
+	if _read_valid_save(temp_path, true) == null:
 		DirAccess.remove_absolute(temp_abs)
 		return false
 	var had_save: bool = FileAccess.file_exists(save_path)

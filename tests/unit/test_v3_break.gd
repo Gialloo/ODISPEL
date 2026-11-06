@@ -320,11 +320,13 @@ func _fase3_scontro() -> void:
 				else:
 					var pid: String = str(e["player"])
 					var q: bool = bool(e.get("quick", false))
+					# i turni bonus ("extra", dopo che tutti hanno agito) non sono turni ordinari: come nel motore non consumano la finestra
+					var bonus: bool = bool(e.get("extra", false))
 					ev = BattleFlow.player_action(s, pid, BattleAI.choose_quick(s, pid) if q else BattleAI.choose(s, pid), q)
-					if open0 and not q and not _has(ev, "duo_rest") and str(s["winner"]) == "":
+					if open0 and not q and not bonus and not _has(ev, "duo_rest") and str(s["winner"]) == "":
 						if int(boss.get("brk_left", 0)) != left0 - 1:
 							bad += 1
-					if open0 and q and int(boss.get("brk_left", 0)) != left0:
+					if open0 and (q or bonus) and int(boss.get("brk_left", 0)) != left0:
 						bad += 1
 				if bool(e["boss"]) and open0 and int(boss.get("brk_left", 0)) != left0:
 					bad += 1
