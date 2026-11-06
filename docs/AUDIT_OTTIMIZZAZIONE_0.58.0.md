@@ -547,3 +547,11 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Test aggiunto:** avvio Timeline, assegnazione di uno stato difensivo e scudo, scelta di una reazione con grado `perfect`, fine round senza azione del boss e avvio del round successivo. Le asserzioni verificano durata dello stato, persistenza dello scudo, reazione e grado.
 - **Esito:** test scritto, non eseguito con Godot in questa sessione. Non si dichiara quindi verificato il comportamento runtime.
 - **Impatto sul gioco:** nessuna modifica alle regole; è stata aggiunta soltanto copertura di regressione.
+
+
+### 2026-11-06 — Pulizia comandi di regressione nel README
+
+- **File modificato:** `README.md`.
+- **Problema documentale trovato durante la verifica:** il comando per la suite BREAK era rimasto attaccato alla riga del nuovo comando telemetria; dopo la separazione era inoltre presente un comando BREAK duplicato.
+- **Correzione:** ripristinata una riga autonoma per BREAK con la sua descrizione e una riga autonoma per `test_v3_resource_telemetry.gd`; rimosso il duplicato.
+- **Verifica:** rilettura delle righe di comando nel README. Nessun test eseguito.
