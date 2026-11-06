@@ -341,7 +341,19 @@ Nessuna modifica a regole di gioco, dialoghi, bilanciamento o contenuti narrativ
 - Nessun test Godot eseguito.
 - Nessuna modifica runtime effettuata.
 - Fase corrente: **1 — Prestazioni 3D**.
-- Prossima azione: eseguire la baseline con Godot e registrare misure ripetibili prima di ottimizzare il codice.
+- Prossima azione: eseguire il benchmark aggiornato con Godot su PC e Android, conservando l'output grezzo prima di intervenire sul rendering.
+
+### 2026-11-06 — Strumentazione benchmark 3D
+
+- **Branch:** `experiment/0.58.0-audit-ottimizzazione`.
+- **File modificato:** `tools/v3_prestazioni.gd`.
+- **Criticità affrontata:** il benchmark originale raccoglieva solo 30 frame e stampava tempi medi; i picchi e gli stutter potevano restare nascosti.
+- **Modifica effettuata:** warmup portato a 30 frame e campionamento a 180 frame per scenario; aggiunti FPS medi, frame time media/p50/p95/max, tempo di processo media/p95/max, versione Godot, sistema operativo, viewport e FPS target. Il limite FPS precedente viene ripristinato al termine di ogni scenario.
+- **Test eseguiti:** revisione statica del file aggiornato e verifica del commit GitHub.
+- **Esito:** modifica salvata nel branch; non è stata eseguita da Godot e non è ancora validata dal parser/runtime.
+- **Test non eseguiti / limiti:** nessun benchmark, nessuna misura GPU e nessun test su dispositivo Android; i dati saranno significativi solo eseguendo lo stesso scenario, con stesso device, renderer e impostazioni.
+- **Rischi residui:** un campione di 180 frame migliora la lettura dei picchi ma resta breve per sessioni lunghe; il tempo totale del frame è una misura osservata dal loop, non una misura isolata della GPU.
+- **Espansioni future:** esportazione CSV/JSON, più ripetizioni per scenario e confronto automatico tra baseline e build ottimizzata.
 
 ## 11. Modello per gli aggiornamenti futuri
 
