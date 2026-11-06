@@ -1,7 +1,7 @@
 # OFFICIAL DEMO ODISPEL · V3, atto 1 (standalone)
 
 Progetto Godot 4.7.2 separato dalla V2 (`Gialloo/ODISPEL`), renderer **gl_compatibility**, landscape 1280×720.
-Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. **Stile visivo: `docs/STILE_VISIVO.md`** — conta l'aggiornamento in cima: urbano di oggi, niente look medievale. Stato attuale: **0.33.0 = atto 1 rivisto con la bibbia di lavoro** (climax al loro posto, finale con Echo ridotta a nucleo, ripresa a metà area). Regole: `BIBBIA_DI_LAVORO.md` nella cartella del progetto.
+Commissione: `docs/HANDOFF_PROLOGO_3D.md`. Storia e piano del seguito: `docs/STORIA.md`. **Stile visivo: `docs/STILE_VISIVO.md`** — conta l'aggiornamento in cima: urbano di oggi, niente look medievale. Stato di riferimento del branch di release: **0.58.0**. L'audit e gli interventi sperimentali successivi sono registrati nel branch `experiment/0.58.0-audit-ottimizzazione` e nel documento `docs/AUDIT_OTTIMIZZAZIONE_0.58.0.md`; non considerarli parte della release finché non vengono integrati e testati. Regole: `BIBBIA_DI_LAVORO.md` nella cartella del progetto.
 
 ## Struttura
 - `scripts/engine/` — motore di combattimento **copiato** dalla V2 (BattleState, SeqRound, BattleResolver e dipendenze).
