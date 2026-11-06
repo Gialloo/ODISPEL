@@ -526,3 +526,14 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Verifiche eseguite:** ispezione statica di `ResourceTelemetry.record()` e del formato effettivo degli eventi prodotti da `DuoTechs.run()`; test aggiornati. Non è stato possibile eseguire Godot/headless in questa sessione.
 - **Impatto sulle regole:** nessuno. La correzione riguarda esclusivamente i metadati diagnostici `resource_delta.source`; quantità e mutazioni delle risorse non cambiano.
 - **Prossimo controllo:** verificare a runtime la suite telemetria e confrontare eventi grezzi e delta snapshot durante tecniche a due, reazioni e transizioni di fase.
+
+
+### 2026-11-06 — Secondo controllo telemetria: fonte diretta per singola risorsa
+
+- **File modificati:** `scripts/engine/resource_telemetry.gd`, `tests/unit/test_v3_resource_telemetry.gd`.
+- **Criticità concreta trovata:** la prima correzione attribuiva la fonte degli eventi `act`/`duo` per unità. Restava un caso: un personaggio che riceve energia come effetto di squadra di una tecnica a due non emette necessariamente un proprio evento `act`; il delta netto snapshot poteva quindi ereditare la fase generica `player_action`, non la fonte effettiva `duo_team`.
+- **Correzione:** `ResourceTelemetry.record()` ora considera anche gli eventi diretti `resource_change`, indicizzati per unità e risorsa. La fonte diretta della singola risorsa prevale sull'etichetta generica dell'azione; fonti dirette discordanti per la stessa risorsa vengono marcate `mista`. Rimane il fallback per azioni senza evento diretto.
+- **Test aggiunto:** il guadagno effettivo tramite `ResourceTelemetry.gain_unit()` con fonte `duo_team` deve produrre un delta snapshot con la stessa fonte.
+- **Verifiche eseguite:** lettura del formato eventi di `DuoTechs.run()` e degli helper `gain_unit/spend_unit`; aggiunta del test. Non eseguito Godot/headless.
+- **Impatto:** sola qualità dei dati diagnostici, nessuna modifica a risorse, costi, regole o bilanciamento.
+- **Prossimo passo:** controllo della telemetria in caso di più fonti che modificano la stessa risorsa nello stesso passo e verifica integrata delle transizioni Timeline.
