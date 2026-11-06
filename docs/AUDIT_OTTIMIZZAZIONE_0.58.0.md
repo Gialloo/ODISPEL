@@ -388,3 +388,16 @@ Per ogni intervento aggiungere una voce con questo schema:
 - **Espansioni future:**
 
 Non segnare mai come effettuato o testato un intervento che non è stato realmente applicato o eseguito.
+
+
+### 2026-11-06 — Verifica copertura shader del warmup
+
+- **Branch:** `experiment/0.58.0-audit-ottimizzazione`.
+- **File ispezionati:** `scripts/v3/shader_warmup.gd`, `scripts/v3/toon.gd`, `scripts/v3/night_fx.gd`, `scripts/v3/static_fx.gd`, `scripts/v3/broken_cam.gd`, `scripts/v3/glitch_fx.gd`.
+- **Verifica effettuata:** confrontati i materiali personalizzati dichiarati nei moduli esaminati con quelli costruiti nel warmup.
+- **Copertura riscontrata:** Toon body/ink/ink_grow/body_tex/glow/shadow; materiale pioggia NightFx; StaticFx; shader 2D BrokenCam e GlitchFx. Il materiale hit_flash è uno StandardMaterial3D, non uno shader personalizzato dichiarato dal progetto.
+- **Esito statico:** tutti gli shader personalizzati individuati in questi moduli hanno un corrispondente materiale nel warmup. Per body_tex viene usata l'icona come texture campione: il codice shader è condiviso, mentre le texture reali possono variare.
+- **Limite della verifica:** questo è un confronto statico dei moduli elencati, non una scansione runtime esaustiva di ogni materiale caricato dinamicamente; non dimostra che la compilazione avvenga correttamente su ogni GPU/driver.
+- **Test eseguiti:** lettura dei sorgenti e confronto degli elenchi; nessuna esecuzione Godot.
+- **Prossimo test necessario:** avvio a freddo, primo utilizzo di ogni effetto e registrazione dei frame time su PC e Android, confrontando warmup attivo/disattivo.
+- **Modifiche runtime:** nessuna in questa verifica.
