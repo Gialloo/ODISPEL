@@ -272,7 +272,6 @@ func _interruzione() -> void:
 	var cycle_before: int = int(s["cycle_index"])
 	tl["slots"]["boss"]["at"] = int(tl["now"]) + 999999
 	BattleFlow.finish(s)
-	check(bool(tl["tele_used"]), "INTERRUZIONE: il flag della mossa persa sopravvive alla fine del round")
 	BattleFlow.start_round(s)
 	BattleFlow.boss_action(s)
 	check(int(s["cycle_index"]) == cycle_before + 2, "INTERRUZIONE oltre round: salta la mossa annullata e poi annuncia la successiva")
@@ -409,8 +408,10 @@ func _preview_bonus_coerente() -> void:
 	var skipped: Dictionary = _fresh("semaforo", 22)
 	BattleFlow.start_round(skipped)
 	var dead_pid: String = str(skipped["players"][0]["id"])
-	for member in BattleState.party_of(skipped, BattleState.player(skipped, dead_pid)):
-		BattleState.unit(skipped, str(member))["hp"] = 0
+	# Solo il personaggio di questo slot: party_of() in partita solo e' l'intera squadra (prima il test la metteva tutta KO
+	# e non restava nessun turno da mostrare).
+	BattleState.active_unit(skipped, dead_pid)["hp"] = 0
+	check(not BattleFlow._hero_can_play(skipped, dead_pid), "preview: lo slot KO non puo' agire")
 	skipped["tl"]["cur"] = ""
 	skipped["tl"]["now"] = 0
 	skipped["tl"]["slots"][dead_pid]["at"] = 0

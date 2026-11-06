@@ -38,7 +38,7 @@ jobs:
           fi
           apk=$(printf '%s\n' "${apks[@]}" | sort -V | tail -1)
           zip=$(printf '%s\n' "${zips[@]}" | sort -V | tail -1)
-          apk_version=$(basename "$apk" .apk | sed 's/^OFFICIAL DEMO ODISPEL mobile v//')
+          apk_version=$(basename "$apk" .apk | sed 's/^OFFICIAL DEMO ODISPEL mobile v\.\{0,1\}//')      # l'APK si chiama "mobile v.X.Y.Z": anche il punto va tolto
           zip_version=$(basename "$zip" .zip | sed 's/^OFFICIAL DEMO ODISPEL pc v//')
           if [[ ! "$apk_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || "$apk_version" != "$zip_version" ]]; then
             echo "::error::Versioni APK ($apk_version) e ZIP ($zip_version) assenti o non corrispondenti"

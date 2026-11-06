@@ -1054,3 +1054,29 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Verifiche effettivamente eseguite:** recupero dell'albero GitHub del branch; scansione statica di tutti i 147 file GDScript; scansione mirata dei 81 file engine/V3/data per le API casuali globali e alternative; lettura diretta di `RNGState`, `BattleState`, `BattleResolver`, `battle3d.gd` e `battle_quips.gd`; controllo dei punti di inizializzazione e dei consumatori. Nessun test Godot, replay, benchmark o confronto runtime eseguito.
 - **Limiti:** l'audit copre il codice GDScript presente nell'albero del branch, non il comportamento interno del motore Godot o di eventuali estensioni native esterne. L'assenza di chiamate globali nei sorgenti non sostituisce la prova runtime che gli effetti non introducano regressioni temporali o di presentazione.
 - **Conclusione:** nel codice GDScript esaminato non risultano più consumatori diretti del RNG globale che possano contaminare il flusso casuale del combattimento. Il resolver usa un RNG dedicato, serializzato nello stato della battaglia; gli effetti e i sistemi secondari individuati usano RNG locali o seed espliciti. La separazione statica è verificata; l'invarianza del risultato con effetti attivi/disattivi resta da confermare con i test runtime sopra elencati.
+
+
+## Ripresa con Claude — prima verifica eseguita (6/11/2026)
+
+Resoconto completo: `odispel/v3/combat_system/AUDIT_CHATGPT_0.58.md` nella cartella del progetto.
+
+### Test eseguiti davvero con Godot 4.7.2 headless
+
+- **Prima di queste correzioni:** 29 test, 25 OK. Falliti: `test_v3_touch_controls` (errore di sintassi del test), `test_v3_timeline` (2), `test_v3_resource_telemetry` (1), `test_v3_dialoghi` (25 errori, già presenti in release/0.58.0: espressioni e nomi dei nuovi dialoghi non previsti).
+- **Dopo queste correzioni:** 28 test su 29 OK. Resta `test_v3_dialoghi`, come nella release.
+- Eseguiti anche: atto 1 completo in AUTO (`tools/v3_atto1.gd`, 7 battaglie su 7 vinte, su release ed experiment), `tools/v3_bilancio.gd` (confronto release/experiment), `tools/v3_prestazioni.gd` (funziona; con rendering software gli FPS non contano: 230-256 draw call e 29-39 mila primitive per battaglia), un salvataggio scritto dalla release caricato dal codice nuovo (OK).
+
+### Correzioni applicate
+
+- **`BattleFlow.finish()` azzera di nuovo `tele_used`, come nella 0.58.0.** La correzione «interruzione a cavallo del round» faceva avanzare il ciclo del boss 3 volte invece di 2 (misurato: `delta=3`): il boss saltava anche la mossa dopo quella annullata. `SeqRound.finish()` salta già la mossa persa (`keep` falso). Il test sul risultato (+2) ora passa. Tolto il solo controllo sul flag interno.
+- **`test_v3_touch_controls`:** `Node.NOTIFICATION_WM_WINDOW_FOCUS_OUT` (lo script del test estende SceneTree). Il codice di gioco non cambia.
+- **`test_v3_timeline`, slot KO nella previsione:** il test metteva KO tutta la squadra (in partita solo `party_of()` è l'intera squadra) e non restava nessun turno da mostrare. Ora va KO solo il personaggio dello slot. Nota: la riprogrammazione aggiunta in `preview()` è ridondante, perché lo slot è già riprogrammato prima del controllo. È innocua e resta.
+- **`test_v3_resource_telemetry`:** il test è allineato alla regola del secondo controllo telemetria (la fonte diretta prevale sulla fase). Aggiunto il caso senza evento diretto, che conserva la fase.
+- **`.github/workflows/itch.yml`:** la verifica delle versioni toglie anche il punto di «mobile v.X.Y.Z». Prima l'APK dava «.0.57.0», diverso dallo zip, e il job si sarebbe fermato. Il passo è stato provato in locale sui file di `releases/` ed esce con la versione 0.57.0. Nessuna pubblicazione.
+- Aggiunti i `.uid` dei nuovi script.
+
+### Da decidere (proposte, non applicate)
+
+- Il doppio cambio di fase in un colpo (`_check_phase`) cambia il bilanciamento. Misurato con `v3_bilancio`: cambi di fase per scontro 1,1→1,3 Distributore, 1,6→2,0 Cabina, 1,1→1,9 Manichino; Cabina passa da 4,0 a 3,8 round. Spesso la fase 2 viene saltata del tutto: decide l'autore.
+- La validazione dei salvataggi è «tutto o niente». Proposta: riparare i dati non validi (equipaggiamento → quello di partenza) invece di rifiutare la partita.
+- CharacterVisual/VendingVisual: costo misurato 2,5 µs e 0,8 µs per istanza a frame (circa l'1% del frame anche su un telefono 10 volte più lento). Sospendere le animazioni non conviene; il costo vero sono le draw call.

@@ -27,7 +27,7 @@ nessuna luce, nessuna ombra in tempo reale, nessun Label3D/Sprite3D (tutto il te
 export PATH=/root/bin:$PATH
 godot --headless --path . --import
 godot --headless --path . -s tests/unit/test_v3_engine.gd
-godot --headless --path . -s tests/unit/test_v3_touch_controls.gd  # stick, camera e multitouch
+godot --headless --path . -s tests/unit/test_v3_touch_controls.gd  # stick, camera, multitouch e reset su pausa/focus
 godot --headless --path . -s tests/unit/test_v3_mesh_batch.gd             # cache delle mesh piatte riutilizzate
 godot --headless --path . -s tests/unit/test_v3_city_builder.gd          # cache dei colori della scenografia
 godot --headless --path . -s tests/unit/test_v3_shader_warmup.gd        # geometria condivisa per il warm-up shader
