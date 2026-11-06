@@ -124,16 +124,47 @@ static func ensure() -> void:
 		reset()
 
 
+static func validate_save(v: Variant) -> bool:
+	if not (v is Dictionary):
+		return false
+	var d: Dictionary = v
+	for key in ["lv", "exp", "equip", "stolen_from"]:
+		if not (d.get(key) is Dictionary):
+			return false
+	var levels: Dictionary = d["lv"]
+	var experience: Dictionary = d["exp"]
+	var equipment: Dictionary = d["equip"]
+	for c in CAST:
+		if not levels.has(c) or not experience.has(c) or not (equipment.get(c) is Dictionary):
+			return false
+		if not (levels[c] is int or levels[c] is float) or not (experience[c] is int or experience[c] is float):
+			return false
+		var lv: int = int(levels[c])
+		var xp: int = int(experience[c])
+		if lv < 1 or lv > MAX_LEVEL or xp < 0 or (lv == MAX_LEVEL and xp != 0):
+			return false
+		if lv < MAX_LEVEL and xp >= exp_need(lv):
+			return false
+		var eq: Dictionary = equipment[c]
+		for kind in ["skill", "ult", "react", "trait", "syn"]:
+			if not eq.has(kind) or not (eq[kind] is String):
+				return false
+	if not (d["stolen"] is Array):
+		return false
+	for move_id in d["stolen"]:
+		if not (move_id is String) or not BattleContent.BOSS_MOVES.has(move_id):
+			return false
+	return true
+
+
 static func from_save(v: Variant) -> void:
 	reset()
-	if not (v is Dictionary):
+	if not validate_save(v):
 		return
 	var d: Dictionary = v
 	for k in ["lv", "exp", "equip", "stolen_from"]:
-		if d.get(k) is Dictionary:
-			(data[k] as Dictionary).merge(d[k], true)
-	if d.get("stolen") is Array:
-		data["stolen"] = (d["stolen"] as Array).duplicate()
+		(data[k] as Dictionary).merge(d[k], true)
+	data["stolen"] = (d["stolen"] as Array).duplicate()
 	register_stolen()
 
 
