@@ -558,11 +558,11 @@ scene("c3_chat", "Durante la diretta, alcuni utenti insistono perché Rio mostri
     L("zecca/triste", "Prima della maschera non mi conosceva nessuno, avevo trentadue follower. Tutti parenti."),
     L("saul/serio", "Io ne ho zero e mi riconoscono in tre stati."))
 
-scene("c3_etichetta", "Indizio: il manichino teme il rosso.",
-    L("zecca/sorpreso", "Il cartellino di un vestito. Collezione Nessuno. Il ROSSO non è di stagione."),
-    L("ferri/sfotto", "Io sono sempre di stagione."),
-    L("nox/neutro", "Lance ha fatto una battuta. Segnatevi la data."),
-    L("ferri/serio", "Pagina trenta."))
+scene("c3_etichetta", "Un cartellino rivela un dettaglio curioso sulla Collezione Nessuno.",
+    L("zecca/sorpreso", "Guardate il cartellino. «Collezione *******». E qui dice: «Il ROSSO non è di stagione»."),
+    L("ferri/sfotto", "Fortunatamente non seguo la moda."),
+    L("nox/neutro", "Lance ha appena fatto una battuta, mi sento male."),
+    L("ferri/serio", "Zitto ragazzino."))
 
 scene("c3_soglia", "Nella vetrina c'è un manichino che copia la squadra. Rio ci guarda dentro.",
     L("zecca/sorpreso", "Il manichino in vetrina si è messo in posa come me."),
