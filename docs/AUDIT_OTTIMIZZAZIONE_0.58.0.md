@@ -732,3 +732,18 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Risultato atteso:** entrando in dialogo o pausa, qualsiasi input touch acquisito viene cancellato entro il successivo aggiornamento del frame; uscendo, il primo nuovo tocco viene riconosciuto normalmente e non produce movimento/camera fantasma.
 - **Verifica effettiva:** lettura incrociata di `Area._input()`, `Area._process()`, `Area._walk()` e del ciclo di vita di `TouchControls`; aggiornati codice e test. Nessun test Godot è stato eseguito in questa sessione.
 - **Rischi residui:** resta da provare su Android la sequenza fisica pressione-stick → apertura dialogo/pausa → rilascio durante overlay → chiusura → nuovo tocco, oltre alla stessa sequenza iniziata con il trascinamento camera.
+
+
+### 2026-11-06 — Mappa delle responsabilità del controller battaglia monolitico
+
+- **File analizzato:** `scripts/v3/battle3d.gd` (4.915 righe, circa 217 KB nel branch esaminato).
+- **Criticità strutturale:** lo stesso Node3D contiene costruzione arena/unità, gestione camera, avanzamento round e azioni, tutorial/QTE, risoluzione e presentazione eventi, effetti/cutin/animazioni, dialoghi rapidi, HUD/menu comandi, pausa e schermata vittoria. La quantità di responsabilità nello stesso file aumenta il costo di ogni modifica e rende più difficile isolare regressioni tra logica di combattimento, presentazione e input.
+- **Verifica eseguita:** inventario statico di classi, segnali e funzioni con numeri di riga; confronto con la struttura descritta nel README. Non è stato modificato il file monolitico e non è stata spostata logica.
+- **Perché non è stata eseguita una divisione automatica:** questo file coordina molte sequenze asincrone e dipendenze tramite stato condiviso. Spostare metodi senza prima mappare le variabili lette/scritte, i segnali e l'ordine delle coroutine potrebbe cambiare tempi di animazione, ordine degli eventi o comportamento dei comandi. Una riduzione delle righe senza test d'integrazione non sarebbe una miglioria dimostrabile.
+- **Piano di miglioramento proposto per fasi, senza cambiare il comportamento:**
+  1. estrarre prima il solo rendering degli effetti numerici/eventi in un componente dedicato, mantenendo un'interfaccia stretta e gli stessi parametri;
+  2. estrarre successivamente HUD e costruzione dei menu, senza trasferire la proprietà dello stato battaglia;
+  3. valutare camera/cutin solo dopo aver tracciato tutte le chiamate e le animazioni asincrone;
+  4. lasciare in `battle3d.gd` il coordinamento della scena e le chiamate al motore, evitando un refactor simultaneo del motore.
+- **Test necessari prima/dopo ogni estrazione:** test unitari del motore già presenti; esecuzione completa dell'Atto 1 in AUTO; confronto degli eventi di battaglia e degli stati finali; verifica manuale di comandi touch/PC, QTE, cutin, BREAK, SLANCIO, vittoria e ritorno alla storia. I report/screenshot devono essere confrontati con la release 0.58.0.
+- **Risultato atteso del piano:** ridurre l'accoppiamento e rendere più sicuri gli interventi futuri, mantenendo invariati gameplay, tempi, UI e presentazione. Nessun risultato di refactor viene dichiarato perché in questa fase è stata prodotta soltanto la mappa delle responsabilità.
