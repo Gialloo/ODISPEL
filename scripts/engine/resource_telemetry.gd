@@ -27,15 +27,26 @@ static func record(state: Dictionary, before: Dictionary, events: Array, phase: 
 	# azioni/reazioni di piu' unita'. Non usare l'ultima azione vista per tutte le risorse.
 	var source_by_unit: Dictionary = {}
 	if phase != "phase_transition":
+		# Le tecniche a due emettono sia "act" sia "duo" per lo stesso attore:
+		# la seconda etichetta e' piu' specifica e deve prevalere sulla prima.
+		var duo_by_unit: Dictionary = {}
+		for e in events:
+			if str(e.get("t", "")) == "duo":
+				var duo_uid: String = str(e.get("unit", ""))
+				if duo_uid != "":
+					duo_by_unit[duo_uid] = str(e.get("id", "unknown"))
 		for e in events:
 			var kind: String = str(e.get("t", ""))
 			var uid: String = str(e.get("unit", ""))
+			if uid == "":
+				continue
 			var candidate: String = ""
 			if kind == "act":
-				candidate = "azione:" + str(e.get("move", "unknown"))
+				var move_id: String = str(e.get("move", "unknown"))
+				candidate = "duo:" + move_id if str(duo_by_unit.get(uid, "")) == move_id else "azione:" + move_id
 			elif kind == "duo":
 				candidate = "duo:" + str(e.get("id", "unknown"))
-			if uid == "" or candidate == "":
+			if candidate == "":
 				continue
 			if source_by_unit.has(uid) and str(source_by_unit[uid]) != candidate:
 				source_by_unit[uid] = "mista"
