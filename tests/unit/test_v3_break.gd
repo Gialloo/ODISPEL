@@ -100,6 +100,7 @@ func _init() -> void:
 	hp0 = int(boss["hp"])
 	BreakRules.round_end(s, ev)
 	check(int(boss["hp"]) == hp0, "Radici: rotto non ricresce")
+	_interruzione_sbilanciamento()
 	_fase_saltate()
 	_fase3()
 	_fase3_scontro()
@@ -121,6 +122,37 @@ func _has(ev: Array, t: String) -> bool:
 		if str(e.get("t", "")) == t:
 			return true
 	return false
+
+
+func _interruzione_sbilanciamento() -> void:
+	var s: Dictionary = _broken("semaforo")
+	var boss: Dictionary = BattleState.boss(s)
+	var actor: Dictionary = BattleState.active_unit(s, str(s["players"][0]["id"]))
+	s["telegraph"] = {"move": _heavy_move("semaforo"), "target": str(s["players"][1]["id"])}
+	s["reserve"] = 3
+	s["react_grade"] = {str(actor["id"]): "great"}
+	var gauge_before: int = int(actor["gauge"])
+	var reserve_before: int = int(s["reserve"])
+	var ev: Array = []
+	check(BattleResolver._react(s, actor, "interruzione", ev), "Interruzione riuscita: reazione accettata")
+	check(int(boss.get("sbil", 0)) == BattleTypes.SBIL_HITS, "Interruzione riuscita: applica i colpi di SBILANCIAMENTO")
+	check(int(actor["gauge"]) == mini(BattleTypes.GAUGE_MAX, gauge_before + 10), "Interruzione: carica Ultimate")
+	check(int(s["reserve"]) == reserve_before - BattleResolver.reaction_cost(s, "interruzione"), "Interruzione: spende la Riserva una sola volta")
+	var reserve_after: int = int(s["reserve"])
+	check(not BattleResolver._react(s, actor, "interruzione", []), "Interruzione: una sola per round")
+	check(int(s["reserve"]) == reserve_after, "seconda Interruzione rifiutata: nessuna spesa aggiuntiva")
+
+	s = _broken("semaforo")
+	boss = BattleState.boss(s)
+	actor = BattleState.active_unit(s, str(s["players"][0]["id"]))
+	s["telegraph"] = {"move": _heavy_move("semaforo"), "target": str(s["players"][1]["id"])}
+	s["reserve"] = 3
+	s["react_grade"] = {str(actor["id"]): "fail"}
+	var balance_before: int = int(boss["balance"])
+	ev = []
+	check(BattleResolver._react(s, actor, "interruzione", ev), "Interruzione fallita al QTE: la reazione resta valida")
+	check(int(boss.get("sbil", 0)) == 0, "Interruzione fallita: niente SBILANCIAMENTO")
+	check(balance_before - int(boss["balance"]) == maxi(1, BattleTypes.INTERRUPT_PTS - 2), "Interruzione fallita: pressione ridotta ma non annullata")
 
 
 func _fase_saltate() -> void:
