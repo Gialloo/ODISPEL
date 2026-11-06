@@ -59,6 +59,28 @@ func _init() -> void:
 	check(controls.stick == Vector2.ZERO and controls.cam_drag == Vector2.ZERO, "focus out azzera movimento e camera")
 	check(controls._knob == Vector2.ZERO, "focus out centra la manopola")
 
+	# La pausa applicativa Android puo' arrivare prima o indipendentemente dal focus out.
+	controls._stick_idx = 4
+	controls._cam_idx = 5
+	controls.stick = Vector2(-0.6, 0.7)
+	controls.cam_drag = Vector2(-12, 28)
+	controls._knob = Vector2(-25, 30)
+	controls._notification(NOTIFICATION_APPLICATION_PAUSED)
+	check(controls._stick_idx == -1 and controls._cam_idx == -1, "pausa applicativa libera entrambe le dita")
+	check(controls.stick == Vector2.ZERO and controls.cam_drag == Vector2.ZERO, "pausa applicativa azzera movimento e camera")
+	check(controls._knob == Vector2.ZERO, "pausa applicativa centra la manopola")
+
+	# La perdita di focus della finestra desktop deve produrre lo stesso reset.
+	controls._stick_idx = 6
+	controls._cam_idx = 7
+	controls.stick = Vector2(1.0, 1.0)
+	controls.cam_drag = Vector2(9, 9)
+	controls._knob = Vector2(40, 40)
+	controls._notification(NOTIFICATION_WM_WINDOW_FOCUS_OUT)
+	check(controls._stick_idx == -1 and controls._cam_idx == -1, "window focus out libera entrambe le dita")
+	check(controls.stick == Vector2.ZERO and controls.cam_drag == Vector2.ZERO, "window focus out azzera movimento e camera")
+	check(controls._knob == Vector2.ZERO, "window focus out centra la manopola")
+
 	TouchUi.force = false
 	print("test_v3_touch_controls: " + ("OK" if fails == 0 else "%d errori" % fails))
 	quit(1 if fails > 0 else 0)
