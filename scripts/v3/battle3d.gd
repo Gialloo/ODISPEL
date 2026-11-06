@@ -398,8 +398,8 @@ func _build_arena() -> void:
 		for side in [-1.0, 1.0]:
 			var z: float = 16.0
 			while z > -20.0:
-				var l: float = cb.rng._presentation_rng.randf_range(6.0, 9.0)
-				cb.building(side, z, l - 0.3, 8.0, cb.rng._presentation_rng.randf_range(8.0, 17.0))
+				var l: float = cb.rng.randf_range(6.0, 9.0)
+				cb.building(side, z, l - 0.3, 8.0, cb.rng.randf_range(8.0, 17.0))
 				z -= l
 		cb.backdrop(-22.0)
 		cb.lamp(4.45, 4.0)
