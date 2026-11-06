@@ -61,7 +61,11 @@ func _ready() -> void:
 	if cont:
 		var bc := Ui.button("CONTINUA", Ui.YELLOW, 34, 380)
 		bc.pressed.connect(func() -> void:
-			Story.load_game()
+			if not Story.load_game():
+				bc.text = "SALVATAGGIO NON LEGGIBILE"
+				bc.disabled = true
+				bc.add_theme_color_override("font_color", Color("#ff7a9c"))
+				return
 			_main().next_story())
 		col.add_child(bc)
 	var b1 := Ui.button("NUOVA PARTITA", Ui.CREAM if cont else Ui.YELLOW, 28 if cont else 34, 380)
@@ -146,7 +150,11 @@ func _open_chapters() -> void:
 						b.text = title
 						b.remove_theme_color_override("font_color"))
 				return
-			Story.load_game()
+			if Story.has_save() and not Story.load_game():
+				b.text = "SALVATAGGIO NON LEGGIBILE"
+				b.disabled = true
+				b.add_theme_color_override("font_color", Color("#ff7a9c"))
+				return
 			Story.start_chapter(i)
 			_main().next_story())
 		vb.add_child(b)
