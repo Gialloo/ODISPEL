@@ -555,3 +555,13 @@ Non segnare mai come effettuato o testato un intervento che non è stato realmen
 - **Problema documentale trovato durante la verifica:** il comando per la suite BREAK era rimasto attaccato alla riga del nuovo comando telemetria; dopo la separazione era inoltre presente un comando BREAK duplicato.
 - **Correzione:** ripristinata una riga autonoma per BREAK con la sua descrizione e una riga autonoma per `test_v3_resource_telemetry.gd`; rimosso il duplicato.
 - **Verifica:** rilettura delle righe di comando nel README. Nessun test eseguito.
+
+
+### 2026-11-06 — Bug Timeline: interruzione del boss a cavallo del round
+
+- **File modificati:** `scripts/engine/battle_flow.gd`, `tests/unit/test_v3_timeline.gd`.
+- **Criticità riprodotta tramite lettura del flusso:** `BattleFlow.interrupt()` marca `tl.tele_used = true` per indicare che la mossa annunciata è stata annullata. Se il boss non rientra prima della fine del round, `BattleFlow.finish()` azzerava incondizionatamente quel flag. Nel round seguente `boss_action()` non poteva quindi riconoscere la mossa persa e non avanzava il ciclo prima dell'azione.
+- **Correzione:** `finish()` non azzera più `tele_used`. Il flag viene consumato dal percorso `boss_action()`, che annuncia la mossa successiva quando il boss rientra. Il normale percorso dopo un'azione del boss resta invariato perché `_announce_next()` azzera già il flag dopo aver avanzato il ciclo.
+- **Test di regressione:** esteso `_interruzione()` per spostare il rientro del boss oltre il confine del round, terminare e riaprire il round, quindi verificare l'avanzamento del ciclo: una mossa annullata viene saltata e viene annunciata quella successiva dopo l'azione eseguita.
+- **Verifiche eseguite:** ispezione dei percorsi `interrupt → finish → start_round → boss_action`; test aggiunto. Non eseguito Godot/headless, quindi il test resta da eseguire localmente.
+- **Impatto:** corregge la sequenza delle mosse dei boss nella sola condizione di interruzione che attraversa un confine round. Nessuna variazione a costi, danni o bilanciamento.
