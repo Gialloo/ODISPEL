@@ -126,12 +126,23 @@ static func validate_area_state(v: Variant) -> bool:
 	return true
 
 
+static func _is_valid_save_integer(v: Variant) -> bool:
+	if not (v is int or v is float):
+		return false
+	var number: float = float(v)
+	return is_finite(number) and number >= 0.0 and number == floor(number)
+
+
 static func _read_valid_save(path: String) -> ConfigFile:
 	var cfg := ConfigFile.new()
 	if cfg.load(path) != OK:
 		return null
-	var loaded_chapter: int = int(cfg.get_value("storia", "capitolo", -1))
-	var loaded_step: int = int(cfg.get_value("storia", "passo", -1))
+	var raw_chapter: Variant = cfg.get_value("storia", "capitolo", -1)
+	var raw_step: Variant = cfg.get_value("storia", "passo", -1)
+	if not _is_valid_save_integer(raw_chapter) or not _is_valid_save_integer(raw_step):
+		return null
+	var loaded_chapter: int = int(raw_chapter)
+	var loaded_step: int = int(raw_step)
 	var chs: Array = chapters()
 	if loaded_chapter < 0 or loaded_chapter > chs.size() or loaded_step < 0:
 		return null
