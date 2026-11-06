@@ -29,6 +29,7 @@ godot --headless --path . --import
 godot --headless --path . -s tests/unit/test_v3_engine.gd
 godot --headless --path . -s tests/unit/test_v3_touch_controls.gd  # stick, camera e multitouch
 godot --headless --path . -s tests/unit/test_v3_mesh_batch.gd             # cache delle mesh piatte riutilizzate
+godot --headless --path . -s tests/unit/test_v3_city_builder.gd          # cache dei colori della scenografia
 godot --headless --path . -s tests/unit/test_v3_integrita_salvataggio.gd  # validazione area, checkpoint finale e recupero backup
 godot --headless --path . -s tests/unit/test_v3_dialoghi.gd
 godot --headless --path . -s tests/unit/test_v3_timeline.gd       # Timeline del combattimento (Fase 1): ordine per VEL, round, pareggi
