@@ -111,8 +111,8 @@ const LISTA_ORDINE: Array = ["attack", "skill", "guard", "ult"]
 const LISTA_NOME: Dictionary = {"attack": "ATTACCO", "skill": "ABILITÀ", "guard": "GUARDIA", "ult": "ULTIMATE"}
 const LISTA_X: float = 0.40          # inizio della prima riga (frazione della cornice); ogni riga scende e rientra un poco
 const LISTA_Y: float = 0.56
-const LISTA_PASSO: float = 0.08
-const LISTA_ANGOLO: float = -0.35       # pendenza del lato alto a punta di saul_avanti (misurata sull'immagine): nastri e SINERGIA paralleli
+const LISTA_PASSO: float = 0.074
+const LISTA_ANGOLO: float = -0.35       # pendenza del lato a punta di saul_avanti; provata su nastri e SINERGIA il 7/11/2026 e scartata dall'autore, tenuta per riprovarla
 const LISTA_RITRATTO: float = 0.96      # il ritratto riempie quasi tutta la cornice
 # lastre dei comandi in frazioni della cornice (dal mockup di Saul): [alto-sx, alto-dx, basso-dx, basso-sx]
 const LASTRE: Dictionary = {
@@ -400,8 +400,8 @@ func _draw_extra(cr: Rect2, dx: float, H: float, f: Font, e: float) -> void:
 		var tw: float = f.get_string_size(banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf).x
 		var sw: float = Ui.body().get_string_size(banner_sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sf).x
 		var bw: float = 46.0 + tw + 12.0 + sw + 18.0
-		# parallela al lato a punta (LISTA_ANGOLO) e un po' piu' piccola (autore, 7/11/2026)
-		draw_set_transform(Vector2(dx + 12.0, cr.position.y + 0.24 * cr.size.y), LISTA_ANGOLO)
+		# orizzontale come la scena e un po' piu' piccola (autore, 7/11/2026: la versione inclinata sul lato a punta non piaceva)
+		draw_set_transform(Vector2(dx + 16.0, cr.position.y + 30.0), 0.0)
 		var pl := PackedVector2Array([Vector2(8, -18), Vector2(bw + 8, -18), Vector2(bw, 18), Vector2(0, 18)])
 		var sh := PackedVector2Array()
 		for q in pl:
@@ -565,27 +565,22 @@ func _lastra_fit(kind: String, f: Font) -> int:
 # del colore del personaggio, piu' alto e spostato in avanti, bordo bianco. ULTIMATE pronta: scritta gialla; in carica:
 # barretta rosa sotto il nome e la percentuale nel tondo.
 func _draw_riga_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: float) -> void:
-	# ogni nastro e' disegnato nel suo riferimento locale, ruotato di LISTA_ANGOLO: parallelo al lato a punta della cornice
 	var cs := Vector2(PW, PH) * CORNICE_SCALA
 	var i: int = LISTA_ORDINE.find(kind)
 	var ok: bool = bool(it.get("ok", false))
 	var on: bool = picked == kind
 	var hov: bool = _hov == kind and ok
 	var hgt: float = cs.y * LISTA_PASSO * (1.12 if on else 0.9)
-	var org := Vector2(dx + cs.x * (LISTA_X + 0.02 * i) - (14.0 if on else 0.0), H - cs.y + cs.y * (LISTA_Y + LISTA_PASSO * i))
-	var T := Transform2D(LISTA_ANGOLO, org)
+	var x0: float = dx + cs.x * (LISTA_X + 0.02 * i) - (14.0 if on else 0.0)
+	var yc: float = H - cs.y + cs.y * (LISTA_Y + LISTA_PASSO * i)
 	var w: float = cs.x * 0.44 + (22.0 if on else 0.0)
 	var sk: float = hgt * 0.42
-	var q := PackedVector2Array([Vector2(sk, -hgt * 0.5), Vector2(w + sk, -hgt * 0.5), Vector2(w, hgt * 0.5), Vector2(0, hgt * 0.5)])
-	var qs := PackedVector2Array()
-	for v in q:
-		qs.append(T * v)
-	_polys[kind] = qs
+	var q := PackedVector2Array([Vector2(x0 + sk, yc - hgt * 0.5 - 2.0), Vector2(x0 + w + sk, yc - hgt * 0.5 - 6.0), Vector2(x0 + w, yc + hgt * 0.5 - 4.0), Vector2(x0, yc + hgt * 0.5)])
+	_polys[kind] = q
 	var sdw := PackedVector2Array()
-	for v in qs:
+	for v in q:
 		sdw.append(v + Vector2(5, 5))
 	draw_colored_polygon(sdw, Color(INK, 0.8 * e))
-	draw_set_transform(org, LISTA_ANGOLO)
 	var fill: Color = Color(col, 0.97) if on else (Color(col.darkened(0.55), 0.9) if hov else Color(0.04, 0.02, 0.07, 0.82))
 	draw_colored_polygon(q, Color(fill, fill.a * e))
 	if on:
@@ -596,27 +591,30 @@ func _draw_riga_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, 
 	if kind == "ult" and ok and not on:
 		txt = Color("#d58bff") if Settings.hud_foto else HOT        # foto: ULTIMATE viola
 	var sz: int = _usz + (4 if on else 0)
-	var ic: Vector2 = Vector2(sk * 0.5 + hgt * 0.5, -1.0)
+	var rot: float = -0.06
+	var ic: Vector2 = Vector2(x0 + sk * 0.5 + hgt * 0.5, yc - 1.0)
 	CmdWheel.glyph(self, kind, ic + Vector2(2, 2), hgt * 0.34, Color(INK, e))
 	CmdWheel.glyph(self, kind, ic, hgt * 0.34, Color(txt, e))
 	var name: String = str(LISTA_NOME[kind])
 	var room: float = w - hgt - 10.0
 	while sz > HudLayers.MIN_TEXT and f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x > room:
 		sz -= 1
-	var tp := Vector2(sk * 0.5 + hgt + 2.0, sz * 0.34)
-	draw_string_outline(f, tp, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, 7, Color(INK, e))
-	draw_string(f, tp, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, Color(txt, e))
+	var tp := Vector2(x0 + sk * 0.5 + hgt + 2.0, yc + sz * 0.34)
+	draw_set_transform(tp, rot)
+	draw_string_outline(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, 7, Color(INK, e))
+	draw_string(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, Color(txt, e))
 	if kind == "ult" and not ok:
 		var pc: float = clampf(str(it.get("cost", "0")).to_float() / 100.0, 0.0, 1.0)
 		var bw: float = f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
-		draw_rect(Rect2(tp.x, tp.y + 5, bw, 6), Color(INK, e))
-		draw_rect(Rect2(tp.x + 1, tp.y + 6, (bw - 2.0) * pc, 4), Color(Ui.PINK, e))
-	# tasto tondo in fondo al nastro: numero su PC, percentuale dell'ULTIMATE in carica; sul telefono solo se c'e' la carica
+		draw_rect(Rect2(0, 5, bw, 6), Color(INK, e))
+		draw_rect(Rect2(1, 6, (bw - 2.0) * pc, 4), Color(Ui.PINK, e))
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+	# tasto tondo a destra del nastro: numero su PC, percentuale dell'ULTIMATE in carica; sul telefono solo se c'e' la carica
 	var k: String = "" if Ui.is_touch() else str(KEYS.get(kind, ""))
 	if kind == "ult" and not ok:
 		k = str(it.get("cost", ""))
 	if k != "":
-		var bc := Vector2(w + sk * 0.5 + 18.0, -2.0)
+		var bc := Vector2(x0 + w + sk + 18.0, yc - 4.0)
 		var br: float = 15.0 if k.length() <= 1 else 19.0
 		draw_circle(bc + Vector2(2, 2), br + 2, Color(INK, e))
 		draw_circle(bc, br + 1, Color(CREAM if ok else GREY, e))
@@ -625,9 +623,8 @@ func _draw_riga_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, 
 		var ksz: int = 18 if k.length() <= 1 else HudLayers.MIN_TEXT
 		var ks: Vector2 = fk.get_string_size(k, HORIZONTAL_ALIGNMENT_LEFT, -1, ksz)
 		draw_string(fk, bc + Vector2(-ks.x * 0.5, ksz * 0.36), k, HORIZONTAL_ALIGNMENT_LEFT, -1, ksz, Color(CREAM if ok else GREY, e))
-	draw_set_transform_matrix(Transform2D.IDENTITY)
-	var bb := Rect2(qs[0], Vector2.ZERO)
-	for v in qs:
+	var bb := Rect2(q[0], Vector2.ZERO)
+	for v in q:
 		bb = bb.expand(v)
 	_rects[kind] = bb
 

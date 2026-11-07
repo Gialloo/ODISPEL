@@ -3428,7 +3428,7 @@ func _build_ui() -> void:
 	_cmd_box = VBoxContainer.new()
 	# REAZIONE in alto a destra, sotto la barra rapida: lontana dalla squadra e da CONFERMA (in basso a sinistra), cosi' un clic
 	# sbagliato non fa partire una reazione. La colonna non prende clic: solo i suoi tasti.
-	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -480, -262, -16, -262)      # sopra la squadra; compare solo quando si puo' reagire
+	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -480, -222, -16, -222)      # sopra la squadra, 20 px sopra la riga «per INCANDESCENTE…» del RITMO (autore, 7/11/2026)
 	if Settings.hud_foto:
 		Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -480, -178, -16, -178)      # foto: subito sopra le card grandi, sotto il RITMO
 	_cmd_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
