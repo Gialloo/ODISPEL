@@ -182,6 +182,7 @@ var _quip_balloon: EchoBalloon
 var _quip_seq: int = 0
 var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
 var _party_back: Control
+const BRK_QUIET: Color = Color("#857a9e")       # equilibrio a riposo (livello 2, Settings.hud_gerarchia)
 var _boss_plate: BossPlate             # HUD come la foto dell'autore (Settings.hud_foto): cartellino del nemico disegnato
 var _weak_txt: String = ""
 var _weak_col: Color = Color("#9a94a8")
@@ -2176,7 +2177,7 @@ func _brk_pulse(near: bool) -> void:
 	if _brk_tw != null and _brk_tw.is_valid():
 		_brk_tw.kill()
 	var fill := StyleBoxFlat.new()
-	fill.bg_color = Ui.YELLOW if near else Color("#f2f0ea")
+	fill.bg_color = Ui.YELLOW if near else (BRK_QUIET if Settings.hud_gerarchia else Color("#f2f0ea"))
 	fill.set_corner_radius_all(2)
 	_boss_brk.add_theme_stylebox_override("fill", fill)
 	_boss_brk.modulate = Color.WHITE
@@ -3335,7 +3336,9 @@ func _build_ui() -> void:
 	bp.add_theme_constant_override("separation", 4)
 	bp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(bp)
-	_boss_name = Ui.label(_bname(), 22, Ui.CREAM, Ui.display(), 0)
+	# gerarchia a 4 livelli (7/11/2026): nome e HP del nemico sono livello 1, quindi titolo da 28 e numeri da 22
+	var gh: bool = Settings.hud_gerarchia
+	_boss_name = Ui.label(_bname(), 28 if gh else 22, Ui.CREAM, Ui.display(), 0)
 	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_boss_name.add_theme_stylebox_override("normal", Ui.plate(Color(0.02, 0.01, 0.03, 0.92), Color("#ff2340"), -0.18, 5))
 	# nome e DEBOLE A sulla stessa riga (HUD piu' pulito, 6/11/2026): il cartellino perde una riga e copre meno scena
@@ -3344,15 +3347,17 @@ func _build_ui() -> void:
 	bhead.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bp.add_child(bhead)
 	bhead.add_child(_boss_name)
-	_boss_hp = _bar(Color("#ff4b6e"), 22)
+	_boss_hp = _bar(Color("#ff4b6e"), 30 if gh else 22)
 	bp.add_child(_boss_hp)
 	_boss_ghost = _ghost_bar(_boss_hp)
-	_boss_hp_txt = Ui.label("", HudLayers.MIN_TEXT, Ui.CREAM, null, 4)
+	_boss_hp_txt = Ui.label("", 22 if gh else HudLayers.MIN_TEXT, Ui.CREAM, Ui.display() if gh else null, 5 if gh else 4)
 	_boss_hp_txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_hp.add_child(_boss_hp_txt)
 	Ui.place(_boss_hp_txt, 0, 0, 1, 1)
 	_boss_hp_txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_boss_brk = _bar(Color("#f2f0ea"), 20)
+	# livello 2: a riposo la barra dell'equilibrio e' grigio lilla (prima bianca piena, la cosa piu' luminosa del pannello);
+	# torna gialla e pulsa solo quando sta per rompersi (_brk_pulse): l'HUD sta zitto finche' non deve urlare
+	_boss_brk = _bar(BRK_QUIET if gh else Color("#f2f0ea"), 18 if gh else 20)
 	bp.add_child(_boss_brk)
 	# il nome della barra bianca dentro la barra, crema col contorno scuro, si legge su barra piena e vuota (prima grigio chiaro da 12: non si leggeva): quando arriva a zero il boss si rompe
 	_brk_lbl = Ui.label("EQUILIBRIO", HudLayers.MIN_TEXT, Ui.CREAM, Ui.display(), 4)
@@ -3370,6 +3375,8 @@ func _build_ui() -> void:
 	bhead.add_child(_weak_row)
 	_weak_k = Ui.plate_label("DEBOLE A", HudLayers.MIN_TEXT, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
 	_weak_row.add_child(_weak_k)
+	if gh:
+		_weak_k.modulate = Color(1, 1, 1, 0.78)      # l'etichetta e' livello 2: il colore che batte il nemico resta pieno
 	_weak_v = Ui.plate_label("???", HudLayers.MIN_TEXT, Ui.INK, Color("#9a94a8"), Ui.INK)
 	_weak_row.add_child(_weak_v)
 	# la minaccia su una lastra scura col bordo rosso: si legge su cielo chiaro e su insegne (prima testo bianco nudo da 20)
@@ -3377,6 +3384,12 @@ func _build_ui() -> void:
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_tele.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bp.add_child(_tele)
+	if gh:
+		# la prossima mossa si stacca dall'anagrafica del nemico: un respiro prima della lastra
+		var gap := Control.new()
+		gap.custom_minimum_size = Vector2(0, 6)
+		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bp.add_child(gap)
 	if Settings.hud_minaccia:
 		# la riga di testo resta (stesso testo, per prove e lettori) ma la vede solo chi spegne la lastra
 		_threat_plate = ThreatPlate.new()
@@ -4514,6 +4527,8 @@ func _refresh_hud() -> void:
 	_boss_brk.max_value = maxi(1, int(boss.get("balance_max", 1)))
 	_boss_brk.value = int(boss.get("balance", 0))
 	_brk_lbl.text = "EQUILIBRIO  %d" % int(boss.get("balance", 0))
+	if Settings.hud_gerarchia:
+		_boss_hp_txt.text += " HP"
 	_brk_pulse(float(_boss_brk.value) / float(_boss_brk.max_value) <= 0.34 and int(boss.get("balance", 0)) > 0 and not Stability.recovering(boss) and not ended)
 	if _boss_plate != null:
 		_boss_plate.set_data({"name": _bname(), "level": level, "weak": _weak_txt, "weak_col": _weak_col, "hp": shown_hp,
