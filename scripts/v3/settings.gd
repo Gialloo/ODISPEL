@@ -15,6 +15,7 @@ static var surprise: bool = true        # prova A/B: si puo' attaccare il nemico
 static var broken_cam: bool = true      # telecamera rotta quando tocca a chi ha pochi PV
 static var parry_wide: bool = false     # finestra di parata ampia (accessibilita'): la guardia normale vale sempre
 static var hud_ritratto: bool = true    # HUD di battaglia col ritratto 2D (remake di Persona 1, 2/11/2026); false = la ruota attorno al personaggio
+static var hud_ventaglio: bool = true   # menu comandi a ventaglio disegnato dall'autore (7/11/2026); false = l'HUD col ritratto di prima
 static var fps_cap: int = 0             # limite degli fps scelto dal giocatore (0 = predefinito: 60 sul telefono, 120 su PC)
 static var text_speed: int = 0          # velocita' del testo nei dialoghi: 0 NORMALE, 1 VELOCE, 2 ISTANTANEO
 static var auto_text: bool = false      # dialoghi automatici (AUTO alla Persona): la battuta va avanti da sola dopo una pausa
@@ -54,6 +55,7 @@ static func load_settings() -> void:
 	text_speed = clampi(int(cfg.get_value("game", "text_speed", text_speed)), 0, TEXT_SPEEDS.size() - 1)
 	auto_text = bool(cfg.get_value("game", "auto_text", auto_text))
 	hud_ritratto = bool(cfg.get_value("video", "hud_ritratto", hud_ritratto))
+	hud_ventaglio = bool(cfg.get_value("video", "hud_ventaglio", hud_ventaglio))
 	music_volume = clampf(float(cfg.get_value("audio", "music", music_volume)), 0.0, 1.0)
 	sfx_volume = clampf(float(cfg.get_value("audio", "sfx", sfx_volume)), 0.0, 1.0)
 	cam_calm = bool(cfg.get_value("video", "cam_calm", cam_calm))
@@ -75,6 +77,7 @@ static func save() -> void:
 	cfg.set_value("game", "text_speed", text_speed)
 	cfg.set_value("game", "auto_text", auto_text)
 	cfg.set_value("video", "hud_ritratto", hud_ritratto)
+	cfg.set_value("video", "hud_ventaglio", hud_ventaglio)
 	cfg.set_value("audio", "music", music_volume)
 	cfg.set_value("audio", "sfx", sfx_volume)
 	cfg.set_value("video", "cam_calm", cam_calm)

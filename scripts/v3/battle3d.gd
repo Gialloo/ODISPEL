@@ -3187,7 +3187,11 @@ func _build_ui() -> void:
 	_reticle = Reticle.new()
 	_fx_layer.add_child(_reticle)
 	# HUD col ritratto 2D (remake di Persona 1, 2/11/2026): stessa interfaccia della ruota, che resta disponibile
-	_wheel = PortraitHud.new() if Settings.hud_ritratto else CmdWheel.new()
+	# menu a ventaglio disegnato a mano dall'autore (7/11/2026): stessa interfaccia del ritratto, che resta come riserva
+	if Settings.hud_ritratto:
+		_wheel = VentaglioHud.new() if Settings.hud_ventaglio else PortraitHud.new()
+	else:
+		_wheel = CmdWheel.new()
 	_wheel.visible = false
 	_wheel.tapped.connect(_wheel_tap)
 	_wheel.hovered.connect(_wheel_hover)
