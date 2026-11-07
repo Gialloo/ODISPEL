@@ -96,6 +96,10 @@ func _draw() -> void:
 	var y: float = 3.0
 	var w: float = size.x - 14.0
 	var plate: PackedVector2Array = slant(x, y, w, PH, 10.0)
+	var alone: float = float(HudLayers.v("prossima_mossa.alone"))
+	if alone > 0.0 and not strong and not stun:
+		# L1 anche a colpo normale: un alone rosso leggero, la mossa non sparisce nel buio della scena (HUD Combat 2.0)
+		draw_colored_polygon(slant(x - 4, y - 2.4, w + 8, PH + 4.8, 10.0), Color(1.0, 0.12, 0.2, alone))
 	if strong:
 		for r in [8.0, 4.0]:
 			draw_colored_polygon(slant(x - r, y - r * 0.6, w + r * 2, PH + r * 1.2, 10.0), Color(1.0, 0.12, 0.2, 0.28))
@@ -103,9 +107,9 @@ func _draw() -> void:
 	for q in plate:
 		sh.append(q + Vector2(5, 5))
 	draw_colored_polygon(sh, Color(INK, 0.94))
-	draw_colored_polygon(plate, Color(DEEP, 0.96) if strong else Color(0.05, 0.03, 0.08, 0.93))
+	draw_colored_polygon(plate, Color(DEEP, 0.96) if strong else (Color(0.05, 0.03, 0.08, 0.93) if stun else HudLayers.v("prossima_mossa.fondo") as Color))
 	var edge: Color = HOT if (strong or stun) else RED
-	draw_polyline(plate + PackedVector2Array([plate[0]]), edge, 2.5, true)
+	draw_polyline(plate + PackedVector2Array([plate[0]]), edge, float(HudLayers.v("prossima_mossa.bordo")), true)
 	# riquadro dell'icona
 	draw_colored_polygon(slant(x + 6, y + 6, 42, 42, 6), edge)
 	draw_icon(self, "stordito" if stun else str(data.get("kind", "singolo")), Vector2(x + 30, y + 27), INK)
@@ -117,8 +121,9 @@ func _draw() -> void:
 	var lab: String = "PROSSIMA MOSSA · SU " + str(data.get("who", "TUTTI"))
 	if str(data.get("chain", "")) != "":
 		lab += " · POI " + str(data["chain"])
-	_txt(fb, Vector2(tx, y + 20), lab, HudLayers.MIN_TEXT, Color(CREAM, 0.88), 4)
-	var nx: float = tx + _txt(fd, Vector2(tx, y + 46), str(data.get("name", "?")).to_upper(), 24, CREAM, 6) + 10.0
+	_txt(fb, Vector2(tx, y + 20), lab, HudLayers.font_size("prossima_mossa_riga"), Color(CREAM, 0.88), 4)
+	var nsz: int = HudLayers.font_size("prossima_mossa")      # L1 TITOLO: 28 (0.63: 24)
+	var nx: float = tx + _txt(fd, Vector2(tx, y + 46 + (nsz - 24) * 0.25), str(data.get("name", "?")).to_upper(), nsz, CREAM, 6) + 10.0
 	if strong:
 		var fw: float = fd.get_string_size("FORTE", HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
 		draw_colored_polygon(slant(nx, y + 27, fw + 14, 22, 5), HOT)

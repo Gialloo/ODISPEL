@@ -20,6 +20,17 @@ static func cw() -> float:
 	return CW_FOTO if Settings.hud_foto else CW
 
 
+# Larghezza vera della colonna ORDINE dal bordo destro (HUD Combat 2.0): lastrina di chi agisce larga 92, 10 di margine,
+# freccia a 40 dalla lastrina. Chi deve stare accanto all'ORDINE (pannello del nemico) usa questa misura, non una stima.
+const ORDINE_LASTRA: float = 92.0
+const ORDINE_BORDO: float = 10.0
+const ORDINE_FRECCIA: float = 40.0
+
+
+static func order_width() -> float:
+	return ORDINE_BORDO + ORDINE_LASTRA + ORDINE_FRECCIA
+
+
 # Altezza dalla base dello schermo al bordo alto della card (per chi deve stare sopra la squadra).
 static func top() -> float:
 	return 160.0 if Settings.hud_foto else 128.0
