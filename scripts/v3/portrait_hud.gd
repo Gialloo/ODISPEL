@@ -97,7 +97,11 @@ var _busto: Texture2D
 # mancanti: tutto come prima.
 var _dietro: Texture2D
 var _avanti: Texture2D
-var _polys: Dictionary = {}                     # kind -> lastra del comando (tocco preciso: le lastre si incastrano)
+var _polys: Dictionary = {}
+# HUD come la foto dell'autore (Settings.hud_foto): sinergia in cima alla cornice e obiettivo in fondo (li passa battle3d)
+var banner_title: String = ""
+var banner_sub: String = ""
+var objective: String = ""                     # kind -> lastra del comando (tocco preciso: le lastre si incastrano)
 const CORNICE_SCALA: float = 1.15               # la cornice e' un po' piu' grande del riquadro del ritratto: le lastre si leggono
 const CORNICE_RITRATTO: float = 0.72            # il ritratto rimpicciolito e appoggiato in basso, come nel mockup (stile "lastre")
 # Disposizione dei comandi sulla cornice. "lista" (autore, 7/11/2026, riferimento): ritratto grande, comandi in colonna
@@ -106,7 +110,7 @@ const CORNICE_STILE: String = "lista"
 const LISTA_ORDINE: Array = ["attack", "skill", "guard", "ult"]
 const LISTA_NOME: Dictionary = {"attack": "ATTACCO", "skill": "ABILITÀ", "guard": "GUARDIA", "ult": "ULTIMATE"}
 const LISTA_X: float = 0.40          # inizio della prima riga (frazione della cornice); ogni riga scende e rientra un poco
-const LISTA_Y: float = 0.585
+const LISTA_Y: float = 0.56
 const LISTA_PASSO: float = 0.074
 const LISTA_RITRATTO: float = 0.96      # il ritratto riempie quasi tutta la cornice
 # lastre dei comandi in frazioni della cornice (dal mockup di Saul): [alto-sx, alto-dx, basso-dx, basso-sx]
@@ -326,6 +330,10 @@ func _draw() -> void:
 		var it0: Dictionary = item(kind)
 		if not it0.is_empty():
 			_usz = mini(_usz, (26 if CORNICE_STILE == "lista" else _lastra_fit(kind, f)) if cornice else _fit_size(kind, it0, dx, H, f))
+	if cornice and Settings.hud_foto and CORNICE_STILE == "lista":
+		# banda scura strappata sotto la lista dei comandi (foto: i nastri stanno su uno strappo nero)
+		var cr := Rect2(Vector2(dx, H - PH * CORNICE_SCALA), Vector2(PW, PH) * CORNICE_SCALA)
+		_shard(cr, [Vector2(0.33, 0.55), Vector2(1.02, 0.49), Vector2(0.95, 0.86), Vector2(0.30, 0.90)], Color(INK, 0.55 * e), 7.0, 4)
 	for kind in ["ult", "skill", "attack", "guard"]:
 		var it: Dictionary = item(kind)
 		if it.is_empty():
@@ -339,15 +347,64 @@ func _draw() -> void:
 			_draw_cmd(kind, it, dx, H, f, e)
 	# 4) nome grande in fondo, sopra al ritratto (come il nome in giapponese del riferimento)
 	var nm: String = who.split(" · ")[0]
+	if cornice and Settings.hud_foto:
+		_draw_foto_bottom(nm, dx, H, f, e)
+	else:
+		_draw_name(nm, dx, H, f)
+	# 5) cosa fa il comando scelto: una lastra scura sopra il ritratto
+	if picked != "":
+		_draw_tip(item(picked), dx, H, e)
+
+
+func _draw_name(nm: String, dx: float, H: float, f: Font) -> void:
 	var nsz: int = 40
 	while nsz > 26 and f.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, nsz).x > PW - 20:
 		nsz -= 2
 	CmdWheel.skew_text(self, Vector2(dx + 12, H - 22), nm, nsz, col.lightened(0.45), INK, f, 12, -0.25)
 	if who.contains("RAPIDO"):
 		CmdWheel.skew_text(self, Vector2(dx + 16, H - 66), "RAPIDO", 18, HOT, INK, f, 7, -0.25)
-	# 5) cosa fa il comando scelto: una lastra scura sopra il ritratto
-	if picked != "":
-		_draw_tip(item(picked), dx, H, e)
+
+
+# Fondo della cornice come la foto: strappo del colore, nome enorme bianco, sinergia in cima e obiettivo in fondo.
+func _draw_foto_bottom(nm: String, dx: float, H: float, f: Font, e: float) -> void:
+	var cr := Rect2(Vector2(dx, H - PH * CORNICE_SCALA), Vector2(PW, PH) * CORNICE_SCALA)
+	_shard(cr, [Vector2(0.0, 0.84), Vector2(0.66, 0.79), Vector2(0.74, 0.90), Vector2(0.0, 0.95)], Color(col, 0.95 * e), 6.0, 5)
+	var nsz: int = 62
+	while nsz > 30 and f.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, nsz).x > PW - 30:
+		nsz -= 2
+	CmdWheel.skew_text(self, Vector2(dx + 18, H - 44), nm, nsz, CREAM, INK, f, 12, -0.3)
+	if who.contains("RAPIDO"):
+		CmdWheel.skew_text(self, Vector2(dx + 22, H - 44 - nsz), "RAPIDO", 18, HOT, INK, f, 7, -0.25)
+	if objective != "":
+		var bf: Font = Ui.body()
+		var ow: float = bf.get_string_size(objective, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT).x + 62.0
+		var ob := PackedVector2Array([Vector2(dx + 12, H - 34), Vector2(dx + 12 + ow, H - 38), Vector2(dx + ow, H - 6), Vector2(dx, H - 4)])
+		draw_colored_polygon(torn(ob, 2.0, 6), Color(0.02, 0.01, 0.04, 0.9 * e))
+		draw_circle(Vector2(dx + 26, H - 20), 10.0, Color(HOT, e))
+		var xw: float = f.get_string_size("!", HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+		draw_string(f, Vector2(dx + 26 - xw * 0.5, H - 13), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(INK, e))
+		draw_string(bf, Vector2(dx + 46, H - 14), objective, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(CREAM, e))
+	if banner_title != "":
+		var tf: int = 24
+		var sf: int = HudLayers.MIN_TEXT
+		var tw: float = f.get_string_size(banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf).x
+		var sw: float = Ui.body().get_string_size(banner_sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sf).x
+		var bw: float = 52.0 + tw + 16.0 + sw + 22.0
+		var y0: float = cr.position.y + 8.0
+		var bx: float = dx + 40.0
+		var pl := PackedVector2Array([Vector2(bx + 12, y0), Vector2(bx + bw + 12, y0 - 10), Vector2(bx + bw, y0 + 34), Vector2(bx, y0 + 44)])
+		var sh := PackedVector2Array()
+		for q in pl:
+			sh.append(q + Vector2(5, 5))
+		draw_colored_polygon(sh, Color(INK, 0.85 * e))
+		draw_colored_polygon(pl, Color(0.02, 0.01, 0.04, 0.94 * e))
+		draw_polyline(pl + PackedVector2Array([pl[0]]), Color(CREAM, 0.9 * e), 2.0, true)
+		CmdWheel.glyph(self, "skill", Vector2(bx + 30, y0 + 20), 15.0, Color(HOT, e))
+		draw_set_transform(Vector2(bx + 52, y0 + 30), -0.08)
+		draw_string_outline(f, Vector2.ZERO, banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, 6, Color(INK, e))
+		draw_string(f, Vector2.ZERO, banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, Color(HOT, e))
+		draw_string(Ui.body(), Vector2(tw + 16, -2), banner_sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sf, Color(CREAM, e))
+		draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
 func _draw_lastra(dx: float, H: float, e: float) -> void:
@@ -386,6 +443,39 @@ func _draw_cornice(dx: float, H: float, e: float) -> void:
 		gl = Vector2(6.0 if ph < 0.06 else -4.0, 0.0)
 	draw_texture_rect(_dietro, Rect2(r.position + Vector2(-(1.0 - eb) * 80.0, 0.0) + gl, r.size), false, Color(1, 1, 1, e))
 	draw_texture_rect(_avanti, Rect2(r.position + Vector2(-(1.0 - e) * 40.0, (1.0 - e) * 30.0), r.size), false, Color(1, 1, 1, e))
+	if Settings.hud_foto:
+		# grafica "a strappi" della foto: lame bianche e del colore coi bordi strappati attorno al ritratto
+		_shard(r, [Vector2(0.0, 0.11), Vector2(0.24, 0.02), Vector2(0.29, 0.05), Vector2(0.03, 0.20)], Color(CREAM, 0.92 * e), 5.0, 1)
+		_shard(r, [Vector2(0.0, 0.24), Vector2(0.13, 0.15), Vector2(0.15, 0.40), Vector2(0.0, 0.50)], Color(col, 0.95 * e), 6.0, 2)
+		_shard(r, [Vector2(0.86, 0.30), Vector2(1.0, 0.18), Vector2(0.97, 0.26), Vector2(0.84, 0.36)], Color(CREAM, 0.8 * e), 4.0, 3)
+
+
+# Bordo strappato: ogni lato del poligono diventa una fila di denti irregolari (sempre gli stessi: niente tremolio).
+static func torn(pts: PackedVector2Array, amp: float, seed_n: int) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_n * 7919 + 17
+	for i in pts.size():
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[(i + 1) % pts.size()]
+		var n: int = maxi(1, int(a.distance_to(b) / 9.0))
+		var nr: Vector2 = (b - a).orthogonal().normalized()
+		for k in n:
+			var p: Vector2 = a.lerp(b, float(k) / float(n))
+			out.append(p + nr * (rng.randf_range(-1.0, 1.0) * amp if k > 0 else 0.0))
+	return out
+
+
+func _shard(r: Rect2, fr: Array, c: Color, amp: float, seed_n: int) -> void:
+	var pts := PackedVector2Array()
+	for v in fr:
+		pts.append(r.position + (v as Vector2) * r.size)
+	var tp := torn(pts, amp, seed_n)
+	var sh := PackedVector2Array()
+	for q in tp:
+		sh.append(q + Vector2(5, 5))
+	draw_colored_polygon(sh, Color(INK, c.a * 0.8))
+	draw_colored_polygon(tp, c)
 
 
 func _cornice_rect(dx: float, H: float) -> Rect2:
@@ -490,7 +580,7 @@ func _draw_riga_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, 
 		draw_line(q[3], q[2], Color(col.lightened(0.2), 0.9 * e), 2.0, true)       # filo del colore sotto il nastro
 	var txt: Color = CREAM if ok else Color(GREY, 1.0)
 	if kind == "ult" and ok and not on:
-		txt = HOT
+		txt = Color("#d58bff") if Settings.hud_foto else HOT        # foto: ULTIMATE viola
 	var sz: int = _usz + (4 if on else 0)
 	var rot: float = -0.06
 	var ic: Vector2 = Vector2(x0 + sk * 0.5 + hgt * 0.5, yc - 1.0)

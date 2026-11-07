@@ -69,4 +69,30 @@ func _run() -> void:
 		await _shot("%s_%s_attacco_scelto" % [who, tag])
 		w.pick("")
 		await create_timer(0.3).timeout
+	if Settings.hud_foto:
+		# ANTEPRIMA DELLO STILE (dati messi a mano solo per la schermata): sinergia, ritmo acceso, tasti di REAZIONE e Ultimate in diretta
+		var w2: PortraitHud = bt.get("_wheel")
+		w2.banner_title = "SINERGIA"
+		w2.banner_sub = "Tec: +12% attacco e difesa"
+		var b2: Dictionary = bt.get("b")
+		var r: Dictionary = Ritmo.st(b2)
+		r["level"] = 1
+		r["ardore"] = 52
+		r["ready"] = true
+		bt.call("_refresh_hud")
+		var rb: Dictionary = bt.get("_react_btns")
+		(bt.get("_react_box") as Control).visible = true
+		for rid in ["schivata", "intercettazione", "interruzione"]:
+			(rb[rid] as Button).visible = true
+		var names: Array = ["ULT NOX", "ULT LANCE"]
+		var lbs: Array = bt.get("_live_btns")
+		for i in 2:
+			(lbs[i] as Button).text = names[i]
+			(lbs[i] as Button).visible = true
+		_as_who(bt, true)
+		w2.banner_title = "SINERGIA"
+		w2.banner_sub = "Tec: +12% attacco e difesa"
+		w2.queue_redraw()
+		await create_timer(0.5).timeout
+		await _shot("%s_anteprima_stile" % who)
 	quit()

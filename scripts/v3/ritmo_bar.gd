@@ -87,11 +87,14 @@ func _slant(x: float, y: float, w: float, h: float, sk: float) -> PackedVector2A
 
 
 func _draw() -> void:
+	if Settings.hud_foto:
+		_draw_badge()
+		return
 	var st: Dictionary = LV[level]
 	var x0: float = size.x - 22.0 - W_PARTY
 	var w: float = W_PARTY
 	var x1: float = x0 + w
-	var yb: float = size.y - 170.0
+	var yb: float = size.y - PortraitParty.top() - 42.0       # sopra la squadra (con le card grandi della foto sale)
 	var fd: Font = Ui.display()
 	var fb: Font = Ui.body()
 	var fill: Color = st["fill"]
@@ -174,3 +177,67 @@ func _draw() -> void:
 			pts.append(c + Vector2(cos(a), sin(a)) * (r if i % 2 == 0 else r * 0.38))
 		draw_colored_polygon(pts, HOT)
 		draw_polyline(pts + PackedVector2Array([pts[0]]), Color.WHITE, 1.5)
+
+
+# RITMO come la barra viola della foto dell'autore (7/11/2026, "SCHEGGIA 80"): lastra viola storta sul lato destro, nome del
+# livello grande, sotto cosa serve per salire (la condizione vera del motore), ARDORE in numero giallo enorme con la stella.
+# Sotto la lastra una striscia del colore del livello si riempie con l'ARDORE. Stessi dati, nessuna previsione in piu'.
+func _draw_badge() -> void:
+	var st: Dictionary = LV[level]
+	var fd: Font = Ui.display()
+	var fb: Font = Ui.body()
+	var w: float = 440.0
+	var h: float = 74.0
+	var x0: float = size.x - 150.0 - w        # a sinistra della colonna ORDINE
+	var y0: float = size.y * 0.34         # sotto la prossima mossa del nemico, sopra REAZIONE
+	var pl := PackedVector2Array([Vector2(x0 + 22, y0), Vector2(x0 + w, y0 - 8), Vector2(x0 + w - 22, y0 + h - 6), Vector2(x0, y0 + h)])
+	var sh := PackedVector2Array()
+	for q in pl:
+		sh.append(q + Vector2(6, 6))
+	draw_colored_polygon(sh, Color(INK, 0.9))
+	var base: Color = Color("#5b1fb8").lerp(Color.WHITE, _flash / 0.6 * 0.4) if _flash > 0.0 else Color("#5b1fb8")
+	draw_colored_polygon(pl, base)
+	# taglio chiaro in diagonale (la luce della lastra del riferimento)
+	draw_colored_polygon(PackedVector2Array([Vector2(x0 + w * 0.55, y0 - 4), Vector2(x0 + w * 0.72, y0 - 6), Vector2(x0 + w * 0.6, y0 + h - 3), Vector2(x0 + w * 0.43, y0 + h - 1)]), Color(0.7, 0.4, 1.0, 0.35))
+	draw_polyline(pl + PackedVector2Array([pl[0]]), Color(CREAM, 0.85), 2.0, true)
+	var nm: String = "RITMO · " + Ritmo.level_name(level)
+	draw_set_transform(Vector2(x0 + 26, y0 + 32), -0.05)
+	draw_string_outline(fd, Vector2.ZERO, nm, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, 7, INK)
+	draw_string(fd, Vector2.ZERO, nm, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, CREAM)
+	var sub: String = hint if hint != "" else "ARDORE della squadra"
+	var room: float = w - 170.0          # il numero e la stella stanno a destra
+	while sub.length() > 8 and fb.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT).x > room:
+		sub = sub.substr(0, sub.length() - 2)
+	if sub != (hint if hint != "" else "ARDORE della squadra"):
+		sub = sub.strip_edges() + "…"
+	draw_string_outline(fb, Vector2(2, 24), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, 5, INK)
+	draw_string(fb, Vector2(2, 24), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, HOT if is_ready else CREAM)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+	# numero enorme dell'ARDORE con la stella
+	var ns: String = str(ardore)
+	var nsz: int = 64
+	var nw: float = fd.get_string_size(ns, HORIZONTAL_ALIGNMENT_LEFT, -1, nsz).x
+	var np := Vector2(x0 + w - 44.0 - nw, y0 + h - 4.0)
+	draw_set_transform(np, -0.1)
+	draw_string_outline(fd, Vector2(4, 4), ns, HORIZONTAL_ALIGNMENT_LEFT, -1, nsz, 12, Color("#2a0a5e"))
+	draw_string_outline(fd, Vector2.ZERO, ns, HORIZONTAL_ALIGNMENT_LEFT, -1, nsz, 9, INK)
+	draw_string(fd, Vector2.ZERO, ns, HORIZONTAL_ALIGNMENT_LEFT, -1, nsz, HOT)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+	var sc := Vector2(x0 + w - 22.0, y0 + 18.0)
+	var pulse: float = 1.0 + (0.12 * sin(_t * TAU) if level == Ritmo.APICE else 0.0)
+	for pass_i in 2:
+		var pts := PackedVector2Array()
+		var rr: float = (22.0 if pass_i == 0 else 18.0) * pulse
+		for k in 10:
+			pts.append(sc + Vector2.from_angle(-PI / 2.0 + k * PI / 5.0) * (rr if k % 2 == 0 else rr * 0.45))
+		draw_colored_polygon(pts, INK if pass_i == 0 else Color("#c77dff"))
+	# striscia del livello sotto la lastra, a quattro tratti (25/50/75/100)
+	var k2: float = clampf(float(ardore) / float(BattleTypes.RITMO_CAP), 0.0, 1.0)
+	var by: float = y0 + h + 6.0
+	var seg: float = (w - 60.0) / 4.0
+	for i in 4:
+		var sx: float = x0 + 10.0 + i * seg
+		draw_colored_polygon(_slant(sx, by, seg - 5.0, 9.0, 4.0), Color(INK, 0.85))
+		var fw: float = minf(seg - 5.0, x0 + 10.0 + (w - 60.0) * k2 - sx)
+		if fw > 1.0:
+			draw_colored_polygon(_slant(sx, by, fw, 9.0, minf(4.0, fw * 0.5)), st["fill"])

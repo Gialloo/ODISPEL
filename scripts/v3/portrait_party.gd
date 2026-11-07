@@ -12,6 +12,17 @@ const CREAM: Color = Color("#fff4dc")
 const HOT: Color = Color("#ffd23f")
 const RED: Color = Color("#ff2340")
 const CW: float = 92.0          # larghezza di una card della squadra
+const CW_FOTO: float = 118.0    # HUD come la foto dell'autore (Settings.hud_foto): card piu' grandi, cornice del colore
+const FH_FOTO: float = 100.0    # altezza del volto nella card grande
+
+
+static func cw() -> float:
+	return CW_FOTO if Settings.hud_foto else CW
+
+
+# Altezza dalla base dello schermo al bordo alto della card (per chi deve stare sopra la squadra).
+static func top() -> float:
+	return 160.0 if Settings.hud_foto else 128.0
 const FACE: Rect2 = Rect2(112, 128, 290, 270)      # volto dentro al mezzobusto 512x768 (segnaposto)
 const EYES: Rect2 = Rect2(120, 270, 290, 110)      # striscia degli occhi per la colonna ORDINE
 
@@ -84,7 +95,10 @@ func _draw() -> void:
 	var f: Font = Ui.display()
 	# --- SQUADRA: fila in basso a destra -------------------------------------------------------------------
 	var n: int = party.size()
-	var x0: float = W - 22.0 - CW * n - 14.0 * (n - 1)
+	var cww: float = cw()
+	var foto: bool = Settings.hud_foto
+	var fh: float = FH_FOTO if foto else 74.0          # altezza del volto
+	var x0: float = W - 22.0 - cww * n - 14.0 * (n - 1)
 	var any_on: bool = false
 	for uu in party:
 		if bool(uu.get("active", false)):
@@ -94,25 +108,25 @@ func _draw() -> void:
 		var on: bool = bool(u.get("active", false))
 		var alive: bool = bool(u.get("alive", true))
 		var col: Color = u.get("col", CREAM)
-		var x: float = x0 + i * (CW + 14.0)
-		var y: float = H - 128.0 - (12.0 if on else 0.0)
+		var x: float = x0 + i * (cww + 14.0)
+		var y: float = H - top() - (12.0 if on else 0.0)
 		var tilt: float = -4.0 if i % 2 == 0 else 3.0
 		# cornice di carta storta: bianca, rossa se il nemico la punta, del colore se e' di turno
-		var fr := PackedVector2Array([Vector2(x, y + 6 + tilt), Vector2(x + CW, y), Vector2(x + CW - 4, y + 84), Vector2(x + 2, y + 88 + tilt)])
+		var fr := PackedVector2Array([Vector2(x, y + 6 + tilt), Vector2(x + cww, y), Vector2(x + cww - 4, y + fh + 10), Vector2(x + 2, y + fh + 14 + tilt)])
 		var sh := PackedVector2Array()
 		for q in fr:
 			sh.append(q + Vector2(6, 6))
 		draw_colored_polygon(sh, INK)
-		var edge: Color = RED if bool(u.get("marked", false)) else (col.lightened(0.2) if on else CREAM)
+		var edge: Color = RED if bool(u.get("marked", false)) else (col.lightened(0.2) if on else (col if foto else CREAM))      # foto: ogni card del colore del suo personaggio
 		if on and Settings.hud_party:
 			# P1-B: chi e' di turno ha una seconda cornice piena del suo colore attorno alla carta (si vede da lontano)
 			var big := PackedVector2Array()
-			var ctr := Vector2(x + CW * 0.5, y + 44)
+			var ctr := Vector2(x + cww * 0.5, y + fh * 0.6)
 			for q in fr:
 				big.append(ctr + (q - ctr) * Vector2(1.1, 1.08))
 			draw_colored_polygon(big, col)
 		draw_colored_polygon(fr, edge)
-		var inner := Rect2(Vector2(x + 5, y + 8), Vector2(CW - 11, 74))
+		var inner := Rect2(Vector2(x + 5, y + 8), Vector2(cww - 11, fh))
 		draw_rect(inner, col.darkened(0.6) if alive else Color(0.15, 0.15, 0.18))
 		var st: String = _stato_di(u)
 		var fd: Array = _face(str(u.get("id", "")), st)
@@ -124,41 +138,44 @@ func _draw() -> void:
 				tint = Color(0.78, 0.78, 0.84)      # P1-B: gli altri un filo piu' scuri, cosi' chi e' di turno risalta
 			draw_texture_rect_region(fd[0], inner, _fit(fd[1], inner.size), tint)
 		# numeri: PV grande, EN sotto, a destra in basso sopra la cornice (come HP/SP del riferimento)
+		var dy: float = fh - 74.0          # tutto quello che sta sotto il volto scende con lui
+		var hsz: int = 28 if foto else 20
+		var esz: int = 20 if foto else HudLayers.MIN_TEXT
 		var hp_s: String = "%d" % int(u.get("hp", 0))
 		var en_s: String = "EN %d" % int(u.get("en", 0))
-		var hw: float = f.get_string_size(hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x
-		var ew: float = f.get_string_size(en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT).x
-		draw_string_outline(f, Vector2(x + CW - hw - 2, y + 96), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, 6, INK)
-		draw_string(f, Vector2(x + CW - hw - 2, y + 96), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, CREAM if alive else Color(0.6, 0.6, 0.65))
-		draw_string_outline(f, Vector2(x + CW - ew - 2, y + 113), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, 5, INK)
-		draw_string(f, Vector2(x + CW - ew - 2, y + 113), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Ui.CYAN)
+		var hw: float = f.get_string_size(hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz).x
+		var ew: float = f.get_string_size(en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, esz).x
+		draw_string_outline(f, Vector2(x + cww - hw - 2, y + 96 + dy + (6.0 if foto else 0.0)), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz, 7, INK)
+		draw_string(f, Vector2(x + cww - hw - 2, y + 96 + dy + (6.0 if foto else 0.0)), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz, CREAM if alive else Color(0.6, 0.6, 0.65))
+		draw_string_outline(f, Vector2(x + cww - ew - 2, y + 113 + dy + (12.0 if foto else 0.0)), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, esz, 5, INK)
+		draw_string(f, Vector2(x + cww - ew - 2, y + 113 + dy + (12.0 if foto else 0.0)), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, esz, Ui.CYAN)
 		# barrette a sinistra sotto il ritratto: vita (verde) e ULTIMATE (rosa, gialla quando e' piena)
-		var bw: float = maxf(18.0, CW - hw - 12.0)
+		var bw: float = maxf(18.0, cww - hw - 12.0)
 		var hpk: float = clampf(float(u.get("hp", 0)) / maxf(1.0, float(u.get("max_hp", 1))), 0.0, 1.0)
 		var gk: float = clampf(float(u.get("gauge", 0)) / maxf(1.0, float(u.get("gmax", 100))), 0.0, 1.0)
-		draw_rect(Rect2(x + 2, y + 94, bw, 7), INK)
-		draw_rect(Rect2(x + 3, y + 95, (bw - 2) * hpk, 5), Color("#62f08c") if hpk > 0.3 else Color("#ff5a6e"))
+		draw_rect(Rect2(x + 2, y + 94 + dy, bw, 7), INK)
+		draw_rect(Rect2(x + 3, y + 95 + dy, (bw - 2) * hpk, 5), Color("#62f08c") if hpk > 0.3 else Color("#ff5a6e"))
 		if Settings.hud_party:
 			# P1-B: barretta ULTIMATE piu' spessa; piena = gialla con la stella accanto
-			draw_rect(Rect2(x + 2, y + 104, bw, 9), INK)
-			draw_rect(Rect2(x + 3, y + 105, (bw - 2) * gk, 7), HOT if gk >= 1.0 else Ui.PINK)
+			draw_rect(Rect2(x + 2, y + 104 + dy, bw, 9), INK)
+			draw_rect(Rect2(x + 3, y + 105 + dy, (bw - 2) * gk, 7), HOT if gk >= 1.0 else Ui.PINK)
 			if gk >= 1.0 and alive:
-				var sc := Vector2(x + bw + 9, y + 108)
+				var sc := Vector2(x + bw + 9, y + 108 + dy)
 				var pts := PackedVector2Array()
 				for k in 10:
 					pts.append(sc + Vector2.from_angle(-PI / 2.0 + k * PI / 5.0) * (8.0 if k % 2 == 0 else 3.4))
 				draw_colored_polygon(pts, HOT)
 		else:
-			draw_rect(Rect2(x + 2, y + 104, bw, 6), INK)
-			draw_rect(Rect2(x + 3, y + 105, (bw - 2) * gk, 4), HOT if gk >= 1.0 else Ui.PINK)
+			draw_rect(Rect2(x + 2, y + 104 + dy, bw, 6), INK)
+			draw_rect(Rect2(x + 3, y + 105 + dy, (bw - 2) * gk, 4), HOT if gk >= 1.0 else Ui.PINK)
 		if on:
 			CmdWheel.skew_text(self, Vector2(x + 2, y - 4), "▶", 18, HOT, INK, f, 6, 0.0)
 		if not alive:
-			CmdWheel.skew_text(self, Vector2(x + 18, y + 54), "KO", 30, RED, INK, f, 8)
+			CmdWheel.skew_text(self, Vector2(x + 18, y + 54 + dy * 0.5), "KO", 30, RED, INK, f, 8)
 		# HUD 0.61, P0-B: chi e' davvero nel bersaglio della prossima mossa (1 mirino; 2 colpo FORTE o KO: "!" rosso e giallo)
 		var tg: int = int(u.get("tgt", 0))
 		if tg > 0 and alive:
-			var bc := Vector2(x + CW - 8, y + 4)
+			var bc := Vector2(x + cww - 8, y + 4)
 			if tg >= 2:
 				draw_circle(bc, 15.0, Color("#d0122f"))
 				draw_arc(bc, 15.0, 0, TAU, 28, HOT, 2.5, true)
