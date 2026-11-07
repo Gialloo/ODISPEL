@@ -169,6 +169,10 @@ var _btn_fast: Button
 var _hint: Label
 var _say_lbl: Label                   # battute dei personaggi in battaglia
 var _say_balloon: EchoBalloon
+var _echo_bal: EchoBalloon              # fumetto di Echo dei consigli (P1-A: tre modi, _echo)
+static var _echo_seen: Dictionary = {}  # P1-A: quante volte Echo ha gia' detto un consiglio (in tutta la partita): non si ripete
+const ECHO_W: float = 400.0             # P1-A: larghezza massima del fumetto dei consigli
+const ECHO_COL: Color = Color("#3fe0ff")
 var _say_seq: int = 0
 var _quips: BattleQuips             # battute a fumetto della squadra (critici, K.O., salvataggi): battle_quips.gd
 var _final_quip: Array = []          # battuta del colpo finale: esce quando la squadra festeggia
@@ -974,6 +978,37 @@ func _start_round() -> void:
 	await _advance()
 
 
+# ECHO IN TRE MODI (HUD 0.61, P1-A). Echo resta Echo: una riga, la sua voce, poi tace.
+#   normale  consiglio corto, solo le prime `times` volte in tutta la partita (key), se ne va da solo dopo `sec` secondi
+#   selezione quando scegli un comando il fumetto si fa da parte: la spiegazione del comando la dice il riquadro sopra il
+#            ritratto (gia' cosi' in _pick); il consiglio torna se chiudi la scelta e non e' scaduto
+#   avviso   pericolo immediato (P0-B): bordo rosso, scavalca un consiglio normale, poche parole su cosa fare
+# Con Settings.hud_echo spento: il testo resta come prima (nessun limite di volte, nessuna scadenza).
+func _echo(line: String, key: String = "", mode: String = "normale", sec: float = 6.0, times: int = 2) -> void:
+	if _hint == null or ended:
+		return
+	if not Settings.hud_echo:
+		_hint.text = line
+		return
+	if mode == "normale" and _echo_bal != null and _echo_bal.col != ECHO_COL and _hint.text != "":
+		return                     # c'e' un avviso in corso: il consiglio aspetta
+	if key != "":
+		if int(_echo_seen.get(key, 0)) >= times:
+			return
+		_echo_seen[key] = int(_echo_seen.get(key, 0)) + 1
+	_hint.text = line
+	if _echo_bal != null:
+		_echo_bal.col = Color("#ff3b4e") if mode == "avviso" else ECHO_COL
+		_echo_bal.queue_redraw()
+	var tw := create_tween()
+	tw.tween_interval(sec)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(_hint) and _hint.text == line:
+			_hint.text = ""
+			if _echo_bal != null:
+				_echo_bal.col = ECHO_COL)
+
+
 # INDIZIO DI INIZIO ROUND: una riga breve su cio' che cambia questo round (evento dell'arena, catena del boss). Va nella fascia del
 # suggerimento (al centro), sparisce da sola e non scavalca altri suggerimenti.
 func _round_hint() -> void:
@@ -1048,7 +1083,10 @@ func _advance() -> void:
 		if first_turn:
 			first_turn = false
 			if not (tutorial or lezioni):       # con le spiegazioni lo dice gia' Echo: una cosa per volta
-				_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
+				if Settings.hud_echo:
+					_echo("GUARDIA ricarica energia · ABILITÀ la spende · ULTIMATE a barra piena", "primo_turno", "normale", 7.0)
+				else:
+					_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
 		return
 
 
@@ -1523,6 +1561,8 @@ func _timed_guard(intro: bool = true) -> String:
 		first_qte = false
 		_qte_lead *= 2.0
 		_hint.text = "GUARDIA A TEMPO: tocca lo schermo quando il cerchio si chiude. Proprio all'impatto è una parata perfetta"
+		if _echo_bal != null:
+			_echo_bal.col = ECHO_COL
 	_qte_t = 0.0
 	_qte_grade = ""
 	_qte_start_us = Time.get_ticks_usec()
@@ -3426,7 +3466,12 @@ func _build_ui() -> void:
 	if Settings.hud_ritratto:
 		# in basso a sinistra ora c'e' il ritratto: il fumetto di Echo va in basso al centro, tra ritratto e squadra
 		Ui.place(_hint, 0.0, 1.0, 1.0, 1.0, 480, -40, -470, -40)
-	_root.add_child(EchoBalloon.new(_hint))
+	_echo_bal = EchoBalloon.new(_hint)
+	if Settings.hud_echo:
+		_echo_bal.fit = true          # P1-A: il fumetto si stringe al testo (prima era sempre largo come tutta la fascia)
+		if Settings.hud_ritratto:
+			Ui.place(_hint, 0.0, 1.0, 0.0, 1.0, 480, -40, 480 + ECHO_W, -40)      # circa il 60% di prima
+	_root.add_child(_echo_bal)
 	_root.add_child(_hint)
 
 	# in alto a destra: pausa, AUTO, velocita'
@@ -3715,6 +3760,8 @@ func _threat_refresh(tstate: String, tele: Dictionary, mv: Dictionary, who: Stri
 			for id in lethal:
 				names.append(str(BattleState.unit(b, str(id)).get("name", "?")).to_upper())
 			_notice("%s A UN COLPO DAL KO · basta il prossimo %s" % [" E ".join(PackedStringArray(names)), str(mv.get("name", "?")).to_upper()], Ui.PINK, 3.5, "boss", "pericolo")
+			# Echo in modo avviso (P1-A): l'avviso dice cosa succede, Echo cosa fare (una riga, non lo ripete)
+			_echo("Metti al sicuro %s prima del colpo" % " e ".join(PackedStringArray(names)), "", "avviso", 4.0)
 		_lethal_sig = lsig
 	for id in ids:
 		if id != "":
@@ -4291,7 +4338,10 @@ func _update_react() -> void:
 		_react_lbl.text = ("REAZIONE\nRISERVA %d · USA IL TURNO" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA\nSENZA RISERVA"
 		if not _react_hint_seen and not first_turn and _hint != null and not usable.is_empty():
 			_react_hint_seen = true
-			_hint.text = "CARICA IN ARRIVO · REAZIONI con la Riserva: SCHIVA (freccia) · COPRI (tieni e lascia) · FERMA (a raffica) · SOCCORRI (battito)"
+			if Settings.hud_echo:
+				_echo("CARICA IN ARRIVO · con la Riserva: SCHIVA, COPRI, FERMA, SOCCORRI", "reazioni", "normale", 7.0)
+			else:
+				_hint.text = "CARICA IN ARRIVO · REAZIONI con la Riserva: SCHIVA (freccia) · COPRI (tieni e lascia) · FERMA (a raffica) · SOCCORRI (battito)"
 
 
 # ULTIMATE IN DIRETTA: un compagno con la barra piena lancia l'Ultimate fuori turno durante una carica. Non costa Riserva ne' il
