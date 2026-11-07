@@ -25,7 +25,7 @@ const CAST: Dictionary = {
 		"name": "Nox", "faction": "Civette", "height": 1.70, "build": 0.95, "kit": "notturna", "look": "foulard",
 		"skin": "#6e5847", "hair": "#221f1c", "top": "#1a0d9c", "bottom": "#1c1a3a", "accent": "#5a4fe0", "shoes": "#191629",
 		"metal": "#aeb4c4", "gold": "#d9b44a", "glove": "#2a2734",
-		"scarf": "#5b4fd8", "trim": "#46516f", "earring": "#2a2834",
+		"scarf": "#5b4fd8", "trim": "#46516f", "earring": "#2a2834", "skirt": "#150a78",
 		"hair_style": "velata", "extra": "foulard", "fem": true, "eyes": "#5b4fe0", "brow": 0.6, "lid": 0.3, "smirk": 0.0,
 	},
 	"rio": {
