@@ -91,6 +91,23 @@ const FERMI: Array = ["lance", "saul", "nox", "rio"]
 # lasciare la vecchia testa sotto. La testa porta con se' il suo alone (ritagliato dal ritratto intero). Le varianti
 # (ferito, ombra...) restano PNG interi e fermi.
 var _busto: Texture2D
+# CORNICE DEL PERSONAGGIO (autore, 7/11/2026, prova): due livelli disegnati a mano dietro al ritratto, stessa tela 1536x2048.
+# <id>_dietro.png (il glitch) e <id>_avanti.png (le lame del colore), separati per muoverli da soli. Con la cornice i
+# comandi diventano quattro lastre bianche storte sopra la testa (mockup dell'autore). Settings.hud_cornice = false o file
+# mancanti: tutto come prima.
+var _dietro: Texture2D
+var _avanti: Texture2D
+var _polys: Dictionary = {}                     # kind -> lastra del comando (tocco preciso: le lastre si incastrano)
+const CORNICE_SCALA: float = 1.15               # la cornice e' un po' piu' grande del riquadro del ritratto: le lastre si leggono
+const CORNICE_RITRATTO: float = 0.72            # il ritratto rimpicciolito e appoggiato in basso, come nel mockup
+# lastre dei comandi in frazioni della cornice (dal mockup di Saul): [alto-sx, alto-dx, basso-dx, basso-sx]
+const LASTRE: Dictionary = {
+	"attack": [Vector2(0.067, 0.160), Vector2(0.450, 0.108), Vector2(0.447, 0.205), Vector2(0.063, 0.262)],
+	"ult": [Vector2(0.467, 0.125), Vector2(0.910, 0.050), Vector2(0.860, 0.150), Vector2(0.460, 0.210)],
+	"guard": [Vector2(0.037, 0.290), Vector2(0.433, 0.226), Vector2(0.427, 0.325), Vector2(0.027, 0.388)],
+	"skill": [Vector2(0.460, 0.222), Vector2(0.830, 0.160), Vector2(0.777, 0.260), Vector2(0.440, 0.313)],
+}
+const LASTRE_NOME: Dictionary = {"attack": "ATTACCO", "ult": "ULTIMATE", "guard": "GUARDIA", "skill": "SKILL"}
 var _sil_busto: Texture2D
 const SC_NX: int = 12
 const SC_NY: int = 9
@@ -117,6 +134,14 @@ func set_who(id: String) -> void:
 	_busto = null
 	_sil_busto = null
 	_tex_real = false
+	_dietro = null
+	_avanti = null
+	if Settings.hud_cornice:
+		var dp: String = "res://assets/portraits/hud/%s_dietro.png" % id
+		var ap: String = "res://assets/portraits/hud/%s_avanti.png" % id
+		if ResourceLoader.exists(dp) and ResourceLoader.exists(ap):
+			_dietro = load(dp)
+			_avanti = load(ap)
 	var real: String = "res://assets/portraits/hud/%s_hud.png" % id
 	if ResourceLoader.exists(real):
 		_tex = load(real)
@@ -237,28 +262,12 @@ func _draw() -> void:
 	var dx: float = -(1.0 - e) * (PW + 60.0)
 	var f: Font = Ui.display()
 	_rects.clear()
-	# 1) lastra del colore di chi e' di turno, storta, con l'ombra d'inchiostro: il ritratto ci sta sopra
-	var sh := PackedVector2Array([Vector2(dx, H - 360), Vector2(dx + 250, H - 430), Vector2(dx + PW + 30, H), Vector2(dx, H)])
-	var off := PackedVector2Array()
-	for q in sh:
-		off.append(q + Vector2(10, 8))
-	draw_colored_polygon(off, Color(INK, 0.9 * e))
-	draw_colored_polygon(sh, Color(col.darkened(0.38 if _tex_real else 0.55), 0.92 * e))      # disegno a mano: lastra piu' chiara, il nero si stacca
-	# SFONDO CHE SCORRE (autore, 3/11/2026, idea 4): strisce storte chiare che scivolano dentro la lastra, come i fondali
-	# di Persona 5. Ritagliate sulla lastra con Geometry2D (8-10 poligoni piccoli al fotogramma).
-	if _tex_real:
-		_draw_stripes(sh, dx, H, e)
-	# PASSAGGIO DA UN PERSONAGGIO ALL'ALTRO (autore, 3/11/2026: «non e' bello»): una lama chiara attraversa la lastra mentre
-	# arriva, poi il ritratto sale da sotto. Netto e veloce, alla Persona: niente dissolvenze molli.
-	if appear < 1.0:
-		var wk: float = clampf((appear - 0.1) / 0.6, 0.0, 1.0)
-		if wk > 0.0 and wk < 1.0:
-			var wx: float = dx - 120.0 + wk * (PW + 260.0)
-			var blade := PackedVector2Array([Vector2(wx, H), Vector2(wx + 46.0, H), Vector2(wx + 46.0 + 190.0, H - 460.0), Vector2(wx + 190.0, H - 460.0)])
-			for poly in Geometry2D.intersect_polygons(sh, blade):
-				draw_colored_polygon(poly, Color(CREAM, 0.85 * (1.0 - wk)))
-	draw_colored_polygon(PackedVector2Array([Vector2(dx, H - 330), Vector2(dx + 226, H - 376), Vector2(dx + 240, H - 362), Vector2(dx, H - 314)]), Color(col.lightened(0.15), 0.9 * e))
-	draw_colored_polygon(PackedVector2Array([Vector2(dx + 268, H - 408), Vector2(dx + 286, H - 412), Vector2(dx + PW + 46, H), Vector2(dx + PW + 26, H)]), Color(col, 0.85 * e))
+	var cornice: bool = _dietro != null and _avanti != null
+	_polys.clear()
+	if cornice:
+		_draw_cornice(dx, H, e)
+	else:
+		_draw_lastra(dx, H, e)
 	# 2) ritratto: in basso, tagliato dal bordo; il volto sta nella meta' destra della zona, le scritte a sinistra e in fondo
 	if _tex != null:
 		var now_t: Texture2D = _tex_now()
@@ -269,6 +278,8 @@ func _draw() -> void:
 			_shown = now_t
 		_live_transform(dx, H, e)
 		var r := Rect2(Vector2(dx, H - PH), Vector2(PW, PH))
+		if cornice and _tex_real:
+			r = _cornice_rect(dx, H)
 		if not _tex_real:
 			# segnaposto (mezzobusto 512x768, volto al centro): spostato e ingrandito per mettere il volto nella sua zona
 			r = Rect2(Vector2(dx + 92.0, H - 500.0), Vector2(320.0, 480.0))
@@ -305,12 +316,15 @@ func _draw() -> void:
 	for kind in ["ult", "skill", "attack", "guard"]:
 		var it0: Dictionary = item(kind)
 		if not it0.is_empty():
-			_usz = mini(_usz, _fit_size(kind, it0, dx, H, f))
+			_usz = mini(_usz, _lastra_fit(kind, f) if cornice else _fit_size(kind, it0, dx, H, f))
 	for kind in ["ult", "skill", "attack", "guard"]:
 		var it: Dictionary = item(kind)
 		if it.is_empty():
 			continue
-		_draw_cmd(kind, it, dx, H, f, e)
+		if cornice:
+			_draw_lastra_cmd(kind, it, dx, H, f, e)
+		else:
+			_draw_cmd(kind, it, dx, H, f, e)
 	# 4) nome grande in fondo, sopra al ritratto (come il nome in giapponese del riferimento)
 	var nm: String = who.split(" · ")[0]
 	var nsz: int = 40
@@ -322,6 +336,130 @@ func _draw() -> void:
 	# 5) cosa fa il comando scelto: una lastra scura sopra il ritratto
 	if picked != "":
 		_draw_tip(item(picked), dx, H, e)
+
+
+func _draw_lastra(dx: float, H: float, e: float) -> void:
+	# 1) lastra del colore di chi e' di turno, storta, con l'ombra d'inchiostro: il ritratto ci sta sopra
+	var sh := PackedVector2Array([Vector2(dx, H - 360), Vector2(dx + 250, H - 430), Vector2(dx + PW + 30, H), Vector2(dx, H)])
+	var off := PackedVector2Array()
+	for q in sh:
+		off.append(q + Vector2(10, 8))
+	draw_colored_polygon(off, Color(INK, 0.9 * e))
+	draw_colored_polygon(sh, Color(col.darkened(0.38 if _tex_real else 0.55), 0.92 * e))      # disegno a mano: lastra piu' chiara, il nero si stacca
+	# SFONDO CHE SCORRE (autore, 3/11/2026, idea 4): strisce storte chiare che scivolano dentro la lastra, come i fondali
+	# di Persona 5. Ritagliate sulla lastra con Geometry2D (8-10 poligoni piccoli al fotogramma).
+	if _tex_real:
+		_draw_stripes(sh, dx, H, e)
+	# PASSAGGIO DA UN PERSONAGGIO ALL'ALTRO (autore, 3/11/2026: «non e' bello»): una lama chiara attraversa la lastra mentre
+	# arriva, poi il ritratto sale da sotto. Netto e veloce, alla Persona: niente dissolvenze molli.
+	if appear < 1.0:
+		var wk: float = clampf((appear - 0.1) / 0.6, 0.0, 1.0)
+		if wk > 0.0 and wk < 1.0:
+			var wx: float = dx - 120.0 + wk * (PW + 260.0)
+			var blade := PackedVector2Array([Vector2(wx, H), Vector2(wx + 46.0, H), Vector2(wx + 46.0 + 190.0, H - 460.0), Vector2(wx + 190.0, H - 460.0)])
+			for poly in Geometry2D.intersect_polygons(sh, blade):
+				draw_colored_polygon(poly, Color(CREAM, 0.85 * (1.0 - wk)))
+	draw_colored_polygon(PackedVector2Array([Vector2(dx, H - 330), Vector2(dx + 226, H - 376), Vector2(dx + 240, H - 362), Vector2(dx, H - 314)]), Color(col.lightened(0.15), 0.9 * e))
+	draw_colored_polygon(PackedVector2Array([Vector2(dx + 268, H - 408), Vector2(dx + 286, H - 412), Vector2(dx + PW + 46, H), Vector2(dx + PW + 26, H)]), Color(col, 0.85 * e))
+
+
+# Cornice a due livelli: DIETRO entra piu' lento e ogni tanto scatta di lato (il glitch), AVANTI entra deciso col ritratto.
+func _draw_cornice(dx: float, H: float, e: float) -> void:
+	var cs := Vector2(PW, PH) * CORNICE_SCALA
+	var r := Rect2(Vector2(dx, H - cs.y), cs)
+	var eb: float = _ease(clampf(appear * 0.8, 0.0, 1.0))
+	var gl: Vector2 = Vector2.ZERO
+	var ph: float = fmod(t, 2.6)
+	if ph < 0.12:          # scatto del glitch: due frame di lato, poi fermo (niente tremolio continuo)
+		gl = Vector2(6.0 if ph < 0.06 else -4.0, 0.0)
+	draw_texture_rect(_dietro, Rect2(r.position + Vector2(-(1.0 - eb) * 80.0, 0.0) + gl, r.size), false, Color(1, 1, 1, e))
+	draw_texture_rect(_avanti, Rect2(r.position + Vector2(-(1.0 - e) * 40.0, (1.0 - e) * 30.0), r.size), false, Color(1, 1, 1, e))
+
+
+func _cornice_rect(dx: float, H: float) -> Rect2:
+	var cs := Vector2(PW, PH) * CORNICE_SCALA * CORNICE_RITRATTO
+	return Rect2(Vector2(dx, H - cs.y), cs)
+
+
+# Comando sulla cornice: lastra bianca storta, icona e scritta d'inchiostro (mockup dell'autore). ULTIMATE pronta: lastra
+# scura del colore e scritta gialla. Scelto: stessa lastra scura col bordo giallo. Non usabile: lastra velata, scritta grigia.
+func _draw_lastra_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: float) -> void:
+	var q := PackedVector2Array()
+	for v in LASTRE[kind]:
+		q.append(Vector2(dx, H - PH * CORNICE_SCALA) + (v as Vector2) * Vector2(PW, PH) * CORNICE_SCALA)
+	_polys[kind] = q
+	var ok: bool = bool(it.get("ok", false))
+	var on: bool = picked == kind
+	var dark: bool = on or (kind == "ult" and ok)
+	var sdw := PackedVector2Array()
+	for v in q:
+		sdw.append(v + Vector2(4, 4))
+	draw_colored_polygon(sdw, Color(INK, 0.85 * e))
+	var plate: Color = Color(col.darkened(0.62), 0.97) if dark else (Color(1, 1, 0.92, 0.97) if _hov == kind and ok else (Color(0.97, 0.98, 0.97, 0.95) if ok else Color(0.66, 0.66, 0.7, 0.92)))
+	draw_colored_polygon(q, Color(plate, plate.a * e))
+	if on:
+		draw_polyline(q + PackedVector2Array([q[0]]), Color(HOT, e), 3.0, true)
+	var ink: Color = HOT if dark else (INK if ok else Color(INK, 0.62))
+	# asse della lastra: la scritta segue il bordo alto, centrata in altezza
+	var left: Vector2 = (q[0] + q[3]) * 0.5
+	var right: Vector2 = (q[1] + q[2]) * 0.5
+	var rot: float = (right - left).angle()
+	var hgt: float = (q[3] - q[0]).length()
+	var name: String = str(LASTRE_NOME[kind])
+	var k: String = "" if Ui.is_touch() else str(KEYS.get(kind, ""))
+	var kw: float = Ui.body().get_string_size(k, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT).x + 6.0 if k != "" else 0.0
+	var tx: float = hgt * 0.82
+	var room: float = (right - left).length() - tx - 10.0 - kw
+	var sz: int = _usz          # stessa grandezza per le quattro lastre (la piu' stretta decide)
+	if kind == "ult" and not ok:
+		# ULTIMATE in carica: una striscia rosa lungo il bordo alto si allunga con la carica, e al posto del tasto la percentuale
+		var pc: float = clampf(str(it.get("cost", "0")).to_float() / 100.0, 0.0, 1.0)
+		var dn: Vector2 = (q[3] - q[0]) * 0.2
+		var a0: Vector2 = q[0]
+		var a1: Vector2 = q[0].lerp(q[1], pc)
+		draw_colored_polygon(PackedVector2Array([a0, a1, a1 + dn, a0 + dn]), Color(Ui.PINK, e))
+		k = str(it.get("cost", ""))
+	var ic: Vector2 = left + Vector2(hgt * 0.42 + 2.0, 0).rotated(rot)
+	CmdWheel.glyph(self, kind, ic, hgt * 0.3, Color(ink, e))
+	draw_set_transform(left + Vector2(tx, sz * 0.36).rotated(rot), rot)
+	draw_string(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, Color(ink, e))
+	if k != "":
+		# tasto della tastiera in piccolo, dentro la lastra dopo la scritta
+		draw_string(Ui.body(), Vector2(f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x + 6.0, -sz * 0.3), k, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(ink, 0.65 * e))
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+	var bb := Rect2(q[0], Vector2.ZERO)
+	for v in q:
+		bb = bb.expand(v)
+	_rects[kind] = bb
+
+
+# Grandezza della scritta che entra nella lastra (calcolata come in _draw_lastra_cmd, a dx = 0).
+func _lastra_fit(kind: String, f: Font) -> int:
+	var q: Array = LASTRE[kind]
+	var cs := Vector2(PW, PH) * CORNICE_SCALA
+	var left: Vector2 = ((q[0] as Vector2) + (q[3] as Vector2)) * 0.5 * cs
+	var right: Vector2 = ((q[1] as Vector2) + (q[2] as Vector2)) * 0.5 * cs
+	var hgt: float = (((q[3] as Vector2) - (q[0] as Vector2)) * cs).length()
+	var kw: float = 0.0 if Ui.is_touch() else Ui.body().get_string_size("4", HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT).x + 6.0
+	if kind == "ult":
+		kw = maxf(kw, Ui.body().get_string_size("100%", HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT).x + 6.0)
+	var room: float = (right - left).length() - hgt * 0.82 - 10.0 - kw
+	var sz: int = int(hgt * 0.6)
+	while sz > HudLayers.MIN_TEXT and f.get_string_size(str(LASTRE_NOME[kind]), HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x > room:
+		sz -= 1
+	return sz
+
+
+func _hit(p: Vector2) -> String:
+	for k in _polys:
+		if Geometry2D.is_point_in_polygon(p, _polys[k]):
+			return k
+	if not _polys.is_empty():
+		return ""
+	for k in _rects:
+		if (_rects[k] as Rect2).has_point(p):
+			return k
+	return ""
 
 
 const STRIPE_GAP: float = 46.0
@@ -528,6 +666,8 @@ func _draw_tip(it: Dictionary, dx: float, H: float, e: float) -> void:
 	if lines.size() > 3:
 		lines = lines.slice(0, 3)
 	var top: float = H - 400.0 - 30.0 - 20.0 * lines.size()
+	if not _polys.is_empty():
+		top = H - PH * CORNICE_SCALA - 14.0 - 20.0 * lines.size()        # cornice: le lastre stanno in alto, la spiegazione sopra di loro
 	var r := Rect2(Vector2(dx + 6, top), Vector2(360, 34 + 20.0 * lines.size()))
 	var poly := CmdWheel.slant(r, 10.0)
 	draw_colored_polygon(poly, Color(0.03, 0.02, 0.06, 0.88 * e))
@@ -538,18 +678,12 @@ func _draw_tip(it: Dictionary, dx: float, H: float, e: float) -> void:
 
 
 func _has_point(p: Vector2) -> bool:
-	for k in _rects:
-		if (_rects[k] as Rect2).has_point(p):
-			return true
-	return false
+	return _hit(p) != ""
 
 
 func _gui_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseMotion:
-		var hk: String = ""
-		for k in _rects:
-			if (_rects[k] as Rect2).has_point((ev as InputEventMouseMotion).position):
-				hk = k
+		var hk: String = _hit((ev as InputEventMouseMotion).position)
 		if hk != _hov:
 			_hov = hk
 			hovered.emit(hk)
@@ -560,8 +694,7 @@ func _gui_input(ev: InputEvent) -> void:
 	if not pressed:
 		return
 	var p: Vector2 = (ev as InputEventScreenTouch).position if ev is InputEventScreenTouch else (ev as InputEventMouseButton).position
-	for k in _rects:
-		if (_rects[k] as Rect2).has_point(p):
-			accept_event()
-			tapped.emit(k)
-			return
+	var hit: String = _hit(p)
+	if hit != "":
+		accept_event()
+		tapped.emit(hit)
