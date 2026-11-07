@@ -107,6 +107,7 @@ const CORNICE_RITRATTO: float = 0.72            # il ritratto rimpicciolito e ap
 # Disposizione dei comandi sulla cornice. "lista" (autore, 7/11/2026, riferimento): ritratto grande, comandi in colonna
 # a nastri storti sotto il volto, ognuno col suo tasto tondo; "lastre": le quattro lastre sopra la testa del primo mockup.
 const CORNICE_STILE: String = "testo"      # "testo" = comandi come nella 0.58 (scritte e tasti tondi) sopra la cornice (autore, 7/11/2026); "lista" = nastri; altro = lastre
+const RITRATTO_QUIETO: float = 0.86   # luminosita' del ritratto con Settings.hud_gerarchia (1 = come la 0.63)
 const LISTA_ORDINE: Array = ["attack", "skill", "guard", "ult"]
 const LISTA_NOME: Dictionary = {"attack": "ATTACCO", "skill": "ABILITÀ", "guard": "GUARDIA", "ult": "ULTIMATE"}
 const LISTA_X: float = 0.40          # inizio della prima riga (frazione della cornice); ogni riga scende e rientra un poco
@@ -321,9 +322,11 @@ func _draw() -> void:
 			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
 			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
 		var layered: bool = _tex_real and _busto != null and now_t == _tex
-		draw_texture_rect(_busto if layered else now_t, r, false, Color(1, 1, 1, e))
+		# gerarchia a 4 livelli (7/11/2026): il ritratto e' decorazione, un filo piu' quieto perche' i comandi davanti si leggano
+		var pm: Color = Color(RITRATTO_QUIETO, RITRATTO_QUIETO, RITRATTO_QUIETO, e) if Settings.hud_gerarchia else Color(1, 1, 1, e)
+		draw_texture_rect(_busto if layered else now_t, r, false, pm)
 		if _head != null and now_t == _tex:      # le varianti (ferito, ombra...) hanno colori diversi: li' resta ferma
-			_draw_head(r, e, Vector2.ZERO, Color(1, 1, 1, e), layered)
+			_draw_head(r, e, Vector2.ZERO, pm, layered)
 		if _scarf != null and now_t == _tex:
 			_draw_scarf(r, e)
 		if _swap > 0.0 and _sil != null and _tex_real:
@@ -815,6 +818,9 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 		fill = HOT
 	elif _hov == kind and ok:
 		fill = CREAM
+	if not on and Settings.hud_gerarchia:
+		# comando non scelto: una lastra d'inchiostro leggera dietro la scritta, si legge anche sopra il ritratto (livello 1)
+		draw_colored_polygon(PackedVector2Array([Vector2(-8, -sz * 0.86), Vector2(tw + 10, -sz * 0.94), Vector2(tw + 4, sz * 0.2), Vector2(-12, sz * 0.26)]), Color(INK, 0.55 * e))
 	# ombra del colore sfalsata (lettering del riferimento) + contorno d'inchiostro spesso
 	draw_set_transform(p + Vector2(4, 4).rotated(rot), rot, Vector2(1, 1))
 	draw_string_outline(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, 10, Color(col.darkened(0.2), 0.95 * e))
@@ -837,9 +843,18 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 	draw_circle(bc + Vector2(2, 2), br + 3, Color(INK, e))
 	draw_circle(bc, br + 2, Color(CREAM if ok else GREY, e))
 	draw_circle(bc, br - 1, Color(INK if not on else col.darkened(0.3), e))
-	if Ui.is_touch():
+	if Ui.is_touch() or Settings.hud_gerarchia:
 		CmdWheel.glyph(self, kind, bc, br * 0.8, Color(CREAM if ok else GREY, e))
-	else:
+	if not Ui.is_touch() and Settings.hud_gerarchia:
+		# su pc il numero del tasto sta in un bollino suo, attaccato all'icona (prima prendeva il posto dell'icona)
+		var kk: String = str(KEYS.get(kind, ""))
+		var bf2: Font = Ui.body()
+		var kc: Vector2 = bc + Vector2((-br - 2.0) if right else (br + 2.0), -br + 1.0)     # dal lato opposto alla scritta
+		draw_circle(kc, 11.0, Color(INK, e))
+		draw_circle(kc, 9.5, Color(CREAM if ok else GREY, e))
+		var kz: Vector2 = bf2.get_string_size(kk, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT)
+		draw_string(bf2, kc + Vector2(-kz.x * 0.5, 6), kk, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(INK, e))
+	elif not Ui.is_touch():
 		var k: String = str(KEYS.get(kind, ""))
 		var ks: Vector2 = f.get_string_size(k, HORIZONTAL_ALIGNMENT_LEFT, -1, 18)
 		draw_string(f, bc + Vector2(-ks.x * 0.5, 7), k, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(CREAM if ok else GREY, e))
@@ -867,7 +882,8 @@ func _draw_tip(it: Dictionary, dx: float, H: float, e: float) -> void:
 	var r := Rect2(Vector2((left + right) * 0.5 - bw * 0.5, H - 18.0 - bh), Vector2(bw, bh))
 	var poly := CmdWheel.slant(r, 10.0)
 	draw_colored_polygon(poly, Color(0.03, 0.02, 0.06, 0.88 * e))
-	draw_polyline(PackedVector2Array([poly[0], poly[1], poly[2], poly[3], poly[0]]), Color(col.lightened(0.3), e), 2.0)
+	# livello 4 (Settings.hud_gerarchia): la cornice si spegne un poco, non deve competere coi comandi
+	draw_polyline(PackedVector2Array([poly[0], poly[1], poly[2], poly[3], poly[0]]), Color(col.lightened(0.3), (0.4 if Settings.hud_gerarchia else 1.0) * e), 2.0)
 	draw_string(Ui.display(), r.position + Vector2(16, 24), str(it.get("title", "")), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 30.0, 17, Color(HOT, e))
 	for i in lines.size():
 		draw_string(bf, r.position + Vector2(16, 46 + 20 * i), str(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(CREAM, e))
