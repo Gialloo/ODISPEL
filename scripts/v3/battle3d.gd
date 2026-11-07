@@ -180,6 +180,8 @@ var _order_title: Label               # «TURNO n»: il giocatore tiene il conto
 var _party_back: Control
 var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
 var _ritmo_bar: RitmoBar               # RITMO di squadra sopra la fila (HUD 0.61, P0-A; Settings.hud_ritmo)
+var _threat_plate: ThreatPlate         # PROSSIMA MOSSA su una lastra con icona (HUD 0.61, P0-B; Settings.hud_minaccia)
+var _tgt: Dictionary = {}              # id del compagno -> 1 nel bersaglio della prossima mossa, 2 se il colpo e' FORTE (P0-B)
 var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
 var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
 var _pop_key: String = ""               # ultimo turno annunciato con lo scatto (evita di rifarlo a ogni aggiornamento)
@@ -3274,6 +3276,10 @@ func _build_ui() -> void:
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_tele.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bp.add_child(_tele)
+	if Settings.hud_minaccia:
+		# la riga di testo resta (stesso testo, per prove e lettori) ma la vede solo chi spegne la lastra
+		_threat_plate = ThreatPlate.new()
+		bp.add_child(_threat_plate)
 	_build_greg_ui()
 
 	_party_back = Control.new()
@@ -3523,7 +3529,7 @@ func _hud_focus(choice: bool) -> void:
 	# durante la mossa restano: nome della mossa, effetti (gli avvisi) e vite della squadra. Il nemico torna quando si sceglie.
 	for c in [_order_panel, _boss_panel, _weak_row, _tele, _hint]:
 		if c != null:
-			(c as Control).visible = choice
+			(c as Control).visible = choice and not (c == _tele and _threat_plate != null)   # con la lastra (P0-B) la riga resta spenta
 	if _p1 != null:
 		_p1.set_order_visible(choice)
 	if _greg_tag != null:
@@ -3665,6 +3671,44 @@ func _order_chip(col: Color, now: bool) -> StyleBoxFlat:
 	if not _order_chips.has(key):
 		_order_chips[key] = Ui.plate(col, Ui.INK, -0.18, 6) if now else Ui.plate(Color(0.05, 0.03, 0.08, 0.82), col, -0.18, 5)
 	return _order_chips[key]
+
+
+# HUD 0.61, P0-B: la prossima mossa sulla lastra con icona, e chi e' davvero nel bersaglio (per i ritratti della squadra).
+# Solo dati del motore: il bersaglio annunciato (telegraph), "su tutti" della mossa, la telecamera (camera_targets),
+# la catena (telegraph.chain) e chi andrebbe KO (threat_preview.lethal). Niente previsioni oltre a queste.
+func _threat_refresh(tstate: String, tele: Dictionary, mv: Dictionary, who: String) -> void:
+	_tgt = {}
+	if _threat_plate == null:
+		return
+	if _tele.text == "":
+		_threat_plate.set_threat({})
+		return
+	if tstate == "stordito":
+		_threat_plate.set_threat({"state": "stordito"})
+		return
+	var thr: Dictionary = BattleResolver.threat_preview(b)
+	var strong: bool = tstate == "forte"
+	var ids: Array = []
+	if bool(mv.get("camera", false)):
+		for pk in BattleResolver.camera_targets(b):
+			ids.append(str((pk["unit"] as Dictionary).get("id", "")))
+	elif str(mv.get("target", "one")) == "all":
+		for p in BattleState.alive_players(b):
+			ids.append(str(BattleState.active_unit(b, str(p["id"])).get("id", "")))
+	else:
+		ids.append(str(BattleState.active_unit(b, str(tele.get("target", ""))).get("id", "")))
+	var lethal: Array = thr.get("lethal", [])
+	for id in ids:
+		if id != "":
+			_tgt[id] = 2 if (strong or lethal.has(id)) else 1
+	var chain_id: String = str(thr.get("chain", ""))
+	var chain_nm: String = str(BattleContent.BOSS_MOVES.get(chain_id, {}).get("name", chain_id)).to_upper() if chain_id != "" else ""
+	var stat: String = ""
+	var sd: Dictionary = mv.get("status", {})
+	if not sd.is_empty():
+		stat = str(STATUS_NAMES.get(str(sd.keys()[0]), str(sd.keys()[0]).to_upper()))
+	var kind: String = "catena" if chain_nm != "" else ("tutti" if str(mv.get("target", "one")) == "all" else "singolo")
+	_threat_plate.set_threat({"state": tstate, "name": str(mv.get("name", "?")), "who": who, "kind": kind, "status": stat, "chain": chain_nm})
 
 
 # Minaccia: lastra scura col bordo rosso; colpo FORTE su lastra rossa piena; nemico stordito in giallo
@@ -4045,7 +4089,8 @@ func _p1_refresh(marked: String) -> void:
 		var u: Dictionary = _slot_unit(i)
 		prow.append({"id": str(u.get("char", "")), "name": str(u.get("name", "")), "col": _col(u), "hp": int(u.get("hp", 0)),
 			"max_hp": int(u.get("max_hp", 1)), "en": int(u.get("energy", 0)), "gauge": int(u.get("gauge", 0)), "gmax": BattleTypes.GAUGE_MAX,
-			"active": str(slots[i]) == cur_pid and not ended, "alive": BattleState.is_alive(u), "marked": marked != "" and str(u.get("id", "")) == marked})
+			"active": str(slots[i]) == cur_pid and not ended, "alive": BattleState.is_alive(u), "marked": marked != "" and str(u.get("id", "")) == marked,
+			"tgt": int(_tgt.get(str(u.get("id", "")), 0))})
 	var orow: Array = []
 	for k in range(maxi(0, turn_i), turn_list.size()):
 		var e: Dictionary = turn_list[k]
@@ -4335,8 +4380,9 @@ func _refresh_hud() -> void:
 		var strong: bool = CombatHud.is_strong(float(mv.get("mult", 0.0)), thr.get("lethal", []))
 		_tele.text = CombatHud.tele_line(str(mv.get("name", "?")), who, str(mv.get("target", "one")) == "all", strong, str(thr.get("chain", "")) != "") if not mv.is_empty() else ""
 		tstate = "forte" if strong else "normale"
-	_tele.visible = _tele.text != ""
+	_tele.visible = _tele.text != "" and _threat_plate == null
 	_tele_dress(tstate)
+	_threat_refresh(tstate, tele, mv, who)
 	_weak_refresh(boss)
 	_greg_refresh()
 	_ghost_to(_boss_ghost, float(shown_hp), float(boss["max_hp"]))

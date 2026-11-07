@@ -15,7 +15,7 @@ const CW: float = 92.0          # larghezza di una card della squadra
 const FACE: Rect2 = Rect2(112, 128, 290, 270)      # volto dentro al mezzobusto 512x768 (segnaposto)
 const EYES: Rect2 = Rect2(120, 270, 290, 110)      # striscia degli occhi per la colonna ORDINE
 
-var party: Array = []           # {id, name, col, hp, max_hp, en, gauge, gmax, active, alive, marked}
+var party: Array = []           # {id, name, col, hp, max_hp, en, gauge, gmax, active, alive, marked, tgt}
 var order: Array = []           # {id, name, col, boss, now}
 var order_on: bool = true
 var round_n: int = 1
@@ -130,6 +130,19 @@ func _draw() -> void:
 			CmdWheel.skew_text(self, Vector2(x + 2, y - 4), "▶", 18, HOT, INK, f, 6, 0.0)
 		if not alive:
 			CmdWheel.skew_text(self, Vector2(x + 18, y + 54), "KO", 30, RED, INK, f, 8)
+		# HUD 0.61, P0-B: chi e' davvero nel bersaglio della prossima mossa (1 mirino; 2 colpo FORTE o KO: "!" rosso e giallo)
+		var tg: int = int(u.get("tgt", 0))
+		if tg > 0 and alive:
+			var bc := Vector2(x + CW - 8, y + 4)
+			if tg >= 2:
+				draw_circle(bc, 15.0, Color("#d0122f"))
+				draw_arc(bc, 15.0, 0, TAU, 28, HOT, 2.5, true)
+				var xw: float = f.get_string_size("!", HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
+				draw_string(f, bc + Vector2(-xw * 0.5, 8), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, CREAM)
+			else:
+				draw_circle(bc, 14.0, Color(INK, 0.92))
+				draw_arc(bc, 14.0, 0, TAU, 28, ThreatPlate.RED, 3.0, true)
+				ThreatPlate.draw_icon(self, "singolo", bc, ThreatPlate.RED, 7.0)
 	# --- ORDINE: colonna sul bordo destro, solo mentre si sceglie -------------------------------------------
 	if not order_on or order.is_empty():
 		return

@@ -54,4 +54,23 @@ func _run() -> void:
 		await _shot(nm + "_acceso")
 		bt.call("_pick", "")
 		await create_timer(0.3).timeout
+	# prossima mossa: VERBALE (FORTE, su uno) e nemico stordito (dati del telegrafo messi a mano solo per la schermata)
+	var pid: String = str(BattleState.alive_players(b)[0]["id"])
+	var tele_ok: Dictionary = b.get("telegraph", {}).duplicate()
+	b["telegraph"] = {"move": "verbale", "target": pid}
+	bt.call("_refresh_hud")
+	await create_timer(0.3).timeout
+	await _shot("minaccia_forte_libero")
+	bt.call("_pick", "attack")
+	await create_timer(0.6).timeout
+	await _shot("minaccia_forte_acceso")
+	bt.call("_pick", "")
+	await create_timer(0.3).timeout
+	BattleState.boss(b)["stun"] = 1
+	bt.call("_refresh_hud")
+	await create_timer(0.3).timeout
+	await _shot("minaccia_stordito")
+	BattleState.boss(b)["stun"] = 0
+	b["telegraph"] = tele_ok
+	bt.call("_refresh_hud")
 	quit()
