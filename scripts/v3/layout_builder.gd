@@ -143,7 +143,7 @@ static func _galleria(cb: CityBuilder, out: Dictionary, parent: Node3D) -> void:
 	cb.bench(-6.1, -10.0)
 	cb.bench(6.1, -24.0)
 	# manichini senza faccia davanti alle vetrine: due forme cotte in una mesh, disegnate con MultiMesh (4 chiamate in tutto)
-	var look: Dictionary = {"faceless": true, "kit": "", "no_props": true, "skin": "#e8e4dc", "hair": "#d8d3ca", "top": "#f2efe8", "bottom": "#cfc9be", "accent": "#ffffff", "shoes": "#bdb7ac", "nomask": true}
+	var look: Dictionary = {"faceless": true, "kit": "", "no_props": true, "skin": "#e8e4dc", "hair": "#d8d3ca", "top": "#f2efe8", "bottom": "#cfc9be", "accent": "#ffffff", "shoes": "#bdb7ac", "nomask": true, "v1": true}
 	for v in 2:
 		var mesh: ArrayMesh = CharacterVisual.baked_mesh(["nox", "saul"][v], look)
 		var mm := MultiMesh.new()

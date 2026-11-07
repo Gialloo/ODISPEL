@@ -49,6 +49,8 @@ var _swing: float = 0.0              # 0..1 durante l'attacco: la mazza vola in 
 func setup(char_id: String, override: Dictionary = {}) -> void:
 	id = char_id
 	var sp: Dictionary = CastVisual.spec(char_id).duplicate()
+	if bool(override.get("v1", false)) and CastVisual.CAST_V1.has(char_id):
+		sp = (CastVisual.CAST_V1[char_id] as Dictionary).duplicate()   # forme di prima (i manichini della galleria restano com'erano)
 	if char_id == "rio" and mask_cracked():
 		sp["mask_crack"] = true          # la crepa resta per il resto dell'atto (un ritratto puo' toglierla con l'override)
 	sp.merge(override, true)            # espressioni dei portrait: sopracciglia, palpebre, bocca...

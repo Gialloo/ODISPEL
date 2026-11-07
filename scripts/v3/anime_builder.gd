@@ -78,7 +78,10 @@ static func torso(sp: Dictionary) -> MeshBatch:
 	var metal: Color = _m(_c(sp, "metal"))
 	var gold: Color = _m(_c(sp, "gold"))
 	var skin: Color = _a(_c(sp, "skin"), 0.8)
+	var look: String = str(sp.get("look", ""))
 	var puff: float = 0.016 if kit in ["streamer", "corriere"] else (0.006 if kit == "tattico" else 0.0)   # felpe e bomber larghi
+	if look != "":
+		puff = float(LOOK_PUFF.get(look, 0.0))
 	# busto snello: vita stretta, spalle contenute
 	var wx: float = (0.098 if fem else 0.105) * b
 	var hx: float = (0.122 if fem else 0.115) * b
@@ -98,6 +101,9 @@ static func torso(sp: Dictionary) -> MeshBatch:
 	mb.sweep(rings, 16, top, true, false, true)
 	# collo (pelle)
 	mb.sweep([_r(0.5, 0.039, 0.037, 0.012), _r(0.6, 0.035, 0.033, 0.012)], 10, skin, false, false, false)
+	if look != "":
+		_torso_look(mb, sp, look, wx, hx, cx, sx)
+		return mb
 	match kit:
 		"tattico":
 			# divisa LibraCorp: giacca blu notte a collo alto con profili rossi, gilet tattico con tasche, cintura, distintivo
@@ -251,11 +257,18 @@ static func head(sp: Dictionary) -> MeshBatch:
 	if bool(sp.get("faceless", false)):
 		pass                              # manichino: niente occhi ne' bocca
 	elif extra == "mask" and not bool(sp.get("nomask", false)):
-		_mask(mb, accent, bool(sp.get("mask_crack", false)))
+		if sp.has("mask_l"):
+			_mask_ufficiale(mb, sp, bool(sp.get("mask_crack", false)))
+		else:
+			_mask(mb, accent, bool(sp.get("mask_crack", false)))
 	else:
 		_eyes(mb, sp)
+	if bool(sp.get("scar", false)) and not bool(sp.get("faceless", false)):
+		_scar(mb)
 	_hair(mb, style, hair, accent, sp)
 	_hat(mb, sp)
+	if sp.has("earring"):
+		_earring(mb, sp)
 	return mb
 
 
@@ -354,20 +367,20 @@ static func _mask(mb: MeshBatch, accent: Color, cracked: bool = false) -> void:
 
 # Dopo il capitolo 3 (Vetrina) la maschera di Rio si incrina invece di cadere: una crepa dalla fronte all'occhio destro
 # e, dentro, un occhio vero («Da qui si vede... un occhio. Il mio.»). Toglierla resta il climax del suo arco (U18).
-static func _mask_crack(mb: MeshBatch) -> void:
+static func _mask_crack(mb: MeshBatch, mx: float = 1.0) -> void:
 	var ink := Color(0.12, 0.07, 0.16, 0.6)
-	var line: Array = [Vector2(0.018, 0.19), Vector2(0.036, 0.165), Vector2(0.026, 0.145), Vector2(0.05, 0.128), Vector2(0.043, 0.112)]
+	var line: Array = [Vector2(0.018 * mx, 0.19), Vector2(0.036 * mx, 0.165), Vector2(0.026 * mx, 0.145), Vector2(0.05 * mx, 0.128), Vector2(0.043 * mx, 0.112)]
 	for i in line.size() - 1:
 		var a: Vector2 = line[i]
 		var b: Vector2 = line[i + 1]
 		var n: Vector2 = Vector2(-(b - a).y, (b - a).x).normalized() * 0.0028
 		_decal(mb, [a + n, b + n, b - n, a - n], 0.0175, ink)
-	_decal(mb, [Vector2(0.036, 0.165), Vector2(0.02, 0.158), Vector2(0.021, 0.155), Vector2(0.036, 0.161)], 0.0175, ink)
+	_decal(mb, [Vector2(0.036 * mx, 0.165), Vector2(0.02 * mx, 0.158), Vector2(0.021 * mx, 0.155), Vector2(0.036 * mx, 0.161)], 0.0175, ink)
 	# l'occhio che si vede dalla crepa: bianco, iride viola (il suo colore), pupilla e riflesso
-	_decal(mb, _ellipse(Vector2(0.05, 0.104), 0.019, 0.011), 0.018, Color(0.98, 0.97, 1.0, 0.6))
-	_decal(mb, _ellipse(Vector2(0.049, 0.104), 0.009, 0.0102), 0.0185, Color(0.62, 0.3, 0.95, 0.6))
-	_decal(mb, _ellipse(Vector2(0.049, 0.104), 0.0042, 0.0054), 0.019, Color(0.1, 0.05, 0.15, 0.6))
-	_decal(mb, _ellipse(Vector2(0.046, 0.108), 0.002, 0.002, 6), 0.0195, Color(1.0, 1.0, 1.0, 0.0))
+	_decal(mb, _ellipse(Vector2(0.05 * mx, 0.104), 0.019, 0.011), 0.018, Color(0.98, 0.97, 1.0, 0.6))
+	_decal(mb, _ellipse(Vector2(0.049 * mx, 0.104), 0.009, 0.0102), 0.0185, Color(0.62, 0.3, 0.95, 0.6))
+	_decal(mb, _ellipse(Vector2(0.049 * mx, 0.104), 0.0042, 0.0054), 0.019, Color(0.1, 0.05, 0.15, 0.6))
+	_decal(mb, _ellipse(Vector2(0.046 * mx, 0.108), 0.002, 0.002, 6), 0.0195, Color(1.0, 1.0, 1.0, 0.0))
 
 
 # Calotta di capelli: dalla linea dell'attaccatura (alta davanti, bassa dietro) fino alla cima
@@ -422,13 +435,16 @@ static func _hair(mb: MeshBatch, style: String, hair: Color, accent: Color, sp: 
 			for s in [-1.0, 1.0]:
 				mb.lock(_hp(s * 0.105, 0.17, -0.03), _hp(s * 0.112, 0.13, -0.04), _hp(s * 0.108, 0.085, -0.045), 0.016, 0.01, Vector3.RIGHT, hair, true, 4)
 			# berretto con visiera e stemma (bilancia stilizzata)
-			var cap := Color("#25324f")
+			var cap := Color(str(sp.get("cap", "#25324f")))
 			mb.sweep([_r(0.205 + HEAD_OFF, 0.124, 0.13, 0.008), _r(0.25 + HEAD_OFF, 0.132, 0.14, 0.005), _r(0.3 + HEAD_OFF, 0.128, 0.138, 0.0), _r(0.325 + HEAD_OFF, 0.09, 0.1, 0.0)], 18, cap, true, false, true)
-			mb.sweep([_r(0.205 + HEAD_OFF, 0.126, 0.132, 0.008), _r(0.228 + HEAD_OFF, 0.126, 0.132, 0.008)], 18, Color("#e8343f"), false, false, false)
+			mb.sweep([_r(0.205 + HEAD_OFF, 0.126, 0.132, 0.008), _r(0.228 + HEAD_OFF, 0.126, 0.132, 0.008)], 18, Color(str(sp.get("accent", "#e8343f"))) if sp.has("cap") else Color("#e8343f"), false, false, false)
 			mb.sweep([[Vector3(0, 0.205 + HEAD_OFF, -0.15), Vector3.RIGHT, Vector3(0, 0.18, -0.98).normalized(), 0.105, 0.06]], 3, cap, false, false, false)
 			mb.ball(Transform3D(Basis(Vector3.RIGHT, 0.2).scaled(Vector3(1.0, 0.12, 0.6)), Vector3(0, 0.205 + HEAD_OFF, -0.165)), 0.11, Color("#141a2b"))
 			mb.box(Transform3D(Basis(Vector3.RIGHT, -0.15), Vector3(0, 0.275 + HEAD_OFF, -0.142)), Vector3(0.05, 0.004, 0.008), Color("#f2f0ea"), false)
 			mb.box(Transform3D(Basis(Vector3.RIGHT, -0.15), Vector3(0, 0.263 + HEAD_OFF, -0.141)), Vector3(0.006, 0.026, 0.008), Color("#f2f0ea"), false)
+			if sp.has("badge"):
+				# ritratto ufficiale: scudetto grigio sul davanti del berretto, sopra la bilancia
+				mb.box(Transform3D(Basis(Vector3.RIGHT, -0.12), Vector3(0, 0.292 + HEAD_OFF, -0.14)), Vector3(0.05, 0.05, 0.01), Color(str(sp["badge"])), false)
 		"owl":
 			# lunghi scuri, frangia asimmetrica, due ciuffi a orecchie di civetta
 			_shell(mb, hair, 0.2, 0.0, 0.012)
@@ -453,6 +469,28 @@ static func _hair(mb: MeshBatch, style: String, hair: Color, accent: Color, sp: 
 				var root: Vector3 = _hp(0, 0.19, 0.01) + dn * 0.09
 				mb.lock(root, root + dn * 0.07 + Vector3(0, 0.01, 0), root + dn * 0.15 + Vector3(0, -0.015, 0.02), 0.04, 0.03, Vector3.UP if absf(dn.y) < 0.9 else Vector3.BACK, hair, true, 4)
 			_bangs(mb, hair, [-0.06, -0.015, 0.035], 0.225, 0.19, 0.03)
+		"velata":
+			# Nox ufficiale: lunghi neri e lisci, frangia piena, due ciocche che scendono davanti sul petto (sotto il foulard)
+			_shell(mb, hair, 0.2, 0.0, 0.012)
+			_bangs(mb, hair, [-0.075, -0.045, -0.015, 0.015, 0.045, 0.075], 0.225, 0.125, 0.028)
+			for s in [-1.0, 1.0]:
+				mb.lock(_hp(s * 0.095, 0.19, -0.05), _hp(s * 0.13, 0.03, -0.06), _hp(s * 0.12, -0.2, -0.085), 0.04, 0.018, Vector3.FORWARD, hair, true, 6)
+			mb.lock(_hp(0.07, 0.17, -0.06), _hp(0.15, -0.02, -0.03), _hp(0.2, -0.24, -0.02), 0.035, 0.016, Vector3.FORWARD, hair, true, 6)
+		"arruffato":
+			# Rio ufficiale: lilla, morbidi e arruffati, ciuffi corti che escono da tutte le parti, frangia sulla maschera
+			_shell(mb, hair, 0.205, -0.01, 0.016)
+			_bangs(mb, hair, [-0.07, -0.04, -0.01, 0.025, 0.06], 0.23, 0.15, 0.03)
+			_tufts(mb, hair, [Vector3(0.0, 1, 0.0), Vector3(0.3, 1, -0.3), Vector3(-0.4, 1, 0.1), Vector3(0.85, 0.5, 0.0), Vector3(-0.85, 0.5, 0.0),
+				Vector3(0.6, 0.7, 0.5), Vector3(-0.5, 0.7, 0.6), Vector3(0.95, 0.0, 0.3), Vector3(-0.95, 0.0, 0.3), Vector3(0.0, 0.2, 1.0), Vector3(0.4, -0.2, 0.9), Vector3(-0.4, -0.2, 0.9)], 0.065, 0.034)
+		"spettinato":
+			# Saul ufficiale: rosso scuro, ciuffi spettinati che sparano in alto e di lato, frangia lunga su un occhio
+			_shell(mb, hair, 0.2, 0.0, 0.016)
+			_bangs(mb, hair, [-0.07, -0.035, 0.0, 0.035], 0.225, 0.12, 0.03)
+			mb.lock(_hp(0.03, 0.22, -0.1), _hp(0.06, 0.15, -0.13), _hp(0.045, 0.085, -0.125), 0.034, 0.016, Vector3.FORWARD, hair, true, 5)
+			_tufts(mb, hair, [Vector3(0.3, 1, -0.1), Vector3(0.9, 0.5, 0.1), Vector3(-0.85, 0.5, 0.1), Vector3(0.5, 0.8, 0.5), Vector3(-0.4, 0.8, 0.5), Vector3(1.0, 0.1, 0.3), Vector3(-0.1, 0.3, 1.0)], 0.075, 0.038)
+			for s in [-1.0, 1.0]:
+				mb.lock(_hp(s * 0.1, 0.18, -0.03), _hp(s * 0.12, 0.11, -0.045), _hp(s * 0.115, 0.05, -0.04), 0.026, 0.014, Vector3.RIGHT, hair, true, 4)
+			mb.lock(_hp(0, 0.15, 0.11), _hp(0, 0.07, 0.15), _hp(0.0, 0.0, 0.13), 0.06, 0.03, Vector3.RIGHT, hair, true, 5)
 		_:
 			# Saul: lunghi castani raccolti in coda, frangia divisa, berretto di lana
 			_shell(mb, hair, 0.19, 0.0, 0.011)
@@ -468,6 +506,10 @@ static func _hair(mb: MeshBatch, style: String, hair: Color, accent: Color, sp: 
 static func _hat(mb: MeshBatch, sp: Dictionary) -> void:
 	var kit: String = str(sp.get("kit", ""))
 	var accent: Color = _c(sp, "accent")
+	if str(sp.get("extra", "")) == "foulard":
+		_foulard(mb, sp)
+	if str(sp.get("look", "")) != "":
+		return                    # design ufficiale: Saul senza berretto di lana (il berretto vecchio resta per CAST_V1)
 	match kit:
 		"corriere":
 			# berretto di lana con risvolto e una toppa
@@ -495,9 +537,46 @@ static func arm(sp: Dictionary, side: float) -> MeshBatch:
 	var fore: Color = top.darkened(0.06)
 	var puff: float = 0.01 if kit in ["streamer", "corriere"] else 0.0
 	# braccio snello (maniche larghe per felpa e bomber)
-	mb.ball(Transform3D(Basis(), Vector3(0, -0.02, 0)), 0.046 * k + puff, upper, true, 6, 10)
-	mb.sweep([_r(-0.01, 0.047 * k + puff, 0.046 * k + puff), _r(-0.15, 0.042 * k + puff, 0.042 * k + puff), _r(-0.29, 0.037 * k + puff, 0.037 * k + puff)], 10, upper, true, false, false)
-	mb.sweep([_r(-0.28, 0.037 * k + puff, 0.037 * k + puff), _r(-0.42, 0.035 * k + puff, 0.034 * k + puff), _r(-0.5, 0.033 * k + puff, 0.032 * k + puff)], 10, fore, true, false, false)
+	var look: String = str(sp.get("look", ""))
+	if look != "":
+		puff = float(LOOK_PUFF.get(look, 0.0)) * 0.6
+	if look in ["foulard", "maglietta"]:
+		# maniche corte del ritratto, braccio nudo sotto
+		var skin_a: Color = _a(_c(sp, "skin"), 0.8)
+		var sleeve: Color = _c(sp, "scarf") if look == "foulard" else top
+		var sp_r: float = 0.012 if look == "maglietta" else 0.004
+		mb.ball(Transform3D(Basis(), Vector3(0, -0.02, 0)), 0.048 * k + sp_r, sleeve, true, 6, 10)
+		mb.sweep([_r(-0.01, 0.05 * k + sp_r, 0.049 * k + sp_r), _r(-0.12, 0.048 * k + sp_r, 0.047 * k + sp_r), _r(-0.19, 0.05 * k + sp_r, 0.049 * k + sp_r)], 10, sleeve, true, true, true)
+		if look == "foulard":
+			mb.sweep([_r(-0.165, 0.052 * k + sp_r, 0.051 * k + sp_r), _r(-0.19, 0.052 * k + sp_r, 0.051 * k + sp_r)], 10, _c(sp, "trim"), false, false, false)
+		mb.sweep([_r(-0.14, 0.038 * k, 0.038 * k), _r(-0.29, 0.035 * k, 0.035 * k), _r(-0.42, 0.032 * k, 0.031 * k), _r(-0.52, 0.03 * k, 0.029 * k)], 10, skin_a, true, false, false)
+	else:
+		mb.ball(Transform3D(Basis(), Vector3(0, -0.02, 0)), 0.046 * k + puff, upper, true, 6, 10)
+		mb.sweep([_r(-0.01, 0.047 * k + puff, 0.046 * k + puff), _r(-0.15, 0.042 * k + puff, 0.042 * k + puff), _r(-0.29, 0.037 * k + puff, 0.037 * k + puff)], 10, upper, true, false, false)
+		mb.sweep([_r(-0.28, 0.037 * k + puff, 0.037 * k + puff), _r(-0.42, 0.035 * k + puff, 0.034 * k + puff), _r(-0.5, 0.033 * k + puff, 0.032 * k + puff)], 10, fore, true, false, false)
+	if look == "nobile":
+		# risvolto largo della manica del cappotto, polsino della camicia
+		mb.sweep([_r(-0.43, 0.046, 0.045), _r(-0.5, 0.05, 0.049)], 12, top.lightened(0.12), true, false, true)
+		mb.sweep([_r(-0.5, 0.034, 0.033), _r(-0.525, 0.034, 0.033)], 10, _c(sp, "shirt"), false, false, false)
+	elif look == "" or look == "divisa":
+		_arm_kit(mb, sp, kit, side, top, accent, glove)
+	# mano (un po' grande, si legge meglio): guanto per Lance, mano nuda per gli altri; Rio ha un guanto marrone a destra
+	var hand_c: Color = glove if kit == "tattico" else _a(_c(sp, "skin"), 0.8)
+	if look == "maglietta" and side > 0.0:
+		hand_c = glove
+	_hand(mb, hand_c, k, side)
+	if kit == "corriere":
+		mb.sweep([_r(-0.605, 0.024, 0.024, -0.01), _r(-0.613, 0.024, 0.024, -0.01)], 8, gold, false, false, false)
+	_arm_props(mb, sp, kit, side, accent)
+	return mb
+
+
+static func _hand(mb: MeshBatch, hand_c: Color, k: float, side: float) -> void:
+	mb.ball(Transform3D(Basis().scaled(Vector3(0.85, 1.0, 1.0)), Vector3(0, -0.585, -0.008)), 0.064 * k, hand_c, true, 6, 10)
+	mb.ball(Transform3D(Basis(Vector3.BACK, 0.5 * side).scaled(Vector3(0.5, 1.0, 0.5)), Vector3(-side * 0.032, -0.565, -0.045)), 0.032 * k, hand_c, true, 4, 6)
+
+
+static func _arm_kit(mb: MeshBatch, sp: Dictionary, kit: String, side: float, top: Color, accent: Color, glove: Color) -> void:
 	match kit:
 		"tattico":
 			# fascia rossa al braccio sinistro; guanto lungo fino al gomito a destra (il braccio segreto)
@@ -517,12 +596,9 @@ static func arm(sp: Dictionary, side: float) -> MeshBatch:
 				mb.sweep([_r(-0.535, 0.032, 0.032), _r(-0.545, 0.032, 0.032)], 8, accent, false, false, false)
 		"corriere":
 			mb.sweep([_r(-0.46, 0.044, 0.043), _r(-0.52, 0.04, 0.039)], 10, top.darkened(0.3), true, false, false)
-	# mano (un po' grande, si legge meglio): guanto per Lance, mano nuda per gli altri
-	var hand_c: Color = glove if kit == "tattico" else _a(_c(sp, "skin"), 0.8)
-	mb.ball(Transform3D(Basis().scaled(Vector3(0.85, 1.0, 1.0)), Vector3(0, -0.585, -0.008)), 0.064 * k, hand_c, true, 6, 10)
-	mb.ball(Transform3D(Basis(Vector3.BACK, 0.5 * side).scaled(Vector3(0.5, 1.0, 0.5)), Vector3(-side * 0.032, -0.565, -0.045)), 0.032 * k, hand_c, true, 4, 6)
-	if kit == "corriere":
-		mb.sweep([_r(-0.605, 0.024, 0.024, -0.01), _r(-0.613, 0.024, 0.024, -0.01)], 8, gold, false, false, false)
+
+
+static func _arm_props(mb: MeshBatch, sp: Dictionary, kit: String, side: float, accent: Color) -> void:
 	var long_props: bool = not bool(sp.get("no_props", false))
 	if side > 0.0:
 		match kit:
@@ -549,7 +625,6 @@ static func arm(sp: Dictionary, side: float) -> MeshBatch:
 				mb.box(Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, -0.66, -0.05)), Vector3(0.124, 0.014, 0.144), Color("#5a3b26"), false)
 				mb.box(Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, -0.66, -0.05)), Vector3(0.014, 0.104, 0.144), Color("#5a3b26"), false)
 				mb.box(Transform3D(Basis(Vector3.RIGHT, 0.2), Vector3(0, -0.6, -0.05)), Vector3(0.05, 0.004, 0.06), Color(0.35, 0.95, 0.5, 0.0), false)
-	return mb
 
 
 static func leg(sp: Dictionary, side: float) -> MeshBatch:
@@ -562,6 +637,8 @@ static func leg(sp: Dictionary, side: float) -> MeshBatch:
 	var fem: bool = bool(sp.get("fem", false))
 	var k: float = 0.9 if fem else 1.0
 	var baggy: float = 0.012 if kit in ["streamer", "corriere"] else 0.0     # pantaloni larghi / cargo
+	if str(sp.get("look", "")) == "nobile":
+		baggy = 0.0
 	mb.sweep([
 		_r(0.0, 0.072 * k + baggy, 0.072 * k + baggy),
 		_r(-0.2, 0.06 * k + baggy, 0.062 * k + baggy),
@@ -575,7 +652,7 @@ static func leg(sp: Dictionary, side: float) -> MeshBatch:
 			# tasca laterale e ginocchiera
 			mb.box(Transform3D(Basis(), Vector3(side * 0.06, -0.24, 0.0)), Vector3(0.02, 0.09, 0.07), bottom.darkened(0.2))
 			mb.ball(Transform3D(Basis().scaled(Vector3(1.0, 1.1, 0.6)), Vector3(0, -0.45, -0.035)), 0.045, Color("#14121a"))
-		"corriere":
+		"corriere" when str(sp.get("look", "")) != "nobile":
 			# cargo con tasconi laterali, una toppa
 			mb.box(Transform3D(Basis(), Vector3(side * 0.07, -0.3, 0.0)), Vector3(0.024, 0.11, 0.085), bottom.darkened(0.15))
 			mb.box(Transform3D(Basis(), Vector3(side * 0.01, -0.5, -0.06)), Vector3(0.05, 0.05, 0.006), Color("#7a6a4a"), false)
@@ -584,7 +661,7 @@ static func leg(sp: Dictionary, side: float) -> MeshBatch:
 			if side < 0.0:
 				mb.box(Transform3D(Basis(Vector3.BACK, 0.3), Vector3(0, -0.47, -0.062)), Vector3(0.05, 0.01, 0.004), _a(_c(sp, "skin"), 0.8), false)
 	# scarpe: grosse e moderne (sneakers / anfibi), suola chiara
-	var sneaker: bool = kit in ["streamer", "corriere"]
+	var sneaker: bool = kit in ["streamer", "corriere"] and str(sp.get("look", "")) != "nobile"
 	var boot_r: float = (0.13 if sneaker else 0.118) * (0.92 if fem else 1.0)
 	var bk: float = boot_r / 0.12
 	if not sneaker:
@@ -600,3 +677,158 @@ static func leg(sp: Dictionary, side: float) -> MeshBatch:
 		for i in 3:
 			mb.box(Transform3D(Basis(Vector3.RIGHT, -0.5), toe + Vector3(0, 0.07, -0.02 - 0.035 * i)), Vector3(0.07, 0.008, 0.012), Color("#f4f2f8"), false)
 	return mb
+
+
+# ================================================================ design ufficiale (ritratti dell'autore, 0.61)
+# I quattro abiti dei ritratti disegnati a mano. Gli abiti di prima (kit) restano sopra, intatti: si riaccendono
+# con CastVisual.DESIGN_UFFICIALE = false. Gli oggetti in mano (manganello, caffe', telefono, pacco, carte) restano.
+
+const LOOK_PUFF: Dictionary = {"divisa": 0.008, "foulard": 0.0, "maglietta": 0.014, "nobile": 0.012}
+
+
+static func _torso_look(mb: MeshBatch, sp: Dictionary, look: String, wx: float, hx: float, cx: float, sx: float) -> void:
+	var top: Color = _c(sp, "top")
+	var puff: float = float(LOOK_PUFF.get(look, 0.0))
+	match look:
+		"divisa":
+			# Lance: giacca blu notte aperta sul collo, camicia rossa, cravatta grigia (come nel ritratto)
+			var shirt: Color = _c(sp, "shirt")
+			mb.sweep([_r(0.13, wx + 0.02 + puff, 0.09 + puff), _r(0.0, hx + 0.022, 0.096), _r(-0.1, hx + 0.03, 0.1)], 16, top, true, false, false)
+			mb.box(Transform3D(Basis(Vector3.RIGHT, -0.25), Vector3(0, 0.415, -0.106)), Vector3(0.09, 0.15, 0.008), shirt, false)
+			mb.box(Transform3D(Basis(), Vector3(0, 0.478, -0.084)), Vector3(0.08, 0.06, 0.008), shirt, false)
+			mb.sweep([_r(0.47, 0.064, 0.056, 0.004), _r(0.56, 0.05, 0.046, 0.01)], 14, shirt, true, false, false)
+			mb.box(Transform3D(Basis(Vector3.RIGHT, -0.2), Vector3(0, 0.39, -0.114)), Vector3(0.024, 0.16, 0.008), _c(sp, "tie"), false)
+			mb.box(Transform3D(Basis(), Vector3(0, 0.466, -0.1)), Vector3(0.03, 0.026, 0.014), _c(sp, "tie"), false)
+			for s2 in [-1.0, 1.0]:
+				mb.box(Transform3D(Basis(Vector3.BACK, -s2 * 0.4), Vector3(s2 * 0.06, 0.4, -0.114)), Vector3(0.03, 0.2, 0.012), top.lightened(0.14), false)
+			mb.sweep([_r(0.1, wx + 0.03 + puff, 0.096 + puff), _r(0.13, wx + 0.03 + puff, 0.096 + puff)], 16, Color("#0a0a12"), false, false, false)
+		"foulard":
+			# Nox: maglia blu intenso, il foulard viola le scende sulle spalle e sulla schiena, tracolla grigio-blu
+			var scarf: Color = _c(sp, "scarf")
+			var trim: Color = _c(sp, "trim")
+			mb.sweep([_r(0.455, 0.084, 0.07), _r(0.47, 0.082, 0.068)], 14, trim, false, false, false)
+			mb.lock(Vector3(-sx * 0.72, 0.46, -0.05), Vector3(0.0, 0.3, -0.108), Vector3(sx * 0.95, 0.1, -0.05), 0.014, 0.006, Vector3.FORWARD, trim, false, 6)
+			mb.sweep([_r(0.1, wx + 0.024, 0.092), _r(0.135, wx + 0.024, 0.092)], 16, Color("#16142a"), false, false, false)
+		"maglietta":
+			# Rio: maglietta viola larga, girocollo e orlo
+			mb.sweep([_r(0.06, wx + 0.032 + puff, 0.094 + puff), _r(0.12, wx + 0.026 + puff, 0.09 + puff)], 16, top, true, false, false)
+			mb.sweep([_r(0.06, wx + 0.034 + puff, 0.096 + puff), _r(0.075, wx + 0.034 + puff, 0.096 + puff)], 16, top.darkened(0.2), false, false, false)
+			mb.sweep([_r(0.49, 0.07, 0.058), _r(0.51, 0.066, 0.055)], 14, top.darkened(0.22), false, false, false)
+			mb.box(Transform3D(Basis(Vector3.BACK, 0.5), Vector3(0.04, 0.3, -0.112)), Vector3(0.06, 0.006, 0.004), top.darkened(0.3), false)
+		"nobile":
+			# Saul: cappotto lungo blu reale col collo alzato, gilet verde scuro con bottoni, camicia verde acqua, jabot bianco
+			var vest: Color = _c(sp, "vest")
+			var cravat: Color = _c(sp, "cravat")
+			mb.sweep([_r(0.13, wx + 0.03 + puff, 0.096 + puff), _r(0.0, hx + 0.035, 0.105), _r(-0.22, hx + 0.075, 0.125, 0.01), _r(-0.46, hx + 0.11, 0.15, 0.02)], 16, top.darkened(0.06), true, false, false)
+			mb.box(Transform3D(Basis(), Vector3(0, 0.27, -0.112)), Vector3(0.12, 0.3, 0.012), vest, false)
+			for i in 3:
+				mb.ball(Transform3D(Basis(), Vector3(0.0, 0.18 + 0.06 * float(i), -0.12)), 0.007, Color("#d8d4f0"), false, 4, 6)
+			mb.sweep([_r(0.47, 0.064, 0.056, 0.004), _r(0.56, 0.05, 0.046, 0.01)], 14, _c(sp, "shirt"), true, false, false)
+			mb.box(Transform3D(Basis(Vector3.RIGHT, -0.25), Vector3(0, 0.55, 0.06)), Vector3(0.17, 0.13, 0.014), top)
+			for s2 in [-1.0, 1.0]:
+				mb.box(Transform3D(Basis(Vector3.UP, s2 * 1.1) * Basis(Vector3.RIGHT, -0.2), Vector3(s2 * 0.075, 0.54, 0.015)), Vector3(0.09, 0.11, 0.014), top)
+			for s2 in [-1.0, 1.0]:
+				mb.box(Transform3D(Basis(Vector3.BACK, s2 * 0.3), Vector3(s2 * 0.075, 0.36, -0.106)), Vector3(0.035, 0.2, 0.014), top.lightened(0.1), false)
+				mb.box(Transform3D(Basis(Vector3.BACK, s2 * 0.04), Vector3(s2 * 0.068, 0.0, -0.118)), Vector3(0.02, 0.3, 0.012), top.lightened(0.1), false)
+			# jabot: fiocco morbido e due code che cadono sul gilet
+			mb.ball(Transform3D(Basis().scaled(Vector3(1.6, 0.9, 0.8)), Vector3(0, 0.48, -0.08)), 0.034, cravat, true, 5, 8)
+			mb.lock(Vector3(0.0, 0.47, -0.1), Vector3(-0.03, 0.41, -0.124), Vector3(-0.02, 0.34, -0.128), 0.044, 0.008, Vector3.FORWARD, cravat, true, 4)
+			mb.lock(Vector3(0.0, 0.47, -0.1), Vector3(0.034, 0.42, -0.122), Vector3(0.048, 0.36, -0.126), 0.04, 0.008, Vector3.FORWARD, cravat, true, 4)
+
+
+# Maschera di Rio dal ritratto: meta' chiara (lato destro) con l'occhio a croce nero e il sorriso cucito,
+# meta' nera (lato sinistro) con la croce e il ghigno che si accendono di viola.
+static func _mask_ufficiale(mb: MeshBatch, sp: Dictionary, cracked: bool = false) -> void:
+	var dark: Color = _a(_c(sp, "mask_l"), 0.6)
+	var light: Color = _a(_c(sp, "mask_r"), 0.6)
+	var cols: int = 12
+	var rows: int = 8
+	var grid: Array = []
+	for i in rows + 1:
+		var y: float = lerpf(0.0, 0.2, float(i) / float(rows))
+		var row: Array = []
+		for j in cols + 1:
+			var phi: float = lerpf(-1.35, 1.35, float(j) / float(cols))
+			row.append(_head_pt(phi, y, 0.011))
+		grid.append(row)
+	for i in rows:
+		for j in cols:
+			var col: Color = dark if j < cols / 2 else light       # meta' nera a sinistra di Rio (a destra di chi guarda), come nel ritratto
+			var a: Array = grid[i][j]
+			var b: Array = grid[i + 1][j]
+			var c: Array = grid[i][j + 1]
+			var d: Array = grid[i + 1][j + 1]
+			mb._tri_smooth(a[0], b[0], c[0], a[1], b[1], c[1], col, false)
+			mb._tri_smooth(c[0], b[0], d[0], c[1], b[1], d[1], col, false)
+	var ink := Color(0.06, 0.04, 0.1, 0.6)
+	_decal(mb, [Vector2(-0.003, 0.0), Vector2(0.003, 0.0), Vector2(0.003, 0.2), Vector2(-0.003, 0.2)], 0.0135, ink)
+	# lato chiaro: croce nera, lentiggini, sorriso cucito a zig-zag
+	var ce := Vector2(0.046, 0.108)
+	_decal(mb, [ce + Vector2(-0.022, -0.008), ce + Vector2(0.022, -0.008), ce + Vector2(0.022, 0.008), ce + Vector2(-0.022, 0.008)], 0.016, ink)
+	_decal(mb, [ce + Vector2(-0.008, -0.022), ce + Vector2(0.008, -0.022), ce + Vector2(0.008, 0.022), ce + Vector2(-0.008, 0.022)], 0.0165, ink)
+	for f in [Vector2(0.03, 0.074), Vector2(0.041, 0.07), Vector2(0.052, 0.074)]:
+		_decal(mb, _ellipse(f, 0.0028, 0.0028, 6), 0.016, ink)
+	_decal(mb, _band([Vector2(0.004, 0.05), Vector2(0.018, 0.04), Vector2(0.03, 0.048), Vector2(0.042, 0.042), Vector2(0.055, 0.058)], 0.006), 0.016, ink)
+	# lato scuro: croce e ghigno di luce viola (alone piu' scuro dietro)
+	var cl := Vector2(-0.046, 0.108)
+	var glow := Color(0.97, 0.55, 1.0, 0.0)
+	var halo := Color(0.6, 0.18, 0.9, 0.0)
+	_decal(mb, [cl + Vector2(-0.027, -0.012), cl + Vector2(0.027, -0.012), cl + Vector2(0.027, 0.012), cl + Vector2(-0.027, 0.012)], 0.0145, halo)
+	_decal(mb, [cl + Vector2(-0.012, -0.027), cl + Vector2(0.012, -0.027), cl + Vector2(0.012, 0.027), cl + Vector2(-0.012, 0.027)], 0.015, halo)
+	_decal(mb, [cl + Vector2(-0.02, -0.0065), cl + Vector2(0.02, -0.0065), cl + Vector2(0.02, 0.0065), cl + Vector2(-0.02, 0.0065)], 0.016, glow)
+	_decal(mb, [cl + Vector2(-0.0065, -0.02), cl + Vector2(0.0065, -0.02), cl + Vector2(0.0065, 0.02), cl + Vector2(-0.0065, 0.02)], 0.0165, glow)
+	_decal(mb, _band([Vector2(-0.004, 0.044), Vector2(-0.022, 0.036), Vector2(-0.042, 0.045), Vector2(-0.058, 0.068)], 0.014), 0.015, halo)
+	_decal(mb, _band([Vector2(-0.006, 0.044), Vector2(-0.022, 0.038), Vector2(-0.04, 0.046), Vector2(-0.055, 0.066)], 0.007), 0.016, glow)
+	if cracked:
+		_mask_crack(mb)                       # la crepa resta sulla meta' chiara, dove si vede
+
+
+# Cicatrice di Lance sulla guancia destra: due tagli paralleli verso l'angolo della bocca
+static func _scar(mb: MeshBatch) -> void:
+	var col := Color(0.62, 0.3, 0.26, 0.6)
+	_decal(mb, _band([Vector2(0.078, 0.08), Vector2(0.066, 0.064), Vector2(0.05, 0.05)], 0.005), 0.003, col)
+	_decal(mb, _band([Vector2(0.084, 0.066), Vector2(0.074, 0.054), Vector2(0.062, 0.044)], 0.004), 0.003, col)
+
+
+# Orecchini: la luna crescente di Nox (tutte e due le orecchie), il brillantino di Saul (orecchio destro)
+static func _earring(mb: MeshBatch, sp: Dictionary) -> void:
+	var col: Color = _m(_c(sp, "earring"))
+	if str(sp.get("look", "")) == "foulard":
+		for s in [-1.0, 1.0]:
+			for i in 6:
+				var a: float = lerpf(-0.4, PI + 0.4, float(i) / 5.0)
+				var p := Vector3(s * 0.118, HEAD_OFF + 0.06 - sin(a) * 0.016, 0.004 + cos(a) * 0.016)
+				mb.ball(Transform3D(Basis(), p), 0.0065, col, false, 3, 6)
+	else:
+		mb.ball(Transform3D(Basis(), Vector3(0.112, HEAD_OFF + 0.085, 0.006)), 0.008, col, false, 4, 6)
+
+
+# Foulard viola di Nox: copre testa e nuca, incornicia il viso, scende sulle spalle; fascia grigio-blu sul bordo
+static func _foulard(mb: MeshBatch, sp: Dictionary) -> void:
+	var scarf: Color = _c(sp, "scarf")
+	var trim: Color = _c(sp, "trim")
+	var front_y: float = 0.255
+	var back_y: float = -0.06
+	_shell(mb, scarf, front_y, back_y, 0.03)
+	for i in 4:
+		var x: float = lerpf(-0.08, 0.08, float(i) / 3.0)
+		mb.lock(_hp(x, 0.06, 0.15), _hp(x * 1.5, -0.14, 0.17), _hp(x * 1.8, -0.36, 0.125), 0.09, 0.02, Vector3.BACK, scarf, true, 6)
+	for s in [-1.0, 1.0]:
+		mb.lock(_hp(s * 0.135, 0.13, -0.01), _hp(s * 0.155, 0.0, 0.03), _hp(s * 0.165, -0.16, 0.06), 0.055, 0.02, Vector3.RIGHT, scarf, true, 5)
+	var prev: Vector3 = Vector3.ZERO
+	for i in 15:
+		var phi: float = lerpf(-1.75, 1.75, float(i) / 14.0)
+		var y: float = lerpf(front_y, back_y, (1.0 - cos(phi)) * 0.5) + 0.022
+		var p: Vector3 = (_head_pt(phi, y, 0.042)[0] as Vector3)
+		if i > 0:
+			rod(mb, prev, p, 0.0065, trim)
+		prev = p
+
+
+# Ciuffi morbidi: escono dalla calotta e si piegano verso il basso (capelli spettinati, non punte)
+static func _tufts(mb: MeshBatch, hair: Color, dirs: Array, length: float, w: float) -> void:
+	for d in dirs:
+		var dn: Vector3 = (d as Vector3).normalized()
+		var root: Vector3 = _hp(0, 0.19, 0.01) + dn * 0.1
+		var tip: Vector3 = root + dn * length + Vector3(0, -length * 0.45, 0)
+		mb.lock(root, root + dn * length * 0.6, tip, w, w * 0.6, Vector3.UP if absf(dn.y) < 0.9 else Vector3.BACK, hair, true, 4)
