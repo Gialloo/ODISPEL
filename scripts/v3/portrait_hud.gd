@@ -839,17 +839,19 @@ func _draw_tip(it: Dictionary, dx: float, H: float, e: float) -> void:
 	if it.is_empty():
 		return
 	var bf: Font = Ui.body()
-	var lines: Array = CmdWheel.wrap(bf, str(it.get("desc", "")).replace("\n", " · "), 16, 330.0)
+	# IN BASSO AL CENTRO (autore, 7/11/2026): tra il ritratto di chi e' di turno e le card della squadra
+	var left: float = dx + (PW * CORNICE_SCALA if _dietro != null else PW + 30.0) + 14.0
+	var right: float = size.x - 22.0 - PortraitParty.cw() * 4.0 - 42.0 - 16.0
+	var bw: float = clampf(right - left, 280.0, 440.0)
+	var lines: Array = CmdWheel.wrap(bf, str(it.get("desc", "")).replace("\n", " · "), 16, bw - 30.0)
 	if lines.size() > 3:
 		lines = lines.slice(0, 3)
-	var top: float = H - 400.0 - 30.0 - 20.0 * lines.size()
-	if not _polys.is_empty():
-		top = H - PH * CORNICE_SCALA - 14.0 - 20.0 * lines.size()        # cornice: le lastre stanno in alto, la spiegazione sopra di loro
-	var r := Rect2(Vector2(dx + 6, top), Vector2(360, 34 + 20.0 * lines.size()))
+	var bh: float = 34.0 + 20.0 * lines.size()
+	var r := Rect2(Vector2((left + right) * 0.5 - bw * 0.5, H - 18.0 - bh), Vector2(bw, bh))
 	var poly := CmdWheel.slant(r, 10.0)
 	draw_colored_polygon(poly, Color(0.03, 0.02, 0.06, 0.88 * e))
 	draw_polyline(PackedVector2Array([poly[0], poly[1], poly[2], poly[3], poly[0]]), Color(col.lightened(0.3), e), 2.0)
-	draw_string(Ui.display(), r.position + Vector2(16, 24), str(it.get("title", "")), HORIZONTAL_ALIGNMENT_LEFT, 330, 17, Color(HOT, e))
+	draw_string(Ui.display(), r.position + Vector2(16, 24), str(it.get("title", "")), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 30.0, 17, Color(HOT, e))
 	for i in lines.size():
 		draw_string(bf, r.position + Vector2(16, 46 + 20 * i), str(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(CREAM, e))
 
