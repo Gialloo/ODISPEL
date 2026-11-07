@@ -3471,10 +3471,13 @@ func _build_ui() -> void:
 	lrow2.add_theme_constant_override("separation", 6)
 	lrow2.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_react_box.add_child(lrow2)
+	_react_box.move_child(lrow2, 0)       # ULTIMATE IN DIRETTA sopra, reazioni sotto (autore, 7/11/2026)
+	lrow2.alignment = BoxContainer.ALIGNMENT_END
 	for k in 3:
-		var lb: Button = Ui.button("", Ui.PINK, 17)
-		lb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lb.clip_text = true
+		var lb: Button = Ui.button("", Ui.PINK, HudLayers.MIN_TEXT)        # piu' piccoli delle reazioni (autore, 7/11/2026)
+		lb.custom_minimum_size = Vector2(0, 42 if Ui.is_touch() else 34)
+		lb.size_flags_horizontal = Control.SIZE_SHRINK_END
+		lb.clip_text = false
 		lb.visible = false
 		lb.pressed.connect(_live_ult.bind(k))
 		lrow2.add_child(lb)
@@ -4397,10 +4400,10 @@ func _update_react() -> void:
 		var lb: Button = _live_btns[k]
 		lb.visible = k < lives.size()
 		if lb.visible:
-			lb.text = "ULT\n%s" % str(_unit_of(str(lives[k])).get("name", "")).to_upper()
+			lb.text = "ULT %s" % str(_unit_of(str(lives[k])).get("name", "")).to_upper()        # una riga sola: tasto piu' piccolo (autore, 7/11/2026)
 			lb.set_meta("pid", str(lives[k]))
 			lb.add_theme_font_size_override("font_size", HudLayers.MIN_TEXT)
-			lb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
+			lb.custom_minimum_size.y = 42.0 if Ui.is_touch() else 34.0
 	for rid in _react_btns:
 		var rb: Button = _react_btns[rid]
 		rb.visible = usable.has(rid)
