@@ -21,6 +21,7 @@ static var hud_avvisi: bool = true      # avvisi in tre categorie (pericolo/tatt
 static var hud_echo: bool = true        # Echo in tre modi: consigli corti che non si ripetono e se ne vanno, avviso rosso sul pericolo (HUD 0.61, P1-A)
 static var hud_party: bool = true       # cornice piena di chi e' di turno, altri piu' scuri, ULTIMATE piu' leggibile (HUD 0.61, P1-B)
 static var hud_foto: bool = false       # HUD come la foto di riferimento dell'autore (7/11/2026, prova): nemico, squadra, logo
+static var colori_in_pausa: bool = true    # il tasto COLORI della battaglia diventa una voce del menu pausa (autore, 7/11/2026); false = torna il tasto
 static var hud_obiettivo: bool = true    # obiettivo in fondo e SINERGIA in cima al ritratto (tenuti dall'autore dalla prova della foto, 7/11/2026)
 static var hud_cornice: bool = true     # cornice a due livelli disegnata dall'autore dietro al ritratto, comandi a lastre (prova, 7/11/2026)
 static var hud_accenti: bool = true     # accenti dei personaggi su timbri e lampo di scelta, +N ULTIMATE dopo la parata perfetta (HUD 0.61, P2)

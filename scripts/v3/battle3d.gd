@@ -3565,7 +3565,10 @@ func _build_ui() -> void:
 	var lbtn := _quick_btn("COLORI", 100)
 	lbtn.pressed.connect(func() -> void:
 		_legend.visible = not _legend.visible)
-	tr.add_child(lbtn)
+	if not Settings.colori_in_pausa:
+		tr.add_child(lbtn)
+	else:
+		lbtn.queue_free()
 	tr.add_child(pb)
 	var leg := PanelContainer.new()
 	_legend = leg
