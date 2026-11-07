@@ -4967,6 +4967,8 @@ func _stack_notices() -> void:
 # Icone degli avvisi, disegnate a mano: catena (legami e impulsi), triangolo (il nemico), lampo (effetti), freccia (mossa)
 func _notice_icon(c: Control, icon: String, col: Color) -> void:
 	var p: Vector2 = c.size * 0.5
+	if HudIcons.draw(c, icon, p, 11.0, col):      # P1-C: l'icona disegnata dall'autore, se c'e'
+		return
 	match icon:
 		"chain":
 			for k in 2:

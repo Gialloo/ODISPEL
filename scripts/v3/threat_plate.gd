@@ -44,6 +44,8 @@ static func slant(x: float, y: float, w: float, h: float, sk: float) -> PackedVe
 
 # Icone del tipo di colpo (segnaposto finche' l'autore non disegna le sue, P1-C). ci = chi disegna, dentro il suo _draw.
 static func draw_icon(ci: CanvasItem, kind: String, c: Vector2, col: Color, r: float = 15.0) -> void:
+	if HudIcons.draw(ci, kind, c, r, col):      # P1-C: l'icona disegnata dall'autore, se c'e'
+		return
 	match kind:
 		"singolo":
 			ci.draw_arc(c, r, 0, TAU, 28, col, 3.0, true)

@@ -1,0 +1,3 @@
+Icone dell'HUD disegnate dall'autore (PNG 256x256, bianche su trasparente).
+Guida: docs/HUD_ICONE_PROCREATE.md. Nomi dei file: scripts/v3/hud_icons.gd (HudIcons.NAMES).
+Finche' un file manca, il gioco usa l'icona disegnata in codice.
