@@ -76,6 +76,12 @@ func _init() -> void:
 	_chk(HudLayers.level("vita_nemico") == HudLayers.PRIORITA and HudLayers.level("rec") == HudLayers.ATMOSFERA, "i tre livelli di HudLayers restano")
 	# colonna ORDINE: 10 di margine + lastrina 92 + freccia 40
 	_chk(is_equal_approx(PortraitParty.order_width(), 142.0), "la colonna ORDINE e' larga 142")
+	# zona A: il pannello del nemico lascia all'ORDINE la sua larghezza vera piu' 8 di aria; spento i 120 della 0.63
+	Settings.hud_gerarchia = true
+	_chk(is_equal_approx(HudLayers.riserva_ordine(), 150.0), "acceso: riserva per l'ORDINE 142 + 8")
+	Settings.hud_gerarchia = false
+	_chk(is_equal_approx(HudLayers.riserva_ordine(), 120.0), "spento: riserva della 0.63 (120)")
+	Settings.hud_gerarchia = prima
 
 	print("test_v3_gerarchia: ", "OK" if fails == 0 else "%d FALLITI" % fails)
 	quit(1 if fails > 0 else 0)

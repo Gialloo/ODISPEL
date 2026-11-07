@@ -3,8 +3,9 @@ extends SceneTree
 # HUD COMBAT 2.0 (7/11/2026): prova delle SOVRAPPOSIZIONI e schermate degli stati, con la gerarchia accesa o spenta.
 # Per ogni stato raccoglie lo spazio vero dei pezzi dell'HUD (pannello nemico, ORDINE, tasti rapidi, comandi, descrizione,
 # Ritmo, squadra, tendina delle abilita') e segnala ogni coppia che si tocca (margine 8 px). Esce con 1 se ne trova.
-# Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_gerarchia.gd -- \
+# Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 --fixed-fps 60 -s tools/v3_gerarchia.gd -- \
 #        <cartella> [touch|pc] [boss] [on|off]
+#   (--fixed-fps 60: il pannello del nemico finisce di scivolare anche dove la macchina disegna a 10 fps)
 # Formati da provare: 1280x720 (16:9), 2400x1080 (20:9 telefono), 1280x800 (16:10), 1600x1200 (4:3 tablet).
 var out: String = "/tmp/v3gerarchia"
 var boss: String = "autovelox"

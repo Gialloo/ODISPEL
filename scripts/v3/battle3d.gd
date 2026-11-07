@@ -187,6 +187,8 @@ var _weak_txt: String = ""
 var _weak_col: Color = Color("#9a94a8")
 var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
 var _ritmo_bar: RitmoBar               # RITMO di squadra sopra la fila (HUD 0.61, P0-A; Settings.hud_ritmo)
+var _boss_stacco: Control              # HUD Combat 2.0: aria fra l'anagrafica del nemico e la prossima mossa
+var _boss_compatto: bool = false       # HUD Combat 2.0, decisione 1: con la tendina aperta il pannello del nemico si stringe
 var _threat_plate: ThreatPlate         # PROSSIMA MOSSA su una lastra con icona (HUD 0.61, P0-B; Settings.hud_minaccia)
 var _lethal_sig: String = ""          # P0-C: l'avviso "a un colpo dal KO" si dice una volta per mossa annunciata
 var _tgt: Dictionary = {}              # id del compagno -> 1 nel bersaglio della prossima mossa, 2 se il colpo e' FORTE (P0-B)
@@ -930,9 +932,26 @@ func _place_boss_tag() -> void:
 		return
 	var hp: Vector2 = cam.unproject_position(h3 + Vector3(0, 0.35, 0))
 	var vs: Vector2 = get_viewport().get_visible_rect().size
+	var rm: float = HudLayers.riserva_ordine() if _p1 != null else 0.0      # HUD col ritratto: la colonna ORDINE sul bordo destro resta libera
+	# HUD Combat 2.0, decisione 1 (7/11/2026): con la tendina delle abilita' aperta il pannello va compatto (nome a 22, vita,
+	# equilibrio e debolezza; la prossima mossa torna quando si chiude) invece di sparire
+	var compatto: bool = _skill_menu != null and bool(HudLayers.v("nemico.compatto_con_tendina"))
+	if compatto != _boss_compatto:
+		_boss_compatto = compatto
+		_boss_name.add_theme_font_size_override("font_size", 22 if compatto else HudLayers.font_size("nome_nemico"))
+		if _boss_stacco != null:
+			_boss_stacco.visible = not compatto
+		if not compatto:        # tendina chiusa: la prossima mossa torna com'era
+			if _threat_plate != null:
+				_threat_plate.visible = not _threat_plate.data.is_empty()
+			else:
+				_tele.visible = _tele.text != ""
+	if compatto:
+		if _threat_plate != null:
+			_threat_plate.visible = false
+		_tele.visible = false
 	var sz: Vector2 = _boss_panel.get_combined_minimum_size()
 	sz.x = maxf(sz.x, 300.0)
-	var rm: float = 120.0 if _p1 != null else 0.0      # HUD col ritratto: la colonna ORDINE sul bordo destro resta libera
 	var want := Vector2(hp.x - sz.x * 0.5, hp.y - sz.y - 18.0)
 	if _boss_plate != null:
 		# HUD come la foto: il cartellino sta fermo in alto, a destra del centro (non segue piu' il nemico)
@@ -953,6 +972,10 @@ func _place_boss_tag() -> void:
 	# mosse. Ora il cartellino si sposta a destra della tendina; se non c'e' posto sparisce finche' la tendina e' aperta.
 	if _skill_menu != null:
 		var mr: float = _skill_menu.area().end.x + 20.0
+		if compatto:
+			# compatto (HUD Combat 2.0): basta stare fuori dalle righe vere della tendina, con gli 8 px delle sovrapposizioni
+			# vietate; la riserva larga di area() a 16:9 lasciava al pannello 380 px e lo faceva sparire
+			mr = _skill_menu.call("_list_rect").end.x + 10.0      # 8 di regola + 2 per gli arrotondamenti del lerp
 		if want.x < mr:
 			want.x = mr
 		_boss_panel.modulate.a = 1.0 if want.x + sz.x <= vs.x - 16.0 - rm else 0.0
@@ -2176,7 +2199,7 @@ func _brk_pulse(near: bool) -> void:
 	if _brk_tw != null and _brk_tw.is_valid():
 		_brk_tw.kill()
 	var fill := StyleBoxFlat.new()
-	fill.bg_color = Ui.YELLOW if near else Color("#f2f0ea")
+	fill.bg_color = Ui.YELLOW if near else (HudLayers.v("equilibrio.colore") as Color)
 	fill.set_corner_radius_all(2)
 	_boss_brk.add_theme_stylebox_override("fill", fill)
 	_boss_brk.modulate = Color.WHITE
@@ -3335,7 +3358,7 @@ func _build_ui() -> void:
 	bp.add_theme_constant_override("separation", 4)
 	bp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(bp)
-	_boss_name = Ui.label(_bname(), 22, Ui.CREAM, Ui.display(), 0)
+	_boss_name = Ui.label(_bname(), HudLayers.font_size("nome_nemico"), Ui.CREAM, Ui.display(), 0)      # L1 TITOLO (HUD Combat 2.0)
 	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_boss_name.add_theme_stylebox_override("normal", Ui.plate(Color(0.02, 0.01, 0.03, 0.92), Color("#ff2340"), -0.18, 5))
 	# nome e DEBOLE A sulla stessa riga (HUD piu' pulito, 6/11/2026): il cartellino perde una riga e copre meno scena
@@ -3344,18 +3367,20 @@ func _build_ui() -> void:
 	bhead.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bp.add_child(bhead)
 	bhead.add_child(_boss_name)
-	_boss_hp = _bar(Color("#ff4b6e"), 22)
+	_boss_hp = _bar(Color("#ff4b6e"), float(HudLayers.v("vita_nemico.barra")))
 	bp.add_child(_boss_hp)
 	_boss_ghost = _ghost_bar(_boss_hp)
-	_boss_hp_txt = Ui.label("", HudLayers.MIN_TEXT, Ui.CREAM, null, 4)
+	# vita del nemico: L1, numeri grandi col carattere dei titoli e «HP» in fondo (HUD Combat 2.0)
+	_boss_hp_txt = Ui.label("", HudLayers.font_size("vita_nemico"), Ui.CREAM, Ui.display() if bool(HudLayers.v("vita_nemico.carattere_titoli")) else null, int(HudLayers.v("vita_nemico.contorno")))
 	_boss_hp_txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_hp.add_child(_boss_hp_txt)
 	Ui.place(_boss_hp_txt, 0, 0, 1, 1)
 	_boss_hp_txt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_boss_brk = _bar(Color("#f2f0ea"), 20)
+	# equilibrio: L2. A riposo un colore quieto; giallo che pulsa solo vicino alla rottura (_brk_pulse, stato critico)
+	_boss_brk = _bar(HudLayers.v("equilibrio.colore") as Color, 20)
 	bp.add_child(_boss_brk)
 	# il nome della barra bianca dentro la barra, crema col contorno scuro, si legge su barra piena e vuota (prima grigio chiaro da 12: non si leggeva): quando arriva a zero il boss si rompe
-	_brk_lbl = Ui.label("EQUILIBRIO", HudLayers.MIN_TEXT, Ui.CREAM, Ui.display(), 4)
+	_brk_lbl = Ui.label("EQUILIBRIO", HudLayers.font_size("equilibrio"), HudLayers.tone("equilibrio", Ui.CREAM, HudLayers.INK), Ui.display(), 4)
 	var brk_t := _brk_lbl
 	brk_t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_brk.add_child(brk_t)
@@ -3368,7 +3393,7 @@ func _build_ui() -> void:
 	_weak_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_weak_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bhead.add_child(_weak_row)
-	_weak_k = Ui.plate_label("DEBOLE A", HudLayers.MIN_TEXT, Ui.CREAM, Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)
+	_weak_k = Ui.plate_label("DEBOLE A", HudLayers.font_size("debole_a"), HudLayers.tone("debole_a", Ui.CREAM), Color(0.05, 0.03, 0.08, 0.9), Ui.CREAM)   # L2: l'etichetta e' strategica, il colore che lo batte resta pieno
 	_weak_row.add_child(_weak_k)
 	_weak_v = Ui.plate_label("???", HudLayers.MIN_TEXT, Ui.INK, Color("#9a94a8"), Ui.INK)
 	_weak_row.add_child(_weak_v)
@@ -3377,6 +3402,13 @@ func _build_ui() -> void:
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_tele.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bp.add_child(_tele)
+	var stacco: float = float(HudLayers.v("prossima_mossa.stacco"))
+	if stacco > 0.0:
+		var sp := Control.new()        # la prossima mossa (L1) si stacca dall'anagrafica del nemico
+		sp.custom_minimum_size = Vector2(0, stacco)
+		sp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bp.add_child(sp)
+		_boss_stacco = sp
 	if Settings.hud_minaccia:
 		# la riga di testo resta (stesso testo, per prove e lettori) ma la vede solo chi spegne la lastra
 		_threat_plate = ThreatPlate.new()
@@ -4510,7 +4542,7 @@ func _refresh_hud() -> void:
 	_boss_hp.max_value = int(boss["max_hp"])
 	var shown_hp: int = mini(int(boss["max_hp"]), int(boss["hp"]) + _team_hold)
 	_boss_hp.value = shown_hp
-	_boss_hp_txt.text = "%d / %d" % [shown_hp, int(boss["max_hp"])]
+	_boss_hp_txt.text = "%d / %d" % [shown_hp, int(boss["max_hp"])] + str(HudLayers.v("vita_nemico.suffisso"))
 	_boss_brk.max_value = maxi(1, int(boss.get("balance_max", 1)))
 	_boss_brk.value = int(boss.get("balance", 0))
 	_brk_lbl.text = "EQUILIBRIO  %d" % int(boss.get("balance", 0))

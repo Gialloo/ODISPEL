@@ -183,3 +183,9 @@ static func _lum(c: Color) -> float:
 	for x in [c.r, c.g, c.b]:
 		ch.append(x / 12.92 if x <= 0.03928 else pow((x + 0.055) / 1.055, 2.4))
 	return 0.2126 * float(ch[0]) + 0.7152 * float(ch[1]) + 0.0722 * float(ch[2])
+
+
+# Spazio che il pannello del nemico lascia alla colonna ORDINE. La 0.63 ne riservava 120, ma la colonna ne occupa 142
+# (PortraitParty.order_width): da li' il contatto a 16:10 e 4:3. Spento resta 120, come nella 0.63.
+static func riserva_ordine() -> float:
+	return PortraitParty.order_width() + float(v("ordine.margine")) if Settings.hud_gerarchia else 120.0
