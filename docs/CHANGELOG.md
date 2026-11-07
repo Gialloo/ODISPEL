@@ -1,5 +1,12 @@
 # Novità
 
+## 0.61.0 · Modelli 3D dai ritratti ufficiali
+
+- **Lance, Nox, Rio e Saul**: i modelli 3D sono rifatti a partire dai ritratti ufficiali dell'autore (PR #68).
+- **Nox**: gonna lunga fino alle caviglie, come nel design ufficiale (PR #69).
+- **Saul**: cappotto verde (PR #70).
+- Solo modifiche grafiche (`data/cast_visual.gd`, `scripts/v3/anime_builder.gd`): le regole del combattimento non cambiano.
+
 ## 0.60.1 · Rio, design ufficiale
 
 - **Ritratto di Rio**: nell'HUD di battaglia e nella barra della squadra c'è il design ufficiale disegnato dall'autore (maschera a croce, maglia viola). Il ritratto è fermo come quelli di Lance, Nox e Saul; il disegno di prima, con testa, busto e sciarpa animati, è conservato nella cartella del progetto.
