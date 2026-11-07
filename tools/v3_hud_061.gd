@@ -1,6 +1,7 @@
 extends SceneTree
 
 # Schermate dell'HUD 0.61 (P0: RITMO di squadra, prossima mossa, avvisi), mockup approvati dall'autore il 7/11/2026.
+# (Nota: a risoluzioni alte sotto xvfb i timbri del P2 a volte non compaiono nelle schermate; a 1280x720 si vedono.)
 # Uso: xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_hud_061.gd -- <cartella> [touch|pc]
 # Per ogni livello del RITMO: turno libero e ATTACCO scelto. I valori del RITMO sono messi a mano (solo per la schermata).
 
@@ -81,4 +82,28 @@ func _run() -> void:
 	BattleState.boss(b)["stun"] = 0
 	b["telegraph"] = tele_ok
 	bt.call("_refresh_hud")
+	# P2: accenti nei timbri (DEBOLEZZA di ognuno) e +N ULTIMATE della parata perfetta (i timbri escono a comandi chiusi)
+	bt.call("_show_commands", false)
+	(bt.get("_wheel") as Control).visible = false
+	for i in 4:
+		var u: Dictionary = bt.call("_slot_unit", i)
+		bt.set("_stamp_free_ms", 0)          # niente coda dei timbri: la schermata arriva subito
+		bt.call("_stamp", "DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.7, str(u.get("char", "")))
+		await create_timer(0.75).timeout
+		await _shot("accento_%s" % str(u.get("char", "")))
+		await create_timer(1.2).timeout
+	var pu: Dictionary = bt.call("_slot_unit", 0)
+	bt.call("_parry_gain_fly", [{"t": "timed_guard", "unit": pu["id"], "grade": "perfect"},
+		{"t": "resource_change", "resource": "gauge", "unit": pu["id"], "effective": BattleTypes.TIMED_PERFECT_GAUGE, "source": "timed_guard"}])
+	await create_timer(0.55).timeout
+	await _shot("parata_ultimate_1")
+	await create_timer(0.55).timeout
+	await _shot("parata_ultimate_2")
+	(bt.get("_wheel") as Control).visible = true
+	bt.call("_show_commands", true)
+	await create_timer(0.5).timeout
+	bt.call("_pick", "attack")
+	await create_timer(0.08).timeout
+	await _shot("lampo_scelta")
+	bt.call("_pick", "")
 	quit()

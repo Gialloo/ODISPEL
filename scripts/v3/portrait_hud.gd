@@ -230,6 +230,9 @@ func _ease(x: float) -> float:
 func _draw() -> void:
 	super()            # bande nere dell'ULTIMATE e lampo della scelta, come la ruota
 	var H: float = size.y
+	if Settings.hud_accenti and flash > 0.01:
+		# P2: nel lampo della scelta il segno del personaggio (tagli di Lance, anelli di Nox, pezzi storti di Saul)
+		CharAccent.draw(self, who_id, Rect2(Vector2(0, H - PH - 40.0), Vector2(PW + 160.0, PH)), col.lightened(0.3), minf(1.0, flash * 1.6))
 	var e: float = _ease(appear)
 	var dx: float = -(1.0 - e) * (PW + 60.0)
 	var f: Font = Ui.display()

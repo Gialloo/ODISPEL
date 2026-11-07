@@ -43,6 +43,9 @@ func _init() -> void:
 
 # Legge lo stato del RITMO dal motore (nessun calcolo qui: la UI mostra, non decide).
 func set_state(state: Dictionary) -> void:
+	visible = BattleTypes.RITMO_ON and not bool(state.get("pvp", false))      # dove il RITMO e' spento (PvP) niente barra vuota
+	if not visible:
+		return
 	var lv: int = Ritmo.level(state)
 	var ar: int = Ritmo.ardore(state)
 	var rd: bool = bool(Ritmo.st(state).get("ready", false)) and lv < Ritmo.APICE

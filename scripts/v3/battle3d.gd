@@ -1214,7 +1214,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		# il nome della tecnica combinata arriva prima dei colpi (dopo, la ruota del turno dopo lo avrebbe scacciato)
 		for x in ev:
 			if str(x.get("t", "")) == "duo":
-				_stamp(str(x.get("name", "")).to_upper(), "%s + %s · TECNICA COMBINATA" % [str(u.get("name", "")).to_upper(), _uname(str(x.get("with", ""))).to_upper()], col.lightened(0.2))
+				_stamp(str(x.get("name", "")).to_upper(), "%s + %s · TECNICA COMBINATA" % [str(u.get("name", "")).to_upper(), _uname(str(x.get("with", ""))).to_upper()], col.lightened(0.2), 0.3, str(u.get("char", "")))
 	if tgt == "enemy":
 		var boss_v: Node3D = vis[tid]
 		var strike: Vector3 = tpos + (home[uid] - tpos).normalized() * (1.7 if tid == BattleState.BOSS_ID else 1.3)
@@ -1264,7 +1264,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 				_cam_hud.disturb("ZOOM x2  ·  PUNTO DEBOLE", Ui.YELLOW, 0.9)
 			await _hit_stop(0.2)
 			_kick(0.9)
-			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.7)   # va nel posto fisso dei timbri (STAMP_AY), in coda: in alto e sul nemico ci sono i numeri del colpo
+			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.7, str(u.get("char", "")))   # va nel posto fisso dei timbri (STAMP_AY), in coda: in alto e sul nemico ci sono i numeri del colpo
 		await _show_events_freeze(ev)
 		await _tw_done(a)
 		cv.move_speed = 1.0
@@ -1365,6 +1365,7 @@ func _boss_turn() -> void:
 				if grade == "perfect":
 					await _parry_shot(str(tele.get("target", "")))
 		var ev: Array = BattleFlow.boss_action(b)
+		_parry_gain_fly(ev)
 		var tw: Tween = m.slam() if all else m.attack()
 		await _wait(0.3 if all else 0.2)
 		if all:
@@ -4827,16 +4828,72 @@ func _slancio_moment(u: Dictionary) -> void:
 	_flash(0.35)
 	_kick(0.5)
 	Settings.buzz(30)
-	_stamp("SLANCIO!", "%s AGISCE ANCORA · COLPISCI O PROTEGGI TUTTI" % str(u["name"]).to_upper(), col.lightened(0.25), 0.58)
+	_stamp("SLANCIO!", "%s AGISCE ANCORA · COLPISCI O PROTEGGI TUTTI" % str(u["name"]).to_upper(), col.lightened(0.25), 0.58, str(u.get("char", "")))
 	await _wait(1.25)
 
 
 # ay resta per chi la chiama, ma il posto e' sempre STAMP_AY: il giocatore guarda sempre li'.
-func _stamp(title: String, sub: String, col: Color, ay: float = 0.3) -> void:
+# P2: dopo la PARATA PERFETTA "+N ULTIMATE" vola dal centro alla barretta ULTIMATE di chi ha parato (HUD col ritratto).
+# N e' quello che il motore ha dato davvero (evento resource_change, fonte timed_guard): se la barra era gia' piena non vola niente.
+func _parry_gain_fly(ev: Array) -> void:
+	if not Settings.hud_accenti or _p1 == null:
+		return
+	var perfect: Dictionary = {}
+	for e in ev:
+		if str(e.get("t", "")) == "timed_guard" and str(e.get("grade", "")) == "perfect":
+			perfect[str(e.get("unit", ""))] = true
+	for e in ev:
+		if str(e.get("t", "")) != "resource_change" or str(e.get("source", "")) != "timed_guard" or str(e.get("resource", "")) != "gauge":
+			continue
+		var uid: String = str(e.get("unit", ""))
+		var n: int = int(e.get("effective", 0))
+		if n <= 0 or not perfect.has(uid):
+			continue
+		var idx: int = -1
+		for i in slots.size():
+			if str(_slot_unit(i).get("id", "")) == uid:
+				idx = i
+		if idx < 0:
+			continue
+		var W: float = _p1.size.x
+		var H: float = _p1.size.y
+		var cnt: int = slots.size()
+		var x0: float = W - 22.0 - PortraitParty.CW * cnt - 14.0 * (cnt - 1)
+		var dest := Vector2(x0 + idx * (PortraitParty.CW + 14.0) + 6.0, H - 128.0 + 98.0)
+		var l := Ui.label("+%d ULTIMATE" % n, 26, Ui.PINK.lightened(0.25), Ui.display(), 8)
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_fx_layer.add_child(l)
+		l.position = Vector2(W * 0.5 - 90.0, H * 0.42)
+		l.modulate.a = 0.0
+		var tw := l.create_tween()
+		tw.tween_interval(0.35)            # dopo il CLANG della parata
+		tw.tween_property(l, "modulate:a", 1.0, 0.08)
+		tw.tween_interval(0.35)
+		tw.tween_property(l, "position", dest - Vector2(40, 20), 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.parallel().tween_property(l, "scale", Vector2(0.55, 0.55), 0.45)
+		tw.tween_property(l, "modulate:a", 0.0, 0.12)
+		tw.tween_callback(l.queue_free)
+
+
+func _stamp(title: String, sub: String, col: Color, ay: float = 0.3, who: String = "") -> void:
 	ay = STAMP_AY
 	await _stamp_turn(1.45)
 	if not is_inside_tree() or _cmds_open():
 		return          # e' gia' il turno di scegliere: il colpo e' passato, la scritta non copre la ruota
+	if who != "" and Settings.hud_accenti:
+		# P2: il segno del personaggio dietro il suo timbro (tagli, anelli, pezzi storti, stelle nell'HYPE)
+		var acc := Control.new()
+		acc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		Ui.place(acc, 0.3, ay, 0.7, ay, 0, -30, 0, 150)
+		var hype: bool = int(Kits.unit_of_char(b, Kits.RIO).get("hype", 0)) >= 50
+		acc.draw.connect(func() -> void: CharAccent.draw(acc, who, Rect2(Vector2.ZERO, acc.size), col, 1.0, hype))
+		_fx_layer.add_child(acc)
+		acc.modulate.a = 0.0
+		var ta := acc.create_tween()
+		ta.tween_property(acc, "modulate:a", 1.0, 0.1)
+		ta.tween_interval(0.9)
+		ta.tween_property(acc, "modulate:a", 0.0, 0.25)
+		ta.tween_callback(acc.queue_free)
 	var box := VBoxContainer.new()
 	Ui.place(box, 0.15, ay, 0.85, ay, 0, 0, 0, 140)
 	_stamps.append(box)

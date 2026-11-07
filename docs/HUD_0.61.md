@@ -75,8 +75,17 @@ Regola seguita: aggiungi, non togliere. Ogni parte nuova ha un interruttore in `
 - Finché un file manca, resta l'icona disegnata in codice.
 - Guida per Procreate: `docs/HUD_ICONE_PROCREATE.md`.
 
+## P2 · Accenti dei personaggi (`scripts/v3/char_accent.gd`, `Settings.hud_accenti`)
+
+- Stessa struttura per tutti, ma un segno proprio dietro i timbri del personaggio (DEBOLEZZA, SLANCIO, tecnica combinata) e nel lampo quando sceglie un comando:
+  - Lance (impatto): tre tagli diagonali spessi;
+  - Nox (precisione): anelli concentrici sottili;
+  - Saul (imprevisto): pezzi storti, fuori asse;
+  - Rio (hype): stelle, solo quando l'HYPE della sua diretta è almeno 50. Fuori dall'HYPE non ha accento.
+- Dopo la PARATA PERFETTA «+N ULTIMATE» vola dal centro alla barretta di chi ha parato. N è quello che il motore ha dato davvero (evento `resource_change` con fonte `timed_guard`): con la barra già piena non vola niente.
+- La barra del Ritmo si nasconde dove il Ritmo è spento (PvP).
+
 ## Restano da fare
 
-- P2: accenti per personaggio (approvato, dopo P0 e P1).
 - Le icone vere, che disegna l'autore.
 - Avviso compatto «tocca per aprirlo»: oggi mostra solo il titolo e non si apre col tocco.

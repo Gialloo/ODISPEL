@@ -20,6 +20,7 @@ static var hud_minaccia: bool = true    # prossima mossa su una lastra con icona
 static var hud_avvisi: bool = true      # avvisi in tre categorie (pericolo/tattica/ambiente), uniti e compatti col comando acceso (HUD 0.61, P0-C)
 static var hud_echo: bool = true        # Echo in tre modi: consigli corti che non si ripetono e se ne vanno, avviso rosso sul pericolo (HUD 0.61, P1-A)
 static var hud_party: bool = true       # cornice piena di chi e' di turno, altri piu' scuri, ULTIMATE piu' leggibile (HUD 0.61, P1-B)
+static var hud_accenti: bool = true     # accenti dei personaggi su timbri e lampo di scelta, +N ULTIMATE dopo la parata perfetta (HUD 0.61, P2)
 static var fps_cap: int = 0             # limite degli fps scelto dal giocatore (0 = predefinito: 60 sul telefono, 120 su PC)
 static var text_speed: int = 0          # velocita' del testo nei dialoghi: 0 NORMALE, 1 VELOCE, 2 ISTANTANEO
 static var auto_text: bool = false      # dialoghi automatici (AUTO alla Persona): la battuta va avanti da sola dopo una pausa
