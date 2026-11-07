@@ -36,6 +36,11 @@ func _run() -> void:
 		await process_frame
 	await create_timer(float(OS.get_environment("ATTESA") if OS.get_environment("ATTESA") != "" else "1.2")).timeout
 	await _shot("0_inizio")
+	bt.call("_pick", "attack")
+	await create_timer(0.4).timeout
+	await _shot("0_inizio_acceso")       # avvisi compatti col comando acceso (P0-C)
+	bt.call("_pick", "")
+	await create_timer(4.5).timeout      # gli avvisi d'inizio se ne vanno
 	var b: Dictionary = bt.get("b")
 	# livello, ardore, soglia raggiunta senza condizione
 	var casi: Array = [[0, 14, false], [1, 52, true], [2, 66, false], [3, 88, false]]
@@ -58,6 +63,7 @@ func _run() -> void:
 	var pid: String = str(BattleState.alive_players(b)[0]["id"])
 	var tele_ok: Dictionary = b.get("telegraph", {}).duplicate()
 	b["telegraph"] = {"move": "verbale", "target": pid}
+	BattleState.active_unit(b, pid)["hp"] = 60          # a un colpo dal KO: avviso di PERICOLO (P0-C) e "!" sul ritratto
 	bt.call("_refresh_hud")
 	await create_timer(0.3).timeout
 	await _shot("minaccia_forte_libero")

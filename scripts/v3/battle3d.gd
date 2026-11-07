@@ -181,6 +181,7 @@ var _party_back: Control
 var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
 var _ritmo_bar: RitmoBar               # RITMO di squadra sopra la fila (HUD 0.61, P0-A; Settings.hud_ritmo)
 var _threat_plate: ThreatPlate         # PROSSIMA MOSSA su una lastra con icona (HUD 0.61, P0-B; Settings.hud_minaccia)
+var _lethal_sig: String = ""          # P0-C: l'avviso "a un colpo dal KO" si dice una volta per mossa annunciata
 var _tgt: Dictionary = {}              # id del compagno -> 1 nel bersaglio della prossima mossa, 2 se il colpo e' FORTE (P0-B)
 var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
 var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
@@ -305,19 +306,28 @@ func _ready() -> void:
 		EdgeCutin.warm(_root, chs)          # riscalda shader e mesh del cut-in senza bloccare l'ingresso (scatto sul telefono)
 	# la strada di questo nemico verso il BREAK, detta una volta all'inizio (poi resta tra i suggerimenti)
 	var brk_rule: Dictionary = BreakRules.of(BattleState.boss(b))
+	var reading: String = EnemyArchetypes.reading(str(BattleState.boss(b).get("char", "")))
+	var merged: bool = false
 	if not brk_rule.is_empty():
-		_notice("%s · %s" % [str(brk_rule["name"]), str(brk_rule["short"])], Ui.YELLOW, 4.0, "fx")      # corto: l'avviso taglia oltre 34 lettere
+		var mt: String = CombatHud.merge_rule_reading(str(brk_rule["name"]), str(brk_rule["short"]), reading) if Settings.hud_avvisi and reading != "" else ""
+		if mt != "":
+			# HUD 0.61, P0-C: la regola del BREAK e la lettura di Echo dicevano la stessa cosa in due avvisi di fila.
+			# Ora uno solo: il nome della regola, il consiglio di Echo e il numero della regola (niente si perde: la regola
+			# intera resta tra i suggerimenti). Es. "IL VERBALE · para perfetto, poi punisci: x2"
+			_notice(mt, Ui.YELLOW, 4.5, "fx", "tattica")
+			merged = true
+		else:
+			_notice("%s · %s" % [str(brk_rule["name"]), str(brk_rule["short"])], Ui.YELLOW, 4.0, "fx")      # corto: l'avviso taglia oltre 34 lettere
 	match ingresso:
 		"vantaggio":
-			_toast("ATTACCO A SORPRESA! %s è già %s al BREAK e agite per primi" % [_cap(_bn()), _g("vicino", "vicina")], Ui.YELLOW, 3.0)
+			_notice("ATTACCO A SORPRESA! %s è già %s al BREAK e agite per primi" % [_cap(_bn()), _g("vicino", "vicina")], Ui.YELLOW, 3.0, "fx", "ambiente")
 		"agguato":
-			_toast("AGGUATO! %s attacca per %s" % [_cap(_bn()), _g("primo", "prima")], Color("#ff7a9c"), 3.0)
+			_notice("AGGUATO! %s attacca per %s" % [_cap(_bn()), _g("primo", "prima")], Color("#ff7a9c"), 3.0, "boss", "pericolo")
 	await get_tree().create_timer(0.4).timeout
 	var bonds: Array = Story.active_bonds() if not ritorno.is_empty() else []
 	var msgs: Array = []
 	# la lettura di Echo del nemico (archetipo, EnemyArchetypes): il problema si capisce dal primo scontro, non solo dopo
-	var reading: String = EnemyArchetypes.reading(str(BattleState.boss(b).get("char", "")))
-	if reading != "":
+	if reading != "" and not merged:
 		msgs.append([reading, Ui.CYAN])
 	if Gregario.alive(b):
 		msgs.append([EnemyArchetypes.reading(Gregario.ID), Ui.CYAN])
@@ -3698,6 +3708,14 @@ func _threat_refresh(tstate: String, tele: Dictionary, mv: Dictionary, who: Stri
 	else:
 		ids.append(str(BattleState.active_unit(b, str(tele.get("target", ""))).get("id", "")))
 	var lethal: Array = thr.get("lethal", [])
+	if Settings.hud_avvisi:
+		var lsig: String = "%s|%s|%s" % [str(tele.get("move", "")), str(lethal), int(b.get("round", 1))]
+		if not lethal.is_empty() and lsig != _lethal_sig:
+			var names: Array = []
+			for id in lethal:
+				names.append(str(BattleState.unit(b, str(id)).get("name", "?")).to_upper())
+			_notice("%s A UN COLPO DAL KO · basta il prossimo %s" % [" E ".join(PackedStringArray(names)), str(mv.get("name", "?")).to_upper()], Ui.PINK, 3.5, "boss", "pericolo")
+		_lethal_sig = lsig
 	for id in ids:
 		if id != "":
 			_tgt[id] = 2 if (strong or lethal.has(id)) else 1
@@ -4120,6 +4138,8 @@ func _pick(kind: String) -> void:
 			return
 	var was: String = _picked
 	_picked = kind
+	if (was == "") != (kind == ""):
+		_stack_notices()          # P0-C: con un comando acceso gli avvisi si fanno compatti (e tornano interi quando si chiude)
 	if _hint != null:
 		_hint.modulate.a = 0.0 if kind != "" else 1.0      # sotto la scelta si legge solo il suo riquadro
 	if _wheel != null:
@@ -4860,17 +4880,33 @@ func _clear_stamps() -> void:
 
 
 func _toast(text: String, col: Color, sec: float) -> void:
-	_notice(text, col, sec, "boss" if col == Ui.PINK or col == Color("#ff7a9c") else "fx")
+	var danger: bool = col == Ui.PINK or col == Color("#ff7a9c")
+	_notice(text, col, sec, "boss" if danger else "fx", "pericolo" if danger and Settings.hud_avvisi else "")
 
 
 # UN posto per tutti gli avvisi: a sinistra, sotto l'ordine dei turni (in alto al centro si scontravano coi numeri dei colpi). Lastre piccole con un'icona e poche
 # parole (titolo grande, il resto piccolo solo se e' corto); al massimo due insieme, il nuovo scaccia il piu' vecchio.
-func _notice(text: String, col: Color, sec: float, icon: String) -> void:
+# HUD 0.61, P0-C (cat): "pericolo" rosso col triangolo, passa davanti a tutto e non viene scacciato dagli altri;
+# "tattica" giallo col lampo; "ambiente" azzurro con le onde. "" = come prima (colore di chi lo manda).
+const NOTICE_CAT: Dictionary = {"pericolo": Color("#ff3b4e"), "tattica": Color("#ffd23f"), "ambiente": Color("#39d8ff")}
+
+
+func _notice(text: String, col: Color, sec: float, icon: String, cat: String = "") -> void:
 	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t))
+	if NOTICE_CAT.has(cat):
+		col = NOTICE_CAT[cat]
+		icon = {"pericolo": "boss", "tattica": "fx", "ambiente": "env"}[cat]
 	while _toasts.size() >= TOAST_MAX:
-		var old: Control = _toasts.pop_front()
+		# si scaccia il piu' vecchio che non e' un pericolo (se sono tutti pericoli, il piu' vecchio)
+		var k: int = 0
+		for j in _toasts.size():
+			if str((_toasts[j] as Control).get_meta("cat", "")) != "pericolo":
+				k = j
+				break
+		var old: Control = _toasts[k]
+		_toasts.remove_at(k)
 		old.queue_free()
-	var parts: Array = CombatHud.notice_parts(text)
+	var parts: Array = CombatHud.notice_parts(text, 48 if cat != "" else 34)
 	var pc := PanelContainer.new()
 	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var mv: bool = icon == "move"
@@ -4893,6 +4929,8 @@ func _notice(text: String, col: Color, sec: float, icon: String) -> void:
 	if tail != "":
 		var sm := Ui.label(tail, 16, Color(Ui.CREAM, 0.9) if not mv else col.lightened(0.2), null, 4)
 		hb.add_child(sm)
+		pc.set_meta("tail", sm)
+	pc.set_meta("cat", cat)
 	_fx_layer.add_child(pc)
 	_toasts.append(pc)
 	_stack_notices()
@@ -4907,14 +4945,23 @@ func _notice(text: String, col: Color, sec: float, icon: String) -> void:
 
 
 func _stack_notices() -> void:
-	for i in _toasts.size():
-		var c: Control = _toasts[i]
+	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t))
+	# i pericoli in cima alla pila (l'ultimo dell'elenco sta piu' in alto)
+	var order: Array = _toasts.filter(func(t) -> bool: return str((t as Control).get_meta("cat", "")) != "pericolo")
+	order.append_array(_toasts.filter(func(t) -> bool: return str((t as Control).get_meta("cat", "")) == "pericolo"))
+	var compact: bool = Settings.hud_avvisi and _picked != ""
+	for i in order.size():
+		var c: Control = order[i]
 		Ui.place(c, 0.0, 0.0, 0.0, 0.0, 24, 0, 24, 0)
 		c.grow_horizontal = Control.GROW_DIRECTION_END
+		var tl: Variant = c.get_meta("tail", null)
+		if tl is Control and is_instance_valid(tl):
+			(tl as Control).visible = not compact
+		c.reset_size()
 		var y0: float = NOTICE_Y
-		if _boss_panel != null and _boss_panel.visible and _boss_panel.size.y > 1.0:
+		if not compact and _boss_panel != null and _boss_panel.visible and _boss_panel.size.y > 1.0:
 			y0 = _boss_panel.position.y + _boss_panel.get_combined_minimum_size().y + 12.0      # subito sotto il nemico
-		c.offset_top = y0 + 46.0 * float(_toasts.size() - 1 - i)
+		c.offset_top = y0 + 46.0 * float(order.size() - 1 - i)
 
 
 # Icone degli avvisi, disegnate a mano: catena (legami e impulsi), triangolo (il nemico), lampo (effetti), freccia (mossa)
@@ -4933,6 +4980,10 @@ func _notice_icon(c: Control, icon: String, col: Color) -> void:
 			c.draw_circle(p + Vector2(0, 6), 1.5, Ui.INK)
 		"move":
 			c.draw_colored_polygon(PackedVector2Array([p + Vector2(-8, -9), p + Vector2(9, 0), p + Vector2(-8, 9), p + Vector2(-3, 0)]), col)
+		"env":
+			for k in 3:
+				c.draw_arc(p + Vector2(0, 7), 4.0 + 5.0 * k, deg_to_rad(215), deg_to_rad(325), 12, col, 2.5, true)
+			c.draw_circle(p + Vector2(0, 7), 2.0, col)
 		_:
 			CmdWheel.glyph(c, "skill", p, 12.0, col)
 
