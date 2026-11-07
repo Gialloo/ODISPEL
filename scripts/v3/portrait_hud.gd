@@ -102,7 +102,7 @@ var _polys: Dictionary = {}
 var banner_title: String = ""
 var banner_sub: String = ""
 var objective: String = ""                     # kind -> lastra del comando (tocco preciso: le lastre si incastrano)
-const CORNICE_SCALA: float = 1.15               # la cornice e' un po' piu' grande del riquadro del ritratto: le lastre si leggono
+const CORNICE_SCALA: float = 1.05               # la cornice e' un po' piu' grande del riquadro del ritratto: le lastre si leggono
 const CORNICE_RITRATTO: float = 0.72            # il ritratto rimpicciolito e appoggiato in basso, come nel mockup (stile "lastre")
 # Disposizione dei comandi sulla cornice. "lista" (autore, 7/11/2026, riferimento): ritratto grande, comandi in colonna
 # a nastri storti sotto il volto, ognuno col suo tasto tondo; "lastre": le quattro lastre sopra la testa del primo mockup.
@@ -111,7 +111,10 @@ const LISTA_ORDINE: Array = ["attack", "skill", "guard", "ult"]
 const LISTA_NOME: Dictionary = {"attack": "ATTACCO", "skill": "ABILITÀ", "guard": "GUARDIA", "ult": "ULTIMATE"}
 const LISTA_X: float = 0.40          # inizio della prima riga (frazione della cornice); ogni riga scende e rientra un poco
 const LISTA_Y: float = 0.56
-const LISTA_PASSO: float = 0.074
+const LISTA_PASSO: float = 0.074     # (vecchio passo in frazione, non piu' usato dai nastri)
+const LISTA_ALTO: float = 46.0        # nastri piu' alti e staccati: si leggono e non si sbaglia tocco (autore, 7/11/2026)
+const LISTA_STACCO: float = 54.0      # passo fra i nastri in pixel: 8 px di vuoto fra uno e l'altro
+const LISTA_FONDO: float = 46.0       # l'ultimo nastro finisce qui sopra il fondo (sopra la striscia dell'obiettivo)
 const LISTA_ANGOLO: float = -0.35       # pendenza del lato a punta di saul_avanti; provata su nastri e SINERGIA il 7/11/2026 e scartata dall'autore, tenuta per riprovarla
 const LISTA_RITRATTO: float = 0.96      # il ritratto riempie quasi tutta la cornice
 # lastre dei comandi in frazioni della cornice (dal mockup di Saul): [alto-sx, alto-dx, basso-dx, basso-sx]
@@ -330,7 +333,7 @@ func _draw() -> void:
 	for kind in ["ult", "skill", "attack", "guard"]:
 		var it0: Dictionary = item(kind)
 		if not it0.is_empty():
-			_usz = mini(_usz, (26 if CORNICE_STILE == "lista" else _lastra_fit(kind, f)) if cornice else _fit_size(kind, it0, dx, H, f))
+			_usz = mini(_usz, (28 if CORNICE_STILE == "lista" else _lastra_fit(kind, f)) if cornice else _fit_size(kind, it0, dx, H, f))
 	if cornice and Settings.hud_foto and CORNICE_STILE == "lista":
 		# banda scura strappata sotto la lista dei comandi (foto: i nastri stanno su uno strappo nero)
 		var cr := Rect2(Vector2(dx, H - PH * CORNICE_SCALA), Vector2(PW, PH) * CORNICE_SCALA)
@@ -570,18 +573,20 @@ func _draw_riga_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, 
 	var ok: bool = bool(it.get("ok", false))
 	var on: bool = picked == kind
 	var hov: bool = _hov == kind and ok
-	var hgt: float = cs.y * LISTA_PASSO * (1.12 if on else 0.9)
+	var hgt: float = LISTA_ALTO      # stessa altezza anche se scelto: non deve invadere i vicini
 	var x0: float = dx + cs.x * (LISTA_X + 0.02 * i) - (14.0 if on else 0.0)
-	var yc: float = H - cs.y + cs.y * (LISTA_Y + LISTA_PASSO * i)
-	var w: float = cs.x * 0.44 + (22.0 if on else 0.0)
+	var yc: float = H - LISTA_FONDO - hgt * 0.5 - LISTA_STACCO * float(LISTA_ORDINE.size() - 1 - i)
+	var w: float = cs.x * 0.52 + (22.0 if on else 0.0)
 	var sk: float = hgt * 0.42
 	var q := PackedVector2Array([Vector2(x0 + sk, yc - hgt * 0.5 - 2.0), Vector2(x0 + w + sk, yc - hgt * 0.5 - 6.0), Vector2(x0 + w, yc + hgt * 0.5 - 4.0), Vector2(x0, yc + hgt * 0.5)])
-	_polys[kind] = q
+	# zona di tocco: tutta la fascia del nastro fino a meta' del vuoto coi vicini, e fino al tasto tondo; mai sovrapposta
+	var hz: float = LISTA_STACCO * 0.5
+	_polys[kind] = PackedVector2Array([Vector2(x0 + sk - 6.0, yc - hz), Vector2(x0 + w + sk + 40.0, yc - hz), Vector2(x0 + w + 40.0, yc + hz), Vector2(x0 - 6.0, yc + hz)])
 	var sdw := PackedVector2Array()
 	for v in q:
 		sdw.append(v + Vector2(5, 5))
 	draw_colored_polygon(sdw, Color(INK, 0.8 * e))
-	var fill: Color = Color(col, 0.97) if on else (Color(col.darkened(0.55), 0.9) if hov else Color(0.04, 0.02, 0.07, 0.82))
+	var fill: Color = Color(col, 0.97) if on else (Color(col.darkened(0.55), 0.9) if hov else Color(0.04, 0.02, 0.07, 0.92))
 	draw_colored_polygon(q, Color(fill, fill.a * e))
 	if on:
 		draw_polyline(q + PackedVector2Array([q[0]]), Color(CREAM, e), 3.0, true)
@@ -843,6 +848,8 @@ func _draw_tip(it: Dictionary, dx: float, H: float, e: float) -> void:
 	var bf: Font = Ui.body()
 	# IN BASSO AL CENTRO (autore, 7/11/2026): tra il ritratto di chi e' di turno e le card della squadra
 	var left: float = dx + (PW * CORNICE_SCALA if _dietro != null else PW + 30.0) + 14.0
+	for rk in _rects:      # mai sotto i nastri o il loro tasto tondo
+		left = maxf(left, (_rects[rk] as Rect2).end.x + 44.0)
 	var right: float = size.x - 22.0 - PortraitParty.cw() * 4.0 - 42.0 - 16.0
 	var bw: float = clampf(right - left, 280.0, 440.0)
 	var lines: Array = CmdWheel.wrap(bf, str(it.get("desc", "")).replace("\n", " · "), 16, bw - 30.0)
