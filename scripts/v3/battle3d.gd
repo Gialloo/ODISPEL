@@ -3274,6 +3274,7 @@ func _build_ui() -> void:
 	_cam_hud.tag_y = 70.0 if Settings.show_fps else 14.0      # REC CAM in alto a sinistra, SOPRA il riquadro dei turni
 	if Settings.hud_foto and not Settings.show_fps:
 		_cam_hud.tag_y = 74.0          # foto dell'autore: il logo in alto a sinistra, REC e CAM sotto
+	_cam_hud.show_tag = not Settings.hud_alto
 	_root.add_child(_cam_hud)
 	if Settings.hud_foto:
 		var logo := Control.new()
@@ -3549,6 +3550,9 @@ func _build_ui() -> void:
 	_top_bar = tr
 	Ui.place(tr, 1.0, 0, 1.0, 0, -480, 12, -16, 56)      # una sola riga di lastre scure e piccole (Metaphor: i tasti rapidi non rubano la scena)
 	tr.alignment = BoxContainer.ALIGNMENT_END
+	if Settings.hud_alto:
+		Ui.place(tr, 0, 0, 0, 0, 16, 12, 480, 56)        # al posto di REC e CAM, in alto a sinistra (autore, 7/11/2026)
+		tr.alignment = BoxContainer.ALIGNMENT_BEGIN
 	tr.add_theme_constant_override("separation", 8)
 	_root.add_child(tr)
 	_btn_fast = _quick_btn("x1", 58)

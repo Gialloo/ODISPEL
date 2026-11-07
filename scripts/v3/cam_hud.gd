@@ -13,6 +13,7 @@ const REC_RED: Color = Color("#ff4630")
 
 var anomaly: bool = false            # dentro un'Anomalia: nessun segnale
 var tag_right: bool = false          # etichetta a destra (esplorazione, sotto la pausa) o a sinistra (battaglia)
+var show_tag: bool = true             # false: niente REC, CAM e pallino rosso (battaglia, autore 7/11/2026: li' vanno x1, AUTO e pausa)
 var tag_y: float = -204.0            # posizione verticale dell'etichetta (dal basso se negativa)
 var _cam_no: int = 1
 var live: int = -1                   # Hype di Rio (battaglia): da 25 in su la telecamera va «in diretta» e lo scrive
@@ -73,6 +74,8 @@ func _ready() -> void:
 	for l in [_tag, _clock]:
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if tag_right else HORIZONTAL_ALIGNMENT_LEFT
 		add_child(l)
+		if not show_tag:
+			l.modulate.a = 0.0
 	var top: float = tag_y
 	var anchor_y: float = 1.0 if tag_y < 0.0 else 0.0
 	if tag_right:
@@ -479,7 +482,7 @@ func _draw() -> void:
 		draw_line(p, p + Vector2(dx, 0), c, w)
 		draw_line(p, p + Vector2(0, dy), c, w)
 	# pallino del REC accanto all'etichetta: lampeggia come una telecamera vera
-	if not anomaly and _tag != null and fmod(_t, 1.2) < 0.75:
+	if show_tag and not anomaly and _tag != null and fmod(_t, 1.2) < 0.75:
 		var tp: Vector2 = _tag.position
 		var x: float = tp.x + _tag.size.x - _tag.get_combined_minimum_size().x - 14.0 if tag_right else tp.x - 14.0
 		draw_circle(Vector2(x, tp.y + _tag.size.y * 0.5), 7.0, REC_RED)

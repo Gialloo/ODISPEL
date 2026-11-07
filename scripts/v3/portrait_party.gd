@@ -189,7 +189,7 @@ func _draw() -> void:
 	if not order_on or order.is_empty():
 		return
 	var ox: float = W - 128.0
-	var oy: float = 76.0
+	var oy: float = 6.0 if Settings.hud_alto else 76.0      # piu' in alto, nello spazio lasciato da x1, AUTO e pausa (autore, 7/11/2026)
 	CmdWheel.skew_text(self, Vector2(ox - 8, oy + 22), "ORDINE", 24, HOT, INK, f, 8, -0.25)
 	CmdWheel.skew_text(self, Vector2(ox + 2, oy + 42), "TURNO %d" % round_n, 14, CREAM, INK, f, 5, -0.25)
 	var y2: float = oy + 54.0

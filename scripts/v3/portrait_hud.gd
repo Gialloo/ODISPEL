@@ -28,9 +28,9 @@ const SLOT: Dictionary = {      # (vecchia disposizione a colonna, tenuta come r
 # Il centro vuoto del rombo sta sul cuore del personaggio (autore, 2/11/2026): sul disegno 1536x2048 ~ (820, 1500).
 const PAD_C: Vector2 = Vector2(188.0, -126.0)
 const PAD: Dictionary = {      # kind -> [posto del tasto dal centro, grandezza della scritta, scritta a destra del tasto?]
-	"attack": [Vector2(6, -52), 30, false],
+	"attack": [Vector2(6, -58), 30, false],     # 54 px fra un comando e l'altro: zone di tocco alte 52 che non si toccano (7/11/2026)
 	"skill": [Vector2(-46, -4), 30, false],
-	"guard": [Vector2(-2, 46), 30, false],
+	"guard": [Vector2(-2, 50), 30, false],
 	"ult": [Vector2(52, 14), 30, true],
 }
 # Scritte tutte della stessa grandezza, quella del piu' piccolo (autore, 2/11/2026); ABILITA' qui si chiama SKILL.
@@ -106,7 +106,7 @@ const CORNICE_SCALA: float = 1.05               # la cornice e' un po' piu' gran
 const CORNICE_RITRATTO: float = 0.72            # il ritratto rimpicciolito e appoggiato in basso, come nel mockup (stile "lastre")
 # Disposizione dei comandi sulla cornice. "lista" (autore, 7/11/2026, riferimento): ritratto grande, comandi in colonna
 # a nastri storti sotto il volto, ognuno col suo tasto tondo; "lastre": le quattro lastre sopra la testa del primo mockup.
-const CORNICE_STILE: String = "lista"
+const CORNICE_STILE: String = "testo"      # "testo" = comandi come nella 0.58 (scritte e tasti tondi) sopra la cornice (autore, 7/11/2026); "lista" = nastri; altro = lastre
 const LISTA_ORDINE: Array = ["attack", "skill", "guard", "ult"]
 const LISTA_NOME: Dictionary = {"attack": "ATTACCO", "skill": "ABILITÀ", "guard": "GUARDIA", "ult": "ULTIMATE"}
 const LISTA_X: float = 0.40          # inizio della prima riga (frazione della cornice); ogni riga scende e rientra un poco
@@ -333,7 +333,7 @@ func _draw() -> void:
 	for kind in ["ult", "skill", "attack", "guard"]:
 		var it0: Dictionary = item(kind)
 		if not it0.is_empty():
-			_usz = mini(_usz, (28 if CORNICE_STILE == "lista" else _lastra_fit(kind, f)) if cornice else _fit_size(kind, it0, dx, H, f))
+			_usz = mini(_usz, (28 if CORNICE_STILE == "lista" else _lastra_fit(kind, f)) if cornice and CORNICE_STILE != "testo" else _fit_size(kind, it0, dx, H - _cmd_up(cornice), f))
 	if cornice and Settings.hud_foto and CORNICE_STILE == "lista":
 		# banda scura strappata sotto la lista dei comandi (foto: i nastri stanno su uno strappo nero)
 		var cr := Rect2(Vector2(dx, H - PH * CORNICE_SCALA), Vector2(PW, PH) * CORNICE_SCALA)
@@ -342,13 +342,13 @@ func _draw() -> void:
 		var it: Dictionary = item(kind)
 		if it.is_empty():
 			continue
-		if cornice:
+		if cornice and CORNICE_STILE != "testo":
 			if CORNICE_STILE == "lista":
 				_draw_riga_cmd(kind, it, dx, H, f, e)
 			else:
 				_draw_lastra_cmd(kind, it, dx, H, f, e)
 		else:
-			_draw_cmd(kind, it, dx, H, f, e)
+			_draw_cmd(kind, it, dx, H - _cmd_up(cornice), f, e)
 	# 4) nome grande in fondo, sopra al ritratto (come il nome in giapponese del riferimento)
 	var nm: String = who.split(" · ")[0]
 	if cornice and Settings.hud_foto:
@@ -360,6 +360,11 @@ func _draw() -> void:
 	# 5) cosa fa il comando scelto: una lastra scura sopra il ritratto
 	if picked != "":
 		_draw_tip(item(picked), dx, H, e)
+
+
+# con la cornice e l'obiettivo in fondo il nome sale di 34: i comandi salgono con lui per non coprirlo
+func _cmd_up(cornice: bool) -> float:
+	return 34.0 if cornice and Settings.hud_obiettivo and objective != "" else 0.0
 
 
 func _draw_name(nm: String, dx: float, H: float, f: Font) -> void:
@@ -491,7 +496,7 @@ func _shard(r: Rect2, fr: Array, c: Color, amp: float, seed_n: int) -> void:
 
 
 func _cornice_rect(dx: float, H: float) -> Rect2:
-	var cs := Vector2(PW, PH) * CORNICE_SCALA * (LISTA_RITRATTO if CORNICE_STILE == "lista" else CORNICE_RITRATTO)
+	var cs := Vector2(PW, PH) * CORNICE_SCALA * (LISTA_RITRATTO if CORNICE_STILE in ["lista", "testo"] else CORNICE_RITRATTO)
 	return Rect2(Vector2(dx, H - cs.y), cs)
 
 
@@ -791,7 +796,7 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 	var ok: bool = bool(it.get("ok", false))
 	var on: bool = picked == kind
 	var tw: float = f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
-	var br: float = 15.0 if not on else 18.0
+	var br: float = (18.0 if Ui.is_touch() else 15.0) + (3.0 if on else 0.0)     # sul telefono il tasto tondo e' piu' grande
 	# la scritta sta a sinistra del tasto e finisce sul tasto (ULTIMATE, ABILITA', ATTACCO) o parte dal tasto (GUARDIA)
 	var p := Vector2(bc.x + br + 8.0, bc.y + sz * 0.36) if right else Vector2(bc.x - br - 8.0 - tw, bc.y + sz * 0.36)
 	var rot: float = -0.06
@@ -836,9 +841,9 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 		var ks: Vector2 = f.get_string_size(k, HORIZONTAL_ALIGNMENT_LEFT, -1, 18)
 		draw_string(f, bc + Vector2(-ks.x * 0.5, 7), k, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(CREAM if ok else GREY, e))
 	# zona del tocco: scritta + tasto, almeno 48 di altezza (i tasti del rombo sono vicini: le zone non si sovrappongono)
-	var x0: float = minf(p.x, bc.x - br) - 6.0
-	var x1: float = maxf(p.x + tw, bc.x + br) + 6.0
-	var hh: float = 46.0
+	var x0: float = minf(p.x, bc.x - br) - (12.0 if not right else 4.0)       # piu' largo dal lato della scritta, stretto verso il vicino
+	var x1: float = maxf(p.x + tw, bc.x + br) + (12.0 if right else 4.0)
+	var hh: float = 52.0
 	_rects[kind] = Rect2(Vector2(x0, bc.y - hh * 0.5), Vector2(x1 - x0, hh))
 
 
