@@ -15,7 +15,7 @@ static var surprise: bool = true        # prova A/B: si puo' attaccare il nemico
 static var broken_cam: bool = true      # telecamera rotta quando tocca a chi ha pochi PV
 static var parry_wide: bool = false     # finestra di parata ampia (accessibilita'): la guardia normale vale sempre
 static var hud_ritratto: bool = true    # HUD di battaglia col ritratto 2D (remake di Persona 1, 2/11/2026); false = la ruota attorno al personaggio
-static var hud_ventaglio: bool = true   # menu comandi a ventaglio disegnato dall'autore (7/11/2026); false = l'HUD col ritratto di prima
+static var hud_ventaglio: bool = false  # menu comandi a ventaglio (7/11/2026): spento, all'autore non piace («torniamo all'originale»); true lo riaccende
 static var fps_cap: int = 0             # limite degli fps scelto dal giocatore (0 = predefinito: 60 sul telefono, 120 su PC)
 static var text_speed: int = 0          # velocita' del testo nei dialoghi: 0 NORMALE, 1 VELOCE, 2 ISTANTANEO
 static var auto_text: bool = false      # dialoghi automatici (AUTO alla Persona): la battuta va avanti da sola dopo una pausa
