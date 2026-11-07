@@ -321,9 +321,11 @@ func _draw() -> void:
 			# ombra piatta del colore (stile cel): lo stesso ritratto spostato e scurito
 			draw_texture_rect(_tex, Rect2(r.position + Vector2(-8, 6), r.size), false, Color(INK, 0.55 * e))
 		var layered: bool = _tex_real and _busto != null and now_t == _tex
-		draw_texture_rect(_busto if layered else now_t, r, false, Color(1, 1, 1, e))
+		# HUD Combat 2.0: il ritratto e' decorazione, un filo meno luminoso (0,86) perche' comandi e nome gli stiano davanti
+		var lu: float = float(HudLayers.v("ritratto.luce"))
+		draw_texture_rect(_busto if layered else now_t, r, false, Color(lu, lu, lu, e))
 		if _head != null and now_t == _tex:      # le varianti (ferito, ombra...) hanno colori diversi: li' resta ferma
-			_draw_head(r, e, Vector2.ZERO, Color(1, 1, 1, e), layered)
+			_draw_head(r, e, Vector2.ZERO, Color(lu, lu, lu, e), layered)
 		if _scarf != null and now_t == _tex:
 			_draw_scarf(r, e)
 		if _swap > 0.0 and _sil != null and _tex_real:
@@ -401,7 +403,7 @@ func _draw_extra(cr: Rect2, dx: float, H: float, f: Font, e: float) -> void:
 		draw_circle(Vector2(dx + 26, H - 20), 10.0, Color(HOT, e))
 		var xw: float = f.get_string_size("!", HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
 		draw_string(f, Vector2(dx + 26 - xw * 0.5, H - 13), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(INK, e))
-		draw_string(bf, Vector2(dx + 46, H - 14), objective, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(CREAM, e))
+		draw_string(bf, Vector2(dx + 46, H - 14), objective, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.font_size("obiettivo"), Color(HudLayers.tone("obiettivo", CREAM), e))      # L4 quieto
 	if banner_title != "":
 		# SINERGIA: lastra nera inclinata come la scritta (autore, 7/11/2026), tutto nello stesso giro
 		var tf: int = 20
@@ -815,6 +817,11 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 		fill = HOT
 	elif _hov == kind and ok:
 		fill = CREAM
+	var lnc: float = float(HudLayers.v("comandi.lastra_non_scelti"))
+	if not on and lnc > 0.0:
+		# HUD Combat 2.0: i comandi non scelti su una lastra d'inchiostro leggera, si leggono anche sopra il ritratto chiaro
+		var sl2 := PackedVector2Array([Vector2(-10, -sz * 0.92), Vector2(tw + 14, -sz * 1.02), Vector2(tw + 6, sz * 0.22), Vector2(-16, sz * 0.3)])
+		draw_colored_polygon(sl2, Color(INK, lnc * e))
 	# ombra del colore sfalsata (lettering del riferimento) + contorno d'inchiostro spesso
 	draw_set_transform(p + Vector2(4, 4).rotated(rot), rot, Vector2(1, 1))
 	draw_string_outline(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, 10, Color(col.darkened(0.2), 0.95 * e))
@@ -828,8 +835,9 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 			var pc: float = clampf(str(it.get("cost", "0")).to_float() / 100.0, 0.0, 1.0)
 			draw_rect(Rect2(4, 8, 74, 9), Color(INK, e))
 			draw_rect(Rect2(5, 9, 72 * pc, 7), Color(Ui.PINK, e))
-			draw_string_outline(Ui.body(), Vector2(84, 19), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, 5, Color(INK, e))
-			draw_string(Ui.body(), Vector2(84, 19), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(CREAM, e))
+			var usz: int = HudLayers.font_size("ultimate")      # L3: quieta finche' carica, piena quando e' pronta (la scritta grande)
+			draw_string_outline(Ui.body(), Vector2(84, 19), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, usz, 5, Color(INK, e))
+			draw_string(Ui.body(), Vector2(84, 19), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, usz, Color(HudLayers.tone("ultimate", CREAM, INK), e))
 		else:
 			draw_string(Ui.body(), Vector2(4, 18), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(GREY, e))
 	draw_set_transform_matrix(Transform2D.IDENTITY)
@@ -839,6 +847,16 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 	draw_circle(bc, br - 1, Color(INK if not on else col.darkened(0.3), e))
 	if Ui.is_touch():
 		CmdWheel.glyph(self, kind, bc, br * 0.8, Color(CREAM if ok else GREY, e))
+	elif bool(HudLayers.v("comandi.numero_a_parte")):
+		# HUD Combat 2.0: su pc l'icona come sul telefono (stesso significato) e il numero del tasto in un bollino accanto (L4)
+		CmdWheel.glyph(self, kind, bc, br * 0.8, Color(CREAM if ok else GREY, e))
+		var k2: String = str(KEYS.get(kind, ""))
+		var ksz: int = HudLayers.font_size("numero_tasto")
+		var bb: Vector2 = bc + Vector2(br * 0.78, br * 0.78)
+		draw_circle(bb, 10.0, Color(INK, e))
+		draw_arc(bb, 10.0, 0.0, TAU, 20, Color(GREY, e), 1.5, true)
+		var kw: Vector2 = f.get_string_size(k2, HORIZONTAL_ALIGNMENT_LEFT, -1, ksz)
+		draw_string(f, bb + Vector2(-kw.x * 0.5, ksz * 0.36), k2, HORIZONTAL_ALIGNMENT_LEFT, -1, ksz, Color(HudLayers.tone("numero_tasto", CREAM, INK), e))
 	else:
 		var k: String = str(KEYS.get(kind, ""))
 		var ks: Vector2 = f.get_string_size(k, HORIZONTAL_ALIGNMENT_LEFT, -1, 18)
@@ -867,10 +885,12 @@ func _draw_tip(it: Dictionary, dx: float, H: float, e: float) -> void:
 	var r := Rect2(Vector2((left + right) * 0.5 - bw * 0.5, H - 18.0 - bh), Vector2(bw, bh))
 	var poly := CmdWheel.slant(r, 10.0)
 	draw_colored_polygon(poly, Color(0.03, 0.02, 0.06, 0.88 * e))
-	draw_polyline(PackedVector2Array([poly[0], poly[1], poly[2], poly[3], poly[0]]), Color(col.lightened(0.3), e), 2.0)
-	draw_string(Ui.display(), r.position + Vector2(16, 24), str(it.get("title", "")), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 30.0, 17, Color(HOT, e))
+	# L4 (HUD Combat 2.0): bordo quieto, titolo e righe a 16; il giallo del titolo e' semantico e resta
+	draw_polyline(PackedVector2Array([poly[0], poly[1], poly[2], poly[3], poly[0]]), Color(col.lightened(0.3), float(HudLayers.v("descrizione.bordo")) * e), 2.0)
+	draw_string(Ui.display(), r.position + Vector2(16, 24), str(it.get("title", "")), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 30.0, HudLayers.font_size("descrizione_titolo"), Color(HOT, e))
+	var dcol: Color = HudLayers.tone("descrizione", CREAM)
 	for i in lines.size():
-		draw_string(bf, r.position + Vector2(16, 46 + 20 * i), str(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(CREAM, e))
+		draw_string(bf, r.position + Vector2(16, 46 + 20 * i), str(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.font_size("descrizione"), Color(dcol, e))
 
 
 func _has_point(p: Vector2) -> bool:
