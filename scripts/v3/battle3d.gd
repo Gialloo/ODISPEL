@@ -4213,7 +4213,7 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 				it["desc"] = "GUARDIA DI SLANCIO: dimezza il danno, +%d EN e uno scudo a tutta la squadra" % (1 + BattleTypes.SLANCIO_GUARD_EN)
 	if _wheel is PortraitHud:
 		(_wheel as PortraitHud).set_who(str(u.get("char", "")))
-		if Settings.hud_foto:
+		if Settings.hud_obiettivo or Settings.hud_foto:
 			# foto dell'autore: sinergia attiva in cima alla cornice, obiettivo della battaglia in fondo (dati veri)
 			var syn: String = str(_syn_msgs[0]) if not _syn_msgs.is_empty() else ""
 			(_wheel as PortraitHud).banner_title = "SINERGIA" if syn != "" else ""

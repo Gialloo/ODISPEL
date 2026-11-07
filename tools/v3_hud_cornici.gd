@@ -69,7 +69,7 @@ func _run() -> void:
 		await _shot("%s_%s_attacco_scelto" % [who, tag])
 		w.pick("")
 		await create_timer(0.3).timeout
-	if Settings.hud_foto:
+	if Settings.hud_obiettivo:
 		# ANTEPRIMA DELLO STILE (dati messi a mano solo per la schermata): sinergia, ritmo acceso, tasti di REAZIONE e Ultimate in diretta
 		var w2: PortraitHud = bt.get("_wheel")
 		w2.banner_title = "SINERGIA"

@@ -351,6 +351,8 @@ func _draw() -> void:
 		_draw_foto_bottom(nm, dx, H, f, e)
 	else:
 		_draw_name(nm, dx, H, f)
+		if cornice and Settings.hud_obiettivo:
+			_draw_extra(Rect2(Vector2(dx, H - PH * CORNICE_SCALA), Vector2(PW, PH) * CORNICE_SCALA), dx, H, f, e)
 	# 5) cosa fa il comando scelto: una lastra scura sopra il ritratto
 	if picked != "":
 		_draw_tip(item(picked), dx, H, e)
@@ -360,9 +362,10 @@ func _draw_name(nm: String, dx: float, H: float, f: Font) -> void:
 	var nsz: int = 40
 	while nsz > 26 and f.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, nsz).x > PW - 20:
 		nsz -= 2
-	CmdWheel.skew_text(self, Vector2(dx + 12, H - 22), nm, nsz, col.lightened(0.45), INK, f, 12, -0.25)
+	var up: float = 34.0 if Settings.hud_obiettivo and objective != "" and _dietro != null else 0.0     # lascia posto all'obiettivo
+	CmdWheel.skew_text(self, Vector2(dx + 12, H - 22 - up), nm, nsz, col.lightened(0.45), INK, f, 12, -0.25)
 	if who.contains("RAPIDO"):
-		CmdWheel.skew_text(self, Vector2(dx + 16, H - 66), "RAPIDO", 18, HOT, INK, f, 7, -0.25)
+		CmdWheel.skew_text(self, Vector2(dx + 16, H - 66 - up), "RAPIDO", 18, HOT, INK, f, 7, -0.25)
 
 
 # Fondo della cornice come la foto: strappo del colore, nome enorme bianco, sinergia in cima e obiettivo in fondo.
@@ -375,6 +378,11 @@ func _draw_foto_bottom(nm: String, dx: float, H: float, f: Font, e: float) -> vo
 	CmdWheel.skew_text(self, Vector2(dx + 18, H - 44), nm, nsz, CREAM, INK, f, 12, -0.3)
 	if who.contains("RAPIDO"):
 		CmdWheel.skew_text(self, Vector2(dx + 22, H - 44 - nsz), "RAPIDO", 18, HOT, INK, f, 7, -0.25)
+	_draw_extra(cr, dx, H, f, e)
+
+
+# Obiettivo in fondo e SINERGIA in cima alla cornice (tenuti dall'autore, 7/11/2026: Settings.hud_obiettivo).
+func _draw_extra(cr: Rect2, dx: float, H: float, f: Font, e: float) -> void:
 	if objective != "":
 		var bf: Font = Ui.body()
 		var ow: float = bf.get_string_size(objective, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT).x + 62.0
@@ -385,25 +393,24 @@ func _draw_foto_bottom(nm: String, dx: float, H: float, f: Font, e: float) -> vo
 		draw_string(f, Vector2(dx + 26 - xw * 0.5, H - 13), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(INK, e))
 		draw_string(bf, Vector2(dx + 46, H - 14), objective, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(CREAM, e))
 	if banner_title != "":
+		# SINERGIA: lastra nera inclinata come la scritta (autore, 7/11/2026), tutto nello stesso giro
 		var tf: int = 24
 		var sf: int = HudLayers.MIN_TEXT
 		var tw: float = f.get_string_size(banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf).x
 		var sw: float = Ui.body().get_string_size(banner_sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sf).x
 		var bw: float = 52.0 + tw + 16.0 + sw + 22.0
-		var y0: float = cr.position.y + 8.0
-		var bx: float = dx + 40.0
-		var pl := PackedVector2Array([Vector2(bx + 12, y0), Vector2(bx + bw + 12, y0 - 10), Vector2(bx + bw, y0 + 34), Vector2(bx, y0 + 44)])
+		draw_set_transform(Vector2(dx + 16.0, cr.position.y + 30.0), -0.08)
+		var pl := PackedVector2Array([Vector2(10, -22), Vector2(bw + 10, -22), Vector2(bw, 22), Vector2(0, 22)])
 		var sh := PackedVector2Array()
 		for q in pl:
 			sh.append(q + Vector2(5, 5))
 		draw_colored_polygon(sh, Color(INK, 0.85 * e))
 		draw_colored_polygon(pl, Color(0.02, 0.01, 0.04, 0.94 * e))
 		draw_polyline(pl + PackedVector2Array([pl[0]]), Color(CREAM, 0.9 * e), 2.0, true)
-		CmdWheel.glyph(self, "skill", Vector2(bx + 30, y0 + 20), 15.0, Color(HOT, e))
-		draw_set_transform(Vector2(bx + 52, y0 + 30), -0.08)
-		draw_string_outline(f, Vector2.ZERO, banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, 6, Color(INK, e))
-		draw_string(f, Vector2.ZERO, banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, Color(HOT, e))
-		draw_string(Ui.body(), Vector2(tw + 16, -2), banner_sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sf, Color(CREAM, e))
+		CmdWheel.glyph(self, "skill", Vector2(28, 0), 15.0, Color(HOT, e))
+		draw_string_outline(f, Vector2(52, 9), banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, 6, Color(INK, e))
+		draw_string(f, Vector2(52, 9), banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, Color(HOT, e))
+		draw_string(Ui.body(), Vector2(52 + tw + 16, 7), banner_sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sf, Color(CREAM, e))
 		draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
