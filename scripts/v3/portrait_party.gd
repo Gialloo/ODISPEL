@@ -85,6 +85,10 @@ func _draw() -> void:
 	# --- SQUADRA: fila in basso a destra -------------------------------------------------------------------
 	var n: int = party.size()
 	var x0: float = W - 22.0 - CW * n - 14.0 * (n - 1)
+	var any_on: bool = false
+	for uu in party:
+		if bool(uu.get("active", false)):
+			any_on = true
 	for i in n:
 		var u: Dictionary = party[i]
 		var on: bool = bool(u.get("active", false))
@@ -100,6 +104,13 @@ func _draw() -> void:
 			sh.append(q + Vector2(6, 6))
 		draw_colored_polygon(sh, INK)
 		var edge: Color = RED if bool(u.get("marked", false)) else (col.lightened(0.2) if on else CREAM)
+		if on and Settings.hud_party:
+			# P1-B: chi e' di turno ha una seconda cornice piena del suo colore attorno alla carta (si vede da lontano)
+			var big := PackedVector2Array()
+			var ctr := Vector2(x + CW * 0.5, y + 44)
+			for q in fr:
+				big.append(ctr + (q - ctr) * Vector2(1.1, 1.08))
+			draw_colored_polygon(big, col)
 		draw_colored_polygon(fr, edge)
 		var inner := Rect2(Vector2(x + 5, y + 8), Vector2(CW - 11, 74))
 		draw_rect(inner, col.darkened(0.6) if alive else Color(0.15, 0.15, 0.18))
@@ -108,7 +119,10 @@ func _draw() -> void:
 		if fd[0] != null:
 			# il volto K.O. disegnato apposta (sagoma blu) si vede intero; quello di ripiego si spegne in grigio come prima
 			var lit: bool = alive or (st == "ko" and bool(fd[2]) and str((fd[0] as Texture2D).resource_path).contains("_volto_ko"))
-			draw_texture_rect_region(fd[0], inner, _fit(fd[1], inner.size), Color.WHITE if lit else Color(0.4, 0.4, 0.45))
+			var tint: Color = Color.WHITE if lit else Color(0.4, 0.4, 0.45)
+			if lit and alive and not on and any_on and Settings.hud_party:
+				tint = Color(0.78, 0.78, 0.84)      # P1-B: gli altri un filo piu' scuri, cosi' chi e' di turno risalta
+			draw_texture_rect_region(fd[0], inner, _fit(fd[1], inner.size), tint)
 		# numeri: PV grande, EN sotto, a destra in basso sopra la cornice (come HP/SP del riferimento)
 		var hp_s: String = "%d" % int(u.get("hp", 0))
 		var en_s: String = "EN %d" % int(u.get("en", 0))
@@ -124,8 +138,19 @@ func _draw() -> void:
 		var gk: float = clampf(float(u.get("gauge", 0)) / maxf(1.0, float(u.get("gmax", 100))), 0.0, 1.0)
 		draw_rect(Rect2(x + 2, y + 94, bw, 7), INK)
 		draw_rect(Rect2(x + 3, y + 95, (bw - 2) * hpk, 5), Color("#62f08c") if hpk > 0.3 else Color("#ff5a6e"))
-		draw_rect(Rect2(x + 2, y + 104, bw, 6), INK)
-		draw_rect(Rect2(x + 3, y + 105, (bw - 2) * gk, 4), HOT if gk >= 1.0 else Ui.PINK)
+		if Settings.hud_party:
+			# P1-B: barretta ULTIMATE piu' spessa; piena = gialla con la stella accanto
+			draw_rect(Rect2(x + 2, y + 104, bw, 9), INK)
+			draw_rect(Rect2(x + 3, y + 105, (bw - 2) * gk, 7), HOT if gk >= 1.0 else Ui.PINK)
+			if gk >= 1.0 and alive:
+				var sc := Vector2(x + bw + 9, y + 108)
+				var pts := PackedVector2Array()
+				for k in 10:
+					pts.append(sc + Vector2.from_angle(-PI / 2.0 + k * PI / 5.0) * (8.0 if k % 2 == 0 else 3.4))
+				draw_colored_polygon(pts, HOT)
+		else:
+			draw_rect(Rect2(x + 2, y + 104, bw, 6), INK)
+			draw_rect(Rect2(x + 3, y + 105, (bw - 2) * gk, 4), HOT if gk >= 1.0 else Ui.PINK)
 		if on:
 			CmdWheel.skew_text(self, Vector2(x + 2, y - 4), "▶", 18, HOT, INK, f, 6, 0.0)
 		if not alive:

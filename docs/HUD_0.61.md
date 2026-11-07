@@ -56,10 +56,27 @@ Regola seguita: aggiungi, non togliere. Ogni parte nuova ha un interruttore in `
   ```
 - Test di unità: `tests/unit/test_v3_hud_061.gd` (unione degli avvisi).
 
-## Restano da fare (approvati, dopo P0)
+## P1-A · Echo in tre modi (`battle3d.gd: _echo`, `Settings.hud_echo`)
 
-- P1-A: Echo in tre modi.
-- P1-B: ritratti, cornice del personaggio attivo, percentuale dell'ULTIMATE.
-- P1-C: icone dell'autore, con la guida per Procreate.
-- P2: accenti per personaggio.
+- **normale**: una riga corta, detta solo le prime due volte in tutta la partita (`_echo_seen`). Se ne va da sola dopo 6–7 secondi. Il fumetto si stringe al testo ed è largo al massimo 400 px, circa il 60% di prima.
+- **selezione**: quando scegli un comando il fumetto si fa da parte e parla il riquadro del comando sopra il ritratto.
+- **avviso**: sul pericolo immediato (P0-B) il fumetto ha il bordo rosso e dice cosa fare in una riga, ad esempio «Metti al sicuro LANCE prima del colpo». L'avviso in alto dice cosa succede: i due non si ripetono.
+- La spiegazione della GUARDIA A TEMPO resta com'era: è un'istruzione, non un consiglio.
+
+## P1-B · Squadra e ULTIMATE (`portrait_party.gd`, `portrait_hud.gd`, `Settings.hud_party`)
+
+- Chi è di turno ha una seconda cornice piena del suo colore attorno alla carta. Gli altri ritratti sono un filo più scuri.
+- La barretta ULTIMATE delle card è più spessa. Quando è piena diventa gialla con una stella accanto.
+- Sotto ULTIMATE, nei comandi, la carica si legge: una barretta rosa e la percentuale crema col contorno. Prima era grigio su viola.
+
+## P1-C · Icone dell'autore (`scripts/v3/hud_icons.gd`)
+
+- PNG 256×256 bianchi su trasparente in `assets/hud_icons/`. Il gioco li colora da solo.
+- Finché un file manca, resta l'icona disegnata in codice.
+- Guida per Procreate: `docs/HUD_ICONE_PROCREATE.md`.
+
+## Restano da fare
+
+- P2: accenti per personaggio (approvato, dopo P0 e P1).
+- Le icone vere, che disegna l'autore.
 - Avviso compatto «tocca per aprirlo»: oggi mostra solo il titolo e non si apre col tocco.

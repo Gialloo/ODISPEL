@@ -42,6 +42,8 @@ func _run() -> void:
 	bt.call("_pick", "")
 	await create_timer(4.5).timeout      # gli avvisi d'inizio se ne vanno
 	var b: Dictionary = bt.get("b")
+	# un compagno con l'ULTIMATE piena (stella sulla card, P1-B)
+	BattleState.active_unit(b, str(BattleState.alive_players(b)[1]["id"]))["gauge"] = BattleTypes.GAUGE_MAX
 	# livello, ardore, soglia raggiunta senza condizione
 	var casi: Array = [[0, 14, false], [1, 52, true], [2, 66, false], [3, 88, false]]
 	for c in casi:

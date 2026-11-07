@@ -490,7 +490,15 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 	draw_string(f, Vector2.ZERO, name, HORIZONTAL_ALIGNMENT_LEFT, -1, sz, Color(fill, e))
 	# ULTIMATE non pronta: la carica in piccolo sotto la scritta
 	if kind == "ult" and not ok:
-		draw_string(Ui.body(), Vector2(4, 18), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(GREY, e))
+		if Settings.hud_party:
+			# P1-B: la carica si legge (prima grigio su viola): barretta rosa e percentuale crema col contorno
+			var pc: float = clampf(str(it.get("cost", "0")).to_float() / 100.0, 0.0, 1.0)
+			draw_rect(Rect2(4, 8, 74, 9), Color(INK, e))
+			draw_rect(Rect2(5, 9, 72 * pc, 7), Color(Ui.PINK, e))
+			draw_string_outline(Ui.body(), Vector2(84, 19), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, 5, Color(INK, e))
+			draw_string(Ui.body(), Vector2(84, 19), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(CREAM, e))
+		else:
+			draw_string(Ui.body(), Vector2(4, 18), str(it.get("cost", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.MIN_TEXT, Color(GREY, e))
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 	# tasto rotondo: numero della tastiera su PC, icona sul telefono
 	draw_circle(bc + Vector2(2, 2), br + 3, Color(INK, e))
