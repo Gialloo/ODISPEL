@@ -182,6 +182,9 @@ var _quip_balloon: EchoBalloon
 var _quip_seq: int = 0
 var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
 var _party_back: Control
+var _boss_plate: BossPlate             # HUD come la foto dell'autore (Settings.hud_foto): cartellino del nemico disegnato
+var _weak_txt: String = ""
+var _weak_col: Color = Color("#9a94a8")
 var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
 var _ritmo_bar: RitmoBar               # RITMO di squadra sopra la fila (HUD 0.61, P0-A; Settings.hud_ritmo)
 var _threat_plate: ThreatPlate         # PROSSIMA MOSSA su una lastra con icona (HUD 0.61, P0-B; Settings.hud_minaccia)
@@ -387,6 +390,41 @@ func _g(masc: String, fem: String) -> String:
 # Prima lettera maiuscola, il resto come sta ("l'Osservatore" -> "L'Osservatore")
 static func _cap(t: String) -> String:
 	return t.left(1).to_upper() + t.substr(1)
+
+
+# Tasto come nella foto dell'autore: lastra storta piena del colore, bordo d'inchiostro spesso, ombra nera sfalsata.
+func _foto_btn(b: Button, c: Color) -> void:
+	for st in ["normal", "hover", "pressed", "disabled"]:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = {"normal": c, "hover": c.lightened(0.15), "pressed": c.darkened(0.15), "disabled": c.darkened(0.6)}[st]
+		sb.border_color = Ui.INK
+		sb.set_border_width_all(3)
+		sb.skew = Vector2(-0.28, 0.0)
+		sb.shadow_color = Color(Ui.INK, 0.9)
+		sb.shadow_size = 1
+		sb.shadow_offset = Vector2(5, 5)
+		sb.content_margin_left = 20
+		sb.content_margin_right = 20
+		b.add_theme_stylebox_override(st, sb)
+
+
+# Logo ODISPEL della foto: scritta enorme storta bianca col contorno d'inchiostro e la stella a quattro punte.
+func _draw_logo(c: Control) -> void:
+	var f: Font = Ui.display()
+	var y: float = 52.0 if not Settings.show_fps else 108.0
+	c.draw_set_transform(Vector2(22, y), -0.08, Vector2(1.0, 1.0))
+	c.draw_string_outline(f, Vector2(4, 4), "ODISPEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 44, 10, Color(Ui.INK, 0.9))
+	c.draw_string_outline(f, Vector2.ZERO, "ODISPEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 44, 8, Ui.INK)
+	c.draw_string(f, Vector2.ZERO, "ODISPEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 44, Ui.CREAM)
+	var w: float = f.get_string_size("ODISPEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 44).x
+	var sc := Vector2(w + 24, -22)
+	for pass_i in 2:
+		var pts := PackedVector2Array()
+		var r: float = 18.0 if pass_i == 0 else 14.0
+		for k in 8:
+			pts.append(sc + Vector2.from_angle(-PI / 2.0 + k * PI / 4.0) * (r if k % 2 == 0 else r * 0.3))
+		c.draw_colored_polygon(pts, Ui.INK if pass_i == 0 else Ui.CREAM)
+	c.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
 func _bname() -> String:
@@ -896,7 +934,10 @@ func _place_boss_tag() -> void:
 	sz.x = maxf(sz.x, 300.0)
 	var rm: float = 120.0 if _p1 != null else 0.0      # HUD col ritratto: la colonna ORDINE sul bordo destro resta libera
 	var want := Vector2(hp.x - sz.x * 0.5, hp.y - sz.y - 18.0)
-	if want.y < 64.0:
+	if _boss_plate != null:
+		# HUD come la foto: il cartellino sta fermo in alto, a destra del centro (non segue piu' il nemico)
+		want = Vector2(vs.x - 150.0 - sz.x, 66.0)       # accanto alla colonna ORDINE
+	elif want.y < 64.0:
 		# boss alto: sopra la testa non c'e' posto e il cartellino gli finirebbe addosso. Va di fianco alla figura,
 		# dal lato con piu' spazio (decisione dell'autore, 24/10/2026: le barre non devono coprire il boss)
 		var fp: Vector2 = cam.unproject_position(bv.global_position)
@@ -3231,7 +3272,16 @@ func _build_ui() -> void:
 	_cam_hud = CamHud.new()
 	_cam_hud.anomaly = arena.begins_with("anomalia") or arena in ["rosso", "blu", "verde"]
 	_cam_hud.tag_y = 70.0 if Settings.show_fps else 14.0      # REC CAM in alto a sinistra, SOPRA il riquadro dei turni
+	if Settings.hud_foto and not Settings.show_fps:
+		_cam_hud.tag_y = 74.0          # foto dell'autore: il logo in alto a sinistra, REC e CAM sotto
+	_cam_hud.show_tag = not Settings.hud_alto
 	_root.add_child(_cam_hud)
+	if Settings.hud_foto:
+		var logo := Control.new()
+		Ui.place(logo, 0, 0, 0, 0, 0, 0, 320, 80)
+		logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		logo.draw.connect(_draw_logo.bind(logo))
+		_root.add_child(logo)
 	_fx_layer = Control.new()
 	Ui.place(_fx_layer, 0, 0, 1, 1)
 	_fx_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -3331,6 +3381,13 @@ func _build_ui() -> void:
 		# la riga di testo resta (stesso testo, per prove e lettori) ma la vede solo chi spegne la lastra
 		_threat_plate = ThreatPlate.new()
 		bp.add_child(_threat_plate)
+	if Settings.hud_foto:
+		# HUD come la foto dell'autore (7/11/2026): il cartellino disegnato prende il posto di nome e barre (che restano, nascosti)
+		_boss_plate = BossPlate.new()
+		bp.add_child(_boss_plate)
+		bp.move_child(_boss_plate, 0)
+		for c in [bhead, _boss_hp, _boss_brk]:
+			(c as Control).visible = false
 	_build_greg_ui()
 
 	_party_back = Control.new()
@@ -3372,7 +3429,9 @@ func _build_ui() -> void:
 	_cmd_box = VBoxContainer.new()
 	# REAZIONE in alto a destra, sotto la barra rapida: lontana dalla squadra e da CONFERMA (in basso a sinistra), cosi' un clic
 	# sbagliato non fa partire una reazione. La colonna non prende clic: solo i suoi tasti.
-	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -480, -262, -16, -262)      # sopra la squadra; compare solo quando si puo' reagire
+	Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -480, -222, -16, -222)      # sopra la squadra, 20 px sopra la riga «per INCANDESCENTE…» del RITMO (autore, 7/11/2026)
+	if Settings.hud_foto:
+		Ui.place(_cmd_box, 1.0, 1.0, 1.0, 1.0, -480, -178, -16, -178)      # foto: subito sopra le card grandi, sotto il RITMO
 	_cmd_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cmd_box.alignment = BoxContainer.ALIGNMENT_END
 	# se un testo e' piu' largo della colonna, la colonna cresce verso sinistra e non esce dallo schermo
@@ -3413,14 +3472,25 @@ func _build_ui() -> void:
 	lrow2.add_theme_constant_override("separation", 6)
 	lrow2.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_react_box.add_child(lrow2)
+	_react_box.move_child(lrow2, 0)       # ULTIMATE IN DIRETTA sopra, reazioni sotto (autore, 7/11/2026)
+	lrow2.alignment = BoxContainer.ALIGNMENT_END
 	for k in 3:
-		var lb: Button = Ui.button("", Ui.PINK, 17)
-		lb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		lb.clip_text = true
+		var lb: Button = Ui.button("", Ui.PINK, HudLayers.MIN_TEXT)        # piu' piccoli delle reazioni (autore, 7/11/2026)
+		lb.custom_minimum_size = Vector2(0, 42 if Ui.is_touch() else 34)
+		lb.size_flags_horizontal = Control.SIZE_SHRINK_END
+		lb.clip_text = false
 		lb.visible = false
 		lb.pressed.connect(_live_ult.bind(k))
 		lrow2.add_child(lb)
 		_live_btns.append(lb)
+	if Settings.hud_foto:
+		# foto dell'autore: REAZIONE e Ultimate in diretta come lastre storte piene, bordo d'inchiostro e ombra
+		var rc2: Dictionary = {"schivata": Ui.CYAN, "intercettazione": Color("#62f08c"), "interruzione": Ui.PINK, "soccorso": Ui.YELLOW}
+		for rid in _react_btns:
+			_foto_btn(_react_btns[rid], rc2.get(rid, Ui.CREAM))
+		for lb2 in _live_btns:
+			_foto_btn(lb2, Ui.PINK)
+			(lb2 as Button).custom_minimum_size.y = 64.0
 	_btn_ult = Ui.button("ULTIMATE", Ui.PINK, 26)
 	_btn_ult.pressed.connect(_command.bind("ult"))
 	_cmd_box.add_child(_btn_ult)
@@ -3480,6 +3550,9 @@ func _build_ui() -> void:
 	_top_bar = tr
 	Ui.place(tr, 1.0, 0, 1.0, 0, -480, 12, -16, 56)      # una sola riga di lastre scure e piccole (Metaphor: i tasti rapidi non rubano la scena)
 	tr.alignment = BoxContainer.ALIGNMENT_END
+	if Settings.hud_alto:
+		Ui.place(tr, 0, 0, 0, 0, 16, 12, 480, 56)        # al posto di REC e CAM, in alto a sinistra (autore, 7/11/2026)
+		tr.alignment = BoxContainer.ALIGNMENT_BEGIN
 	tr.add_theme_constant_override("separation", 8)
 	_root.add_child(tr)
 	_btn_fast = _quick_btn("x1", 58)
@@ -3496,7 +3569,10 @@ func _build_ui() -> void:
 	var lbtn := _quick_btn("COLORI", 100)
 	lbtn.pressed.connect(func() -> void:
 		_legend.visible = not _legend.visible)
-	tr.add_child(lbtn)
+	if not Settings.colori_in_pausa:
+		tr.add_child(lbtn)
+	else:
+		lbtn.queue_free()
 	tr.add_child(pb)
 	var leg := PanelContainer.new()
 	_legend = leg
@@ -3809,6 +3885,8 @@ func _weak_refresh(boss: Dictionary) -> void:
 		return
 	_weak_sig = sig
 	_weak_row.visible = beater != "" and not ended
+	_weak_txt = ("DEBOLE A ???" if not known else "") if beater != "" and not ended else ""
+	_weak_col = Color("#9a94a8")
 	if not known:
 		_weak_v.text = "???"
 		_weak_v.add_theme_stylebox_override("normal", Ui.plate(Color("#9a94a8"), Ui.INK))
@@ -3816,6 +3894,9 @@ func _weak_refresh(boss: Dictionary) -> void:
 	var who: String = _who_is(beater.to_upper())
 	_weak_v.text = beater.to_upper() + (" · " + who.to_upper() if who != "chi ha quel colore" else "")
 	_weak_v.add_theme_stylebox_override("normal", Ui.plate(Ui.BATTLE_COLORS.get(beater, Ui.CREAM), Ui.INK))
+	if _weak_row.visible:
+		_weak_txt = _weak_v.text
+		_weak_col = Ui.BATTLE_COLORS.get(beater, Ui.CREAM)
 	_weak_v.pivot_offset = _weak_v.size * 0.5
 	var tw := _weak_v.create_tween()
 	_weak_v.scale = Vector2(1.35, 1.35)
@@ -4142,6 +4223,12 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 				it["desc"] = "GUARDIA DI SLANCIO: dimezza il danno, +%d EN e uno scudo a tutta la squadra" % (1 + BattleTypes.SLANCIO_GUARD_EN)
 	if _wheel is PortraitHud:
 		(_wheel as PortraitHud).set_who(str(u.get("char", "")))
+		if Settings.hud_obiettivo or Settings.hud_foto:
+			# foto dell'autore: sinergia attiva in cima alla cornice, obiettivo della battaglia in fondo (dati veri)
+			var syn: String = str(_syn_msgs[0]) if not _syn_msgs.is_empty() else ""
+			(_wheel as PortraitHud).banner_title = "SINERGIA" if syn != "" else ""
+			(_wheel as PortraitHud).banner_sub = syn.get_slice("· ", 1) if syn.contains("· ") else syn
+			(_wheel as PortraitHud).objective = "Obiettivo: sconfiggi " + _bname()
 		# sotto il 50% / 25% dei PV il ritratto si scurisce (varianti di Rio, 3/11/2026)
 		var vs: String = RitrattoVarianti.per_vita(int(u.get("hp", 0)), int(u.get("max_hp", 1)))
 		(_wheel as PortraitHud).set_stato("" if vs == "ko" else vs)
@@ -4320,10 +4407,10 @@ func _update_react() -> void:
 		var lb: Button = _live_btns[k]
 		lb.visible = k < lives.size()
 		if lb.visible:
-			lb.text = "ULT\n%s" % str(_unit_of(str(lives[k])).get("name", "")).to_upper()
+			lb.text = "ULT %s" % str(_unit_of(str(lives[k])).get("name", "")).to_upper()        # una riga sola: tasto piu' piccolo (autore, 7/11/2026)
 			lb.set_meta("pid", str(lives[k]))
 			lb.add_theme_font_size_override("font_size", HudLayers.MIN_TEXT)
-			lb.custom_minimum_size.y = 56.0 if Ui.is_touch() else 48.0
+			lb.custom_minimum_size.y = 42.0 if Ui.is_touch() else 34.0
 	for rid in _react_btns:
 		var rb: Button = _react_btns[rid]
 		rb.visible = usable.has(rid)
@@ -4428,6 +4515,11 @@ func _refresh_hud() -> void:
 	_boss_brk.value = int(boss.get("balance", 0))
 	_brk_lbl.text = "EQUILIBRIO  %d" % int(boss.get("balance", 0))
 	_brk_pulse(float(_boss_brk.value) / float(_boss_brk.max_value) <= 0.34 and int(boss.get("balance", 0)) > 0 and not Stability.recovering(boss) and not ended)
+	if _boss_plate != null:
+		_boss_plate.set_data({"name": _bname(), "level": level, "weak": _weak_txt, "weak_col": _weak_col, "hp": shown_hp,
+			"max_hp": int(boss["max_hp"]), "ghost": int(_boss_ghost.value) if _boss_ghost != null else shown_hp,
+			"brk": int(boss.get("balance", 0)), "brk_max": int(_boss_brk.max_value),
+			"low": float(_boss_brk.value) / float(_boss_brk.max_value) <= 0.34 and int(boss.get("balance", 0)) > 0})
 	var tele: Dictionary = b.get("telegraph", {})
 	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	var who: String = "TUTTI"
@@ -4858,8 +4950,8 @@ func _parry_gain_fly(ev: Array) -> void:
 		var W: float = _p1.size.x
 		var H: float = _p1.size.y
 		var cnt: int = slots.size()
-		var x0: float = W - 22.0 - PortraitParty.CW * cnt - 14.0 * (cnt - 1)
-		var dest := Vector2(x0 + idx * (PortraitParty.CW + 14.0) + 6.0, H - 128.0 + 98.0)
+		var x0: float = W - 22.0 - PortraitParty.cw() * cnt - 14.0 * (cnt - 1)
+		var dest := Vector2(x0 + idx * (PortraitParty.cw() + 14.0) + 6.0, H - PortraitParty.top() + 98.0 + (26.0 if Settings.hud_foto else 0.0))
 		var l := Ui.label("+%d ULTIMATE" % n, 26, Ui.PINK.lightened(0.25), Ui.display(), 8)
 		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_fx_layer.add_child(l)

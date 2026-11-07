@@ -111,6 +111,13 @@ func _build(exit_text: String, on_resume: Callable, on_exit: Callable, exit_hint
 		notes.visible = false
 		sp.closed.connect(func() -> void: notes.visible = true)
 		add_child(sp)))
+	# COLORI: la guida intera a debolezze e resistenze, spostata qui dal tasto in battaglia (autore, 7/11/2026)
+	notes.add_child(_note("COLORI", "Nox sa chi batte chi", -1.0, func() -> void:
+		_say("nox", "Rosso, verde, blu. Poi giallo e viola. Prendete appunti.")
+		var cg := ColorGuide.new()
+		notes.visible = false
+		cg.closed.connect(func() -> void: notes.visible = true)
+		add_child(cg)))
 	# SQUADRA (livelli e cosa equipaggiare): e' la voce di Rio, che finalmente si mette al centro
 	notes.add_child(_note("SQUADRA", "Rio si mette al centro", 3.0, func() -> void:
 		_say("rio", "Finalmente. Inquadrate me. Poi gli altri.")
