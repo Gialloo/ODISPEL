@@ -115,6 +115,7 @@ const LISTA_PASSO: float = 0.074     # (vecchio passo in frazione, non piu' usat
 const LISTA_ALTO: float = 46.0        # nastri piu' alti e staccati: si leggono e non si sbaglia tocco (autore, 7/11/2026)
 const LISTA_STACCO: float = 54.0      # passo fra i nastri in pixel: 8 px di vuoto fra uno e l'altro
 const LISTA_FONDO: float = 46.0       # l'ultimo nastro finisce qui sopra il fondo (sopra la striscia dell'obiettivo)
+const RITRATTO_SCALA: Dictionary = {"nox": 1.12}   # Nox nel suo png e' disegnata piu' piccola degli altri (autore, 7/11/2026)
 const LISTA_ANGOLO: float = -0.35       # pendenza del lato a punta di saul_avanti; provata su nastri e SINERGIA il 7/11/2026 e scartata dall'autore, tenuta per riprovarla
 const LISTA_RITRATTO: float = 0.96      # il ritratto riempie quasi tutta la cornice
 # lastre dei comandi in frazioni della cornice (dal mockup di Saul): [alto-sx, alto-dx, basso-dx, basso-sx]
@@ -497,7 +498,9 @@ func _shard(r: Rect2, fr: Array, c: Color, amp: float, seed_n: int) -> void:
 
 func _cornice_rect(dx: float, H: float) -> Rect2:
 	var cs := Vector2(PW, PH) * CORNICE_SCALA * (LISTA_RITRATTO if CORNICE_STILE in ["lista", "testo"] else CORNICE_RITRATTO)
-	return Rect2(Vector2(dx, H - cs.y), cs)
+	var k: float = float(RITRATTO_SCALA.get(who_id, 1.0))
+	var big := cs * k
+	return Rect2(Vector2(dx - (big.x - cs.x) * 0.3, H - big.y), big)      # cresce verso l'alto, poco verso sinistra
 
 
 # Comando sulla cornice: lastra bianca storta, icona e scritta d'inchiostro (mockup dell'autore). ULTIMATE pronta: lastra
