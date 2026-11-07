@@ -20,6 +20,17 @@ static func cw() -> float:
 	return CW_FOTO if Settings.hud_foto else CW
 
 
+# Larghezza vera della colonna ORDINE dal bordo destro (HUD Combat 2.0): lastrina di chi agisce larga 92, 10 di margine,
+# freccia a 40 dalla lastrina. Chi deve stare accanto all'ORDINE (pannello del nemico) usa questa misura, non una stima.
+const ORDINE_LASTRA: float = 92.0
+const ORDINE_BORDO: float = 10.0
+const ORDINE_FRECCIA: float = 40.0
+
+
+static func order_width() -> float:
+	return ORDINE_BORDO + ORDINE_LASTRA + ORDINE_FRECCIA
+
+
 # Altezza dalla base dello schermo al bordo alto della card (per chi deve stare sopra la squadra).
 static func top() -> float:
 	return 160.0 if Settings.hud_foto else 128.0
@@ -103,13 +114,6 @@ func _draw() -> void:
 	for uu in party:
 		if bool(uu.get("active", false)):
 			any_on = true
-	# gerarchia a 4 livelli (7/11/2026): se la prossima mossa colpisce tutti, i mirini lo ripetono su ogni carta; li faccio
-	# piu' piccoli (lo dice gia' la lastra "SU TUTTI"), restano grandi quando il nemico ne sceglie uno solo
-	var gh: bool = Settings.hud_gerarchia
-	var all_tgt: bool = gh
-	for uu in party:
-		if bool(uu.get("alive", true)) and int(uu.get("tgt", 0)) != 1:
-			all_tgt = false
 	for i in n:
 		var u: Dictionary = party[i]
 		var on: bool = bool(u.get("active", false))
@@ -153,23 +157,15 @@ func _draw() -> void:
 		var hw: float = f.get_string_size(hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz).x
 		var ew: float = f.get_string_size(en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, esz).x
 		draw_string_outline(f, Vector2(x + cww - hw - 2, y + 96 + dy + (6.0 if foto else 0.0)), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz, 7, INK)
-		var hpk0: float = clampf(float(u.get("hp", 0)) / maxf(1.0, float(u.get("max_hp", 1))), 0.0, 1.0)
-		var hcol: Color = CREAM if alive else Color(0.6, 0.6, 0.65)
-		if gh and alive and hpk0 <= 0.3:
-			hcol = Color("#ff5a6e")      # PV critici: il numero diventa rosso (livello 1, deve urlare)
-		draw_string(f, Vector2(x + cww - hw - 2, y + 96 + dy + (6.0 if foto else 0.0)), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz, hcol)
+		draw_string(f, Vector2(x + cww - hw - 2, y + 96 + dy + (6.0 if foto else 0.0)), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz, CREAM if alive else Color(0.6, 0.6, 0.65))
 		draw_string_outline(f, Vector2(x + cww - ew - 2, y + 113 + dy + (12.0 if foto else 0.0)), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, esz, 5, INK)
 		draw_string(f, Vector2(x + cww - ew - 2, y + 113 + dy + (12.0 if foto else 0.0)), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, esz, Ui.CYAN)
 		# barrette a sinistra sotto il ritratto: vita (verde) e ULTIMATE (rosa, gialla quando e' piena)
 		var bw: float = maxf(18.0, cww - hw - 12.0)
-		if gh:
-			# barre lunghe uguali su tutte le carte (prima dipendevano da quante cifre aveva la vita)
-			bw = maxf(18.0, cww - f.get_string_size("8888", HORIZONTAL_ALIGNMENT_LEFT, -1, hsz).x - 10.0)
 		var hpk: float = clampf(float(u.get("hp", 0)) / maxf(1.0, float(u.get("max_hp", 1))), 0.0, 1.0)
 		var gk: float = clampf(float(u.get("gauge", 0)) / maxf(1.0, float(u.get("gmax", 100))), 0.0, 1.0)
-		var hb: float = 11.0 if gh else 7.0          # gerarchia: barra della vita piu' spessa (prima 5 px di colore)
-		draw_rect(Rect2(x + 2, y + 94 + dy - (3.0 if gh else 0.0), bw, hb), INK)
-		draw_rect(Rect2(x + 3, y + 95 + dy - (3.0 if gh else 0.0), (bw - 2) * hpk, hb - 2.0), Color("#62f08c") if hpk > 0.3 else Color("#ff5a6e"))
+		draw_rect(Rect2(x + 2, y + 94 + dy, bw, 7), INK)
+		draw_rect(Rect2(x + 3, y + 95 + dy, (bw - 2) * hpk, 5), Color("#62f08c") if hpk > 0.3 else Color("#ff5a6e"))
 		if Settings.hud_party:
 			# P1-B: barretta ULTIMATE piu' spessa; piena = gialla con la stella accanto
 			draw_rect(Rect2(x + 2, y + 104 + dy, bw, 9), INK)
@@ -191,11 +187,7 @@ func _draw() -> void:
 		var tg: int = int(u.get("tgt", 0))
 		if tg > 0 and alive:
 			var bc := Vector2(x + cww - 8, y + 4)
-			if all_tgt:
-				draw_circle(bc, 10.0, Color(INK, 0.92))
-				draw_arc(bc, 10.0, 0, TAU, 24, ThreatPlate.RED, 2.5, true)
-				draw_circle(bc, 2.6, ThreatPlate.RED)
-			elif tg >= 2:
+			if tg >= 2:
 				draw_circle(bc, 15.0, Color("#d0122f"))
 				draw_arc(bc, 15.0, 0, TAU, 28, HOT, 2.5, true)
 				var xw: float = f.get_string_size("!", HORIZONTAL_ALIGNMENT_LEFT, -1, 22).x
@@ -209,11 +201,7 @@ func _draw() -> void:
 		return
 	var ox: float = W - 128.0
 	var oy: float = 6.0 if Settings.hud_alto else 76.0      # piu' in alto, nello spazio lasciato da x1, AUTO e pausa (autore, 7/11/2026)
-	if Settings.hud_gerarchia:
-		# livello 2: l'etichetta non deve pesare piu' dei ritratti che annuncia (prima gialla da 24, come un titolo)
-		CmdWheel.skew_text(self, Vector2(ox - 4, oy + 22), "ORDINE", 20, Color(CREAM, 0.9), INK, f, 7, -0.25)
-	else:
-		CmdWheel.skew_text(self, Vector2(ox - 8, oy + 22), "ORDINE", 24, HOT, INK, f, 8, -0.25)
+	CmdWheel.skew_text(self, Vector2(ox - 8, oy + 22), "ORDINE", 24, HOT, INK, f, 8, -0.25)
 	CmdWheel.skew_text(self, Vector2(ox + 2, oy + 42), "TURNO %d" % round_n, 14, CREAM, INK, f, 5, -0.25)
 	var y2: float = oy + 54.0
 	for e in order:
