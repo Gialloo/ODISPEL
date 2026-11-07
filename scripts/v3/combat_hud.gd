@@ -56,6 +56,24 @@ static func link_banner(events: Array) -> Dictionary:
 
 
 # Avviso corto: titolo (prima di " · " o ":") e, se breve, il resto in piccolo. Il resto lungo si lascia: c'e' gia' nelle descrizioni.
+# HUD 0.61, P0-C: regola del BREAK + lettura di Echo in un avviso solo. Titolo = nome della regola; resto = il consiglio
+# di Echo (dopo i due punti della lettura) e il numero della regola (dopo i due punti di "short", se c'e'). "" se non sta in una riga.
+# ("IL VERBALE", "dopo la parata perfetta: x2", "Il Verbale fa male: para perfetto, poi punisci") -> "IL VERBALE · para perfetto, poi punisci: x2"
+static func merge_rule_reading(rule_name: String, short: String, reading: String) -> String:
+	var tip: String = reading
+	var i: int = reading.find(": ")
+	if i > 0:
+		tip = reading.substr(i + 2)
+	var num: String = short
+	var j: int = short.rfind(": ")
+	if j > 0:
+		num = short.substr(j + 2)
+	var tail: String = "%s: %s" % [tip.strip_edges(), num.strip_edges()]
+	if tail.length() > 48:
+		return ""          # troppo lungo per una riga: restano i due avvisi di prima (non si taglia niente)
+	return "%s · %s" % [rule_name, tail]
+
+
 static func notice_parts(text: String, max_sub: int = 34) -> Array:
 	var cut: int = -1
 	for sep in [" · ", ": "]:

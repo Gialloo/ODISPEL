@@ -169,6 +169,10 @@ var _btn_fast: Button
 var _hint: Label
 var _say_lbl: Label                   # battute dei personaggi in battaglia
 var _say_balloon: EchoBalloon
+var _echo_bal: EchoBalloon              # fumetto di Echo dei consigli (P1-A: tre modi, _echo)
+static var _echo_seen: Dictionary = {}  # P1-A: quante volte Echo ha gia' detto un consiglio (in tutta la partita): non si ripete
+const ECHO_W: float = 400.0             # P1-A: larghezza massima del fumetto dei consigli
+const ECHO_COL: Color = Color("#3fe0ff")
 var _say_seq: int = 0
 var _quips: BattleQuips             # battute a fumetto della squadra (critici, K.O., salvataggi): battle_quips.gd
 var _final_quip: Array = []          # battuta del colpo finale: esce quando la squadra festeggia
@@ -179,6 +183,10 @@ var _quip_seq: int = 0
 var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
 var _party_back: Control
 var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
+var _ritmo_bar: RitmoBar               # RITMO di squadra sopra la fila (HUD 0.61, P0-A; Settings.hud_ritmo)
+var _threat_plate: ThreatPlate         # PROSSIMA MOSSA su una lastra con icona (HUD 0.61, P0-B; Settings.hud_minaccia)
+var _lethal_sig: String = ""          # P0-C: l'avviso "a un colpo dal KO" si dice una volta per mossa annunciata
+var _tgt: Dictionary = {}              # id del compagno -> 1 nel bersaglio della prossima mossa, 2 se il colpo e' FORTE (P0-B)
 var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
 var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
 var _pop_key: String = ""               # ultimo turno annunciato con lo scatto (evita di rifarlo a ogni aggiornamento)
@@ -302,19 +310,28 @@ func _ready() -> void:
 		EdgeCutin.warm(_root, chs)          # riscalda shader e mesh del cut-in senza bloccare l'ingresso (scatto sul telefono)
 	# la strada di questo nemico verso il BREAK, detta una volta all'inizio (poi resta tra i suggerimenti)
 	var brk_rule: Dictionary = BreakRules.of(BattleState.boss(b))
+	var reading: String = EnemyArchetypes.reading(str(BattleState.boss(b).get("char", "")))
+	var merged: bool = false
 	if not brk_rule.is_empty():
-		_notice("%s · %s" % [str(brk_rule["name"]), str(brk_rule["short"])], Ui.YELLOW, 4.0, "fx")      # corto: l'avviso taglia oltre 34 lettere
+		var mt: String = CombatHud.merge_rule_reading(str(brk_rule["name"]), str(brk_rule["short"]), reading) if Settings.hud_avvisi and reading != "" else ""
+		if mt != "":
+			# HUD 0.61, P0-C: la regola del BREAK e la lettura di Echo dicevano la stessa cosa in due avvisi di fila.
+			# Ora uno solo: il nome della regola, il consiglio di Echo e il numero della regola (niente si perde: la regola
+			# intera resta tra i suggerimenti). Es. "IL VERBALE · para perfetto, poi punisci: x2"
+			_notice(mt, Ui.YELLOW, 4.5, "fx", "tattica")
+			merged = true
+		else:
+			_notice("%s · %s" % [str(brk_rule["name"]), str(brk_rule["short"])], Ui.YELLOW, 4.0, "fx")      # corto: l'avviso taglia oltre 34 lettere
 	match ingresso:
 		"vantaggio":
-			_toast("ATTACCO A SORPRESA! %s è già %s al BREAK e agite per primi" % [_cap(_bn()), _g("vicino", "vicina")], Ui.YELLOW, 3.0)
+			_notice("ATTACCO A SORPRESA! %s è già %s al BREAK e agite per primi" % [_cap(_bn()), _g("vicino", "vicina")], Ui.YELLOW, 3.0, "fx", "ambiente")
 		"agguato":
-			_toast("AGGUATO! %s attacca per %s" % [_cap(_bn()), _g("primo", "prima")], Color("#ff7a9c"), 3.0)
+			_notice("AGGUATO! %s attacca per %s" % [_cap(_bn()), _g("primo", "prima")], Color("#ff7a9c"), 3.0, "boss", "pericolo")
 	await get_tree().create_timer(0.4).timeout
 	var bonds: Array = Story.active_bonds() if not ritorno.is_empty() else []
 	var msgs: Array = []
 	# la lettura di Echo del nemico (archetipo, EnemyArchetypes): il problema si capisce dal primo scontro, non solo dopo
-	var reading: String = EnemyArchetypes.reading(str(BattleState.boss(b).get("char", "")))
-	if reading != "":
+	if reading != "" and not merged:
 		msgs.append([reading, Ui.CYAN])
 	if Gregario.alive(b):
 		msgs.append([EnemyArchetypes.reading(Gregario.ID), Ui.CYAN])
@@ -961,6 +978,37 @@ func _start_round() -> void:
 	await _advance()
 
 
+# ECHO IN TRE MODI (HUD 0.61, P1-A). Echo resta Echo: una riga, la sua voce, poi tace.
+#   normale  consiglio corto, solo le prime `times` volte in tutta la partita (key), se ne va da solo dopo `sec` secondi
+#   selezione quando scegli un comando il fumetto si fa da parte: la spiegazione del comando la dice il riquadro sopra il
+#            ritratto (gia' cosi' in _pick); il consiglio torna se chiudi la scelta e non e' scaduto
+#   avviso   pericolo immediato (P0-B): bordo rosso, scavalca un consiglio normale, poche parole su cosa fare
+# Con Settings.hud_echo spento: il testo resta come prima (nessun limite di volte, nessuna scadenza).
+func _echo(line: String, key: String = "", mode: String = "normale", sec: float = 6.0, times: int = 2) -> void:
+	if _hint == null or ended:
+		return
+	if not Settings.hud_echo:
+		_hint.text = line
+		return
+	if mode == "normale" and _echo_bal != null and _echo_bal.col != ECHO_COL and _hint.text != "":
+		return                     # c'e' un avviso in corso: il consiglio aspetta
+	if key != "":
+		if int(_echo_seen.get(key, 0)) >= times:
+			return
+		_echo_seen[key] = int(_echo_seen.get(key, 0)) + 1
+	_hint.text = line
+	if _echo_bal != null:
+		_echo_bal.col = Color("#ff3b4e") if mode == "avviso" else ECHO_COL
+		_echo_bal.queue_redraw()
+	var tw := create_tween()
+	tw.tween_interval(sec)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(_hint) and _hint.text == line:
+			_hint.text = ""
+			if _echo_bal != null:
+				_echo_bal.col = ECHO_COL)
+
+
 # INDIZIO DI INIZIO ROUND: una riga breve su cio' che cambia questo round (evento dell'arena, catena del boss). Va nella fascia del
 # suggerimento (al centro), sparisce da sola e non scavalca altri suggerimenti.
 func _round_hint() -> void:
@@ -1035,7 +1083,10 @@ func _advance() -> void:
 		if first_turn:
 			first_turn = false
 			if not (tutorial or lezioni):       # con le spiegazioni lo dice gia' Echo: una cosa per volta
-				_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
+				if Settings.hud_echo:
+					_echo("GUARDIA ricarica energia · ABILITÀ la spende · ULTIMATE a barra piena", "primo_turno", "normale", 7.0)
+				else:
+					_hint.text = "GUARDIA ricarica energia (+1 a ogni round) · ABILITÀ la spende · ULTIMATE a barra piena"
 		return
 
 
@@ -1163,7 +1214,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		# il nome della tecnica combinata arriva prima dei colpi (dopo, la ruota del turno dopo lo avrebbe scacciato)
 		for x in ev:
 			if str(x.get("t", "")) == "duo":
-				_stamp(str(x.get("name", "")).to_upper(), "%s + %s · TECNICA COMBINATA" % [str(u.get("name", "")).to_upper(), _uname(str(x.get("with", ""))).to_upper()], col.lightened(0.2))
+				_stamp(str(x.get("name", "")).to_upper(), "%s + %s · TECNICA COMBINATA" % [str(u.get("name", "")).to_upper(), _uname(str(x.get("with", ""))).to_upper()], col.lightened(0.2), 0.3, str(u.get("char", "")))
 	if tgt == "enemy":
 		var boss_v: Node3D = vis[tid]
 		var strike: Vector3 = tpos + (home[uid] - tpos).normalized() * (1.7 if tid == BattleState.BOSS_ID else 1.3)
@@ -1213,7 +1264,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 				_cam_hud.disturb("ZOOM x2  ·  PUNTO DEBOLE", Ui.YELLOW, 0.9)
 			await _hit_stop(0.2)
 			_kick(0.9)
-			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.7)   # va nel posto fisso dei timbri (STAMP_AY), in coda: in alto e sul nemico ci sono i numeri del colpo
+			_stamp("DEBOLEZZA!", "%s colpisce il punto debole" % str(u["name"]).to_upper(), Ui.YELLOW, 0.7, str(u.get("char", "")))   # va nel posto fisso dei timbri (STAMP_AY), in coda: in alto e sul nemico ci sono i numeri del colpo
 		await _show_events_freeze(ev)
 		await _tw_done(a)
 		cv.move_speed = 1.0
@@ -1314,6 +1365,7 @@ func _boss_turn() -> void:
 				if grade == "perfect":
 					await _parry_shot(str(tele.get("target", "")))
 		var ev: Array = BattleFlow.boss_action(b)
+		_parry_gain_fly(ev)
 		var tw: Tween = m.slam() if all else m.attack()
 		await _wait(0.3 if all else 0.2)
 		if all:
@@ -1510,6 +1562,8 @@ func _timed_guard(intro: bool = true) -> String:
 		first_qte = false
 		_qte_lead *= 2.0
 		_hint.text = "GUARDIA A TEMPO: tocca lo schermo quando il cerchio si chiude. Proprio all'impatto è una parata perfetta"
+		if _echo_bal != null:
+			_echo_bal.col = ECHO_COL
 	_qte_t = 0.0
 	_qte_grade = ""
 	_qte_start_us = Time.get_ticks_usec()
@@ -3273,6 +3327,10 @@ func _build_ui() -> void:
 	_tele.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_tele.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	bp.add_child(_tele)
+	if Settings.hud_minaccia:
+		# la riga di testo resta (stesso testo, per prove e lettori) ma la vede solo chi spegne la lastra
+		_threat_plate = ThreatPlate.new()
+		bp.add_child(_threat_plate)
 	_build_greg_ui()
 
 	_party_back = Control.new()
@@ -3299,6 +3357,9 @@ func _build_ui() -> void:
 		# squadra e turni li disegna PortraitParty: le card e la riga dei turni restano (stato, prove) ma non si vedono
 		_p1 = PortraitParty.new()
 		_root.add_child(_p1)
+		if Settings.hud_ritmo and BattleTypes.RITMO_ON:
+			_ritmo_bar = RitmoBar.new()
+			_root.add_child(_ritmo_bar)
 		for c in [party, _party_back, ob]:
 			(c as Control).visible = false
 			(c as Control).modulate.a = 0.0
@@ -3406,7 +3467,12 @@ func _build_ui() -> void:
 	if Settings.hud_ritratto:
 		# in basso a sinistra ora c'e' il ritratto: il fumetto di Echo va in basso al centro, tra ritratto e squadra
 		Ui.place(_hint, 0.0, 1.0, 1.0, 1.0, 480, -40, -470, -40)
-	_root.add_child(EchoBalloon.new(_hint))
+	_echo_bal = EchoBalloon.new(_hint)
+	if Settings.hud_echo:
+		_echo_bal.fit = true          # P1-A: il fumetto si stringe al testo (prima era sempre largo come tutta la fascia)
+		if Settings.hud_ritratto:
+			Ui.place(_hint, 0.0, 1.0, 0.0, 1.0, 480, -40, 480 + ECHO_W, -40)      # circa il 60% di prima
+	_root.add_child(_echo_bal)
 	_root.add_child(_hint)
 
 	# in alto a destra: pausa, AUTO, velocita'
@@ -3519,7 +3585,7 @@ func _hud_focus(choice: bool) -> void:
 	# durante la mossa restano: nome della mossa, effetti (gli avvisi) e vite della squadra. Il nemico torna quando si sceglie.
 	for c in [_order_panel, _boss_panel, _weak_row, _tele, _hint]:
 		if c != null:
-			(c as Control).visible = choice
+			(c as Control).visible = choice and not (c == _tele and _threat_plate != null)   # con la lastra (P0-B) la riga resta spenta
 	if _p1 != null:
 		_p1.set_order_visible(choice)
 	if _greg_tag != null:
@@ -3661,6 +3727,54 @@ func _order_chip(col: Color, now: bool) -> StyleBoxFlat:
 	if not _order_chips.has(key):
 		_order_chips[key] = Ui.plate(col, Ui.INK, -0.18, 6) if now else Ui.plate(Color(0.05, 0.03, 0.08, 0.82), col, -0.18, 5)
 	return _order_chips[key]
+
+
+# HUD 0.61, P0-B: la prossima mossa sulla lastra con icona, e chi e' davvero nel bersaglio (per i ritratti della squadra).
+# Solo dati del motore: il bersaglio annunciato (telegraph), "su tutti" della mossa, la telecamera (camera_targets),
+# la catena (telegraph.chain) e chi andrebbe KO (threat_preview.lethal). Niente previsioni oltre a queste.
+func _threat_refresh(tstate: String, tele: Dictionary, mv: Dictionary, who: String) -> void:
+	_tgt = {}
+	if _threat_plate == null:
+		return
+	if _tele.text == "":
+		_threat_plate.set_threat({})
+		return
+	if tstate == "stordito":
+		_threat_plate.set_threat({"state": "stordito"})
+		return
+	var thr: Dictionary = BattleResolver.threat_preview(b)
+	var strong: bool = tstate == "forte"
+	var ids: Array = []
+	if bool(mv.get("camera", false)):
+		for pk in BattleResolver.camera_targets(b):
+			ids.append(str((pk["unit"] as Dictionary).get("id", "")))
+	elif str(mv.get("target", "one")) == "all":
+		for p in BattleState.alive_players(b):
+			ids.append(str(BattleState.active_unit(b, str(p["id"])).get("id", "")))
+	else:
+		ids.append(str(BattleState.active_unit(b, str(tele.get("target", ""))).get("id", "")))
+	var lethal: Array = thr.get("lethal", [])
+	if Settings.hud_avvisi:
+		var lsig: String = "%s|%s|%s" % [str(tele.get("move", "")), str(lethal), int(b.get("round", 1))]
+		if not lethal.is_empty() and lsig != _lethal_sig:
+			var names: Array = []
+			for id in lethal:
+				names.append(str(BattleState.unit(b, str(id)).get("name", "?")).to_upper())
+			_notice("%s A UN COLPO DAL KO · basta il prossimo %s" % [" E ".join(PackedStringArray(names)), str(mv.get("name", "?")).to_upper()], Ui.PINK, 3.5, "boss", "pericolo")
+			# Echo in modo avviso (P1-A): l'avviso dice cosa succede, Echo cosa fare (una riga, non lo ripete)
+			_echo("Metti al sicuro %s prima del colpo" % " e ".join(PackedStringArray(names)), "", "avviso", 4.0)
+		_lethal_sig = lsig
+	for id in ids:
+		if id != "":
+			_tgt[id] = 2 if (strong or lethal.has(id)) else 1
+	var chain_id: String = str(thr.get("chain", ""))
+	var chain_nm: String = str(BattleContent.BOSS_MOVES.get(chain_id, {}).get("name", chain_id)).to_upper() if chain_id != "" else ""
+	var stat: String = ""
+	var sd: Dictionary = mv.get("status", {})
+	if not sd.is_empty():
+		stat = str(STATUS_NAMES.get(str(sd.keys()[0]), str(sd.keys()[0]).to_upper()))
+	var kind: String = "catena" if chain_nm != "" else ("tutti" if str(mv.get("target", "one")) == "all" else "singolo")
+	_threat_plate.set_threat({"state": tstate, "name": str(mv.get("name", "?")), "who": who, "kind": kind, "status": stat, "chain": chain_nm})
 
 
 # Minaccia: lastra scura col bordo rosso; colpo FORTE su lastra rossa piena; nemico stordito in giallo
@@ -4041,7 +4155,8 @@ func _p1_refresh(marked: String) -> void:
 		var u: Dictionary = _slot_unit(i)
 		prow.append({"id": str(u.get("char", "")), "name": str(u.get("name", "")), "col": _col(u), "hp": int(u.get("hp", 0)),
 			"max_hp": int(u.get("max_hp", 1)), "en": int(u.get("energy", 0)), "gauge": int(u.get("gauge", 0)), "gmax": BattleTypes.GAUGE_MAX,
-			"active": str(slots[i]) == cur_pid and not ended, "alive": BattleState.is_alive(u), "marked": marked != "" and str(u.get("id", "")) == marked})
+			"active": str(slots[i]) == cur_pid and not ended, "alive": BattleState.is_alive(u), "marked": marked != "" and str(u.get("id", "")) == marked,
+			"tgt": int(_tgt.get(str(u.get("id", "")), 0))})
 	var orow: Array = []
 	for k in range(maxi(0, turn_i), turn_list.size()):
 		var e: Dictionary = turn_list[k]
@@ -4071,6 +4186,8 @@ func _pick(kind: String) -> void:
 			return
 	var was: String = _picked
 	_picked = kind
+	if (was == "") != (kind == ""):
+		_stack_notices()          # P0-C: con un comando acceso gli avvisi si fanno compatti (e tornano interi quando si chiude)
 	if _hint != null:
 		_hint.modulate.a = 0.0 if kind != "" else 1.0      # sotto la scelta si legge solo il suo riquadro
 	if _wheel != null:
@@ -4222,7 +4339,10 @@ func _update_react() -> void:
 		_react_lbl.text = ("REAZIONE\nRISERVA %d · USA IL TURNO" % int(b.get("reserve", 0))) if not usable.is_empty() else "ULTIMATE IN DIRETTA\nSENZA RISERVA"
 		if not _react_hint_seen and not first_turn and _hint != null and not usable.is_empty():
 			_react_hint_seen = true
-			_hint.text = "CARICA IN ARRIVO · REAZIONI con la Riserva: SCHIVA (freccia) · COPRI (tieni e lascia) · FERMA (a raffica) · SOCCORRI (battito)"
+			if Settings.hud_echo:
+				_echo("CARICA IN ARRIVO · con la Riserva: SCHIVA, COPRI, FERMA, SOCCORRI", "reazioni", "normale", 7.0)
+			else:
+				_hint.text = "CARICA IN ARRIVO · REAZIONI con la Riserva: SCHIVA (freccia) · COPRI (tieni e lascia) · FERMA (a raffica) · SOCCORRI (battito)"
 
 
 # ULTIMATE IN DIRETTA: un compagno con la barra piena lancia l'Ultimate fuori turno durante una carica. Non costa Riserva ne' il
@@ -4331,8 +4451,9 @@ func _refresh_hud() -> void:
 		var strong: bool = CombatHud.is_strong(float(mv.get("mult", 0.0)), thr.get("lethal", []))
 		_tele.text = CombatHud.tele_line(str(mv.get("name", "?")), who, str(mv.get("target", "one")) == "all", strong, str(thr.get("chain", "")) != "") if not mv.is_empty() else ""
 		tstate = "forte" if strong else "normale"
-	_tele.visible = _tele.text != ""
+	_tele.visible = _tele.text != "" and _threat_plate == null
 	_tele_dress(tstate)
+	_threat_refresh(tstate, tele, mv, who)
 	_weak_refresh(boss)
 	_greg_refresh()
 	_ghost_to(_boss_ghost, float(shown_hp), float(boss["max_hp"]))
@@ -4429,6 +4550,8 @@ func _refresh_hud() -> void:
 			l.add_theme_font_override("font", Ui.display())
 	if _p1 != null:
 		_p1_refresh(marked)
+	if _ritmo_bar != null:
+		_ritmo_bar.set_state(b)
 	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper() + (" · RAPIDO" if _quick else "")) if cur_pid != "" and not ended else ""
 	if waiting:
 		_show_commands(true)
@@ -4705,16 +4828,72 @@ func _slancio_moment(u: Dictionary) -> void:
 	_flash(0.35)
 	_kick(0.5)
 	Settings.buzz(30)
-	_stamp("SLANCIO!", "%s AGISCE ANCORA · COLPISCI O PROTEGGI TUTTI" % str(u["name"]).to_upper(), col.lightened(0.25), 0.58)
+	_stamp("SLANCIO!", "%s AGISCE ANCORA · COLPISCI O PROTEGGI TUTTI" % str(u["name"]).to_upper(), col.lightened(0.25), 0.58, str(u.get("char", "")))
 	await _wait(1.25)
 
 
 # ay resta per chi la chiama, ma il posto e' sempre STAMP_AY: il giocatore guarda sempre li'.
-func _stamp(title: String, sub: String, col: Color, ay: float = 0.3) -> void:
+# P2: dopo la PARATA PERFETTA "+N ULTIMATE" vola dal centro alla barretta ULTIMATE di chi ha parato (HUD col ritratto).
+# N e' quello che il motore ha dato davvero (evento resource_change, fonte timed_guard): se la barra era gia' piena non vola niente.
+func _parry_gain_fly(ev: Array) -> void:
+	if not Settings.hud_accenti or _p1 == null:
+		return
+	var perfect: Dictionary = {}
+	for e in ev:
+		if str(e.get("t", "")) == "timed_guard" and str(e.get("grade", "")) == "perfect":
+			perfect[str(e.get("unit", ""))] = true
+	for e in ev:
+		if str(e.get("t", "")) != "resource_change" or str(e.get("source", "")) != "timed_guard" or str(e.get("resource", "")) != "gauge":
+			continue
+		var uid: String = str(e.get("unit", ""))
+		var n: int = int(e.get("effective", 0))
+		if n <= 0 or not perfect.has(uid):
+			continue
+		var idx: int = -1
+		for i in slots.size():
+			if str(_slot_unit(i).get("id", "")) == uid:
+				idx = i
+		if idx < 0:
+			continue
+		var W: float = _p1.size.x
+		var H: float = _p1.size.y
+		var cnt: int = slots.size()
+		var x0: float = W - 22.0 - PortraitParty.CW * cnt - 14.0 * (cnt - 1)
+		var dest := Vector2(x0 + idx * (PortraitParty.CW + 14.0) + 6.0, H - 128.0 + 98.0)
+		var l := Ui.label("+%d ULTIMATE" % n, 26, Ui.PINK.lightened(0.25), Ui.display(), 8)
+		l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_fx_layer.add_child(l)
+		l.position = Vector2(W * 0.5 - 90.0, H * 0.42)
+		l.modulate.a = 0.0
+		var tw := l.create_tween()
+		tw.tween_interval(0.35)            # dopo il CLANG della parata
+		tw.tween_property(l, "modulate:a", 1.0, 0.08)
+		tw.tween_interval(0.35)
+		tw.tween_property(l, "position", dest - Vector2(40, 20), 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tw.parallel().tween_property(l, "scale", Vector2(0.55, 0.55), 0.45)
+		tw.tween_property(l, "modulate:a", 0.0, 0.12)
+		tw.tween_callback(l.queue_free)
+
+
+func _stamp(title: String, sub: String, col: Color, ay: float = 0.3, who: String = "") -> void:
 	ay = STAMP_AY
 	await _stamp_turn(1.45)
 	if not is_inside_tree() or _cmds_open():
 		return          # e' gia' il turno di scegliere: il colpo e' passato, la scritta non copre la ruota
+	if who != "" and Settings.hud_accenti:
+		# P2: il segno del personaggio dietro il suo timbro (tagli, anelli, pezzi storti, stelle nell'HYPE)
+		var acc := Control.new()
+		acc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		Ui.place(acc, 0.3, ay, 0.7, ay, 0, -30, 0, 150)
+		var hype: bool = int(Kits.unit_of_char(b, Kits.RIO).get("hype", 0)) >= 50
+		acc.draw.connect(func() -> void: CharAccent.draw(acc, who, Rect2(Vector2.ZERO, acc.size), col, 1.0, hype))
+		_fx_layer.add_child(acc)
+		acc.modulate.a = 0.0
+		var ta := acc.create_tween()
+		ta.tween_property(acc, "modulate:a", 1.0, 0.1)
+		ta.tween_interval(0.9)
+		ta.tween_property(acc, "modulate:a", 0.0, 0.25)
+		ta.tween_callback(acc.queue_free)
 	var box := VBoxContainer.new()
 	Ui.place(box, 0.15, ay, 0.85, ay, 0, 0, 0, 140)
 	_stamps.append(box)
@@ -4808,17 +4987,33 @@ func _clear_stamps() -> void:
 
 
 func _toast(text: String, col: Color, sec: float) -> void:
-	_notice(text, col, sec, "boss" if col == Ui.PINK or col == Color("#ff7a9c") else "fx")
+	var danger: bool = col == Ui.PINK or col == Color("#ff7a9c")
+	_notice(text, col, sec, "boss" if danger else "fx", "pericolo" if danger and Settings.hud_avvisi else "")
 
 
 # UN posto per tutti gli avvisi: a sinistra, sotto l'ordine dei turni (in alto al centro si scontravano coi numeri dei colpi). Lastre piccole con un'icona e poche
 # parole (titolo grande, il resto piccolo solo se e' corto); al massimo due insieme, il nuovo scaccia il piu' vecchio.
-func _notice(text: String, col: Color, sec: float, icon: String) -> void:
+# HUD 0.61, P0-C (cat): "pericolo" rosso col triangolo, passa davanti a tutto e non viene scacciato dagli altri;
+# "tattica" giallo col lampo; "ambiente" azzurro con le onde. "" = come prima (colore di chi lo manda).
+const NOTICE_CAT: Dictionary = {"pericolo": Color("#ff3b4e"), "tattica": Color("#ffd23f"), "ambiente": Color("#39d8ff")}
+
+
+func _notice(text: String, col: Color, sec: float, icon: String, cat: String = "") -> void:
 	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t))
+	if NOTICE_CAT.has(cat):
+		col = NOTICE_CAT[cat]
+		icon = {"pericolo": "boss", "tattica": "fx", "ambiente": "env"}[cat]
 	while _toasts.size() >= TOAST_MAX:
-		var old: Control = _toasts.pop_front()
+		# si scaccia il piu' vecchio che non e' un pericolo (se sono tutti pericoli, il piu' vecchio)
+		var k: int = 0
+		for j in _toasts.size():
+			if str((_toasts[j] as Control).get_meta("cat", "")) != "pericolo":
+				k = j
+				break
+		var old: Control = _toasts[k]
+		_toasts.remove_at(k)
 		old.queue_free()
-	var parts: Array = CombatHud.notice_parts(text)
+	var parts: Array = CombatHud.notice_parts(text, 48 if cat != "" else 34)
 	var pc := PanelContainer.new()
 	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var mv: bool = icon == "move"
@@ -4841,6 +5036,8 @@ func _notice(text: String, col: Color, sec: float, icon: String) -> void:
 	if tail != "":
 		var sm := Ui.label(tail, 16, Color(Ui.CREAM, 0.9) if not mv else col.lightened(0.2), null, 4)
 		hb.add_child(sm)
+		pc.set_meta("tail", sm)
+	pc.set_meta("cat", cat)
 	_fx_layer.add_child(pc)
 	_toasts.append(pc)
 	_stack_notices()
@@ -4855,19 +5052,30 @@ func _notice(text: String, col: Color, sec: float, icon: String) -> void:
 
 
 func _stack_notices() -> void:
-	for i in _toasts.size():
-		var c: Control = _toasts[i]
+	_toasts = _toasts.filter(func(t) -> bool: return is_instance_valid(t))
+	# i pericoli in cima alla pila (l'ultimo dell'elenco sta piu' in alto)
+	var order: Array = _toasts.filter(func(t) -> bool: return str((t as Control).get_meta("cat", "")) != "pericolo")
+	order.append_array(_toasts.filter(func(t) -> bool: return str((t as Control).get_meta("cat", "")) == "pericolo"))
+	var compact: bool = Settings.hud_avvisi and _picked != ""
+	for i in order.size():
+		var c: Control = order[i]
 		Ui.place(c, 0.0, 0.0, 0.0, 0.0, 24, 0, 24, 0)
 		c.grow_horizontal = Control.GROW_DIRECTION_END
+		var tl: Variant = c.get_meta("tail", null)
+		if tl is Control and is_instance_valid(tl):
+			(tl as Control).visible = not compact
+		c.reset_size()
 		var y0: float = NOTICE_Y
-		if _boss_panel != null and _boss_panel.visible and _boss_panel.size.y > 1.0:
+		if not compact and _boss_panel != null and _boss_panel.visible and _boss_panel.size.y > 1.0:
 			y0 = _boss_panel.position.y + _boss_panel.get_combined_minimum_size().y + 12.0      # subito sotto il nemico
-		c.offset_top = y0 + 46.0 * float(_toasts.size() - 1 - i)
+		c.offset_top = y0 + 46.0 * float(order.size() - 1 - i)
 
 
 # Icone degli avvisi, disegnate a mano: catena (legami e impulsi), triangolo (il nemico), lampo (effetti), freccia (mossa)
 func _notice_icon(c: Control, icon: String, col: Color) -> void:
 	var p: Vector2 = c.size * 0.5
+	if HudIcons.draw(c, icon, p, 11.0, col):      # P1-C: l'icona disegnata dall'autore, se c'e'
+		return
 	match icon:
 		"chain":
 			for k in 2:
@@ -4881,6 +5089,10 @@ func _notice_icon(c: Control, icon: String, col: Color) -> void:
 			c.draw_circle(p + Vector2(0, 6), 1.5, Ui.INK)
 		"move":
 			c.draw_colored_polygon(PackedVector2Array([p + Vector2(-8, -9), p + Vector2(9, 0), p + Vector2(-8, 9), p + Vector2(-3, 0)]), col)
+		"env":
+			for k in 3:
+				c.draw_arc(p + Vector2(0, 7), 4.0 + 5.0 * k, deg_to_rad(215), deg_to_rad(325), 12, col, 2.5, true)
+			c.draw_circle(p + Vector2(0, 7), 2.0, col)
 		_:
 			CmdWheel.glyph(c, "skill", p, 12.0, col)
 

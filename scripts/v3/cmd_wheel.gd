@@ -326,6 +326,8 @@ static func ribbon(c, pts: PackedVector2Array, w0: float, w1: float, fill: Color
 
 # Icona del comando disegnata a mano (nessuna texture): spade incrociate, fulmine, esplosione, scudo
 static func glyph(c: CanvasItem, kind: String, p: Vector2, r: float, fill: Color) -> void:
+	if HudIcons.draw(c, kind, p, r, fill):      # P1-C: l'icona disegnata dall'autore, se c'e'
+		return
 	match kind:
 		"attack":
 			for s in [-1.0, 1.0]:
