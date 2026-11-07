@@ -30,8 +30,8 @@ func _as_who(bt: Node, ult_full: bool) -> void:
 	var w: PortraitHud = bt.get("_wheel")
 	var b: Dictionary = bt.get("b")
 	var u: Dictionary = {}
-	for p in BattleState.alive_players(b):
-		if str(p.get("char", "")) == who:
+	for p in (b.get("units", {}) as Dictionary).values():      # tutte le unita' della squadra (prima la ricerca restava vuota e il colore era sempre verde)
+		if p is Dictionary and str(p.get("char", "")) == who:
 			u = p
 	var items: Array = (w.get("items") as Array).duplicate(true)
 	for it in items:
