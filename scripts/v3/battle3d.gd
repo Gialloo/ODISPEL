@@ -179,6 +179,7 @@ var _quip_seq: int = 0
 var _order_title: Label               # «TURNO n»: il giocatore tiene il conto dei round
 var _party_back: Control
 var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
+var _ritmo_bar: RitmoBar               # RITMO di squadra sopra la fila (HUD 0.61, P0-A; Settings.hud_ritmo)
 var _party_mesh: ArrayMesh      # va tenuta viva finche' si vede
 var _reticle: Reticle                    # mirino sul nemico quando tocca al giocatore
 var _pop_key: String = ""               # ultimo turno annunciato con lo scatto (evita di rifarlo a ogni aggiornamento)
@@ -3299,6 +3300,9 @@ func _build_ui() -> void:
 		# squadra e turni li disegna PortraitParty: le card e la riga dei turni restano (stato, prove) ma non si vedono
 		_p1 = PortraitParty.new()
 		_root.add_child(_p1)
+		if Settings.hud_ritmo and BattleTypes.RITMO_ON:
+			_ritmo_bar = RitmoBar.new()
+			_root.add_child(_ritmo_bar)
 		for c in [party, _party_back, ob]:
 			(c as Control).visible = false
 			(c as Control).modulate.a = 0.0
@@ -4429,6 +4433,8 @@ func _refresh_hud() -> void:
 			l.add_theme_font_override("font", Ui.display())
 	if _p1 != null:
 		_p1_refresh(marked)
+	if _ritmo_bar != null:
+		_ritmo_bar.set_state(b)
 	_turn_lbl.text = ("TURNO DI " + str(_unit_of(cur_pid).get("name", "")).to_upper() + (" · RAPIDO" if _quick else "")) if cur_pid != "" and not ended else ""
 	if waiting:
 		_show_commands(true)
