@@ -37,7 +37,8 @@ const CAST: Dictionary = {
 	},
 	"saul": {
 		"name": "Saul", "faction": "Magabondi", "height": 1.78, "build": 0.98, "kit": "corriere", "look": "nobile",
-		"skin": "#f0dcc2", "hair": "#5c1a1f", "top": "#0b1a8f", "bottom": "#1c1e2c", "accent": "#ff8a2b", "shoes": "#1e1612",
+		# prova dell'autore (07/11): cappotto verde, lo stesso verde del Saul di prima; il blu del ritratto era "#0b1a8f"
+		"skin": "#f0dcc2", "hair": "#5c1a1f", "top": "#2f8f5a", "bottom": "#1c1e2c", "accent": "#ff8a2b", "shoes": "#1e1612",
 		"metal": "#b5b9c4", "gold": "#d9b44a", "glove": "#5a3b26",
 		"shirt": "#6e9894", "vest": "#0e3a31", "cravat": "#ece6ff", "earring": "#e8e8f0",
 		"hair_style": "spettinato", "extra": "cravat", "eyes": "#a8d030", "brow": -0.3, "lid": 0.25, "smirk": 1.4,
