@@ -1,5 +1,13 @@
 # Novità
 
+## 0.63.0 · Cornici HUD dei personaggi
+
+- **Cornici nuove** per Saul, Rio, Lance e Nox nell'HUD di battaglia, ciascuna con il suo colore.
+- **COLORI** nel menu pausa.
+- I comandi tornano come nella 0.58; ORDINE sta più in alto.
+- x1, AUTO e pausa stanno in alto a sinistra; REC e CAM non ci sono più.
+- PR #75.
+
 ## 0.62.0 · Nuovo HUD di battaglia
 
 - **Ritmo di squadra**: una barra mostra quanto è carica la squadra (CALMO, ACCESO, INCANDESCENTE, APICE).
