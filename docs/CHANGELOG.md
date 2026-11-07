@@ -1,5 +1,13 @@
 # Novità
 
+## 0.62.0 · Nuovo HUD di battaglia
+
+- **Ritmo di squadra**: una barra mostra quanto è carica la squadra (CALMO, ACCESO, INCANDESCENTE, APICE).
+- **Prossima mossa**: una targa dice cosa farà il nemico al turno dopo: tipo di attacco, colpo FORTE, MARCHIO o SANGUINA, STORDITO, e segna i ritratti presi di mira.
+- Ogni parte nuova si può spegnere nelle Impostazioni.
+- Dettagli in `docs/HUD_0.61.md` (PR #73).
+
+
 ## 0.61.0 · Modelli 3D dai ritratti ufficiali
 
 - **Lance, Nox, Rio e Saul**: i modelli 3D sono rifatti a partire dai ritratti ufficiali dell'autore (PR #68).
