@@ -709,6 +709,10 @@ static func _torso_look(mb: MeshBatch, sp: Dictionary, look: String, wx: float, 
 			mb.sweep([_r(0.455, 0.084, 0.07), _r(0.47, 0.082, 0.068)], 14, trim, false, false, false)
 			mb.lock(Vector3(-sx * 0.72, 0.46, -0.05), Vector3(0.0, 0.3, -0.108), Vector3(sx * 0.95, 0.1, -0.05), 0.014, 0.006, Vector3.FORWARD, trim, false, 6)
 			mb.sweep([_r(0.1, wx + 0.024, 0.092), _r(0.135, wx + 0.024, 0.092)], 16, Color("#16142a"), false, false, false)
+			# gonna lunga fino alle caviglie, che si allarga un po' in fondo (le scarpe restano fuori)
+			var skirt: Color = _c(sp, "skirt", "#150a78")
+			mb.sweep([_r(0.12, wx + 0.02, 0.09), _r(0.0, hx + 0.03, 0.1), _r(-0.3, hx + 0.07, 0.12), _r(-0.58, hx + 0.1, 0.14), _r(-0.76, hx + 0.12, 0.15)], 16, skirt, true, false, false)
+			mb.sweep([_r(-0.74, hx + 0.121, 0.151), _r(-0.76, hx + 0.121, 0.151)], 16, trim, false, false, false)
 		"maglietta":
 			# Rio: maglietta viola larga, girocollo e orlo
 			mb.sweep([_r(0.06, wx + 0.032 + puff, 0.094 + puff), _r(0.12, wx + 0.026 + puff, 0.09 + puff)], 16, top, true, false, false)
