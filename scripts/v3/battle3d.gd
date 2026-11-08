@@ -172,7 +172,7 @@ var _say_lbl: Label                   # battute dei personaggi in battaglia
 var _say_balloon: EchoBalloon
 var _echo_bal: EchoBalloon              # fumetto di Echo dei consigli (P1-A: tre modi, _echo)
 static var _echo_seen: Dictionary = {}  # P1-A: quante volte Echo ha gia' detto un consiglio (in tutta la partita): non si ripete
-const ECHO_W: float = 400.0             # P1-A: larghezza massima del fumetto dei consigli
+const ECHO_W: float = 470.0             # P1-A: larghezza massima del fumetto dei consigli
 const ECHO_COL: Color = Color("#3fe0ff")
 var _say_seq: int = 0
 var _quips: BattleQuips             # battute a fumetto della squadra (critici, K.O., salvataggi): battle_quips.gd
@@ -1152,14 +1152,16 @@ func _place_balloons() -> void:
 		if l == null:
 			continue
 		var lb: Label = l
-		var w: float = minf(ECHO_W if lb == _hint else 560.0, vs.x * 0.55 - BAL_X)
+		var w: float = minf(ECHO_W if lb == _hint else 620.0, vs.x * 0.55 - BAL_X)
 		# il pannello del nemico (segue la sua testa) puo' arrivare fin qui: il fumetto si stringe, e se non basta gli passa sotto
 		if _boss_panel != null and _boss_panel.visible and _boss_panel.modulate.a > 0.5:
 			var br: Rect2 = _boss_panel.get_global_rect()
 			if br.position.y < y + 140.0 and br.end.x > BAL_X:
 				var avail: float = br.position.x - 22.0 - 16.0 - BAL_X
-				if avail >= 240.0:
-					w = minf(w, avail)
+				# sotto il nemico solo se c'e' posto prima dei comandi; se no resta in alto, piu' stretto (16:9, 8/11/2026)
+				var low_fit: bool = br.end.y + 40.0 + lb.get_combined_minimum_size().y + 60.0 < vs.y - 340.0
+				if avail >= 240.0 or not low_fit:
+					w = minf(w, maxf(avail, 200.0))
 				else:
 					y = maxf(y, br.end.y + 40.0)
 		if lb.anchor_top != 0.0 or lb.anchor_bottom != 0.0 or lb.anchor_left != 0.0 or lb.anchor_right != 0.0:
@@ -1174,7 +1176,13 @@ func _place_balloons() -> void:
 			lb.offset_top = y
 			lb.offset_bottom = y
 		if lb.is_visible_in_tree() and lb.text != "":
-			y += lb.size.y + 22.0 + 30.0 + 14.0     # nome sopra, fondo e coda del fumetto sotto, aria
+			# altezza vera della scritta alla larghezza nuova (la Label si reimpagina solo al fotogramma dopo)
+			var nl: int = CmdWheel.wrap(lb.get_theme_font("font"), lb.text, lb.get_theme_font_size("font_size"), w).size()
+			var hh: float = maxf(lb.size.y, float(maxi(nl, 1) * lb.get_line_height()))
+			var bal: EchoBalloon = {_hint: _echo_bal, _say_lbl: _say_balloon, _quip_lbl: _quip_balloon}.get(lb, null)
+			if bal != null and bal._r.size.y > 0.0:
+				hh = maxf(hh, bal._r.size.y)      # quello che il fumetto disegna davvero
+			y += hh + 26.0 + 80.0 + 14.0      # coda del fumetto e nome di chi parla sotto     # nome sopra, fondo e coda del fumetto sotto, aria
 
 
 func _place_boss_tag() -> void:
@@ -2115,10 +2123,10 @@ class EchoBalloon extends Control:
 		if not on:
 			return
 		modulate.a = lbl.modulate.a
-		var r := Rect2(lbl.position, lbl.size)
+		var r := Rect2(lbl.position, Vector2(lbl.size.x, maxf(lbl.size.y, float(lbl.get_line_count() * lbl.get_line_height()))))
 		if fit:
 			var f: Font = lbl.get_theme_font("font")
-			r.size.x = minf(r.size.x, f.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, lbl.get_theme_font_size("font_size")).x + 4.0)
+			r.size.x = minf(r.size.x, f.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, lbl.get_theme_font_size("font_size")).x + 4.0 + float(lbl.get_theme_constant("outline_size")))
 		if r.size.x < 24.0 or r.size.y < 12.0:
 			return        # etichetta non ancora impaginata: il fumetto storto verrebbe un poligono che si incrocia
 		if r != _r:
@@ -2126,7 +2134,8 @@ class EchoBalloon extends Control:
 			queue_redraw()
 
 	func _draw() -> void:
-		var r: Rect2 = _r.grow_individual(18, 10, 22, 12)
+		# piu' aria attorno alla scritta (autore, 8/11/2026: i testi uscivano dal contenitore); a destra il bordo e' storto
+		var r: Rect2 = _r.grow_individual(22, 16, 38, 18)
 		var sk: float = 14.0
 		var cy: Color = col
 		var pts := PackedVector2Array([r.position + Vector2(sk, 0), Vector2(r.end.x + sk, r.position.y - 4),
@@ -3909,7 +3918,7 @@ func _build_ui() -> void:
 	_kit_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_kit_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_kit_lbl)
-	_hint = Ui.label("", 18, Ui.CREAM, null, 5)
+	_hint = Ui.label("", 22, Ui.CREAM, null, 5)      # 18 -> 22: nei fumetti la scritta era piccola e usciva (autore, 8/11/2026)
 	# a sinistra sotto i TURNI, dentro il fumetto di Echo (come l'alleata che parla in Persona): il centro resta alla scena
 	# in basso a sinistra, nello stesso angolo della didascalia della scelta (che lo sostituisce quando scegli): la ruota attorno al
 	# personaggio resta libera (prima il fumetto le stava sopra quando il personaggio era a sinistra)
@@ -4005,7 +4014,7 @@ func _build_ui() -> void:
 	Ui.place(ll, 0.05, 0.66, 0.95, 0.66, 0, 70, 0, 110)
 	_cutin.add_child(ll)
 	# fumetto della battuta (sopra la fascia, a sinistra): il ritratto sporge a sinistra del testo
-	_say_lbl = Ui.label("", 26, Ui.CREAM, null, 7)
+	_say_lbl = Ui.label("", 28, Ui.CREAM, null, 7)
 	_say_lbl.name = "Say"
 	Ui.place(_say_lbl, 0.0, 0.66, 0.0, 0.66, 190, -118, 1010, -118)
 	_say_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -4023,7 +4032,7 @@ func _build_ui() -> void:
 	Ui.place(_quip_layer, 0, 0, 1, 1)
 	_quip_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_quip_layer)
-	_quip_lbl = Ui.label("", 24, Ui.CREAM, null, 7)
+	_quip_lbl = Ui.label("", 27, Ui.CREAM, null, 7)
 	_quip_lbl.name = "Quip"
 	Ui.place(_quip_lbl, 1.0, 1.0, 1.0, 1.0, -500, -168, -40, -168)
 	_quip_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -5597,6 +5606,8 @@ func _notices_bottom(order: Array) -> void:
 		var mx: float = 0.0
 		for k in rs:
 			mx = maxf(mx, (rs[k] as Rect2).end.x)
+		if _wheel is PortraitHud:
+			mx = maxf(mx, PortraitHud.PW * PortraitHud.CORNICE_SCALA)      # i nastri non ancora disegnati: mai sopra ritratto e comandi
 		if mx > 0.0:
 			lx = _wheel.get_global_rect().position.x + mx + 28.0      # 20 -> 28: la lastra ULTIMATE inclinata sporgeva di 3 px (20:9)
 	var n: int = maxi(1, (_p1.party as Array).size()) if _p1 != null else 3
