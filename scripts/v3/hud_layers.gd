@@ -130,7 +130,8 @@ const VAL: Dictionary = {
 	"squadra.barre_uguali": [true, false],
 	"squadra.mirino_su_tutti": [10.0, 0.0],
 	"ordine.etichetta_gialla": [false, true],
-	"ordine.volto_nemico": [true, false],           # decisione 3 (7/11/2026): il volto del nemico al posto del nome rimpicciolito
+	"ordine.volto_nemico": [true, false],
+	"echo.sopra_descrizione": [true, false],        # la riga di Echo sale sopra la descrizione del comando invece di coprirla           # decisione 3 (7/11/2026): il volto del nemico al posto del nome rimpicciolito
 }
 
 

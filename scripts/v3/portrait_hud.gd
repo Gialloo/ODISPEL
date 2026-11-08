@@ -361,6 +361,7 @@ func _draw() -> void:
 		if cornice and Settings.hud_obiettivo:
 			_draw_extra(Rect2(Vector2(dx, H - PH * CORNICE_SCALA), Vector2(PW, PH) * CORNICE_SCALA), dx, H, f, e)
 	# 5) cosa fa il comando scelto: una lastra scura sopra il ritratto
+	tip_rect = Rect2()
 	if picked != "":
 		_draw_tip(item(picked), dx, H, e)
 
@@ -868,6 +869,9 @@ func _draw_cmd(kind: String, it: Dictionary, dx: float, H: float, f: Font, e: fl
 	_rects[kind] = Rect2(Vector2(x0, bc.y - hh * 0.5), Vector2(x1 - x0, hh))
 
 
+var tip_rect: Rect2 = Rect2()      # dove sta la descrizione del comando scelto (battle3d ci fa salire sopra la riga di Echo)
+
+
 func _draw_tip(it: Dictionary, dx: float, H: float, e: float) -> void:
 	if it.is_empty():
 		return
@@ -883,6 +887,7 @@ func _draw_tip(it: Dictionary, dx: float, H: float, e: float) -> void:
 		lines = lines.slice(0, 3)
 	var bh: float = 34.0 + 20.0 * lines.size()
 	var r := Rect2(Vector2((left + right) * 0.5 - bw * 0.5, H - 18.0 - bh), Vector2(bw, bh))
+	tip_rect = r
 	var poly := CmdWheel.slant(r, 10.0)
 	draw_colored_polygon(poly, Color(0.03, 0.02, 0.06, 0.88 * e))
 	# L4 (HUD Combat 2.0): bordo quieto, titolo e righe a 16; il giallo del titolo e' semantico e resta

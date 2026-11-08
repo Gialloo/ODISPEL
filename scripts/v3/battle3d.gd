@@ -188,6 +188,7 @@ var _weak_col: Color = Color("#9a94a8")
 var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
 var _ritmo_bar: RitmoBar               # RITMO di squadra sopra la fila (HUD 0.61, P0-A; Settings.hud_ritmo)
 var _boss_stacco: Control              # HUD Combat 2.0: aria fra l'anagrafica del nemico e la prossima mossa
+var _boss_face_on: bool = false       # HUD Combat 2.0: la foto del volto del nemico per l'ORDINE e' gia' partita
 var _boss_compatto: bool = false       # HUD Combat 2.0, decisione 1: con la tendina aperta il pannello del nemico si stringe
 var _threat_plate: ThreatPlate         # PROSSIMA MOSSA su una lastra con icona (HUD 0.61, P0-B; Settings.hud_minaccia)
 var _lethal_sig: String = ""          # P0-C: l'avviso "a un colpo dal KO" si dice una volta per mossa annunciata
@@ -590,6 +591,34 @@ func _build_units() -> void:
 	_seal = LightFx.seal(self, ENEMY_POS + Vector3(0, -0.1, 0), 2.0 if not minore else 1.4)
 
 
+# HUD Combat 2.0, decisione 3: il volto del nemico per la colonna ORDINE. Una sola fotografia della scena (UPDATE_ONCE)
+# dalla telecamera piccola davanti alla sua testa: nessun disegno nuovo da fare per ogni nemico, nessun costo per frame.
+func _boss_face() -> void:
+	if not vis.has(BattleState.BOSS_ID):
+		return
+	var bv: Node3D = vis[BattleState.BOSS_ID]
+	var hd: Vector3 = bv.call("head_point") if bv.has_method("head_point") else bv.global_position + Vector3(0, 2.0, 0)
+	var sv := SubViewport.new()
+	sv.size = Vector2i(156, 76)
+	sv.render_target_update_mode = SubViewport.UPDATE_ONCE
+	add_child(sv)
+	var c := Camera3D.new()
+	c.fov = 34.0
+	sv.add_child(c)
+	c.global_position = hd + Vector3(0, 0.05, 2.4)
+	c.look_at(hd, Vector3.UP)
+	c.current = true
+	# la foto si copia in una texture normale e la SubViewport se ne va: niente nodi, niente disegni in piu' dopo il primo frame
+	await RenderingServer.frame_post_draw
+	if is_instance_valid(sv) and _p1 != null:
+		var im: Image = sv.get_texture().get_image()
+		if im != null and not im.is_empty():
+			_p1.boss_face = ImageTexture.create_from_image(im)
+			_p1.queue_redraw()
+	if is_instance_valid(sv):
+		sv.queue_free()
+
+
 func _face(n: Node3D, at: Vector3) -> void:
 	var d: Vector3 = at - n.position
 	n.rotation.y = atan2(-d.x, -d.z)
@@ -832,6 +861,7 @@ func _process(delta: float) -> void:
 			_reticle.position = cam.unproject_position(bp)
 	_update_wheel()
 	_place_boss_tag()
+	_place_echo()
 	_place_greg_tag()
 	if _glide_t < _glide_len:
 		# CARRELLATA: da dove si era a dove si va, partenza e arrivo morbidi e un piccolo arco verso l'alto (si passa sopra le
@@ -923,6 +953,27 @@ func _update_wheel() -> void:
 # Il nemico preso di mira dall'attacco scelto brilla piano (alone caldo che pulsa) e resta in luce anche con lo schermo scuro dell'ULTIMATE
 # Cartellino del nemico (Persona 5 / Metaphor: il nome sta SUL nemico): sopra la sua testa, segue la telecamera, resta nello
 # schermo. Si vede solo mentre si sceglie (_hud_focus).
+# HUD Combat 2.0: la riga di Echo e la descrizione del comando stanno tutte e due in basso al centro; nella 0.63, al primo
+# turno, Echo copriva la descrizione. Ora, finche' la descrizione e' aperta, la riga di Echo le sta sopra (14 px d'aria).
+func _place_echo() -> void:
+	if _hint == null or not Settings.hud_ritratto or not bool(HudLayers.v("echo.sopra_descrizione")):
+		return
+	var tr: Rect2 = _wheel.get("tip_rect") if _wheel != null and _wheel.visible else Rect2()
+	var vs: Vector2 = get_viewport().get_visible_rect().size
+	var want: float = -40.0
+	if tr.size.y > 0.0 and _hint.text != "":
+		want = minf(-40.0, tr.position.y - vs.y - 14.0)
+	if not is_equal_approx(_hint.offset_bottom, want):
+		_hint.offset_bottom = want
+		_hint.offset_top = want
+	# e non entra nelle card della squadra (nella 0.63 la riga lunga ci finiva sotto): va a capo prima
+	if Settings.hud_echo and _p1 != null:
+		var n: int = maxi(1, (_p1.party as Array).size())
+		var rx: float = minf(480.0 + ECHO_W, vs.x - 22.0 - PortraitParty.cw() * n - 14.0 * (n - 1) - 16.0)
+		if not is_equal_approx(_hint.offset_right, rx):
+			_hint.offset_right = rx
+
+
 func _place_boss_tag() -> void:
 	if _boss_panel == null or not _boss_panel.visible or not vis.has(BattleState.BOSS_ID):
 		return
@@ -3729,9 +3780,9 @@ func livello3_sopra_livello1() -> Array:
 
 # Tasto della barra rapida in alto a destra: lastra scura, scritta crema, piccolo (resta grande abbastanza per il dito)
 func _quick_btn(text: String, w: float) -> Button:
-	var b: Button = Ui.button(text, Color(0.05, 0.03, 0.08, 0.78), 14, w * 0.8)
+	var b: Button = Ui.button(text, Color(0.05, 0.03, 0.08, 0.78), HudLayers.font_size("tasti_rapidi"), w * 0.8)      # L4 (HUD Combat 2.0: 16, 0.63: 14)
 	for k in ["font_color", "font_hover_color", "font_pressed_color"]:
-		b.add_theme_color_override(k, Ui.CREAM)
+		b.add_theme_color_override(k, Ui.CREAM if k != "font_color" else HudLayers.tone("tasti_rapidi", Ui.CREAM))
 	b.add_theme_stylebox_override("normal", Ui.box(Color(0.05, 0.03, 0.08, 0.72), Color(Ui.CREAM, 0.55), 2, 4, 0))
 	b.add_theme_stylebox_override("hover", Ui.box(Color(0.12, 0.08, 0.18, 0.85), Ui.CREAM, 2, 4, 0))
 	b.add_theme_stylebox_override("pressed", Ui.box(Color(0.2, 0.14, 0.28, 0.9), Ui.CREAM, 2, 4, 0))
@@ -4287,9 +4338,12 @@ func _p1_refresh(marked: String) -> void:
 		if bool(e.get("greg", false)):
 			onm = Gregario.NAME.to_upper()      # due nemici: la scheggia nella colonna ORDINE col suo nome, in rosso come il nemico
 		orow.append({"id": "" if is_boss else str(uu.get("char", "")), "name": onm,
-			"col": Ui.YELLOW if is_boss else _col(uu), "boss": is_boss, "now": k == turn_i})
+			"col": Ui.YELLOW if is_boss else _col(uu), "boss": is_boss, "now": k == turn_i, "greg": bool(e.get("greg", false))})
 		if orow.size() >= 6:
 			break
+	if _p1.boss_face == null and not _boss_face_on and bool(HudLayers.v("ordine.volto_nemico")):
+		_boss_face_on = true
+		_boss_face()
 	_p1.set_data(prow, orow, int(b.get("round", 1)), _choice_hud)
 
 

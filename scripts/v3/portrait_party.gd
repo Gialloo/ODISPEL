@@ -42,6 +42,7 @@ var order: Array = []           # {id, name, col, boss, now}
 var order_on: bool = true
 var round_n: int = 1
 var _tex: Dictionary = {}
+var boss_face: Texture2D        # HUD Combat 2.0, decisione 3: il volto del nemico nella colonna ORDINE (battle3d._boss_face)
 var _sig: String = ""
 
 
@@ -150,28 +151,35 @@ func _draw() -> void:
 			draw_texture_rect_region(fd[0], inner, _fit(fd[1], inner.size), tint)
 		# numeri: PV grande, EN sotto, a destra in basso sopra la cornice (come HP/SP del riferimento)
 		var dy: float = fh - 74.0          # tutto quello che sta sotto il volto scende con lui
-		var hsz: int = 28 if foto else 20
-		var esz: int = 20 if foto else HudLayers.MIN_TEXT
+		var hsz: int = 28 if foto else HudLayers.font_size("vite_squadra")      # L2 (HUD Combat 2.0)
+		var esz: int = 20 if foto else HudLayers.font_size("en_squadra")
 		var hp_s: String = "%d" % int(u.get("hp", 0))
 		var en_s: String = "EN %d" % int(u.get("en", 0))
 		var hw: float = f.get_string_size(hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz).x
 		var ew: float = f.get_string_size(en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, esz).x
 		draw_string_outline(f, Vector2(x + cww - hw - 2, y + 96 + dy + (6.0 if foto else 0.0)), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz, 7, INK)
-		draw_string(f, Vector2(x + cww - hw - 2, y + 96 + dy + (6.0 if foto else 0.0)), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz, CREAM if alive else Color(0.6, 0.6, 0.65))
+		var hpk0: float = float(u.get("hp", 0)) / maxf(1.0, float(u.get("max_hp", 1)))
+		var hcol: Color = HudLayers.tone("vite_squadra", CREAM, INK, hpk0 <= 0.3) if alive else Color(0.6, 0.6, 0.65)   # sotto il 30% torna piena
+		draw_string(f, Vector2(x + cww - hw - 2, y + 96 + dy + (6.0 if foto else 0.0)), hp_s, HORIZONTAL_ALIGNMENT_LEFT, -1, hsz, hcol)
 		draw_string_outline(f, Vector2(x + cww - ew - 2, y + 113 + dy + (12.0 if foto else 0.0)), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, esz, 5, INK)
 		draw_string(f, Vector2(x + cww - ew - 2, y + 113 + dy + (12.0 if foto else 0.0)), en_s, HORIZONTAL_ALIGNMENT_LEFT, -1, esz, Ui.CYAN)
 		# barrette a sinistra sotto il ritratto: vita (verde) e ULTIMATE (rosa, gialla quando e' piena)
 		var bw: float = maxf(18.0, cww - hw - 12.0)
+		if bool(HudLayers.v("squadra.barre_uguali")):
+			# HUD Combat 2.0: barre lunghe uguali su tutte le card (prima la lunghezza dipendeva da quante cifre ha la vita)
+			bw = maxf(18.0, cww - _hp_w_max(f, hsz) - 12.0)
+		var bh: float = float(HudLayers.v("squadra.barra_vita"))      # 7 nella 0.63, 11 (riempimento 9) nella 2.0
+		var ud: float = bh - 7.0                                      # la barretta ULTIMATE scende di quanto cresce la vita
 		var hpk: float = clampf(float(u.get("hp", 0)) / maxf(1.0, float(u.get("max_hp", 1))), 0.0, 1.0)
 		var gk: float = clampf(float(u.get("gauge", 0)) / maxf(1.0, float(u.get("gmax", 100))), 0.0, 1.0)
-		draw_rect(Rect2(x + 2, y + 94 + dy, bw, 7), INK)
-		draw_rect(Rect2(x + 3, y + 95 + dy, (bw - 2) * hpk, 5), Color("#62f08c") if hpk > 0.3 else Color("#ff5a6e"))
+		draw_rect(Rect2(x + 2, y + 94 + dy, bw, bh), INK)
+		draw_rect(Rect2(x + 3, y + 95 + dy, (bw - 2) * hpk, bh - 2.0), Color("#62f08c") if hpk > 0.3 else Color("#ff5a6e"))
 		if Settings.hud_party:
 			# P1-B: barretta ULTIMATE piu' spessa; piena = gialla con la stella accanto
-			draw_rect(Rect2(x + 2, y + 104 + dy, bw, 9), INK)
-			draw_rect(Rect2(x + 3, y + 105 + dy, (bw - 2) * gk, 7), HOT if gk >= 1.0 else Ui.PINK)
+			draw_rect(Rect2(x + 2, y + 104 + dy + ud, bw, 9), INK)
+			draw_rect(Rect2(x + 3, y + 105 + dy + ud, (bw - 2) * gk, 7), HOT if gk >= 1.0 else Ui.PINK)
 			if gk >= 1.0 and alive:
-				var sc := Vector2(x + bw + 9, y + 108 + dy)
+				var sc := Vector2(x + bw + 9, y + 108 + dy + ud)
 				var pts := PackedVector2Array()
 				for k in 10:
 					pts.append(sc + Vector2.from_angle(-PI / 2.0 + k * PI / 5.0) * (8.0 if k % 2 == 0 else 3.4))
@@ -187,6 +195,13 @@ func _draw() -> void:
 		var tg: int = int(u.get("tgt", 0))
 		if tg > 0 and alive:
 			var bc := Vector2(x + cww - 8, y + 4)
+			var mr: float = float(HudLayers.v("squadra.mirino_su_tutti"))
+			if tg == 1 and mr > 0.0 and _tutti_nel_mirino():
+				# HUD Combat 2.0: colpo normale su tutti = L3, mirino piccolo; il colpo singolo o FORTE resta grande (L1)
+				draw_circle(bc, mr, Color(INK, 0.92))
+				draw_arc(bc, mr, 0, TAU, 24, ThreatPlate.RED, 2.5, true)
+				ThreatPlate.draw_icon(self, "singolo", bc, ThreatPlate.RED, 5.0)
+				continue
 			if tg >= 2:
 				draw_circle(bc, 15.0, Color("#d0122f"))
 				draw_arc(bc, 15.0, 0, TAU, 28, HOT, 2.5, true)
@@ -201,8 +216,10 @@ func _draw() -> void:
 		return
 	var ox: float = W - 128.0
 	var oy: float = 6.0 if Settings.hud_alto else 76.0      # piu' in alto, nello spazio lasciato da x1, AUTO e pausa (autore, 7/11/2026)
-	CmdWheel.skew_text(self, Vector2(ox - 8, oy + 22), "ORDINE", 24, HOT, INK, f, 8, -0.25)
-	CmdWheel.skew_text(self, Vector2(ox + 2, oy + 42), "TURNO %d" % round_n, 14, CREAM, INK, f, 5, -0.25)
+	# HUD Combat 2.0: etichetta L2 (18 crema, la 0.63 la faceva gialla da 24: gridava come un'informazione L1)
+	var oc: Color = HOT if bool(HudLayers.v("ordine.etichetta_gialla")) else HudLayers.tone("ordine_etichetta", CREAM, INK)
+	CmdWheel.skew_text(self, Vector2(ox - 8, oy + 22), "ORDINE", HudLayers.font_size("ordine_etichetta"), oc, INK, f, 8, -0.25)
+	CmdWheel.skew_text(self, Vector2(ox + 2, oy + 42), "TURNO %d" % round_n, HudLayers.font_size("ordine_turno"), HudLayers.tone("ordine_turno", CREAM, INK), INK, f, 5, -0.25)
 	var y2: float = oy + 54.0
 	for e in order:
 		var now: bool = bool(e.get("now", false))
@@ -219,7 +236,10 @@ func _draw() -> void:
 		draw_colored_polygon(sh2, INK)
 		draw_colored_polygon(poly, (HOT if now else col2.darkened(0.1)) if not boss else RED)
 		var ir := Rect2(r.position + Vector2(8, 4), r.size - Vector2(14, 8))
-		if boss:
+		if boss and boss_face != null and not bool(e.get("greg", false)) and bool(HudLayers.v("ordine.volto_nemico")):
+			draw_rect(ir, Color(0.06, 0.0, 0.03))
+			draw_texture_rect(boss_face, ir, false)
+		elif boss:
 			draw_rect(ir, Color(0.06, 0.0, 0.03))
 			var bn: String = str(e.get("name", "?"))
 			var bs: int = 15
@@ -239,6 +259,22 @@ func _draw() -> void:
 		if now:
 			CmdWheel.skew_text(self, Vector2(x - 40, y2 + h * 0.5 + 8), "▶", 20, HOT, INK, f, 6, 0.0)
 		y2 += h + 6.0
+
+
+# vita piu' larga della squadra con questa misura: le barre di tutte le card finiscono allo stesso punto
+func _hp_w_max(f: Font, sz: int) -> float:
+	var w: float = 0.0
+	for uu in party:
+		w = maxf(w, f.get_string_size("%d" % int(uu.get("hp", 0)), HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x)
+	return w
+
+
+# la prossima mossa colpisce tutti i vivi (colpo su tutti)
+func _tutti_nel_mirino() -> bool:
+	for uu in party:
+		if bool(uu.get("alive", true)) and int(uu.get("tgt", 0)) == 0:
+			return false
+	return true
 
 
 # Regione della texture con le stesse proporzioni del riquadro (taglia ai lati o sopra/sotto, non schiaccia)
