@@ -1,5 +1,12 @@
 # Novità
 
+## 0.64.0 · HUD Combat 2.0, gerarchia a 4 livelli
+
+- **Pannello del nemico** in alto: PV grandi, equilibrio più discreto e prossima mossa in evidenza, con il volto del nemico.
+- **Pannello del personaggio**: ritratto un po' più discreto, comandi non scelti su una lastra leggera e, su PC, il numero del tasto separato dall'icona.
+- **Squadra e ORDINE**: barre della vita più spesse e tutte della stessa lunghezza, PV critici in rosso, mirini piccoli quando il colpo prende tutti. ORDINE mostra il volto del nemico.
+- Echo sta sopra la descrizione.
+
 ## 0.63.0 · Cornici HUD dei personaggi
 
 - **Cornici nuove** per Saul, Rio, Lance e Nox nell'HUD di battaglia, ciascuna con il suo colore.
