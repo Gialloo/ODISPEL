@@ -1,5 +1,10 @@
 # Novità
 
+## 0.66.3 · Più fluido
+
+- Niente più scatti a ogni cambio di turno: i ritratti di chi gioca dopo si caricano in anticipo.
+- L'ingresso in battaglia (anche con l'attacco a sorpresa) e i cut-in ULTIMATE e del colpo finale sono molto più rapidi.
+
 ## 0.66.2 · Fumetti più grandi
 
 - I fumetti del combattimento sono più grandi e il testo resta sempre dentro.
