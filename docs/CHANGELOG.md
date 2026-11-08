@@ -1,5 +1,15 @@
 # Novità
 
+## 0.65.0 · Ritocchi dell'8/11 (HUD, modelli 3D, regia)
+
+- **HUD**: i comandi sono disposti a croce, con ULTIMATE speculare a SKILL e GUARDIA speculare ad ATTACCO. RAPIDO compare accanto al nome. SINERGIA si vede per circa 2,5 secondi e poi sparisce.
+- **HUD**: durante la presentazione del boss le schede del party sono nascoste. I nomi delle mosse sono più grandi e stanno in basso. Echo e i fumetti tornano in alto a sinistra.
+- **HUD**: la chat di Rio sta sopra la barra RITMO/ARDORE.
+- **Zona sicura**: tutto l'HUD sta a 10 px dai bordi e, sul telefono, resta fuori da tacca e angoli.
+- **ORDINE e DEBOLE A**: ORDINE mostra anche i nemici normali. DEBOLE A mostra solo il colore.
+- **Modelli 3D**: un personaggio rialzato da Nox torna in piedi, e i compagni nascosti tornano visibili quando parte l'azione.
+- **Regia**: la camera segue il colpo dell'ultimate. Quando il nemico colpisce un solo personaggio, l'inquadratura mostra chi viene colpito. Le scosse sono più leggere e il drone di Saul è più leggibile.
+
 ## 0.64.0 · HUD Combat 2.0, gerarchia a 4 livelli
 
 - **Pannello del nemico** in alto: PV grandi, equilibrio più discreto e prossima mossa in evidenza, con il volto del nemico.
