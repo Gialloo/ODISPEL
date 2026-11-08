@@ -30,8 +30,8 @@ const PAD_C: Vector2 = Vector2(188.0, -126.0)
 const PAD: Dictionary = {      # kind -> [posto del tasto dal centro, grandezza della scritta, scritta a destra del tasto?]
 	"attack": [Vector2(6, -58), 30, false],     # 54 px fra un comando e l'altro: zone di tocco alte 52 che non si toccano (7/11/2026)
 	"skill": [Vector2(-46, -4), 30, false],
-	"guard": [Vector2(-2, 50), 30, false],
-	"ult": [Vector2(52, 14), 30, true],
+	"guard": [Vector2(6, 58), 30, false],      # croce precisa (autore, 8/11/2026): GUARDIA speculare ad ATTACCO
+	"ult": [Vector2(58, -4), 30, true],        # e ULTIMATE speculare a SKILL (prima erano sfalsate)
 }
 # Scritte tutte della stessa grandezza, quella del piu' piccolo (autore, 2/11/2026); ABILITA' qui si chiama SKILL.
 const LABEL: Dictionary = {"skill": "SKILL"}
@@ -101,6 +101,8 @@ var _polys: Dictionary = {}
 # HUD come la foto dell'autore (Settings.hud_foto): sinergia in cima alla cornice e obiettivo in fondo (li passa battle3d)
 var banner_title: String = ""
 var banner_sub: String = ""
+var banner_t: float = 0.0          # SINERGIA (autore, 8/11/2026): non resta fissa, compare all'inizio del turno e sparisce
+const BANNER_SEC: float = 2.6
 var objective: String = ""                     # kind -> lastra del comando (tocco preciso: le lastre si incastrano)
 const CORNICE_SCALA: float = 1.05               # la cornice e' un po' piu' grande del riquadro del ritratto: le lastre si leggono
 const CORNICE_RITRATTO: float = 0.72            # il ritratto rimpicciolito e appoggiato in basso, come nel mockup (stile "lastre")
@@ -251,6 +253,9 @@ func _process(delta: float) -> void:
 	if not visible:
 		return
 	t += delta
+	if banner_t > 0.0:
+		banner_t = maxf(0.0, banner_t - delta)
+		queue_redraw()
 	var was_a: float = appear
 	var was_s: float = sel
 	appear = move_toward(appear, 1.0, delta / 0.32)
@@ -268,6 +273,18 @@ func _process(delta: float) -> void:
 
 func _ease(x: float) -> float:
 	return 1.0 - pow(1.0 - clampf(x, 0.0, 1.0), 3.0)
+
+
+# Zona sicura (8/11/2026): l'HUD sta a qualche px dai bordi, ma il ritratto e la sua cornice sono disegno e devono uscire dallo
+# schermo come prima. battle3d dice quanto manca al bordo (bleed): il disegno si allarga in proporzione verso sinistra e in basso,
+# con l'angolo in alto a destra fermo; scritte e comandi restano dove sono.
+var bleed: Vector2 = Vector2.ZERO
+func _bleed(r: Rect2) -> Rect2:
+	if bleed == Vector2.ZERO or r.size.x < 1.0:
+		return r
+	var k: float = maxf(bleed.x / r.size.x, bleed.y / r.size.y)
+	var ns: Vector2 = r.size * (1.0 + k)
+	return Rect2(Vector2(r.end.x - ns.x, r.position.y), ns)
 
 
 func _draw() -> void:
@@ -298,6 +315,7 @@ func _draw() -> void:
 		var r := Rect2(Vector2(dx, H - PH), Vector2(PW, PH))
 		if cornice and _tex_real:
 			r = _cornice_rect(dx, H)
+		r = _bleed(r)
 		if not _tex_real:
 			# segnaposto (mezzobusto 512x768, volto al centro): spostato e ingrandito per mettere il volto nella sua zona
 			r = Rect2(Vector2(dx + 92.0, H - 500.0), Vector2(320.0, 480.0))
@@ -378,7 +396,9 @@ func _draw_name(nm: String, dx: float, H: float, f: Font) -> void:
 	var up: float = 34.0 if Settings.hud_obiettivo and objective != "" and _dietro != null else 0.0     # lascia posto all'obiettivo
 	CmdWheel.skew_text(self, Vector2(dx + 12, H - 22 - up), nm, nsz, col.lightened(0.45), INK, f, 12, -0.25)
 	if who.contains("RAPIDO"):
-		CmdWheel.skew_text(self, Vector2(dx + 16, H - 66 - up), "RAPIDO", 18, HOT, INK, f, 7, -0.25)
+		# a destra del nome, sulla stessa riga (autore, 8/11/2026; prima stava sopra il nome e finiva tra i comandi)
+		var nw: float = f.get_string_size(nm, HORIZONTAL_ALIGNMENT_LEFT, -1, nsz).x
+		CmdWheel.skew_text(self, Vector2(dx + 12 + nw + 18, H - 22 - up), "RAPIDO", 20, HOT, INK, f, 7, -0.25)
 
 
 # Fondo della cornice come la foto: strappo del colore, nome enorme bianco, sinergia in cima e obiettivo in fondo.
@@ -405,7 +425,8 @@ func _draw_extra(cr: Rect2, dx: float, H: float, f: Font, e: float) -> void:
 		var xw: float = f.get_string_size("!", HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
 		draw_string(f, Vector2(dx + 26 - xw * 0.5, H - 13), "!", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(INK, e))
 		draw_string(bf, Vector2(dx + 46, H - 14), objective, HORIZONTAL_ALIGNMENT_LEFT, -1, HudLayers.font_size("obiettivo"), Color(HudLayers.tone("obiettivo", CREAM), e))      # L4 quieto
-	if banner_title != "":
+	if banner_title != "" and banner_t > 0.0:
+		var e2: float = e * clampf(banner_t / 0.4, 0.0, 1.0)      # sparisce in 0,4 s
 		# SINERGIA: lastra nera inclinata come la scritta (autore, 7/11/2026), tutto nello stesso giro
 		var tf: int = 20
 		var sf: int = HudLayers.MIN_TEXT
@@ -418,13 +439,13 @@ func _draw_extra(cr: Rect2, dx: float, H: float, f: Font, e: float) -> void:
 		var sh := PackedVector2Array()
 		for q in pl:
 			sh.append(q + Vector2(5, 5))
-		draw_colored_polygon(sh, Color(INK, 0.85 * e))
-		draw_colored_polygon(pl, Color(0.02, 0.01, 0.04, 0.94 * e))
-		draw_polyline(pl + PackedVector2Array([pl[0]]), Color(CREAM, 0.9 * e), 2.0, true)
-		CmdWheel.glyph(self, "skill", Vector2(24, 0), 13.0, Color(HOT, e))
-		draw_string_outline(f, Vector2(46, 8), banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, 6, Color(INK, e))
-		draw_string(f, Vector2(46, 8), banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, Color(HOT, e))
-		draw_string(Ui.body(), Vector2(46 + tw + 12, 6), banner_sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sf, Color(CREAM, e))
+		draw_colored_polygon(sh, Color(INK, 0.85 * e2))
+		draw_colored_polygon(pl, Color(0.02, 0.01, 0.04, 0.94 * e2))
+		draw_polyline(pl + PackedVector2Array([pl[0]]), Color(CREAM, 0.9 * e2), 2.0, true)
+		CmdWheel.glyph(self, "skill", Vector2(24, 0), 13.0, Color(HOT, e2))
+		draw_string_outline(f, Vector2(46, 8), banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, 6, Color(INK, e2))
+		draw_string(f, Vector2(46, 8), banner_title, HORIZONTAL_ALIGNMENT_LEFT, -1, tf, Color(HOT, e2))
+		draw_string(Ui.body(), Vector2(46 + tw + 12, 6), banner_sub, HORIZONTAL_ALIGNMENT_LEFT, -1, sf, Color(CREAM, e2))
 		draw_set_transform_matrix(Transform2D.IDENTITY)
 
 
@@ -456,7 +477,7 @@ func _draw_lastra(dx: float, H: float, e: float) -> void:
 # Cornice a due livelli: DIETRO entra piu' lento e ogni tanto scatta di lato (il glitch), AVANTI entra deciso col ritratto.
 func _draw_cornice(dx: float, H: float, e: float) -> void:
 	var cs := Vector2(PW, PH) * CORNICE_SCALA
-	var r := Rect2(Vector2(dx, H - cs.y), cs)
+	var r := _bleed(Rect2(Vector2(dx, H - cs.y), cs))
 	var eb: float = _ease(clampf(appear * 0.8, 0.0, 1.0))
 	var gl: Vector2 = Vector2.ZERO
 	var ph: float = fmod(t, 2.6)
