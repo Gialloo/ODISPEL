@@ -188,6 +188,7 @@ var _weak_col: Color = Color("#9a94a8")
 var _p1: PortraitParty                 # HUD col ritratto: squadra in fila e colonna ORDINE (Settings.hud_ritratto)
 var _ritmo_bar: RitmoBar               # RITMO di squadra sopra la fila (HUD 0.61, P0-A; Settings.hud_ritmo)
 var _boss_stacco: Control              # HUD Combat 2.0: aria fra l'anagrafica del nemico e la prossima mossa
+var _boss_face_on: bool = false       # HUD Combat 2.0: la foto del volto del nemico per l'ORDINE e' gia' partita
 var _boss_compatto: bool = false       # HUD Combat 2.0, decisione 1: con la tendina aperta il pannello del nemico si stringe
 var _threat_plate: ThreatPlate         # PROSSIMA MOSSA su una lastra con icona (HUD 0.61, P0-B; Settings.hud_minaccia)
 var _lethal_sig: String = ""          # P0-C: l'avviso "a un colpo dal KO" si dice una volta per mossa annunciata
@@ -592,9 +593,9 @@ func _build_units() -> void:
 
 # HUD Combat 2.0, decisione 3: il volto del nemico per la colonna ORDINE. Una sola fotografia della scena (UPDATE_ONCE)
 # dalla telecamera piccola davanti alla sua testa: nessun disegno nuovo da fare per ogni nemico, nessun costo per frame.
-func _boss_face() -> Texture2D:
+func _boss_face() -> void:
 	if not vis.has(BattleState.BOSS_ID):
-		return null
+		return
 	var bv: Node3D = vis[BattleState.BOSS_ID]
 	var hd: Vector3 = bv.call("head_point") if bv.has_method("head_point") else bv.global_position + Vector3(0, 2.0, 0)
 	var sv := SubViewport.new()
@@ -607,7 +608,15 @@ func _boss_face() -> Texture2D:
 	c.global_position = hd + Vector3(0, 0.05, 2.4)
 	c.look_at(hd, Vector3.UP)
 	c.current = true
-	return sv.get_texture()
+	# la foto si copia in una texture normale e la SubViewport se ne va: niente nodi, niente disegni in piu' dopo il primo frame
+	await RenderingServer.frame_post_draw
+	if is_instance_valid(sv) and _p1 != null:
+		var im: Image = sv.get_texture().get_image()
+		if im != null and not im.is_empty():
+			_p1.boss_face = ImageTexture.create_from_image(im)
+			_p1.queue_redraw()
+	if is_instance_valid(sv):
+		sv.queue_free()
 
 
 func _face(n: Node3D, at: Vector3) -> void:
@@ -4332,8 +4341,9 @@ func _p1_refresh(marked: String) -> void:
 			"col": Ui.YELLOW if is_boss else _col(uu), "boss": is_boss, "now": k == turn_i, "greg": bool(e.get("greg", false))})
 		if orow.size() >= 6:
 			break
-	if _p1.boss_face == null and bool(HudLayers.v("ordine.volto_nemico")):
-		_p1.boss_face = _boss_face()
+	if _p1.boss_face == null and not _boss_face_on and bool(HudLayers.v("ordine.volto_nemico")):
+		_boss_face_on = true
+		_boss_face()
 	_p1.set_data(prow, orow, int(b.get("round", 1)), _choice_hud)
 
 
