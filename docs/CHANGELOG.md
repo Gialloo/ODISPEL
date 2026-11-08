@@ -1,5 +1,9 @@
 # Novità
 
+## 0.66.2 · Fumetti più grandi
+
+- I fumetti del combattimento sono più grandi e il testo resta sempre dentro.
+
 ## 0.66.1 · Correzione
 
 - Sui telefoni con notch il fumetto di Echo ora resta allineato al testo.
