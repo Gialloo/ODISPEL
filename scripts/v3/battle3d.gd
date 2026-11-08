@@ -120,6 +120,7 @@ var _glitch: GlitchFx
 var _night: NightFx                     # la citta' che reagisce: i neon saltano col BREAK e sfarfallano con le Ultimate
 var _order_box: BoxContainer
 var _combo: int = 0                 # colpi a segno della squadra di fila prima che il nemico agisca
+var _combo_num: Label               # il numero della COMBO, piu' grande della scritta (autore, 8/11/2026)
 var _combo_lbl: Label               # contatore COMBO a pennarello (approvato dall'autore, 1/11/2026)
 var _boss_name: Label
 var _boss_hp: ProgressBar
@@ -343,10 +344,14 @@ func _ready() -> void:
 		msgs.append([EnemyArchetypes.reading(Gregario.ID), Ui.CYAN])
 	if not weak.is_empty():
 		msgs.append(["INDIZIO: %s teme il %s. Fai colpire %s." % [_bn(), str(weak[0]), _who_is(str(weak[0]))], Ui.CYAN])
+	# legami e sinergie: con il banner sul ritratto si annunciano al turno di chi e' coinvolto, non a tutti all'inizio (8/11/2026)
+	var on_turn: bool = Settings.hud_ritratto and (Settings.hud_obiettivo or Settings.hud_foto)
 	for bd in bonds:
-		msgs.append(["LEGAME · %s: +5%% attacco a entrambi" % str(bd.get("nome", "")), Ui.PINK])
+		if not on_turn:
+			msgs.append(["LEGAME · %s: +5%% attacco a entrambi" % str(bd.get("nome", "")), Ui.PINK])
 	for sm in _syn_msgs:
-		msgs.append([str(sm), Ui.YELLOW])
+		if not on_turn:
+			msgs.append([str(sm), Ui.YELLOW])
 	var delay: float = 3.4 if ingresso != "normale" else 0.0
 	for m in msgs:
 		get_tree().create_timer(delay).timeout.connect(func() -> void:
@@ -828,16 +833,46 @@ func _safe_zone() -> void:
 		off = Vector2(ins.x + ((vs.x - ins.x - ins.z) - vs.x * sc) * 0.5, ins.y + ((vs.y - ins.y - ins.w) - vs.y * sc) * 0.5)
 	_ui.scale = Vector2(sc, sc)
 	_ui.offset = off
+	_safe_off = Vector4(-off.x / sc, -off.y / sc, (vs.x - off.x - vs.x * sc) / sc, (vs.y - off.y - vs.y * sc) / sc)
 	if _wheel is PortraitHud:
 		(_wheel as PortraitHud).bleed = Vector2(off.x, vs.y - off.y - vs.y * sc) / sc + Vector2(4, 4) if m > 0.0 else Vector2.ZERO
+	if _wheel != null:
+		# bande nere dell'ULTIMATE e lampo della scelta: a tutto schermo anche se la ruota sta nella zona sicura
+		# la ruota sta dentro _fx_layer, che si allarga a tutto schermo: lei resta nella zona sicura (vedi _full_screen)
+		_wheel.set("screen_rect", Rect2(Vector2(_safe_off.x, _safe_off.y), vs / sc) if m > 0.0 else Rect2())
 		_wheel.queue_redraw()
-	for c in [_cam_hud, _cutin, _spot]:
-		if c != null:
-			var cc: Control = c
-			cc.offset_left = -off.x / sc
-			cc.offset_top = -off.y / sc
-			cc.offset_right = (vs.x - off.x - vs.x * sc) / sc
-			cc.offset_bottom = (vs.y - off.y - vs.y * sc) / sc
+	for c in _root.get_children():
+		_full_screen(c)
+
+
+# Autore (8/11/2026): «le scene a schermo intero non coprono piu' tutto lo schermo». Nella zona sicura si stringe solo l'HUD;
+# ogni strato a tutto schermo figlio dell'HUD (avvisi dei QTE, fasci dell'ultimate, velo della scelta, stacchi, fermo
+# immagine, sguardo di Echo...) torna a coprire lo schermo intero. Vale anche per quelli creati dopo (child_entered_tree).
+var _safe_off: Vector4 = Vector4.ZERO
+func _full_screen(c: Node) -> void:
+	if not (c is Control) or c in [_p1, _ritmo_bar, _wheel, _top_bar]:
+		return
+	var cc: Control = c
+	if not (is_equal_approx(cc.anchor_left, 0.0) and is_equal_approx(cc.anchor_top, 0.0) and is_equal_approx(cc.anchor_right, 1.0) and is_equal_approx(cc.anchor_bottom, 1.0)):
+		return
+	if absf(cc.offset_left) > 40.0 or absf(cc.offset_top) > 40.0 or absf(cc.offset_right) > 40.0 or absf(cc.offset_bottom) > 40.0:
+		return          # un pannello con margini suoi, non uno strato a tutto schermo
+	if cc == _fx_layer:
+		# _fx_layer resta nella zona sicura (numeri, mirino, avvisi e comandi si piazzano in coordinate dell'HUD):
+		# si allargano i suoi strati a tutto schermo, uno per uno, anche quelli creati dopo
+		if not cc.child_entered_tree.is_connected(_on_root_child):
+			cc.child_entered_tree.connect(_on_root_child)
+		for k in cc.get_children():
+			_full_screen(k)
+		return
+	cc.offset_left = _safe_off.x
+	cc.offset_top = _safe_off.y
+	cc.offset_right = _safe_off.z
+	cc.offset_bottom = _safe_off.w
+
+
+func _on_root_child(c: Node) -> void:
+	_full_screen.call_deferred(c)
 
 
 # Autore (8/11/2026): «a volte i modelli spariscono e continuano ad attaccare» e «rialzato da Nox, il modello resta a terra».
@@ -884,17 +919,84 @@ func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
 			_cam_hud.look("diretta", col)
 		"lance":       # Lance: dal palo dell'autovelox, alto di lato
 			_cam_set(mid + _rg(Vector3(side * 3.0, 3.1, -0.9), Vector3(side * 3.0, 3.6, -2.4)), mid + Vector3(0, 1.0, 0), _rg(3.4, 4.0))      # vicino: piu' in la' si finiva dentro le facciate; morbida: meno controcampo
-			_cam_hud.look("autovelox", col)
+			_cam_hud.look("sorveglianza", col)      # autore, 8/11/2026: i monitor dei servizi segreti (prima il mirino dell'autovelox)
 		"nox":         # Nox: dal basso, controluce
 			_cam_set(a + _rg(Vector3(-side * 1.6, 0.9, -1.0), Vector3(-side * 1.6, 0.45, -1.4)), a + _rg(Vector3(0, 1.75, -0.6), Vector3(0, 1.9, -0.6)), _rg(3.6, 4.5))
 			_cam_hud.look("controluce", col)
 		"saul":        # Saul: dall'alto, come un drone
 			_cam_set(mid + _rg(Vector3(side * 2.2, 3.8, 4.2), Vector3(0.0, 8.0, 1.2)), mid + Vector3(0, _rg(1.0, 0.6), 0), 3.5)      # morbida: drone di tre quarti dal lato di Saul, si vede chi colpisce chi (8/11/2026)      # morbida: alto di tre quarti, non a picco
-			_cam_hud.look("drone", col)
+			_cam_hud.look("notturna", col)          # autore, 8/11/2026: Saul e' un ladro, visore notturno (prima il drone)
 		_:
 			_cam_side(a, tpos)
 			return
 	_cam_glide(0.4)
+
+
+# REGIA ALLA PERSONA 5 (autore, 8/11/2026: «la regia ancora non mi piace»). Tra un turno e l'altro e per abilita', ultimate e
+# guardia niente carrellate lunghe: STACCO NETTO sull'inquadratura nuova, poi una piccola spinta in avanti (la camera parte
+# mezzo metro piu' indietro e si avvicina piano). L'attacco base resta com'era. Con la regia DINAMICA restano le inquadrature di prima.
+const P5_REGIA: bool = true
+
+
+# Il filtro della camera di ogni personaggio durante le sue abilita' (cam_hud.look): Rio in diretta, Lance coi monitor dei
+# servizi segreti, Nox in controluce, Saul col visore notturno (autore, 8/11/2026). Lance riceve dove sta il nemico.
+func _sign_look(ch: String, col: Color) -> void:
+	if _cam_hud == null:
+		return
+	var kind: String = {"rio": "diretta", "lance": "sorveglianza", "nox": "controluce", "saul": "notturna"}.get(ch, "diretta")
+	_cam_hud.look_pt = Vector2(-1, -1)
+	if kind == "sorveglianza" and vis.has(BattleState.BOSS_ID):
+		var bp: Vector3 = (vis[BattleState.BOSS_ID] as Node).call("chest_point")
+		if not cam.is_position_behind(bp):
+			_cam_hud.look_pt = cam.unproject_position(bp) / (_ui.scale.x if _ui != null else 1.0)      # lo sguardo copre lo schermo intero
+	_cam_hud.look(kind, col, 1.6)
+
+
+# [titolo, sotto] del banner sul ritratto: le sinergie e i legami in cui c'e' questo personaggio, e basta
+func _unit_links(u: Dictionary) -> Array:
+	var syn: Array = []
+	var bonded: Array = []
+	var ch: String = str(u.get("char", ""))
+	for m in u.get("mods", []):
+		var id: String = str(m.get("id", ""))
+		if id.begins_with("sinergia_") and id.ends_with("_atk"):
+			var k: String = id.trim_prefix("sinergia_").trim_suffix("_atk")
+			syn.append(str(Progress.SYNERGIES.get(k, {}).get("name", k)))
+	if not ritorno.is_empty():
+		for bd in Story.active_bonds():
+			if ch in (bd.get("chi", []) as Array):
+				bonded.append(str(bd.get("nome", "")))
+	if not syn.is_empty():
+		return ["SINERGIA", " · ".join(syn) + (" · LEGAME" if not bonded.is_empty() else "")]
+	if not bonded.is_empty():
+		return ["LEGAME", " · ".join(bonded) + ": +5% attacco"]
+	return ["", ""]
+
+
+func _p5() -> bool:
+	return P5_REGIA and Settings.cam_calm
+
+
+func _p5_cut(pos: Vector3, look: Vector3, back: float = 0.55, rate: float = 1.4) -> void:
+	_cam_set(pos, look, rate, true)
+	var d: Vector3 = (look - pos)
+	if d.length() > 0.01:
+		_cam_pos = _cam_want_pos - d.normalized() * back      # parte un po' indietro: la molla fa la spinta in avanti
+	_cam_look = _cam_want_look
+
+
+# Davanti a chi agisce, basso e di tre quarti, il nemico alle spalle della camera: il volto si legge (abilita', guardia).
+func _p5_front(uid: String, close: bool = false) -> void:
+	var p: Vector3 = home[uid]
+	var d: Vector3 = Vector3(ENEMY_POS.x - p.x, 0.0, ENEMY_POS.z - p.z).normalized()
+	var l: Vector3 = Vector3(d.z, 0.0, -d.x)
+	var k: float = 0.8 if close else 1.0
+	_p5_cut(p + d * 2.3 * k + l * 1.0 * k + Vector3(0, 0.95, 0), p + Vector3(0, 1.3, 0) + l * 0.15, 0.5)
+
+
+# Il nemico dal basso, dal lato della squadra: entra in scena grande (passaggio dalla squadra al nemico).
+func _p5_enemy() -> void:
+	_p5_cut(ENEMY_POS + Vector3(1.7, 0.85, 4.4), ENEMY_POS + Vector3(0, 1.5, 0), 0.7, 1.2)
 
 
 func _cam_boss() -> void:
@@ -1273,7 +1375,10 @@ func _advance() -> void:
 		cur_pid = pid
 		_quick = bool(e.get("quick", false))
 		var uid: String = str(_unit_of(pid)["id"])
-		_cam_actor(uid)
+		if _p5() and not auto_on:
+			_cam_choose(uid)            # P5: si arriva gia' sull'inquadratura della scelta (niente doppio movimento)
+		else:
+			_cam_actor(uid)
 		_cam_switch(uid)
 		_fx_turn(uid)
 		_refresh_hud()
@@ -1412,10 +1517,15 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			weak_hit = true
 		if str(x.get("t", "")) == "slancio":
 			got_slancio = true
+	var combo_before: int = _combo
 	for x in ev:
 		if str(x.get("t", "")) == "damage" and str(x.get("src", "")) == uid and str(x.get("dst", "")) == BattleState.BOSS_ID and int(x.get("amount", 0)) > 0:
 			_combo += 1
-	_combo_show(_col(u))
+	# la scritta compare solo se questa mossa ha colpito, nel momento del colpo (autore, 8/11/2026): la mostra _show_events
+	if _combo > combo_before and _combo >= 2:
+		_combo_pending = _col(u)
+	else:
+		_combo_show(_col(u), false)
 	var cv: CharacterVisual = vis[uid]
 	var col: Color = _col(u)
 	if kind == "ult":
@@ -1433,7 +1543,15 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		var boss_v: Node3D = vis[tid]
 		var strike: Vector3 = tpos + (home[uid] - tpos).normalized() * (1.7 if tid == BattleState.BOSS_ID else 1.3)
 		strike.y = 0.14
-		if kind == "skill" and _cam_hud != null and not tutorial:
+		if kind == "skill" and _p5():
+			_p5_front(uid)
+			if _cam_hud != null and not tutorial:
+				_sign_look(str(u.get("char", "")), col)
+			cv.cast()
+			await _wait(0.42)
+			_cam_side(home[uid], tpos)
+			_p5_cut(_cam_want_pos, _cam_want_look, 0.4, 2.2)
+		elif kind == "skill" and _cam_hud != null and not tutorial:
 			_cam_sign(uid, str(u.get("char", "")), tpos, col)
 		elif kind != "ult":
 			_cam_side(home[uid], tpos)
@@ -1441,7 +1559,10 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			# autore (8/11/2026): dopo lo stacco dell'ULTIMATE la camera restava sul primo piano e chi attacca usciva di quadro
 			# (Saul). Ora segue il colpo: tre quarti che tengono in quadro chi colpisce e il nemico, come in Star Rail e Persona.
 			_cam_side(home[uid], tpos)
-			_cam_glide(0.35)
+			if _p5():
+				_p5_cut(_cam_want_pos, _cam_want_look, 0.45, 2.0)
+			else:
+				_cam_glide(0.35)
 		cv.move_speed = 1.0
 		# TECNICA COMBINATA: il compagno scatta insieme, dall'altro lato del nemico
 		var mate_cv: CharacterVisual = null
@@ -1502,7 +1623,11 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			_set_target("")             # scheggia abbattuta: il mirino torna sul nemico principale
 	else:
 		# mossa su se stessi (guardia, cura): prima era uno stacco secco davanti al personaggio; ora una carrellata (3/11/2026)
-		if kind == "skill" and _cam_hud != null and not tutorial:
+		if _p5():
+			_p5_front(uid, kind != "skill")      # guardia: piu' stretta, si vede chi si para
+			if kind == "skill" and _cam_hud != null and not tutorial:
+				_sign_look(str(u.get("char", "")), col)
+		elif kind == "skill" and _cam_hud != null and not tutorial:
 			_cam_sign(uid, str(u.get("char", "")), home[uid], col)     # anche Copertura e Pausa caffe' hanno la loro inquadratura
 		else:
 			_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
@@ -1531,6 +1656,7 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 func _boss_turn() -> void:
 	cur_pid = ""
 	_combo = 0
+	_combo_pending = Color(0, 0, 0, 0)
 	_combo_show(Ui.YELLOW)
 	_quick = false
 	_boss_acting = true
@@ -1540,9 +1666,14 @@ func _boss_turn() -> void:
 	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	var boss_u: Dictionary = BattleState.boss(b)
 	var stunned: bool = int(boss_u.get("stun", 0)) > 0
-	_cam_boss()
-	if _last_turn_uid != "nemico":
-		_cam_glide(0.6)                 # carrellata fluida da chi ha agito al nemico (prima scivolava di colpo)
+	if _p5():
+		_p5_enemy()
+		if _cam_hud != null and _last_turn_uid != "nemico":
+			_cam_hud.cut(1.0)
+	else:
+		_cam_boss()
+		if _last_turn_uid != "nemico":
+			_cam_glide(0.6)                 # carrellata fluida da chi ha agito al nemico (prima scivolava di colpo)
 	_last_turn_uid = "nemico"           # il prossimo personaggio arriva con la carrellata e il cartellino della sua CAM
 	var m: VendingVisual = vis[BattleState.BOSS_ID]
 	if stunned:
@@ -1591,7 +1722,13 @@ func _boss_turn() -> void:
 			# colpo su uno solo: di tre quarti, il nemico e chi viene colpito nello stesso quadro (si capisce chi prende il colpo)
 			if tu != "" and home.has(tu):
 				_cam_side(home[tu], ENEMY_POS)
-				_cam_glide(0.3)
+				if _p5():
+					_p5_cut(_cam_want_pos, _cam_want_look, 0.4, 2.0)
+				else:
+					_cam_glide(0.3)
+		elif all and _p5():
+			_cam_boss()
+			_p5_cut(_cam_want_pos, _cam_want_look, 0.5, 1.6)      # colpo su tutti: alle spalle del nemico, tutta la squadra in quadro
 		var tw: Tween = m.slam() if all else m.attack()
 		await _wait(0.3 if all else 0.2)
 		if all:
@@ -2094,6 +2231,13 @@ func _show_events(ev: Array, hit_anims: bool) -> void:
 				if bool(e.get("cost", false)):
 					continue
 				last_src[dst] = str(e.get("src", ""))
+				if _combo_pending.a > 0.0 and dst == BattleState.BOSS_ID and int(e.get("amount", 0)) > 0:
+					var cc: Color = _combo_pending
+					_combo_pending = Color(0, 0, 0, 0)
+					if delay <= 0.0:
+						_combo_show(cc)
+					else:
+						get_tree().create_timer(delay).timeout.connect(_combo_show.bind(cc, true))
 				if bool(e.get("crit", false)) and Gregario.is_enemy(b, dst) and _quip_char(str(e.get("src", ""))) != "":
 					quip = _quip_best(quip, [1, "critico", _quip_char(str(e.get("src", ""))), "", delay])
 				var amt: int = int(e.get("amount", 0))
@@ -2511,15 +2655,31 @@ func _sparks_later(uid: String, delay: float, crit: bool) -> void:
 
 
 # COMBO: da 2 colpi di fila il numero entra con uno scatto; l'ombra prende il colore di chi ha colpito per ultimo
-func _combo_show(col: Color) -> void:
+var _combo_tw: Tween
+var _combo_pending: Color = Color(0, 0, 0, 0)     # alfa 0 = nessuna COMBO da mostrare al prossimo colpo
+func _combo_show(col: Color, hit: bool = true) -> void:
 	Sfx.combo(_combo)            # blip che sale di tono e musica che si arricchisce
 	if _combo_lbl == null:
 		return
-	if _combo < 2:
+	if _combo < 2 or not hit:
+		if _combo_tw != null:
+			_combo_tw.kill()
 		_combo_lbl.visible = false
 		return
+	# compare nel momento del colpo e poi sparisce: HUD piu' pulito (autore, 8/11/2026). Il conto resta, si vede al colpo dopo.
+	if _combo_tw != null:
+		_combo_tw.kill()
+	_combo_lbl.modulate.a = 1.0
+	_combo_tw = _combo_lbl.create_tween()
+	_combo_tw.tween_interval(1.1)
+	_combo_tw.tween_property(_combo_lbl, "modulate:a", 0.0, 0.35)
+	_combo_tw.tween_callback(func() -> void: _combo_lbl.visible = false)
 	_combo_lbl.visible = true
-	_combo_lbl.text = "%d COMBO" % _combo
+	# il numero grande, la scritta resta com'era (autore, 8/11/2026): il numero e' un'etichetta figlia, a sinistra di COMBO
+	_combo_lbl.text = "COMBO"
+	if _combo_num != null:
+		_combo_num.text = str(_combo)
+		_combo_num.add_theme_color_override("font_shadow_color", col)
 	_combo_lbl.add_theme_color_override("font_shadow_color", col)
 	_combo_lbl.add_theme_constant_override("shadow_offset_x", 5)
 	_combo_lbl.add_theme_constant_override("shadow_offset_y", 5)
@@ -2740,7 +2900,10 @@ func _cam_switch(uid: String) -> void:
 	_cam_hud.cut(dir if dir != 0.0 else 1.0)
 	# 3/11/2026 (autore: «a scatti, deve spostarsi in modo fluido»): niente piu' taglio secco. La telecamera fa una carrellata
 	# morbida verso chi agisce (dal nemico, dalla presentazione o da un compagno); il disturbo resta, leggero, sopra il viaggio.
-	_cam_glide(0.62 if home.has(prev) else 0.75)
+	if _p5():
+		_p5_cut(_cam_want_pos, _cam_want_look, 0.6, 1.5)      # stacco netto con spinta, come nel passaggio di turno di Persona 5
+	else:
+		_cam_glide(0.62 if home.has(prev) else 0.75)
 
 
 var _cam_vel: Vector3 = Vector3.ZERO
@@ -3465,6 +3628,7 @@ func _build_ui() -> void:
 	Ui.place(_root, 0, 0, 1, 1)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ui.add_child(_root)
+	_root.child_entered_tree.connect(_on_root_child)
 	# lo sguardo di Echo sotto a tutto; dentro le Anomalie le telecamere non arrivano
 	_cam_hud = CamHud.new()
 	_cam_hud.anomaly = arena.begins_with("anomalia") or arena in ["rosso", "blu", "verde"]
@@ -3472,6 +3636,8 @@ func _build_ui() -> void:
 	if Settings.hud_foto and not Settings.show_fps:
 		_cam_hud.tag_y = 74.0          # foto dell'autore: il logo in alto a sinistra, REC e CAM sotto
 	_cam_hud.show_tag = not Settings.hud_alto
+	if Settings.hud_alto and not Settings.show_fps:
+		_cam_hud.tag_y = 61.0          # NESSUN SEGNALE, ZOOM, SEGNALE PERSO: sotto x1 AUTO pausa (finiscono a 56) con 5 px d'aria (autore, 8/11/2026)
 	_root.add_child(_cam_hud)
 	if Settings.hud_foto:
 		var logo := Control.new()
@@ -3523,6 +3689,15 @@ func _build_ui() -> void:
 	_combo_lbl.visible = false
 	_combo_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_combo_lbl)
+	_combo_num = Ui.label("", 76, Ui.YELLOW, Ui._font("PermanentMarker-Regular.ttf"), 14)
+	_combo_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	var cw: float = Ui._font("PermanentMarker-Regular.ttf").get_string_size("COMBO", HORIZONTAL_ALIGNMENT_LEFT, -1, 42).x
+	_combo_num.position = Vector2(272.0 - cw - 14.0 - 200.0, -44.0)      # stessa riga di COMBO, base allineata a occhio
+	_combo_num.size = Vector2(200.0, 100.0)
+	_combo_num.add_theme_constant_override("shadow_offset_x", 6)
+	_combo_num.add_theme_constant_override("shadow_offset_y", 6)
+	_combo_num.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_combo_lbl.add_child(_combo_num)
 
 	# nemico: lastra nera storta in alto a sinistra (Persona 5: il nome del nemico in alto a sinistra), vita ed equilibrio
 	# come due barre sottili sotto il nome; DEBOLE A e la prossima mossa solo mentre si sceglie
@@ -3759,7 +3934,7 @@ func _build_ui() -> void:
 	if Settings.hud_alto:
 		Ui.place(tr, 0, 0, 0, 0, 16, 12, 480, 56)        # al posto di REC e CAM, in alto a sinistra (autore, 7/11/2026)
 		tr.alignment = BoxContainer.ALIGNMENT_BEGIN
-	tr.add_theme_constant_override("separation", 8)
+	tr.add_theme_constant_override("separation", 20)      # 8 -> 20: col telefono si premeva il tasto vicino (autore, 8/11/2026)
 	_root.add_child(tr)
 	_btn_fast = _quick_btn("x1", 58)
 	_btn_fast.pressed.connect(_toggle_fast)
@@ -4430,10 +4605,11 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 		(_wheel as PortraitHud).set_who(str(u.get("char", "")))
 		if Settings.hud_obiettivo or Settings.hud_foto:
 			# foto dell'autore: sinergia attiva in cima alla cornice, obiettivo della battaglia in fondo (dati veri)
-			var syn: String = str(_syn_msgs[0]) if not _syn_msgs.is_empty() else ""
-			(_wheel as PortraitHud).banner_title = "SINERGIA" if syn != "" else ""
-			(_wheel as PortraitHud).banner_sub = syn.get_slice("· ", 1) if syn.contains("· ") else syn
-			(_wheel as PortraitHud).banner_t = PortraitHud.BANNER_SEC if syn != "" else 0.0
+			# solo le sinergie e i legami di CHI HA IL TURNO (autore, 8/11/2026): niente informazioni degli altri
+			var lk: Array = _unit_links(u)
+			(_wheel as PortraitHud).banner_title = str(lk[0])
+			(_wheel as PortraitHud).banner_sub = str(lk[1])
+			(_wheel as PortraitHud).banner_t = PortraitHud.BANNER_SEC if str(lk[0]) != "" else 0.0
 			(_wheel as PortraitHud).objective = "Obiettivo: sconfiggi " + _bname()
 		# sotto il 50% / 25% dei PV il ritratto si scurisce (varianti di Rio, 3/11/2026)
 		var vs: String = RitrattoVarianti.per_vita(int(u.get("hp", 0)), int(u.get("max_hp", 1)))
@@ -5396,7 +5572,7 @@ func _notices_bottom(order: Array) -> void:
 		for k in rs:
 			mx = maxf(mx, (rs[k] as Rect2).end.x)
 		if mx > 0.0:
-			lx = _wheel.get_global_rect().position.x + mx + 20.0
+			lx = _wheel.get_global_rect().position.x + mx + 28.0      # 20 -> 28: la lastra ULTIMATE inclinata sporgeva di 3 px (20:9)
 	var n: int = maxi(1, (_p1.party as Array).size()) if _p1 != null else 3
 	var px: float = vs.x - 22.0 - PortraitParty.cw() * n - 14.0 * (n - 1) - 16.0      # dove cominciano le schede
 	var low: float = vs.y - 24.0

@@ -219,7 +219,17 @@ func _draw() -> void:
 	# HUD Combat 2.0: etichetta L2 (18 crema, la 0.63 la faceva gialla da 24: gridava come un'informazione L1)
 	var oc: Color = HOT if bool(HudLayers.v("ordine.etichetta_gialla")) else HudLayers.tone("ordine_etichetta", CREAM, INK)
 	CmdWheel.skew_text(self, Vector2(ox - 8, oy + 22), "ORDINE", HudLayers.font_size("ordine_etichetta"), oc, INK, f, 8, -0.25)
-	CmdWheel.skew_text(self, Vector2(ox + 2, oy + 42), "TURNO %d" % round_n, HudLayers.font_size("ordine_turno"), HudLayers.tone("ordine_turno", CREAM, INK), INK, f, 5, -0.25)
+	# ORDINE TURNO bloccati cosi' (autore, 8/11/2026: «e' perfetto»). Il numero a parte, alto dalla cima di ORDINE al fondo
+	# di TURNO, 3 px a destra della scritta piu' lunga, nello spazio vuoto verso il riquadro della telecamera.
+	var so: int = HudLayers.font_size("ordine_etichetta")
+	var st: int = HudLayers.font_size("ordine_turno")
+	var tc: Color = HudLayers.tone("ordine_turno", CREAM, INK)
+	CmdWheel.skew_text(self, Vector2(ox + 2, oy + 42), "TURNO", st, tc, INK, f, 5, -0.25)
+	var cap: float = 0.72          # altezza delle maiuscole e delle cifre rispetto alla grandezza del carattere
+	var nh: float = 20.0 + float(so) * cap
+	var ns: int = int(round(nh / cap))
+	var nx: float = maxf(ox - 8.0 + f.get_string_size("ORDINE", HORIZONTAL_ALIGNMENT_LEFT, -1, so).x, ox + 2.0 + f.get_string_size("TURNO", HORIZONTAL_ALIGNMENT_LEFT, -1, st).x) + 3.0 + 6.0
+	CmdWheel.skew_text(self, Vector2(nx, oy + 42), str(round_n), ns, HOT if bool(HudLayers.v("ordine.etichetta_gialla")) else CREAM, INK, f, 6, -0.25)
 	var y2: float = oy + 54.0
 	for e in order:
 		var now: bool = bool(e.get("now", false))
