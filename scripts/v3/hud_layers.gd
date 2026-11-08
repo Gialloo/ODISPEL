@@ -131,7 +131,13 @@ const VAL: Dictionary = {
 	"squadra.mirino_su_tutti": [10.0, 0.0],
 	"ordine.etichetta_gialla": [false, true],
 	"ordine.volto_nemico": [true, false],
-	"echo.sopra_descrizione": [true, false],        # la riga di Echo sale sopra la descrizione del comando invece di coprirla           # decisione 3 (7/11/2026): il volto del nemico al posto del nome rimpicciolito
+	"echo.sopra_descrizione": [true, false],
+	# ritocchi dell'autore (8/11/2026)
+	"avvisi.in_basso": [true, false],               # i nomi delle mosse in basso, tra il personaggio e le schede della squadra
+	"avvisi.grandi": [true, false],                 # e un poco piu' grandi (28/24/18 invece di 24/20/16)
+	"chat.sopra_ardore": [true, false],             # la chat di Rio finisce sopra la barra RITMO / ARDORE
+	"fumetti.in_alto": [true, false],
+	"zona_sicura.margine": [10.0, 0.0],             # tutto l'HUD dentro la zona sicura: 10 px dai bordi, di piu' dove il telefono ha tacca o angoli               # fumetti di Echo, dei personaggi e delle battute in alto a sinistra        # la riga di Echo sale sopra la descrizione del comando invece di coprirla           # decisione 3 (7/11/2026): il volto del nemico al posto del nome rimpicciolito
 }
 
 

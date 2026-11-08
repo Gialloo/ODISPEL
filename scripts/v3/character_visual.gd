@@ -268,10 +268,16 @@ func hit() -> Tween:
 	return tw
 
 
+var _fall_tw: Tween = null          # una caduta e un rialzo non devono correre insieme (vinceva quello che finiva dopo)
+
+
 func ko() -> Tween:
 	down = true
 	stance = false
+	if _fall_tw != null and _fall_tw.is_valid():
+		_fall_tw.kill()
 	var tw := create_tween()
+	_fall_tw = tw
 	tw.tween_property(self, "fall", 1.0, 0.45).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	return tw
 
@@ -280,7 +286,10 @@ func ko() -> Tween:
 func revive() -> Tween:
 	down = false
 	stance = true
+	if _fall_tw != null and _fall_tw.is_valid():
+		_fall_tw.kill()
 	var tw := create_tween()
+	_fall_tw = tw
 	tw.tween_property(self, "fall", 0.0, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	return tw
 

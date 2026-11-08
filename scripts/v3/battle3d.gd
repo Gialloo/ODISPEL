@@ -798,6 +798,63 @@ func _cam_choose(uid: String, close: bool = false) -> void:
 		vis[uid].call("highlight", _col(_unit_of(cur_pid)), true)
 
 
+# ZONA SICURA (autore, 8/11/2026: «qualche scritta e tasto va qualche pixel fuori»). Tutto l'HUD si stringe di poco, in modo
+# uniforme, dentro la zona sicura: almeno zona_sicura.margine px da ogni bordo, e sul telefono anche fuori da tacca e angoli
+# (la zona sicura del sistema). Una scala unica tiene insieme misure, tocchi e cartellini sopra le teste (errore < 1 px al
+# centro). Lo sguardo di Echo, lo stacco dell'ultimate e la luce della scelta restano a schermo pieno.
+var _safe_sig: String = ""
+func _safe_zone() -> void:
+	if _ui == null:
+		return
+	var vs: Vector2 = get_viewport().get_visible_rect().size
+	var m: float = float(HudLayers.v("zona_sicura.margine"))
+	var ins := Vector4(m, m, m, m)       # sinistra, alto, destra, basso
+	if m > 0.0 and OS.has_feature("mobile"):
+		var ws := Vector2(DisplayServer.window_get_size())
+		var sa := Rect2(DisplayServer.get_display_safe_area())
+		var wp := Vector2(DisplayServer.window_get_position())
+		if ws.x > 1.0 and sa.size.x > 1.0:
+			var k: float = vs.x / ws.x
+			ins = Vector4(maxf(m, (sa.position.x - wp.x) * k), maxf(m, (sa.position.y - wp.y) * k),
+				maxf(m, (wp.x + ws.x - sa.end.x) * k), maxf(m, (wp.y + ws.y - sa.end.y) * k))
+	var sig: String = "%s|%s" % [vs, ins]
+	if sig == _safe_sig:
+		return
+	_safe_sig = sig
+	var sc: float = 1.0
+	var off := Vector2.ZERO
+	if m > 0.0:
+		sc = minf((vs.x - ins.x - ins.z) / vs.x, (vs.y - ins.y - ins.w) / vs.y)
+		off = Vector2(ins.x + ((vs.x - ins.x - ins.z) - vs.x * sc) * 0.5, ins.y + ((vs.y - ins.y - ins.w) - vs.y * sc) * 0.5)
+	_ui.scale = Vector2(sc, sc)
+	_ui.offset = off
+	if _wheel is PortraitHud:
+		(_wheel as PortraitHud).bleed = Vector2(off.x, vs.y - off.y - vs.y * sc) / sc + Vector2(4, 4) if m > 0.0 else Vector2.ZERO
+		_wheel.queue_redraw()
+	for c in [_cam_hud, _cutin, _spot]:
+		if c != null:
+			var cc: Control = c
+			cc.offset_left = -off.x / sc
+			cc.offset_top = -off.y / sc
+			cc.offset_right = (vs.x - off.x - vs.x * sc) / sc
+			cc.offset_bottom = (vs.y - off.y - vs.y * sc) / sc
+
+
+# Autore (8/11/2026): «a volte i modelli spariscono e continuano ad attaccare» e «rialzato da Nox, il modello resta a terra».
+# Il corpo segue sempre lo stato: chi e' vivo sta in piedi, e fuori dalla scelta nessun compagno resta nascosto
+# (_cam_choose li toglie di quadro; se la scelta finiva per un'altra strada, AUTO, reazioni, azioni rapide, restavano invisibili).
+func _sync_bodies() -> void:
+	for id in vis:
+		var cv: Variant = vis[id]
+		if not (cv is CharacterVisual) or Gregario.is_enemy(b, str(id)):
+			continue
+		var u: Dictionary = BattleState.unit(b, str(id))
+		if not u.is_empty() and BattleState.is_alive(u) and (cv as CharacterVisual).down:
+			(cv as CharacterVisual).revive()
+		if not waiting and not (cv as Node3D).visible:
+			(cv as Node3D).visible = true
+
+
 func _cam_choose_end() -> void:
 	for id in vis:
 		(vis[id] as Node3D).visible = true
@@ -832,7 +889,7 @@ func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
 			_cam_set(a + _rg(Vector3(-side * 1.6, 0.9, -1.0), Vector3(-side * 1.6, 0.45, -1.4)), a + _rg(Vector3(0, 1.75, -0.6), Vector3(0, 1.9, -0.6)), _rg(3.6, 4.5))
 			_cam_hud.look("controluce", col)
 		"saul":        # Saul: dall'alto, come un drone
-			_cam_set(mid + _rg(Vector3(0.0, 5.0, 3.6), Vector3(0.0, 8.0, 1.2)), mid + Vector3(0, _rg(0.8, 0.6), 0), 3.5)      # morbida: alto di tre quarti, non a picco
+			_cam_set(mid + _rg(Vector3(side * 2.2, 3.8, 4.2), Vector3(0.0, 8.0, 1.2)), mid + Vector3(0, _rg(1.0, 0.6), 0), 3.5)      # morbida: drone di tre quarti dal lato di Saul, si vede chi colpisce chi (8/11/2026)      # morbida: alto di tre quarti, non a picco
 			_cam_hud.look("drone", col)
 		_:
 			_cam_side(a, tpos)
@@ -860,6 +917,9 @@ func _process(delta: float) -> void:
 		if not cam.is_position_behind(bp):
 			_reticle.position = cam.unproject_position(bp)
 	_update_wheel()
+	_safe_zone()
+	if not waiting:
+		_sync_bodies()
 	_place_boss_tag()
 	_place_echo()
 	_place_greg_tag()
@@ -884,10 +944,10 @@ func _process(delta: float) -> void:
 	var sh := Vector3.ZERO
 	if _shake > 0.0:
 		_shake = maxf(0.0, _shake - rd * 3.0)
-		var k: float = _shake * Settings.shake * 0.22
+		var k: float = _shake * Settings.shake * float(_rg(0.13, 0.22))      # regia morbida (autore, 8/11/2026): scosse piu' leggere
 		sh = Vector3(_presentation_rng.randf_range(-k, k), _presentation_rng.randf_range(-k, k), _presentation_rng.randf_range(-k, k) * 0.5)
 		# colpo forte: il campo visivo si stringe appena e poi si riapre, insieme alla scossa
-		cam.fov = FOV_BASE - _shake * Settings.shake * 3.5
+		cam.fov = FOV_BASE - _shake * Settings.shake * float(_rg(2.0, 3.5))
 		_pinched = true
 	elif _pinched:
 		cam.fov = FOV_BASE
@@ -956,6 +1016,9 @@ func _update_wheel() -> void:
 # HUD Combat 2.0: la riga di Echo e la descrizione del comando stanno tutte e due in basso al centro; nella 0.63, al primo
 # turno, Echo copriva la descrizione. Ora, finche' la descrizione e' aperta, la riga di Echo le sta sopra (14 px d'aria).
 func _place_echo() -> void:
+	if bool(HudLayers.v("fumetti.in_alto")):
+		_place_balloons()
+		return
 	if _hint == null or not Settings.hud_ritratto or not bool(HudLayers.v("echo.sopra_descrizione")):
 		return
 	var tr: Rect2 = _wheel.get("tip_rect") if _wheel != null and _wheel.visible else Rect2()
@@ -972,6 +1035,42 @@ func _place_echo() -> void:
 		var rx: float = minf(480.0 + ECHO_W, vs.x - 22.0 - PortraitParty.cw() * n - 14.0 * (n - 1) - 16.0)
 		if not is_equal_approx(_hint.offset_right, rx):
 			_hint.offset_right = rx
+
+
+# Autore (8/11/2026): i fumetti (Echo, le battute dei personaggi, i dialoghi) tornano in alto a sinistra, sotto i tasti
+# rapidi, uno sotto l'altro se ce n'e' piu' d'uno. Il basso resta ai comandi, alla descrizione e ai nomi delle mosse.
+const BAL_X: float = 96.0          # a destra del volto del fumetto (sta 72 px a sinistra del testo)
+const BAL_Y: float = 100.0         # sotto la barra dei tasti rapidi (12-56) e il nome di chi parla (22 sopra il testo)
+func _place_balloons() -> void:
+	var vs: Vector2 = get_viewport().get_visible_rect().size
+	var y: float = BAL_Y
+	for l in [_hint, _say_lbl, _quip_lbl]:
+		if l == null:
+			continue
+		var lb: Label = l
+		var w: float = minf(ECHO_W if lb == _hint else 560.0, vs.x * 0.55 - BAL_X)
+		# il pannello del nemico (segue la sua testa) puo' arrivare fin qui: il fumetto si stringe, e se non basta gli passa sotto
+		if _boss_panel != null and _boss_panel.visible and _boss_panel.modulate.a > 0.5:
+			var br: Rect2 = _boss_panel.get_global_rect()
+			if br.position.y < y + 140.0 and br.end.x > BAL_X:
+				var avail: float = br.position.x - 22.0 - 16.0 - BAL_X
+				if avail >= 240.0:
+					w = minf(w, avail)
+				else:
+					y = maxf(y, br.end.y + 40.0)
+		if lb.anchor_top != 0.0 or lb.anchor_bottom != 0.0 or lb.anchor_left != 0.0 or lb.anchor_right != 0.0:
+			lb.anchor_left = 0.0
+			lb.anchor_right = 0.0
+			lb.anchor_top = 0.0
+			lb.anchor_bottom = 0.0
+			lb.grow_vertical = Control.GROW_DIRECTION_END
+		if not is_equal_approx(lb.offset_top, y) or not is_equal_approx(lb.offset_right, BAL_X + w):
+			lb.offset_left = BAL_X
+			lb.offset_right = BAL_X + w
+			lb.offset_top = y
+			lb.offset_bottom = y
+		if lb.is_visible_in_tree() and lb.text != "":
+			y += lb.size.y + 22.0 + 30.0 + 14.0     # nome sopra, fondo e coda del fumetto sotto, aria
 
 
 func _place_boss_tag() -> void:
@@ -1338,6 +1437,11 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			_cam_sign(uid, str(u.get("char", "")), tpos, col)
 		elif kind != "ult":
 			_cam_side(home[uid], tpos)
+		else:
+			# autore (8/11/2026): dopo lo stacco dell'ULTIMATE la camera restava sul primo piano e chi attacca usciva di quadro
+			# (Saul). Ora segue il colpo: tre quarti che tengono in quadro chi colpisce e il nemico, come in Star Rail e Persona.
+			_cam_side(home[uid], tpos)
+			_cam_glide(0.35)
 		cv.move_speed = 1.0
 		# TECNICA COMBINATA: il compagno scatta insieme, dall'altro lato del nemico
 		var mate_cv: CharacterVisual = null
@@ -1479,8 +1583,15 @@ func _boss_turn() -> void:
 					b["timed_guard"] = grade
 				if grade == "perfect":
 					await _parry_shot(str(tele.get("target", "")))
+		var tpl: Dictionary = BattleState.player(b, str(tele.get("target", "")))      # prima dell'azione: dopo si annuncia la prossima
+		var tu: String = str(tpl.get("active", ""))
 		var ev: Array = BattleFlow.boss_action(b)
 		_parry_gain_fly(ev)
+		if not all and Settings.cam_calm:
+			# colpo su uno solo: di tre quarti, il nemico e chi viene colpito nello stesso quadro (si capisce chi prende il colpo)
+			if tu != "" and home.has(tu):
+				_cam_side(home[tu], ENEMY_POS)
+				_cam_glide(0.3)
 		var tw: Tween = m.slam() if all else m.attack()
 		await _wait(0.3 if all else 0.2)
 		if all:
@@ -2423,6 +2534,14 @@ func _combo_show(col: Color) -> void:
 const INTRO_FROM: Vector3 = ENEMY_POS + Vector3(1.7, 1.6, 4.2)
 
 
+# schede della squadra (e Ritmo sopra di loro) spente durante le presentazioni del nemico
+func _party_cards(on: bool) -> void:
+	if _p1 != null:
+		_p1.visible = on
+	if _ritmo_bar != null:
+		_ritmo_bar.visible = on
+
+
 func _intro_on() -> bool:
 	return not tutorial and not Settings.skip_cutin
 
@@ -2438,10 +2557,12 @@ func _boss_intro() -> void:
 	_cam_set(ENEMY_POS + Vector3(1.2, 1.45, 3.1), ENEMY_POS + Vector3(0, 1.3, 0), 0.9)      # si avvicina piano
 	var prev_col: Color = _cam_hud._who_col
 	_cam_hud._who_col = bcol
+	_party_cards(false)        # durante la presentazione del nemico la squadra in basso non si vede (autore, 8/11/2026)
 	_cam_hud.cut(1.0, nm, ttl, 1.4)
 	await get_tree().create_timer(1.4).timeout
 	if not is_inside_tree():
 		return
+	_party_cards(true)
 	_cam_hud._who_col = prev_col
 	_last_turn_uid = "ingresso"       # il primo turno taglia dalla presentazione a chi agisce (un solo cambio, col cartellino)
 
@@ -2503,11 +2624,13 @@ func _phase_shift(ph: int) -> void:
 	var prev_col: Color = _cam_hud._who_col
 	_cam_hud._who_col = col
 	var nxt: String = str(BattleContent.cycle_for(boss_id, ph)[0]) if BattleContent.BOSSES.has(boss_id) else ""
+	_party_cards(false)
 	_cam_hud.cut(1.0, "%s · FASE %d" % [_bname(), ph], ("NUOVA MOSSA: " + BattleText.move_name(nxt).to_upper()) if nxt != "" else "L'ANOMALIA SI SQUARCIA", 1.5)
 	_cam_set(ENEMY_POS + Vector3(1.2, 1.5, 5.0), ENEMY_POS + Vector3(0, 1.7, 0), 0.8)      # si allontana piano mentre il boss cambia
 	await _wait(1.5)
 	if not is_inside_tree():
 		return
+	_party_cards(true)
 	_cam_hud._who_col = prev_col
 	_last_turn_uid = "ingresso"        # il turno dopo taglia dal boss a chi agisce, col cartellino
 
@@ -3974,8 +4097,7 @@ func _weak_refresh(boss: Dictionary) -> void:
 		_weak_v.text = "???"
 		_weak_v.add_theme_stylebox_override("normal", Ui.plate(Color("#9a94a8"), Ui.INK))
 		return
-	var who: String = _who_is(beater.to_upper())
-	_weak_v.text = beater.to_upper() + (" · " + who.to_upper() if who != "chi ha quel colore" else "")
+	_weak_v.text = beater.to_upper()      # autore (8/11/2026): basta il colore, il nome di chi ce l'ha non serve
 	_weak_v.add_theme_stylebox_override("normal", Ui.plate(Ui.BATTLE_COLORS.get(beater, Ui.CREAM), Ui.INK))
 	if _weak_row.visible:
 		_weak_txt = _weak_v.text
@@ -4311,6 +4433,7 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 			var syn: String = str(_syn_msgs[0]) if not _syn_msgs.is_empty() else ""
 			(_wheel as PortraitHud).banner_title = "SINERGIA" if syn != "" else ""
 			(_wheel as PortraitHud).banner_sub = syn.get_slice("· ", 1) if syn.contains("· ") else syn
+			(_wheel as PortraitHud).banner_t = PortraitHud.BANNER_SEC if syn != "" else 0.0
 			(_wheel as PortraitHud).objective = "Obiettivo: sconfiggi " + _bname()
 		# sotto il 50% / 25% dei PV il ritratto si scurisce (varianti di Rio, 3/11/2026)
 		var vs: String = RitrattoVarianti.per_vita(int(u.get("hp", 0)), int(u.get("max_hp", 1)))
@@ -4341,6 +4464,13 @@ func _p1_refresh(marked: String) -> void:
 			"col": Ui.YELLOW if is_boss else _col(uu), "boss": is_boss, "now": k == turn_i, "greg": bool(e.get("greg", false))})
 		if orow.size() >= 6:
 			break
+	# autore (8/11/2026): coi nemici normali (piu' lenti) la previsione del motore finisce col giro degli eroi e il nemico non
+	# compariva. Agisce comunque dopo di loro: si mette in fondo alla colonna, come nelle battaglie coi boss.
+	var has_foe: bool = false
+	for o in orow:
+		has_foe = has_foe or bool(o["boss"])
+	if not has_foe and not ended and orow.size() < 6 and BattleState.is_alive(BattleState.unit(b, BattleState.BOSS_ID)):
+		orow.append({"id": "", "name": _bname(), "col": Ui.YELLOW, "boss": true, "now": false, "greg": false})
 	if _p1.boss_face == null and not _boss_face_on and bool(HudLayers.v("ordine.volto_nemico")):
 		_boss_face_on = true
 		_boss_face()
@@ -4585,6 +4715,7 @@ func _fit_btn(btn: Button, base: int) -> void:
 
 
 func _refresh_hud() -> void:
+	_sync_bodies()
 	if _boss_hp == null:
 		return
 	_update_broken_cam()
@@ -5209,10 +5340,12 @@ func _notice(text: String, col: Color, sec: float, icon: String, cat: String = "
 	# mossa: grande il NOME della mossa, piccolo chi la fa ("RIO · ATTACCO" -> ATTACCO grande, RIO piccolo)
 	var head: String = str(parts[1]) if mv and str(parts[1]) != "" else str(parts[0])
 	var tail: String = str(parts[0]) if mv and str(parts[1]) != "" else str(parts[1])
-	var big := Ui.label(head, 24 if mv else 20, Ui.CREAM if mv else col, Ui.display(), 6)
+	var gr: int = 4 if bool(HudLayers.v("avvisi.grandi")) else 0      # autore (8/11/2026): un poco piu' grandi
+	ic.custom_minimum_size = Vector2(26 + gr, 26 + gr)
+	var big := Ui.label(head, (24 if mv else 20) + gr, Ui.CREAM if mv else col, Ui.display(), 6)
 	hb.add_child(big)
 	if tail != "":
-		var sm := Ui.label(tail, 16, Color(Ui.CREAM, 0.9) if not mv else col.lightened(0.2), null, 4)
+		var sm := Ui.label(tail, 16 + gr / 2, Color(Ui.CREAM, 0.9) if not mv else col.lightened(0.2), null, 4)
 		hb.add_child(sm)
 		pc.set_meta("tail", sm)
 	pc.set_meta("cat", cat)
@@ -5247,6 +5380,54 @@ func _stack_notices() -> void:
 		if not compact and _boss_panel != null and _boss_panel.visible and _boss_panel.size.y > 1.0:
 			y0 = _boss_panel.position.y + _boss_panel.get_combined_minimum_size().y + 12.0      # subito sotto il nemico
 		c.offset_top = y0 + 46.0 * float(order.size() - 1 - i)
+	if bool(HudLayers.v("avvisi.in_basso")) and Settings.hud_ritratto:
+		_notices_bottom(order)
+
+
+# Autore (8/11/2026): i nomi delle mosse stanno in basso, nello spazio libero fra il personaggio (ritratto e comandi) e le
+# schede della squadra; si impilano verso l'alto. Se in quello spazio non ci stanno (schermi stretti, 4:3) salgono sopra
+# la barra del RITMO e le schede, sempre a destra del personaggio. Mai sopra la descrizione del comando.
+func _notices_bottom(order: Array) -> void:
+	var vs: Vector2 = get_viewport().get_visible_rect().size
+	var lx: float = 470.0
+	if _wheel != null and _wheel.visible:
+		var rs: Dictionary = _wheel.get("_rects")
+		var mx: float = 0.0
+		for k in rs:
+			mx = maxf(mx, (rs[k] as Rect2).end.x)
+		if mx > 0.0:
+			lx = _wheel.get_global_rect().position.x + mx + 20.0
+	var n: int = maxi(1, (_p1.party as Array).size()) if _p1 != null else 3
+	var px: float = vs.x - 22.0 - PortraitParty.cw() * n - 14.0 * (n - 1) - 16.0      # dove cominciano le schede
+	var low: float = vs.y - 24.0
+	var tr: Rect2 = _wheel.get("tip_rect") if _wheel != null and _wheel.visible else Rect2()
+	if tr.size.y > 0.0 and tr.end.x > lx and tr.position.x < px:
+		low = minf(low, tr.position.y - 12.0)
+	elif _wheel != null and _wheel.visible and str(_wheel.get("picked")) != "":
+		low = minf(low, vs.y - 18.0 - 74.0 - 12.0)       # la descrizione del comando scelto (34 + due righe da 20, a 18 dal fondo)
+	var high: float = vs.y - 230.0          # sopra RITMO e schede
+	if _ritmo_bar != null and _ritmo_bar.visible:
+		high = minf(high, _ritmo_bar.get_global_rect().position.y - 12.0)
+	var gap: float = 8.0
+	var y_low: float = low
+	var y_high: float = high
+	for i in order.size():
+		var c: Control = order[i]
+		var sz: Vector2 = c.get_combined_minimum_size()
+		var y: float
+		if lx + sz.x <= px:
+			y_low -= sz.y
+			y = y_low
+			y_low -= gap
+		else:
+			y_high -= sz.y
+			y = y_high
+			y_high -= gap
+		c.offset_left = lx
+		c.offset_right = lx
+		c.offset_top = y
+		c.offset_bottom = y
+		c.reset_size()
 
 
 # Icone degli avvisi, disegnate a mano: catena (legami e impulsi), triangolo (il nemico), lampo (effetti), freccia (mossa)

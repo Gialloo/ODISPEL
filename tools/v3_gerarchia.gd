@@ -86,6 +86,17 @@ func _pezzi(bt: Node) -> Dictionary:
 			var bw: float = clampf(right - left, 280.0, 440.0)
 			var bh: float = 34.0 + 20.0 * 2.0
 			p["descrizione"] = _g(w, Rect2(Vector2((left + right) * 0.5 - bw * 0.5, w.size.y - 18.0 - bh), Vector2(bw, bh)))
+	# ritocchi dell'autore (8/11/2026): nomi delle mosse in basso e fumetti in alto a sinistra (col volto, il nome e la coda)
+	var ts: Array = bt.get("_toasts")
+	var ti: int = 0
+	for t in ts:
+		if is_instance_valid(t) and (t as Control).is_visible_in_tree():
+			p["avviso_%d" % ti] = (t as Control).get_global_rect()
+			ti += 1
+	for nm in ["_hint", "_say_lbl", "_quip_lbl"]:
+		var lb: Label = bt.get(nm)
+		if lb != null and lb.is_visible_in_tree() and lb.text != "":
+			p["fumetto" + nm] = lb.get_global_rect().grow_individual(72.0, 26.0, 22.0, 30.0)
 	var sm: Control = bt.get("_skill_menu")
 	if sm != null and sm.visible:
 		# vietato toccare le righe vere della tendina (_list_rect); la riserva piu' larga di area() serve solo a spostare il nemico
@@ -114,6 +125,11 @@ func _controlla(stato: String, bt: Node) -> void:
 	for c in COPPIE:
 		_coppia(stato, p, str(c[0]), str(c[1]), righe)
 	for k in p:
+		if str(k).begins_with("avviso_") or str(k).begins_with("fumetto"):
+			for o in p:
+				if str(o) != str(k) and str(o) > str(k) or (not str(o).begins_with("avviso_") and not str(o).begins_with("fumetto")):
+					if str(o) != str(k):
+						_coppia(stato, p, str(k), str(o), righe)
 		if str(k).begins_with("comando_"):
 			for o in ["descrizione", "squadra", "ritmo", "nemico"]:
 				_coppia(stato, p, str(k), o, righe)
@@ -155,6 +171,8 @@ func _run() -> void:
 	_controlla("libero", bt)
 	await _shot("%s_%s_1_libero" % [boss, tag])
 	w.pick("attack")
+	bt.call("_notice", "RIO · ATTACCO", Color("#ff3b4e"), 3.0, "move")
+	bt.call("_notice", "+15% ULTIMATE", Color("#ffd23f"), 3.0, "fx")
 	await create_timer(0.5).timeout
 	_controlla("attacco_scelto", bt)
 	await _shot("%s_%s_2_attacco_scelto" % [boss, tag])

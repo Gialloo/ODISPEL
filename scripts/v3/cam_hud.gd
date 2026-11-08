@@ -228,6 +228,9 @@ func _draw_chat(sz: Vector2) -> void:
 	var now: int = Time.get_ticks_msec()
 	var x0: float = sz.x - 24.0 - CHAT_W
 	var y: float = sz.y * CHAT_BOTTOM    # fondo della pila: il messaggio piu' nuovo sta in basso, come nelle dirette vere
+	# autore (8/11/2026): la barra RITMO / ARDORE copriva gli ultimi messaggi: la pila finisce sopra le sue scritte
+	if bool(HudLayers.v("chat.sopra_ardore")) and Settings.hud_ritratto and Settings.hud_ritmo and not Settings.hud_foto:
+		y = minf(y, sz.y - PortraitParty.top() - 42.0 - 30.0 - 14.0)
 	var top_a: float = 0.0
 	for i in range(_chat.size() - 1, -1, -1):
 		var e: Array = _chat[i]
