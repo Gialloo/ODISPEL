@@ -1,5 +1,13 @@
 # Novità
 
+## 0.66.0 · Regia in stile Persona 5
+
+- **Regia** in stile Persona 5 nei combattimenti.
+- **Saul**: le sue skill si vedono con il visore notturno.
+- **Lance**: le sue skill si vedono su un monitor di sorveglianza.
+- **COMBO** compare solo quando il colpo va a segno; le sinergie compaiono solo nel turno giusto.
+- Lo schermo intero ora rispetta la zona sicura, e il numero del turno è più grande.
+
 ## 0.65.0 · Ritocchi dell'8/11 (HUD, modelli 3D, regia)
 
 - **HUD**: i comandi sono disposti a croce, con ULTIMATE speculare a SKILL e GUARDIA speculare ad ATTACCO. RAPIDO compare accanto al nome. SINERGIA si vede per circa 2,5 secondi e poi sparisce.
