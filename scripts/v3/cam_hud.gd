@@ -58,6 +58,18 @@ void fragment() {
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	Ui.place(self, 0, 0, 1, 1)
+	# VIRAGGI delle inquadrature firmate (autore, 8/11/2026): due rettangoli a tutto schermo, uno che MOLTIPLICA (toglie i colori
+	# che non c'entrano) e uno che SOMMA (alza i neri nel colore del visore). Nessuna lettura dello schermo: costano due rettangoli.
+	for mode in [CanvasItemMaterial.BLEND_MODE_MUL, CanvasItemMaterial.BLEND_MODE_ADD]:
+		var tr := ColorRect.new()
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		Ui.place(tr, 0, 0, 1, 1)
+		var cm := CanvasItemMaterial.new()
+		cm.blend_mode = mode
+		tr.material = cm
+		tr.visible = false
+		add_child(tr)
+		_tints.append(tr)
 	if not Settings.light_fx:
 		_grain = ColorRect.new()
 		_grain.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -307,6 +319,12 @@ func freeze(title: String, who: String, c: Color, secs: float) -> void:
 # telecamera di Echo prende il «mezzo» di chi agisce: Rio in verticale come una sua diretta, Lance nel mirino
 # dell'autovelox, Nox in controluce, Saul dall'alto come un drone. Poche forme piatte per un secondo, niente shader.
 var _look: String = ""
+var _tints: Array = []               # [moltiplica, somma]
+var look_pt: Vector2 = Vector2(-1, -1)   # dove sta il bersaglio sullo schermo (riquadro del riconoscimento di Lance)
+const TINT: Dictionary = {
+	"notturna": [Color(0.32, 1.0, 0.38), Color(0.02, 0.16, 0.04)],       # visore notturno: tutto verde, i neri non sono mai neri
+	"sorveglianza": [Color(0.58, 0.72, 0.86), Color(0.05, 0.07, 0.1)],   # monitor del furgone: freddo e slavato
+}
 var _look_from: float = 0.0          # in tempo di gioco (_t), non in millisecondi veri: si registra uguale col movie maker
 var _look_until: float = 0.0
 var _look_col: Color = Ui.CREAM
@@ -379,6 +397,73 @@ func _draw_look(sz: Vector2) -> void:
 			for i in 5:
 				var e: float = 30.0 + i * 26.0
 				draw_rect(Rect2(0, 0, sz.x, sz.y), Color(0, 0, 0, 0.07 * a), false, e)
+		"notturna":
+			# SAUL, ladro (autore, 8/11/2026): il visore notturno. Lente tonda coi bordi neri, righe del fosforo, granelli che
+			# frizzano, crocetta e i dati del visore. Il verde viene dai viraggi (_tints).
+			var gr := Color(0.55, 1.0, 0.55, a)
+			var ctr := Vector2(sz.x * 0.5, sz.y * 0.5)
+			var rad: float = sz.y * 0.56
+			var thick: float = sz.length()
+			draw_arc(ctr, rad + thick * 0.5, 0, TAU, 72, Color(0, 0.02, 0, 0.94 * a), thick)
+			for i in 3:
+				draw_arc(ctr, rad - 6.0 - i * 10.0, 0, TAU, 72, Color(0, 0, 0, 0.18 * a), 12.0)
+			var yy: float = 0.0
+			while yy < sz.y:
+				draw_line(Vector2(0, yy), Vector2(sz.x, yy), Color(0, 0.1, 0, 0.16 * a), 1.0)
+				yy += 4.0
+			var fr: float = floor(_t * 24.0)
+			for i in 40:
+				var px := Vector2(fract_hash(i * 1.7 + fr) * sz.x, fract_hash(i * 2.9 + fr * 0.7) * sz.y)
+				draw_rect(Rect2(px, Vector2(2, 2)), Color(0.7, 1.0, 0.7, 0.45 * a))
+			draw_line(ctr - Vector2(46, 0), ctr - Vector2(14, 0), gr, 2.0)
+			draw_line(ctr + Vector2(14, 0), ctr + Vector2(46, 0), gr, 2.0)
+			draw_line(ctr - Vector2(0, 46), ctr - Vector2(0, 14), gr, 2.0)
+			draw_line(ctr + Vector2(0, 14), ctr + Vector2(0, 46), gr, 2.0)
+			var tl := ctr + Vector2(-rad * 0.62, -rad * 0.62)
+			draw_string(f, tl, "NV · IR ON", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, gr)
+			draw_string(fb, tl + Vector2(0, 26), "GEN 3 · x%.1f" % (2.0 + minf(el, 1.0) * 2.0), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, gr)
+			draw_string(fb, tl + Vector2(0, 52), "SAUL · %s" % ("BERSAGLIO AGGANCIATO" if fmod(el, 0.5) < 0.35 else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 22, gr)
+		"sorveglianza":
+			# LANCE (autore, 8/11/2026): i monitor degli agenti nel furgone. Muro di quattro schermi, ora e REC, riconoscimento
+			# del bersaglio col riquadro che lo segue, e la traccia audio dell'intercettazione.
+			var wc := Color(0.85, 0.95, 1.0, a)
+			var dim := Color(0.85, 0.95, 1.0, 0.35 * a)
+			var gx: float = sz.x * 0.5
+			var gy: float = sz.y * 0.5
+			draw_line(Vector2(gx, 0), Vector2(gx, sz.y), Color(0, 0, 0, 0.8 * a), 6.0)
+			draw_line(Vector2(0, gy), Vector2(sz.x, gy), Color(0, 0, 0, 0.8 * a), 6.0)
+			var yy2: float = fmod(el * 120.0, 3.0)
+			while yy2 < sz.y:
+				draw_line(Vector2(0, yy2), Vector2(sz.x, yy2), Color(0, 0, 0, 0.12 * a), 1.0)
+				yy2 += 3.0
+			var labels: Array = ["CAM 01 · INGRESSO", "CAM 02 · CORSIA NORD", "CAM 03 · SVINCOLO", "CAM 04 · OBIETTIVO"]
+			for i in 4:
+				var o := Vector2((i % 2) * gx, (i / 2) * gy + (60.0 if i < 2 else 0.0))      # sotto la barra dei tasti rapidi
+				draw_string(fb, o + Vector2(18, 30), str(labels[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, dim if i != 3 else wc)
+				var secs2: int = int(_t) % 60
+				draw_string(fb, o + Vector2(250, 30), "23:4%d:%02d" % [i, secs2], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, dim)
+			if fmod(el, 1.0) < 0.6:
+				draw_circle(Vector2(sz.x - 120, sz.y - 34), 7.0, Color(REC_RED.r, REC_RED.g, REC_RED.b, a))
+				draw_string(fb, Vector2(sz.x - 106, sz.y - 27), "REC", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, wc)
+			var tp: Vector2 = look_pt if look_pt.x >= 0.0 else Vector2(sz.x * 0.62, sz.y * 0.42)
+			var bw: float = lerpf(260.0, 150.0, clampf(el / 0.35, 0.0, 1.0))
+			var br := Rect2(tp - Vector2(bw, bw * 1.2) * 0.5, Vector2(bw, bw * 1.2))
+			var L2: float = 22.0
+			for cn in [br.position, Vector2(br.end.x, br.position.y), Vector2(br.position.x, br.end.y), br.end]:
+				var dx2: float = L2 if cn.x == br.position.x else -L2
+				var dy2: float = L2 if cn.y == br.position.y else -L2
+				draw_line(cn, cn + Vector2(dx2, 0), wc, 3.0)
+				draw_line(cn, cn + Vector2(0, dy2), wc, 3.0)
+			var pct: int = mini(41 + int(el * 160.0), 98)
+			draw_string(fb, br.position + Vector2(0, -10), "RICONOSCIMENTO %d%%" % pct, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, wc)
+			if pct >= 98:
+				draw_string(f, br.position + Vector2(0, br.size.y + 30), "SOGGETTO IDENTIFICATO", HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(Ui.YELLOW.r, Ui.YELLOW.g, Ui.YELLOW.b, a))
+			var wy: float = sz.y - 70.0
+			draw_string(fb, Vector2(24, wy - 30), "INTERCETTAZIONE · CANALE 3 · LANCE", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, wc)
+			for i in 64:
+				var hh: float = 4.0 + 26.0 * absf(sin(i * 0.7 + _t * 9.0) * cos(i * 0.23 + _t * 3.0))
+				draw_rect(Rect2(Vector2(24 + i * 7.0, wy - hh * 0.5), Vector2(4, hh)), Color(0.55, 0.85, 1.0, 0.8 * a))
+			draw_string(fb, Vector2(sz.x * 0.5 + 18, sz.y * 0.5 - 16), "RISERVATO · NON DIVULGARE", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(REC_RED.r, REC_RED.g, REC_RED.b, 0.8 * a))
 		"drone":
 			# Saul dall'alto: la griglia e i dati di un drone
 			var gc := Color(_look_col.lightened(0.5).r, _look_col.lightened(0.5).g, _look_col.lightened(0.5).b, 0.22 * a)
@@ -425,6 +510,17 @@ func _process(delta: float) -> void:
 	if anomaly and _tag != null:
 		_tag.modulate.a = 0.55 + 0.45 * float(sin(_t * 23.0) > -0.6)
 	_chat_tick(delta)
+	var tk: Array = TINT.get(_look, [])
+	var tin: bool = not tk.is_empty() and _t < _look_until
+	if _tints.size() == 2 and (tin or (_tints[0] as ColorRect).visible):
+		var el: float = _t - _look_from
+		var a: float = clampf(el / 0.12, 0.0, 1.0) * clampf((_look_until - _look_from - el) / 0.2, 0.0, 1.0) if tin else 0.0
+		for i in 2:
+			var tr: ColorRect = _tints[i]
+			tr.visible = a > 0.0
+			if tr.visible:
+				var tc: Color = tk[i]
+				tr.color = Color.WHITE.lerp(tc, a) if i == 0 else Color(tc.r * a, tc.g * a, tc.b * a, 1.0)
 	if _cut_t > 0.0:
 		# tetto al passo: il primo fotogramma dopo il taglio puo' essere lento (scena nuova da disegnare) e si mangerebbe tutto
 		_cut_t = maxf(0.0, _cut_t - minf(delta, 0.034))

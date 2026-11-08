@@ -884,17 +884,63 @@ func _cam_sign(uid: String, ch: String, tpos: Vector3, col: Color) -> void:
 			_cam_hud.look("diretta", col)
 		"lance":       # Lance: dal palo dell'autovelox, alto di lato
 			_cam_set(mid + _rg(Vector3(side * 3.0, 3.1, -0.9), Vector3(side * 3.0, 3.6, -2.4)), mid + Vector3(0, 1.0, 0), _rg(3.4, 4.0))      # vicino: piu' in la' si finiva dentro le facciate; morbida: meno controcampo
-			_cam_hud.look("autovelox", col)
+			_cam_hud.look("sorveglianza", col)      # autore, 8/11/2026: i monitor dei servizi segreti (prima il mirino dell'autovelox)
 		"nox":         # Nox: dal basso, controluce
 			_cam_set(a + _rg(Vector3(-side * 1.6, 0.9, -1.0), Vector3(-side * 1.6, 0.45, -1.4)), a + _rg(Vector3(0, 1.75, -0.6), Vector3(0, 1.9, -0.6)), _rg(3.6, 4.5))
 			_cam_hud.look("controluce", col)
 		"saul":        # Saul: dall'alto, come un drone
 			_cam_set(mid + _rg(Vector3(side * 2.2, 3.8, 4.2), Vector3(0.0, 8.0, 1.2)), mid + Vector3(0, _rg(1.0, 0.6), 0), 3.5)      # morbida: drone di tre quarti dal lato di Saul, si vede chi colpisce chi (8/11/2026)      # morbida: alto di tre quarti, non a picco
-			_cam_hud.look("drone", col)
+			_cam_hud.look("notturna", col)          # autore, 8/11/2026: Saul e' un ladro, visore notturno (prima il drone)
 		_:
 			_cam_side(a, tpos)
 			return
 	_cam_glide(0.4)
+
+
+# REGIA ALLA PERSONA 5 (autore, 8/11/2026: «la regia ancora non mi piace»). Tra un turno e l'altro e per abilita', ultimate e
+# guardia niente carrellate lunghe: STACCO NETTO sull'inquadratura nuova, poi una piccola spinta in avanti (la camera parte
+# mezzo metro piu' indietro e si avvicina piano). L'attacco base resta com'era. Con la regia DINAMICA restano le inquadrature di prima.
+const P5_REGIA: bool = true
+
+
+# Il filtro della camera di ogni personaggio durante le sue abilita' (cam_hud.look): Rio in diretta, Lance coi monitor dei
+# servizi segreti, Nox in controluce, Saul col visore notturno (autore, 8/11/2026). Lance riceve dove sta il nemico.
+func _sign_look(ch: String, col: Color) -> void:
+	if _cam_hud == null:
+		return
+	var kind: String = {"rio": "diretta", "lance": "sorveglianza", "nox": "controluce", "saul": "notturna"}.get(ch, "diretta")
+	_cam_hud.look_pt = Vector2(-1, -1)
+	if kind == "sorveglianza" and vis.has(BattleState.BOSS_ID):
+		var bp: Vector3 = (vis[BattleState.BOSS_ID] as Node).call("chest_point")
+		if not cam.is_position_behind(bp):
+			_cam_hud.look_pt = cam.unproject_position(bp) / (_ui.scale.x if _ui != null else 1.0)      # lo sguardo copre lo schermo intero
+	_cam_hud.look(kind, col, 1.6)
+
+
+func _p5() -> bool:
+	return P5_REGIA and Settings.cam_calm
+
+
+func _p5_cut(pos: Vector3, look: Vector3, back: float = 0.55, rate: float = 1.4) -> void:
+	_cam_set(pos, look, rate, true)
+	var d: Vector3 = (look - pos)
+	if d.length() > 0.01:
+		_cam_pos = _cam_want_pos - d.normalized() * back      # parte un po' indietro: la molla fa la spinta in avanti
+	_cam_look = _cam_want_look
+
+
+# Davanti a chi agisce, basso e di tre quarti, il nemico alle spalle della camera: il volto si legge (abilita', guardia).
+func _p5_front(uid: String, close: bool = false) -> void:
+	var p: Vector3 = home[uid]
+	var d: Vector3 = Vector3(ENEMY_POS.x - p.x, 0.0, ENEMY_POS.z - p.z).normalized()
+	var l: Vector3 = Vector3(d.z, 0.0, -d.x)
+	var k: float = 0.8 if close else 1.0
+	_p5_cut(p + d * 2.3 * k + l * 1.0 * k + Vector3(0, 0.95, 0), p + Vector3(0, 1.3, 0) + l * 0.15, 0.5)
+
+
+# Il nemico dal basso, dal lato della squadra: entra in scena grande (passaggio dalla squadra al nemico).
+func _p5_enemy() -> void:
+	_p5_cut(ENEMY_POS + Vector3(1.7, 0.85, 4.4), ENEMY_POS + Vector3(0, 1.5, 0), 0.7, 1.2)
 
 
 func _cam_boss() -> void:
@@ -1273,7 +1319,10 @@ func _advance() -> void:
 		cur_pid = pid
 		_quick = bool(e.get("quick", false))
 		var uid: String = str(_unit_of(pid)["id"])
-		_cam_actor(uid)
+		if _p5() and not auto_on:
+			_cam_choose(uid)            # P5: si arriva gia' sull'inquadratura della scelta (niente doppio movimento)
+		else:
+			_cam_actor(uid)
 		_cam_switch(uid)
 		_fx_turn(uid)
 		_refresh_hud()
@@ -1433,7 +1482,15 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 		var boss_v: Node3D = vis[tid]
 		var strike: Vector3 = tpos + (home[uid] - tpos).normalized() * (1.7 if tid == BattleState.BOSS_ID else 1.3)
 		strike.y = 0.14
-		if kind == "skill" and _cam_hud != null and not tutorial:
+		if kind == "skill" and _p5():
+			_p5_front(uid)
+			if _cam_hud != null and not tutorial:
+				_sign_look(str(u.get("char", "")), col)
+			cv.cast()
+			await _wait(0.42)
+			_cam_side(home[uid], tpos)
+			_p5_cut(_cam_want_pos, _cam_want_look, 0.4, 2.2)
+		elif kind == "skill" and _cam_hud != null and not tutorial:
 			_cam_sign(uid, str(u.get("char", "")), tpos, col)
 		elif kind != "ult":
 			_cam_side(home[uid], tpos)
@@ -1441,7 +1498,10 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			# autore (8/11/2026): dopo lo stacco dell'ULTIMATE la camera restava sul primo piano e chi attacca usciva di quadro
 			# (Saul). Ora segue il colpo: tre quarti che tengono in quadro chi colpisce e il nemico, come in Star Rail e Persona.
 			_cam_side(home[uid], tpos)
-			_cam_glide(0.35)
+			if _p5():
+				_p5_cut(_cam_want_pos, _cam_want_look, 0.45, 2.0)
+			else:
+				_cam_glide(0.35)
 		cv.move_speed = 1.0
 		# TECNICA COMBINATA: il compagno scatta insieme, dall'altro lato del nemico
 		var mate_cv: CharacterVisual = null
@@ -1502,7 +1562,11 @@ func _do_action(pid: String, choice: Dictionary, quick: bool = false) -> void:
 			_set_target("")             # scheggia abbattuta: il mirino torna sul nemico principale
 	else:
 		# mossa su se stessi (guardia, cura): prima era uno stacco secco davanti al personaggio; ora una carrellata (3/11/2026)
-		if kind == "skill" and _cam_hud != null and not tutorial:
+		if _p5():
+			_p5_front(uid, kind != "skill")      # guardia: piu' stretta, si vede chi si para
+			if kind == "skill" and _cam_hud != null and not tutorial:
+				_sign_look(str(u.get("char", "")), col)
+		elif kind == "skill" and _cam_hud != null and not tutorial:
 			_cam_sign(uid, str(u.get("char", "")), home[uid], col)     # anche Copertura e Pausa caffe' hanno la loro inquadratura
 		else:
 			_cam_set(home[uid] + Vector3(0.3, 1.6, -3.0), home[uid] + Vector3(0, 1.2, 0), 4.0)
@@ -1540,9 +1604,14 @@ func _boss_turn() -> void:
 	var mv: Dictionary = BattleContent.BOSS_MOVES.get(str(tele.get("move", "")), {})
 	var boss_u: Dictionary = BattleState.boss(b)
 	var stunned: bool = int(boss_u.get("stun", 0)) > 0
-	_cam_boss()
-	if _last_turn_uid != "nemico":
-		_cam_glide(0.6)                 # carrellata fluida da chi ha agito al nemico (prima scivolava di colpo)
+	if _p5():
+		_p5_enemy()
+		if _cam_hud != null and _last_turn_uid != "nemico":
+			_cam_hud.cut(1.0)
+	else:
+		_cam_boss()
+		if _last_turn_uid != "nemico":
+			_cam_glide(0.6)                 # carrellata fluida da chi ha agito al nemico (prima scivolava di colpo)
 	_last_turn_uid = "nemico"           # il prossimo personaggio arriva con la carrellata e il cartellino della sua CAM
 	var m: VendingVisual = vis[BattleState.BOSS_ID]
 	if stunned:
@@ -1591,7 +1660,13 @@ func _boss_turn() -> void:
 			# colpo su uno solo: di tre quarti, il nemico e chi viene colpito nello stesso quadro (si capisce chi prende il colpo)
 			if tu != "" and home.has(tu):
 				_cam_side(home[tu], ENEMY_POS)
-				_cam_glide(0.3)
+				if _p5():
+					_p5_cut(_cam_want_pos, _cam_want_look, 0.4, 2.0)
+				else:
+					_cam_glide(0.3)
+		elif all and _p5():
+			_cam_boss()
+			_p5_cut(_cam_want_pos, _cam_want_look, 0.5, 1.6)      # colpo su tutti: alle spalle del nemico, tutta la squadra in quadro
 		var tw: Tween = m.slam() if all else m.attack()
 		await _wait(0.3 if all else 0.2)
 		if all:
@@ -2740,7 +2815,10 @@ func _cam_switch(uid: String) -> void:
 	_cam_hud.cut(dir if dir != 0.0 else 1.0)
 	# 3/11/2026 (autore: «a scatti, deve spostarsi in modo fluido»): niente piu' taglio secco. La telecamera fa una carrellata
 	# morbida verso chi agisce (dal nemico, dalla presentazione o da un compagno); il disturbo resta, leggero, sopra il viaggio.
-	_cam_glide(0.62 if home.has(prev) else 0.75)
+	if _p5():
+		_p5_cut(_cam_want_pos, _cam_want_look, 0.6, 1.5)      # stacco netto con spinta, come nel passaggio di turno di Persona 5
+	else:
+		_cam_glide(0.62 if home.has(prev) else 0.75)
 
 
 var _cam_vel: Vector3 = Vector3.ZERO
