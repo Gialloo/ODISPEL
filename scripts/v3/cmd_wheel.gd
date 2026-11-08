@@ -202,17 +202,23 @@ func _back(x: float) -> float:
 
 
 # Sotto a tutto: le bande nere oblique dell'ultimate e il lampo della scelta
+var screen_rect: Rect2 = Rect2()       # lo schermo intero in coordinate della ruota (zona sicura: la ruota sta un po' dentro)
+
+
 func _draw() -> void:
 	var e: float = smoothstep(0.0, 1.0, sel)
+	var sr: Rect2 = screen_rect if screen_rect.size.x > 1.0 else Rect2(Vector2.ZERO, size)
+	var o: Vector2 = sr.position
+	var ss: Vector2 = sr.size
 	if picked == "ult" and e > 0.01:
 		var hi: Color = col.lightened(0.7)
-		var bt: float = size.y * 0.13 * e
-		draw_colored_polygon(PackedVector2Array([Vector2(0, 0), Vector2(size.x, 0), Vector2(size.x, bt * 0.6), Vector2(0, bt * 1.4)]), Color(0, 0, 0.03, 0.9))
-		draw_colored_polygon(PackedVector2Array([Vector2(0, size.y), Vector2(size.x, size.y), Vector2(size.x, size.y - bt * 1.4), Vector2(0, size.y - bt * 0.6)]), Color(0, 0, 0.03, 0.9))
-		draw_line(Vector2(0, bt * 1.4), Vector2(size.x, bt * 0.6), Color(hi, 0.9 * e), 3.0, true)
-		draw_line(Vector2(0, size.y - bt * 0.6), Vector2(size.x, size.y - bt * 1.4), Color(hi, 0.9 * e), 3.0, true)
+		var bt: float = ss.y * 0.13 * e
+		draw_colored_polygon(PackedVector2Array([o, o + Vector2(ss.x, 0), o + Vector2(ss.x, bt * 0.6), o + Vector2(0, bt * 1.4)]), Color(0, 0, 0.03, 0.9))
+		draw_colored_polygon(PackedVector2Array([o + Vector2(0, ss.y), o + ss, o + Vector2(ss.x, ss.y - bt * 1.4), o + Vector2(0, ss.y - bt * 0.6)]), Color(0, 0, 0.03, 0.9))
+		draw_line(o + Vector2(0, bt * 1.4), o + Vector2(ss.x, bt * 0.6), Color(hi, 0.9 * e), 3.0, true)
+		draw_line(o + Vector2(0, ss.y - bt * 0.6), o + Vector2(ss.x, ss.y - bt * 1.4), Color(hi, 0.9 * e), 3.0, true)
 	if flash > 0.01:
-		draw_rect(Rect2(Vector2.ZERO, size), Color(col.lightened(0.7), flash * (0.4 if picked == "ult" else 0.16)))
+		draw_rect(sr, Color(col.lightened(0.7), flash * (0.4 if picked == "ult" else 0.16)))
 
 
 func _has_point(p: Vector2) -> bool:
