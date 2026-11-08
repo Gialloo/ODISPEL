@@ -1,5 +1,9 @@
 # Novità
 
+## 0.66.1 · Correzione
+
+- Sui telefoni con notch il fumetto di Echo ora resta allineato al testo.
+
 ## 0.66.0 · Regia in stile Persona 5
 
 - **Regia** in stile Persona 5 nei combattimenti.
