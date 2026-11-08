@@ -301,6 +301,7 @@ func _ready() -> void:
 	_build_ui()
 	_warm_fonts()
 	_refresh_hud()
+	_prefetch_portrait()          # il ritratto del primo eroe si legge in sottofondo durante la presentazione del nemico
 	Breadcrumb.mark("battaglia")
 	await get_tree().create_timer(0.6).timeout
 	if not is_inside_tree():
@@ -4616,6 +4617,30 @@ func _fill_wheel(u: Dictionary, sk: String, skm: Dictionary, um: Dictionary, ult
 		var vs: String = RitrattoVarianti.per_vita(int(u.get("hp", 0)), int(u.get("max_hp", 1)))
 		(_wheel as PortraitHud).set_stato("" if vs == "ko" else vs)
 	_wheel.setup(str(u.get("name", "")).to_upper() + (" · RAPIDO" if _quick else ""), _col(u), items)
+	_prefetch_portrait(cur_pid)
+
+
+# PRESTAZIONI (8/11/2026): i ritratti di chi giochera' dopo si leggono in anticipo in un altro thread (PortraitHud.prefetch):
+# prima ogni cambio di turno fermava il gioco per leggere tre disegni grandi. Aspetto identico, stessi file.
+func _prefetch_portrait(skip_pid: String = "") -> void:
+	if not (_wheel is PortraitHud):
+		return
+	var order: Array = BattleFlow.preview(b, 6)
+	if order.is_empty():
+		# prima del primo round (durante la presentazione del nemico): l'ordine si prova su una copia dello stato
+		var sim: Dictionary = b.duplicate(true)
+		BattleFlow.start_round(sim, ingresso)
+		order = BattleFlow.preview(sim, 6)
+	for e in order:
+		if bool(e.get("boss", false)) or bool(e.get("greg", false)):
+			continue
+		var pid: String = str(e.get("player", ""))
+		if pid == "" or pid == skip_pid:
+			continue
+		var ch: String = str(_unit_of(pid).get("char", ""))
+		if ch != "":
+			PortraitHud.prefetch(ch)
+		return
 
 
 # HUD col ritratto: dati della fila della squadra e della colonna ORDINE (si ridisegna solo se cambiano)

@@ -639,15 +639,8 @@ class _Layer extends Control:
 		# niente CONFERMA (decisione dell'autore, 24/10/2026): il tocco sul comando lo lancia, qui resta solo la spiegazione
 
 
-# Riflettore: la scena si scurisce attorno a chi sceglie e lui resta in luce, con un'aura del suo colore (piu' forte per l'ULTIMATE).
-# Un solo rettangolo con uno shader: costa un passaggio a tutto schermo, solo mentre una scelta e' aperta.
-static func make_spot() -> ColorRect:
-	var r := ColorRect.new()
-	r.set_anchors_preset(Control.PRESET_FULL_RECT)
-	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	r.visible = false
-	var sh := Shader.new()
-	sh.code = """shader_type canvas_item;
+# Riflettore (vedi make_spot): un solo Shader per tutta la partita, condiviso con Toon.shared_shader.
+const SPOT_SHADER: String = """shader_type canvas_item;
 uniform vec2 c = vec2(0.3, 0.55);
 uniform vec2 r = vec2(0.12, 0.3);
 uniform float k = 0.0;
@@ -669,7 +662,16 @@ void fragment() {
 	col = mix(col, tint2, clamp(glow2 * 1.5, 0.0, 1.0));
 	COLOR = vec4(col, clamp(max(max(dark, glow * 0.55), glow2 * 0.6), 0.0, 1.0));
 }"""
+
+
+# Riflettore: la scena si scurisce attorno a chi sceglie e lui resta in luce, con un'aura del suo colore (piu' forte per l'ULTIMATE).
+# Un solo rettangolo con uno shader: costa un passaggio a tutto schermo, solo mentre una scelta e' aperta.
+static func make_spot() -> ColorRect:
+	var r := ColorRect.new()
+	r.set_anchors_preset(Control.PRESET_FULL_RECT)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.visible = false
 	var m := ShaderMaterial.new()
-	m.shader = sh
+	m.shader = Toon.shared_shader(SPOT_SHADER)          # uno solo per tutta la partita (prima uno nuovo a ogni battaglia)
 	r.material = m
 	return r

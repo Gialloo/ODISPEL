@@ -446,10 +446,8 @@ func _build_solids_vp() -> void:
 	cam.current = true
 	var half_h: float = tan(deg_to_rad(27.5)) * 9.0
 	_origin = Vector3(0.06 * 2.0 * half_h * float(_w) / float(_h), 0.0, 0.0)
-	var sh := Shader.new()
-	sh.code = SH_SOLID
 	var mat := ShaderMaterial.new()
-	mat.shader = sh
+	mat.shader = Toon.shared_shader(SH_SOLID)          # condiviso tra i cut-in: niente compilazione a ogni ULTIMATE
 	var total: int = SOLIDS_LIGHT if _light else SOLIDS_FULL
 	var meshes: Array = _solid_meshes()
 	var cols: Array = _pal["solids"]
@@ -579,11 +577,10 @@ func _build_comp() -> void:
 	add_child(_flash)
 
 
+# Lo Shader e' condiviso tra tutti i cut-in (Toon.shared_shader): il materiale resta nuovo, i parametri sono di questo cut-in.
 func _mat(code: String) -> ShaderMaterial:
-	var sh := Shader.new()
-	sh.code = code
 	var m := ShaderMaterial.new()
-	m.shader = sh
+	m.shader = Toon.shared_shader(code)
 	return m
 
 
