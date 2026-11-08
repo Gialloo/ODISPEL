@@ -75,9 +75,7 @@ func _ready() -> void:
 		_grain.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		Ui.place(_grain, 0, 0, 1, 1)
 		var mat := ShaderMaterial.new()
-		var sh := Shader.new()
-		sh.code = GRAIN_SHADER
-		mat.shader = sh
+		mat.shader = Toon.shared_shader(GRAIN_SHADER)          # condiviso: si compila una volta per partita
 		mat.set_shader_parameter("k", 1.6 if anomaly else 1.0)
 		_grain.material = mat
 		add_child(_grain)

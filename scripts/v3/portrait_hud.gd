@@ -143,6 +143,75 @@ func _init() -> void:
 	_flow.emitting = false
 
 
+# PRE-CARICAMENTO DEI RITRATTI (8/11/2026): a ogni cambio di turno si leggevano da zero tre disegni 1536x2048 (sfondo,
+# ritratto, cornice davanti): ~150-230 ms fermi su PC, molto di piu' sul telefono, A OGNI TURNO. Ora la battaglia chiede
+# in anticipo i disegni di chi giochera' dopo (prefetch) e un altro thread li legge mentre si gioca il turno di adesso.
+# In memoria restano al massimo i disegni di adesso e quelli del prossimo (come prima durante il cambio): niente di piu'.
+static var _pf_paths: Array = []       # richieste in sottofondo non ancora ritirate
+static var _pf_id: String = ""
+
+
+# I file che set_who leggera' per questo personaggio (stesso ordine e stesse condizioni)
+static func files_of(id: String) -> Array:
+	var out: Array = []
+	if Settings.hud_cornice:
+		var dp: String = "res://assets/portraits/hud/%s_dietro.png" % id
+		var ap: String = "res://assets/portraits/hud/%s_avanti.png" % id
+		if ResourceLoader.exists(dp) and ResourceLoader.exists(ap):
+			out.append(dp)
+			out.append(ap)
+	var real: String = "res://assets/portraits/hud/%s_hud.png" % id
+	if ResourceLoader.exists(real):
+		out.append(real)
+		if FERMI.has(id):
+			return out
+		for k in ["sciarpa", "testa", "busto"]:
+			var fp: String = "res://assets/portraits/hud/%s_%s.png" % [id, k]
+			if ResourceLoader.exists(fp):
+				out.append(fp)
+	else:
+		var np: String = "res://assets/portraits/%s_neutro.png" % id
+		if ResourceLoader.exists(np):
+			out.append(np)
+	return out
+
+
+static func prefetch(id: String) -> void:
+	if id == "" or id == _pf_id:
+		return
+	release_prefetch()           # al massimo un personaggio in anticipo
+	_pf_id = id
+	for p in files_of(id):
+		if ResourceLoader.has_cached(p):
+			continue
+		if ResourceLoader.load_threaded_request(p) == OK:
+			_pf_paths.append(p)
+
+
+# Ritira e lascia andare i disegni chiesti e non usati (es. il prossimo e' andato K.O. o la battaglia e' finita)
+static func release_prefetch() -> void:
+	for p in _pf_paths:
+		ResourceLoader.load_threaded_get(p)
+	_pf_paths.clear()
+	_pf_id = ""
+
+
+# Come load(), ma se il file e' gia' stato chiesto in anticipo lo prende da li' (pronto, o quasi)
+static func _take(path: String) -> Resource:
+	if _pf_paths.has(path):
+		_pf_paths.erase(path)
+		if _pf_paths.is_empty():
+			_pf_id = ""
+		var r: Resource = ResourceLoader.load_threaded_get(path)
+		if r != null:
+			return r
+	return load(path)
+
+
+func _exit_tree() -> void:
+	release_prefetch()
+
+
 func set_who(id: String) -> void:
 	if id == who_id and _tex != null:
 		return
@@ -160,11 +229,11 @@ func set_who(id: String) -> void:
 		var dp: String = "res://assets/portraits/hud/%s_dietro.png" % id
 		var ap: String = "res://assets/portraits/hud/%s_avanti.png" % id
 		if ResourceLoader.exists(dp) and ResourceLoader.exists(ap):
-			_dietro = load(dp)
-			_avanti = load(ap)
+			_dietro = _take(dp)
+			_avanti = _take(ap)
 	var real: String = "res://assets/portraits/hud/%s_hud.png" % id
 	if ResourceLoader.exists(real):
-		_tex = load(real)
+		_tex = _take(real)
 		_tex_real = true
 		_sil = _silhouette(_tex)          # le varianti hanno la stessa sagoma: il bordo e l'ombra valgono per tutte
 		_base = RitrattoVarianti.base(id)
@@ -172,17 +241,17 @@ func set_who(id: String) -> void:
 			queue_redraw()
 			return
 		var sp: String = "res://assets/portraits/hud/%s_sciarpa.png" % id
-		_scarf = load(sp) if SCIARPA.has(id) and ResourceLoader.exists(sp) else null
+		_scarf = _take(sp) if SCIARPA.has(id) and ResourceLoader.exists(sp) else null
 		var hp: String = "res://assets/portraits/hud/%s_testa.png" % id
-		_head = load(hp) if TESTA.has(id) and ResourceLoader.exists(hp) else null
+		_head = _take(hp) if TESTA.has(id) and ResourceLoader.exists(hp) else null
 		var bp: String = "res://assets/portraits/hud/%s_busto.png" % id
 		if _head != null and ResourceLoader.exists(bp):
-			_busto = load(bp)
+			_busto = _take(bp)
 			_sil_busto = _silhouette(_busto)
 	else:
 		var fp: String = "res://assets/portraits/%s_neutro.png" % id
 		if ResourceLoader.exists(fp):
-			_tex = load(fp)
+			_tex = _take(fp)
 	queue_redraw()
 
 
@@ -191,9 +260,36 @@ func set_who(id: String) -> void:
 static var _sil_cache: Dictionary = {}
 
 
+# PRESTAZIONI (8/11/2026): calcolare la sagoma costava ~35 ms per disegno su PC (il triplo sul telefono), due disegni per
+# personaggio, al suo primo turno: uno scatto all'inizio dello scontro. Ora le sagome sono gia' pronte nei file di
+# assets/portraits/hud/sagome/ (fatti da tools/v3_sagome.gd con lo stesso calcolo, pixel per pixel): si caricano e basta.
+# Se il file non c'e' (disegno nuovo non ancora passato dallo strumento) si calcola come prima.
+const SIL_DIR: String = "res://assets/portraits/hud/sagome/"
+
+
+static func sil_path(src_path: String) -> String:
+	return SIL_DIR + src_path.get_file().get_basename() + ".png"
+
+
 static func _silhouette(t: Texture2D) -> Texture2D:
 	if _sil_cache.has(t.resource_path):
 		return _sil_cache[t.resource_path]
+	var pre: String = sil_path(t.resource_path)
+	if t.resource_path != "" and ResourceLoader.exists(pre):
+		var ready_tex: Texture2D = load(pre)
+		if ready_tex != null:
+			_sil_cache[t.resource_path] = ready_tex
+			return ready_tex
+	var out: Image = silhouette_image(t)
+	if out == null:
+		return null
+	var tex := ImageTexture.create_from_image(out)
+	_sil_cache[t.resource_path] = tex
+	return tex
+
+
+# Il calcolo della sagoma (usato dal gioco quando manca il file e da tools/v3_sagome.gd per farli)
+static func silhouette_image(t: Texture2D) -> Image:
 	var src: Image = t.get_image()
 	if src == null:
 		return null
@@ -208,10 +304,7 @@ static func _silhouette(t: Texture2D) -> Texture2D:
 		d[i + 1] = 255
 		d[i + 2] = 255
 		d[i + 3] = 255 if d[i + 3] >= 140 else 0
-	var out := Image.create_from_data(src.get_width(), src.get_height(), false, Image.FORMAT_RGBA8, d)
-	var tex := ImageTexture.create_from_image(out)
-	_sil_cache[t.resource_path] = tex
-	return tex
+	return Image.create_from_data(src.get_width(), src.get_height(), false, Image.FORMAT_RGBA8, d)
 
 
 # Vita di chi e' di turno: sotto il 50% e il 25% il ritratto si scurisce (varianti dell'autore, 3/11/2026).

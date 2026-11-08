@@ -77,18 +77,19 @@ func setup(char_id: String, override: Dictionary = {}) -> void:
 	_hip_y = AnimeBuilder.HIP_Y
 	_hips.position = Vector3(0, _hip_y, 0)
 	var sw: float = (0.14 if bool(sp.get("fem", false)) else 0.168) * b
-	_mesh(_hips, AnimeBuilder.torso(sp), "Torso")
+	var parts: Dictionary = _parts_for(sp)
+	_mesh_of(_hips, parts["torso"], "Torso")
 	_head = _pivot(_hips, "Head", Vector3(0, AnimeBuilder.NECK_Y, 0))
 	_head.scale = Vector3.ONE * 1.16         # testa grande da anime: si legge meglio sul telefono
-	_mesh(_head, AnimeBuilder.head(sp), "HeadMesh")
+	_mesh_of(_head, parts["head"], "HeadMesh")
 	_arm_l = _pivot(_hips, "ArmL", Vector3(-sw - 0.035, AnimeBuilder.SHOULDER_Y, 0))
 	_arm_r = _pivot(_hips, "ArmR", Vector3(sw + 0.035, AnimeBuilder.SHOULDER_Y, 0))
-	_mesh(_arm_l, AnimeBuilder.arm(sp, -1.0), "Arm")
-	_mesh(_arm_r, AnimeBuilder.arm(sp, 1.0), "Arm")
+	_mesh_of(_arm_l, parts["arm_l"], "Arm")
+	_mesh_of(_arm_r, parts["arm_r"], "Arm")
 	_leg_l = _pivot(_body, "LegL", Vector3(-0.088, _hip_y, 0))
 	_leg_r = _pivot(_body, "LegR", Vector3(0.088, _hip_y, 0))
-	_mesh(_leg_l, AnimeBuilder.leg(sp, -1.0), "Leg")
-	_mesh(_leg_r, AnimeBuilder.leg(sp, 1.0), "Leg")
+	_mesh_of(_leg_l, parts["leg_l"], "Leg")
+	_mesh_of(_leg_r, parts["leg_r"], "Leg")
 	_shadow = MeshInstance3D.new()
 	_shadow.mesh = MeshBatch.disc(0.42 * _scale, Color(0.02, 0.0, 0.06, 0.55), 14, 0.015)
 	_shadow.material_override = Toon.shadow()
@@ -139,6 +140,43 @@ func _pivot(parent: Node3D, n: String, pos: Vector3) -> Node3D:
 	p.position = pos
 	parent.add_child(p)
 	return p
+
+
+# PRESTAZIONI (8/11/2026): il corpo di un personaggio (testa, capelli, busto, braccia, gambe) si costruiva da zero, in
+# GDScript, ogni volta che compariva: 20-40 ms a testa su PC, il triplo sul telefono. Succedeva 4 volte all'inizio di ogni
+# scontro, per strada e a OGNI cut-in (ULTIMATE e colpo finale). Le forme dipendono solo dalla scheda del personaggio
+# (stessa scheda = stesse forme, nessun caso), quindi si costruiscono una volta e poi si riusano: aspetto identico.
+const PARTS_CACHE_MAX: int = 24        # schede diverse tenute (4 eroi, crepa della maschera, espressioni dei ritratti)
+static var _parts_cache: Dictionary = {}
+
+
+static func _parts_for(sp: Dictionary) -> Dictionary:
+	var key: String = var_to_str(sp)
+	if _parts_cache.has(key):
+		return _parts_cache[key]
+	var parts: Dictionary = {
+		"torso": AnimeBuilder.torso(sp).build(),
+		"head": AnimeBuilder.head(sp).build(),
+		"arm_l": AnimeBuilder.arm(sp, -1.0).build(),
+		"arm_r": AnimeBuilder.arm(sp, 1.0).build(),
+		"leg_l": AnimeBuilder.leg(sp, -1.0).build(),
+		"leg_r": AnimeBuilder.leg(sp, 1.0).build(),
+	}
+	if _parts_cache.size() >= PARTS_CACHE_MAX:
+		_parts_cache.erase(_parts_cache.keys()[0])       # la piu' vecchia
+	_parts_cache[key] = parts
+	return parts
+
+
+func _mesh_of(parent: Node3D, mesh: ArrayMesh, n: String) -> void:
+	# come MeshBatch.make_instance, ma con la mesh gia' pronta (condivisa tra le copie dello stesso personaggio)
+	var mi := MeshInstance3D.new()
+	mi.name = n
+	mi.mesh = mesh
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	Toon.dress(mi)
+	parent.add_child(mi)
+	_meshes.append(mi)
 
 
 func _mesh(parent: Node3D, mb: MeshBatch, n: String) -> void:

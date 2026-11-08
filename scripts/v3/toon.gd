@@ -154,6 +154,19 @@ void fragment() {
 """
 
 static var _cache: Dictionary = {}
+static var _shared: Dictionary = {}
+
+
+# PRESTAZIONI (8/11/2026): sul telefono (GLES3) ogni Shader.new() e' un programma nuovo da compilare, anche se il testo
+# e' identico a uno gia' usato. Lo stesso testo ora da' sempre lo stesso Shader: si compila una volta per partita,
+# non a ogni scontro, a ogni cut-in o a ogni ruota dei comandi. L'aspetto non cambia (stesso codice, stessi parametri).
+static func shared_shader(code: String) -> Shader:
+	var sh: Shader = _shared.get(code)
+	if sh == null:
+		sh = Shader.new()
+		sh.code = code
+		_shared[code] = sh
+	return sh
 
 
 static func _shader_mat(key: String, code: String) -> ShaderMaterial:

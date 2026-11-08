@@ -22,6 +22,13 @@ var _pending: Array = []          # cambio di schermata chiesto durante un altro
 var _going: Array = []            # cambio in corso: [schermata, argomenti]
 signal screen_shown               # la nuova schermata e' nell'albero (prima della dissolvenza di uscita)
 
+# PRE-CARICAMENTO (8/11/2026): la prima volta che si entrava in battaglia il gioco si fermava ~0,9 s (strada ~0,5 s su PC,
+# il triplo sul telefono) solo per leggere e compilare il codice della schermata e tutto quello che usa. Ora, appena il menu e'
+# a schermo, le schermate pesanti si caricano in un altro thread mentre si gioca: al cambio sono gia' pronte.
+const PRELOAD: Array = ["area", "battle"]
+var _preloading: Array = []       # percorsi chiesti al caricatore in sottofondo e non ancora ritirati
+var _ready_scripts: Dictionary = {}   # percorso -> script gia' pronto (tenuto qui perche' resti in memoria)
+
 
 func _ready() -> void:
 	Breadcrumb.read_previous()
@@ -48,11 +55,49 @@ func _ready() -> void:
 		if str(a).begins_with("--screen="):
 			screen = str(a).substr(9)
 	go(screen)
+	screen_shown.connect(_preload_screens, CONNECT_ONE_SHOT)
 	if DisplayServer.get_name() != "headless":
-		add_child(ShaderWarmup.new())
+		var warm := ShaderWarmup.new()
+		warm.extra_2d = [TEAR_SHADER]          # lo strappo del nastro all'ingresso in battaglia (prima si compilava al contatto)
+		add_child(warm)
+
+
+func _preload_screens() -> void:
+	for k in PRELOAD:
+		var p: String = SCREENS[k]
+		if _ready_scripts.has(p) or ResourceLoader.has_cached(p):
+			continue
+		if ResourceLoader.load_threaded_request(p) == OK:
+			_preloading.append(p)
+
+
+# Ritira gli script finiti di caricare (un controllo leggero, solo finche' ce n'e' qualcuno in corso)
+func _collect_preloads() -> void:
+	for p in _preloading.duplicate():
+		var st: int = ResourceLoader.load_threaded_get_status(p)
+		if st == ResourceLoader.THREAD_LOAD_LOADED:
+			_ready_scripts[p] = ResourceLoader.load_threaded_get(p)
+			_preloading.erase(p)
+		elif st == ResourceLoader.THREAD_LOAD_FAILED or st == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			_preloading.erase(p)          # si carichera' come prima, al cambio
+
+
+func _screen_script(path: String) -> GDScript:
+	if _ready_scripts.has(path):
+		return _ready_scripts[path]
+	if _preloading.has(path):
+		# ancora in corso: si aspetta la fine di quel caricamento (mai piu' lento di prima, spesso quasi finito)
+		_preloading.erase(path)
+		var res: Resource = ResourceLoader.load_threaded_get(path)
+		if res is GDScript:
+			_ready_scripts[path] = res
+			return res
+	return load(path)
 
 
 func _process(_delta: float) -> void:
+	if not _preloading.is_empty():
+		_collect_preloads()
 	_fps.visible = Settings.show_fps
 	if _fps.visible:
 		_fps.text = "%d FPS" % Engine.get_frames_per_second()
@@ -99,7 +144,7 @@ func go(screen: String, args: Dictionary = {}) -> void:
 	# due fotogrammi: la scena vecchia esce davvero dall'albero e libera le risorse prima della nuova
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var script: GDScript = load(SCREENS.get(screen, SCREENS["menu"]))
+	var script: GDScript = _screen_script(SCREENS.get(screen, SCREENS["menu"]))
 	current = script.new()
 	current.name = screen.capitalize()
 	if current.has_method("configure"):
@@ -208,8 +253,7 @@ static var _tear_sh: Shader = null
 
 func _tear_rect(img: Image) -> Array:
 	if _tear_sh == null:
-		_tear_sh = Shader.new()
-		_tear_sh.code = TEAR_SHADER
+		_tear_sh = Toon.shared_shader(TEAR_SHADER)      # stesso Shader del riscaldamento (ShaderWarmup): niente compilazione al contatto
 	var mat := ShaderMaterial.new()
 	mat.shader = _tear_sh
 	mat.set_shader_parameter("src", ImageTexture.create_from_image(img))

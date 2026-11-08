@@ -32,6 +32,7 @@ godot --headless --path . -s tests/unit/test_v3_settings_panel.gd   # il pannell
 godot --headless --path . -s tests/unit/test_v3_mesh_batch.gd             # cache delle mesh piatte riutilizzate
 godot --headless --path . -s tests/unit/test_v3_city_builder.gd          # cache dei colori della scenografia
 godot --headless --path . -s tests/unit/test_v3_shader_warmup.gd        # geometria condivisa per il warm-up shader
+godot --headless --path . -s tests/unit/test_v3_prestazioni_cambi.gd    # sagome pronte identiche, shader e forme dei personaggi condivisi
 godot --headless --path . -s tests/unit/test_v3_integrita_salvataggio.gd  # validazione area, checkpoint finale e recupero backup
 godot --headless --path . -s tests/unit/test_v3_dialoghi.gd
 godot --headless --path . -s tests/unit/test_v3_timeline.gd       # Timeline del combattimento (Fase 1): ordine per VEL, round, pareggi
@@ -44,6 +45,9 @@ godot --headless --path . -s tools/v3_bilancio.gd -- vel           # VEL e azion
 xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_atto1.gd -- /tmp/atto1 [tutte] [capitolo=N]
 xvfb-run -a -s "-screen 0 2400x1080x24" godot --path . --resolution 2400x1080 -s tools/v3_atto1.gd -- /tmp/atto1_t touch
 xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_vetrina.gd -- /tmp/vetrina      # personaggi, nemici ed effetti senza giocare
+xvfb-run -a godot --path . --resolution 1280x720 -s tools/v3_cambi_scena.gd -- giri=4   # strada <-> battaglia: tempi del cambio, scatti, nodi e memoria a ogni giro
+godot --headless --path . -s tools/v3_scatti.gd -- soglia=12        # scontro intero in AUTO: ogni fotogramma lento con fase e nodi creati (con xvfb-run anche il disegno)
+godot --headless --path . -s tools/v3_sagome.gd                     # rifà le sagome dei ritratti (assets/portraits/hud/sagome) dopo aver cambiato un *_hud.png o *_busto.png
 ```
 
 ## Rilascio

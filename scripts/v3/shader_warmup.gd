@@ -7,6 +7,9 @@ extends SubViewport
 
 const FRAMES: int = 3
 
+# Shader 2D in piu' da riscaldare, passati da chi crea il riscaldamento (es. lo strappo del nastro di main.gd).
+var extra_2d: Array = []
+
 
 func _ready() -> void:
 	size = Vector2i(64, 64)
@@ -21,6 +24,10 @@ func _ready() -> void:
 	static_fx_mat.shader = StaticFx.shader()
 	var mats: Array = [Toon.body(), Toon.ink(), Toon.ink_grow(), Toon.glow(), Toon.shadow(), Toon.hit_flash(),
 		Toon.body_tex(load("res://icon.png") as Texture2D), Toon.body_world(), NightFx.rain_material(), static_fx_mat]
+	# PRESTAZIONI (8/11/2026): anche i solidi del cut-in (ULTIMATE e colpo finale), con lo stesso Shader condiviso
+	var solid_mat := ShaderMaterial.new()
+	solid_mat.shader = Toon.shared_shader(EdgeCutin.SH_SOLID)
+	mats.append(solid_mat)
 	# La geometria e' identica per tutti i materiali: una sola mesh condivisa evita
 	# allocazioni ArrayMesh ripetute durante il warm-up.
 	var warmup_mesh: ArrayMesh = _quad()
@@ -46,6 +53,21 @@ func _ready() -> void:
 	gr.material = gm
 	gr.size = Vector2(16, 16)
 	add_child(gr)
+	# PRESTAZIONI (8/11/2026): gli shader 2D che prima si compilavano a scontro gia' iniziato o al contatto col nemico.
+	# Riflettore della ruota dei comandi, grana della telecamera, i quattro strati del cut-in e lo strappo del nastro:
+	# sono gli stessi Shader (Toon.shared_shader) che usera' il gioco, quindi la compilazione fatta qui vale per sempre.
+	var codes_2d: Array = [CmdWheel.SPOT_SHADER, CamHud.GRAIN_SHADER, EdgeCutin.SH_PERSON, EdgeCutin.SH_BG,
+		EdgeCutin.SH_NEAR, EdgeCutin.SH_FLAME] + extra_2d
+	var px: float = 32.0
+	for code in codes_2d:
+		var r2 := ColorRect.new()
+		var m2 := ShaderMaterial.new()
+		m2.shader = Toon.shared_shader(str(code))
+		r2.material = m2
+		r2.position = Vector2(px, 0)
+		r2.size = Vector2(4, 4)
+		px += 4.0
+		add_child(r2)
 	for i in FRAMES:
 		await RenderingServer.frame_post_draw
 	queue_free()
