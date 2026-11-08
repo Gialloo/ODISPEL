@@ -850,7 +850,8 @@ func _safe_zone() -> void:
 # immagine, sguardo di Echo...) torna a coprire lo schermo intero. Vale anche per quelli creati dopo (child_entered_tree).
 var _safe_off: Vector4 = Vector4.ZERO
 func _full_screen(c: Node) -> void:
-	if not (c is Control) or c in [_p1, _ritmo_bar, _wheel, _top_bar]:
+	# fuori: i pezzi dell'HUD e chi disegna in coordinate dell'HUD (fumetti, sfondo della squadra, strato delle battute)
+	if not (c is Control) or c in [_p1, _ritmo_bar, _wheel, _top_bar, _party_back, _quip_layer] or c is EchoBalloon:
 		return
 	var cc: Control = c
 	if not (is_equal_approx(cc.anchor_left, 0.0) and is_equal_approx(cc.anchor_top, 0.0) and is_equal_approx(cc.anchor_right, 1.0) and is_equal_approx(cc.anchor_bottom, 1.0)):
