@@ -170,3 +170,8 @@ Entrambi partono dalla paura/diffidenza e da una lettura incompleta della creatu
 - Vecchie scene di rifugio che presuppongono Rio come compagno umano parlante.
 - Materiale su personaggi diversi da Lance, Nox, Saul e Rio, se non discusso nella serie 0–23.
 - Qualsiasi dettaglio di archi o relazioni recuperato da conversazioni precedenti o successive alla serie.
+
+
+## 8. Dossier approfondito
+
+Questo supplemento è integrato dal [Supplemento VI — Dossier approfondito dei quattro protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md), che espande in particolare l'epilogo di Lance da istruttore con un solo cadetto, il rapporto di Nox con il padre e la magia, le sfumature di Saul tra sincerità e opportunismo, e l'identità aliena/adattiva di Rio.
