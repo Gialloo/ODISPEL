@@ -189,30 +189,21 @@ Sfumature discusse:
 
 Questi dettagli vanno usati per creare persone credibili, non per assegnare a Echo il ruolo di mascotte comica.
 
-## 11. Rifugio: non sono ancora una famiglia
+## 11. Scene del rifugio e dialoghi: rettifica di continuità
 
-**PREFERENZA ESPRESSA dall'autore (5 novembre 2026):**
-Il rifugio non deve sembrare subito una casa condivisa da una famiglia affiatata. Inizialmente sono quattro persone finite nello stesso posto:
-- piccoli disaccordi sul divano e sugli spazi;
-- turni e compiti pratici;
-- abitudini incompatibili;
-- silenzi e tentativi di conversazione;
-- gesti di cortesia non dichiarati;
-- persone che cercano vicinanza senza ammetterlo.
+**RETTIFICA CANONICA — 11 novembre 2026**
 
-Il senso di famiglia si costruisce col tempo attraverso abitudini, attriti, esclusioni, riconciliazioni e gentilezze non sottolineate.
+Le scene di rifugio e i dialoghi elencati nella precedente versione di questo supplemento provenivano da una iterazione narrativa precedente e sono stati rimossi dal canone attuale.
 
-## 12. Dialoghi e scene di rifugio già approvati
+In particolare, non sono canonici per la versione attuale:
+- Nox e Rio che parlano insieme prima o durante una convivenza domestica;
+- Rio e Saul che scherzano sulla batteria del telefono;
+- Rio che partecipa ai turni di guardia o alle dinamiche da falò come un membro umano del gruppo;
+- la rappresentazione del gruppo come quattro persone già riunite in un rifugio e avviate a una quotidianità condivisa.
 
-Nelle conversazioni del 5 novembre sono state approvate/revisionate alcune interazioni naturali:
-- Lance–Rio sul primo turno di guardia e sulle telecamere.
-- Nox–Rio: «Aspetta, stai già dormendo?» / «Se stai zitto riesco».
-- Rio–Saul: battuta sulla batteria al 9% e sulla sopravvivenza.
-- Echo–Nox: «Funziona?» / «Non so dirtelo con certezza».
+**Canone attuale:** i protagonisti partono come sconosciuti e la collaborazione nasce dalla necessità. Rio è un'anomalia/Kairos: non va scritto come un normale compagno umano che conversa con gli altri. Il suo rapporto con Lance, Nox e Saul si sviluppa attraverso osservazione, comportamento, distanze, difese, curiosità e convivenza difficile. La scena della nidificazione nel Capitolo 1 è un momento concreto e importante.
 
-Una dinamica Lance–Saul discussa: Saul cerca un contatto senza fidarsi ancora; parte da una stupidaggine e può arrivare a una conversazione più sincera, senza trasformarla in una confessione improvvisa.
-
-**Riferimento storico:** una versione di questi dialoghi è stata riportata come inserita in `data/dialoghi_atto1.json` sul branch `claude/v3-prologo`, commit `e76723d0df5ca90e56ec23f62950738f825f4c18`. Il contenuto è una vecchia iterazione: controllare prima di recuperarlo e riscriverlo in accordo con il canone attuale. Non assumere che quel branch o quei dialoghi siano la versione definitiva.
+Le scene del 5 novembre possono restare come materiale storico di una versione precedente, ma non devono essere recuperate, riscritte o inserite nella demo attuale senza una nuova approvazione esplicita.
 
 ## 13. Nostalgia e memoria dei personaggi
 
