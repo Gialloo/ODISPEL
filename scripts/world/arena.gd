@@ -107,6 +107,58 @@ func _skyline() -> void:
 	win_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	var qm := QuadMesh.new()
 	_multimesh(qm, win_mat, wins)
+	_power_lines(body_mat)
+
+## 0.12: pali e fili della luce. Ad anello appena fuori dal muro, più qualche filo che passa alto
+## sopra l'arena: guardando in su si vedono tagliare il cielo del tramonto.
+func _power_lines(pole_mat: Material) -> void:
+	var n := 18
+	var r := 30.5
+	var h := 11.0
+	var poles := []
+	var bars := []
+	var tops: Array[Vector3] = []
+	for i in n:
+		var a := TAU * (i + 0.5) / n
+		var p := Vector3(sin(a) * r, 0, cos(a) * r)
+		var basis := Basis(Vector3.UP, a)
+		poles.append([Transform3D(basis.scaled(Vector3(0.32, h, 0.32)), p + Vector3(0, h * 0.5, 0)), Color(0.32, 0.22, 0.2)])
+		bars.append([Transform3D(basis.scaled(Vector3(2.6, 0.18, 0.2)), p + Vector3(0, h - 0.6, 0)), Color(0.32, 0.22, 0.2)])
+		tops.append(p + Vector3(0, h - 0.5, 0))
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.5
+	cm.bottom_radius = 0.5
+	cm.height = 1.0
+	cm.radial_segments = 6
+	_multimesh(cm, pole_mat, poles)
+	_multimesh(BoxMesh.new(), pole_mat, bars)
+	var wires := []
+	for i in n:
+		var a: Vector3 = tops[i]
+		var b: Vector3 = tops[(i + 1) % n]
+		var side := (b - a).cross(Vector3.UP).normalized()
+		for k in [-1.0, 1.0]:
+			_wire(wires, a + side * k * 1.1, b + side * k * 1.1, 0.7)
+	# fili che attraversano l'arena in alto, da un palo a quello quasi opposto
+	for pair in [[0, 8], [3, 12], [6, 14], [10, 1]]:
+		_wire(wires, tops[pair[0]], tops[pair[1]], 2.2)
+	var wm := StandardMaterial3D.new()
+	wm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	wm.vertex_color_use_as_albedo = true
+	_multimesh(BoxMesh.new(), wm, wires)
+
+## Filo che pende: quattro tratti dritti con la pancia in mezzo.
+func _wire(out: Array, a: Vector3, b: Vector3, sag: float) -> void:
+	var pts: Array[Vector3] = []
+	for k in 5:
+		var t := k / 4.0
+		pts.append(a.lerp(b, t) - Vector3(0, sag * 4.0 * t * (1.0 - t), 0))
+	for k in 4:
+		var p0: Vector3 = pts[k]
+		var p1: Vector3 = pts[k + 1]
+		var d := p0.distance_to(p1)
+		var basis := Basis.looking_at(p1 - p0, Vector3.UP).scaled(Vector3(0.06, 0.06, d))
+		out.append([Transform3D(basis, (p0 + p1) * 0.5), Color(0.06, 0.04, 0.07)])
 
 func _multimesh(mesh: Mesh, mat: Material, items: Array) -> void:
 	var mm := MultiMesh.new()

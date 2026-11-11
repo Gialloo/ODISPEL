@@ -45,6 +45,7 @@ func _ready() -> void:
 	power.cam = cam
 	player.add_child(power)
 	player.died.connect(_on_player_died)
+	add_child(preload("res://scripts/ui/anime_fx.gd").new())
 	hud = Hud.new()
 	hud.player = player
 	hud.cam = cam

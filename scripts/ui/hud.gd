@@ -207,15 +207,17 @@ func _open_options() -> void:
 	]
 	for r in rows:
 		v.add_child(_centered(_opt_row(r[0], r[1], r[2], r[3], r[4])))
-	var cb := CheckButton.new()
-	cb.text = "Visuale libera che si gira da sola"
-	cb.focus_mode = Control.FOCUS_NONE
-	cb.add_theme_font_override("font", _font)
-	cb.add_theme_font_size_override("font_size", 22)
-	cb.add_theme_constant_override("h_separation", 18)
-	cb.button_pressed = bool(Run.opt.auto_cam)
-	cb.toggled.connect(func(on): Run.opt.auto_cam = on)
-	v.add_child(_centered(cb))
+	for c in [["Visuale libera che si gira da sola", "auto_cam"], ["Lampi sui colpi forti (impact frame)", "flash"], ["Grana e bordi scuri", "film"]]:
+		var cb := CheckButton.new()
+		cb.text = c[0]
+		cb.focus_mode = Control.FOCUS_NONE
+		cb.add_theme_font_override("font", _font)
+		cb.add_theme_font_size_override("font_size", 22)
+		cb.add_theme_constant_override("h_separation", 18)
+		var key: String = c[1]
+		cb.button_pressed = bool(Run.opt.get(key, true))
+		cb.toggled.connect(func(on): Run.opt[key] = on)
+		v.add_child(_centered(cb))
 	var bb := _button("INDIETRO", Color(0.35, 0.95, 1.0), 360, 90, 30)
 	bb.pressed.connect(func():
 		Run.save_cfg()

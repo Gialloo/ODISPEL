@@ -15,6 +15,8 @@ var _sounds := {}
 var _players: Array[AudioStreamPlayer] = []
 var _next_player := 0
 var _world: Node3D
+signal impact_requested(ms: int)
+signal speedlines_requested(ms: int)
 
 ## Parametri regolabili dal pannello (laboratorio).
 var tune := {
@@ -110,6 +112,13 @@ func slow_enemies(factor: float, seconds: float) -> void:
 
 func is_slowed() -> bool:
 	return now() < _slow_until
+
+## 0.12: lampo bianco e nero invertito (impact frame) e linee di velocità, vedi ui/anime_fx.gd.
+func impact_frame(ms := 60) -> void:
+	impact_requested.emit(ms)
+
+func speed_lines(ms := 260) -> void:
+	speedlines_requested.emit(ms)
 
 func shake(strength: float, duration := 0.18) -> void:
 	shake_requested.emit(strength * tune.shake_scale, duration)

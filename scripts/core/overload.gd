@@ -104,6 +104,8 @@ func _refresh() -> void:
 		FX.stat("overload_bursts")
 		FX.sound("cutin", 0.7)
 		FX.shake(0.5)
+		FX.impact_frame(110)
+		FX.speed_lines(600)
 		burst.emit(true)
 	_set_level(l)
 

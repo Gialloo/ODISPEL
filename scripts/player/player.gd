@@ -424,6 +424,8 @@ func _stick_side(to_t: Vector3) -> bool:
 func _start_move(id: String, now: int) -> void:
 	move_id = id
 	move = M.DATA[id]
+	if move.lunge >= 11.0 or move.get("zip", false):
+		FX.speed_lines(280)
 	move_t = 0.0
 	_hit_list.clear()
 	_hit_any = false
@@ -640,10 +642,14 @@ func _do_hits(slam: bool) -> void:
 		OV.feed("move:" + move_id, "weapon_%d" % move.form, 5.0)
 		FX.hitstop(move.stop)
 		FX.shake(move.shake)
+		# 0.12: i colpi che chiudono o schiacciano hanno il loro impact frame
+		if move.dmg >= 18.0:
+			FX.impact_frame(70 if move.dmg >= 24.0 else 50)
 		FX.sound(move.sound, M.FORM_PITCH[move.form])
 		if move.has("ring"):
 			FX.ring(global_position, Color(M.FORM_COLOR[move.form], 0.8), move.ring, 0.3)
 	elif slam:
+		FX.speed_lines(200)
 		FX.shake(move.shake * 0.6)
 		FX.sound("colpo_forte", 0.8)
 		FX.ring(global_position, Color(M.FORM_COLOR[move.form], 0.8), move.ring, 0.3)
@@ -749,6 +755,7 @@ func _start_dodge(now: int) -> void:
 		if _air_dodge_used:
 			return
 		_air_dodge_used = true
+	FX.speed_lines(220)
 	if state == S.ATTACK:
 		_end_move(now)
 	var d := input_dir()
@@ -806,6 +813,7 @@ func _perfect(_e: Node) -> void:
 	FX.ring(global_position, Color(0.6, 1.0, 1.0, 0.9), 3.5, 0.35)
 	FX.hitstop(60)
 	FX.stat("perfect_dodges")
+	FX.impact_frame(50)
 	perfect_dodge.emit()
 	if cam and cam.has_method("kick"):
 		cam.kick(9.0)
@@ -826,6 +834,7 @@ func parry(from: Node3D, dmg: float, projectile := false) -> void:
 		hp = min(max_hp, hp + 6.0)
 		hp_changed.emit(hp, max_hp)
 	FX.stat("parries")
+	FX.impact_frame(80)
 	OV.feed("parry", "defense", 16.0)
 	FX.hitstop(130)
 	FX.shake(0.4)

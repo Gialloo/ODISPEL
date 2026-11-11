@@ -76,3 +76,6 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 
 ## 0.11
 - Look da fumetto al tramonto: ombre a blocchi e contorni neri automatici (`FX._style_mesh`, si spegne con `FX.style_on`), cielo e nebbia caldi, città di sfondo in MultiMesh (`arena._skyline`).
+
+## 0.12
+- Effetti da anime: impact frame, linee di velocità, grana e bordi scuri (`scripts/ui/anime_fx.gd`, `FX.impact_frame`, `FX.speed_lines`), spegnibili dalle Opzioni. Pali e fili della luce sopra la città.
