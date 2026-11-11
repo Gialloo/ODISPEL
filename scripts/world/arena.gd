@@ -2,7 +2,7 @@ extends Node3D
 ## Arena unica: spazio aperto al centro, qualche ostacolo, una piattaforma rialzata
 ## con rampa (zona speciale). Colori piatti e leggibili, nessuna ombra costosa.
 
-const RADIUS := 22.0
+const RADIUS := 26.0                # 0.6: più larga, centro sgombro per muoversi
 const Prop = preload("res://scripts/world/prop.gd")
 
 func _ready() -> void:
@@ -96,28 +96,29 @@ func _floor() -> void:
 	ring.position.y = 0.01
 	var rm := StandardMaterial3D.new()
 	rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	rm.albedo_color = Color(0.35, 0.9, 1.0, 1)
+	rm.albedo_color = Color(0.2, 0.42, 0.5, 1)   # 0.6: più tenue, è solo un riferimento
 	ring.material_override = rm
 	add_child(ring)
 
 func _walls() -> void:
-	var n := 24
+	# muro continuo e calmo: un solo colore, pochi pannelli più alti come riferimento
+	var n := 28
 	for i in n:
 		var a := TAU * i / n
 		var p := Vector3(sin(a), 0, cos(a)) * (RADIUS + 1.0)
-		var h := 4.0 if i % 3 else 6.5
-		var c := Color(0.26, 0.27, 0.34) if i % 3 else Color(0.34, 0.3, 0.42)
-		_static_box(Vector3(6.2, h, 1.2), p + Vector3(0, h * 0.5, 0), c, a)
+		var tall := i % 7 == 0
+		var h := 6.0 if tall else 4.0
+		var c := Color(0.32, 0.29, 0.42) if tall else Color(0.24, 0.25, 0.32)
+		_static_box(Vector3(6.4, h, 1.2), p + Vector3(0, h * 0.5, 0), c, a)
 
 func _obstacles() -> void:
-	# pilastri: ripari e punti da cui girare intorno
-	for p in [Vector3(9, 0, 6), Vector3(-10, 0, 4), Vector3(4, 0, -11), Vector3(-6, 0, -9)]:
-		_static_box(Vector3(1.6, 5.0, 1.6), p + Vector3(0, 2.5, 0), Color(0.3, 0.32, 0.4))
-	# muretti bassi: si saltano
-	_static_box(Vector3(5.0, 1.0, 0.8), Vector3(-2, 0.5, 12), Color(0.36, 0.34, 0.3))
-	_static_box(Vector3(0.8, 1.0, 5.0), Vector3(14, 0.5, -3), Color(0.36, 0.34, 0.3), 0.3)
-	# piattaforma rialzata con rampa: zona speciale (in Fase 3 diventa interattiva)
-	var plat := _static_box(Vector3(7.0, 2.2, 7.0), Vector3(-13, 1.1, -14), Color(0.28, 0.24, 0.36))
+	# 0.6: pochi ostacoli e tutti ai bordi, il centro resta libero per il combattimento
+	for p in [Vector3(15, 0, 11), Vector3(-16, 0, 10)]:
+		_static_box(Vector3(1.8, 5.0, 1.8), p + Vector3(0, 2.5, 0), Color(0.3, 0.32, 0.4))
+	# un muretto basso da saltare
+	_static_box(Vector3(5.0, 1.0, 0.8), Vector3(0, 0.5, 18), Color(0.36, 0.34, 0.3))
+	# piattaforma rialzata con rampa: zona speciale
+	var plat := _static_box(Vector3(7.0, 2.2, 7.0), Vector3(-15, 1.1, -15), Color(0.28, 0.24, 0.36))
 	plat.name = "Piattaforma"
 	var ramp := StaticBody3D.new()
 	ramp.collision_layer = 1
@@ -133,28 +134,26 @@ func _obstacles() -> void:
 	mi.mesh = bm
 	mi.material_override = _mat(Color(0.32, 0.28, 0.4))
 	ramp.add_child(mi)
-	ramp.position = Vector3(-13, 1.0, -7.6)
+	ramp.position = Vector3(-15, 1.0, -8.6)
 	ramp.rotation.x = atan2(2.2, len) * 1.0
 	add_child(ramp)
 
-## Oggetti manipolabili: casse leggere sparse e blocchi pesanti vicino ai pilastri.
+## Oggetti raccolti in tre "postazioni" ai bordi, ognuna con una funzione chiara;
+## il centro resta sgombro. Poche cose, ben leggibili.
 func _props() -> void:
-	var light := [Vector3(3, 0, 3), Vector3(-4, 0, 2), Vector3(6, 0, -4), Vector3(-7, 0, -3),
-		Vector3(1, 0, -7), Vector3(-2, 0, 8), Vector3(10, 0, 1), Vector3(-11, 0, 9)]
-	for p in light:
+	# postazione elettrica (est): bobina accanto alla pozza
+	_puddle(Vector3(12, 0, -4), 3.0)
+	_spawn_prop("coil", Vector3(16, 0, -5))
+	# postazione del fuoco (ovest): due bidoni e una cassa
+	_spawn_prop("barrel", Vector3(-14, 0, -1))
+	_spawn_prop("barrel", Vector3(-15.5, 0, 1.5))
+	_spawn_prop("light", Vector3(-11.5, 0, 1))
+	# muretto da sfondare (nord) e blocco di metallo (sud-est)
+	_spawn_prop("cover", Vector3(2, 0, -15))
+	_spawn_prop("heavy", Vector3(9, 0, 14))
+	# poche casse leggere a portata del centro, per il potere
+	for p in [Vector3(7, 0, 5), Vector3(-6, 0, -7), Vector3(-5, 0, 9)]:
 		_spawn_prop("light", p)
-	for p in [Vector3(7.5, 0, 7.5), Vector3(-8, 0, 6), Vector3(5, 0, -9)]:
-		_spawn_prop("heavy", p)
-	# Fase 3: bidoni, bobine vicino all'acqua, muretti da sfondare
-	for p in [Vector3(-3, 0, 4), Vector3(4, 0, 6), Vector3(0, 0, -11)]:
-		_spawn_prop("barrel", p)
-	_puddle(Vector3(9, 0, -5), 2.6)
-	_puddle(Vector3(-4, 0, -5), 2.2)
-	_spawn_prop("coil", Vector3(11.5, 0, -6.5))
-	_spawn_prop("coil", Vector3(-7, 0, -6.5))
-	_spawn_prop("cover", Vector3(-6, 0, 0), 0.4)
-	_spawn_prop("cover", Vector3(6, 0, 10.5), -0.3)
-	_spawn_prop("cover", Vector3(13, 0, 4), 1.4)
 
 ## Ogni oggetto distrutto torna al suo posto dopo un po': l'arena non si svuota.
 func _spawn_prop(k: String, p: Vector3, rot := 0.0) -> void:
@@ -189,5 +188,5 @@ func _puddle(p: Vector3, r: float) -> void:
 
 func spawn_point() -> Vector3:
 	var a := randf() * TAU
-	var r := randf_range(10.0, 17.0)
+	var r := randf_range(12.0, 21.0)
 	return Vector3(sin(a) * r, 0.2, cos(a) * r)

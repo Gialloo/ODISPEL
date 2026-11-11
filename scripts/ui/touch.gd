@@ -1,4 +1,6 @@
 extends Control
+
+const M = preload("res://scripts/player/moves.gd")
 ## Comandi touch: stick mobile a sinistra, trascinamento a destra per la telecamera,
 ## tasti grandi per il pollice destro. Multitouch con indice per ogni dito.
 
@@ -148,11 +150,18 @@ func _draw() -> void:
 		var b: Dictionary = _buttons()[n]
 		var on: bool = held.has(n) or Pad.held(n)
 		var col: Color = b.col
+		if n == "attack" and power and power.player and power.player.has_method("next_form"):
+			# il tasto prende il colore della forma che uscirà: viola = VECTOR pronto
+			col = M.FORM_COLOR[power.player.next_form()]
 		draw_circle(b.pos, b.r, Color(col, 0.32 if on else 0.14))
 		draw_arc(b.pos, b.r, 0, TAU, 40, Color(col, 0.9 if on else 0.55), 4.0 if on else 3.0)
 		var fs := 22 if b.r > 70 else 17
 		var w := _font.get_string_size(b.label, HORIZONTAL_ALIGNMENT_CENTER, -1, fs).x
 		draw_string(_font, b.pos + Vector2(-w * 0.5, fs * 0.35), b.label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.9))
+		if n == "attack" and power and power.player and power.player.has_method("next_form"):
+			var fn: String = M.FORM_NAME[power.player.next_form()]
+			var fw := _font.get_string_size(fn, HORIZONTAL_ALIGNMENT_CENTER, -1, 15).x
+			draw_string(_font, b.pos + Vector2(-fw * 0.5, 34), fn, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(col, 0.95))
 	# POTERE: frecce del gesto e ricariche
 	var pb: Dictionary = _buttons()["power"]
 	var pc: Vector2 = pb.pos

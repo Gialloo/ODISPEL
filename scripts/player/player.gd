@@ -17,7 +17,7 @@ var tune := {
 	"accel": 60.0,
 	"decel": 45.0,
 	"air_control": 0.6,
-	"turn_speed": 16.0,
+	"turn_speed": 20.0,
 	"jump": 10.0,
 	"gravity": 28.0,
 	"fall_mult": 1.55,
@@ -290,11 +290,16 @@ func _landing_feel(on_floor: bool) -> void:
 
 # ---------------------------------------------------------------- attacchi
 
-func _pick_move(kind: String) -> String:
+## Forma del prossimo attacco leggero (per colorare il tasto ATTACCO: si vede prima cosa uscirà).
+func next_form() -> int:
+	return M.DATA[_pick_move("light", true)].form
+
+func _pick_move(kind: String, peek := false) -> String:
 	var now := Time.get_ticks_msec()
 	var airborne := not is_on_floor()
 	if _counter_ready and FX.is_slowed():
-		_counter_ready = false
+		if not peek:
+			_counter_ready = false
 		return "impact_counter"
 	if kind == "heavy":
 		return "impact_slam" if airborne and global_position.y > 1.2 else "impact_launcher"
@@ -304,7 +309,8 @@ func _pick_move(kind: String) -> String:
 		if _air_attacks < 3:
 			return "blade_air_1"
 		return "blade_air_3"
-	if now - _last_dodge_end < 260:
+	# 0.6: finestra più larga, VECTOR circolare subito dopo la schivata
+	if now - _last_dodge_end < 450:
 		return "vector_sweep"
 	var t := _best_target(true)
 	if t:
@@ -314,7 +320,7 @@ func _pick_move(kind: String) -> String:
 		# stick tirato all'indietro rispetto al nemico: VECTOR lo frusta verso di te
 		if back != Vector3.ZERO and d > 2.2 and d < 6.8 and back.normalized().dot(to_t.normalized()) < -0.5:
 			return "vector_reel"
-		if d > 4.2 and d < 11.5:
+		if d > 3.4 and d < 11.5:
 			return "vector_lash"
 	if state == S.ATTACK and move.next != "":
 		return move.next
@@ -423,6 +429,14 @@ func _update_attack(delta: float, on_floor: bool, now: int) -> void:
 		return
 	if move_t >= move.cancel:
 		_try_buffer(now)
+	# 0.6: finito il colpo, lo stick fa ripartire subito (la combo resta aperta per un attimo)
+	if state == S.ATTACK and _buffer == "" and on_floor and not move.get("air", false) \
+			and move_t >= max(move.cancel, move.hit_to) + 0.03 and input_dir().length() > 0.55:
+		_end_move(now)
+		var dir := input_dir()
+		velocity.x = dir.x * tune.run_speed * 0.7
+		velocity.z = dir.z * tune.run_speed * 0.7
+		return
 	if state == S.ATTACK and move_t >= move.dur:
 		_end_move(now)
 
@@ -479,7 +493,7 @@ func _do_hits(slam: bool) -> void:
 		e.receive_hit(info)
 		if is_enemy:
 			_upgrade_hit(e)
-		FX.sparks(e.global_position + Vector3(0, 1.0, 0), -kdir, M.FORM_COLOR[move.form], 9, 8.0)
+		FX.sparks(e.global_position + Vector3(0, 1.0, 0), -kdir, M.FORM_COLOR[move.form], 6, 8.0)
 		FX.stat("hits")
 		if not is_on_floor():
 			velocity.y = max(velocity.y, 3.2)
@@ -491,8 +505,6 @@ func _do_hits(slam: bool) -> void:
 		FX.hitstop(move.stop)
 		FX.shake(move.shake)
 		FX.sound(move.sound, M.FORM_PITCH[move.form])
-		if move.form == M.Form.IMPACT:
-			FX.ring(global_position + facing * 1.4, Color(1, 0.75, 0.4, 0.7), 1.6, 0.22)
 		if move.has("ring"):
 			FX.ring(global_position, Color(M.FORM_COLOR[move.form], 0.8), move.ring, 0.3)
 	elif slam:
@@ -606,7 +618,9 @@ func _start_dodge(now: int) -> void:
 func _update_dodge(delta: float) -> void:
 	_dodge_t += delta
 	var k: float = clamp(_dodge_t / tune.dodge_time, 0.0, 1.0)
-	var spd: float = lerp(tune.dodge_speed, tune.run_speed * 0.6, k * k)
+	# se tieni lo stick si esce correndo, senza il calo di velocità
+	var out: float = tune.run_speed * (1.05 if input_dir() != Vector3.ZERO else 0.6)
+	var spd: float = lerp(tune.dodge_speed, out, k * k)
 	velocity.x = _dodge_dir.x * spd
 	velocity.z = _dodge_dir.z * spd
 	velocity.y = max(velocity.y - tune.gravity * 0.3 * delta, -6.0)
@@ -614,6 +628,9 @@ func _update_dodge(delta: float) -> void:
 		_afterimage()
 	if _dodge_t >= tune.dodge_time:
 		state = S.MOVE
+		var dir := input_dir()
+		if dir != Vector3.ZERO:
+			facing = dir.normalized()
 		_last_dodge_end = Time.get_ticks_msec()
 		_try_buffer(_last_dodge_end)
 

@@ -95,7 +95,7 @@ func _scenario(i: int) -> bool:
 		0:
 			# nemico nella pozza, il giocatore colpisce la bobina
 			var coil = of_kind.call("coil")[0]
-			e.global_position = Vector3(9, 0.2, -5)
+			e.global_position = Vector3(12, 0.2, -4)
 			coil.receive_hit({"dmg": 10.0, "poise": 0.0, "dir": Vector3.FORWARD, "knock": 1.0, "launch": 0.0, "form": 0, "move": "bot"})
 			print("SCENA bobina+pozza")
 		1:
