@@ -2,7 +2,7 @@
 **Fonti:** esclusivamente «Consigli per scrivere storie» 0–23, 10–11 novembre 2026.  
 **Branch:** `docs/odispel-master-canon-2026-11-11`
 
-> Questo documento sostituisce il precedente Supplemento V. Le vecchie scene «Le provviste», «Una medicazione» e ogni altro materiale proveniente da chat diverse dalla serie 0–23 sono state eliminate. Il rapporto Saul–Nox qui documentato è quello deciso nelle conversazioni ammesse.
+> Questo documento sostituisce il precedente Supplemento V e contiene soltanto l'arco Saul–Nox ricostruito dalle conversazioni ammesse.
 
 ## 1. Come Nox cambia il rapporto di Saul con la magia
 
