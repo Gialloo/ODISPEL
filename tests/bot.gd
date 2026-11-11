@@ -94,24 +94,32 @@ func _scenario(i: int) -> bool:
 	match i:
 		0:
 			# nemico nella pozza, il giocatore colpisce la bobina
+			if of_kind.call("coil").is_empty():
+				return false
 			var coil = of_kind.call("coil")[0]
 			e.global_position = Vector3(12, 0.2, -4)
 			coil.receive_hit({"dmg": 10.0, "poise": 0.0, "dir": Vector3.FORWARD, "knock": 1.0, "launch": 0.0, "form": 0, "move": "bot"})
 			print("SCENA bobina+pozza")
 		1:
 			# bidone vicino al nemico: un colpo lo accende
+			if of_kind.call("barrel").is_empty():
+				return false
 			var b = of_kind.call("barrel")[0]
 			e.global_position = b.global_position + Vector3(1.5, 0.2, 0)
 			b.receive_hit({"dmg": 12.0, "poise": 0.0, "dir": Vector3.RIGHT, "knock": 0.5, "launch": 0.0, "form": 1, "move": "bot"})
 			print("SCENA bidone")
 		2:
 			# muretto sfondato a colpi pesanti
+			if of_kind.call("cover").is_empty():
+				return false
 			var c = of_kind.call("cover")[0]
 			for k in 3:
 				c.receive_hit({"dmg": 22.0, "poise": 0.0, "dir": Vector3.FORWARD, "knock": 2.0, "launch": 0.0, "form": 1, "move": "bot"})
 			print("SCENA muretto")
 		3:
 			# cassa accesa lanciata contro il nemico
+			if of_kind.call("light").is_empty():
+				return false
 			var cr = of_kind.call("light")[0]
 			cr.ignite()
 			cr.global_position = e.global_position + Vector3(0, 1.0, 4.0)
@@ -144,7 +152,11 @@ func _drive(delta: float) -> void:
 	var want := atan2(-to.x, -to.z)
 	cam.yaw = lerp_angle(cam.yaw, want, 0.15)
 	# schivata quando il nemico sta per colpire
-	if e.state == 2 and e._t >= e.tune.windup - 0.12 and dist < 4.0 and randf() < 0.6:
+	# a volte para con la BLADE invece di schivare
+	if e.state == 3 and dist < 3.0 and randf() < 0.25:
+		_press("attack")
+		return
+	if e.state == 2 and e._t >= e._tv("windup") - 0.12 and dist < 4.0 and randf() < 0.6:
 		pad.move = Vector2(1, 0)
 		_press("dodge")
 		return
@@ -240,7 +252,7 @@ func _report() -> void:
 	keys.sort()
 	for k in keys:
 		print("  %s = %s" % [k, s[k]])
-	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts", "shocks", "puddle_shocks", "coil_discharges", "barrels_exploded", "enemies_burned", "structures_broken", "fire_throws", "overload_level_1", "overload_level_2", "overload_bursts", "waves", "spawn_brute", "spawn_conduit", "orbs_fired", "upgrades_taken", "double_jumps", "triple_jumps", "move_blade_dash", "move_blade_spin", "move_impact_breaker", "move_impact_hammer", "move_vector_zip", "move_vector_whirl", "theme_waves"]
+	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts", "shocks", "puddle_shocks", "coil_discharges", "barrels_exploded", "enemies_burned", "structures_broken", "fire_throws", "overload_level_1", "overload_level_2", "overload_bursts", "waves", "spawn_brute", "spawn_conduit", "orbs_fired", "upgrades_taken", "double_jumps", "triple_jumps", "move_blade_dash", "move_blade_spin", "move_impact_breaker", "move_impact_hammer", "move_vector_zip", "move_vector_whirl", "theme_waves", "parries", "sprints", "enemy_bounces"]
 	var missing := []
 	for n in need:
 		if s.get(n, 0) == 0:

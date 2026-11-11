@@ -14,9 +14,12 @@ enum S { MOVE, ATTACK, DODGE, HURT, DEAD }
 
 var tune := {
 	"run_speed": 7.8,
-	"accel": 60.0,
-	"decel": 45.0,
-	"air_control": 0.6,
+	"sprint_speed": 9.6,           # 0.8: dopo un attimo di corsa piena si accelera ancora
+	"sprint_after": 0.6,
+	"accel": 70.0,
+	"decel": 60.0,
+	"parry_window": 0.2,           # 0.8: un colpo BLADE partito da meno di così para l'attacco
+	"air_control": 0.75,
 	"turn_speed": 20.0,
 	"jump": 10.0,
 	"max_jumps": 3.0,              # 0.7: triplo salto
@@ -55,6 +58,8 @@ var _jump_buffer_until := 0
 var _coyote_until := 0
 var _air_attacks := 0
 var _jumps := 0
+var _run_t := 0.0
+var _parry_flash := 0.0
 var _spin_t := 0.0
 var _leap_t := 0.0
 var _air_dodge_used := false
@@ -248,7 +253,17 @@ func input_dir() -> Vector3:
 
 func _update_move(delta: float, on_floor: bool, now: int) -> void:
 	var dir := input_dir()
-	var target: Vector3 = dir * tune.run_speed
+	# corsa piena tenuta: scatto (si perde se ti fermi o cambi direzione di colpo)
+	var hv0 := Vector3(velocity.x, 0, velocity.z)
+	if dir.length() > 0.9 and on_floor and hv0.length() > tune.run_speed * 0.9 and hv0.normalized().dot(dir.normalized()) > 0.8:
+		_run_t += delta
+	elif on_floor:
+		_run_t = 0.0
+	var spd: float = tune.sprint_speed if _run_t > tune.sprint_after else tune.run_speed
+	if _run_t > tune.sprint_after and _run_t - delta <= tune.sprint_after:
+		_afterimage()
+		FX.stat("sprints")
+	var target: Vector3 = dir * spd
 	var hv := Vector3(velocity.x, 0, velocity.z)
 	var acc: float = tune.accel if dir != Vector3.ZERO else tune.decel
 	if not on_floor:
@@ -346,6 +361,10 @@ func _pick_move(kind: String, peek := false) -> String:
 		if airborne and global_position.y > 1.2:
 			return "impact_slam"
 		return "impact_hammer" if running else "impact_launcher"
+	# sfera in arrivo vicina: l'attacco diventa BLADE, così para e la rimanda indietro
+	for o in get_tree().get_nodes_in_group("orbs"):
+		if not o.reflected and o.global_position.distance_to(global_position + Vector3(0, 0.9, 0)) < 3.0:
+			return "blade_air_1" if airborne else "blade_1"
 	if airborne:
 		if state == S.ATTACK and move.get("air", false) and move.next != "":
 			return move.next
@@ -757,9 +776,43 @@ func _perfect(_e: Node) -> void:
 		cam.kick(9.0)
 
 ## Chiamata dai nemici quando il loro colpo arriva. Ritorna "hit", "dodged" o "perfect".
+## PARRY: un colpo BLADE partito al momento giusto ferma l'attacco e lo rimanda al mittente.
+func can_parry(from: Node3D) -> bool:
+	if state != S.ATTACK or move.form != M.Form.BLADE or move_t > tune.parry_window:
+		return false
+	if from and is_instance_valid(from):
+		var to := _flat(from.global_position - global_position)
+		if to.length() > 0.3 and rad_to_deg(facing.angle_to(to.normalized())) > 120.0:
+			return false
+	return true
+
+func parry(from: Node3D, dmg: float, projectile := false) -> void:
+	FX.stat("parries")
+	OV.feed("parry", "defense", 16.0)
+	FX.hitstop(130)
+	FX.shake(0.4)
+	FX.sound("scudo", 1.8)
+	FX.sound("critico", 1.3, -4.0)
+	FX.ring(global_position + Vector3(0, 1.0, 0) + facing * 0.8, Color(1, 1, 1, 0.95), 1.6, 0.2)
+	FX.sparks(global_position + Vector3(0, 1.2, 0) + facing * 0.9, facing, Color(1, 1, 1), 14, 9.0)
+	FX.slow_enemies(0.3, 0.45)
+	_flash(Color(1, 1, 1))
+	_combo_hits += 1
+	# la lama resta pronta: puoi continuare la combo subito
+	move_t = max(move_t, move.cancel)
+	if projectile or from == null or not is_instance_valid(from) or not from.has_method("receive_hit"):
+		return
+	var to := _flat(from.global_position - global_position)
+	var d := to.normalized() if to.length() > 0.1 else facing
+	# rispedito al mittente: si prende il suo stesso colpo e perde l'equilibrio
+	from.receive_hit({"dmg": dmg * 1.5, "poise": 999.0, "dir": d, "knock": 7.0, "launch": 0.0, "form": M.Form.BLADE, "move": "parry"})
+
 func take_hit(from: Node3D, dmg: float, dir: Vector3) -> String:
 	if state == S.DEAD:
 		return "dodged"
+	if can_parry(from) and from != self:
+		parry(from, dmg)
+		return "parry"
 	if is_invulnerable():
 		if _recent_dodge():
 			_perfect(from)

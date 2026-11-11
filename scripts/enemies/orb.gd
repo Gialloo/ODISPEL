@@ -65,6 +65,12 @@ func _physics_process(delta: float) -> void:
 				return
 	else:
 		var pl: Node3D = get_tree().get_first_node_in_group("player")
+		if pl and (pl.global_position + Vector3(0, 0.9, 0)).distance_to(global_position) < 1.25 and pl.can_parry(self):
+			# PARRY con la BLADE: la sfera torna dritta a chi l'ha lanciata
+			pl.parry(self, dmg, true)
+			reflect(pl)
+			vel *= 1.3
+			return
 		if pl and (pl.global_position + Vector3(0, 0.9, 0)).distance_to(global_position) < 0.85:
 			var r: String = pl.take_hit(owner_enemy if is_instance_valid(owner_enemy) else self, dmg, vel.normalized())
 			_burst(0.8, r == "hit")

@@ -56,3 +56,8 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 - VECTOR: catena in aria verso un nemico lontano (attacca in salto), vortice che risucchia (schiva, attacca, attacca).
 - Ondate più brevi e frequenti; ondate a tema SCIAME, CORAZZATI, TEMPESTA.
 - Prova delle mosse: `godot --path . -s tests/moves_07.gd`
+
+## 0.8
+- PARRY: un colpo BLADE che parte poco prima dell'impatto (0,2 s) ferma l'attacco: lo Scout e il Brute si prendono il loro colpo e perdono l'equilibrio, la sfera del Conduit torna a chi l'ha lanciata. Con una sfera vicina l'attacco diventa sempre BLADE. Prova: `tests/parry_08.gd`.
+- Movimento: scatto dopo 0,6 s di corsa piena, accelerazione e frenata più rapide, più controllo in aria.
+- Nemici: rotolano quando volano, rimbalzano a terra se cadono forte, i colpi forti li mandano contro muri e altri nemici, non ti entrano più dentro.

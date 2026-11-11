@@ -34,6 +34,9 @@ var state := S.IDLE
 var arch := "scout"
 var wave := 1                      # ondata: rende i nemici più svelti e frequenti, non solo più resistenti
 var _zap_cd := 0.0
+var _prev_vy := 0.0
+var _tumble := 0.0                 # 0.8: rotazione in aria quando viene lanciato
+var _bounced := false
 var tune := {
 	"speed": 6.5,
 	"attack_range": 2.3,
@@ -254,8 +257,10 @@ func _physics_process(delta: float) -> void:
 				_cooldown = randf_range(_tv("cooldown_min"), _tv("cooldown_max"))
 				_set_state(S.CHASE)
 		S.HITSTUN, S.STAGGER:
-			velocity.x = move_toward(velocity.x, 0, 22 * d)
-			velocity.z = move_toward(velocity.z, 0, 22 * d)
+			# scivola sul pavimento: più pesante = si ferma prima
+			var fr: float = (22.0 if is_on_floor() else 5.0) * sqrt(weight)
+			velocity.x = move_toward(velocity.x, 0, fr * d)
+			velocity.z = move_toward(velocity.z, 0, fr * d)
 			if _t >= (0.32 if state == S.HITSTUN else (2.0 if arch == "brute" else 1.3)) and is_on_floor():
 				if state == S.STAGGER:
 					poise = max_poise
@@ -263,9 +268,20 @@ func _physics_process(delta: float) -> void:
 		S.AIR:
 			velocity.x = move_toward(velocity.x, 0, 4 * d)
 			velocity.z = move_toward(velocity.z, 0, 4 * d)
+			_visual.rotation.x += _tumble * d
 			if is_on_floor() and _t > 0.15:
-				FX.ring(global_position, Color(1, 1, 1, 0.4), 1.2, 0.2)
-				_set_state(S.HITSTUN)
+				if _prev_vy < -8.0 and not _bounced:
+					# cade forte: un rimbalzo basso, dà peso al corpo
+					_bounced = true
+					velocity.y = min(-_prev_vy * 0.3, 5.5) / sqrt(weight)
+					_tumble *= 0.5
+					FX.ring(global_position, Color(1, 1, 1, 0.5), 1.5, 0.2)
+					FX.sound("colpo_forte", 0.6, -10.0)
+					FX.stat("enemy_bounces")
+				else:
+					FX.ring(global_position, Color(1, 1, 1, 0.4), 1.2, 0.2)
+					_set_state(S.HITSTUN)
+					_tumble = 0.0
 		S.DEAD:
 			velocity.x = move_toward(velocity.x, 0, 10 * d)
 			velocity.z = move_toward(velocity.z, 0, 10 * d)
@@ -284,6 +300,17 @@ func _physics_process(delta: float) -> void:
 		if _charge_t > 7.0:
 			charged = false
 			_mat.emission_enabled = false
+	if state != S.AIR and state != S.WINDUP and state != S.ATTACK and state != S.DEAD:
+		_visual.rotation.x = lerp_angle(_visual.rotation.x, 0.0, clamp(12.0 * delta, 0.0, 1.0))
+	# non si infila dentro il giocatore: spinta morbida verso fuori
+	if state != S.DEAD and player and is_instance_valid(player):
+		var away := _flat(global_position - player.global_position)
+		var gap: float = radius + 0.5 - away.length()
+		if gap > 0.0 and state != S.ATTACK:
+			var n: Vector3 = away.normalized() if away.length() > 0.05 else Vector3.RIGHT
+			velocity.x += n.x * gap * 30.0 * d
+			velocity.z += n.z * gap * 30.0 * d
+	_prev_vy = velocity.y
 	var saved := velocity
 	velocity *= FX.enemy_time if FX.enemy_time < 1.0 else 1.0
 	move_and_slide()
@@ -380,6 +407,8 @@ func power_push(v: Vector3) -> void:
 	velocity = v / weight
 	_set_state(S.AIR)
 	_power_fly = 0.9
+	_bounced = false
+	_tumble = 9.0 * (-1.0 if randf() < 0.5 else 1.0)
 	_hit_by.clear()
 	FX.stat("enemy_pushed")
 
@@ -522,6 +551,10 @@ func receive_hit(info: Dictionary) -> void:
 	else:
 		velocity.x = dir.x * kb
 		velocity.z = dir.z * kb
+		# colpo forte: vola e può sbattere contro muri e altri nemici
+		if kb > 8.0:
+			_power_fly = max(_power_fly, 0.45)
+			_hit_by.clear()
 	var interrupted := state == S.WINDUP or state == S.ATTACK
 	if arch == "brute" and poise > 0.0 and state != S.STAGGER and state != S.AIR and not info.has("pull_to"):
 		# corazza: incassa senza fermarsi finché non perde l'equilibrio
@@ -539,7 +572,10 @@ func receive_hit(info: Dictionary) -> void:
 		return
 	if info.launch > 0.0 and (info.launch > 6.0 or not is_on_floor()):
 		velocity.y = info.launch / sqrt(weight)
+		if state != S.AIR:
+			_bounced = false
 		_set_state(S.AIR)
+		_tumble = clamp(info.launch * 0.9 + kb * 0.4, 0.0, 12.0) * (-1.0 if randf() < 0.5 else 1.0)
 	elif not info.has("pull_to"):
 		if poise <= 0.0:
 			_set_state(S.STAGGER)
