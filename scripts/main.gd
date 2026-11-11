@@ -1,5 +1,5 @@
 extends Node3D
-## OVERLOAD 0.1 · Fase 1: arena, protagonista, un nemico alla volta, comandi touch e tastiera.
+## OVERLOAD: arena, protagonista, ondate infinite (Run), comandi touch e tastiera.
 
 const Arena = preload("res://scripts/world/arena.gd")
 const Player = preload("res://scripts/player/player.gd")
@@ -20,7 +20,6 @@ var enemy_tune := {
 	"speed": 6.5, "attack_range": 2.3, "windup": 0.55, "lunge_speed": 13.0, "active": 0.16,
 	"recover": 0.65, "damage": 12.0, "cooldown_min": 1.2, "cooldown_max": 2.4,
 }
-var max_enemies := 1
 var _mouse_captured := false
 var _is_touch := false
 
@@ -58,28 +57,35 @@ func _ready() -> void:
 	hud.add_child(touch)
 	hud.touch = touch
 	hud.bind()
-	for i in max_enemies:
-		spawn_enemy()
+	Run.start(self)
 	if not _is_touch:
 		hud.message("WASD muovi · mouse guarda · clic attacca (tieni = pesante)\nSPAZIO salto · SHIFT schivata · Q aggancio\nE spingi · R attira · F sovraccarica · TAB laboratorio", 4.0)
 
-func spawn_enemy() -> void:
-	var e := Enemy.new()
-	e.player = player
-	e.tune = enemy_tune
-	var p: Vector3 = arena.spawn_point()
-	if player.global_position.distance_to(p) < 7.0:
-		p = -p
-	e.position = p
-	enemies.add_child(e)
-	e.died.connect(func(_x): get_tree().create_timer(1.2).timeout.connect(spawn_enemy))
-	FX.ring(p, Color(1, 0.3, 0.3, 0.8), 2.0, 0.4)
-
 func _on_player_died() -> void:
-	hud.message("A TERRA", 1.2)
-	get_tree().create_timer(1.6).timeout.connect(func():
-		player.revive()
-		player.global_position = Vector3(0, 0.5, 0))
+	Run.game_over()
+
+## Ripartenza immediata: arena nuova, nemici via, contatori azzerati, stessa scena.
+func restart() -> void:
+	get_tree().paused = false
+	Engine.time_scale = 1.0
+	FX.enemy_time = 1.0
+	for e in enemies.get_children():
+		e.queue_free()
+	for o in get_tree().get_nodes_in_group("orbs"):
+		o.queue_free()
+	El.puddles.clear()
+	arena.queue_free()
+	arena = Arena.new()
+	add_child(arena)
+	move_child(arena, 0)
+	FX.stats.clear()
+	OV.reset()
+	if power.held:
+		power.held = null
+	player.revive()
+	player.global_position = Vector3(0, 0.5, 6)
+	player.velocity = Vector3.ZERO
+	Run.start(self)
 
 # ------------------------------------------------------------ tastiera e mouse
 
@@ -116,6 +122,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.keycode == KEY_ESCAPE and event.pressed:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			_mouse_captured = false
+		elif (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER) and event.pressed and not Run.running:
+			hud.restart()
 		elif event.keycode == KEY_TAB and event.pressed:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			_mouse_captured = false

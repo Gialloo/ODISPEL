@@ -41,3 +41,10 @@ Barra sottile sotto la vita. Sale con azioni diverse concatenate (forme dell'arm
 reazioni a catena, schivate perfette); la stessa azione ripetuta rende poco; cala se ti fermi o vieni colpito.
 Livello 1 = potere stadio 2 (pesanti), livello 2 = stadio 3 (due bersagli), pieno = OVERLOAD per 6 s
 con ricariche del potere rapidissime. Valori in `scripts/core/overload.gd` e nel LAB.
+
+## Run (Fase 5)
+Ondate infinite: Scout (rosso, affondo), Conduit (blu, da lontano lancia sfere elettriche, spesso su pozze,
+bidoni e bobine vicino a te: SPINGI le rimanda indietro), Brute (arancione, non si ferma ai colpi finché non
+perde l'equilibrio, schianto ad area, si sposta col potere dallo stadio 2). Dopo le ondate 1, 3, 5... scegli
+uno di tre potenziamenti (dati in `data/upgrades.json`, tasti 1-2-3). Tra un'ondata e l'altra recuperi un po'
+di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.

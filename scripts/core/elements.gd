@@ -48,7 +48,8 @@ func ignite_area(pos: Vector3, r: float, source: Node = null) -> void:
 # ------------------------------------------------------------ elettricità
 
 ## Scarica che parte da un punto e salta tra i conduttori vicini.
-func shock(pos: Vector3, source: Node = null, power := 1.0) -> void:
+## hostile: la scarica viene da un nemico e può colpire anche il giocatore.
+func shock(pos: Vector3, source: Node = null, power := 1.0, hostile := false) -> void:
 	FX.sound("critico", 1.5, -2.0)
 	FX.ring(pos, Color(0.45, 0.9, 1.0, 0.9), 1.4, 0.18)
 	FX.stat("shocks")
@@ -57,6 +58,11 @@ func shock(pos: Vector3, source: Node = null, power := 1.0) -> void:
 		visited[source] = true
 	var frontier := [{"pos": pos, "depth": 0}]
 	var shocked_puddles := {}
+	var pl: Node3D = get_tree().get_first_node_in_group("player")
+	var player_hit := not hostile or pl == null
+	if not player_hit and pl.global_position.distance_to(pos) < 1.8:
+		player_hit = true
+		pl.take_hit(source if source is Node3D else pl, tune.shock_dmg * 0.8, (pl.global_position - pos).normalized())
 	while not frontier.is_empty():
 		var cur: Dictionary = frontier.pop_front()
 		var at: Vector3 = cur.pos
@@ -68,6 +74,10 @@ func shock(pos: Vector3, source: Node = null, power := 1.0) -> void:
 			shocked_puddles[pi] = true
 			_flash_puddle(pi)
 			FX.stat("puddle_shocks")
+			if not player_hit and puddle_at(pl.global_position) == pi:
+				player_hit = true
+				_arc(puddles[pi].pos + Vector3(0, 0.1, 0), pl.global_position + Vector3(0, 0.9, 0))
+				pl.take_hit(source if source is Node3D else pl, tune.shock_dmg * 0.9, Vector3.UP)
 			for e in _enemies():
 				if not visited.has(e) and not e.is_dead() and puddle_at(e.global_position) == pi:
 					visited[e] = true
@@ -109,7 +119,7 @@ func _flash_puddle(i: int) -> void:
 
 ## Arco a zig-zag: pochi segmenti, svanisce in fretta.
 func _arc(a: Vector3, b: Vector3) -> void:
-	var world := get_tree().current_scene
+	var world: Node = FX._world
 	if world == null:
 		return
 	var pts := [a]

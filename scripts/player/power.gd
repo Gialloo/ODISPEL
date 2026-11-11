@@ -143,9 +143,9 @@ func _too_heavy() -> void:
 	FX.sound("scudo", 0.7, -4.0)
 	FX.stat("power_too_heavy")
 
-func _targets_for_stage(main: Node3D) -> Array:
+func _targets_for_stage(main: Node3D, kind := "push") -> Array:
 	var list := [main]
-	if stage >= 3:
+	if stage >= 3 or (kind == "pull" and Run.has("attrazione_doppia")):
 		# stadio 3: il potere prende anche il bersaglio più vicino al primo
 		var best: Node3D = null
 		var bd := 4.0
@@ -165,12 +165,26 @@ func _targets_for_stage(main: Node3D) -> Array:
 func push() -> void:
 	if _cd.push > 0.0:
 		return
+	# sfere del Conduit davanti a te: SPINGI le rimanda indietro
+	var reflected := false
+	for o in get_tree().get_nodes_in_group("orbs"):
+		var to: Vector3 = o.global_position - player.global_position
+		to.y = 0
+		if not o.reflected and to.length() < 6.0 and (to.length() < 1.5 or player.facing.angle_to(to.normalized()) < deg_to_rad(80)):
+			o.reflect(player)
+			reflected = true
+	if reflected:
+		_beam_to(player.global_position + player.facing * 2.0 + Vector3(0, 1.2, 0), Color(1, 0.95, 0.5, 0.9))
+		_done("push", "reflect")
+		return
 	if held and is_instance_valid(held):
 		var aim: Vector3 = player.facing
 		if target:
 			aim = (target.global_position + Vector3(0, 0.8, 0) - held.center()).normalized()
 		elif cam:
 			aim = cam.forward_flat()
+		if Run.has("lanci_carichi"):
+			held.charge()
 		held.launch(aim * tune.push_speed * 1.25 + Vector3(0, 1.5, 0), player)
 		_beam_to(held.center(), Color(0.7, 0.95, 1.0, 0.9))
 		held = null
@@ -225,7 +239,7 @@ func pull() -> void:
 		_too_heavy()
 		_cd.pull = 0.25
 		return
-	for t in _targets_for_stage(target):
+	for t in _targets_for_stage(target, "pull"):
 		if not _can_move(t):
 			continue
 		if t.has_method("hold"):

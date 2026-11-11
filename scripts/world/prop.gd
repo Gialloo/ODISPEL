@@ -46,6 +46,7 @@ var fuse := -1.0                    # bidone: miccia accesa
 var _zap_cd := 0.0
 var _gone := false
 var _base_col := Color.WHITE
+var _bounces := 0
 
 func setup(k: String) -> void:
 	kind = k
@@ -133,6 +134,7 @@ func launch(v: Vector3, by: Node3D) -> void:
 	state = S.FLYING
 	thrower = by
 	velocity = v / sqrt(mass)
+	_bounces = 1 if Run.has("rimbalzo") else 0
 	_fly_t = 0.0
 	_hit_cool.clear()
 
@@ -255,13 +257,16 @@ func _break_cover() -> void:
 		away.y = 0
 		away = away.normalized() if away.length() > 0.1 else Vector3.FORWARD
 	var right := Vector3(-away.z, 0, away.x)
-	for i in 5:
+	var n := 10 if Run.has("detriti") else 5
+	for i in n:
 		var pr = get_script().new()
 		pr.setup("debris")
-		pr.temp = 6.0
+		pr.temp = 12.0 if Run.has("detriti") else 6.0
 		get_parent().add_child(pr)
-		pr.global_position = global_position + right * (i - 2) * 0.6 + Vector3(0, 0.6 + (i % 2) * 0.6, 0)
-		pr.launch((away * 15.0 + right * (i - 2) * 2.5 + Vector3(0, 4.0, 0)), pl)
+		var off: float = (i % 5) - 2
+		var row: int = i / 5
+		pr.global_position = global_position + right * off * 0.6 + Vector3(0, 0.6 + (i % 2) * 0.6 + row * 0.7, 0)
+		pr.launch((away * (15.0 - row * 6.0) + right * off * 2.5 + Vector3(0, 4.0, 0)), pl)
 		if burning > 0.0:
 			pr.ignite()
 	_vanish()
@@ -368,8 +373,21 @@ func _physics_process(delta: float) -> void:
 	if state == S.FLYING and get_slide_collision_count() > 0:
 		var n := get_slide_collision(0).get_normal()
 		if pre.length() > 9.0 and absf(n.y) < 0.6:
-			# rimbalza sul muro e perde forza
+			# rimbalza sul muro e perde forza (col potenziamento: riparte verso un nemico)
 			velocity = pre.bounce(n) * 0.35
+			if _bounces > 0:
+				_bounces -= 1
+				var best: Node3D = null
+				var bd := 16.0
+				for e in get_tree().get_nodes_in_group("enemies"):
+					var dd: float = e.global_position.distance_to(global_position)
+					if dd < bd and not e.is_dead():
+						bd = dd
+						best = e
+				if best:
+					velocity = (best.global_position + Vector3(0, 0.8, 0) - center()).normalized() * pre.length() + Vector3(0, 1.5, 0)
+					_hit_cool.clear()
+					FX.stat("up_bounces")
 			FX.sound("colpo_forte", 0.7, -6.0)
 			FX.sparks(center(), n, Color(1, 1, 1), 5, 4.0)
 			var col := get_slide_collision(0).get_collider()

@@ -6,6 +6,7 @@ const RADIUS := 22.0
 const Prop = preload("res://scripts/world/prop.gd")
 
 func _ready() -> void:
+	El.puddles.clear()
 	_environment()
 	_floor()
 	_walls()

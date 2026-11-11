@@ -20,6 +20,12 @@ var _center_msg: Label
 var _ov_back: ColorRect
 var _ov_bar: ColorRect
 var _ov_label: Label
+var _wave_label: Label
+var _ups_label: Label
+var _choice: Control
+var _over: Control
+const FAM_COL := {"Blade": Color(0.35, 0.95, 1.0), "Impact": Color(1.0, 0.6, 0.25), "Vector": Color(0.8, 0.5, 1.0),
+	"Manipolazione": Color(0.7, 0.95, 1.0), "Elementi": Color(1.0, 0.85, 0.3), "Ambiente": Color(0.75, 0.6, 0.4), "Combo": Color(0.5, 1.0, 0.7)}
 const OV_W := 316.0
 const OV_COL := [Color(0.85, 0.85, 0.9), Color(0.35, 0.95, 1.0), Color(0.85, 0.5, 1.0), Color(1.0, 0.82, 0.25)]
 
@@ -68,6 +74,16 @@ func _ready() -> void:
 	_info.position = Vector2(24, 94)
 	_info.modulate.a = 0.6
 	add_child(_info)
+	_wave_label = _label("", 22)
+	_wave_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_wave_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_wave_label.position = Vector2(-150, 18)
+	_wave_label.size = Vector2(300, 30)
+	add_child(_wave_label)
+	_ups_label = _label("", 14)
+	_ups_label.position = Vector2(24, 118)
+	_ups_label.modulate.a = 0.85
+	add_child(_ups_label)
 	_center_msg = _label("", 40)
 	_center_msg.set_anchors_preset(Control.PRESET_CENTER)
 	_center_msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -91,6 +107,12 @@ func bind() -> void:
 	player.form_changed.connect(_set_form)
 	player.perfect_dodge.connect(_on_perfect)
 	OV.level_changed.connect(_on_ov_level)
+	Run.wave_started.connect(func(n):
+		_wave_label.text = "ONDATA %d" % n
+		message("ONDATA %d" % n, 1.0))
+	Run.choice_open.connect(_open_choice)
+	Run.choice_closed.connect(_refresh_ups)
+	Run.run_over.connect(_open_over)
 	if touch:
 		touch.gear_pressed.connect(toggle_panel)
 
@@ -109,6 +131,136 @@ func _on_perfect() -> void:
 	var t := create_tween().set_ignore_time_scale(true)
 	t.tween_property(_flash, "color:a", 0.0, 0.5)
 	message("SCHIVATA PERFETTA", 0.7)
+
+# ------------------------------------------------------------ run: scelte e fine
+
+func _refresh_ups() -> void:
+	if _choice:
+		_choice.queue_free()
+		_choice = null
+	var names := []
+	for id in Run.owned:
+		names.append(Run.def(id).get("name", id))
+	_ups_label.text = "  ·  ".join(names)
+
+## Tre carte grandi, comode col pollice. Il gioco resta in pausa finché non scegli.
+func _open_choice(opts: Array) -> void:
+	_choice = Control.new()
+	_choice.process_mode = Node.PROCESS_MODE_ALWAYS
+	_choice.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_choice.add_child(dim)
+	var title := _label("SCEGLI UN POTENZIAMENTO", 30)
+	title.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(-300, 70)
+	title.size = Vector2(600, 40)
+	_choice.add_child(title)
+	var row := HBoxContainer.new()
+	row.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	row.add_theme_constant_override("separation", 24)
+	var w := 340.0
+	row.position = Vector2(-(w * opts.size() + 24 * (opts.size() - 1)) * 0.5, -150)
+	_choice.add_child(row)
+	for i in opts.size():
+		var d: Dictionary = opts[i]
+		var col: Color = FAM_COL.get(d.family, Color.WHITE)
+		var b := Button.new()
+		b.custom_minimum_size = Vector2(w, 330)
+		b.focus_mode = Control.FOCUS_NONE
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.06, 0.06, 0.1, 0.95)
+		sb.border_color = col
+		sb.set_border_width_all(4)
+		sb.set_corner_radius_all(10)
+		b.add_theme_stylebox_override("normal", sb)
+		var sb2 := sb.duplicate()
+		sb2.bg_color = Color(col, 0.25)
+		b.add_theme_stylebox_override("hover", sb2)
+		b.add_theme_stylebox_override("pressed", sb2)
+		var v := VBoxContainer.new()
+		v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		v.offset_left = 20
+		v.offset_right = -20
+		v.offset_top = 24
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_theme_constant_override("separation", 14)
+		var fam := _label(d.family.to_upper(), 16)
+		fam.add_theme_color_override("font_color", col)
+		v.add_child(fam)
+		var nm := _label(d.name, 28)
+		nm.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(nm)
+		var ds := _label(d.desc, 19)
+		ds.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		ds.custom_minimum_size = Vector2(w - 40, 0)
+		v.add_child(ds)
+		var key := _label("%d" % (i + 1), 16)
+		key.modulate.a = 0.5
+		v.add_child(key)
+		b.add_child(v)
+		var sc := Shortcut.new()
+		var ev := InputEventKey.new()
+		ev.keycode = KEY_1 + i
+		sc.events = [ev]
+		b.shortcut = sc
+		b.pressed.connect(func(): Run.choose(i))
+		row.add_child(b)
+	add_child(_choice)
+
+func _open_over(wave: int, kills: int) -> void:
+	_over = Control.new()
+	_over.process_mode = Node.PROCESS_MODE_ALWAYS
+	_over.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_over.add_child(dim)
+	var t := _label("A TERRA", 54)
+	t.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	t.position = Vector2(-300, -170)
+	t.size = Vector2(600, 70)
+	_over.add_child(t)
+	var s := _label("ondata %d   ·   abbattuti %d   ·   potenziamenti %d" % [wave, kills, Run.owned.size()], 24)
+	s.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	s.position = Vector2(-400, -90)
+	s.size = Vector2(800, 40)
+	_over.add_child(s)
+	var b := Button.new()
+	b.text = "RICOMINCIA"
+	b.add_theme_font_override("font", _font)
+	b.add_theme_font_size_override("font_size", 34)
+	b.custom_minimum_size = Vector2(380, 110)
+	b.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	b.position = Vector2(-190, -10)
+	b.size = Vector2(380, 110)
+	var bs := StyleBoxFlat.new()
+	bs.bg_color = Color(0.35, 0.95, 1.0, 0.25)
+	bs.border_color = Color(0.35, 0.95, 1.0)
+	bs.set_border_width_all(4)
+	bs.set_corner_radius_all(12)
+	b.add_theme_stylebox_override("normal", bs)
+	b.add_theme_stylebox_override("hover", bs)
+	b.add_theme_stylebox_override("pressed", bs)
+	b.pressed.connect(restart)
+	_over.add_child(b)
+	add_child(_over)
+
+func restart() -> void:
+	if _over:
+		_over.queue_free()
+		_over = null
+	if _choice:
+		_choice.queue_free()
+		_choice = null
+	_ups_label.text = ""
+	_wave_label.text = ""
+	_on_hp(player.max_hp, player.max_hp)
+	get_parent().restart()
 
 func _on_ov_level(l: int) -> void:
 	if l == 0:

@@ -1,0 +1,14 @@
+[
+  {"id": "lama_eco", "family": "Blade", "name": "Lama d'eco", "desc": "Il terzo colpo della BLADE lancia un fendente che taglia tutto per 7 metri."},
+  {"id": "onda_urto", "family": "Impact", "name": "Onda d'urto", "desc": "Ogni colpo IMPACT scuote anche i nemici vicini al bersaglio."},
+  {"id": "impatto_aereo", "family": "Impact", "name": "Caduta pesante", "desc": "Dopo due colpi in aria, il prossimo IMPACT fa il doppio e allarga l'onda."},
+  {"id": "catena_doppia", "family": "Vector", "name": "Catena doppia", "desc": "La frusta VECTOR trascina anche il nemico più vicino al primo."},
+  {"id": "vector_scossa", "family": "Vector", "name": "Catena elettrica", "desc": "I colpi VECTOR mandano una scossa che salta tra i conduttori."},
+  {"id": "rimbalzo", "family": "Manipolazione", "name": "Rimbalzo guidato", "desc": "Gli oggetti lanciati rimbalzano una volta sul muro verso il nemico più vicino."},
+  {"id": "attrazione_doppia", "family": "Manipolazione", "name": "Presa doppia", "desc": "ATTIRA prende anche un secondo bersaglio vicino al primo."},
+  {"id": "lanci_carichi", "family": "Manipolazione", "name": "Lanci carichi", "desc": "Ogni oggetto che lanci è già sovraccaricato: esplode all'impatto."},
+  {"id": "propagazione", "family": "Elementi", "name": "Propagazione", "desc": "Le scariche saltano più lontano e fanno più salti."},
+  {"id": "fuoco_vivo", "family": "Elementi", "name": "Fuoco vivo", "desc": "Un nemico che muore in fiamme esplode e incendia chi gli sta intorno."},
+  {"id": "detriti", "family": "Ambiente", "name": "Macerie", "desc": "I muretti distrutti lasciano il doppio dei detriti, e durano di più."},
+  {"id": "catena_combo", "family": "Combo", "name": "Risonanza", "desc": "Ogni 10 colpi senza farti colpire, un'onda parte da te e respinge tutti."}
+]

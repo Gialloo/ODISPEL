@@ -65,6 +65,11 @@ var _last_dodge_end := -100000
 var _hurt_t := 0.0
 var _counter_ready := false
 var _multi_done := false
+# potenziamenti della run
+var _combo_hits := 0
+var _air_hits := 0
+var _heavy_ready := false
+var _vshock_at := 0
 
 var visual: Node3D
 var weapon: Node3D
@@ -340,6 +345,8 @@ func _start_move(id: String, now: int) -> void:
 		FX.ring(global_position, Color(M.FORM_COLOR[move.form], 0.7), 1.3, 0.18)
 		FX.sound("cutin", 1.6 + 0.2 * move.form, -12.0)
 	FX.stat("move_" + id)
+	if id == "blade_3" and Run.has("lama_eco"):
+		get_tree().create_timer(0.1, false).timeout.connect(_echo_slash)
 	# aiuto alla mira: ci si gira subito verso il bersaglio
 	var t := _best_target(false)
 	if t:
@@ -462,11 +469,23 @@ func _do_hits(slam: bool) -> void:
 		}
 		if move.get("pull", false):
 			info["pull_to"] = global_position + facing * 1.8
+		var is_enemy: bool = e.is_in_group("enemies")
+		if is_enemy and _heavy_ready and move.form == M.Form.IMPACT:
+			info.dmg *= 2.0
+			info.poise *= 2.0
+			FX.ring(e.global_position, Color(1, 0.6, 0.2, 0.95), 3.5, 0.35)
+			_wave_at(e.global_position, 3.5, e)
+			FX.stat("up_heavy_drops")
 		e.receive_hit(info)
+		if is_enemy:
+			_upgrade_hit(e)
 		FX.sparks(e.global_position + Vector3(0, 1.0, 0), -kdir, M.FORM_COLOR[move.form], 9, 8.0)
 		FX.stat("hits")
 		if not is_on_floor():
 			velocity.y = max(velocity.y, 3.2)
+	if _hit_any and move.form == M.Form.IMPACT:
+		_heavy_ready = false
+		_air_hits = 0
 	if _hit_any and first_hit:
 		OV.feed("move:" + move_id, "weapon_%d" % move.form, 5.0)
 		FX.hitstop(move.stop)
@@ -480,6 +499,79 @@ func _do_hits(slam: bool) -> void:
 		FX.shake(move.shake * 0.6)
 		FX.sound("colpo_forte", 0.8)
 		FX.ring(global_position, Color(M.FORM_COLOR[move.form], 0.8), move.ring, 0.3)
+
+# ---------------------------------------------------------------- potenziamenti
+
+func _upgrade_hit(e: Node3D) -> void:
+	_combo_hits += 1
+	if Run.has("catena_combo") and _combo_hits % 10 == 0:
+		_resonance()
+	if move.form == M.Form.IMPACT and Run.has("onda_urto"):
+		_wave_at(e.global_position, 2.4, e)
+	if move_id.begins_with("blade_air"):
+		_air_hits += 1
+		if _air_hits >= 2 and Run.has("impatto_aereo") and not _heavy_ready:
+			_heavy_ready = true
+			_flash(Color(1, 0.6, 0.2))
+	if move.form == M.Form.VECTOR:
+		if Run.has("catena_doppia") and (move_id == "vector_lash" or move_id == "vector_reel"):
+			var best: Node3D = null
+			var bd := 4.5
+			for o in get_tree().get_nodes_in_group("enemies"):
+				if o == e or o.is_dead() or _hit_list.has(o):
+					continue
+				var d: float = o.global_position.distance_to(e.global_position)
+				if d < bd:
+					bd = d
+					best = o
+			if best:
+				_hit_list.append(best)
+				best.power_pull(global_position + facing * 2.2)
+				FX.stat("up_double_chain")
+		if Run.has("vector_scossa") and Time.get_ticks_msec() > _vshock_at:
+			_vshock_at = Time.get_ticks_msec() + 600
+			El.shock(e.global_position, null, 0.6)
+			FX.stat("up_vector_shocks")
+
+## Onda attorno a un punto che colpisce gli altri nemici.
+func _wave_at(c: Vector3, r: float, skip: Node) -> void:
+	FX.ring(c, Color(1, 0.75, 0.4, 0.8), r, 0.25)
+	for o in get_tree().get_nodes_in_group("enemies"):
+		if o == skip or o.is_dead() or _hit_list.has(o):
+			continue
+		var to: Vector3 = _flat(o.global_position - c)
+		if to.length() < r:
+			o.receive_hit({"dmg": 8.0, "poise": 25.0, "dir": to.normalized() if to.length() > 0.1 else facing, "knock": 6.0, "launch": 0.0, "form": M.Form.IMPACT, "move": "wave"})
+			FX.stat("up_wave_hits")
+
+## Fendente d'eco: taglia in linea retta davanti.
+func _echo_slash() -> void:
+	if state == S.DEAD:
+		return
+	var from := global_position + Vector3(0, 1.0, 0)
+	for k in 5:
+		FX.sparks(from + facing * (1.5 + k * 1.3), facing, M.FORM_COLOR[0], 3, 6.0)
+	for o in get_tree().get_nodes_in_group("enemies"):
+		if o.is_dead():
+			continue
+		var to: Vector3 = _flat(o.global_position - global_position)
+		var along := to.dot(facing)
+		var side := (to - facing * along).length()
+		if along > 0.5 and along < 7.0 and side < 1.0 + o.radius:
+			o.receive_hit({"dmg": 12.0, "poise": 20.0, "dir": facing, "knock": 4.0, "launch": 0.0, "form": M.Form.BLADE, "move": "eco"})
+			FX.stat("up_echo_hits")
+	FX.sound("colpo", 1.6, -4.0)
+
+## Risonanza: onda che parte dal giocatore ogni 10 colpi puliti.
+func _resonance() -> void:
+	FX.ring(global_position, Color(0.6, 1.0, 1.0, 0.9), 3.5, 0.3)
+	FX.sound("break", 1.3, -3.0)
+	FX.shake(0.4)
+	for o in get_tree().get_nodes_in_group("enemies"):
+		var to: Vector3 = _flat(o.global_position - global_position)
+		if not o.is_dead() and to.length() < 3.5:
+			o.receive_hit({"dmg": 12.0, "poise": 40.0, "dir": to.normalized() if to.length() > 0.1 else facing, "knock": 9.0, "launch": 4.0, "form": -1, "move": "resonance"})
+	FX.stat("up_resonance")
 
 # ---------------------------------------------------------------- schivata
 
@@ -561,6 +653,8 @@ func take_hit(from: Node3D, dmg: float, dir: Vector3) -> String:
 	FX.sparks(global_position + Vector3(0, 1.1, 0), dir, Color(1, 0.25, 0.3), 10, 7.0)
 	FX.stat("player_hits_taken")
 	OV.hurt()
+	_combo_hits = 0
+	_air_hits = 0
 	if state == S.ATTACK:
 		weapon.rest()
 	velocity = _flat(dir).normalized() * 7.0 + Vector3(0, 2.0, 0)

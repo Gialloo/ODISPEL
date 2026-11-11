@@ -1,12 +1,26 @@
 extends CharacterBody3D
-## Nemico base. Fase 1: SCOUT (rapido, aggressivo, poco resistente).
-## Avvisa sempre prima di colpire (si carica e si illumina), così chi perde capisce perché.
+## Nemico a tre archetipi. Avvisa sempre prima di colpire (si carica e si illumina),
+## così chi perde capisce perché.
+##   SCOUT   rapido, aggressivo, poco resistente: affondo.
+##   BRUTE   pesante e resistente: non si ferma ai colpi finché non perde l'equilibrio,
+##           schianto ad area lento e potente; si sposta col potere solo dallo stadio 2.
+##   CONDUIT tiene le distanze e lancia sfere elettriche, spesso sull'ambiente (pozze, bidoni,
+##           bobine vicino al giocatore). La sfera si rimanda indietro con SPINGI; scosso, si scarica.
 
 signal died(enemy: Node)
 
 enum S { IDLE, CHASE, WINDUP, ATTACK, RECOVER, HITSTUN, AIR, STAGGER, DEAD }
 
 const COL_BODY := Color(0.85, 0.2, 0.25)
+const Orb = preload("res://scripts/enemies/orb.gd")
+## Archetipi: valori base e moltiplicatori della tabella condivisa (tune, regolabile nel LAB).
+const ARCH := {
+	"scout": {"hp": 70.0, "poise": 30.0, "weight": 1.0, "radius": 0.45, "col": Color(0.85, 0.2, 0.25), "m": {}},
+	"brute": {"hp": 220.0, "poise": 95.0, "weight": 2.6, "radius": 0.8, "col": Color(0.9, 0.48, 0.15),
+		"m": {"speed": 0.48, "attack_range": 1.25, "windup": 1.7, "lunge_speed": 0.25, "damage": 1.9, "active": 1.4, "recover": 1.5}},
+	"conduit": {"hp": 55.0, "poise": 25.0, "weight": 0.9, "radius": 0.45, "col": Color(0.3, 0.55, 1.0),
+		"m": {"speed": 0.8, "attack_range": 3.4, "windup": 1.5, "damage": 0.9, "cooldown_min": 1.5, "cooldown_max": 1.3}},
+}
 const COL_WARN := Color(1.0, 0.85, 0.2)
 
 var player: Node3D
@@ -17,6 +31,9 @@ var max_poise := 30.0
 var poise := 30.0
 var weight := 1.0                  # più pesante = meno spinta
 var state := S.IDLE
+var arch := "scout"
+var wave := 1                      # ondata: rende i nemici più svelti e frequenti, non solo più resistenti
+var _zap_cd := 0.0
 var tune := {
 	"speed": 6.5,
 	"attack_range": 2.3,
@@ -49,6 +66,31 @@ var _hit_by: Dictionary = {}
 var burn_t := 0.0                  # FUOCO: secondi di fiamma rimasti
 var _burn_tick := 0.0
 
+func setup(a: String, w: int) -> void:
+	arch = a
+	wave = w
+	var d: Dictionary = ARCH[a]
+	radius = d.radius
+	weight = d.weight
+	max_hp = d.hp * (1.0 + 0.04 * min(w - 1, 15))
+	max_poise = d.poise * (1.0 + 0.03 * min(w - 1, 15))
+
+## Valore della tabella per questo archetipo e questa ondata.
+func _tv(k: String) -> float:
+	var v: float = tune[k] * ARCH[arch].m.get(k, 1.0)
+	var lw: float = min(wave - 1, 14)
+	match k:
+		"speed":
+			v *= 1.0 + 0.02 * lw
+		"cooldown_min", "cooldown_max":
+			v *= 1.0 - 0.03 * lw
+		"windup":
+			v *= max(0.75, 1.0 - 0.015 * lw)
+	return v
+
+func is_heavy() -> bool:
+	return arch == "brute"
+
 func _ready() -> void:
 	add_to_group("enemies")
 	collision_layer = 4
@@ -56,26 +98,50 @@ func _ready() -> void:
 	var col := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
 	cap.radius = radius
-	cap.height = 1.5
+	cap.height = 2.0 if arch == "brute" else 1.5
 	col.shape = cap
-	col.position.y = 0.75
+	col.position.y = cap.height * 0.5
 	add_child(col)
 	_visual = Node3D.new()
 	add_child(_visual)
 	_mat = StandardMaterial3D.new()
-	_mat.albedo_color = COL_BODY
+	_mat.albedo_color = ARCH[arch].col
 	_body = MeshInstance3D.new()
-	var pm := PrismMesh.new()
-	pm.size = Vector3(0.9, 1.3, 0.7)
-	_body.mesh = pm
-	_body.position.y = 0.8
+	if arch == "brute":
+		var bx := BoxMesh.new()
+		bx.size = Vector3(1.6, 1.9, 1.2)
+		_body.mesh = bx
+		_body.position.y = 1.0
+	elif arch == "conduit":
+		var cy := CylinderMesh.new()
+		cy.top_radius = 0.2
+		cy.bottom_radius = 0.45
+		cy.height = 1.5
+		_body.mesh = cy
+		_body.position.y = 0.8
+		var ant := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.25
+		sm.height = 0.5
+		ant.mesh = sm
+		ant.position.y = 1.75
+		var am := StandardMaterial3D.new()
+		am.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		am.albedo_color = Color(0.5, 0.95, 1.0)
+		ant.material_override = am
+		_visual.add_child(ant)
+	else:
+		var pm := PrismMesh.new()
+		pm.size = Vector3(0.9, 1.3, 0.7)
+		_body.mesh = pm
+		_body.position.y = 0.8
 	_body.material_override = _mat
 	_visual.add_child(_body)
 	var eye := MeshInstance3D.new()
 	var em := BoxMesh.new()
 	em.size = Vector3(0.5, 0.1, 0.1)
 	eye.mesh = em
-	eye.position = Vector3(0, 0.95, -0.32)
+	eye.position = Vector3(0, 1.45, -0.62) if arch == "brute" else Vector3(0, 0.95, -0.32)
 	var emat := StandardMaterial3D.new()
 	emat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	emat.albedo_color = Color(1, 0.95, 0.8)
@@ -125,12 +191,13 @@ func is_dead() -> bool:
 
 ## Vero se sta colpendo adesso e il giocatore è a portata (per la schivata all'ultimo).
 func is_threatening(p: Node3D) -> bool:
-	if state != S.ATTACK and not (state == S.WINDUP and _t >= tune.windup - 0.08):
+	if state != S.ATTACK and not (state == S.WINDUP and _t >= _tv("windup") - 0.08):
 		return false
-	return global_position.distance_to(p.global_position) < tune.attack_range + 1.6
+	return global_position.distance_to(p.global_position) < _tv("attack_range") + 1.6
 
 func _physics_process(delta: float) -> void:
 	var d := delta * FX.enemy_time
+	_zap_cd = max(0.0, _zap_cd - delta)
 	_t += d
 	if _hit_flash > 0:
 		_hit_flash -= delta
@@ -143,42 +210,53 @@ func _physics_process(delta: float) -> void:
 			_face_player(d * 4.0)
 			velocity.x = move_toward(velocity.x, 0, 30 * d)
 			velocity.z = move_toward(velocity.z, 0, 30 * d)
-			var k: float = clamp(_t / tune.windup, 0.0, 1.0)
+			var k: float = clamp(_t / _tv("windup"), 0.0, 1.0)
 			_warn_mat.albedo_color = Color(COL_WARN, 0.25 + 0.75 * k)
-			_warn.scale = Vector3.ONE * lerp(2.2, 0.9, k)
+			_warn.scale = Vector3.ONE * (lerp(1.2, 3.0, k) if arch == "brute" else lerp(2.2, 0.9, k))
+			if arch == "conduit":
+				_mat.emission_enabled = true
+				_mat.emission = Color(0.5, 0.95, 1.0)
+				_mat.emission_energy_multiplier = 2.0 * k
 			_visual.position.z = 0.25 * k
 			_visual.rotation.x = 0.25 * k
-			if _t >= tune.windup:
+			if _t >= _tv("windup"):
 				_attack_dir = _flat(player.global_position - global_position).normalized()
 				_attack_resolved = false
-				_set_state(S.ATTACK)
+				if arch == "conduit":
+					_fire_orb()
+					_set_state(S.RECOVER)
+				elif arch == "brute":
+					_slam()
+					_set_state(S.ATTACK)
+				else:
+					_set_state(S.ATTACK)
 		S.ATTACK:
-			velocity.x = _attack_dir.x * tune.lunge_speed
-			velocity.z = _attack_dir.z * tune.lunge_speed
+			velocity.x = _attack_dir.x * _tv("lunge_speed")
+			velocity.z = _attack_dir.z * _tv("lunge_speed")
 			_visual.position.z = -0.3
 			_visual.rotation.x = -0.3
-			if not _attack_resolved:
+			if not _attack_resolved and arch == "scout":
 				var to := _flat(player.global_position - global_position)
 				if to.length() < 1.7 and to.normalized().dot(_attack_dir) > 0.2:
 					_attack_resolved = true
-					var r: String = player.take_hit(self, tune.damage, _attack_dir)
+					var r: String = player.take_hit(self, _tv("damage"), _attack_dir)
 					if r == "perfect":
 						_set_state(S.RECOVER)
 						_t = -0.6
-			if state == S.ATTACK and _t >= tune.active:
+			if state == S.ATTACK and _t >= _tv("active"):
 				_set_state(S.RECOVER)
 		S.RECOVER:
 			velocity.x = move_toward(velocity.x, 0, 40 * d)
 			velocity.z = move_toward(velocity.z, 0, 40 * d)
 			_visual.position.z = lerp(_visual.position.z, 0.0, 0.2)
 			_visual.rotation.x = lerp(_visual.rotation.x, 0.0, 0.2)
-			if _t >= tune.recover:
-				_cooldown = randf_range(tune.cooldown_min, tune.cooldown_max)
+			if _t >= _tv("recover"):
+				_cooldown = randf_range(_tv("cooldown_min"), _tv("cooldown_max"))
 				_set_state(S.CHASE)
 		S.HITSTUN, S.STAGGER:
 			velocity.x = move_toward(velocity.x, 0, 22 * d)
 			velocity.z = move_toward(velocity.z, 0, 22 * d)
-			if _t >= (0.32 if state == S.HITSTUN else 1.3) and is_on_floor():
+			if _t >= (0.32 if state == S.HITSTUN else (2.0 if arch == "brute" else 1.3)) and is_on_floor():
 				if state == S.STAGGER:
 					poise = max_poise
 				_set_state(S.CHASE)
@@ -228,13 +306,13 @@ func _chase(d: float) -> void:
 	var dist := to.length()
 	var dir := to.normalized()
 	var want: Vector3
-	if dist > tune.attack_range + 1.5:
-		want = dir * tune.speed
+	if dist > _tv("attack_range") + 1.5:
+		want = dir * _tv("speed")
 	else:
 		# gira intorno al giocatore aspettando il momento
 		var side := Vector3(-dir.z, 0, dir.x) * _strafe
-		want = side * tune.speed * 0.45 + dir * (dist - tune.attack_range) * 1.5
-		if _cooldown <= 0.0 and dist < tune.attack_range + 1.6:
+		want = side * _tv("speed") * 0.45 + dir * (dist - _tv("attack_range")) * 1.5
+		if _cooldown <= 0.0 and dist < _tv("attack_range") + 1.6:
 			_set_state(S.WINDUP)
 			FX.sound("scudo", 1.4, -8.0)
 			return
@@ -254,6 +332,42 @@ func _face_player(step: float) -> void:
 
 func _flat(v: Vector3) -> Vector3:
 	return Vector3(v.x, 0, v.z)
+
+## BRUTE: schianto ad area davanti a sé.
+func _slam() -> void:
+	var c := global_position + _attack_dir * 1.0
+	FX.ring(c, Color(1, 0.6, 0.2, 0.9), 3.0, 0.3)
+	FX.shake(0.6)
+	FX.sound("colpo_finale", 0.6)
+	FX.sparks(c, Vector3.UP, Color(1, 0.6, 0.2), 12, 8.0)
+	var to := _flat(player.global_position - c)
+	if to.length() < 3.0 and absf(player.global_position.y - global_position.y) < 1.6:
+		player.take_hit(self, _tv("damage"), to.normalized() if to.length() > 0.1 else _attack_dir)
+	for p in get_tree().get_nodes_in_group("props"):
+		if p.center().distance_to(c) < 3.0:
+			p.structure_damage(25.0)
+	_attack_resolved = true
+
+## CONDUIT: sfera elettrica. Mira al giocatore o all'ambiente vicino a lui.
+func _fire_orb() -> void:
+	_mat.emission_enabled = false
+	var aim: Vector3 = player.global_position + Vector3(0, 0.9, 0)
+	var pi := El.puddle_at(player.global_position, 0.6)
+	if pi >= 0 and randf() < 0.75:
+		aim = El.puddles[pi].pos + Vector3(0, 0.2, 0)
+		FX.stat("conduit_env_shots")
+	else:
+		for pr in get_tree().get_nodes_in_group("props"):
+			if (pr.get("explosive") or pr.get("kind") == "coil") and pr.center().distance_to(player.global_position) < 3.2 and not pr.is_dead():
+				aim = pr.center()
+				FX.stat("conduit_env_shots")
+				break
+	var o := Orb.new()
+	FX._world.add_child(o)
+	var from := global_position + Vector3(0, 1.6, 0)
+	o.fire(from, aim, self, _tv("damage"))
+	FX.sound("critico", 1.8, -4.0)
+	FX.stat("orbs_fired")
 
 func _set_state(s: int) -> void:
 	state = s
@@ -377,6 +491,12 @@ func shock(dmg: float) -> void:
 	_mat.emission_energy_multiplier = 2.0
 	_hit_flash = 0.18
 	FX.stat("enemies_shocked")
+	if arch == "conduit" and _zap_cd <= 0.0 and state != S.DEAD:
+		# il Conduit scosso si scarica su chi gli sta intorno
+		_zap_cd = 1.5
+		FX.stat("conduit_overloads")
+		var at := global_position
+		get_tree().create_timer(0.12).timeout.connect(func(): El.shock(at, self, 1.3))
 
 ## Riceve un colpo del giocatore (dati dalla tabella delle mosse).
 func receive_hit(info: Dictionary) -> void:
@@ -394,8 +514,8 @@ func receive_hit(info: Dictionary) -> void:
 		# VECTOR: trascinato verso il giocatore
 		var to: Vector3 = info.pull_to - global_position
 		to.y = 0
-		velocity.x = to.x * 6.0
-		velocity.z = to.z * 6.0
+		velocity.x = to.x * 6.0 / weight
+		velocity.z = to.z * 6.0 / weight
 		velocity.y = 3.0
 		_set_state(S.HITSTUN)
 		_t = -0.15
@@ -403,6 +523,20 @@ func receive_hit(info: Dictionary) -> void:
 		velocity.x = dir.x * kb
 		velocity.z = dir.z * kb
 	var interrupted := state == S.WINDUP or state == S.ATTACK
+	if arch == "brute" and poise > 0.0 and state != S.STAGGER and state != S.AIR and not info.has("pull_to"):
+		# corazza: incassa senza fermarsi finché non perde l'equilibrio
+		velocity.x *= 0.25
+		velocity.z *= 0.25
+		interrupted = false
+		_visual.scale = Vector3(1.1, 0.92, 1.1)
+		create_tween().tween_property(_visual, "scale", Vector3.ONE, 0.12)
+		if charged and info.get("move", "") != "blast":
+			charged = false
+			_mat.emission_enabled = false
+			FX.overcharge_blast(global_position + Vector3(0, 0.8, 0), self)
+		if hp <= 0.0:
+			_die(dir)
+		return
 	if info.launch > 0.0 and (info.launch > 6.0 or not is_on_floor()):
 		velocity.y = info.launch / sqrt(weight)
 		_set_state(S.AIR)
@@ -426,13 +560,18 @@ func receive_hit(info: Dictionary) -> void:
 		_die(dir)
 
 func _die(dir: Vector3) -> void:
+	if burn_t > 0.0 and Run.has("fuoco_vivo"):
+		var at := global_position + Vector3(0, 0.8, 0)
+		FX.stat("up_fire_bursts")
+		get_tree().create_timer(0.05).timeout.connect(func(): El.ignite_area(at, 2.8, self))
+	burn_t = 0.0
 	_set_state(S.DEAD)
 	remove_from_group("enemies")
 	collision_layer = 0
 	velocity = dir * 9.0 + Vector3(0, 7.0, 0)
 	FX.sound("ko", 1.2)
 	FX.stat("kills")
-	FX.sparks(global_position + Vector3(0, 1, 0), Vector3.UP, COL_BODY, 16, 9.0)
+	FX.sparks(global_position + Vector3(0, 1, 0), Vector3.UP, ARCH[arch].col, 16, 9.0)
 	_bar.visible = false
 	_bar_bg.visible = false
 	var t := create_tween()

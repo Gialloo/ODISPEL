@@ -18,6 +18,12 @@ var _fps_samples: Array = []
 var _next_shot := 3.0
 var _shot_n := 0
 var _scene_i := 0
+var run: Node
+var _acc := {}
+var _over_t := -1.0
+var _allup := false
+var _runs := 0
+var _best_wave := 0
 const SCENES := [10.0, 22.0, 34.0, 46.0]
 
 func _initialize() -> void:
@@ -26,6 +32,7 @@ func _initialize() -> void:
 		secs = float(args[0])
 	if args.size() > 1:
 		shots_dir = args[1]
+	_allup = args.has("--allup")
 	main = load("res://scenes/main.tscn").instantiate()
 	main.set_meta("bot", true)
 	root.add_child(main)
@@ -34,13 +41,33 @@ func _process(delta: float) -> bool:
 	if pad == null:
 		pad = root.get_node_or_null("Pad")
 		fx = root.get_node_or_null("FX")
+		run = root.get_node_or_null("Run")
 		if pad == null:
 			return false
+		if _allup:
+			for d in run.defs:
+				run.owned.append(d.id)
+			root.get_node("El").tune.chain = 7
 	t += delta
 	_frames += 1
 	if t > 2.0:
 		var fps := Engine.get_frames_per_second()
 		_fps_samples.append(fps)
+	# run: scelte dei potenziamenti e ripartenza dopo la sconfitta
+	if run.choosing:
+		run.choose(randi() % run.options.size())
+	_best_wave = max(_best_wave, run.wave)
+	if not run.running:
+		if _over_t < 0.0:
+			_over_t = 1.0
+		_over_t -= delta
+		if _over_t <= 0.0:
+			_over_t = -1.0
+			_runs += 1
+			for k in fx.stats:
+				_acc[k] = _acc.get(k, 0) + fx.stats[k]
+			main.hud.restart()
+		return false
 	_drive(delta)
 	if _scene_i < SCENES.size() and t >= SCENES[_scene_i]:
 		if _scenario(_scene_i):
@@ -121,6 +148,10 @@ func _drive(delta: float) -> void:
 		pad.move = Vector2(1, 0)
 		_press("dodge")
 		return
+	for o in root.get_tree().get_nodes_in_group("orbs"):
+		if not o.reflected and o.global_position.distance_to(p.global_position) < 5.0 and randf() < 0.5:
+			pad.tap("push")
+			break
 	_plan_t -= delta
 	if _plan_t <= 0:
 		var r := randf()
@@ -190,7 +221,10 @@ func _drive(delta: float) -> void:
 					_press("attack")   # tenuto: schianto
 
 func _report() -> void:
-	var s: Dictionary = fx.stats
+	var s: Dictionary = fx.stats.duplicate()
+	for k in _acc:
+		s[k] = s.get(k, 0) + _acc[k]
+	print("RUN ondata_max=%d sconfitte=%d potenziamenti=%s" % [_best_wave, _runs, ", ".join(run.owned)])
 	var avg := 0.0
 	var mn := 9999.0
 	for f in _fps_samples:
@@ -204,7 +238,7 @@ func _report() -> void:
 	keys.sort()
 	for k in keys:
 		print("  %s = %s" % [k, s[k]])
-	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts", "shocks", "puddle_shocks", "coil_discharges", "barrels_exploded", "enemies_burned", "structures_broken", "fire_throws", "overload_level_1", "overload_level_2", "overload_bursts"]
+	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts", "shocks", "puddle_shocks", "coil_discharges", "barrels_exploded", "enemies_burned", "structures_broken", "fire_throws", "overload_level_1", "overload_level_2", "overload_bursts", "waves", "spawn_brute", "spawn_conduit", "orbs_fired", "upgrades_taken"]
 	var missing := []
 	for n in need:
 		if s.get(n, 0) == 0:
