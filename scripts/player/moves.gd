@@ -6,6 +6,8 @@ class_name Moves
 enum Form { BLADE, IMPACT, VECTOR }
 
 const FORM_NAME := ["BLADE", "IMPACT", "VECTOR"]
+## Suono per forma: BLADE acuta, IMPACT grave, VECTOR metallica.
+const FORM_PITCH := [1.3, 0.78, 1.05]
 const FORM_COLOR := [Color(0.35, 0.95, 1.0), Color(1.0, 0.55, 0.15), Color(0.8, 0.45, 1.0)]
 
 ## Campi:
@@ -13,23 +15,23 @@ const FORM_COLOR := [Color(0.35, 0.95, 1.0), Color(1.0, 0.55, 0.15), Color(0.8, 
 ## lunge (velocità in avanti fino al colpo), reach, arc (gradi), dmg, poise, knock, launch,
 ## stop (hitstop ms), shake, sound, next (mossa successiva della catena), air
 const DATA := {
-	"blade_1": {"form": Form.BLADE, "dur": 0.30, "hit_from": 0.07, "hit_to": 0.15, "cancel": 0.16,
+	"blade_1": {"form": Form.BLADE, "dur": 0.26, "hit_from": 0.06, "hit_to": 0.13, "cancel": 0.13,
 		"lunge": 7.0, "reach": 2.4, "arc": 130.0, "dmg": 8.0, "poise": 10.0, "knock": 2.5, "launch": 0.0,
-		"stop": 45.0, "shake": 0.10, "sound": "colpo", "next": "blade_2", "swing": -1.0},
-	"blade_2": {"form": Form.BLADE, "dur": 0.30, "hit_from": 0.07, "hit_to": 0.15, "cancel": 0.16,
+		"stop": 32.0, "shake": 0.08, "sound": "colpo", "next": "blade_2", "swing": -1.0},
+	"blade_2": {"form": Form.BLADE, "dur": 0.26, "hit_from": 0.06, "hit_to": 0.13, "cancel": 0.13,
 		"lunge": 7.0, "reach": 2.4, "arc": 130.0, "dmg": 9.0, "poise": 10.0, "knock": 2.5, "launch": 0.0,
-		"stop": 45.0, "shake": 0.10, "sound": "colpo", "next": "blade_3", "swing": 1.0},
-	"blade_3": {"form": Form.BLADE, "dur": 0.34, "hit_from": 0.08, "hit_to": 0.18, "cancel": 0.19,
+		"stop": 32.0, "shake": 0.08, "sound": "colpo", "next": "blade_3", "swing": 1.0},
+	"blade_3": {"form": Form.BLADE, "dur": 0.38, "hit_from": 0.07, "hit_to": 0.24, "cancel": 0.25, "multi": 2,
 		"lunge": 8.0, "reach": 2.6, "arc": 150.0, "dmg": 10.0, "poise": 14.0, "knock": 3.0, "launch": 0.0,
-		"stop": 55.0, "shake": 0.14, "sound": "colpo", "next": "impact_finisher", "swing": -1.0},
+		"stop": 40.0, "shake": 0.12, "sound": "colpo", "next": "impact_finisher", "swing": -1.0},
 	# quarto colpo della catena: l'arma si trasforma da sola in IMPACT
 	"impact_finisher": {"form": Form.IMPACT, "dur": 0.58, "hit_from": 0.20, "hit_to": 0.30, "cancel": 0.36,
 		"lunge": 9.0, "reach": 2.9, "arc": 170.0, "dmg": 24.0, "poise": 45.0, "knock": 11.0, "launch": 2.0,
-		"stop": 120.0, "shake": 0.55, "sound": "colpo_finale", "next": "", "swing": 1.0, "ring": 2.6},
+		"stop": 140.0, "shake": 0.65, "sound": "colpo_finale", "next": "", "swing": 1.0, "ring": 3.0},
 	# pesante a terra (tenere premuto): lancia in aria
 	"impact_launcher": {"form": Form.IMPACT, "dur": 0.55, "hit_from": 0.20, "hit_to": 0.30, "cancel": 0.32,
 		"lunge": 4.0, "reach": 2.7, "arc": 140.0, "dmg": 16.0, "poise": 35.0, "knock": 1.0, "launch": 11.5,
-		"stop": 95.0, "shake": 0.40, "sound": "colpo_forte", "next": "", "swing": 0.0, "ring": 2.0},
+		"stop": 110.0, "shake": 0.5, "sound": "colpo_forte", "next": "", "swing": 0.0, "ring": 2.4, "follow": true},
 	# pesante in aria: schianto a terra con onda d'urto
 	"impact_slam": {"form": Form.IMPACT, "dur": 0.70, "hit_from": 0.0, "hit_to": 0.0, "cancel": 0.40,
 		"lunge": 0.0, "reach": 3.4, "arc": 360.0, "dmg": 20.0, "poise": 40.0, "knock": 8.0, "launch": 4.0,
@@ -47,7 +49,11 @@ const DATA := {
 	# bersaglio lontano: VECTOR si allunga, aggancia e trascina il nemico verso di te
 	"vector_lash": {"form": Form.VECTOR, "dur": 0.42, "hit_from": 0.12, "hit_to": 0.20, "cancel": 0.24,
 		"lunge": 0.0, "reach": 11.0, "arc": 24.0, "dmg": 6.0, "poise": 20.0, "knock": 0.0, "launch": 0.0,
-		"stop": 70.0, "shake": 0.20, "sound": "critico", "next": "blade_1", "swing": 0.0, "pull": true},
+		"stop": 70.0, "shake": 0.20, "sound": "critico", "next": "blade_2", "swing": 0.0, "pull": true, "line": true},
+	# stick all'indietro con un nemico a media distanza: VECTOR frusta e tira il nemico oltre la lama
+	"vector_reel": {"form": Form.VECTOR, "dur": 0.40, "hit_from": 0.10, "hit_to": 0.18, "cancel": 0.22,
+		"lunge": 0.0, "reach": 6.5, "arc": 60.0, "dmg": 8.0, "poise": 22.0, "knock": 0.0, "launch": 2.5,
+		"stop": 60.0, "shake": 0.18, "sound": "critico", "next": "blade_2", "swing": 1.0, "pull": true, "line": true},
 	# attacco subito dopo una schivata: VECTOR spazza tutto intorno
 	"vector_sweep": {"form": Form.VECTOR, "dur": 0.46, "hit_from": 0.10, "hit_to": 0.24, "cancel": 0.28,
 		"lunge": 5.0, "reach": 3.9, "arc": 360.0, "dmg": 11.0, "poise": 18.0, "knock": 6.0, "launch": 0.0,

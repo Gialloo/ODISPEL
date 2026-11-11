@@ -64,6 +64,7 @@ var _dodge_start := -100000
 var _last_dodge_end := -100000
 var _hurt_t := 0.0
 var _counter_ready := false
+var _multi_done := false
 
 var visual: Node3D
 var weapon: Node3D
@@ -301,8 +302,13 @@ func _pick_move(kind: String) -> String:
 		return "vector_sweep"
 	var t := _best_target(true)
 	if t:
-		var d := _flat(t.global_position - global_position).length()
-		if d > 4.6 and d < 11.5:
+		var to_t := _flat(t.global_position - global_position)
+		var d := to_t.length()
+		var back := input_dir()
+		# stick tirato all'indietro rispetto al nemico: VECTOR lo frusta verso di te
+		if back != Vector3.ZERO and d > 2.2 and d < 6.8 and back.normalized().dot(to_t.normalized()) < -0.5:
+			return "vector_reel"
+		if d > 4.2 and d < 11.5:
 			return "vector_lash"
 	if state == S.ATTACK and move.next != "":
 		return move.next
@@ -319,6 +325,7 @@ func _start_move(id: String, now: int) -> void:
 	_hit_list.clear()
 	_hit_any = false
 	_trail_done = false
+	_multi_done = false
 	_slam_landed = false
 	_move_press_ms = Pad._pressed_at["attack"]
 	state = S.ATTACK
@@ -327,6 +334,10 @@ func _start_move(id: String, now: int) -> void:
 		form_changed.emit(move.form)
 		_band_mat.albedo_color = M.FORM_COLOR[move.form]
 		FX.stat("form_" + M.FORM_NAME[move.form].to_lower())
+		# la trasformazione si vede e si sente: lampo del colore della forma
+		_flash(M.FORM_COLOR[move.form])
+		FX.ring(global_position, Color(M.FORM_COLOR[move.form], 0.7), 1.3, 0.18)
+		FX.sound("cutin", 1.6 + 0.2 * move.form, -12.0)
 	FX.stat("move_" + id)
 	# aiuto alla mira: ci si gira subito verso il bersaglio
 	var t := _best_target(false)
@@ -339,6 +350,8 @@ func _start_move(id: String, now: int) -> void:
 		if d != Vector3.ZERO:
 			facing = d.normalized()
 	weapon.swing(move.swing, move.hit_from, max(0.06, move.hit_to - move.hit_from + 0.04))
+	if move.form == M.Form.IMPACT and move.hit_from > 0.1:
+		weapon.charge(move.hit_from)
 	if move.get("air", false):
 		_air_attacks += 1
 		velocity.y = max(velocity.y, 2.2)
@@ -391,6 +404,15 @@ func _update_attack(delta: float, on_floor: bool, now: int) -> void:
 				else:
 					weapon.trail(move.form, move.reach, move.arc)
 			_do_hits(false)
+	# IMPACT launcher: se tieni premuto, salti dietro al nemico lanciato
+	if move.get("follow", false) and _hit_any and on_floor and move_t >= move.cancel and Pad.held("attack"):
+		_end_move(now)
+		velocity.y = tune.jump * 1.2
+		_jump_cut = true
+		_squash(Vector3(0.75, 1.3, 0.75))
+		_afterimage()
+		FX.stat("launch_follow")
+		return
 	if move_t >= move.cancel:
 		_try_buffer(now)
 	if state == S.ATTACK and move_t >= move.dur:
@@ -445,7 +467,9 @@ func _do_hits(slam: bool) -> void:
 	if _hit_any and first_hit:
 		FX.hitstop(move.stop)
 		FX.shake(move.shake)
-		FX.sound(move.sound)
+		FX.sound(move.sound, M.FORM_PITCH[move.form])
+		if move.form == M.Form.IMPACT:
+			FX.ring(global_position + facing * 1.4, Color(1, 0.75, 0.4, 0.7), 1.6, 0.22)
 		if move.has("ring"):
 			FX.ring(global_position, Color(M.FORM_COLOR[move.form], 0.8), move.ring, 0.3)
 	elif slam:

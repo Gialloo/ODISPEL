@@ -89,12 +89,18 @@ func _drive(delta: float) -> void:
 			_plan = "heavy"
 		elif r < 0.85:
 			_plan = "air"
+		elif r < 0.93:
+			_plan = "reel"
 		else:
 			_plan = "approach"
 		_plan_t = randf_range(1.0, 2.2)
 		_phase = 0.0
 	_phase += delta
 	match _plan:
+		"reel":
+			pad.move = Vector2(0, -1)
+			if dist > 2.6 and dist < 6.5 and fmod(_phase, 0.4) < delta * 1.5:
+				_press("attack")
 		"approach":
 			pad.move = Vector2(0, 1) if dist > 2.0 else Vector2.ZERO
 		"lash":
@@ -110,7 +116,7 @@ func _drive(delta: float) -> void:
 		"heavy":
 			pad.move = Vector2(0, 1) if dist > 2.4 else Vector2.ZERO
 			if dist < 3.0:
-				if _phase < 0.4:
+				if _phase < 0.75:
 					_press("attack")
 				else:
 					_release("attack")
@@ -139,7 +145,7 @@ func _report() -> void:
 	keys.sort()
 	for k in keys:
 		print("  %s = %s" % [k, s[k]])
-	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam"]
+	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow"]
 	var missing := []
 	for n in need:
 		if s.get(n, 0) == 0:

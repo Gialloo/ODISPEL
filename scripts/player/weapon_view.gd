@@ -111,25 +111,34 @@ func swing(side: float, windup: float, strike: float) -> void:
 		_swing_tw.tween_property(_arm, "rotation", Vector3(deg_to_rad(-75), deg_to_rad(-85) * -side, 0), strike).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 
 ## Scia a ventaglio davanti al personaggio, colore della forma.
+## Carica di IMPACT: la testa del martello si gonfia durante la preparazione.
+func charge(seconds: float) -> void:
+	var n := _forms[M.Form.IMPACT]
+	var t := n.create_tween()
+	t.tween_property(n, "scale", Vector3(1.35, 1.35, 1.1), seconds).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t.tween_property(n, "scale", Vector3.ONE, 0.12)
+
+## Ogni forma ha la sua scia: BLADE sottile e nitida, IMPACT larga e piena, VECTOR lunga e filiforme.
 func trail(f: int, reach: float, arc_deg: float, height := 1.1) -> void:
 	var mi := MeshInstance3D.new()
-	mi.mesh = _fan(reach, min(arc_deg, 359.0))
+	var inner: float = [0.78, 0.2, 0.88][f]
+	mi.mesh = _fan(reach, min(arc_deg, 359.0), inner)
 	var mat: StandardMaterial3D = _trail_mats[f].duplicate()
 	mi.material_override = mat
 	get_parent().get_parent().add_child(mi)
 	mi.global_transform = global_transform
 	mi.global_position += Vector3(0, height, 0)
 	var t := mi.create_tween()
-	t.tween_property(mat, "albedo_color:a", 0.0, 0.16)
+	t.tween_property(mat, "albedo_color:a", 0.0, [0.12, 0.22, 0.16][f])
 	t.tween_callback(mi.queue_free)
 
-func _fan(r: float, arc_deg: float) -> ArrayMesh:
+func _fan(r: float, arc_deg: float, inner_k := 0.55) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var seg := 14
 	var a0 := deg_to_rad(-arc_deg * 0.5)
 	var step := deg_to_rad(arc_deg) / seg
-	var inner := r * 0.55
+	var inner := r * inner_k
 	for i in seg:
 		var a := a0 + step * i
 		var b := a + step
