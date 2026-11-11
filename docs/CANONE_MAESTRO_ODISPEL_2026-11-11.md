@@ -225,3 +225,10 @@ Per i dossier estesi di Lance, Nox, Saul e Rio, con sfumature caratteriali, scen
 ## 12. Manuale di riferimento completo dei protagonisti
 
 Il documento operativo di riferimento per la scrittura dei quattro protagonisti è il [Supplemento VI — Manuale approfondito dei protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md). Contiene i retroscena, i poteri e le regole conosciute, il comportamento quotidiano e in combattimento, il metodo con cui affrontano i problemi, le relazioni, gli archi, gli epiloghi, le letture tematiche e un registro delle questioni aperte. In caso di differenza di livello di dettaglio, consultare il Supplemento VI, mantenendo il perimetro 0–23 e la cronologia delle decisioni.
+
+
+## 13. Manuale di scene, capitoli, interazioni e regia narrativa
+
+Per scrivere correttamente le scene, la progressione dei capitoli e le interazioni tra Lance, Nox, Saul e Rio, consultare il [Manuale di scene, capitoli, interazioni e regia narrativa](MANUALE_SCENE_CAPITOLI_INTERAZIONI_REGIA_NARRATIVA_ODISPEL_2026-11-11.md).
+
+Il manuale raccoglie le scene approvate, la struttura della demo, le regole di continuità, le dinamiche individuali e di gruppo, il modo in cui i personaggi reagiscono alle scelte del giocatore, le istruzioni operative per collaboratori e gli elementi ancora aperti. È complementare al Supplemento VI: quest'ultimo definisce chi sono i protagonisti; il nuovo manuale spiega come metterli in scena senza snaturarli. Il raccordo non ancora deciso tra alcuni momenti della demo è lasciato esplicitamente aperto.
