@@ -73,6 +73,7 @@ var _band_mat: StandardMaterial3D
 var _body_parts: Array[MeshInstance3D] = []
 
 func _ready() -> void:
+	add_to_group("player")
 	collision_layer = 2
 	collision_mask = 1
 	floor_snap_length = 0.3
@@ -428,8 +429,10 @@ func _do_hits(slam: bool) -> void:
 	if enemies_root == null:
 		return
 	var first_hit := not _hit_any
-	for e in enemies_root.get_children():
+	for e in enemies_root.get_children() + get_tree().get_nodes_in_group("props"):
 		if not e.has_method("receive_hit") or e.is_dead() or _hit_list.has(e):
+			continue
+		if e.has_method("hold") and e.state == 2:
 			continue
 		var to: Vector3 = e.global_position - global_position
 		var flat := _flat(to)

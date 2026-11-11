@@ -42,8 +42,13 @@ var _warn_mat: StandardMaterial3D
 var _bar: MeshInstance3D
 var _bar_bg: MeshInstance3D
 var _visual: Node3D
+var charged := false
+var _charge_t := 0.0
+var _power_fly := 0.0
+var _hit_by: Dictionary = {}
 
 func _ready() -> void:
+	add_to_group("enemies")
 	collision_layer = 4
 	collision_mask = 1 | 4
 	var col := CollisionShape3D.new()
@@ -189,11 +194,22 @@ func _physics_process(delta: float) -> void:
 	if state == S.AIR and velocity.y < 2.0 and velocity.y > -4.0:
 		g = 11.0
 	velocity.y = max(velocity.y - g * d, -30.0)
+	if charged:
+		_charge_t += delta
+		_mat.emission_enabled = true
+		_mat.emission = Color(1, 0.85, 0.2)
+		_mat.emission_energy_multiplier = 1.0 + 0.8 * sin(_charge_t * 18.0)
+		if _charge_t > 7.0:
+			charged = false
+			_mat.emission_enabled = false
 	var saved := velocity
 	velocity *= FX.enemy_time if FX.enemy_time < 1.0 else 1.0
 	move_and_slide()
 	if FX.enemy_time < 1.0:
 		velocity = saved
+	if _power_fly > 0.0:
+		_power_fly -= delta
+		_power_collisions(saved)
 	if state != S.WINDUP:
 		_warn_mat.albedo_color.a = move_toward(_warn_mat.albedo_color.a, 0.0, 6 * delta)
 	_update_bar()
@@ -239,6 +255,63 @@ func _set_state(s: int) -> void:
 	state = s
 	_t = 0.0
 
+## SPINGI: scaraventato via. Contro un muro o un altro nemico si fa male.
+func power_push(v: Vector3) -> void:
+	if state == S.DEAD:
+		return
+	velocity = v / weight
+	_set_state(S.AIR)
+	_power_fly = 0.9
+	_hit_by.clear()
+	FX.stat("enemy_pushed")
+
+## ATTIRA: trascinato a portata di lama e lasciato scoperto per un attimo.
+func power_pull(point: Vector3) -> void:
+	if state == S.DEAD:
+		return
+	var to := point - global_position
+	to.y = 0
+	velocity = to * 5.5 / weight + Vector3(0, 4.0, 0)
+	_set_state(S.HITSTUN)
+	_t = -0.3
+	_warn_mat.albedo_color.a = 0.0
+	FX.stat("enemy_pulled")
+
+## SOVRACCARICA: al prossimo colpo esplode.
+func charge() -> void:
+	charged = true
+	_charge_t = 0.0
+
+func _power_collisions(pre: Vector3) -> void:
+	var speed := Vector3(pre.x, 0, pre.z).length()
+	if speed < 7.0:
+		return
+	for i in get_slide_collision_count():
+		var c := get_slide_collision(i)
+		var n := c.get_normal()
+		if absf(n.y) < 0.6 and c.get_collider() is StaticBody3D:
+			_power_fly = 0.0
+			velocity = Vector3(n.x, 0.4, n.z) * 3.0
+			FX.stat("wall_slams")
+			FX.stat("env_hits")
+			receive_hit({"dmg": 8.0 + speed * 0.8, "poise": 50.0, "dir": n, "knock": 1.0, "launch": 0.0, "form": -1, "move": "wall", "env": true})
+			FX.ring(global_position + Vector3(0, 1, 0) - n * 0.4, Color(1, 1, 1, 0.8), 1.6, 0.2)
+			return
+	# contro un altro nemico: birilli
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e == self or e.is_dead() or _hit_by.has(e):
+			continue
+		if e.global_position.distance_to(global_position) < radius + e.radius + 0.4:
+			_hit_by[e] = true
+			var dir: Vector3 = e.global_position - global_position
+			dir.y = 0
+			dir = dir.normalized()
+			e.receive_hit({"dmg": 6.0 + speed * 0.6, "poise": 40.0, "dir": dir, "knock": speed * 0.5, "launch": 3.0, "form": -1, "move": "bowl", "env": true})
+			FX.stat("enemy_collisions")
+			FX.stat("env_hits")
+			FX.hitstop(60)
+			FX.sound("colpo_forte", 1.0)
+
 ## Riceve un colpo del giocatore (dati dalla tabella delle mosse).
 func receive_hit(info: Dictionary) -> void:
 	if state == S.DEAD:
@@ -279,11 +352,16 @@ func receive_hit(info: Dictionary) -> void:
 	_visual.scale = Vector3(1.25, 0.8, 1.25)
 	create_tween().tween_property(_visual, "scale", Vector3.ONE, 0.15)
 	_warn_mat.albedo_color.a = 0.0
+	if charged and info.get("move", "") != "blast":
+		charged = false
+		_mat.emission_enabled = false
+		FX.overcharge_blast(global_position + Vector3(0, 0.8, 0), self)
 	if hp <= 0.0:
 		_die(dir)
 
 func _die(dir: Vector3) -> void:
 	_set_state(S.DEAD)
+	remove_from_group("enemies")
 	collision_layer = 0
 	velocity = dir * 9.0 + Vector3(0, 7.0, 0)
 	FX.sound("ko", 1.2)

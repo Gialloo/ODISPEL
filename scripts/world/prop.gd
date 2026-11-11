@@ -30,6 +30,7 @@ func setup(k: String) -> void:
 		mass = 1.0
 
 func _ready() -> void:
+	add_to_group("props")
 	collision_layer = 8
 	collision_mask = 1 | 8
 	var cs := CollisionShape3D.new()

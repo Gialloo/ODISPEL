@@ -81,7 +81,9 @@ func _drive(delta: float) -> void:
 	_plan_t -= delta
 	if _plan_t <= 0:
 		var r := randf()
-		if dist > 6.0 and r < 0.5:
+		if dist > 6.0 and r < 0.25:
+			_plan = "power"
+		elif dist > 6.0 and r < 0.5:
 			_plan = "lash"
 		elif r < 0.45:
 			_plan = "combo"
@@ -89,14 +91,27 @@ func _drive(delta: float) -> void:
 			_plan = "heavy"
 		elif r < 0.85:
 			_plan = "air"
-		elif r < 0.93:
+		elif r < 0.9:
 			_plan = "reel"
+		elif r < 0.99 or dist > 4.0:
+			_plan = "power"
 		else:
 			_plan = "approach"
-		_plan_t = randf_range(1.0, 2.2)
+		_plan_t = 3.0 if _plan == "power" else randf_range(1.0, 2.2)
 		_phase = 0.0
 	_phase += delta
 	match _plan:
+		"power":
+			pad.move = Vector2.ZERO
+			var k := int(_phase / 0.5)
+			if fmod(_phase, 0.5) < delta * 1.5:
+				match k % 6:
+					0: pad.tap("alter")
+					1: pad.tap("pull")
+					2: _press("attack")
+					3: pad.tap("push")
+					4: pad.tap("pull")
+					5: pad.tap("push")
 		"reel":
 			pad.move = Vector2(0, -1)
 			if dist > 2.6 and dist < 6.5 and fmod(_phase, 0.4) < delta * 1.5:
@@ -145,7 +160,7 @@ func _report() -> void:
 	keys.sort()
 	for k in keys:
 		print("  %s = %s" % [k, s[k]])
-	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow"]
+	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts"]
 	var missing := []
 	for n in need:
 		if s.get(n, 0) == 0:

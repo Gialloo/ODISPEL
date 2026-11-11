@@ -116,8 +116,8 @@ func _update_reticle() -> void:
 	_reticle_mat.albedo_color = Color(0.7, 0.95, 1.0, 0.75) if _can_move(target) else Color(1, 0.4, 0.4, 0.6)
 
 func _beam_to(to: Vector3, c: Color) -> void:
-	var from := player.global_position + Vector3(0, 1.3, 0) + player.facing * 0.4
-	var d := from.distance_to(to)
+	var from: Vector3 = player.global_position + Vector3(0, 1.3, 0) + player.facing * 0.4
+	var d: float = from.distance_to(to)
 	if d < 0.2:
 		return
 	_beam.visible = true
@@ -181,7 +181,7 @@ func push() -> void:
 		var dir: Vector3 = t.global_position - player.global_position
 		dir.y = 0
 		dir = dir.normalized()
-		var v := dir * tune.push_speed + Vector3(0, 3.5, 0)
+		var v: Vector3 = dir * tune.push_speed + Vector3(0, 3.5, 0)
 		if t.has_method("launch"):
 			t.launch(v, player)
 		else:

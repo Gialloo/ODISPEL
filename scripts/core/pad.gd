@@ -2,7 +2,7 @@ extends Node
 ## Ingresso unico per touch, tastiera/mouse e test automatici.
 ## Il giocatore legge solo da qui: così i comandi si cambiano senza toccare il combattimento.
 
-const ACTIONS := ["attack", "jump", "dodge", "lock", "power"]
+const ACTIONS := ["attack", "jump", "dodge", "lock", "push", "pull", "alter"]
 
 var move := Vector2.ZERO          # x = destra, y = avanti (lunghezza 0..1)
 var look := Vector2.ZERO          # delta accumulato nel frame (pixel)
@@ -25,13 +25,18 @@ func press(a: String) -> void:
 		_just[a] = true
 		_pressed_at[a] = Time.get_ticks_msec()
 
+## Pressione istantanea (gesti: scorrimento sul tasto POTERE).
+func tap(a: String) -> void:
+	press(a)
+	_held[a] = false
+
 func release(a: String) -> void:
 	if _held[a]:
 		_held[a] = false
 		_released[a] = true
 
 func held(a: String) -> bool:
-	return _held[a]
+	return _held.get(a, false)
 
 func just(a: String) -> bool:
 	return _just[a]

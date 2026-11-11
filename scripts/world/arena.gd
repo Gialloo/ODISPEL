@@ -3,12 +3,14 @@ extends Node3D
 ## con rampa (zona speciale). Colori piatti e leggibili, nessuna ombra costosa.
 
 const RADIUS := 22.0
+const Prop = preload("res://scripts/world/prop.gd")
 
 func _ready() -> void:
 	_environment()
 	_floor()
 	_walls()
 	_obstacles()
+	_props()
 
 func _environment() -> void:
 	var env := Environment.new()
@@ -133,6 +135,21 @@ func _obstacles() -> void:
 	ramp.position = Vector3(-13, 1.0, -7.6)
 	ramp.rotation.x = atan2(2.2, len) * 1.0
 	add_child(ramp)
+
+## Oggetti manipolabili: casse leggere sparse e blocchi pesanti vicino ai pilastri.
+func _props() -> void:
+	var light := [Vector3(3, 0, 3), Vector3(-4, 0, 2), Vector3(6, 0, -4), Vector3(-7, 0, -3),
+		Vector3(1, 0, -7), Vector3(-2, 0, 8), Vector3(10, 0, 1), Vector3(-11, 0, 9)]
+	for p in light:
+		_spawn_prop("light", p)
+	for p in [Vector3(7.5, 0, 7.5), Vector3(-8, 0, 6), Vector3(5, 0, -9)]:
+		_spawn_prop("heavy", p)
+
+func _spawn_prop(k: String, p: Vector3) -> void:
+	var pr := Prop.new()
+	pr.setup(k)
+	pr.position = p + Vector3(0, 0.1, 0)
+	add_child(pr)
 
 func spawn_point() -> Vector3:
 	var a := randf() * TAU

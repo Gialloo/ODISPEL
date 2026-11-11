@@ -5,6 +5,14 @@ extends Control
 signal gear_pressed
 
 var look_scale := 1.7
+var power: Node                    # per disegnare le ricariche
+var _pw_id := -1
+var _pw_start := Vector2.ZERO
+var _pw_t := 0
+var _pw_done := false
+var _pw_last := ""
+var _pw_last_t := 0
+const SWIPE := 42.0
 var _stick_id := -1
 var _stick_center := Vector2.ZERO
 var _stick_pos := Vector2.ZERO
@@ -26,7 +34,8 @@ func _buttons() -> Dictionary:
 		"attack": {"pos": Vector2(s.x - 165, s.y - 150), "r": 82.0, "label": "ATTACCO", "col": Color(0.35, 0.95, 1.0)},
 		"dodge": {"pos": Vector2(s.x - 330, s.y - 92), "r": 58.0, "label": "SCHIVA", "col": Color(1, 1, 1)},
 		"jump": {"pos": Vector2(s.x - 92, s.y - 305), "r": 56.0, "label": "SALTO", "col": Color(1, 1, 1)},
-		"lock": {"pos": Vector2(s.x - 290, s.y - 255), "r": 42.0, "label": "LOCK", "col": Color(1, 0.85, 0.3)},
+		"power": {"pos": Vector2(s.x - 305, s.y - 262), "r": 62.0, "label": "POTERE", "col": Color(0.85, 0.6, 1.0)},
+		"lock": {"pos": Vector2(s.x - 175, s.y - 395), "r": 40.0, "label": "LOCK", "col": Color(1, 0.85, 0.3)},
 	}
 
 func _gear_rect() -> Rect2:
@@ -44,6 +53,14 @@ func _input(event: InputEvent) -> void:
 			for n in _buttons():
 				var b: Dictionary = _buttons()[n]
 				if p.distance_to(b.pos) <= b.r * 1.15:
+					if n == "power":
+						# POTERE: scorri su = SPINGI, giù = ATTIRA, tocco = SOVRACCARICA
+						_pw_id = event.index
+						_pw_start = p
+						_pw_t = Time.get_ticks_msec()
+						_pw_done = false
+						queue_redraw()
+						return
 					_btn_touch[event.index] = n
 					Pad.press(n)
 					queue_redraw()
@@ -57,6 +74,10 @@ func _input(event: InputEvent) -> void:
 				_look_last = p
 			queue_redraw()
 		else:
+			if event.index == _pw_id:
+				if not _pw_done and Time.get_ticks_msec() - _pw_t < 400:
+					_fire("alter")
+				_pw_id = -1
 			if _btn_touch.has(event.index):
 				Pad.release(_btn_touch[event.index])
 				_btn_touch.erase(event.index)
@@ -67,6 +88,12 @@ func _input(event: InputEvent) -> void:
 				_look_id = -1
 			queue_redraw()
 	elif event is InputEventScreenDrag:
+		if event.index == _pw_id:
+			var dy: float = event.position.y - _pw_start.y
+			if not _pw_done and absf(dy) >= SWIPE:
+				_pw_done = true
+				_fire("push" if dy < 0 else "pull")
+			return
 		if event.index == _stick_id:
 			_stick_pos = event.position
 			var v: Vector2 = (_stick_pos - _stick_center)
@@ -81,6 +108,11 @@ func _input(event: InputEvent) -> void:
 			Pad.look += (event.position - _look_last) * look_scale
 			_look_last = event.position
 
+func _fire(a: String) -> void:
+	Pad.tap(a)
+	_pw_last = a
+	_pw_last_t = Time.get_ticks_msec()
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
 		for i in _btn_touch:
@@ -88,10 +120,15 @@ func _notification(what: int) -> void:
 		_btn_touch.clear()
 		_stick_id = -1
 		_look_id = -1
+		_pw_id = -1
 		Pad.move = Vector2.ZERO
 
 func _process(_d: float) -> void:
 	queue_redraw()
+
+func _tri(c: Vector2, dir: int, col: Color) -> void:
+	var h := 12.0 * dir
+	draw_colored_polygon(PackedVector2Array([c + Vector2(-13, -h * 0.5), c + Vector2(13, -h * 0.5), c + Vector2(0, h * 0.7)]), col)
 
 func _draw() -> void:
 	# stick
@@ -116,6 +153,22 @@ func _draw() -> void:
 		var fs := 22 if b.r > 70 else 17
 		var w := _font.get_string_size(b.label, HORIZONTAL_ALIGNMENT_CENTER, -1, fs).x
 		draw_string(_font, b.pos + Vector2(-w * 0.5, fs * 0.35), b.label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.9))
+	# POTERE: frecce del gesto e ricariche
+	var pb: Dictionary = _buttons()["power"]
+	var pc: Vector2 = pb.pos
+	var pr: float = pb.r
+	var flash := Time.get_ticks_msec() - _pw_last_t < 180
+	_tri(pc + Vector2(0, -pr - 18), -1, Color(0.7, 0.95, 1.0, 0.95 if flash and _pw_last == "push" else 0.6))
+	_tri(pc + Vector2(0, pr + 18), 1, Color(0.85, 0.5, 1.0, 0.95 if flash and _pw_last == "pull" else 0.6))
+	if power:
+		var cols := {"push": Color(0.7, 0.95, 1.0), "pull": Color(0.85, 0.5, 1.0), "alter": Color(1, 0.85, 0.2)}
+		var i := 0
+		for k in ["push", "pull", "alter"]:
+			var cr: float = power.cooldown_ratio(k)
+			if cr > 0.0:
+				var a0 := -PI * 0.5 + i * TAU / 3.0
+				draw_arc(pc, pr + 6 + i * 5, a0, a0 + TAU / 3.0 * cr, 16, Color(cols[k], 0.85), 4.0)
+			i += 1
 	# ingranaggio del laboratorio
 	var g := _gear_rect()
 	draw_rect(g, Color(0, 0, 0, 0.35))

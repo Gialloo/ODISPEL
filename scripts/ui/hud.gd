@@ -7,6 +7,7 @@ var player: Node
 var cam: Node
 var touch: Control
 var enemy_tune: Dictionary
+var power: Node
 
 var _font: Font
 var _hp_bar: ColorRect
@@ -132,6 +133,10 @@ func toggle_panel() -> void:
 		["Velocità nemico", enemy_tune, "speed", 2.0, 12.0],
 		["Carica attacco nemico", enemy_tune, "windup", 0.25, 1.2],
 		["Danno nemico", enemy_tune, "damage", 0.0, 40.0],
+		["Stadio del potere (1-3)", power, "stage", 1.0, 3.0],
+		["Forza spinta", power.tune, "push_speed", 8.0, 40.0],
+		["Ricarica spinta", power.tune, "push_cd", 0.1, 2.0],
+		["Ricarica attira", power.tune, "pull_cd", 0.1, 2.0],
 	]
 	for r in rows:
 		box.add_child(_slider_row(r[0], r[1], r[2], r[3], r[4]))
@@ -151,12 +156,14 @@ func _slider_row(title: String, obj, key: String, lo: float, hi: float) -> Contr
 	var s := HSlider.new()
 	s.min_value = lo
 	s.max_value = hi
-	s.step = (hi - lo) / 100.0
+	s.step = 1.0 if key == "stage" else (hi - lo) / 100.0
 	s.value = cur
 	s.custom_minimum_size = Vector2(480, 40)
 	s.value_changed.connect(func(val):
 		if obj is Dictionary:
 			obj[key] = val
+		elif key == "stage":
+			obj.set(key, int(val))
 		else:
 			obj.set(key, val)
 		l.text = "%s: %.2f" % [title, val])
