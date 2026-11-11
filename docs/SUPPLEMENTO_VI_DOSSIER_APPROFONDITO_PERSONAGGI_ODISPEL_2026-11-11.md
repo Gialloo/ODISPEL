@@ -837,6 +837,26 @@ Non sono stati definiti:
 
 Non attribuire a Rio un potere senza costo o una capacità di adattamento istantanea e illimitata: il principio è stato deciso, il bilanciamento no.
 
+## 24.5 Arsenale e capacità di combattimento già nominate
+
+Nella prima definizione dei poteri di Rio/Kairos erano stati nominati questi strumenti e capacità:
+- **Mazza da baseball:** arma abituale, usata con brutalità e senza una tecnica raffinata da combattente addestrato.
+- **Berserk:** aumento smisurato della forza fisica.
+- **Braccia allungabili:** arti capaci di estendersi in modo elastico, «come rubber».
+- **Paura e despair:** incantesimi o tecniche che producono paura e disperazione. Il loro senso tematico è collegato alla ricerca di engagement: provocare terrore e reazioni estreme genera attenzione tanto quanto essere adorati.
+
+Questi elementi sono stati nominati nella serie 0–23 e vanno conservati nel repertorio di riferimento. Non sono stati però definiti numeri, costi, gittata, durata o condizioni precise di attivazione.
+
+## 24.6 Stile di combattimento: dalla performance horror al predatore
+
+La prima direzione descriveva il combattimento come una performance horror: violenta, imprevedibile e spettacolare, con un contrasto tra comicità e brutalità. Il riferimento di tono era Krieg di *Borderlands 2*.
+
+La precisazione successiva dell'autore è importante e prevale sulla lettura troppo teatrale: **Rio combatte più come un animale/creatura che come un performer**. I movimenti sono istintivi, non eleganti; la mazza non è usata con tecnica raffinata, ma come uno strumento brutale per colpire e distruggere.
+
+Il Kairos, crescendo in potere, impara anche astuzia predatoria e altre abilità. La progressione non consiste quindi soltanto nell'aumentare la forza: la creatura diventa più capace di cacciare, adattarsi e sfruttare ciò che apprende.
+
+La componente spettacolare e horror resta una qualità della presenza e dell'effetto prodotto sugli altri, non un'indicazione che Rio combatta consapevolmente come un intrattenitore o un artista di scena.
+
 # 25. Nido e nidificazione
 
 ## 25.1 Il nido
