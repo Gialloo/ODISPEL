@@ -140,3 +140,8 @@ Non confondere questo rapporto con quello romantico tra Nox e Saul.
 4. Quanto possono agire autonomamente le mani e quali limiti hanno?
 5. Quali sono i dettagli del nemico-hive e della battaglia?
 6. Come si manifesta concretamente la libertà di scelta lasciata a Nox dopo il sacrificio?
+
+
+## 12. Dossier approfondito dei personaggi
+
+Per il quadro più esteso dei quattro protagonisti e per le precisazioni su Saul, Nox e Rio, consultare il [Supplemento VI — Dossier approfondito dei quattro protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md).
