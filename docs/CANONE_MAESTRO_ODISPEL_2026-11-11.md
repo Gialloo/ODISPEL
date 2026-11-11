@@ -215,3 +215,8 @@ Le percezioni sono passive e non devono diventare un radar invasivo. Il personag
 
 ---
 **Nota di accuratezza:** questo documento è una ricostruzione strutturata delle decisioni recuperabili nelle conversazioni 0–23, non una trascrizione parola per parola. Dove non è disponibile il testo completo, non vengono inventati raccordi o dialoghi.
+
+
+## 11. Approfondimento dei protagonisti
+
+Per i dossier estesi di Lance, Nox, Saul e Rio, con sfumature caratteriali, scene, dinamiche, epiloghi e questioni aperte recuperate dalle sole conversazioni 0–23, consultare il [Supplemento VI — Dossier approfondito dei quattro protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md).
