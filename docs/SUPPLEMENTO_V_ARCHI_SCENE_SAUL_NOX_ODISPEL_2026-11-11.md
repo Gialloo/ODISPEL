@@ -145,3 +145,8 @@ Non confondere questo rapporto con quello romantico tra Nox e Saul.
 ## 12. Dossier approfondito dei personaggi
 
 Per il quadro più esteso dei quattro protagonisti e per le precisazioni su Saul, Nox e Rio, consultare il [Supplemento VI — Dossier approfondito dei quattro protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md).
+
+
+## 13. Regole complete di magia e rinvio al manuale personaggi
+
+Il [Supplemento VI — Manuale approfondito dei protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md) contiene ora anche le regole concordate per la riserva d'essenza e le tre cariche di buff di Nox, il contrasto tra apprendimento di Nox e intuizione di Saul, le mani spirituali e i sipari dimensionali di Saul, oltre alla relazione narrativa tra studio segreto, rivelazione e sacrificio. I limiti non ancora decisi restano esplicitamente elencati come aperti.
