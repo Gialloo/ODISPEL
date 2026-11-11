@@ -459,7 +459,7 @@ func _start_move(id: String, now: int) -> void:
 		var d := input_dir()
 		if d != Vector3.ZERO:
 			facing = d.normalized()
-	weapon.swing(move.swing, move.hit_from, max(0.06, move.hit_to - move.hit_from + 0.04))
+	weapon.play(id, move)   # 0.13: posa completa di arma e corpo per ogni colpo
 	if move.form == M.Form.IMPACT and move.hit_from > 0.1:
 		weapon.charge(move.hit_from)
 	if move.get("air", false):
@@ -540,7 +540,11 @@ func _update_attack(delta: float, on_floor: bool, now: int) -> void:
 						end = target.global_position + Vector3(0, 1.0, 0)
 					weapon.show_line(global_position + Vector3(0, 1.15, 0), end, 0.14)
 				else:
-					weapon.trail(move.form, move.reach, move.arc)
+					# scia inclinata come il taglio: i fendenti alternano diagonale in giù e in su
+					var tilt := 0.0
+					if move.form == M.Form.BLADE and move.swing != 2.0 and move.swing != 0.0:
+						tilt = (14.0 if move_id in ["blade_1", "blade_air_1", "blade_dash"] else -14.0) * move.swing
+					weapon.trail(move.form, move.reach, move.arc, 1.1, tilt)
 			_do_hits(false)
 	# IMPACT launcher: se tieni premuto, salti dietro al nemico lanciato
 	if move.get("follow", false) and _hit_any and on_floor and move_t >= move.cancel and Pad.held("attack"):
@@ -993,18 +997,27 @@ func toggle_lock() -> void:
 # ---------------------------------------------------------------- aspetto
 
 func _update_visual(delta: float) -> void:
-	visual.rotation.y = lerp_angle(visual.rotation.y, atan2(-facing.x, -facing.z), clamp(30.0 * delta, 0, 1))
+	_yaw_base = lerp_angle(_yaw_base, atan2(-facing.x, -facing.z), clamp(30.0 * delta, 0, 1))
+	visual.rotation.y = _yaw_base
 	if _spin_t > 0.0:
 		_spin_t = max(0.0, _spin_t - delta)
 		var k := 1.0 - _spin_t / 0.4
 		visual.rotation.y = atan2(-facing.x, -facing.z) + TAU * (1.0 - (1.0 - k) * (1.0 - k))
 	var hv := Vector3(velocity.x, 0, velocity.z)
 	var lean: float = clamp(hv.length() / 10.0, 0.0, 1.0) * 0.12
-	visual.rotation.x = lerp(visual.rotation.x, -lean, clamp(10.0 * delta, 0, 1))
-	visual.scale = visual.scale.lerp(Vector3.ONE, clamp(14.0 * delta, 0, 1))
+	# 0.13: la posa del colpo (torsione, inclinazione, accovacciata) si somma al movimento
+	visual.rotation.y += deg_to_rad(weapon.body_twist)
+	var want_x: float = -lean - deg_to_rad(weapon.body_pitch) * 0.6
+	visual.rotation.x = lerp(visual.rotation.x, want_x, clamp(18.0 * delta, 0, 1))
+	_squash_s = _squash_s.lerp(Vector3.ONE, clamp(14.0 * delta, 0, 1))
+	var dr: float = weapon.body_drop
+	visual.scale = _squash_s * Vector3(1.0 + dr * 0.45, 1.0 - dr, 1.0 + dr * 0.45)
+
+var _squash_s := Vector3.ONE
+var _yaw_base := 0.0
 
 func _squash(s: Vector3) -> void:
-	visual.scale = s
+	_squash_s = s
 
 func _flash(c: Color) -> void:
 	_body_mat.emission_enabled = true

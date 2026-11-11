@@ -79,3 +79,6 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 
 ## 0.12
 - Effetti da anime: impact frame, linee di velocità, grana e bordi scuri (`scripts/ui/anime_fx.gd`, `FX.impact_frame`, `FX.speed_lines`), spegnibili dalle Opzioni. Pali e fili della luce sopra la città.
+
+## 0.13
+- Animazioni dei colpi a pose (`weapon_view.play`): corpo che si torce/piega/accovaccia, fendenti diagonali, martellata pesante, catena VECTOR che si allunga davvero.
