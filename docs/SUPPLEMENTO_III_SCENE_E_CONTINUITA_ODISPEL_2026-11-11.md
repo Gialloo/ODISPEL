@@ -60,11 +60,14 @@ Nelle conversazioni della serie è stata discussa una situazione di accampamento
 ### Scanner e falsi allarmi
 - Lance deve adattare scanner e ricognizione per distinguere minacce reali dagli scherzi di Saul.
 - La provocazione culmina nello sparo di Lance verso un sacco a pelo vuoto.
+- Nox reagisce credendo che Lance abbia ucciso Saul («HAI UCCISO SAUL!»); quando emerge lo scherzo, partecipa alla punizione di Saul.
 - Saul non vuole confessare di essere l'autore: desidera che Lance e Nox arrivino autonomamente alla verità.
 - Per Saul lo scherzo è sia il piacere di provocare reazioni sia il piacere di progettare il trucco: preparazione, diversivo, tempismo ed esecuzione.
 
-### Continuità di Rio
-Nella scena dell'accampamento Rio costruisce la propria tana/nido. Non gli vengono attribuiti dialoghi umani: è un'anomalia/Kairos e la scena deve comunicarne la presenza attraverso il comportamento.
+### Continuità di Rio e linguaggio frammentario
+Nella scena dell'accampamento Rio costruisce la propria tana/nido, osserva la situazione e può intervenire con frammenti come «Trending», «Unfollow», «Unsubscribed» o «Log off». Queste espressioni erano presenti nella scena discussa all'interno della serie 0–23 e vanno conservate come residui del linguaggio social dell'host, reinterpretati dal Kairos.
+
+Non sono battute da conversazione umana ordinaria: Rio resta un'anomalia/Kairos, parla pochissimo e usa frammenti/meme senza necessariamente comprenderne il contesto sociale. La sua presenza si comunica soprattutto attraverso comportamento, osservazione e reazioni non umane.
 
 ## 5. Nidificazione: scena concreta del Capitolo 1
 
@@ -129,3 +132,10 @@ Il personaggio commenta ciò che nota; il giocatore cerca il punto e interagisce
 - Nido dominante e boss della demo.
 - Esito preciso della scena del sacco a pelo e relativa punizione, oltre al fatto che Lance spara verso il sacco vuoto.
 - Non aggiungere dialoghi umani a Rio per completare le scene.
+
+
+## 11. Nota di continuità sul linguaggio di Rio
+
+La serie 0–23 contiene sia l'origine umana di Rio e i residui di linguaggio social, sia la precisazione successiva che Rio non deve essere scritto come un normale compagno umano parlante. Le due informazioni non vanno confuse: i frammenti «Trending», «Unfollow», «Unsubscribed», «Log off» sono stati discussi nella scena dell'accampamento della stessa serie e possono restare come comunicazione minima e aliena; non autorizzano dialoghi quotidiani, battute articolate o conversazioni umane con Nox e gli altri.
+
+Per il profilo completo della fusione, della critica all'engagement e dell'evoluzione comportamentale, consultare il [Supplemento VI — Manuale approfondito dei protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md).
