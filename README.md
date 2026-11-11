@@ -82,3 +82,6 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 
 ## 0.13
 - Animazioni dei colpi a pose (`weapon_view.play`): corpo che si torce/piega/accovaccia, fendenti diagonali, martellata pesante, catena VECTOR che si allunga davvero.
+
+## 0.14
+- Impact frame solo su counter, colpo dall'alto potente e colpo finale della combo (`player.IMPACT_FRAME_MOVES`). Città spostata lontano (palazzine a 140-175 m, grattacieli anni 2000 a 230-360 m nella foschia), linee elettriche in diagonale verso l'orizzonte. Prestazioni: niente contorni né emissione sulla città, riflessi spenti, pellicola a texture.

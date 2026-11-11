@@ -78,7 +78,9 @@ func _style_mesh(mi: MeshInstance3D) -> void:
 	if m.next_pass == null and not mi.get_meta("no_outline", false):
 		var aabb := mi.get_aabb()
 		var big := aabb.size.x * mi.scale.x > 9.0 or aabb.size.z * mi.scale.z > 9.0
-		if not big:
+		# 0.14: niente contorno su schegge e detriti piccoli (tante copie, quasi invisibile)
+		var tiny := aabb.size.length() * maxf(mi.scale.x, 0.01) < 0.55
+		if not big and not tiny:
 			# contorno proporzionato: più sottile sugli oggetti piccoli (scaglie, detriti)
 			var sz := aabb.size.length()
 			m.next_pass = _outline(clampf(outline_width * clampf(sz / 1.6, 0.35, 1.0), 0.012, outline_width))

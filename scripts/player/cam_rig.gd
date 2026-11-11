@@ -48,7 +48,7 @@ func _ready() -> void:
 	camera = Camera3D.new()
 	camera.fov = BASE_FOV
 	camera.near = 0.1
-	camera.far = 120.0
+	camera.far = 420.0   # 0.14: la città è lontana
 	_arm.add_child(camera)
 	camera.current = true
 	FX.shake_requested.connect(_on_shake)

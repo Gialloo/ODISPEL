@@ -19,21 +19,20 @@ void fragment() {
 }
 """
 
+## 0.14: pellicola a basso costo. Grana e vignetta sono due piccole texture preparate una volta;
+## lo shader fa solo due letture (niente seni o hash per pixel come prima).
 const FILM_SHADER := """
 shader_type canvas_item;
-uniform float grain = 0.05;
-uniform float vignette = 0.38;
-float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+uniform sampler2D noise_tex : filter_nearest, repeat_enable;
+uniform sampler2D vig_tex : filter_linear;
+uniform vec2 offset = vec2(0.0);
+uniform vec2 tiles = vec2(10.0, 5.6);
 void fragment() {
-	vec2 uv = UV - 0.5;
-	float v = smoothstep(0.35, 0.85, length(uv * vec2(1.25, 1.0))) * vignette;
-	// grana a scatti (12 al secondo, come la pellicola), non a ogni frame
-	float t = floor(TIME * 12.0);
-	float n = hash(floor(FRAGCOORD.xy / 2.0) + t * 17.0) - 0.5;
-	float ga = abs(n) * grain;
+	float n = texture(noise_tex, UV * tiles + offset).r;
+	float v = texture(vig_tex, UV).r;
+	float ga = abs(n - 0.5) * 0.1;
 	float a = v + ga * (1.0 - v);
-	vec3 gc = vec3(step(0.0, n));
-	COLOR = vec4(gc * ga * (1.0 - v) / max(a, 0.0001), a);
+	COLOR = vec4(vec3(step(0.5, n)) * ga * (1.0 - v) / max(a, 0.0001), a);
 }
 """
 
@@ -65,6 +64,25 @@ var _impact_until := 0
 var _impact_cd_until := 0
 var _lines_until := 0
 var _lines_len := 1
+var _film_mat: ShaderMaterial
+var _film_step := -1
+
+func _noise_tex() -> ImageTexture:
+	var img := Image.create(64, 64, false, Image.FORMAT_L8)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for y in 64:
+		for x in 64:
+			img.set_pixel(x, y, Color(rng.randf(), 0, 0))
+	return ImageTexture.create_from_image(img)
+
+func _vig_tex() -> ImageTexture:
+	var img := Image.create(64, 36, false, Image.FORMAT_L8)
+	for y in 36:
+		for x in 64:
+			var u := Vector2(x / 63.0 - 0.5, y / 35.0 - 0.5) * Vector2(1.25, 1.0)
+			img.set_pixel(x, y, Color(smoothstep(0.35, 0.85, u.length()) * 0.38, 0, 0))
+	return ImageTexture.create_from_image(img)
 
 func _ready() -> void:
 	layer = -1                        # sopra il 3D, sotto la HUD (layer 1)
@@ -76,6 +94,9 @@ func _ready() -> void:
 	_lines_mat = _lines.material
 	_lines.visible = false
 	_film = _rect(FILM_SHADER)
+	_film_mat = _film.material
+	_film_mat.set_shader_parameter("noise_tex", _noise_tex())
+	_film_mat.set_shader_parameter("vig_tex", _vig_tex())
 	FX.impact_requested.connect(_on_impact)
 	FX.speedlines_requested.connect(_on_lines)
 
@@ -110,6 +131,11 @@ func _on_lines(ms: int) -> void:
 func _process(_d: float) -> void:
 	var now := Time.get_ticks_msec()
 	_film.visible = bool(Run.opt.get("film", true))
+	# la grana salta 12 volte al secondo: si sposta la texture, non si ricalcola niente
+	var st := int(now / 83)
+	if _film.visible and st != _film_step:
+		_film_step = st
+		_film_mat.set_shader_parameter("offset", Vector2(randf(), randf()))
 	if _impact.visible and now >= _impact_until:
 		_impact.visible = false
 	if _lines.visible:

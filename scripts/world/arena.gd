@@ -36,12 +36,13 @@ func _environment() -> void:
 	env.ambient_light_energy = 0.5
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_DEPTH
-	env.fog_light_color = Color(1.0, 0.62, 0.42)
-	env.fog_density = 0.85
-	env.fog_depth_begin = 26.0
-	env.fog_depth_end = 110.0
+	env.fog_light_color = Color(0.8, 0.5, 0.52)   # foschia rosa-viola: la città lontana sfuma nel tramonto
+	env.fog_density = 0.72
+	env.fog_depth_begin = 60.0
+	env.fog_depth_end = 400.0
 	env.fog_depth_curve = 1.4
 	env.fog_sky_affect = 0.0
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED   # niente riflessi: risparmia la radianza del cielo
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -53,102 +54,138 @@ func _environment() -> void:
 	add_child(sun)
 	_skyline()
 
-## Città al tramonto fuori dall'arena: case con tetti a punta, campanili, finestre accese.
-## Tutto in tre MultiMesh (corpi, tetti, finestre): poche chiamate di disegno anche con cento case.
+## 0.14: città LONTANA, solo sfondo. Fascia di palazzine basse a 90-130 m e skyline di grattacieli
+## anni 2000 (vetro a fasce, gradoni, antenne) a 150-260 m. Niente vicino al muro dell'arena.
+## Tutto in poche MultiMesh senza contorno (costa quasi niente); finestre con texture a griglia
+## proiettata nel mondo (triplanar), così ogni palazzo ha finestre della misura giusta.
 func _skyline() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	var walls_cols := [Color(0.96, 0.78, 0.55), Color(0.88, 0.55, 0.38), Color(0.95, 0.66, 0.42), Color(0.78, 0.5, 0.46), Color(0.9, 0.82, 0.68)]
-	var roof_cols := [Color(0.62, 0.18, 0.2), Color(0.3, 0.22, 0.42), Color(0.72, 0.3, 0.18), Color(0.22, 0.28, 0.45)]
-	var bodies := []
+	var low := []
 	var roofs := []
-	var wins := []
-	# tre anelli di case: più alte man mano che si allontanano, così si vedono a strati
-	for ring in [[34.0, 30, 4.0, 8.0], [46.0, 34, 6.0, 12.0], [62.0, 30, 9.0, 20.0]]:
-		var r0: float = ring[0]
-		var n: int = ring[1]
-		for i in n:
-			var a := TAU * (i + rng.randf_range(-0.3, 0.3)) / n
-			var r := r0 + rng.randf_range(-2.5, 2.5)
-			var w := rng.randf_range(4.0, 7.5)
-			var d := rng.randf_range(4.0, 7.0)
-			var h := rng.randf_range(ring[2], ring[3])
-			var tower := rng.randf() < 0.12
-			if tower:
-				w = 3.2
-				d = 3.2
-				h *= 1.9
-			var pos := Vector3(sin(a) * r, 0, cos(a) * r)
-			var basis := Basis(Vector3.UP, a + rng.randf_range(-0.2, 0.2))
-			bodies.append([Transform3D(basis.scaled(Vector3(w, h, d)), pos + Vector3(0, h * 0.5, 0)), walls_cols[rng.randi() % walls_cols.size()]])
-			var rh: float = w * (1.6 if tower else rng.randf_range(0.45, 0.8))
-			roofs.append([Transform3D(basis.scaled(Vector3(w * 1.12, rh, d * 1.12)), pos + Vector3(0, h + rh * 0.5, 0)), roof_cols[rng.randi() % roof_cols.size()]])
-			# finestre accese sul lato che guarda l'arena
-			var face := -pos.normalized()
-			var right := Vector3(-face.z, 0, face.x)
-			for k in rng.randi_range(1, 3):
-				var wy := rng.randf_range(1.5, h - 1.0)
-				var wx := rng.randf_range(-w * 0.3, w * 0.3)
-				var wp := pos + face * (d * 0.5 + 0.05) + right * wx + Vector3(0, wy, 0)
-				var wb := Basis.looking_at(face, Vector3.UP).scaled(Vector3(0.9, 1.3, 1))
-				wins.append([Transform3D(wb, wp), Color(1.0, 0.86, 0.45) if rng.randf() < 0.75 else Color(0.25, 0.18, 0.3)])
-	var body_mat := StandardMaterial3D.new()
-	body_mat.vertex_color_use_as_albedo = true
-	body_mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
-	body_mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
-	body_mat.next_pass = FX.outline_mat(0.02)   # piccolo: la MultiMesh lo scala con la casa
+	var towers := []
+	var tops := []
+	var low_cols := [Color(0.62, 0.42, 0.42), Color(0.55, 0.36, 0.4), Color(0.66, 0.46, 0.4), Color(0.48, 0.34, 0.44)]
+	var roof_cols := [Color(0.55, 0.2, 0.22), Color(0.3, 0.22, 0.4), Color(0.6, 0.3, 0.2)]
+	# palazzine basse, a fascia continua: fanno da "primo piano" della città
+	for i in 46:
+		var a := TAU * (i + rng.randf_range(-0.35, 0.35)) / 46.0
+		var r := rng.randf_range(140.0, 175.0)   # lontane: dall'arena spuntano appena sopra il muro
+		var w := rng.randf_range(10.0, 18.0)
+		var h := rng.randf_range(8.0, 15.0)
+		var pos := Vector3(sin(a) * r, 0, cos(a) * r)
+		var b := Basis(Vector3.UP, a + rng.randf_range(-0.3, 0.3))
+		low.append([Transform3D(b.scaled(Vector3(w, h, w * 0.8)), pos + Vector3(0, h * 0.5, 0)), low_cols[rng.randi() % low_cols.size()]])
+		if rng.randf() < 0.5:
+			var rh := w * 0.35
+			roofs.append([Transform3D(b.scaled(Vector3(w * 1.05, rh, w * 0.85)), pos + Vector3(0, h + rh * 0.5, 0)), roof_cols[rng.randi() % roof_cols.size()]])
+	# grattacieli anni 2000: torri di vetro, alcune a gradoni, alcune con antenna
+	# colori scuri e freddi: in controluce col tramonto diventano sagome, la nebbia fa il resto
+	var glass := [Color(0.22, 0.24, 0.38), Color(0.3, 0.24, 0.4), Color(0.18, 0.22, 0.32), Color(0.36, 0.28, 0.38), Color(0.26, 0.3, 0.42)]
+	for i in 44:
+		var a := TAU * (i + rng.randf_range(-0.4, 0.4)) / 44.0
+		var r := rng.randf_range(230.0, 360.0)
+		var w := rng.randf_range(14.0, 26.0)
+		var h := rng.randf_range(40.0, 105.0)
+		var pos := Vector3(sin(a) * r, 0, cos(a) * r)
+		var b := Basis(Vector3.UP, rng.randf_range(0, PI))
+		var col: Color = glass[rng.randi() % glass.size()]
+		towers.append([Transform3D(b.scaled(Vector3(w, h, w)), pos + Vector3(0, h * 0.5, 0)), col])
+		var y := h
+		if rng.randf() < 0.55:
+			# gradone: un corpo più stretto sopra
+			var h2 := h * rng.randf_range(0.15, 0.3)
+			towers.append([Transform3D(b.scaled(Vector3(w * 0.65, h2, w * 0.65)), pos + Vector3(0, y + h2 * 0.5, 0)), col.lightened(0.08)])
+			y += h2
+		if rng.randf() < 0.45:
+			var ah := rng.randf_range(10.0, 25.0)
+			tops.append([Transform3D(Basis().scaled(Vector3(0.8, ah, 0.8)), pos + Vector3(0, y + ah * 0.5, 0)), Color(0.12, 0.08, 0.14)])
+	var wt: Array = _window_textures()
+	var win: ImageTexture = wt[0]
+	var lm := StandardMaterial3D.new()
+	lm.vertex_color_use_as_albedo = true
+	lm.vertex_color_is_srgb = true   # i colori scuri restano scuri
+	lm.albedo_texture = win
+	lm.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	lm.uv1_triplanar = true
+	lm.uv1_world_triplanar = true
+	lm.uv1_scale = Vector3(0.07, 0.07, 0.07)   # piani da ~1,8 m: da lontano finestre, non rumore
+	lm.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	lm.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	# niente emissione: col triplanare sbiancava i palazzi, e senza costa meno; le finestre accese sono già chiare
 	var bm := BoxMesh.new()
-	_multimesh(bm, body_mat, bodies)
-	var pm := PrismMesh.new()
-	_multimesh(pm, body_mat, roofs)
-	var win_mat := StandardMaterial3D.new()
-	win_mat.vertex_color_use_as_albedo = true
-	win_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	win_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	var qm := QuadMesh.new()
-	_multimesh(qm, win_mat, wins)
-	_power_lines(body_mat)
+	_multimesh(bm, lm, low)
+	_multimesh(bm, lm, towers)
+	var rm := StandardMaterial3D.new()
+	rm.vertex_color_use_as_albedo = true
+	rm.vertex_color_is_srgb = true
+	rm.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	rm.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	_multimesh(PrismMesh.new(), rm, roofs)
+	var am := StandardMaterial3D.new()
+	am.vertex_color_use_as_albedo = true
+	am.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_multimesh(bm, am, tops)
+	_power_lines()
 
-## 0.12: pali e fili della luce. Ad anello appena fuori dal muro, più qualche filo che passa alto
-## sopra l'arena: guardando in su si vedono tagliare il cielo del tramonto.
-func _power_lines(pole_mat: Material) -> void:
-	var n := 18
-	var r := 30.5
-	var h := 11.0
+## Griglia di finestre 8x8: molte accese (giallo caldo), alcune spente. Bianco = muro (preso dal colore del palazzo).
+func _window_textures() -> Array:
+	var img := Image.create(8, 8, false, Image.FORMAT_RGB8)
+	var glow := Image.create(8, 8, false, Image.FORMAT_RGB8)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	for y in 8:
+		for x in 8:
+			var c := Color(1, 1, 1)
+			var g := Color(0, 0, 0)
+			if x % 2 == 1 and y % 2 == 1:
+				var lit := rng.randf() < 0.5
+				c = Color(1.0, 0.85, 0.5) if lit else Color(0.25, 0.22, 0.35)
+				g = Color(1.0, 0.8, 0.45) if lit else g
+			img.set_pixel(x, y, c)
+			glow.set_pixel(x, y, g)
+	return [ImageTexture.create_from_image(img), ImageTexture.create_from_image(glow)]
+
+## 0.14: linee elettriche che partono da fuori l'arena e corrono via verso la città, in linea retta:
+## pali in fila che si rimpiccioliscono in lontananza, fili tesi da un palo al successivo.
+func _power_lines() -> void:
 	var poles := []
 	var bars := []
-	var tops: Array[Vector3] = []
-	for i in n:
-		var a := TAU * (i + 0.5) / n
-		var p := Vector3(sin(a) * r, 0, cos(a) * r)
-		var basis := Basis(Vector3.UP, a)
-		poles.append([Transform3D(basis.scaled(Vector3(0.32, h, 0.32)), p + Vector3(0, h * 0.5, 0)), Color(0.32, 0.22, 0.2)])
-		bars.append([Transform3D(basis.scaled(Vector3(2.6, 0.18, 0.2)), p + Vector3(0, h - 0.6, 0)), Color(0.32, 0.22, 0.2)])
-		tops.append(p + Vector3(0, h - 0.5, 0))
+	var wires := []
+	# ogni linea parte fuori dal muro e scappa via in diagonale: dall'arena si vede di sbieco,
+	# con i pali che si rimpiccioliscono e i fili che corrono verso l'orizzonte
+	for a in [0.35, 2.4, 4.3]:
+		var out := Vector3(sin(a), 0, cos(a))
+		var dir := out.rotated(Vector3.UP, 0.55)
+		var side := Vector3(dir.z, 0, -dir.x)
+		var start := out * 48.0
+		var prev_tops: Array = []
+		for k in 11:
+			var p := start + dir * (k * 26.0)
+			var h := 14.0
+			var th := 0.45 + k * 0.05          # più spessi lontano, così non spariscono
+			poles.append([Transform3D(Basis().scaled(Vector3(th, h, th)), p + Vector3(0, h * 0.5, 0)), Color(0.16, 0.1, 0.12)])
+			bars.append([Transform3D(Basis.looking_at(side, Vector3.UP).scaled(Vector3(0.3 + k * 0.03, 0.3 + k * 0.03, 4.6)), p + Vector3(0, h - 0.8, 0)), Color(0.16, 0.1, 0.12)])
+			var c := p + Vector3(0, h - 0.6, 0)
+			var tops := [c + side * 2.0, c - side * 2.0, c + side * 0.7]
+			if not prev_tops.is_empty():
+				for w in 3:
+					_wire(wires, prev_tops[w], tops[w], 1.4, 0.1 + k * 0.025)
+			prev_tops = tops
+	var pm := StandardMaterial3D.new()
+	pm.vertex_color_use_as_albedo = true
+	pm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var cm := CylinderMesh.new()
 	cm.top_radius = 0.5
 	cm.bottom_radius = 0.5
 	cm.height = 1.0
-	cm.radial_segments = 6
-	_multimesh(cm, pole_mat, poles)
-	_multimesh(BoxMesh.new(), pole_mat, bars)
-	var wires := []
-	for i in n:
-		var a: Vector3 = tops[i]
-		var b: Vector3 = tops[(i + 1) % n]
-		var side := (b - a).cross(Vector3.UP).normalized()
-		for k in [-1.0, 1.0]:
-			_wire(wires, a + side * k * 1.1, b + side * k * 1.1, 0.7)
-	# fili che attraversano l'arena in alto, da un palo a quello quasi opposto
-	for pair in [[0, 8], [3, 12], [6, 14], [10, 1]]:
-		_wire(wires, tops[pair[0]], tops[pair[1]], 2.2)
-	var wm := StandardMaterial3D.new()
-	wm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	wm.vertex_color_use_as_albedo = true
-	_multimesh(BoxMesh.new(), wm, wires)
+	cm.radial_segments = 5
+	_multimesh(cm, pm, poles)
+	_multimesh(BoxMesh.new(), pm, bars)
+	_multimesh(BoxMesh.new(), pm, wires)
 
 ## Filo che pende: quattro tratti dritti con la pancia in mezzo.
-func _wire(out: Array, a: Vector3, b: Vector3, sag: float) -> void:
+func _wire(out: Array, a: Vector3, b: Vector3, sag: float, thick := 0.12) -> void:
 	var pts: Array[Vector3] = []
 	for k in 5:
 		var t := k / 4.0
@@ -157,7 +194,7 @@ func _wire(out: Array, a: Vector3, b: Vector3, sag: float) -> void:
 		var p0: Vector3 = pts[k]
 		var p1: Vector3 = pts[k + 1]
 		var d := p0.distance_to(p1)
-		var basis := Basis.looking_at(p1 - p0, Vector3.UP).scaled(Vector3(0.06, 0.06, d))
+		var basis := Basis.looking_at(p1 - p0, Vector3.UP).scaled(Vector3(thick, thick, d))
 		out.append([Transform3D(basis, (p0 + p1) * 0.5), Color(0.06, 0.04, 0.07)])
 
 func _multimesh(mesh: Mesh, mat: Material, items: Array) -> void:
