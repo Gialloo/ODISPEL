@@ -63,8 +63,8 @@ Nelle conversazioni della serie è stata discussa una situazione di accampamento
 - Saul non vuole confessare di essere l'autore: desidera che Lance e Nox arrivino autonomamente alla verità.
 - Per Saul lo scherzo è sia il piacere di provocare reazioni sia il piacere di progettare il trucco: preparazione, diversivo, tempismo ed esecuzione.
 
-### Rettifica su Rio
-Nelle prime formulazioni della scena erano stati associati a Rio commenti in linguaggio da streamer («Trending», «Unfollowed», «Log off»). Non vanno mantenuti nella continuità attuale: Rio è un'anomalia/Kairos e non deve essere scritto come un normale interlocutore umano che conversa con gli altri. Nella scena dell'accampamento la sua azione pertinente è costruire la tana/nido.
+### Continuità di Rio
+Nella scena dell'accampamento Rio costruisce la propria tana/nido. Non gli vengono attribuiti dialoghi umani: è un'anomalia/Kairos e la scena deve comunicarne la presenza attraverso il comportamento.
 
 ## 5. Nidificazione: scena concreta del Capitolo 1
 
