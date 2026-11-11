@@ -48,3 +48,11 @@ bidoni e bobine vicino a te: SPINGI le rimanda indietro), Brute (arancione, non 
 perde l'equilibrio, schianto ad area, si sposta col potere dallo stadio 2). Dopo le ondate 1, 3, 5... scegli
 uno di tre potenziamenti (dati in `data/upgrades.json`, tasti 1-2-3). Tra un'ondata e l'altra recuperi un po'
 di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
+
+## Mosse 0.7
+- Triplo salto: il secondo e il terzo cambiano direzione, il terzo è più alto con piroetta. Si salta anche per interrompere un attacco.
+- BLADE: affondo in corsa (attacca mentre corri), piroetta (stick di lato durante la combo).
+- IMPACT: martellata a terra (stick di lato al posto del finale), martello in corsa (tieni premuto mentre corri).
+- VECTOR: catena in aria verso un nemico lontano (attacca in salto), vortice che risucchia (schiva, attacca, attacca).
+- Ondate più brevi e frequenti; ondate a tema SCIAME, CORAZZATI, TEMPESTA.
+- Prova delle mosse: `godot --path . -s tests/moves_07.gd`

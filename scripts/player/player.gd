@@ -19,6 +19,7 @@ var tune := {
 	"air_control": 0.6,
 	"turn_speed": 20.0,
 	"jump": 10.0,
+	"max_jumps": 3.0,              # 0.7: triplo salto
 	"gravity": 28.0,
 	"fall_mult": 1.55,
 	"dodge_speed": 17.0,
@@ -53,6 +54,9 @@ var _buffer_until := 0
 var _jump_buffer_until := 0
 var _coyote_until := 0
 var _air_attacks := 0
+var _jumps := 0
+var _spin_t := 0.0
+var _leap_t := 0.0
 var _air_dodge_used := false
 var _jump_cut := false
 var _was_on_floor := true
@@ -150,6 +154,8 @@ func _physics_process(delta: float) -> void:
 		_coyote_until = now + 120
 		_air_attacks = 0
 		_air_dodge_used = false
+		if velocity.y <= 0.1:
+			_jumps = 0
 	_read_actions(now)
 	match state:
 		S.MOVE:
@@ -253,18 +259,45 @@ func _update_move(delta: float, on_floor: bool, now: int) -> void:
 	if dir != Vector3.ZERO:
 		_turn_towards(dir, tune.turn_speed * delta)
 	# salto con tolleranza (coyote) e memoria del tasto
-	if now <= _jump_buffer_until and now <= _coyote_until:
-		velocity.y = tune.jump
-		_jump_buffer_until = 0
-		_coyote_until = 0
-		_jump_cut = false
-		_squash(Vector3(0.8, 1.25, 0.8))
-		FX.stat("jumps")
+	if now <= _jump_buffer_until and (now <= _coyote_until or _jumps < int(tune.max_jumps)):
+		_do_jump(now)
 	if not Pad.held("jump") and velocity.y > 0 and not _jump_cut:
 		velocity.y *= 0.55
 		_jump_cut = true
 	_apply_gravity(delta, 1.0)
 	_try_buffer(now)
+
+## Salto, doppio e triplo: il secondo un po' più basso, il terzo più alto con una piroetta.
+func _do_jump(now: int) -> void:
+	if now <= _coyote_until and _jumps == 0:
+		_jumps = 1
+	else:
+		_jumps = max(_jumps, 1) + 1
+	var mult: float = [1.0, 1.0, 0.92, 1.12][clampi(_jumps, 0, 3)]
+	velocity.y = tune.jump * mult
+	_jump_buffer_until = 0
+	_coyote_until = 0
+	_jump_cut = false
+	_air_attacks = 0
+	FX.stat("jumps")
+	if _jumps == 1:
+		_squash(Vector3(0.8, 1.25, 0.8))
+	else:
+		# in aria il salto cambia anche direzione: reattivo
+		var dir := input_dir()
+		if dir != Vector3.ZERO:
+			var hv := Vector3(velocity.x, 0, velocity.z)
+			hv = dir * max(hv.length(), tune.run_speed * 0.85)
+			velocity.x = hv.x
+			velocity.z = hv.z
+			facing = dir.normalized()
+		_squash(Vector3(0.85, 1.2, 0.85))
+		FX.ring(global_position, Color(1, 1, 1, 0.45), 1.0, 0.18)
+		FX.sound("schivata", 1.5 if _jumps == 2 else 1.8, -10.0)
+		FX.stat("double_jumps" if _jumps == 2 else "triple_jumps")
+		if _jumps == 3:
+			_spin_t = 0.4
+			_afterimage()
 
 func _apply_gravity(delta: float, mult: float) -> void:
 	var g: float = tune.gravity * mult
@@ -301,34 +334,65 @@ func _pick_move(kind: String, peek := false) -> String:
 		if not peek:
 			_counter_ready = false
 		return "impact_counter"
+	var hspeed := Vector3(velocity.x, 0, velocity.z).length()
+	var running: bool = state == S.MOVE and is_on_floor() and hspeed > tune.run_speed * 0.8
+	var t := _best_target(true)
+	var to_t := Vector3.ZERO
+	var d := 99.0
+	if t:
+		to_t = _flat(t.global_position - global_position)
+		d = to_t.length()
 	if kind == "heavy":
-		return "impact_slam" if airborne and global_position.y > 1.2 else "impact_launcher"
+		if airborne and global_position.y > 1.2:
+			return "impact_slam"
+		return "impact_hammer" if running else "impact_launcher"
 	if airborne:
 		if state == S.ATTACK and move.get("air", false) and move.next != "":
 			return move.next
+		# VECTOR in aria: un nemico lontano ti attira verso di lui
+		if t and d > 3.5 and d < 10.0 and _air_attacks == 0:
+			return "vector_zip"
 		if _air_attacks < 3:
 			return "blade_air_1"
 		return "blade_air_3"
-	# 0.6: finestra più larga, VECTOR circolare subito dopo la schivata
-	if now - _last_dodge_end < 450:
+	var in_sweep: bool = (state == S.ATTACK and move_id == "vector_sweep") or (_last_move_id == "vector_sweep" and now - _last_move_end < 450)
+	if now - _last_dodge_end < 450 and not in_sweep:
 		return "vector_sweep"
-	var t := _best_target(true)
+	if in_sweep:
+		return "vector_whirl"
 	if t:
-		var to_t := _flat(t.global_position - global_position)
-		var d := to_t.length()
 		var back := input_dir()
 		# stick tirato all'indietro rispetto al nemico: VECTOR lo frusta verso di te
 		if back != Vector3.ZERO and d > 2.2 and d < 6.8 and back.normalized().dot(to_t.normalized()) < -0.5:
 			return "vector_reel"
 		if d > 3.4 and d < 11.5:
 			return "vector_lash"
+	var nxt := ""
 	if state == S.ATTACK and move.next != "":
-		return move.next
-	if _last_move_id != "" and now - _last_move_end < 450:
+		nxt = move.next
+	elif _last_move_id != "" and now - _last_move_end < 450:
 		var last: Dictionary = M.DATA[_last_move_id]
 		if last.next != "" and not last.get("air", false):
-			return last.next
+			nxt = last.next
+	if nxt != "":
+		# stick di lato durante la combo: la variante della forma
+		if _stick_side(to_t):
+			if nxt == "blade_2" or nxt == "blade_3":
+				return "blade_spin"
+			if nxt == "impact_finisher":
+				return "impact_breaker"
+		return nxt
+	if running:
+		return "blade_dash"
 	return "blade_1"
+
+## Stick spinto di lato rispetto al nemico (o a dove guardi).
+func _stick_side(to_t: Vector3) -> bool:
+	var dir := input_dir()
+	if dir.length() < 0.6:
+		return false
+	var ref := to_t.normalized() if to_t.length() > 0.1 else facing
+	return absf(dir.normalized().dot(ref)) < 0.45
 
 func _start_move(id: String, now: int) -> void:
 	move_id = id
@@ -339,6 +403,9 @@ func _start_move(id: String, now: int) -> void:
 	_trail_done = false
 	_multi_done = false
 	_slam_landed = false
+	_leap_t = 0.0
+	if move.has("leap"):
+		velocity.y = move.leap
 	_move_press_ms = Pad._pressed_at["attack"]
 	state = S.ATTACK
 	_buffer = ""
@@ -380,7 +447,18 @@ func _update_attack(delta: float, on_floor: bool, now: int) -> void:
 	var target: Node3D = _best_target(false)
 	# avanzamento verso il bersaglio fino al colpo, senza sorpassarlo
 	if move.get("slam", false):
-		if not _slam_landed:
+		if not _slam_landed and move.has("leap") and _leap_t < 0.32:
+			# martello in corsa: prima il balzo in avanti, poi giù
+			_leap_t += delta
+			move_t = min(move_t, 0.05)
+			var lv: Vector3 = facing * move.lunge
+			if target:
+				var dd := _flat(target.global_position - global_position).length()
+				lv = facing * clamp(dd * 3.0, 0.0, move.lunge)
+			velocity.x = lv.x
+			velocity.z = lv.z
+			_apply_gravity(delta, 1.0)
+		elif not _slam_landed:
 			move_t = min(move_t, 0.05)
 			if on_floor:
 				_slam_landed = true
@@ -392,10 +470,27 @@ func _update_attack(delta: float, on_floor: bool, now: int) -> void:
 			velocity.z = move_toward(velocity.z, 0, 40 * delta)
 	else:
 		var lunge: float = move.lunge
-		if target:
+		if target and not move.get("through", false):
 			var d := _flat(target.global_position - global_position).length()
 			if d < move.reach * 0.55:
 				lunge = 0.0
+		if move.get("zip", false) and move_t < move.hit_from:
+			# VECTOR in aria: la catena ti tira verso il nemico
+			if target:
+				var aim: Vector3 = target.global_position + Vector3(0, 0.6, 0) - facing * 1.4
+				var zv := aim - global_position
+				if zv.length() > 0.6:
+					velocity = zv.normalized() * min(26.0, zv.length() / max(move.hit_from - move_t, 0.03))
+				else:
+					velocity = Vector3.ZERO
+			if not _trail_done:
+				_trail_done = true
+				var end: Vector3 = global_position + Vector3(0, 1.1, 0) + facing * 6.0
+				if target:
+					end = target.global_position + Vector3(0, 1.0, 0)
+				weapon.show_line(global_position + Vector3(0, 1.15, 0), end, 0.16)
+			_try_buffer(now)
+			return
 		var hv := Vector3(velocity.x, 0, velocity.z)
 		if move_t < move.hit_to and lunge > 0:
 			hv = hv.move_toward(facing * lunge, 120 * delta)
@@ -429,6 +524,12 @@ func _update_attack(delta: float, on_floor: bool, now: int) -> void:
 		return
 	if move_t >= move.cancel:
 		_try_buffer(now)
+	# 0.7: salto che interrompe l'attacco dopo il colpo (anche in aria, finché restano salti)
+	if state == S.ATTACK and not move.get("slam", false) and move_t >= move.cancel and now <= _jump_buffer_until \
+			and (on_floor or _jumps < int(tune.max_jumps)):
+		_end_move(now)
+		_do_jump(now)
+		return
 	# 0.6: finito il colpo, lo stick fa ripartire subito (la combo resta aperta per un attimo)
 	if state == S.ATTACK and _buffer == "" and on_floor and not move.get("air", false) \
 			and move_t >= max(move.cancel, move.hit_to) + 0.03 and input_dir().length() > 0.55:
@@ -483,6 +584,8 @@ func _do_hits(slam: bool) -> void:
 		}
 		if move.get("pull", false):
 			info["pull_to"] = global_position + facing * 1.8
+			if move_id == "vector_whirl":
+				info["pull_to"] = global_position + kdir * 1.5
 		var is_enemy: bool = e.is_in_group("enemies")
 		if is_enemy and _heavy_ready and move.form == M.Form.IMPACT:
 			info.dmg *= 2.0
@@ -749,6 +852,10 @@ func toggle_lock() -> void:
 
 func _update_visual(delta: float) -> void:
 	visual.rotation.y = lerp_angle(visual.rotation.y, atan2(-facing.x, -facing.z), clamp(30.0 * delta, 0, 1))
+	if _spin_t > 0.0:
+		_spin_t = max(0.0, _spin_t - delta)
+		var k := 1.0 - _spin_t / 0.4
+		visual.rotation.y = atan2(-facing.x, -facing.z) + TAU * (1.0 - (1.0 - k) * (1.0 - k))
 	var hv := Vector3(velocity.x, 0, velocity.z)
 	var lean: float = clamp(hv.length() / 10.0, 0.0, 1.0) * 0.12
 	visual.rotation.x = lerp(visual.rotation.x, -lean, clamp(10.0 * delta, 0, 1))

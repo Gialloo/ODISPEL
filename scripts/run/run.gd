@@ -3,7 +3,7 @@ extends Node
 ## I potenziamenti sono dati in data/upgrades.json (nome, famiglia, descrizione): si cambiano lì.
 ## Scelta: JSON e non .tres perché si modifica con qualsiasi editor di testo, anche dal telefono.
 
-signal wave_started(n: int)
+signal wave_started(n: int, theme: String)
 signal choice_open(options: Array)
 signal choice_closed
 signal run_over(wave: int, kills: int)
@@ -24,6 +24,9 @@ var _queue: Array = []
 var _spawn_t := 0.0
 var _between := 0.0
 var _seen := {}
+var theme := ""
+## 0.7: ondate più brevi e più frequenti; ogni tanto un'ondata a tema (si legge subito cosa arriva).
+const THEMES := {4: "SCIAME", 7: "CORAZZATI", 10: "TEMPESTA"}
 var choice_every := 2                  # una scelta ogni N ondate (dopo la 1, la 3, la 5...)
 
 func _ready() -> void:
@@ -55,7 +58,7 @@ func def(id: String) -> Dictionary:
 	return {}
 
 func max_alive() -> int:
-	return mini(2 + wave / 2, 6)
+	return mini(2 + wave / 2 + (2 if theme == "SCIAME" else 0), 7)
 
 func _process(delta: float) -> void:
 	if not running or choosing or main == null:
@@ -75,14 +78,38 @@ func _process(delta: float) -> void:
 
 func _next_wave() -> void:
 	wave += 1
-	_queue = _compose(wave)
+	theme = ""
+	var cyc := wave if wave <= 10 else 4 + (wave - 4) % 7
+	if THEMES.has(cyc) or (wave > 10 and wave % 3 == 1):
+		theme = THEMES.get(cyc, ["SCIAME", "CORAZZATI", "TEMPESTA"][wave % 3])
+	_queue = _compose_theme(wave, theme) if theme != "" else _compose(wave)
 	_spawn_t = 0.3
 	FX.stat("waves")
-	wave_started.emit(wave)
+	if theme != "":
+		FX.stat("theme_waves")
+	wave_started.emit(wave, theme)
+
+func _compose_theme(w: int, th: String) -> Array:
+	var list: Array = []
+	match th:
+		"SCIAME":
+			# tanti Scout, uno dopo l'altro: velocità e spazio
+			for i in 4 + w:
+				list.append("scout")
+		"CORAZZATI":
+			list = ["brute", "brute", "scout", "scout"]
+			for i in w / 4:
+				list.append("brute" if i % 2 == 0 else "scout")
+		"TEMPESTA":
+			# Conduit in gruppo: le pozze e le bobine diventano il campo di battaglia
+			list = ["conduit", "conduit", "conduit", "scout", "scout"]
+			for i in w / 4:
+				list.append("conduit")
+	return list
 
 ## Composizione controllata: casuale ma sempre leggibile. Nuovi archetipi entrano uno alla volta.
 func _compose(w: int) -> Array:
-	var budget := 2.0 + w * 1.5
+	var budget := 2.0 + w * 1.2
 	var list: Array = []
 	var brutes := 0
 	if w == 2:
@@ -137,7 +164,7 @@ func _wave_cleared() -> void:
 	if wave % choice_every == 1 or choice_every == 1:
 		_open_choice()
 	else:
-		_between = 2.0
+		_between = 1.2
 
 func _open_choice() -> void:
 	var free: Array = defs.filter(func(d): return not owned.has(d.id))
@@ -171,7 +198,7 @@ func choose(i: int) -> void:
 	choosing = false
 	get_tree().paused = false
 	choice_closed.emit()
-	_between = 1.5
+	_between = 1.0
 
 func game_over() -> void:
 	if not running:

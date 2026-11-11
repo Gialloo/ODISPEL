@@ -107,9 +107,9 @@ func bind() -> void:
 	player.form_changed.connect(_set_form)
 	player.perfect_dodge.connect(_on_perfect)
 	OV.level_changed.connect(_on_ov_level)
-	Run.wave_started.connect(func(n):
-		_wave_label.text = "ONDATA %d" % n
-		message("ONDATA %d" % n, 1.0))
+	Run.wave_started.connect(func(n, th):
+		_wave_label.text = "ONDATA %d" % n + ("  ·  " + th if th != "" else "")
+		message("ONDATA %d" % n + ("\n" + th if th != "" else ""), 1.2))
 	Run.choice_open.connect(_open_choice)
 	Run.choice_closed.connect(_refresh_ups)
 	Run.run_over.connect(_open_over)

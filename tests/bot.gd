@@ -215,6 +215,8 @@ func _drive(delta: float) -> void:
 			if dist < 3.0 or _phase > 0.6:
 				if p.is_on_floor() and fmod(_phase, 1.6) < 0.1:
 					_press("jump")
+				elif not p.is_on_floor() and randf() < 0.5 and (absf(fmod(_phase, 1.6) - 0.35) < 0.02 or absf(fmod(_phase, 1.6) - 0.6) < 0.02):
+					_press("jump")   # doppio e triplo salto
 				elif not p.is_on_floor() and fmod(_phase, 1.6) < 0.9 and fmod(_phase, 0.2) < delta * 1.5:
 					_press("attack")
 				elif not p.is_on_floor() and fmod(_phase, 1.6) >= 0.9:
@@ -238,7 +240,7 @@ func _report() -> void:
 	keys.sort()
 	for k in keys:
 		print("  %s = %s" % [k, s[k]])
-	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts", "shocks", "puddle_shocks", "coil_discharges", "barrels_exploded", "enemies_burned", "structures_broken", "fire_throws", "overload_level_1", "overload_level_2", "overload_bursts", "waves", "spawn_brute", "spawn_conduit", "orbs_fired", "upgrades_taken"]
+	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts", "shocks", "puddle_shocks", "coil_discharges", "barrels_exploded", "enemies_burned", "structures_broken", "fire_throws", "overload_level_1", "overload_level_2", "overload_bursts", "waves", "spawn_brute", "spawn_conduit", "orbs_fired", "upgrades_taken", "double_jumps", "triple_jumps", "move_blade_dash", "move_blade_spin", "move_impact_breaker", "move_impact_hammer", "move_vector_zip", "move_vector_whirl", "theme_waves"]
 	var missing := []
 	for n in need:
 		if s.get(n, 0) == 0:
