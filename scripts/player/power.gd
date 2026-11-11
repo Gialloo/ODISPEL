@@ -76,9 +76,15 @@ func _physics_process(delta: float) -> void:
 func _can_move(t: Node3D) -> bool:
 	if t == null:
 		return false
+	if t.has_method("is_fixed") and t.is_fixed():
+		return false
 	if t.has_method("is_heavy") and t.is_heavy():
 		return stage >= 2
 	return true
+
+## Oggetti fissi che il potere può comunque "toccare" (bobina, muretto).
+func _can_poke(t: Node3D) -> bool:
+	return t != null and t.has_method("power_poke") and t.has_method("is_fixed") and t.is_fixed()
 
 ## Bersaglio: quello agganciato, altrimenti il più vicino al centro dello schermo.
 func _pick_target() -> Node3D:
@@ -99,7 +105,7 @@ func _pick_target() -> Node3D:
 			var ang := rad_to_deg(fwd.angle_to(to.normalized()))
 			if ang > 40.0:
 				continue
-			var score := ang * 0.12 + d * 0.25 + (0.0 if group == "enemies" else 1.0)
+			var score := ang * 0.12 + d * 0.25 + (0.0 if group == "enemies" else 1.0) + (1.5 if n.has_method("is_fixed") and n.is_fixed() else 0.0)
 			if score < best_score:
 				best_score = score
 				best = n
@@ -113,7 +119,7 @@ func _update_reticle() -> void:
 	var r: float = target.get("radius") if target.get("radius") != null else 0.5
 	_reticle.global_position = target.global_position + Vector3(0, 0.08, 0)
 	_reticle.scale = Vector3.ONE * (r + 0.55) * (1.0 + 0.06 * sin(Time.get_ticks_msec() * 0.012))
-	_reticle_mat.albedo_color = Color(0.7, 0.95, 1.0, 0.75) if _can_move(target) else Color(1, 0.4, 0.4, 0.6)
+	_reticle_mat.albedo_color = Color(0.7, 0.95, 1.0, 0.75) if _can_move(target) or _can_poke(target) else Color(1, 0.4, 0.4, 0.6)
 
 func _beam_to(to: Vector3, c: Color) -> void:
 	var from: Vector3 = player.global_position + Vector3(0, 1.3, 0) + player.facing * 0.4
@@ -171,6 +177,11 @@ func push() -> void:
 		FX.ring(player.global_position + player.facing * 1.5, Color(0.7, 0.95, 1.0, 0.7), 2.0, 0.2)
 		_done("push", "wave")
 		return
+	if _can_poke(target):
+		target.power_poke()
+		_beam_to(target.global_position + Vector3(0, 1.0, 0), Color(0.7, 0.95, 1.0, 0.9))
+		_done("push", "poke")
+		return
 	if not _can_move(target):
 		_too_heavy()
 		_cd.push = 0.25
@@ -200,6 +211,11 @@ func pull() -> void:
 		_cd.pull = 0.2
 		return
 	if target == null:
+		return
+	if _can_poke(target):
+		target.power_poke()
+		_beam_to(target.global_position + Vector3(0, 1.0, 0), Color(0.7, 0.95, 1.0, 0.9))
+		_done("pull", "poke")
 		return
 	if not _can_move(target):
 		_too_heavy()

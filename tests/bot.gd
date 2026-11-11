@@ -17,6 +17,8 @@ var _slow_frames := 0
 var _fps_samples: Array = []
 var _next_shot := 3.0
 var _shot_n := 0
+var _scene_i := 0
+const SCENES := [10.0, 22.0, 34.0, 46.0]
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -40,6 +42,9 @@ func _process(delta: float) -> bool:
 		var fps := Engine.get_frames_per_second()
 		_fps_samples.append(fps)
 	_drive(delta)
+	if _scene_i < SCENES.size() and t >= SCENES[_scene_i]:
+		if _scenario(_scene_i):
+			_scene_i += 1
 	if shots_dir != "" and t >= _next_shot:
 		_next_shot += 5.0
 		_shot_n += 1
@@ -49,6 +54,44 @@ func _process(delta: float) -> bool:
 		_report()
 		return true
 	return false
+
+## Scenari della Fase 3: preparano la situazione e lasciano agire i sistemi veri.
+func _scenario(i: int) -> bool:
+	var es: Array = main.enemies.get_children().filter(func(e): return not e.is_dead())
+	if es.is_empty():
+		return false
+	var e = es[0]
+	var props: Array = root.get_tree().get_nodes_in_group("props")
+	var of_kind := func(k: String) -> Array:
+		return props.filter(func(p): return p.kind == k and not p.is_dead())
+	match i:
+		0:
+			# nemico nella pozza, il giocatore colpisce la bobina
+			var coil = of_kind.call("coil")[0]
+			e.global_position = Vector3(9, 0.2, -5)
+			coil.receive_hit({"dmg": 10.0, "poise": 0.0, "dir": Vector3.FORWARD, "knock": 1.0, "launch": 0.0, "form": 0, "move": "bot"})
+			print("SCENA bobina+pozza")
+		1:
+			# bidone vicino al nemico: un colpo lo accende
+			var b = of_kind.call("barrel")[0]
+			e.global_position = b.global_position + Vector3(1.5, 0.2, 0)
+			b.receive_hit({"dmg": 12.0, "poise": 0.0, "dir": Vector3.RIGHT, "knock": 0.5, "launch": 0.0, "form": 1, "move": "bot"})
+			print("SCENA bidone")
+		2:
+			# muretto sfondato a colpi pesanti
+			var c = of_kind.call("cover")[0]
+			for k in 3:
+				c.receive_hit({"dmg": 22.0, "poise": 0.0, "dir": Vector3.FORWARD, "knock": 2.0, "launch": 0.0, "form": 1, "move": "bot"})
+			print("SCENA muretto")
+		3:
+			# cassa accesa lanciata contro il nemico
+			var cr = of_kind.call("light")[0]
+			cr.ignite()
+			cr.global_position = e.global_position + Vector3(0, 1.0, 4.0)
+			cr.launch(Vector3(0, 2.0, -20.0), main.player)
+			print("SCENA cassa in fiamme state=%d burning=%.1f dist=%.1f" % [cr.state, cr.burning, cr.global_position.distance_to(e.global_position)])
+
+	return true
 
 func _press(a: String) -> void:
 	pad.press(a)
@@ -160,7 +203,7 @@ func _report() -> void:
 	keys.sort()
 	for k in keys:
 		print("  %s = %s" % [k, s[k]])
-	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts"]
+	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts", "shocks", "puddle_shocks", "coil_discharges", "barrels_exploded", "enemies_burned", "structures_broken", "fire_throws"]
 	var missing := []
 	for n in need:
 		if s.get(n, 0) == 0:

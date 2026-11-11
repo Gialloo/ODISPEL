@@ -75,7 +75,7 @@ var _body_parts: Array[MeshInstance3D] = []
 func _ready() -> void:
 	add_to_group("player")
 	collision_layer = 2
-	collision_mask = 1
+	collision_mask = 1 | 16
 	floor_snap_length = 0.3
 	var col := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()

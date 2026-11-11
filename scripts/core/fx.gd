@@ -154,5 +154,7 @@ func overcharge_blast(pos: Vector3, source: Node) -> void:
 		if p == source:
 			continue
 		var to2: Vector3 = p.center() - pos
-		if to2.length() < 4.0 and p.has_method("launch"):
+		if to2.length() < 4.0 and p.has_method("structure_damage"):
+			p.structure_damage(30.0)
+		if to2.length() < 4.0 and p.has_method("launch") and not p.is_dead():
 			p.launch((to2.normalized() + Vector3(0, 0.6, 0)) * 14.0, null)

@@ -144,12 +144,47 @@ func _props() -> void:
 		_spawn_prop("light", p)
 	for p in [Vector3(7.5, 0, 7.5), Vector3(-8, 0, 6), Vector3(5, 0, -9)]:
 		_spawn_prop("heavy", p)
+	# Fase 3: bidoni, bobine vicino all'acqua, muretti da sfondare
+	for p in [Vector3(-3, 0, 4), Vector3(4, 0, 6), Vector3(0, 0, -11)]:
+		_spawn_prop("barrel", p)
+	_puddle(Vector3(9, 0, -5), 2.6)
+	_puddle(Vector3(-4, 0, -5), 2.2)
+	_spawn_prop("coil", Vector3(11.5, 0, -6.5))
+	_spawn_prop("coil", Vector3(-7, 0, -6.5))
+	_spawn_prop("cover", Vector3(-6, 0, 0), 0.4)
+	_spawn_prop("cover", Vector3(6, 0, 10.5), -0.3)
+	_spawn_prop("cover", Vector3(13, 0, 4), 1.4)
 
-func _spawn_prop(k: String, p: Vector3) -> void:
+## Ogni oggetto distrutto torna al suo posto dopo un po': l'arena non si svuota.
+func _spawn_prop(k: String, p: Vector3, rot := 0.0) -> void:
 	var pr := Prop.new()
 	pr.setup(k)
-	pr.position = p + Vector3(0, 0.1, 0)
+	pr.position = p + Vector3(0, 0.0 if k == "coil" or k == "cover" else 0.1, 0)
+	pr.rotation.y = rot
 	add_child(pr)
+	pr.broke.connect(func(_x):
+		get_tree().create_timer(12.0 if k == "cover" else 8.0).timeout.connect(func():
+			if is_inside_tree():
+				_spawn_prop(k, p, rot)
+				FX.ring(p, Color(1, 1, 1, 0.5), 1.4, 0.3)))
+
+## Pozza d'acqua: conduce la scossa a chi ci sta dentro, spegne il fuoco.
+func _puddle(p: Vector3, r: float) -> void:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = r
+	cm.bottom_radius = r
+	cm.height = 0.02
+	cm.radial_segments = 28
+	mi.mesh = cm
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_color = Color(0.25, 0.55, 0.9, 0.45)
+	mi.material_override = m
+	mi.position = p + Vector3(0, 0.02, 0)
+	add_child(mi)
+	El.add_puddle(p, r, mi)
 
 func spawn_point() -> Vector3:
 	var a := randf() * TAU

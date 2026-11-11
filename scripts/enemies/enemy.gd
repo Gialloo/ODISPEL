@@ -46,11 +46,13 @@ var charged := false
 var _charge_t := 0.0
 var _power_fly := 0.0
 var _hit_by: Dictionary = {}
+var burn_t := 0.0                  # FUOCO: secondi di fiamma rimasti
+var _burn_tick := 0.0
 
 func _ready() -> void:
 	add_to_group("enemies")
 	collision_layer = 4
-	collision_mask = 1 | 4
+	collision_mask = 1 | 4 | 16
 	var col := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
 	cap.radius = radius
@@ -194,6 +196,8 @@ func _physics_process(delta: float) -> void:
 	if state == S.AIR and velocity.y < 2.0 and velocity.y > -4.0:
 		g = 11.0
 	velocity.y = max(velocity.y - g * d, -30.0)
+	if burn_t > 0.0 and state != S.DEAD:
+		_burning(delta)
 	if charged:
 		_charge_t += delta
 		_mat.emission_enabled = true
@@ -289,7 +293,11 @@ func _power_collisions(pre: Vector3) -> void:
 	for i in get_slide_collision_count():
 		var c := get_slide_collision(i)
 		var n := c.get_normal()
-		if absf(n.y) < 0.6 and c.get_collider() is StaticBody3D:
+		var col := c.get_collider()
+		var solid: bool = col is StaticBody3D or (col != null and col.has_method("is_fixed") and col.is_fixed())
+		if absf(n.y) < 0.6 and solid:
+			if col.has_method("structure_damage"):
+				col.structure_damage(speed * 3.0)
 			_power_fly = 0.0
 			velocity = Vector3(n.x, 0.4, n.z) * 3.0
 			FX.stat("wall_slams")
@@ -311,6 +319,64 @@ func _power_collisions(pre: Vector3) -> void:
 			FX.stat("env_hits")
 			FX.hitstop(60)
 			FX.sound("colpo_forte", 1.0)
+
+## FUOCO: brucia per qualche secondo, il fuoco passa ai vicini; l'acqua lo spegne.
+func ignite(sec: float) -> void:
+	if state == S.DEAD:
+		return
+	if El.puddle_at(global_position) >= 0:
+		FX.ring(global_position, Color(0.9, 0.95, 1.0, 0.6), 1.0, 0.2)
+		return
+	if burn_t <= 0.0:
+		FX.stat("enemies_burned")
+		_burn_tick = 0.0
+	burn_t = max(burn_t, sec)
+
+func _burning(delta: float) -> void:
+	burn_t -= delta
+	_burn_tick -= delta
+	if El.puddle_at(global_position) >= 0:
+		burn_t = 0.0
+		FX.ring(global_position, Color(0.9, 0.95, 1.0, 0.7), 1.2, 0.25)
+		FX.stat("fires_doused")
+	if burn_t <= 0.0:
+		if not charged:
+			_mat.emission_enabled = false
+		return
+	if not charged and _hit_flash <= 0.0:
+		_mat.emission_enabled = true
+		_mat.emission = Color(1, 0.45, 0.1)
+		_mat.emission_energy_multiplier = 1.2 + 0.6 * sin(_t * 30.0)
+	if _burn_tick <= 0.0:
+		_burn_tick = 0.5
+		hp -= El.tune.fire_dps * 0.5
+		FX.stat("fire_damage", int(El.tune.fire_dps * 0.5))
+		FX.sparks(global_position + Vector3(0, 1.2, 0), Vector3.UP, Color(1, 0.55, 0.15), 3, 3.0)
+		# si propaga a chi è attaccato e alle casse di legno vicine
+		if burn_t > 1.0:
+			for e in get_tree().get_nodes_in_group("enemies"):
+				if e != self and e.burn_t <= 0.0 and e.global_position.distance_to(global_position) < 1.7:
+					e.ignite(burn_t * 0.7)
+					FX.stat("fire_spread")
+			for p in get_tree().get_nodes_in_group("props"):
+				if p.get("flammable") and p.center().distance_to(global_position) < 1.4:
+					p.ignite()
+		if hp <= 0.0:
+			_die(Vector3.ZERO)
+
+## ELETTRICITÀ: scossa che blocca sul posto e fa esplodere chi è sovraccaricato.
+func shock(dmg: float) -> void:
+	if state == S.DEAD:
+		return
+	receive_hit({"dmg": dmg, "poise": 35.0, "dir": Vector3.ZERO, "knock": 0.0, "launch": 0.0, "form": -1, "move": "shock", "env": true})
+	if state != S.DEAD and is_on_floor():
+		_set_state(S.STAGGER)
+		_t = 0.35
+	_mat.emission_enabled = true
+	_mat.emission = Color(0.5, 0.95, 1.0)
+	_mat.emission_energy_multiplier = 2.0
+	_hit_flash = 0.18
+	FX.stat("enemies_shocked")
 
 ## Riceve un colpo del giocatore (dati dalla tabella delle mosse).
 func receive_hit(info: Dictionary) -> void:

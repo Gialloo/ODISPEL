@@ -27,3 +27,11 @@ Un push che cambia `releases/` pubblica su itch (`boomeranza/odispel`, canale `a
 ## Comandi di gioco
 Telefono: stick a sinistra, trascina a destra per guardare, ATTACCO (tieni = pesante), SCHIVA, SALTO, LOCK, LAB.
 PC: WASD, mouse, clic (tieni = pesante), SPAZIO, SHIFT o tasto destro, Q, TAB.
+
+## Ambiente (Fase 3)
+- Casse di legno (fascia azzurra): bruciano; lanciate accese incendiano i nemici.
+- Blocchi di metallo (fascia viola) e bobine (sfera ciano): conducono la scossa.
+- Bidoni rossi: esplodono con fuoco, scossa o un urto forte.
+- Pozze d'acqua: la scossa prende chiunque ci stia dentro; il fuoco si spegne.
+- Muretti marroni: si sfondano con colpi IMPACT, oggetti e nemici lanciati.
+- Il potere su una bobina la fa scaricare a distanza.
