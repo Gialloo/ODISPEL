@@ -468,6 +468,7 @@ func _do_hits(slam: bool) -> void:
 		if not is_on_floor():
 			velocity.y = max(velocity.y, 3.2)
 	if _hit_any and first_hit:
+		OV.feed("move:" + move_id, "weapon_%d" % move.form, 5.0)
 		FX.hitstop(move.stop)
 		FX.shake(move.shake)
 		FX.sound(move.sound, M.FORM_PITCH[move.form])
@@ -559,6 +560,7 @@ func take_hit(from: Node3D, dmg: float, dir: Vector3) -> String:
 	FX.sound("ferita")
 	FX.sparks(global_position + Vector3(0, 1.1, 0), dir, Color(1, 0.25, 0.3), 10, 7.0)
 	FX.stat("player_hits_taken")
+	OV.hurt()
 	if state == S.ATTACK:
 		weapon.rest()
 	velocity = _flat(dir).normalized() * 7.0 + Vector3(0, 2.0, 0)

@@ -198,12 +198,13 @@ func _report() -> void:
 		mn = min(mn, f)
 	if _fps_samples.size() > 0:
 		avg /= _fps_samples.size()
+	print("OVERLOAD meter=%.0f livello=%d picco=%.0f" % [root.get_node("OV").meter, root.get_node("OV").level, root.get_node("OV")._peak])
 	print("BOT_REPORT secs=%.0f fps_avg=%.1f fps_min=%.0f" % [t, avg, mn])
 	var keys := s.keys()
 	keys.sort()
 	for k in keys:
 		print("  %s = %s" % [k, s[k]])
-	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts", "shocks", "puddle_shocks", "coil_discharges", "barrels_exploded", "enemies_burned", "structures_broken", "fire_throws"]
+	var need := ["form_impact", "form_vector", "hits", "kills", "dodges", "move_blade_1", "move_impact_launcher", "move_vector_lash", "jumps", "move_blade_air_1", "move_impact_slam", "move_vector_reel", "launch_follow", "power_push", "power_pull", "power_alter", "enemy_pushed", "overcharge_blasts", "shocks", "puddle_shocks", "coil_discharges", "barrels_exploded", "enemies_burned", "structures_broken", "fire_throws", "overload_level_1", "overload_level_2", "overload_bursts"]
 	var missing := []
 	for n in need:
 		if s.get(n, 0) == 0:

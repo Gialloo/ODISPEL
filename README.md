@@ -35,3 +35,9 @@ PC: WASD, mouse, clic (tieni = pesante), SPAZIO, SHIFT o tasto destro, Q, TAB.
 - Pozze d'acqua: la scossa prende chiunque ci stia dentro; il fuoco si spegne.
 - Muretti marroni: si sfondano con colpi IMPACT, oggetti e nemici lanciati.
 - Il potere su una bobina la fa scaricare a distanza.
+
+## OVERLOAD (Fase 4)
+Barra sottile sotto la vita. Sale con azioni diverse concatenate (forme dell'arma, potere, ambiente,
+reazioni a catena, schivate perfette); la stessa azione ripetuta rende poco; cala se ti fermi o vieni colpito.
+Livello 1 = potere stadio 2 (pesanti), livello 2 = stadio 3 (due bersagli), pieno = OVERLOAD per 6 s
+con ricariche del potere rapidissime. Valori in `scripts/core/overload.gd` e nel LAB.

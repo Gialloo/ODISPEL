@@ -39,6 +39,7 @@ var stats := {}
 
 func stat(key: String, n := 1) -> void:
 	stats[key] = stats.get(key, 0) + n
+	OV.on_stat(key)
 
 func set_world(w: Node3D) -> void:
 	_world = w

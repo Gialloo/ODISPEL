@@ -7,7 +7,8 @@ signal used(kind: String)
 
 var player: CharacterBody3D
 var cam: Node3D
-var stage := 1
+var stage := 1                      # stadio effettivo (base o sbloccato da OVERLOAD)
+var base_stage := 1
 var tune := {
 	"range": 15.0,
 	"push_speed": 22.0,
@@ -58,6 +59,7 @@ func cooldown_ratio(kind: String) -> float:
 	return clamp(_cd[kind] / tune[kind + "_cd"], 0.0, 1.0)
 
 func _physics_process(delta: float) -> void:
+	stage = max(base_stage, OV.stage_bonus())
 	for k in _cd:
 		_cd[k] = max(0.0, _cd[k] - delta)
 	target = _pick_target()
@@ -120,6 +122,8 @@ func _update_reticle() -> void:
 	_reticle.global_position = target.global_position + Vector3(0, 0.08, 0)
 	_reticle.scale = Vector3.ONE * (r + 0.55) * (1.0 + 0.06 * sin(Time.get_ticks_msec() * 0.012))
 	_reticle_mat.albedo_color = Color(0.7, 0.95, 1.0, 0.75) if _can_move(target) or _can_poke(target) else Color(1, 0.4, 0.4, 0.6)
+	if OV.bursting > 0.0 and _can_move(target):
+		_reticle_mat.albedo_color = Color(1, 0.82, 0.25, 0.85)
 
 func _beam_to(to: Vector3, c: Color) -> void:
 	var from: Vector3 = player.global_position + Vector3(0, 1.3, 0) + player.facing * 0.4
@@ -250,7 +254,7 @@ func alter() -> void:
 	_done("alter", "alter")
 
 func _done(kind: String, stat: String) -> void:
-	_cd[kind] = tune[kind + "_cd"]
+	_cd[kind] = tune[kind + "_cd"] * OV.cooldown_mult()
 	FX.sound("cutin" if kind == "alter" else "schivata", 0.8 if kind == "pull" else 1.3, -3.0)
 	FX.stat("power_" + stat)
 	if cam and cam.has_method("kick"):

@@ -17,6 +17,11 @@ var _info: Label
 var _flash: ColorRect
 var _panel: PanelContainer
 var _center_msg: Label
+var _ov_back: ColorRect
+var _ov_bar: ColorRect
+var _ov_label: Label
+const OV_W := 316.0
+const OV_COL := [Color(0.85, 0.85, 0.9), Color(0.35, 0.95, 1.0), Color(0.85, 0.5, 1.0), Color(1.0, 0.82, 0.25)]
 
 func _ready() -> void:
 	_font = load("res://assets/fonts/ArchivoBlack-Regular.ttf")
@@ -35,13 +40,32 @@ func _ready() -> void:
 	_hp_bar.size = Vector2(316, 14)
 	_hp_bar.color = Color(0.35, 1.0, 0.6)
 	add_child(_hp_bar)
+	# OVERLOAD: una sola barra sottile sotto la vita, con le tacche dei livelli
+	_ov_back = ColorRect.new()
+	_ov_back.position = Vector2(24, 44)
+	_ov_back.size = Vector2(320, 10)
+	_ov_back.color = Color(0, 0, 0, 0.5)
+	add_child(_ov_back)
+	_ov_bar = ColorRect.new()
+	_ov_bar.position = Vector2(26, 46)
+	_ov_bar.size = Vector2(0, 6)
+	add_child(_ov_bar)
+	for k in [0.34, 0.67]:
+		var notch := ColorRect.new()
+		notch.position = Vector2(26 + OV_W * k - 1, 42)
+		notch.size = Vector2(2, 14)
+		notch.color = Color(1, 1, 1, 0.7)
+		add_child(notch)
+	_ov_label = _label("OVERLOAD", 14)
+	_ov_label.position = Vector2(352, 38)
+	add_child(_ov_label)
 	for i in 3:
 		var l := _label(M.FORM_NAME[i], 18)
-		l.position = Vector2(24 + i * 112, 48)
+		l.position = Vector2(24 + i * 112, 60)
 		add_child(l)
 		_forms.append(l)
 	_info = _label("", 14)
-	_info.position = Vector2(24, 84)
+	_info.position = Vector2(24, 94)
 	_info.modulate.a = 0.6
 	add_child(_info)
 	_center_msg = _label("", 40)
@@ -66,6 +90,7 @@ func bind() -> void:
 	player.hp_changed.connect(_on_hp)
 	player.form_changed.connect(_set_form)
 	player.perfect_dodge.connect(_on_perfect)
+	OV.level_changed.connect(_on_ov_level)
 	if touch:
 		touch.gear_pressed.connect(toggle_panel)
 
@@ -85,6 +110,19 @@ func _on_perfect() -> void:
 	t.tween_property(_flash, "color:a", 0.0, 0.5)
 	message("SCHIVATA PERFETTA", 0.7)
 
+func _on_ov_level(l: int) -> void:
+	if l == 0:
+		return
+	if l == 3:
+		message("OVERLOAD", 1.0)
+		_flash.color = Color(1, 0.85, 0.3, 0.2)
+		create_tween().set_ignore_time_scale(true).tween_property(_flash, "color:a", 0.0, 0.6)
+	elif l > _shown_level:
+		message(["", "SINERGIA 1 · PESANTI", "SINERGIA 2 · DOPPIO BERSAGLIO"][l], 0.8)
+	_shown_level = l
+
+var _shown_level := 0
+
 func message(t: String, secs := 1.2) -> void:
 	_center_msg.text = t
 	_center_msg.modulate.a = 1.0
@@ -93,6 +131,14 @@ func message(t: String, secs := 1.2) -> void:
 	tw.tween_property(_center_msg, "modulate:a", 0.0, 0.3)
 
 func _process(_d: float) -> void:
+	var lv: int = OV.level
+	var col: Color = OV_COL[3] if OV.bursting > 0.0 else OV_COL[lv]
+	_ov_bar.size.x = OV_W * clamp(OV.meter / 100.0, 0.0, 1.0)
+	_ov_bar.color = col
+	_ov_label.add_theme_color_override("font_color", col)
+	_ov_label.modulate.a = 0.55 + (0.45 * absf(sin(Time.get_ticks_msec() * 0.01)) if OV.bursting > 0.0 else 0.0)
+	if lv == 0:
+		_shown_level = 0
 	var s: Dictionary = FX.stats
 	_info.text = "%d fps   colpi %d   abbattuti %d   perfette %d" % [Engine.get_frames_per_second(), s.get("hits", 0), s.get("kills", 0), s.get("perfect_dodges", 0)]
 
@@ -133,7 +179,12 @@ func toggle_panel() -> void:
 		["Velocità nemico", enemy_tune, "speed", 2.0, 12.0],
 		["Carica attacco nemico", enemy_tune, "windup", 0.25, 1.2],
 		["Danno nemico", enemy_tune, "damage", 0.0, 40.0],
-		["Stadio del potere (1-3)", power, "stage", 1.0, 3.0],
+		["Stadio base del potere (1-3)", power, "base_stage", 1.0, 3.0],
+			["OVERLOAD: resa delle azioni", OV.tune, "gain", 0.1, 2.0],
+			["OVERLOAD: punti persi al secondo", OV.tune, "decay", 0.0, 30.0],
+			["OVERLOAD: tregua prima del calo", OV.tune, "grace", 0.5, 6.0],
+			["OVERLOAD: resa delle ripetizioni", OV.tune, "repeat_mult", 0.0, 1.0],
+			["OVERLOAD: durata del pieno", OV.tune, "burst_time", 2.0, 12.0],
 		["Forza spinta", power.tune, "push_speed", 8.0, 40.0],
 		["Ricarica spinta", power.tune, "push_cd", 0.1, 2.0],
 		["Ricarica attira", power.tune, "pull_cd", 0.1, 2.0],
@@ -156,13 +207,13 @@ func _slider_row(title: String, obj, key: String, lo: float, hi: float) -> Contr
 	var s := HSlider.new()
 	s.min_value = lo
 	s.max_value = hi
-	s.step = 1.0 if key == "stage" else (hi - lo) / 100.0
+	s.step = 1.0 if key == "base_stage" else (hi - lo) / 100.0
 	s.value = cur
 	s.custom_minimum_size = Vector2(480, 40)
 	s.value_changed.connect(func(val):
 		if obj is Dictionary:
 			obj[key] = val
-		elif key == "stage":
+		elif key == "base_stage":
 			obj.set(key, int(val))
 		else:
 			obj.set(key, val)
