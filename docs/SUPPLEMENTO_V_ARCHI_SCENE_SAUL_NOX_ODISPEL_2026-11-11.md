@@ -132,15 +132,7 @@ Nox ha anche un rapporto speciale con Rio, ma è di natura diversa:
 
 Non confondere questo rapporto con quello romantico tra Nox e Saul.
 
-## 11. Materiale escluso
-
-Sono stati eliminati da questo documento:
-- le vecchie scene «Le provviste» e «Una medicazione»;
-- battute e scene Saul–Nox recuperate da conversazioni precedenti alla serie 0–23;
-- vecchie scene domestiche in cui Rio conversa normalmente con Nox;
-- qualsiasi dettaglio romantico non confermato nelle conversazioni ammesse.
-
-## 12. Questioni ancora aperte
+## 11. Questioni ancora aperte
 
 1. Saul sopravvive davvero oppure no?
 2. Come viene mostrata la rivelazione della magia a Nox e al resto del party?
