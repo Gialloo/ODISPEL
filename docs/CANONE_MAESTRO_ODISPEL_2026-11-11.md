@@ -220,3 +220,8 @@ Le percezioni sono passive e non devono diventare un radar invasivo. Il personag
 ## 11. Approfondimento dei protagonisti
 
 Per i dossier estesi di Lance, Nox, Saul e Rio, con sfumature caratteriali, scene, dinamiche, epiloghi e questioni aperte recuperate dalle sole conversazioni 0–23, consultare il [Supplemento VI — Dossier approfondito dei quattro protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md).
+
+
+## 12. Manuale di riferimento completo dei protagonisti
+
+Il documento operativo di riferimento per la scrittura dei quattro protagonisti è il [Supplemento VI — Manuale approfondito dei protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md). Contiene i retroscena, i poteri e le regole conosciute, il comportamento quotidiano e in combattimento, il metodo con cui affrontano i problemi, le relazioni, gli archi, gli epiloghi, le letture tematiche e un registro delle questioni aperte. In caso di differenza di livello di dettaglio, consultare il Supplemento VI, mantenendo il perimetro 0–23 e la cronologia delle decisioni.
