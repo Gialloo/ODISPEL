@@ -1,0 +1,69 @@
+# Pubblica OVERLOAD sulla pagina di ODISPEL (boomeranza/odispel) su canali propri:
+#   releases/OVERLOAD mobile vX.Y.Z.apk -> canale android-overload
+#   releases/OVERLOAD pc vX.Y.Z.zip     -> canale windows-overload (quando ci sarà)
+# I canali di ODISPEL (android-v3, windows-v3, android-mobile, windows-pc) non si toccano.
+name: Pubblica OVERLOAD su itch.io
+
+on:
+  push:
+    branches: [OVERLOAD]
+    paths:
+      - 'releases/OVERLOAD mobile v*.apk'
+      - 'releases/OVERLOAD pc v*.zip'
+      - '.github/workflows/itch-overload.yml'
+  workflow_dispatch:
+
+jobs:
+  itch:
+    if: github.ref == 'refs/heads/OVERLOAD'
+    runs-on: ubuntu-latest
+    env:
+      BUTLER_API_KEY: ${{ secrets.ITCH_API_KEY }}
+      ITCH_TARGET: boomeranza/odispel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trova i pacchetti
+        id: artifacts
+        shell: bash
+        run: |
+          shopt -s nullglob
+          apks=(releases/OVERLOAD\ mobile\ v*.apk)
+          zips=(releases/OVERLOAD\ pc\ v*.zip)
+          if (( ${#apks[@]} == 0 )); then echo "::error::Manca l'APK in releases"; exit 1; fi
+          apk=$(printf '%s\n' "${apks[@]}" | sort -V | tail -1)
+          version=$(basename "$apk" .apk | sed 's/^OVERLOAD mobile v//')
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error::Versione APK non valida: $version"; exit 1; fi
+          echo "apk=$apk" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if (( ${#zips[@]} > 0 )); then
+            zip=$(printf '%s\n' "${zips[@]}" | sort -V | tail -1)
+            echo "zip=$zip" >> "$GITHUB_OUTPUT"
+            echo "zip_version=$(basename "$zip" .zip | sed 's/^OVERLOAD pc v//')" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Controlla la firma dell'APK
+        env:
+          APK_FILE: ${{ steps.artifacts.outputs.apk }}
+        run: |
+          signer=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner
+          "$signer" verify --verbose --min-sdk-version 24 "$APK_FILE"
+      - name: Controlla che la chiave ci sia
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then echo "::error::Manca il segreto ITCH_API_KEY"; exit 1; fi
+      - name: Installa butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d butler && chmod +x butler/butler
+      - name: Carica
+        run: |
+          push() {   # file canale versione
+            for n in 1 2 3 4 5 6; do
+              if ./butler/butler push "$1" "$ITCH_TARGET:$2" --userversion "$3" > out.txt 2>&1; then cat out.txt; return 0; fi
+              cat out.txt; sleep 45
+            done
+            echo "::error::butler push $2 fallito: $(tail -c 400 out.txt | tr '\n' ' ')"
+            return 1
+          }
+          push "${{ steps.artifacts.outputs.apk }}" android-overload "${{ steps.artifacts.outputs.version }}"
+          if [ -n "${{ steps.artifacts.outputs.zip }}" ]; then
+            push "${{ steps.artifacts.outputs.zip }}" windows-overload "${{ steps.artifacts.outputs.zip_version }}"
+          fi
