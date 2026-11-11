@@ -217,7 +217,7 @@ func combo_break() -> void:
 func _tick_combo(delta: float) -> void:
 	if combo <= 0:
 		return
-	_combo_t -= delta
+	_combo_t -= delta * (0.62 if has("combo_lunga") else 1.0)
 	if _combo_t <= 0.0:
 		_bank_combo()
 
@@ -227,7 +227,7 @@ func _bank_combo() -> void:
 	if hits < 3:
 		return
 	# cresce più che in proporzione: le combo lunghe valgono davvero
-	var pts := int(hits * 25 * (1.0 + hits / 10.0))
+	var pts := int(hits * 25 * (1.0 + hits / 10.0) * (1.25 if has("combo_lunga") else 1.0))
 	combos += 1
 	best_combo = maxi(best_combo, hits)
 	FX.stat("combos")
@@ -318,6 +318,9 @@ func _spawn(arch: String) -> void:
 			if rid != _run_id:
 				return
 			kills += 1
+			if has("rigenerazione") and main and main.player.hp > 0.0:
+				main.player.hp = min(main.player.max_hp, main.player.hp + 4.0)
+				main.player.hp_changed.emit(main.player.hp, main.player.max_hp)
 			add_score(int(KILL_PTS.get(arch, 100) * (1.0 + 0.05 * (wave - 1)))))
 		FX.stat("spawn_" + arch))
 
@@ -358,6 +361,10 @@ func choose(i: int) -> void:
 	owned.append(d.id)
 	FX.stat("upgrades_taken")
 	FX.stat("up_" + d.id)
+	if d.id == "vigore" and main:
+		main.player.max_hp += 30.0
+		main.player.hp = main.player.max_hp
+		main.player.hp_changed.emit(main.player.hp, main.player.max_hp)
 	if d.id == "propagazione":
 		El.tune.chain = 7
 		El.tune.enemy_hop = 3.9

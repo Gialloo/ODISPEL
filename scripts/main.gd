@@ -63,6 +63,13 @@ func _ready() -> void:
 		# 0.9: si parte dal menu principale (Nuova partita, Opzioni)
 		hud.open_menu()
 
+## Su PC il mouse catturato non può cliccare i pulsanti: si libera per menu, scelte e fine partita.
+func release_mouse() -> void:
+	if _is_touch:
+		return
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_mouse_captured = false
+
 func start_game() -> void:
 	hud.restart()
 	if not _is_touch:

@@ -31,6 +31,9 @@ var tune := {
 	"perfect_window": 0.18,
 	"assist_range": 7.5,
 	"assist_angle": 80.0,
+	"chain_cancel": 0.85,          # 0.10: da un colpo al successivo si passa prima (combo più fluide)
+	"chain_window": 600.0,         # ms dopo la fine di un colpo in cui la catena continua
+	"impact_mult": 1.2,            # 0.10: IMPACT (arancione) fa il 20% in più
 }
 
 var cam: Node3D                   # rig della telecamera (yaw)
@@ -210,7 +213,11 @@ func _request(kind: String, now: int) -> void:
 		_do(kind, now)
 	else:
 		_buffer = kind
-		_buffer_until = now + 260
+		_buffer_until = now + 380
+
+## Da quando un colpo può passare al successivo (un po' prima della sua finestra di uscita).
+func _chain_t() -> float:
+	return max(move.hit_to, move.cancel * tune.chain_cancel)
 
 func _can_act_now(kind: String) -> bool:
 	match state:
@@ -219,7 +226,7 @@ func _can_act_now(kind: String) -> bool:
 		S.ATTACK:
 			if kind == "dodge":
 				return move_t >= move.cancel or move_t < 0.04 or _hit_any and move_t >= move.hit_to
-			return move_t >= move.cancel
+			return move_t >= _chain_t()
 		S.DODGE:
 			# attacco dalla schivata: si può uscire quasi subito (diventa VECTOR sweep)
 			return kind != "dodge" and _dodge_t >= tune.dodge_time * 0.55
@@ -375,7 +382,7 @@ func _pick_move(kind: String, peek := false) -> String:
 		if _air_attacks < 3:
 			return "blade_air_1"
 		return "blade_air_3"
-	var in_sweep: bool = (state == S.ATTACK and move_id == "vector_sweep") or (_last_move_id == "vector_sweep" and now - _last_move_end < 450)
+	var in_sweep: bool = (state == S.ATTACK and move_id == "vector_sweep") or (_last_move_id == "vector_sweep" and now - _last_move_end < int(tune.chain_window))
 	if now - _last_dodge_end < 450 and not in_sweep:
 		return "vector_sweep"
 	if in_sweep:
@@ -390,7 +397,7 @@ func _pick_move(kind: String, peek := false) -> String:
 	var nxt := ""
 	if state == S.ATTACK and move.next != "":
 		nxt = move.next
-	elif _last_move_id != "" and now - _last_move_end < 450:
+	elif _last_move_id != "" and now - _last_move_end < int(tune.chain_window):
 		var last: Dictionary = M.DATA[_last_move_id]
 		if last.next != "" and not last.get("air", false):
 			nxt = last.next
@@ -542,7 +549,7 @@ func _update_attack(delta: float, on_floor: bool, now: int) -> void:
 		_afterimage()
 		FX.stat("launch_follow")
 		return
-	if move_t >= move.cancel:
+	if move_t >= _chain_t():
 		_try_buffer(now)
 	# 0.7: salto che interrompe l'attacco dopo il colpo (anche in aria, finché restano salti)
 	if state == S.ATTACK and not move.get("slam", false) and move_t >= move.cancel and now <= _jump_buffer_until \
@@ -560,6 +567,11 @@ func _update_attack(delta: float, on_floor: bool, now: int) -> void:
 		return
 	if state == S.ATTACK and move_t >= move.dur:
 		_end_move(now)
+		# 0.10: a fine colpo con lo stick tenuto si riparte già in corsa, senza fermarsi
+		var d2 := input_dir()
+		if on_floor and d2.length() > 0.3:
+			velocity.x = d2.x * tune.run_speed * 0.75
+			velocity.z = d2.z * tune.run_speed * 0.75
 
 func _end_move(now: int) -> void:
 	_last_move_id = move_id
@@ -582,7 +594,7 @@ func _do_hits(slam: bool) -> void:
 		var dy: float = absf(to.y)
 		if dy > 2.4:
 			continue
-		var r: float = move.reach + e.radius
+		var r: float = move.reach * (1.3 if move.form == M.Form.VECTOR and Run.has("frusta_lunga") else 1.0) + e.radius
 		if move_id == "vector_lash":
 			var along := flat.dot(facing)
 			var side := (flat - facing * along).length()
@@ -606,6 +618,7 @@ func _do_hits(slam: bool) -> void:
 			info["pull_to"] = global_position + facing * 1.8
 			if move_id == "vector_whirl":
 				info["pull_to"] = global_position + kdir * 1.5
+		_apply_upgrades_to_hit(info)
 		var is_enemy: bool = e.is_in_group("enemies")
 		if is_enemy and _heavy_ready and move.form == M.Form.IMPACT:
 			info.dmg *= 2.0
@@ -637,9 +650,29 @@ func _do_hits(slam: bool) -> void:
 
 # ---------------------------------------------------------------- potenziamenti
 
+## Moltiplicatori di forma e potenziamenti "di statistica" (0.10).
+func _apply_upgrades_to_hit(info: Dictionary) -> void:
+	match move.form:
+		M.Form.BLADE:
+			if Run.has("filo_tagliente"):
+				info.dmg *= 1.25
+		M.Form.IMPACT:
+			info.dmg *= tune.impact_mult
+			if Run.has("martello_pesante"):
+				info.knock *= 1.5
+				info.poise *= 1.35
+		M.Form.VECTOR:
+			if Run.has("frusta_lunga"):
+				info.dmg *= 1.1
+	if Run.has("furia") and hp < max_hp * 0.35:
+		info.dmg *= 1.3
+
 func _upgrade_hit(e: Node3D) -> void:
 	_combo_hits += 1
 	Run.combo_hit()
+	if move.form == M.Form.BLADE and Run.has("lama_scintilla") and _combo_hits % 5 == 0:
+		El.shock(e.global_position + Vector3(0, 0.5, 0), self, 0.8)
+		FX.stat("up_blade_sparks")
 	if Run.has("catena_combo") and _combo_hits % 10 == 0:
 		_resonance()
 	if move.form == M.Form.IMPACT and Run.has("onda_urto"):
@@ -762,7 +795,7 @@ func is_invulnerable() -> bool:
 	return state == S.DODGE and Time.get_ticks_msec() - _dodge_start <= int(tune.iframe * 1000.0)
 
 func _recent_dodge() -> bool:
-	return Time.get_ticks_msec() - _dodge_start <= int(tune.perfect_window * 1000.0)
+	return Time.get_ticks_msec() - _dodge_start <= int(tune.perfect_window * (1.6 if Run.has("passo_fantasma") else 1.0) * 1000.0)
 
 func _perfect(_e: Node) -> void:
 	if FX.is_slowed():
@@ -789,6 +822,9 @@ func can_parry(from: Node3D) -> bool:
 	return true
 
 func parry(from: Node3D, dmg: float, projectile := false) -> void:
+	if Run.has("contrattacco"):
+		hp = min(max_hp, hp + 6.0)
+		hp_changed.emit(hp, max_hp)
 	FX.stat("parries")
 	OV.feed("parry", "defense", 16.0)
 	FX.hitstop(130)
@@ -845,6 +881,7 @@ func take_hit(from: Node3D, dmg: float, dir: Vector3) -> String:
 	return "hit"
 
 func revive() -> void:
+	max_hp = 100.0
 	hp = max_hp
 	hp_changed.emit(hp, max_hp)
 	state = S.MOVE

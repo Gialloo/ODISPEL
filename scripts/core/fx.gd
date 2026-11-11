@@ -18,7 +18,7 @@ var _world: Node3D
 
 ## Parametri regolabili dal pannello (laboratorio).
 var tune := {
-	"hitstop_scale": 1.0,   # moltiplica la durata degli arresti all'impatto
+	"hitstop_scale": 0.85,   # moltiplica la durata degli arresti all'impatto
 	"shake_scale": 1.0,
 }
 

@@ -60,7 +60,7 @@ func on_stat(key: String) -> void:
 
 ## Un'azione del giocatore: tag = cosa esattamente, cat = famiglia.
 func feed(tag: String, cat: String, pts: float) -> void:
-	var g: float = pts * tune.gain
+	var g: float = pts * tune.gain * (1.3 if Run.has("barra_calda") else 1.0)
 	if _recent.has(tag):
 		g *= tune.repeat_mult
 	elif cat != _last_cat and _last_cat != "":
@@ -91,7 +91,8 @@ func stage_bonus() -> int:
 	return [1, 2, 3, 3][level]
 
 func cooldown_mult() -> float:
-	return tune.burst_cd_mult if bursting > 0.0 else 1.0
+	var m: float = tune.burst_cd_mult if bursting > 0.0 else 1.0
+	return m * (0.7 if Run.has("ricarica_rapida") else 1.0)
 
 func _refresh() -> void:
 	var l := 0

@@ -68,3 +68,8 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 - Menu principale (Nuova partita, Opzioni) e schermata finale con Ricomincia / Menu.
 - Telecamera: inseguimento più stretto, scorrimento liscio, rientro automatico alle spalle, LOCK più grande, doppio tocco = lock, colpo di dito in lock = cambio bersaglio.
 - Prova: `tests/waves_09.gd`.
+
+## 0.10
+- 24 potenziamenti (nuova famiglia Corpo), schermata di scelta che si chiude sempre (`tests/choice_10.gd`).
+- IMPACT +20% di danno; passaggi tra i colpi più rapidi, coda dei tasti più lunga, ripartenza in corsa a fine colpo.
+- Versione PC: preset "Windows", `releases/OVERLOAD pc vX.Y.Z.zip` -> canale itch `windows-overload`.

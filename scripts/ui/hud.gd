@@ -31,11 +31,12 @@ var _circle_label: Label
 var _score_shown := 0.0
 var _notches: Array = []
 const FAM_COL := {"Blade": Color(0.35, 0.95, 1.0), "Impact": Color(1.0, 0.6, 0.25), "Vector": Color(0.8, 0.5, 1.0),
-	"Manipolazione": Color(0.7, 0.95, 1.0), "Elementi": Color(1.0, 0.85, 0.3), "Ambiente": Color(0.75, 0.6, 0.4), "Combo": Color(0.5, 1.0, 0.7)}
+	"Manipolazione": Color(0.7, 0.95, 1.0), "Elementi": Color(1.0, 0.85, 0.3), "Ambiente": Color(0.75, 0.6, 0.4), "Combo": Color(0.5, 1.0, 0.7), "Corpo": Color(1.0, 0.45, 0.55)}
 const OV_W := 316.0
 const OV_COL := [Color(0.85, 0.85, 0.9), Color(0.35, 0.95, 1.0), Color(0.85, 0.5, 1.0), Color(1.0, 0.82, 0.25)]
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_font = load("res://assets/fonts/ArchivoBlack-Regular.ttf")
 	_flash = ColorRect.new()
 	_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -166,6 +167,7 @@ func _centered(n: Control) -> CenterContainer:
 # ------------------------------------------------------------ menu principale
 
 func open_menu() -> void:
+	get_parent().release_mouse()
 	close_screens()
 	_set_play_ui(false)
 	_menu = _screen(0.55)
@@ -330,7 +332,22 @@ func _refresh_ups() -> void:
 	_ups_label.text = "  ·  ".join(names)
 
 ## Tre carte grandi, comode col pollice. Il gioco resta in pausa finché non scegli.
+func _pick(i: int) -> void:
+	Run.choose(i)
+	_close_choice()
+
+func _close_choice() -> void:
+	if _choice and is_instance_valid(_choice):
+		_choice.queue_free()
+	_choice = null
+	if not Run.choosing and get_tree().paused and _panel == null:
+		get_tree().paused = false
+
 func _open_choice(opts: Array) -> void:
+	# 0.10: mai due schermate una sopra l'altra (quella vecchia restava e non si chiudeva più)
+	if _choice and is_instance_valid(_choice):
+		_choice.queue_free()
+	get_parent().release_mouse()
 	_choice = Control.new()
 	_choice.process_mode = Node.PROCESS_MODE_ALWAYS
 	_choice.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -392,11 +409,14 @@ func _open_choice(opts: Array) -> void:
 		ev.keycode = KEY_1 + i
 		sc.events = [ev]
 		b.shortcut = sc
-		b.pressed.connect(func(): Run.choose(i))
+		# la carta risponde appena la tocchi, non al rilascio: un dito che scivola non perde la scelta
+		b.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		b.pressed.connect(func(): _pick(i))
 		row.add_child(b)
 	add_child(_choice)
 
 func _open_over(wave: int, kills: int) -> void:
+	get_parent().release_mouse()
 	close_screens()
 	if touch:
 		touch.visible = false
@@ -458,6 +478,11 @@ func message(t: String, secs := 1.2) -> void:
 	tw.tween_property(_center_msg, "modulate:a", 0.0, 0.3)
 
 func _process(_d: float) -> void:
+	# rete di sicurezza: la schermata dei potenziamenti esiste solo mentre la run sta scegliendo
+	if _choice and is_instance_valid(_choice) and not Run.choosing:
+		_close_choice()
+	elif Run.choosing and (_choice == null or not is_instance_valid(_choice)) and Run.running:
+		_open_choice(Run.options)
 	var lv: int = OV.level
 	var col: Color = OV_COL[3] if OV.bursting > 0.0 else OV_COL[lv]
 	_ov_bar.size.x = OV_W * clamp(OV.meter / 100.0, 0.0, 1.0)

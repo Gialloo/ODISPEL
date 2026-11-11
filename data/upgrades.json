@@ -10,5 +10,17 @@
   {"id": "propagazione", "family": "Elementi", "name": "Propagazione", "desc": "Le scariche saltano più lontano e fanno più salti."},
   {"id": "fuoco_vivo", "family": "Elementi", "name": "Fuoco vivo", "desc": "Un nemico che muore in fiamme esplode e incendia chi gli sta intorno."},
   {"id": "detriti", "family": "Ambiente", "name": "Macerie", "desc": "I muretti distrutti lasciano il doppio dei detriti, e durano di più."},
-  {"id": "catena_combo", "family": "Combo", "name": "Risonanza", "desc": "Ogni 10 colpi senza farti colpire, un'onda parte da te e respinge tutti."}
+  {"id": "catena_combo", "family": "Combo", "name": "Risonanza", "desc": "Ogni 10 colpi senza farti colpire, un'onda parte da te e respinge tutti."},
+  {"id": "filo_tagliente", "family": "Blade", "name": "Filo tagliente", "desc": "I colpi BLADE fanno il 25% di danno in più."},
+  {"id": "contrattacco", "family": "Blade", "name": "Contrattacco", "desc": "Ogni parry riuscito ti ridà 6 di vita."},
+  {"id": "lama_scintilla", "family": "Elementi", "name": "Lama scintilla", "desc": "Ogni 5 colpi a segno, un colpo BLADE fa partire una scarica elettrica."},
+  {"id": "martello_pesante", "family": "Impact", "name": "Martello pesante", "desc": "IMPACT spinge il 50% più lontano e sbilancia prima."},
+  {"id": "frusta_lunga", "family": "Vector", "name": "Frusta lunga", "desc": "VECTOR arriva il 30% più lontano e colpisce un po' più forte."},
+  {"id": "ricarica_rapida", "family": "Manipolazione", "name": "Ricarica rapida", "desc": "Le ricariche del potere durano il 30% in meno."},
+  {"id": "barra_calda", "family": "Combo", "name": "Barra calda", "desc": "La barra OVERLOAD sale il 30% più in fretta."},
+  {"id": "combo_lunga", "family": "Combo", "name": "Fiato lungo", "desc": "Hai più tempo tra un colpo e l'altro per tenere viva la combo, e le combo valgono il 25% in più."},
+  {"id": "vigore", "family": "Corpo", "name": "Vigore", "desc": "Vita massima +30, e ti curi del tutto."},
+  {"id": "rigenerazione", "family": "Corpo", "name": "Rigenerazione", "desc": "Ogni nemico sconfitto ti ridà 4 di vita."},
+  {"id": "furia", "family": "Corpo", "name": "Furia", "desc": "Sotto un terzo della vita fai il 30% di danno in più."},
+  {"id": "passo_fantasma", "family": "Corpo", "name": "Passo fantasma", "desc": "La finestra della schivata perfetta è più larga."}
 ]
