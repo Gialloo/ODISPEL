@@ -64,7 +64,7 @@ Quando un personaggio è alla guida o partecipa all'esplorazione, può notare el
 ### Regole di presentazione
 - Le percezioni devono essere passive o comunque poco invasive.
 - Non devono trasformarsi in quattro modalità obbligatorie di scansione.
-- La scoperta deve essere coerente con ciò che il personaggio può davvero sapere: Saul non possiede ancora le sue future mani magiche; Rio riconosce soprattutto segnali biologici e Kairos; Nox interpreta fenomeni magici; Lance ragiona da ricognitore.
+- La scoperta deve essere coerente con ciò che il personaggio può davvero sapere: Saul riconosce ricchezze e dettagli sospetti; Rio percepisce segnali biologici e Kairos; Nox interpreta fenomeni magici; Lance ragiona da ricognitore. Saul ha studiato magia da Nox in segreto: non confondere questa rivelazione narrativa con il suo modo di esplorare nella fase iniziale.
 - Gli indizi possono portare a oggetti curiosi, segreti e piccoli ritrovamenti, non soltanto a risorse utili.
 - L'esplorazione del quartiere urbano mezzo trasformato deve consentire di osservare, trovare segreti e ricostruire cosa è successo.
 
@@ -91,26 +91,40 @@ La competenza di Lance deve emergere da ciò che nota e da come valuta il rischi
 - Lance può cercare di controllare tre sconosciuti senza riuscirci sempre. Non è infallibile.
 - Nox può essere sbrigativa e avere temperamento.
 - Saul può essere ironico, ma non deve essere sempre quello che ha la battuta pronta o che capisce tutto.
-- Rio può salutare una telecamera se pensa che dall'altra parte possa esserci davvero qualcuno: il gesto deve nascere dalla sua curiosità e dal suo passato, non essere una gag automatica da streamer.
+- Rio non va scritto come un normale interlocutore umano: nella versione attuale è un'anomalia/Kairos. La sua spontaneità e curiosità emergono da comportamenti, posture, esplorazione, reazioni e segnali non verbali, non da dialoghi domestici con Nox o Saul.
 
 ### Regia e coda delle scene
 È stata apprezzata una regia che non taglia immediatamente dopo l'ultima battuta. Lasciare una breve coda silenziosa in cui i personaggi continuano a fare ciò che stavano facendo può dare più verità alla scena di un'altra battuta aggiunta.
 
-In particolare, per le scene del rifugio:
-- non farli diventare subito una famiglia;
-- mostrare tolleranza difficile, piccoli attriti e comportamenti reali;
-- lasciare che la vicinanza emerga anche da tentativi indiretti e non dichiarati;
-- non chiudere ogni scena con una riconciliazione o una battuta conclusiva.
+**Rettifica di continuità:** le scene domestiche di rifugio, i dialoghi Nox–Rio, Rio–Saul e i turni di guardia condivisi con Rio appartengono a iterazioni precedenti e non sono canonici nella demo attuale. Rio è un'anomalia/Kairos e non va trattato come un normale membro umano che conversa con il gruppo.
 
-## 7. Il party: origine e convivenza
+## 7. Il rapporto con Rio nella versione attuale
 
-### Direzione confermata
-I protagonisti non si conoscono all'inizio e non hanno familiarità immediata. Devono imparare a convivere e a rispettare le distanze reciproche. Le differenze non sono un difetto da eliminare: sono una fonte di situazioni, incomprensioni e crescita.
+### Stato canonico
+- Lance inizialmente considera Rio una creatura imprevedibile e potenzialmente da eliminare. Durante la ricognizione equivoca e lo scambia per l'anomalia che sta cercando.
+- Nox vuole comprenderne la natura, ma deve imparare a rispettare distanze e comportamenti, soprattutto durante la nidificazione. Rio può accettarla se rispetta le sue regole.
+- Saul lo considera inizialmente una bestiaccia/mostro e usa appellativi impropri perché non ha né la conoscenza accademica di Nox né quella militare di Lance.
+- Rio è spontaneo e curioso, ma anche istintivo, territoriale e capace di difendere il nido. Non va trasformato in un provocatore deliberato come Saul.
+- Il rapporto tra questi personaggi non parte da una familiarità comica o domestica: si costruisce attraverso osservazione, incomprensioni, rispetto dei confini e collaborazione difficile.
 
-La progressione deve essere graduale. In una prima fase possono condividere uno spazio per necessità senza sentirsi ancora un gruppo. La fiducia arriva attraverso comportamenti ripetuti e conseguenze, non perché la sceneggiatura dichiara che ormai sono amici.
+### Scena del nido — Capitolo 1
+**DIREZIONE APPROVATA**
+- Rio sta nidificando ed è in una condizione vulnerabile, perciò mantiene difese attive.
+- Saul prova a giocare/interagire con lui senza comprenderne il comportamento.
+- Muco e tentacoli del nido lo respingono o lo tengono a distanza.
+- Nox spiega che Rio è vulnerabile durante la nidificazione e che quelle difese servono a proteggere il nido.
+- Saul interpreta male la situazione e reagisce minacciando Rio, invece di comprenderne subito il comportamento.
+- Nox deve rispettare a sua volta distanze e comportamenti necessari a non attivare le difese.
+- Rio può imparare ad accettare Nox quando lei rispetta tali limiti.
 
-### Precisazione sulla storia e sul gameplay
-La storia e i personaggi non devono essere forzati a coincidere con le esigenze di una vecchia struttura di gioco. Il gameplay deve sostenere la storia nuova, non obbligare i personaggi a comportarsi secondo ruoli o scene appartenenti a iterazioni precedenti.
+La scena non deve essere trasformata in un dialogo amichevole tra Rio e Saul o in un momento da famiglia. Il suo valore è mostrare una creatura con bisogni, vulnerabilità e regole proprie, e tre persone che ancora non la comprendono allo stesso modo.
+
+### Regole di scrittura
+- Non attribuire a Rio dialoghi umani o battute da compagno di party.
+- Le sue intenzioni devono essere leggibili attraverso comportamento, reazioni, curiosità, segnali corporei e azioni.
+- Nox può interpretare e spiegare ciò che osserva, ma non deve sapere tutto in anticipo.
+- Saul può essere comicamente inadeguato nel leggere Rio, ma la sua reazione deve restare coerente con il fatto che considera la creatura pericolosa.
+- Lance valuta il rischio da ricognitore e non concede fiducia immediata.
 
 ## 8. Un progetto narrativo precedente da non confondere con la demo attuale
 
