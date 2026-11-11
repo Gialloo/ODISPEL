@@ -1,156 +1,131 @@
-# ODISPEL — Supplemento III: scene, continuità e materiale narrativo aggiuntivo
-**Data:** 11 novembre 2026  
-**Repository:** `Gialloo/ODISPEL`  
+# ODISPEL — Supplemento III: scene e continuità dalle conversazioni 0–23
+**Fonti:** esclusivamente «Consigli per scrivere storie» 0–23, 10–11 novembre 2026.  
 **Branch:** `docs/odispel-master-canon-2026-11-11`
 
-> Questo documento integra il Canone Maestro e il Supplemento Decisioni. Non li sostituisce. Raccoglie dettagli emersi in conversazioni ulteriori o rimasti poco espliciti nei primi due documenti. Non è una trascrizione letterale delle chat: quando un dettaglio non è certo, viene indicato come tale.
+> Sostituisce il precedente Supplemento III. Le scene e i dialoghi di altre date o iterazioni sono stati rimossi. Le parti che non risultano recuperabili integralmente sono descritte senza inventare raccordi.
 
-## 1. Gerarchia e metodo di lavoro
+## 1. Sequenza di partenza: quattro vite separate
 
-### Confermato
-- Il contenuto presente nel repository Git è costituito in larga parte da scheletri e iterazioni primitive, precedenti al lavoro narrativo e di design più recente.
-- La demo attuale è quella progettata nelle conversazioni correnti: non bisogna cercare di far coincidere la nuova storia con la vecchia demo.
-- Il lavoro deve procedere prima sulla storia e sulla definizione dell'esperienza, poi sull'allineamento tecnico.
-- Si possono preservare sistemi e componenti tecnici recuperabili, ma i contenuti narrativi obsoleti vanno sostituiti.
-- Prima di intervenire sul progetto, distinguere ciò che è riutilizzabile da ciò che va rifatto. Non modificare codice, dati, scene o architettura sulla base di una semplice proposta: prima presentare audit e piano, poi attendere approvazione.
+Prima della convergenza, i protagonisti sono impegnati in attività diverse:
+- **Lance** indaga anomalie minori della città, con un taglio da casi SCP.
+- **Nox** si occupa di usi magici non regolamentati, forse influenzati dai Kairos.
+- **Saul** è impegnato in affari loschi.
+- **Rio** è descritto mentre è a cena prima dell'evento.
 
-### Conseguenza pratica
-Il vecchio repository è una riserva tecnica, non un vincolo creativo. La continuità va garantita con il nuovo canone, non con la fedeltà alle vecchie scene.
+Tutti conoscono i Kairos tranne Saul. Nox possiede conoscenze accademiche; Lance ha una conoscenza militare; Saul li chiama in modo improprio «mostri» o «demoni» e sa soltanto che mordono e vanno eliminati.
 
-## 2. Apertura della demo: dettagli aggiuntivi dell'incontro Lance–Rio
+La convergenza nasce da una situazione che interrompe le normali attività e costringe i quattro a collaborare. Non decidono immediatamente di essere amici né partono con un obiettivo eroico comune già condiviso.
 
-### Confermato nella conversazione dell'11 novembre
-L'apertura parte con Lance giocabile in ricognizione. Ha notato anomalie nella zona e sta indagando per conto proprio. L'incontro con Rio nasce da un equivoco plausibile, non da una coincidenza comica forzata.
+## 2. Apertura giocabile: Lance in ricognizione
 
-La composizione scelta combina due idee (opzioni D e B discusse nella conversazione):
-- Rio è intento a rovistare tra resti organici e materiali contaminati.
-- La sua Masca non deve essere immediatamente identificabile dal giocatore come una maschera particolare o come un elemento già spiegato dal lore.
-- Da lontano, la postura e ciò che Rio sta facendo possono farlo sembrare una creatura anomala.
-- Rio è completamente assorto nella propria attività e non si accorge di Lance.
-- Lance osserva la scena e interpreta Rio come la possibile anomalia che stava cercando.
-- Il giocatore deve poter comprendere l'equivoco prima che inizi il dialogo: vede che Lance sta leggendo la situazione come una minaccia, mentre Rio è semplicemente concentrato su ciò che ha trovato.
+### Decisioni confermate l'11 novembre
+- Il giocatore inizia direttamente con Lance giocabile.
+- Lance sta svolgendo una ricognizione autonoma: ha notato personalmente stranezze nella zona e ha deciso di investigare.
+- Non è un incarico ufficiale per Libra Corp.
+- Il gameplay introduce movimento, telecamera e interazione attraverso le azioni di ricognizione.
+- Lance osserva accessi, pericoli, coperture, tracce e possibili anomalie.
 
-### Indicazioni di regia
-- Non spiegare subito che Rio è una Masca e non usare la scena per impartire al giocatore una lezione sul mondo.
-- Lasciare che siano postura, distanza, animazioni e contesto ambientale a generare il fraintendimento.
-- Rio non deve interrompere immediatamente ciò che sta facendo per salutare o presentarsi: in questo momento non ha ancora notato Lance.
-- Lance non deve sembrare sciocco o incompetente. Sta formulando un'ipotesi ragionevole sulla base di informazioni incomplete.
-- Il dettaglio preciso di come Lance interrompa o affronti Rio resta da decidere: non è stata fissata una soluzione definitiva tra intimazione diretta, sorpresa o tentativo di immobilizzarlo.
+### Primo incontro con Rio: combinazione D+B
+- Rio è intento a rovistare tra resti organici e materiali contaminati, in un edificio.
+- La Masca non deve essere immediatamente riconoscibile o spiegata.
+- Da lontano, postura e attività di Rio possono farlo sembrare una creatura anomala.
+- Rio è assorto in ciò che sta facendo e non si accorge di Lance.
+- Lance interpreta Rio come la possibile anomalia che stava cercando.
+- Il giocatore deve poter comprendere l'equivoco prima che venga spiegato.
+- Lance non deve apparire stupido: la sua ipotesi nasce da informazioni incomplete e da una situazione ambigua.
 
-## 3. La Masca di Rio e il segreto del giocatore
+**Ancora aperto:** Lance interrompe Rio con un'intimazione diretta oppure tenta di sorprenderlo e immobilizzarlo. Non è stata scelta una soluzione definitiva.
 
-### Confermato
-- Il giocatore deve poter notare la Masca di Rio e incuriosirsi.
-- La scoperta è un dettaglio riservato al giocatore, non un'informazione che il party deve necessariamente commentare o conoscere in quel momento.
-- La scena non deve presupporre che il giocatore sappia già cosa siano le Masca, i Kairos o ODISPEL.
-- La curiosità deve nascere dall'osservazione di un elemento insolito e dalla possibilità di collegarlo in seguito ad altri indizi.
+## 3. Il reperto collegato alla Masca
 
-### Da preservare
-Non trasformare un segreto ambientale in una spiegazione anticipata. Il giocatore può sapere o sospettare qualcosa che gli altri personaggi ancora ignorano.
+**Scena opzionale, approvata l'11 novembre**
+- Il giocatore può imbattersi in un reperto collegato alla Masca.
+- Rio reagisce con curiosità consapevole, non con aggressività o puro istinto.
+- La scena deve essere privata del giocatore: gli altri personaggi non reagiscono e non interrompono.
+- Non deve esserci una spiegazione immediata del reperto.
+- Il giocatore non conosce ancora ODISPEL, le Masca o il significato dei Kairos.
+- Il legame con la Masca deve restare un indizio e una curiosità da ricordare.
 
-## 4. Esplorazione: percezioni dei personaggi
+Il dettaglio del reperto e la sua spiegazione completa non risultano definiti. Non inventare una descrizione precisa o una rivelazione.
 
-Il sistema di percezione passiva discusso l'11 novembre serve a dare personalità all'esplorazione senza costringere il giocatore a cambiare continuamente modalità o usare un sistema complesso.
+## 4. Accampamento e scherzo di Saul
 
-Quando un personaggio è alla guida o partecipa all'esplorazione, può notare elementi coerenti con la propria esperienza:
+Nelle conversazioni della serie è stata discussa una situazione di accampamento:
+- Lance stabilisce i turni di guardia e resta vigile.
+- Saul finge di dormire, ma in realtà esplora e prepara scherzi.
+- Saul usa trucchi e falsi segnali per sviare la ricognizione di Lance.
+- Nox studia.
+- Rio costruisce la propria tana/nido.
 
-| Personaggio | Ambito di attenzione | Esempi di elementi individuabili |
-|---|---|---|
-| Lance | Ricognizione militare | Munizioni, armi, coperture, tracce di combattimento, accessi e pericoli |
-| Nox | Ricerca magica e analisi | Oggetti magici, artefatti, fenomeni e tracce soprannaturali |
-| Saul | Ricchezze e curiosità | Denaro, oggetti di valore, nascondigli, cimeli e dettagli sospetti |
-| Rio | Percezione biologica/Kairos | Odori, secrezioni, tracce organiche, resti, passaggi e attività dei Kairos |
+### Scanner e falsi allarmi
+- Lance deve adattare scanner e ricognizione per distinguere minacce reali dagli scherzi di Saul.
+- La provocazione culmina nello sparo di Lance verso un sacco a pelo vuoto.
+- Saul non vuole confessare di essere l'autore: desidera che Lance e Nox arrivino autonomamente alla verità.
+- Per Saul lo scherzo è sia il piacere di provocare reazioni sia il piacere di progettare il trucco: preparazione, diversivo, tempismo ed esecuzione.
 
-### Regole di presentazione
-- Le percezioni devono essere passive o comunque poco invasive.
-- Non devono trasformarsi in quattro modalità obbligatorie di scansione.
-- La scoperta deve essere coerente con ciò che il personaggio può davvero sapere: Saul riconosce ricchezze e dettagli sospetti; Rio percepisce segnali biologici e Kairos; Nox interpreta fenomeni magici; Lance ragiona da ricognitore. Saul ha studiato magia da Nox in segreto: non confondere questa rivelazione narrativa con il suo modo di esplorare nella fase iniziale.
-- Gli indizi possono portare a oggetti curiosi, segreti e piccoli ritrovamenti, non soltanto a risorse utili.
-- L'esplorazione del quartiere urbano mezzo trasformato deve consentire di osservare, trovare segreti e ricostruire cosa è successo.
+### Rettifica su Rio
+Nelle prime formulazioni della scena erano stati associati a Rio commenti in linguaggio da streamer («Trending», «Unfollowed», «Log off»). Non vanno mantenuti nella continuità attuale: Rio è un'anomalia/Kairos e non deve essere scritto come un normale interlocutore umano che conversa con gli altri. Nella scena dell'accampamento la sua azione pertinente è costruire la tana/nido.
 
-### Archivio
-È stata accettata l'idea di un Archivio che conservi e riassuma le scoperte e le curiosità raccolte. Deve aiutare il giocatore a ritrovare ciò che ha scoperto, non diventare una fonte onnisciente che anticipa misteri non ancora risolti. La forma tecnica e il livello di dettaglio dell'Archivio restano da definire.
+## 5. Nidificazione: scena concreta del Capitolo 1
 
-## 5. Anomalie minori e ruolo di Lance
+**Decisioni approvate l'11 novembre**
+- Rio sta nidificando: è vulnerabile e difende il proprio nido.
+- Il nido usa muco e tentacoli come difese.
+- Saul, inesperto della biologia di Rio, prova a interagire/giocare come farebbe con un animale.
+- Rio reagisce alle intrusioni e Saul rischia di essere quasi catturato dal muco e dai tentacoli.
+- Nox spiega che durante la nidificazione Rio è vulnerabile e territoriale, e che le difese servono a proteggere il nido.
+- Saul interpreta male la reazione e minaccia Rio invece di comprenderne subito il comportamento.
+- Anche Nox deve rispettare distanze e comportamenti per non attivare le difese.
+- Rio accetta che Nox resti vicina quando lei rispetta le regole del nido.
 
-La ricognizione di Lance può introdurre una struttura investigativa leggera:
-- Lance osserva una zona e rileva elementi fuori posto.
-- Cerca di capire se siano tracce di una creatura, di un evento o di un'attività pericolosa.
-- Le anomalie non devono essere tutte dungeon o boss: alcune possono essere casi minori, fenomeni ambientali o tracce che il giocatore interpreta.
-- L'ispirazione SCP riguarda il gusto per anomalie e dossier, non l'obbligo di trasformare il gioco in una raccolta di missioni horror.
+### Regola di caratterizzazione
+L'imprinting con Nox non annulla la territorialità o le difese di Rio. Nox non riceve accesso illimitato e deve imparare a leggere i segnali. Fuori dalla nidificazione Rio torna più disponibile al contatto e al gioco; il gioco può iniziare con comportamenti animali e poi diventare fatto di interazioni strane e curiose. Rio non cerca di provocare deliberatamente gli altri: scopre le reazioni sociali in modo spontaneo.
 
-La competenza di Lance deve emergere da ciò che nota e da come valuta il rischio, non da lunghi monologhi esplicativi.
+## 6. Evoluzione del rapporto con Rio
 
-## 6. Dialoghi: regole di scrittura più precise
+- Inizialmente Rio non cerca spontaneamente Nox; le permette di avvicinarsi e studiarlo.
+- All'inizio limita il contatto fisico; in seguito accetta gradualmente di essere toccato.
+- Riconosce Lance, Saul e Nox come gruppo.
+- Ha però un imprinting con Nox: lei è il riferimento primario e viene protetta con una reazione più intensa se minacciata.
+- Nox comprende gradualmente la specificità del legame.
+- Lance e Saul cambiano atteggiamento sia grazie all'influenza di Nox sia attraverso le azioni di Rio.
+- Saul deve imparare a convivere con una creatura che non comprende; Lance deve superare la valutazione iniziale di Rio come minaccia da eliminare.
 
-### Preferenze espresse
-- Italiano naturale, parlato e idiomatico. Evitare calchi dall'inglese e frasi che sembrano tradotte.
-- Non far recitare ai personaggi la propria personalità: una battuta non deve annunciare che qualcuno è il sarcastico, il militare, il curioso o il guastafeste.
-- Privilegiare sottotesto, ritmo spontaneo, silenzi, interruzioni, reazioni e coerenza emotiva.
-- I personaggi devono comportarsi come persone in una situazione concreta, non come portavoce della propria scheda caratteriale.
-- Lance può cercare di controllare tre sconosciuti senza riuscirci sempre. Non è infallibile.
-- Nox può essere sbrigativa e avere temperamento.
-- Saul può essere ironico, ma non deve essere sempre quello che ha la battuta pronta o che capisce tutto.
-- Rio non va scritto come un normale interlocutore umano: nella versione attuale è un'anomalia/Kairos. La sua spontaneità e curiosità emergono da comportamenti, posture, esplorazione, reazioni e segnali non verbali, non da dialoghi domestici con Nox o Saul.
+## 7. Esplorazione del quartiere trasformato
 
-### Regia e coda delle scene
-È stata apprezzata una regia che non taglia immediatamente dopo l'ultima battuta. Lasciare una breve coda silenziosa in cui i personaggi continuano a fare ciò che stavano facendo può dare più verità alla scena di un'altra battuta aggiunta.
+Il quartiere della demo è urbano e mezzo trasformato: la città originale rimane riconoscibile, ma si intreccia con mutazioni e strutture Kairos.
 
-**Rettifica di continuità:** le scene domestiche di rifugio, i dialoghi Nox–Rio, Rio–Saul e i turni di guardia condivisi con Rio appartengono a iterazioni precedenti e non sono canonici nella demo attuale. Rio è un'anomalia/Kairos e non va trattato come un normale membro umano che conversa con il gruppo.
+Le percezioni sono prevalentemente passive e dipendono dal personaggio guida:
+- Saul nota ricchezze, bottini, oggetti di valore, nascondigli e curiosità.
+- Nox nota oggetti magici, artefatti e fenomeni soprannaturali.
+- Rio percepisce tracce biologiche, odori, secrezioni, nidi e attività Kairos.
+- Lance nota munizioni, armi, equipaggiamento, depositi e tracce tattiche.
 
-## 7. Il rapporto con Rio nella versione attuale
+Il personaggio commenta ciò che nota; il giocatore cerca il punto e interagisce. Non devono esserci radar, frecce o indicatori che rivelino automaticamente ogni scoperta. Alcuni ritrovamenti possono essere esclusivi della specializzazione, altri comuni.
 
-### Stato canonico
-- Lance inizialmente considera Rio una creatura imprevedibile e potenzialmente da eliminare. Durante la ricognizione equivoca e lo scambia per l'anomalia che sta cercando.
-- Nox vuole comprenderne la natura, ma deve imparare a rispettare distanze e comportamenti, soprattutto durante la nidificazione. Rio può accettarla se rispetta le sue regole.
-- Saul lo considera inizialmente una bestiaccia/mostro e usa appellativi impropri perché non ha né la conoscenza accademica di Nox né quella militare di Lance.
-- Rio è spontaneo e curioso, ma anche istintivo, territoriale e capace di difendere il nido. Non va trasformato in un provocatore deliberato come Saul.
-- Il rapporto tra questi personaggi non parte da una familiarità comica o domestica: si costruisce attraverso osservazione, incomprensioni, rispetto dei confini e collaborazione difficile.
+## 8. Nidi e dungeon della città
 
-### Scena del nido — Capitolo 1
-**DIREZIONE APPROVATA**
-- Rio sta nidificando ed è in una condizione vulnerabile, perciò mantiene difese attive.
-- Saul prova a giocare/interagire con lui senza comprenderne il comportamento.
-- Muco e tentacoli del nido lo respingono o lo tengono a distanza.
-- Nox spiega che Rio è vulnerabile durante la nidificazione e che quelle difese servono a proteggere il nido.
-- Saul interpreta male la situazione e reagisce minacciando Rio, invece di comprenderne subito il comportamento.
-- Nox deve rispettare a sua volta distanze e comportamenti necessari a non attivare le difese.
-- Rio può imparare ad accettare Nox quando lei rispetta tali limiti.
+- Ogni zona ha un nido che genera Kairos.
+- Ogni nido è protetto da élite e boss ed è la tana/dungeon del boss.
+- Ogni capitolo può contenere uno o più dungeon.
+- I nidi alterano la città: caverne dentro edifici, strutture sospese tra grattacieli, gravità alterata, labirinti e puzzle magici.
+- I boss possono generare strutture e mini-città con ecosistemi propri.
+- Il riferimento è una combinazione tra la città dei mostri di *Monster Allergy* e i Palace di *Persona*.
+- Dopo la neutralizzazione del nido alcune alterazioni restano: la zona può essere recuperata ma non torna necessariamente identica.
 
-La scena non deve essere trasformata in un dialogo amichevole tra Rio e Saul o in un momento da famiglia. Il suo valore è mostrare una creatura con bisogni, vulnerabilità e regole proprie, e tre persone che ancora non la comprendono allo stesso modo.
+## 9. Demo: vincoli di regia e produzione
 
-### Regole di scrittura
-- Non attribuire a Rio dialoghi umani o battute da compagno di party.
-- Le sue intenzioni devono essere leggibili attraverso comportamento, reazioni, curiosità, segnali corporei e azioni.
-- Nox può interpretare e spiegare ciò che osserva, ma non deve sapere tutto in anticipo.
-- Saul può essere comicamente inadeguato nel leggere Rio, ma la sua reazione deve restare coerente con il fatto che considera la creatura pericolosa.
-- Lance valuta il rischio da ricognitore e non concede fiducia immediata.
+- Durata approvata: **30–40 minuti**.
+- Niente cinematiche costose: il budget non lo consente e una struttura del genere potrebbe impedire al gioco di uscire.
+- La storia deve essere raccontata soprattutto tramite gameplay, ambiente, animazioni riutilizzabili e dialoghi normali.
+- La sequenza temporale proposta dall'assistente (8–10 minuti presentazione, 5–7 incontro/cataclisma, 4–5 collaborazione, 12–15 esplorazione, 2–3 segreto/finale) è una distribuzione indicativa, non una scaletta rigida confermata dall'utente.
 
-## 8. Un progetto narrativo precedente da non confondere con la demo attuale
+## 10. Elementi non recuperati o non decisi
 
-In una conversazione del 19 ottobre era stato descritto un progetto narrativo separato nell'universo di ODISPEL, con esattamente quattro protagonisti indicati come **Ferri, Zecca, Nox e Saul**. La discussione lo descriveva come un RPG 3D a turni story-driven, in una metropoli moderna sotto una cupola, con neon e magia nascosta, tono assurdo/criminale/azione.
-
-Erano emersi:
-- quattro protagonisti provenienti da quattro società, organizzazioni o mondi differenti e in conflitto;
-- una situazione drammatica iniziale che li costringeva a collaborare;
-- un sistema chiamato **Prestigi**, ipotizzato come trasformazioni narrative in grado di cambiare classe, arma, abilità e combattimento;
-- un'idea di Zecca-giullare con falce, che era però soltanto un'ipotesi.
-
-### Stato
-Questo materiale va conservato come traccia storica di un progetto/iterazione precedente. Non assumere che Ferri e Zecca siano nomi alternativi di Lance e Rio, né che il sistema Prestigi sia parte della demo attuale. La relazione precisa tra quel progetto e la versione corrente di ODISPEL non è stata chiarita nei dettagli recuperati. In caso di riutilizzo, chiedere o verificare il contesto prima di fonderli.
-
-## 9. Questioni da tenere aperte
-
-1. Come Lance interrompe Rio durante il primo incontro: intimazione, sorpresa o tentativo di immobilizzarlo.
-2. Quali dettagli visivi rendono la Masca riconoscibile al giocatore senza spiegarla.
-3. Quali scoperte vengono registrate nell'Archivio e come si distinguono fatti, ipotesi e curiosità.
-4. Quanto spesso le percezioni passive producono indizi, oggetti o segreti, evitando che diventino notifiche continue.
-5. Quali anomalie minori sono presenti nel quartiere della demo e quali sono soltanto elementi ambientali.
-6. Quale sia il rapporto esatto tra il progetto narrativo con Ferri e Zecca e la versione attuale con Lance e Rio.
-7. Quali dialoghi delle vecchie iterazioni possano essere recuperati dopo una revisione, senza copiare scene che non corrispondono più alla nuova storia.
-
-## 10. Regola conclusiva
-
-Questo supplemento non autorizza a espandere automaticamente la demo. La demo resta un'esperienza da 30–40 minuti, realizzabile da una persona senza budget per cinematiche costose. Ogni dettaglio aggiunto deve servire a presentare i personaggi, rendere esplorabile il quartiere, costruire curiosità o far avanzare l'incontro iniziale.
-
-**Priorità: coerenza narrativa, chiarezza per il giocatore, produzione sostenibile.**
+- Battute complete della scena dell'accampamento, oltre alla struttura descritta.
+- Testo preciso di Lance quando affronta Rio.
+- Identità e descrizione completa del reperto.
+- Missione principale che unisce i quattro.
+- Nido dominante e boss della demo.
+- Esito preciso della scena del sacco a pelo e relativa punizione, oltre al fatto che Lance spara verso il sacco vuoto.
+- Non aggiungere dialoghi umani a Rio per completare le scene.
