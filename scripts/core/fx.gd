@@ -132,3 +132,27 @@ func _process(_d: float) -> void:
 		enemy_time = min(1.0, enemy_time + 0.08)
 	elif t < _slow_until:
 		enemy_time = _slow_factor
+
+## SOVRACCARICA: esplosione che sbilancia e lancia tutto ciò che è vicino.
+func overcharge_blast(pos: Vector3, source: Node) -> void:
+	ring(pos, Color(1, 0.85, 0.2, 0.9), 4.0, 0.35)
+	sparks(pos, Vector3.UP, Color(1, 0.85, 0.2), 18, 10.0)
+	sound("break", 0.8)
+	shake(0.7)
+	hitstop(110)
+	stat("overcharge_blasts")
+	var tree := get_tree()
+	for e in tree.get_nodes_in_group("enemies"):
+		if e == source or e.is_dead():
+			continue
+		var to: Vector3 = e.global_position - pos
+		to.y = 0
+		if to.length() < 4.0:
+			e.receive_hit({"dmg": 22.0, "poise": 60.0, "dir": to.normalized() if to.length() > 0.1 else Vector3.FORWARD,
+				"knock": 9.0, "launch": 7.0, "form": -1, "move": "blast", "env": true})
+	for p in tree.get_nodes_in_group("props"):
+		if p == source:
+			continue
+		var to2: Vector3 = p.center() - pos
+		if to2.length() < 4.0 and p.has_method("launch"):
+			p.launch((to2.normalized() + Vector3(0, 0.6, 0)) * 14.0, null)
