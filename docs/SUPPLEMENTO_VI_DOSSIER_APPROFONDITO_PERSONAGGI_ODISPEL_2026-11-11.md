@@ -703,6 +703,27 @@ La scena iniziale lo colloca a cena prima dell'evento. Il giocatore non conosce 
 
 Rio riceve una Masca contenente un Kairos. Il Kairos era originariamente debole e primitivo. La fusione casuale con Rio produce un ibrido molto più potente di quanto sarebbe stato il Kairos da solo.
 
+## 21.1-bis Regola generale delle Masca
+
+La regola generale emersa è che alcune persone ricevono misteriosamente una Masca e, indossandola, ottengono poteri legati al Kairos contenuto. Gli esiti possibili non sono tutti uguali:
+- il Kairos può prendere il controllo della volontà e del corpo;
+- la maschera può diventare impossibile da rimuovere e la persona può perdere la propria vecchia identità;
+- in altri casi chi la indossa mantiene il controllo e può indossarla o toglierla a piacimento.
+
+Chi mantiene il controllo può usare i poteri per i propri scopi e diventare vigilante o antagonista. Non è stato stabilito che ogni portatore segua lo stesso percorso morale.
+
+## 21.1-ter La Masca di Rio: contenitore, Core e punto vitale
+
+Nel caso specifico di Rio, la Masca è il contenitore del Kairos e il punto vitale della creatura. Il Kairos controlla ormai il corpo e la Masca è strettamente integrata:
+- adesione mucosa al corpo;
+- rinforzi e involucri magici;
+- difese concentrate intorno alla Masca;
+- Core concentrato in quella zona.
+
+La Masca non è un semplice accessorio che si può sfilare senza conseguenze. Perforarla, spaccarla o frantumarla provoca danni reali al Kairos. La decapitazione, invece, è stata indicata come un danno da cui la creatura può recuperare.
+
+È stata discussa la possibilità che separare la Masca senza distruggerla possa permettere a Rio di tornare umano. Tuttavia la separazione è quasi impossibile proprio per l'integrazione biologica, i rinforzi magici e le difese. Va trattata come possibilità teorica, non come soluzione semplice o già disponibile al party.
+
 ## 21.2 Coscienza dell'host
 
 Nella prima formulazione:
