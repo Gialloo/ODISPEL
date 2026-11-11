@@ -175,3 +175,8 @@ Entrambi partono dalla paura/diffidenza e da una lettura incompleta della creatu
 ## 8. Dossier approfondito
 
 Questo supplemento è integrato dal [Supplemento VI — Dossier approfondito dei quattro protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md), che espande in particolare l'epilogo di Lance da istruttore con un solo cadetto, il rapporto di Nox con il padre e la magia, le sfumature di Saul tra sincerità e opportunismo, e l'identità aliena/adattiva di Rio.
+
+
+## 9. Manuale esteso e dettagli di continuità
+
+Il riferimento completo per i personaggi è il [Supplemento VI — Manuale approfondito dei protagonisti](SUPPLEMENTO_VI_DOSSIER_APPROFONDITO_PERSONAGGI_ODISPEL_2026-11-11.md). Lì sono raccolti in modo esteso i retroscena di Lance, le sue memorie e capacità One Man Army, la magia e la riserva d'essenza di Nox, il talento e le tecniche di Saul (mani spirituali e sipari dimensionali), la fusione e l'evoluzione biologica di Rio, le dinamiche di gruppo e i messaggi tematici. Le versioni precedenti di Rio sono documentate come evoluzione della discussione, non come autorizzazione a ripristinare dialoghi umani nel canone corrente.
