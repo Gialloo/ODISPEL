@@ -33,6 +33,53 @@ func _ready() -> void:
 		a.bus = "Master"
 		add_child(a)
 		_players.append(a)
+	get_tree().node_added.connect(_on_node_added)
+
+# ------------------------------------------------------------ stile (0.11)
+## Look da fumetto: ombre a blocchi (toon) e contorno nero spesso sui corpi solidi.
+## Si applica da solo a ogni mesh che entra in scena: niente da cambiare nei singoli script.
+## Il contorno è uno "scafo rovesciato" (seconda passata ingrandita, facce dietro): costa poco anche su telefono.
+var style_on := true
+var outline_width := 0.07
+var _outline_mats := {}
+
+func outline_mat(w: float) -> StandardMaterial3D:
+	return _outline(w)
+
+func _outline(w: float) -> StandardMaterial3D:
+	var k := snappedf(w, 0.0025)
+	if not _outline_mats.has(k):
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.cull_mode = BaseMaterial3D.CULL_FRONT
+		m.grow = true
+		m.grow_amount = k
+		m.albedo_color = Color(0.03, 0.02, 0.05)
+		_outline_mats[k] = m
+	return _outline_mats[k]
+
+func _on_node_added(n: Node) -> void:
+	if style_on and n is MeshInstance3D:
+		_style_mesh.call_deferred(n)
+
+func _style_mesh(mi: MeshInstance3D) -> void:
+	if not is_instance_valid(mi) or mi.get_meta("no_style", false):
+		return
+	var m = mi.material_override
+	if not (m is StandardMaterial3D):
+		return
+	if m.shading_mode == BaseMaterial3D.SHADING_MODE_UNSHADED or m.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+		return
+	m.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
+	m.roughness = 1.0
+	if m.next_pass == null and not mi.get_meta("no_outline", false):
+		var aabb := mi.get_aabb()
+		var big := aabb.size.x * mi.scale.x > 9.0 or aabb.size.z * mi.scale.z > 9.0
+		if not big:
+			# contorno proporzionato: più sottile sugli oggetti piccoli (scaglie, detriti)
+			var sz := aabb.size.length()
+			m.next_pass = _outline(clampf(outline_width * clampf(sz / 1.6, 0.35, 1.0), 0.012, outline_width))
 
 ## Contatori per i test e il laboratorio.
 var stats := {}

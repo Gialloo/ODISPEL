@@ -108,7 +108,7 @@ func _build_visual() -> void:
 	visual = Node3D.new()
 	add_child(visual)
 	_body_mat = StandardMaterial3D.new()
-	_body_mat.albedo_color = Color(0.12, 0.13, 0.2)
+	_body_mat.albedo_color = Color(0.2, 0.1, 0.17)   # 0.11: sagoma scura che stacca sul verde acqua
 	_band_mat = StandardMaterial3D.new()
 	_band_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_band_mat.albedo_color = M.FORM_COLOR[0]

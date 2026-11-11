@@ -73,3 +73,6 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 - 24 potenziamenti (nuova famiglia Corpo), schermata di scelta che si chiude sempre (`tests/choice_10.gd`).
 - IMPACT +20% di danno; passaggi tra i colpi più rapidi, coda dei tasti più lunga, ripartenza in corsa a fine colpo.
 - Versione PC: preset "Windows", `releases/OVERLOAD pc vX.Y.Z.zip` -> canale itch `windows-overload`.
+
+## 0.11
+- Look da fumetto al tramonto: ombre a blocchi e contorni neri automatici (`FX._style_mesh`, si spegne con `FX.style_on`), cielo e nebbia caldi, città di sfondo in MultiMesh (`arena._skyline`).
