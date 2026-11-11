@@ -1,0 +1,182 @@
+{
+  "_nota": "Testi della prova. Si possono cambiare qui senza toccare il codice. Righe: {chi, faccia, testo} oppure {narra}. Regia: {regia: ...}. Balloon: {balloon: chi, testo, s}. Scelte: {scelta: [{testo, vai}]}. Facce: neutro, serio, sorpreso, arrabbiato, sfotto, felice, triste.",
+
+  "vicolo": {
+    "punti": [
+      {"id": "bossoli", "chi": "lance", "pos": [2.2, -9.0], "avviso": {"lance": "Odore di cordite. Recente."}, "scena": "bossoli", "scoperta": "Bossoli fusi nel muro"},
+      {"id": "distributore", "chi": "tutti", "pos": [-1.9, -17.0], "avviso": {"lance": "Quel distributore ronza. Non dovrebbe."}, "scena": "distributore", "scoperta": "Distributore acceso senza corrente"},
+      {"id": "sacca", "chi": "lance", "pos": [1.9, -26.6], "avviso": {"lance": "Qui qualcuno ha nascosto roba. Si capisce da quanto non si vede."}, "scena": "sacca", "scoperta": "Sacca militare abbandonata"}
+    ]
+  },
+
+  "quartiere": {
+    "punti": [
+      {"id": "piastrella", "chi": "saul", "pos": [101.0, -13.8], "avviso": {"saul": "Sento odore di soldi. Non chiedetemi come."}, "scena": "piastrella", "scoperta": "Busta di contanti sotto una piastrella"},
+      {"id": "glifo", "chi": "nox", "pos": [118.0, -20.0], "avviso": {"nox": "Un residuo magico. Qualcuno ha lanciato senza permesso."}, "scena": "glifo", "scoperta": "Glifo non registrato (copiato)"},
+      {"id": "grata", "chi": "rio", "pos": [112.0, 2.0], "avviso": {"rio": "Sniff... sniff."}, "scena": "grata", "scoperta": "Qualcosa vive sotto la grata"},
+      {"id": "transenna", "chi": "lance", "pos": [122.0, -1.6], "avviso": {"lance": "Transenna della polizia. Lasciata di corsa."}, "scena": "transenna", "scoperta": "Scudo antisommossa graffiato"},
+      {"id": "manifesto", "chi": "tutti", "pos": [106.0, 4.0],
+        "avviso": {"lance": "Un manifesto nuovo. Gli altri sono vecchi di mesi.", "nox": "Quel foglio è stato attaccato stanotte.", "saul": "Un annuncio! Adoro gli annunci.", "rio": "Sniff?"},
+        "scena": "manifesto", "scoperta": "Manifesto: gatto scomparso"},
+      {"id": "palazzo", "chi": "tutti", "pos": [115.0, -15.0],
+        "avviso": {"lance": "Quel palazzo. Guardate in alto.", "nox": "L'alterazione parte da lì.", "saul": "Il condominio ha fatto la muffa.", "rio": "Krrr..."},
+        "scena": "palazzo", "scoperta": "Palazzo alterato dai Kairos"}
+    ],
+    "chiacchiere": [
+      [{"balloon": "saul", "testo": "Nox, quella cosa ci sta sempre così attaccata?", "s": 2.6}, {"balloon": "nox", "testo": "Si chiama Rio. E sì.", "s": 2.2}, {"balloon": "rio", "testo": "...", "s": 1.6}],
+      [{"balloon": "lance", "testo": "Restate in fila. Non disperdetevi.", "s": 2.4}, {"balloon": "saul", "testo": "Sissignore. Posso disperdermi un pochino?", "s": 2.6}, {"balloon": "lance", "testo": "No.", "s": 1.4}],
+      [{"balloon": "nox", "testo": "Lance, quando hai mangiato l'ultima volta?", "s": 2.4}, {"balloon": "lance", "testo": "Ieri.", "s": 1.4}, {"balloon": "nox", "testo": "Ieri quando?", "s": 1.6}, {"balloon": "lance", "testo": "...Ieri.", "s": 1.6}],
+      [{"balloon": "rio", "testo": "Sniff.", "s": 1.4}, {"balloon": "saul", "testo": "Mi ha annusato. Devo preoccuparmi?", "s": 2.4}, {"balloon": "nox", "testo": "Ti sta solo memorizzando.", "s": 2.2}, {"balloon": "saul", "testo": "Quindi sì.", "s": 1.6}]
+    ]
+  },
+
+  "scene": {
+    "intro": [
+      {"narra": "Periferia, notte. Le luci di questa strada saltano da tre notti. Sempre alla stessa ora."},
+      {"chi": "lance", "faccia": "serio", "testo": "Nessun incarico, nessun rapporto. Solo io e un vicolo che non torna."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Controllo, prendo nota, me ne vado."},
+      {"narra": "Muoviti con lo stick (o con WASD). Quando Lance nota qualcosa lo dice ad alta voce: il punto devi trovarlo tu, poi premi ESAMINA."}
+    ],
+
+    "bossoli": [
+      {"narra": "Nel mattone ci sono tre bossoli. Non conficcati: fusi, come cera colata."},
+      {"chi": "lance", "faccia": "sorpreso", "testo": "Niente bruciature intorno. Il calore non è passato da qui."},
+      {"chi": "lance", "faccia": "serio", "testo": "Li tengo. Prima o poi qualcuno mi spiegherà come si fa."}
+    ],
+    "distributore": [
+      {"narra": "Il distributore è acceso. La spina pende a terra, staccata."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Corrente da nessuna parte. Luce dappertutto."},
+      {"chi": "lance", "faccia": "sfotto", "testo": "Già che ci sono, una lattina."},
+      {"regia": "onomato", "testo": "CLANG"},
+      {"narra": "Cade una lattina. È calda. Molto calda."},
+      {"chi": "lance", "faccia": "serio", "testo": "...Annotato. Niente lattina."}
+    ],
+    "sacca": [
+      {"narra": "Dietro il cassonetto c'è una sacca militare. Le cinghie sono tagliate, non slacciate."},
+      {"chi": "lance", "faccia": "serio", "testo": "Torcia tattica, nastro, un caricatore vuoto. Chi l'ha lasciata stava scappando."},
+      {"chi": "lance", "faccia": "neutro", "testo": "La torcia funziona. A me serve più che a lui."}
+    ],
+
+    "sagoma": [
+      {"balloon": "lance", "testo": "Movimento. In fondo, nel palazzo.", "s": 2.8}
+    ],
+
+    "rio": [
+      {"regia": "barre", "on": true},
+      {"regia": "lance", "z": -38.4, "s": 1.0},
+      {"regia": "camera", "a": "rio_lontano", "s": 1.4},
+      {"regia": "onomato", "testo": "CRUNCH"},
+      {"narra": "Una sagoma china su un mucchio di resti. Rovista. Non si accorge di niente."},
+      {"regia": "camera", "a": "rio_vicino", "s": 1.0},
+      {"regia": "rio", "azione": "annusa"},
+      {"narra": "Annusa ogni pezzo, lo gira, lo mette da parte. Con cura, come chi cerca una cosa precisa."},
+      {"regia": "rio", "azione": "rovista"},
+      {"regia": "camera", "a": "lance_volto", "s": 0.8},
+      {"chi": "lance", "faccia": "serio", "testo": "Eccola. L'anomalia che cercavo."},
+      {"chi": "lance", "faccia": "arrabbiato", "testo": "Si sta mangiando quello che resta. Non la lascio andare."},
+      {"scelta": [
+        {"testo": "Intimagli di fermarsi", "vai": "rio_intima"},
+        {"testo": "Sorprendilo alle spalle", "vai": "rio_sorprendi"}
+      ]}
+    ],
+    "rio_intima": [
+      {"chi": "lance", "faccia": "arrabbiato", "testo": "Tu. Fermo. Mani dove le vedo."},
+      {"regia": "camera", "a": "rio_vicino", "s": 0.6},
+      {"regia": "rio", "azione": "ferma"},
+      {"regia": "attesa", "s": 0.7},
+      {"regia": "rio", "azione": "rovista"},
+      {"chi": "rio", "faccia": "neutro", "testo": "..."},
+      {"narra": "Niente. Continua a rovistare come se Lance fosse un lampione."},
+      {"chi": "lance", "faccia": "sorpreso", "testo": "...Mi stai ignorando?"},
+      {"regia": "rio", "azione": "gira"},
+      {"chi": "rio", "faccia": "felice", "testo": "Sniff. Sniff."},
+      {"narra": "Si volta e gli porge un pezzo di qualcosa di molle e violaceo. Come un regalo."},
+      {"chi": "lance", "faccia": "serio", "testo": "No. Grazie."},
+      {"vai": "rio_fine"}
+    ],
+    "rio_sorprendi": [
+      {"regia": "camera", "a": "due", "s": 0.8},
+      {"narra": "Lance avanza nel buio, un passo alla volta. Allunga la mano."},
+      {"regia": "lance", "z": -43.6, "s": 1.6},
+      {"regia": "rio", "azione": "salta"},
+      {"regia": "onomato", "testo": "SWISH"},
+      {"regia": "lampo"},
+      {"chi": "rio", "faccia": "sorpreso", "testo": "Krrr?"},
+      {"narra": "La sagoma scatta via prima del contatto e atterra sulle casse. Lo fissa, con la testa inclinata."},
+      {"chi": "lance", "faccia": "sorpreso", "testo": "Troppo veloce per essere umano."},
+      {"regia": "rio", "azione": "torna"},
+      {"narra": "Poi torna al suo mucchio. Come se niente fosse."},
+      {"chi": "lance", "faccia": "sfotto", "testo": "...E adesso mi ignora di nuovo."},
+      {"vai": "rio_fine"}
+    ],
+    "rio_fine": [
+      {"regia": "luce"},
+      {"regia": "camera", "a": "rio_vicino", "s": 0.9},
+      {"narra": "Sotto la luce la sagoma è un ragazzo. Felpa viola, capelli bianchi dritti. Gli occhi non sono del tutto umani."},
+      {"chi": "lance", "faccia": "serio", "testo": "Non attacca. Non mangia. Cerca qualcosa."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Va bene. Allora resto a guardare cosa trova."},
+      {"regia": "barre", "on": false}
+    ],
+
+    "quartiere_intro": [
+      {"balloon": "saul", "testo": "Quindi è questo il mostro. Morde?", "s": 2.6},
+      {"balloon": "nox", "testo": "Non è un mostro.", "s": 2.0},
+      {"balloon": "rio", "testo": "Sniff.", "s": 1.4},
+      {"balloon": "lance", "testo": "Morde. Tenetelo d'occhio.", "s": 2.4},
+      {"narra": "Chi guida il gruppo nota cose diverse. Premi CAMBIA (o Q) per cambiare chi guida: ognuno trova quello che sa cercare."}
+    ],
+
+    "piastrella": [
+      {"narra": "Dietro l'edicola una piastrella suona vuota."},
+      {"chi": "saul", "faccia": "felice", "testo": "Le piastrelle non dovrebbero suonare. Questa canta."},
+      {"narra": "Sotto c'è una busta: banconote arrotolate, tenute da un elastico."},
+      {"chi": "saul", "faccia": "sfotto", "testo": "Non è rubare. È trovare in anticipo."}
+    ],
+    "glifo": [
+      {"narra": "Sulla saracinesca, quasi invisibile, c'è un glifo inciso a caldo."},
+      {"chi": "nox", "faccia": "serio", "testo": "Nessun timbro di registro. Lavoro pulito, mano esperta."},
+      {"chi": "nox", "faccia": "sorpreso", "testo": "Però i bordi sono... cresciuti. Come se il glifo si fosse nutrito di qualcosa."},
+      {"chi": "nox", "faccia": "neutro", "testo": "Lo copio. Lo studio con calma."}
+    ],
+    "grata": [
+      {"narra": "Rio si accuccia sulla grata e non si muove più."},
+      {"chi": "rio", "faccia": "serio", "testo": "Krrr."},
+      {"narra": "Da sotto sale un odore dolce e marcio. Sul ferro ci sono filamenti viola, ancora umidi."},
+      {"narra": "Rio guarda giù a lungo, poi si gira verso il gruppo. Come per dire: di qui."}
+    ],
+    "transenna": [
+      {"narra": "Dietro la transenna c'è uno scudo antisommossa, segnato da tre solchi paralleli."},
+      {"chi": "lance", "faccia": "serio", "testo": "Artigli. O qualcosa che taglia allo stesso modo."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Lo scudo è ancora buono. Lo prendo."}
+    ],
+    "manifesto_lance": [
+      {"narra": "Un manifesto: «CERCASI GATTO. Risponde al nome di Bistecca.»"},
+      {"chi": "lance", "faccia": "serio", "testo": "Tre animali spariti in una settimana, nella stessa via. Non è un caso."}
+    ],
+    "manifesto_nox": [
+      {"narra": "Un manifesto: «CERCASI GATTO. Risponde al nome di Bistecca.»"},
+      {"chi": "nox", "faccia": "triste", "testo": "Povera bestia. Lo segno: potrebbe essere collegato."}
+    ],
+    "manifesto_saul": [
+      {"narra": "Un manifesto: «CERCASI GATTO. Risponde al nome di Bistecca.»"},
+      {"chi": "saul", "faccia": "sfotto", "testo": "Bistecca. Chi chiama un gatto Bistecca un po' se l'è cercata."},
+      {"chi": "nox", "faccia": "arrabbiato", "testo": "Saul."},
+      {"chi": "saul", "faccia": "felice", "testo": "Scherzo! Lo cerchiamo. C'è una ricompensa?"}
+    ],
+    "manifesto_rio": [
+      {"narra": "Un manifesto: «CERCASI GATTO. Risponde al nome di Bistecca.»"},
+      {"narra": "Rio annusa il foglio, poi la strada. Segue una pista per due passi e si ferma, deluso."},
+      {"chi": "rio", "faccia": "triste", "testo": "..."}
+    ],
+    "palazzo": [
+      {"narra": "Il palazzo è cresciuto. Escrescenze viola gonfie tra i balconi, un ponte di carne tesa fino al tetto di fronte."},
+      {"chi": "nox", "faccia": "serio", "testo": "Un'alterazione. La città è ancora lì sotto, vedete? Finestre, numeri civici, tende."},
+      {"chi": "saul", "faccia": "sfotto", "testo": "Io con quella muffa non pagherei l'affitto."},
+      {"chi": "lance", "faccia": "serio", "testo": "Viene tutto da lì. Prima o poi dovremo entrarci."}
+    ],
+
+    "fine_prova": [
+      {"narra": "Hai trovato tutto quello che c'era in questa prova. Puoi continuare a girare e a cambiare guida per sentire i commenti degli altri."}
+    ]
+  }
+}
