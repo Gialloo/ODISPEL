@@ -770,7 +770,7 @@ Il riferimento di tono approvato è **Krieg di Borderlands 2**: comicità e viol
 
 Nella prima versione Rio/Kairos parla pochissimo e usa frammenti di linguaggio social e meme, come «Follow», «Hype», «Git Gud», «Get Rekt», «K», «Kappa», «Rip», «LOL» e «lmao».
 
-Queste espressioni non devono essere trattate come normali dialoghi conversazionali tra compagni. Sono residui del passato umano reinterpretati da una creatura che non comprende pienamente il contesto sociale.
+Il riferimento usato per la comunicazione è Inumaki: Rio è estremamente taciturno e comunica con pochissime parole o frammenti. Queste espressioni non devono essere trattate come normali dialoghi conversazionali tra compagni. Sono residui del passato umano reinterpretati da una creatura che non comprende pienamente il contesto sociale.
 
 Nella scena dell'accampamento sono emersi frammenti come «Trending», «Unfollow», «Unsubscribed» e «Log off». La loro funzione è mostrare un modo alieno e frammentario di registrare o commentare le reazioni, non trasformare Rio in un normale streamer umano.
 
