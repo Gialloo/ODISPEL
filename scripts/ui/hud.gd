@@ -24,6 +24,12 @@ var _wave_label: Label
 var _ups_label: Label
 var _choice: Control
 var _over: Control
+var _menu: Control
+var _score_label: Label
+var _combo_label: Label
+var _circle_label: Label
+var _score_shown := 0.0
+var _notches: Array = []
 const FAM_COL := {"Blade": Color(0.35, 0.95, 1.0), "Impact": Color(1.0, 0.6, 0.25), "Vector": Color(0.8, 0.5, 1.0),
 	"Manipolazione": Color(0.7, 0.95, 1.0), "Elementi": Color(1.0, 0.85, 0.3), "Ambiente": Color(0.75, 0.6, 0.4), "Combo": Color(0.5, 1.0, 0.7)}
 const OV_W := 316.0
@@ -62,6 +68,7 @@ func _ready() -> void:
 		notch.size = Vector2(2, 14)
 		notch.color = Color(1, 1, 1, 0.7)
 		add_child(notch)
+		_notches.append(notch)
 	_ov_label = _label("OVERLOAD", 14)
 	_ov_label.position = Vector2(352, 38)
 	add_child(_ov_label)
@@ -90,7 +97,180 @@ func _ready() -> void:
 	_center_msg.position = Vector2(-300, -120)
 	_center_msg.size = Vector2(600, 60)
 	add_child(_center_msg)
+	# punteggio in alto a destra (sotto l'ingranaggio), combo in corso sotto
+	_score_label = _label("0", 30)
+	_score_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_score_label.position = Vector2(-420, 76)
+	_score_label.size = Vector2(400, 40)
+	add_child(_score_label)
+	_combo_label = _label("", 22)
+	_combo_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_combo_label.position = Vector2(-420, 112)
+	_combo_label.size = Vector2(400, 30)
+	_combo_label.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+	add_child(_combo_label)
+	_circle_label = _label("", 26)
+	_circle_label.set_anchors_preset(Control.PRESET_CENTER)
+	_circle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_circle_label.position = Vector2(-300, 60)
+	_circle_label.size = Vector2(600, 40)
+	_circle_label.add_theme_color_override("font_color", Color(0.45, 0.9, 1.0))
+	add_child(_circle_label)
 	_set_form(0)
+
+func _button(text: String, col: Color, w := 380.0, h := 100.0, fs := 32) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_font_override("font", _font)
+	b.add_theme_font_size_override("font_size", fs)
+	b.custom_minimum_size = Vector2(w, h)
+	var bs := StyleBoxFlat.new()
+	bs.bg_color = Color(col, 0.22)
+	bs.border_color = col
+	bs.set_border_width_all(4)
+	bs.set_corner_radius_all(12)
+	b.add_theme_stylebox_override("normal", bs)
+	b.add_theme_stylebox_override("hover", bs)
+	var bp := bs.duplicate()
+	bp.bg_color = Color(col, 0.45)
+	b.add_theme_stylebox_override("pressed", bp)
+	return b
+
+func _screen(dim_a := 0.6) -> Control:
+	var c := Control.new()
+	c.process_mode = Node.PROCESS_MODE_ALWAYS
+	c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.03, 0.06, dim_a)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	c.add_child(dim)
+	return c
+
+func _centered_box(parent: Control, y: float, sep := 18) -> VBoxContainer:
+	var v := VBoxContainer.new()
+	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.offset_top = y
+	v.add_theme_constant_override("separation", sep)
+	parent.add_child(v)
+	return v
+
+func _centered(n: Control) -> CenterContainer:
+	var c := CenterContainer.new()
+	c.add_child(n)
+	return c
+
+# ------------------------------------------------------------ menu principale
+
+func open_menu() -> void:
+	close_screens()
+	_set_play_ui(false)
+	_menu = _screen(0.55)
+	var v := _centered_box(_menu, 0, 22)
+	var t := _label("OVERLOAD", 84)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	t.add_theme_color_override("font_color", Color(0.45, 0.95, 1.0))
+	v.add_child(t)
+	var rec := _label("RECORD  %d" % Run.best if Run.best > 0 else "ondate infinite · fai punti con abbattimenti e combo", 22)
+	rec.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rec.modulate.a = 0.8
+	v.add_child(rec)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 16)
+	v.add_child(gap)
+	var bn := _button("NUOVA PARTITA", Color(0.35, 0.95, 1.0), 440, 110, 36)
+	bn.pressed.connect(func(): get_parent().start_game())
+	v.add_child(_centered(bn))
+	var bo := _button("OPZIONI", Color(1, 1, 1), 440, 90, 30)
+	bo.pressed.connect(_open_options)
+	v.add_child(_centered(bo))
+	add_child(_menu)
+
+func _open_options() -> void:
+	if _menu:
+		_menu.queue_free()
+	_menu = _screen(0.75)
+	var v := _centered_box(_menu, 0, 14)
+	var t := _label("OPZIONI", 48)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(t)
+	var rows := [
+		["Sensibilità visuale", "look", 0.4, 2.5, 0.05],
+		["Distanza telecamera", "cam_dist", 3.5, 7.0, 0.1],
+		["Volume", "volume", 0.0, 1.0, 0.05],
+		["Scossa dello schermo", "shake", 0.0, 1.5, 0.05],
+	]
+	for r in rows:
+		v.add_child(_centered(_opt_row(r[0], r[1], r[2], r[3], r[4])))
+	var cb := CheckButton.new()
+	cb.text = "Visuale libera che si gira da sola"
+	cb.focus_mode = Control.FOCUS_NONE
+	cb.add_theme_font_override("font", _font)
+	cb.add_theme_font_size_override("font_size", 22)
+	cb.add_theme_constant_override("h_separation", 18)
+	cb.button_pressed = bool(Run.opt.auto_cam)
+	cb.toggled.connect(func(on): Run.opt.auto_cam = on)
+	v.add_child(_centered(cb))
+	var bb := _button("INDIETRO", Color(0.35, 0.95, 1.0), 360, 90, 30)
+	bb.pressed.connect(func():
+		Run.save_cfg()
+		Run.apply_opt()
+		if Run.running:
+			close_screens()
+		else:
+			open_menu())
+	v.add_child(_centered(bb))
+	add_child(_menu)
+
+func _opt_row(title: String, key: String, lo: float, hi: float, step: float) -> Control:
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 18)
+	var l := _label(title, 22)
+	l.custom_minimum_size = Vector2(330, 0)
+	h.add_child(l)
+	var sl := HSlider.new()
+	sl.min_value = lo
+	sl.max_value = hi
+	sl.step = step
+	sl.value = float(Run.opt[key])
+	sl.custom_minimum_size = Vector2(380, 56)
+	sl.focus_mode = Control.FOCUS_NONE
+	var grab := StyleBoxFlat.new()
+	grab.bg_color = Color(0.35, 0.95, 1.0, 0.6)
+	grab.content_margin_top = 8
+	grab.content_margin_bottom = 8
+	sl.add_theme_stylebox_override("slider", grab)
+	h.add_child(sl)
+	var val := _label("%.2f" % sl.value, 22)
+	val.custom_minimum_size = Vector2(80, 0)
+	h.add_child(val)
+	sl.value_changed.connect(func(x):
+		Run.opt[key] = x
+		val.text = "%.2f" % x
+		Run.apply_opt())
+	return h
+
+func close_screens() -> void:
+	for c in [_menu, _over, _choice]:
+		if c and is_instance_valid(c):
+			c.queue_free()
+	_menu = null
+	_over = null
+	_choice = null
+
+## Barre, punteggio e comandi touch solo mentre si gioca.
+func _set_play_ui(on: bool) -> void:
+	for n in [_hp_back, _hp_bar, _ov_back, _ov_bar, _ov_label, _info, _wave_label, _ups_label, _score_label, _combo_label, _circle_label]:
+		n.visible = on
+	for l in _forms:
+		l.visible = on
+	for n in _notches:
+		n.visible = on
+	if touch:
+		touch.visible = on and get_parent()._is_touch
 
 func _label(t: String, size: int) -> Label:
 	var l := Label.new()
@@ -113,6 +293,12 @@ func bind() -> void:
 	Run.choice_open.connect(_open_choice)
 	Run.choice_closed.connect(_refresh_ups)
 	Run.run_over.connect(_open_over)
+	Run.combo_banked.connect(func(hits, pts):
+		_combo_label.text = "COMBO %d  +%d" % [hits, pts]
+		_combo_label.modulate.a = 1.0
+		var tw := create_tween()
+		tw.tween_interval(1.0)
+		tw.tween_property(_combo_label, "modulate:a", 0.0, 0.4))
 	if touch:
 		touch.gear_pressed.connect(toggle_panel)
 
@@ -211,52 +397,41 @@ func _open_choice(opts: Array) -> void:
 	add_child(_choice)
 
 func _open_over(wave: int, kills: int) -> void:
-	_over = Control.new()
-	_over.process_mode = Node.PROCESS_MODE_ALWAYS
-	_over.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_over.add_child(dim)
+	close_screens()
+	if touch:
+		touch.visible = false
+	_over = _screen(0.6)
+	var v := _centered_box(_over, 0, 14)
 	var t := _label("A TERRA", 54)
-	t.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	t.position = Vector2(-300, -170)
-	t.size = Vector2(600, 70)
-	_over.add_child(t)
-	var s := _label("ondata %d   ·   abbattuti %d   ·   potenziamenti %d" % [wave, kills, Run.owned.size()], 24)
-	s.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	v.add_child(t)
+	var sc := _label("PUNTEGGIO  %d" % Run.score, 44)
+	sc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sc.add_theme_color_override("font_color", Color(1, 0.85, 0.3))
+	v.add_child(sc)
+	var rec := _label("NUOVO RECORD" if Run.score >= Run.best and Run.score > 0 else "record  %d" % Run.best, 24)
+	rec.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(rec)
+	var s := _label("ondata %d   ·   abbattuti %d   ·   combo %d (la più lunga %d)" % [wave, kills, Run.combos, Run.best_combo], 22)
 	s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	s.position = Vector2(-400, -90)
-	s.size = Vector2(800, 40)
-	_over.add_child(s)
-	var b := Button.new()
-	b.text = "RICOMINCIA"
-	b.add_theme_font_override("font", _font)
-	b.add_theme_font_size_override("font_size", 34)
-	b.custom_minimum_size = Vector2(380, 110)
-	b.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	b.position = Vector2(-190, -10)
-	b.size = Vector2(380, 110)
-	var bs := StyleBoxFlat.new()
-	bs.bg_color = Color(0.35, 0.95, 1.0, 0.25)
-	bs.border_color = Color(0.35, 0.95, 1.0)
-	bs.set_border_width_all(4)
-	bs.set_corner_radius_all(12)
-	b.add_theme_stylebox_override("normal", bs)
-	b.add_theme_stylebox_override("hover", bs)
-	b.add_theme_stylebox_override("pressed", bs)
+	s.modulate.a = 0.85
+	v.add_child(s)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 24)
+	var b := _button("RICOMINCIA", Color(0.35, 0.95, 1.0), 360, 105, 32)
 	b.pressed.connect(restart)
-	_over.add_child(b)
+	row.add_child(b)
+	var bm := _button("MENU", Color(1, 1, 1), 240, 105, 30)
+	bm.pressed.connect(func(): get_parent().to_menu())
+	row.add_child(bm)
+	v.add_child(row)
 	add_child(_over)
 
 func restart() -> void:
-	if _over:
-		_over.queue_free()
-		_over = null
-	if _choice:
-		_choice.queue_free()
-		_choice = null
+	close_screens()
+	_set_play_ui(true)
+	_score_shown = 0.0
 	_ups_label.text = ""
 	_wave_label.text = ""
 	_on_hp(player.max_hp, player.max_hp)
@@ -291,6 +466,18 @@ func _process(_d: float) -> void:
 	_ov_label.modulate.a = 0.55 + (0.45 * absf(sin(Time.get_ticks_msec() * 0.01)) if OV.bursting > 0.0 else 0.0)
 	if lv == 0:
 		_shown_level = 0
+	# punteggio che sale a scatti morbidi, combo in corso, conto alla rovescia del cerchio
+	_score_shown = move_toward(_score_shown, float(Run.score), max(40.0, (Run.score - _score_shown) * 8.0) * _d)
+	_score_label.text = "%d" % int(_score_shown)
+	if Run.combo >= 2:
+		_combo_label.text = "COMBO %d" % Run.combo
+		_combo_label.modulate.a = 1.0
+	elif _combo_label.text.find("+") == -1:
+		_combo_label.modulate.a = 0.0
+	if Run.circle_t > 0.8 and Run.running:
+		_circle_label.text = "RESTA NEL CERCHIO · ONDATA TRA %d" % ceili(Run.CIRCLE_TIME - Run.circle_t)
+	else:
+		_circle_label.text = ""
 	var s: Dictionary = FX.stats
 	_info.text = "%d fps   colpi %d   abbattuti %d   perfette %d" % [Engine.get_frames_per_second(), s.get("hits", 0), s.get("kills", 0), s.get("perfect_dodges", 0)]
 
@@ -327,7 +514,7 @@ func toggle_panel() -> void:
 		["Arresto all'impatto", FX.tune, "hitstop_scale", 0.0, 2.5],
 		["Scossa telecamera", FX.tune, "shake_scale", 0.0, 2.5],
 		["Sensibilità visuale", touch, "look_scale", 0.5, 4.0],
-		["Distanza telecamera", cam.tune, "distance", 2.5, 7.0],
+		["Distanza telecamera", Run.opt, "cam_dist", 2.5, 7.0],
 		["Velocità nemico", enemy_tune, "speed", 2.0, 12.0],
 		["Carica attacco nemico", enemy_tune, "windup", 0.25, 1.2],
 		["Danno nemico", enemy_tune, "damage", 0.0, 40.0],

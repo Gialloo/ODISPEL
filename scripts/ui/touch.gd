@@ -21,12 +21,17 @@ var _stick_pos := Vector2.ZERO
 var _look_id := -1
 var _look_last := Vector2.ZERO
 var _btn_touch := {}               # indice dito -> nome tasto
+var _look_tap_t := 0               # doppio tocco sulla visuale = aggancio
+var _look_tap_p := Vector2.ZERO
+var _look_down_t := 0
+var _look_moved := 0.0
 var _font: Font
 
 const STICK_R := 95.0
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_font = load("res://assets/fonts/ArchivoBlack-Regular.ttf")
 
@@ -37,14 +42,18 @@ func _buttons() -> Dictionary:
 		"dodge": {"pos": Vector2(s.x - 330, s.y - 92), "r": 58.0, "label": "SCHIVA", "col": Color(1, 1, 1)},
 		"jump": {"pos": Vector2(s.x - 92, s.y - 305), "r": 56.0, "label": "SALTO", "col": Color(1, 1, 1)},
 		"power": {"pos": Vector2(s.x - 305, s.y - 262), "r": 62.0, "label": "POTERE", "col": Color(0.85, 0.6, 1.0)},
-		"lock": {"pos": Vector2(s.x - 175, s.y - 395), "r": 40.0, "label": "LOCK", "col": Color(1, 0.85, 0.3)},
+		"lock": {"pos": Vector2(s.x - 190, s.y - 400), "r": 52.0, "label": "LOCK", "col": Color(1, 0.85, 0.3)},
 	}
 
 func _gear_rect() -> Rect2:
 	return Rect2(Vector2(size.x - 86, 14), Vector2(70, 60))
 
 func _input(event: InputEvent) -> void:
-	if not visible:
+	if not visible or get_tree().paused:
+		# 0.9: con i comandi nascosti (scelta, menu) le dita alzate vanno comunque registrate,
+		# altrimenti la visuale restava "occupata" da un dito che non c'è più e non scorreva
+		if event is InputEventScreenTouch and not event.pressed:
+			_release_all()
 		return
 	if event is InputEventScreenTouch:
 		var p: Vector2 = event.position
@@ -67,13 +76,22 @@ func _input(event: InputEvent) -> void:
 					Pad.press(n)
 					queue_redraw()
 					return
+			if event.index == _stick_id:
+				_stick_id = -1
 			if p.x < size.x * 0.42 and _stick_id == -1:
 				_stick_id = event.index
 				_stick_center = p
 				_stick_pos = p
-			elif _look_id == -1:
+			elif p.x >= size.x * 0.42 or _look_id == -1:
+				# l'ultimo dito sulla destra prende sempre la visuale
 				_look_id = event.index
 				_look_last = p
+				var now := Time.get_ticks_msec()
+				if now - _look_tap_t < 320 and p.distance_to(_look_tap_p) < 90.0:
+					Pad.tap("lock")
+					_look_tap_t = 0
+				_look_down_t = now
+				_look_moved = 0.0
 			queue_redraw()
 		else:
 			if event.index == _pw_id:
@@ -88,6 +106,9 @@ func _input(event: InputEvent) -> void:
 				Pad.move = Vector2.ZERO
 			if event.index == _look_id:
 				_look_id = -1
+				if Time.get_ticks_msec() - _look_down_t < 220 and _look_moved < 18.0:
+					_look_tap_t = Time.get_ticks_msec()
+					_look_tap_p = event.position
 			queue_redraw()
 	elif event is InputEventScreenDrag:
 		if event.index == _pw_id:
@@ -106,8 +127,12 @@ func _input(event: InputEvent) -> void:
 			var m := v / STICK_R
 			Pad.move = Vector2(m.x, -m.y)
 			queue_redraw()
-		elif event.index == _look_id:
+		elif event.index == _look_id or (_look_id == -1 and event.position.x >= size.x * 0.42 and not _btn_touch.has(event.index)):
+			if _look_id == -1:
+				_look_id = event.index
+				_look_last = event.position
 			Pad.look += (event.position - _look_last) * look_scale
+			_look_moved += (event.position - _look_last).length()
 			_look_last = event.position
 
 func _fire(a: String) -> void:
@@ -115,7 +140,18 @@ func _fire(a: String) -> void:
 	_pw_last = a
 	_pw_last_t = Time.get_ticks_msec()
 
+func _release_all() -> void:
+	for i in _btn_touch:
+		Pad.release(_btn_touch[i])
+	_btn_touch.clear()
+	_stick_id = -1
+	_look_id = -1
+	_pw_id = -1
+	Pad.move = Vector2.ZERO
+
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_VISIBILITY_CHANGED:
+		_release_all()
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
 		for i in _btn_touch:
 			Pad.release(_btn_touch[i])

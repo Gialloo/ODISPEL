@@ -61,3 +61,10 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 - PARRY: un colpo BLADE che parte poco prima dell'impatto (0,2 s) ferma l'attacco: lo Scout e il Brute si prendono il loro colpo e perdono l'equilibrio, la sfera del Conduit torna a chi l'ha lanciata. Con una sfera vicina l'attacco diventa sempre BLADE. Prova: `tests/parry_08.gd`.
 - Movimento: scatto dopo 0,6 s di corsa piena, accelerazione e frenata più rapide, più controllo in aria.
 - Nemici: rotolano quando volano, rimbalzano a terra se cadono forte, i colpi forti li mandano contro muri e altri nemici, non ti entrano più dentro.
+
+## 0.9
+- Ondate che non si bloccano più (nemici fuori mappa recuperati, conteggio reale) e cerchio centrale: 5 s dentro senza nemici vicini fanno partire l'ondata.
+- Punteggio: abbattimenti per tipo + combo; record salvato in `user://overload.cfg`.
+- Menu principale (Nuova partita, Opzioni) e schermata finale con Ricomincia / Menu.
+- Telecamera: inseguimento più stretto, scorrimento liscio, rientro automatico alle spalle, LOCK più grande, doppio tocco = lock, colpo di dito in lock = cambio bersaglio.
+- Prova: `tests/waves_09.gd`.

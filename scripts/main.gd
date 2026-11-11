@@ -57,9 +57,28 @@ func _ready() -> void:
 	hud.add_child(touch)
 	hud.touch = touch
 	hud.bind()
-	Run.start(self)
+	if get_meta("bot", false):
+		Run.start(self)
+	else:
+		# 0.9: si parte dal menu principale (Nuova partita, Opzioni)
+		hud.open_menu()
+
+func start_game() -> void:
+	hud.restart()
 	if not _is_touch:
 		hud.message("WASD muovi · mouse guarda · clic attacca (tieni = pesante)\nSPAZIO salto · SHIFT schivata · Q aggancio\nE spingi · R attira · F sovraccarica · TAB laboratorio", 4.0)
+
+func to_menu() -> void:
+	Run.stop()
+	get_tree().paused = false
+	for e in enemies.get_children():
+		e.queue_free()
+	for o in get_tree().get_nodes_in_group("orbs"):
+		o.queue_free()
+	player.revive()
+	player.global_position = Vector3(0, 0.5, 6)
+	player.velocity = Vector3.ZERO
+	hud.open_menu()
 
 func _on_player_died() -> void:
 	Run.game_over()
@@ -123,7 +142,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			_mouse_captured = false
 		elif (event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER) and event.pressed and not Run.running:
-			hud.restart()
+			start_game()
 		elif event.keycode == KEY_TAB and event.pressed:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			_mouse_captured = false

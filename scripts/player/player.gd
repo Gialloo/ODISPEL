@@ -180,7 +180,8 @@ func _physics_process(delta: float) -> void:
 	_landing_feel(on_floor)
 	_update_visual(delta)
 	if lock_target and (not is_instance_valid(lock_target) or lock_target.is_dead()):
-		lock_target = null
+		# 0.9: caduto il bersaglio, l'aggancio passa al più vicino (resti in modalità lock)
+		lock_target = _nearest_enemy(14.0, null)
 
 func _read_actions(now: int) -> void:
 	if Pad.just("jump"):
@@ -638,6 +639,7 @@ func _do_hits(slam: bool) -> void:
 
 func _upgrade_hit(e: Node3D) -> void:
 	_combo_hits += 1
+	Run.combo_hit()
 	if Run.has("catena_combo") and _combo_hits % 10 == 0:
 		_resonance()
 	if move.form == M.Form.IMPACT and Run.has("onda_urto"):
@@ -798,6 +800,7 @@ func parry(from: Node3D, dmg: float, projectile := false) -> void:
 	FX.slow_enemies(0.3, 0.45)
 	_flash(Color(1, 1, 1))
 	_combo_hits += 1
+	Run.combo_hit(2)
 	# la lama resta pronta: puoi continuare la combo subito
 	move_t = max(move_t, move.cancel)
 	if projectile or from == null or not is_instance_valid(from) or not from.has_method("receive_hit"):
@@ -827,6 +830,7 @@ func take_hit(from: Node3D, dmg: float, dir: Vector3) -> String:
 	FX.stat("player_hits_taken")
 	OV.hurt()
 	_combo_hits = 0
+	Run.combo_break()
 	_air_hits = 0
 	if state == S.ATTACK:
 		weapon.rest()
@@ -879,6 +883,45 @@ func _best_target(far: bool) -> Node3D:
 			best = e
 	return best
 
+func _nearest_enemy(max_d: float, skip: Node3D) -> Node3D:
+	if enemies_root == null:
+		return null
+	var best: Node3D = null
+	var bd := max_d
+	for e in enemies_root.get_children():
+		if e == skip or not e.has_method("is_dead") or e.is_dead() or not e.is_in_group("enemies"):
+			continue
+		var d := _flat(e.global_position - global_position).length()
+		if d < bd:
+			bd = d
+			best = e
+	return best
+
+## In aggancio, un colpo di dito sulla visuale passa al nemico più vicino da quel lato (dir +1 = destra).
+func switch_lock(dir: float) -> void:
+	if lock_target == null or cam == null:
+		return
+	var fwd := _flat(lock_target.global_position - global_position).normalized()
+	var right := Vector3(-fwd.z, 0, fwd.x)
+	var best: Node3D = null
+	var best_score := INF
+	for e in enemies_root.get_children():
+		if e == lock_target or not e.has_method("is_dead") or e.is_dead() or not e.is_in_group("enemies"):
+			continue
+		var to := _flat(e.global_position - global_position)
+		if to.length() > 20.0:
+			continue
+		var side := right.dot(to.normalized())
+		if side * dir <= 0.05:
+			continue
+		var score := absf(fwd.angle_to(to.normalized())) + to.length() * 0.02
+		if score < best_score:
+			best_score = score
+			best = e
+	if best:
+		lock_target = best
+		FX.sound("schivata", 1.8, -10.0)
+
 func toggle_lock() -> void:
 	if lock_target:
 		lock_target = null
@@ -889,11 +932,11 @@ func toggle_lock() -> void:
 	var best: Node3D = null
 	var best_score := INF
 	for e in enemies_root.get_children():
-		if not e.has_method("is_dead") or e.is_dead():
+		if not e.has_method("is_dead") or e.is_dead() or not e.is_in_group("enemies"):
 			continue
 		var to := _flat(e.global_position - global_position)
 		var d := to.length()
-		if d > 20.0:
+		if d > 26.0:
 			continue
 		var score := d * 0.5 + rad_to_deg(fwd.angle_to(to.normalized())) * 0.1
 		if score < best_score:

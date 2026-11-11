@@ -198,7 +198,22 @@ func is_threatening(p: Node3D) -> bool:
 		return false
 	return global_position.distance_to(p.global_position) < _tv("attack_range") + 1.6
 
+## Riporta il nemico in campo (caduto fuori dall'arena o incastrato): rientra con l'annuncio rosso.
+func recall(p: Vector3) -> void:
+	if is_dead():
+		return
+	velocity = Vector3.ZERO
+	global_position = p
+	_set_state(S.CHASE)
+	FX.ring(p, Color(1, 0.3, 0.3, 0.8), 2.0, 0.4)
+
 func _physics_process(delta: float) -> void:
+	# 0.9: lanciato oltre il muro o sotto il pavimento non resta perso per sempre (bloccava l'ondata)
+	if not is_dead() and (global_position.y < -4.0 or global_position.y > 40.0 or Vector2(global_position.x, global_position.z).length() > 27.5):
+		FX.stat("enemy_recalls")
+		var a := randf() * TAU
+		recall(Vector3(sin(a) * 16.0, 0.3, cos(a) * 16.0))
+		return
 	var d := delta * FX.enemy_time
 	_zap_cd = max(0.0, _zap_cd - delta)
 	_t += d
