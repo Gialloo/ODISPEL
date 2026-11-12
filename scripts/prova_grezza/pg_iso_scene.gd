@@ -1,6 +1,6 @@
 extends Node3D
 
-# PROVA GREZZA ISO · il combattimento a scorrimento della prima prova grezza, visto in diagonale (isometrica),
+# PROVA GREZZA 3 · il combattimento a scorrimento della prima prova grezza (vista di lato; l'isometrica resta con ISO = true),
 # con la squadra da 4 a cambio rapido: in campo ne sta UNO solo, gli altri entrano col CAMBIO.
 # Perché (autore, 12/11): l'arena circolare con due in campo era peggio; il secondo personaggio stava tra i piedi;
 # il salto come tasto in più pesa sull'accessibilità → si torna allo scorrimento con lo scorri in su per saltare.
@@ -15,6 +15,9 @@ const COL: Dictionary = {"rosso": Color("#ff3d5a"), "blu": Color("#3f9dff"), "":
 const WHITE := Color("#fff4dc")
 const SWIPE_MIN: float = 55.0
 const HEADS: Array = [Color("#e8dcc8"), Color("#7ce0c3"), Color("#ffb36b"), Color("#c9a0ff")]   # chi è chi, a colpo d'occhio
+# 12/11 notte, autore: «mi piaceva più orizzontale, era più snappy e responsive» → vista di lato fissa come la prima prova.
+# L'isometrica resta qui: basta mettere ISO = true.
+const ISO: bool = false
 const CAM_SIZE: float = 7.6
 const CAM_YAW: float = -32.0       # gradi: la strada corre in diagonale, il nemico sta più in là
 const CAM_PITCH: float = 30.0
@@ -96,6 +99,18 @@ func _ready() -> void:
 	_build_arena()
 	_build_bodies()
 	cam = Camera3D.new()
+	if not ISO:
+		# vista di lato fissa: niente inseguimento, lo schermo è il ring
+		cam.fov = 50.0
+		cam.position = Vector3(0, 2.3, 9.2)
+		add_child(cam)
+		cam.look_at(Vector3(0, 1.3, 0))
+		cam.current = true
+		_cam_home = cam.position
+		_build_ui()
+		Sfx.music_start("battaglia")
+		_show_hint("prima", "Il nemico ti attacca: guarda la freccia", 2.2)
+		return
 	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
 	cam.size = CAM_SIZE
 	cam.near = 0.1
@@ -158,7 +173,10 @@ func _build_arena() -> void:
 		_box(Vector3(2.6, hs[i], 1.0), Vector3(-9.0 + i * 3.0, hs[i] * 0.5, -6.0), _mat(Color("#1a1030")))
 	# i due muri: quello a destra è il bersaglio (insegna al neon che si accende quando ci sbatti il nemico)
 	# a sinistra solo una transenna bassa: in isometrica un muro alto starebbe davanti al Manichino
-	_box(Vector3(0.5, 1.0, 3.0), Vector3(_wx(E.WALL_L) - 0.25, 0.5, 0), _mat(Color("#2b1f4a")))
+	if ISO:
+		_box(Vector3(0.5, 1.0, 3.0), Vector3(_wx(E.WALL_L) - 0.25, 0.5, 0), _mat(Color("#2b1f4a")))
+	else:
+		_box(Vector3(0.5, 5.0, 3.0), Vector3(_wx(E.WALL_L) - 0.25, 2.5, 0), _mat(Color("#2b1f4a")))
 	_box(Vector3(0.5, 5.0, 3.0), Vector3(_wx(E.WALL_R) + 0.25, 2.5, 0), _mat(Color("#2b1f4a")))
 	wall_r_mat = _mat(Color("#ff3d8b"), true)
 	_box(Vector3(0.08, 2.4, 0.6), Vector3(_wx(E.WALL_R) - 0.02, 2.6, 0.6), wall_r_mat)
@@ -336,8 +354,9 @@ func _process(delta: float) -> void:
 	_refresh()
 	# scossa dell'inquadratura e segni del gesto (in tempo reale, anche durante il fermo immagine)
 	var rd: float = delta / maxf(0.01, Engine.time_scale)
-	_cam_x = lerpf(_cam_x, _wx((eng.px + eng.ex) * 0.5), minf(1.0, rd * 4.0))
-	_cam_home = Vector3(_cam_x, 1.1, 0) + _cam_off
+	if ISO:
+		_cam_x = lerpf(_cam_x, _wx((eng.px + eng.ex) * 0.5), minf(1.0, rd * 4.0))
+		_cam_home = Vector3(_cam_x, 1.1, 0) + _cam_off
 	if _shake_t > 0.0:
 		_shake_t -= rd
 		var p: float = _shake_p * maxf(0.0, _shake_t)
@@ -842,6 +861,10 @@ func _shake(dur: float, power: float) -> void:
 
 func _punch(fov: float) -> void:
 	var tw := create_tween().set_ignore_time_scale(true)
+	if not ISO:
+		tw.tween_property(cam, "fov", fov, 0.06)
+		tw.tween_property(cam, "fov", 50.0, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		return
 	tw.tween_property(cam, "size", CAM_SIZE * fov / 50.0, 0.06)
 	tw.tween_property(cam, "size", CAM_SIZE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
