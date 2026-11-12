@@ -43,7 +43,27 @@ const MOVES: Dictionary = {
 	"schiacciata": {"dur": 0.50, "hit": 0.18, "cancel": 0.30, "dmg": 18.0, "seg": 6.0, "push": 0.6, "adv": 0.4},
 	"contro": {"dur": 0.38, "hit": 0.0, "cancel": 0.12, "dmg": 15.0, "seg": 0.0, "push": 1.4, "adv": 0.0},
 	"blackout": {"dur": 1.00, "hit": 0.45, "cancel": 9.0, "dmg": 0.0, "seg": 0.0, "push": 0.0, "adv": 1.0},
+	# aggiunte del 12/11 sera (decisioni dell'autore: carica, montante, cambio personaggio)
+	"montante": {"dur": 0.50, "hit": 0.16, "cancel": 0.24, "dmg": 12.0, "seg": 4.0, "push": 0.2, "adv": 0.5},
+	"scatto": {"dur": 0.55, "hit": 0.18, "cancel": 0.30, "dmg": 16.0, "seg": 6.0, "push": 2.0, "adv": 3.5},
+	"schianto": {"dur": 0.60, "hit": 0.20, "cancel": 0.34, "dmg": 20.0, "seg": 6.0, "push": 1.2, "adv": 0.8},
+	"entrata": {"dur": 0.45, "hit": 0.14, "cancel": 0.20, "dmg": 8.0, "seg": 2.0, "push": 0.6, "adv": 2.4},
 }
+# ---------------------------------------------------------------- carica e cambio personaggio (12/11 sera)
+const HOLD: float = 0.22                 # oltre 220 ms il tocco diventa carica
+const CHARGE_LV: Array = [0.0, 0.40, 0.85]   # livelli contati da quando parte la carica
+const HOVER_MAX: float = 1.0             # in aria: sospeso al massimo un secondo mentre carichi la schiacciata
+const SWITCH_CD: float = 2.0
+const PARTY_ENEMY_MULT: float = 1.5
+const PARTY_ENEMY_DMG: float = 1.35
+const DEFENSE_COST: float = 15.0        # il CAMBIO IN DIFESA consuma FIATO: non si fa a caso
+# squadra a cambio rapido (un solo personaggio in campo, come nei giochi a cambio istantaneo): per la prova, Manichini neutri
+const PARTY: Array = [
+	{"id": "a", "name": "MANICHINO A", "posture": "rosso"},
+	{"id": "b", "name": "MANICHINO B", "posture": "blu"},
+	{"id": "c", "name": "MANICHINO C", "posture": "rosso"},
+	{"id": "d", "name": "MANICHINO D", "posture": "blu"},
+]
 const POSTURE: Dictionary = {
 	"rosso": {"dmg": 1.4, "seg": 1.5, "speed": 0.8, "push": 1.5},
 	"blu": {"dmg": 0.8, "seg": 0.8, "speed": 1.25, "push": 0.7},
@@ -81,6 +101,8 @@ const DISCOVERIES: Array = [
 	["muro", "AL MURO"], ["annullo", "ANNULLAMENTO"], ["salto_castigo", "SALTO E CASTIGO"],
 	["giocoliere", "GIOCOLIERE"], ["schiacciata", "SCHIACCIATA"], ["catena_piena", "CATENA PIENA"],
 	["cambio_in_catena", "CAMBIO IN CATENA"], ["piano_contro", "PIANO E CONTRO"], ["blackout", "BLACKOUT"],
+	["contro_caricato", "CONTRO CARICATO"], ["montante", "MONTANTE"], ["schianto", "SCHIACCIATA CARICATA"],
+	["staffetta", "STAFFETTA"], ["cambio_difesa", "CAMBIO IN DIFESA"],
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -129,9 +151,22 @@ var walled: bool = false                 # un solo AL MURO finché il nemico non
 var phase: int = 0
 var idle_wait: float = 1.2
 
+# squadra e carica
+var party: Array = []                    # {id, name, hp, maxhp, posture, ko}; hp e posture qui sopra sono quelli di chi è in campo
+var active: int = 0
+var switch_ready: float = 0.0
+var holding: bool = false
+var hold_t: float = 0.0
+var charge_t: float = 0.0
 
-func _init(seed_v: int = 7) -> void:
+
+func _init(seed_v: int = 7, party_size: int = 1) -> void:
 	rng.seed = seed_v
+	for i in clampi(party_size, 1, PARTY.size()):
+		party.append({"id": PARTY[i]["id"], "name": PARTY[i]["name"], "hp": HP_MAX, "maxhp": HP_MAX, "posture": PARTY[i]["posture"], "ko": false})
+	posture = party[0]["posture"]
+	if party.size() > 1:
+		ehp = ENEMY_HP * PARTY_ENEMY_MULT      # con la squadra hai più vite: il nemico ne ha di più
 
 
 # ================================================================ comandi
@@ -141,6 +176,9 @@ func input(g: String) -> void:
 		return
 	if g == "postura":
 		_switch_posture()
+		return
+	if g == "cambio":
+		switch_to(next_alive())
 		return
 	if plan_active:
 		# il CONTRO col pollice sospende il PIANO senza cancellarlo; ogni altro gesto lo cancella
@@ -152,6 +190,80 @@ func input(g: String) -> void:
 			_ev({"type": "piano_fine", "why": "mani"})
 	if not _try(g, false):
 		pending = {"g": g, "t": time}
+
+
+func press_attack() -> void:
+	if over != "":
+		return
+	holding = true
+	hold_t = 0.0
+
+
+func cancel_press() -> void:
+	holding = false
+
+
+func release_attack() -> void:
+	if not holding:
+		return
+	holding = false
+	if st == "charge":
+		_release_charge()
+	elif st == "hover":
+		_release_hover()
+	else:
+		input("tocco")
+
+
+func charge_level() -> int:
+	var lv: int = 0
+	for i in CHARGE_LV.size():
+		if charge_t >= float(CHARGE_LV[i]):
+			lv = i + 1
+	return lv if st in ["charge", "hover"] else 0
+
+
+func switch_to(i: int, forced: bool = false) -> bool:
+	# CAMBIO: esce chi è in campo, entra un altro. Nel lampo bianco = STAFFETTA; sul colpo nemico = CAMBIO IN DIFESA
+	if over != "" or i == active or i < 0 or i >= party.size() or party[i]["ko"] or time < switch_ready:
+		return false
+	var relay: bool = can_cancel_now() and not forced
+	var defend: bool = not forced and est == "tele" and float(eatk["impact"]) - float(eatk["t"]) <= win_len() + BUFFER and fiato >= DEFENSE_COST
+	if defend:
+		fiato -= DEFENSE_COST
+	party[active]["hp"] = hp
+	party[active]["posture"] = posture
+	var old: int = active
+	active = i
+	hp = float(party[i]["hp"])
+	posture = party[i]["posture"]
+	switch_ready = time + SWITCH_CD
+	holding = false
+	charge_t = 0.0
+	pending = {}
+	st = "idle"
+	move = {}
+	chain = 0
+	p_air = 0.0
+	_ev({"type": "cambio", "from": old, "to": i, "staffetta": relay, "difesa": defend})
+	if defend:
+		# chi entra para il colpo al posto tuo: vale come un CONTRO (sulla SPAZZATA salta e colpisce)
+		_found("cambio_difesa")
+		_do_counter(0, true)
+		return true
+	if relay and ex - px <= REACH + 2.6:
+		# solo nella STAFFETTA chi entra porta un colpo d'entrata; il cambio normale è un cambio e basta
+		_start_move("entrata")
+		move["relay"] = relay
+	return true
+
+
+func next_alive() -> int:
+	for k in range(1, party.size() + 1):
+		var j: int = (active + k) % party.size()
+		if not party[j]["ko"]:
+			return j
+	return -1
 
 
 func start_plan(actions: Array) -> bool:
@@ -228,10 +340,12 @@ func _try(g: String, from_plan: bool) -> bool:
 	match g:
 		"tocco":
 			var id: String = "aria" if p_air > 0.0 else "colpo"
+			if id == "colpo" and chain == 2 and chain_idle >= 0.25 and chain_idle <= 0.9:
+				id = "montante"       # colpo, colpo, PAUSA, colpo
 			if not _free(from_plan, id):
 				return false
 			if id == "colpo":
-				chain = chain + 1 if chain_idle < 0.5 and chain < 4 else 1
+				chain = chain + 1 if chain_idle < (0.25 if party.size() > 1 else 0.5) and chain < 4 else 1
 				if chain == 4:
 					_found("catena_piena")
 			_start_move(id)
@@ -265,9 +379,26 @@ func _try(g: String, from_plan: bool) -> bool:
 				return false
 			_start_move("schiacciata")
 			return true
+		"carica":
+			# dal PIANO: una carica di secondo livello già pronta
+			if p_air > 0.0 or not _free(from_plan, "scatto"):
+				return false
+			_end_move()
+			st = "charge"
+			charge_t = float(CHARGE_LV[1])
+			_release_charge()
+			return true
+		"cambio":
+			return switch_to(next_alive())
 		"via":
 			if p_air > 0.0:
 				return false
+			if st == "charge" and time >= dodge_ready:
+				# lo scarto annulla la carica: è la via d'uscita se il nemico ti anticipa
+				st = "idle"
+				charge_t = 0.0
+				holding = false
+				_ev({"type": "carica_annullata"})
 			if time < dodge_ready or not _free(from_plan, "via"):
 				return false
 			_end_move()
@@ -285,12 +416,13 @@ func _free(from_plan: bool, next_id: String) -> bool:
 	# si può agire ora? da fermo sempre; dentro una mossa solo nel lampo bianco (annullamento)
 	if st == "idle":
 		return true
-	if st == "dodge" or st == "hurt":
+	if st in ["dodge", "hurt", "charge", "hover"]:
 		return false
 	if st != "atk" or not can_cancel_now():
 		return false
-	var natural: bool = (next_id == "colpo" and move["id"] == "colpo") or (next_id in ["aria", "schiacciata"] and move["id"] in ["aria", "lancio"]) \
-		or move["id"] == "contro" or next_id == "blackout"
+	var natural: bool = (next_id in ["colpo", "montante"] and move["id"] == "colpo") \
+		or (next_id in ["aria", "schiacciata"] and move["id"] in ["aria", "lancio", "montante"]) \
+		or move["id"] in ["contro", "entrata"] or next_id == "blackout"
 	if natural or from_plan:
 		return true
 	if fiato < CANCEL_COST:
@@ -308,8 +440,17 @@ func _switch_posture() -> void:
 	_ev({"type": "postura", "posture": posture})
 
 
-func _start_move(id: String) -> void:
+func _start_move(id: String, lv: int = 0) -> void:
 	var m: Dictionary = MOVES[id].duplicate()
+	m["lv"] = lv
+	if id == "scatto":
+		m["adv"] = 3.0 + lv
+		m["dmg"] = [16.0, 16.0, 26.0, 40.0][lv]
+		m["seg"] = [6.0, 6.0, 10.0, 16.0][lv]
+		m["push"] = [2.0, 2.0, 3.0, 4.0][lv]
+	if id == "schianto":
+		m["dmg"] = 20.0 + 12.0 * lv
+		m["seg"] = 6.0 + 5.0 * lv
 	var p: Dictionary = POSTURE[posture]
 	var sp: float = float(p["speed"]) if id in ["colpo", "aria", "affondo"] else 1.0
 	m["dur"] = float(m["dur"]) / sp
@@ -324,11 +465,11 @@ func _start_move(id: String) -> void:
 	st_t = 0.0
 	if id != "colpo":
 		chain = 0
-	if id == "lancio":
+	if id == "lancio" or id == "montante":
 		p_air = 0.0
 	if id == "blackout" or id == "contro":
 		iframes = float(m["dur"])
-	_ev({"type": "mossa", "id": id, "posture": posture, "chain": m["chain"]})
+	_ev({"type": "mossa", "id": id, "posture": posture, "chain": m["chain"], "lv": lv})
 
 
 func _end_move() -> void:
@@ -345,16 +486,40 @@ func _respiro() -> void:
 	_ev({"type": "respiro"})
 
 
-func _do_counter() -> void:
+func _release_charge() -> void:
+	var lv: int = maxi(1, charge_level())
+	charge_t = 0.0
+	st = "idle"
+	# rilasciata a tempo su un AFFONDO: CONTRO CARICATO
+	if _counter_time() >= 0.0:
+		_do_counter(lv)
+		return
+	if est == "tele" and eatk["kind"] == "affondo":
+		esposto_until = time + float(eatk["impact"]) - float(eatk["t"]) + 0.05
+		_ev({"type": "troppo_presto"})
+	_start_move("scatto", lv)
+
+
+func _release_hover() -> void:
+	var lv: int = maxi(1, charge_level())
+	charge_t = 0.0
+	st = "idle"
+	_start_move("schianto", lv)
+
+
+func _do_counter(lv: int = 0, by_switch: bool = false) -> void:
 	var left: float = float(eatk["impact"]) - float(eatk["t"])
 	var perfect: bool = left <= PERFECT * (WIDE_MULT if wide else 1.0)
-	var freq: bool = eatk["color"] == posture
-	_start_move("contro")
+	var freq: bool = eatk["color"] == posture and not by_switch
+	_start_move("contro", lv)
 	move["landed"] = true
 	move["done"] = true
 	var s: float = 20.0 if perfect else 14.0
 	if freq:
 		s *= 2.5
+	if lv > 0:
+		s *= 1.4 + 0.3 * lv
+		_found("contro_caricato")
 	fiato = minf(FIATO_MAX, fiato + (18.0 if perfect else 10.0))
 	_found("contro")
 	if perfect:
@@ -364,12 +529,12 @@ func _do_counter() -> void:
 	if plan_countered:
 		_found("piano_contro")
 	estring.clear()
-	_ev({"type": "contro", "perfect": perfect, "freq": freq, "color": eatk["color"]})
+	_ev({"type": "contro", "perfect": perfect, "freq": freq, "color": eatk["color"], "lv": lv, "cambio": by_switch})
 	eatk = {}
-	_hit_enemy(MOVES["contro"]["dmg"], s, MOVES["contro"]["push"] * (1.6 if freq else 1.0), "contro")
+	_hit_enemy(float(MOVES["contro"]["dmg"]) * (1.0 + 0.8 * lv), s, float(MOVES["contro"]["push"]) * (1.6 if freq else 1.0) * (1.0 + 0.4 * lv), "contro")
 	if est not in ["crollo", "dead"]:
 		est = "stun"
-		est_t = 1.3 if freq else 0.7
+		est_t = (1.3 if freq else 0.7) + 0.2 * lv
 		if freq:
 			_ev({"type": "un_altro"})
 
@@ -380,6 +545,12 @@ func _tick() -> void:
 	if over != "":
 		return
 	time += TICK
+	if holding:
+		hold_t += TICK
+		if hold_t >= HOLD and st == "idle":
+			st = "hover" if p_air > 0.0 else "charge"
+			charge_t = 0.0
+			_ev({"type": "sospeso" if p_air > 0.0 else "carica"})
 	_tick_player()
 	_tick_enemy()
 	# il gesto in memoria si riprova a ogni passo
@@ -406,10 +577,10 @@ func _tick() -> void:
 
 func _tick_player() -> void:
 	iframes = maxf(0.0, iframes - TICK)
-	if p_air > 0.0 and not (st == "atk" and move["id"] in ["aria", "lancio"] and e_air > 0.0):
+	if p_air > 0.0 and not ((st == "atk" and move["id"] in ["aria", "lancio", "montante"] and e_air > 0.0) or st == "hover"):
 		p_air = maxf(0.0, p_air - TICK)
 	chain_idle += TICK if st != "atk" else 0.0
-	if st != "atk" and chain_idle > 0.6:
+	if st != "atk" and chain_idle > (0.9 if party.size() > 1 else 0.6):
 		if chain_hits >= 3:
 			_respiro()
 		chain = 0
@@ -427,6 +598,13 @@ func _tick_player() -> void:
 				_resolve_player_hit()
 			if st_t >= float(move["dur"]):
 				_end_move()
+		"charge":
+			charge_t += TICK
+		"hover":
+			charge_t += TICK
+			if charge_t >= HOVER_MAX:
+				holding = false
+				_release_hover()
 		"dodge":
 			st_t += TICK
 			if st_t >= DODGE_DUR:
@@ -443,10 +621,14 @@ func _tick_player() -> void:
 func _resolve_player_hit() -> void:
 	var id: String = move["id"]
 	if id == "blackout":
-		var dmg: float = ENEMY_HP * BLACKOUT_FRAC
+		var team: int = 0
+		for m in party:
+			if not m["ko"]:
+				team += 1
+		var dmg: float = ENEMY_HP * BLACKOUT_FRAC * (1.0 + 0.05 * (team - 1))   # tutta la squadra entra nel BLACKOUT
 		ehp -= dmg
 		_found("blackout")
-		_ev({"type": "blackout", "dmg": dmg})
+		_ev({"type": "blackout", "dmg": dmg, "team": team - 1})
 		ex = WALL_R - 0.5
 		phase += 1
 		seg = SEG_MAX
@@ -458,10 +640,10 @@ func _resolve_player_hit() -> void:
 		return
 	var d: float = ex - px
 	var in_air_target: bool = est == "air"
-	var reach_ok: bool = d <= REACH + 0.1
+	var reach_ok: bool = d <= (2.8 if id == "schianto" else REACH + 0.1)
 	if id == "aria" and not in_air_target and p_air <= 0.0:
 		reach_ok = false
-	if id in ["colpo", "affondo", "lancio"] and in_air_target:
+	if id in ["colpo", "affondo", "lancio", "montante", "scatto", "entrata"] and in_air_target:
 		reach_ok = false      # da terra non arrivi a chi è in aria (salta per inseguirlo)
 	if not reach_ok:
 		_ev({"type": "a_vuoto", "id": id})
@@ -474,7 +656,12 @@ func _resolve_player_hit() -> void:
 	if id == "colpo" and int(move["chain"]) == 4:
 		dmg2 *= 1.6
 		push = 1.4 * float(p["push"])
-	if time <= castigo_until and id in ["aria", "schiacciata", "colpo"]:
+	if id == "entrata" and move.get("relay", false):
+		dmg2 *= 2.0
+		s *= 3.0
+		push *= 2.0
+		_found("staffetta")
+	if time <= castigo_until and id in ["aria", "schiacciata", "schianto", "colpo"]:
 		s *= 1.8
 		dmg2 *= 1.5
 		castigo_until = -1.0
@@ -482,11 +669,14 @@ func _resolve_player_hit() -> void:
 		_ev({"type": "castigo"})
 	if id == "colpo":
 		chain_hits += 1
+	var was_air: bool = est == "air"
 	_hit_enemy(dmg2, s, push, id)
 	if est in ["dead", "crollo"]:
 		return
 	match id:
-		"lancio":
+		"lancio", "montante":
+			if id == "montante":
+				_found("montante")
 			est = "air"
 			e_air = LAUNCH_AIR
 			juggle = 0
@@ -500,14 +690,16 @@ func _resolve_player_hit() -> void:
 					p_air = maxf(p_air, e_air)
 				if juggle >= 3:
 					_found("giocoliere")
-		"schiacciata":
-			if est == "air":
+		"schiacciata", "schianto":
+			if id == "schianto":
+				_found("schianto")
+			if was_air:
 				_found("schiacciata")
-				_ev({"type": "schiacciata"})
+				_ev({"type": "schiacciata", "lv": move.get("lv", 0)})
 				est = "down"
-				est_t = 0.8
+				est_t = 0.8 + 0.3 * int(move.get("lv", 0))
 				e_air = 0.0
-				p_air = 0.0
+			p_air = 0.0
 
 
 func _hit_enemy(dmg: float, s: float, push: float, src: String) -> void:
@@ -557,7 +749,7 @@ func _push_enemy(push: float) -> void:
 	var nx: float = ex + push
 	if nx >= WALL_R - 0.5:
 		ex = WALL_R - 0.5
-		if push >= 1.0 and est != "air" and not walled:
+		if push >= (1.0 if party.size() == 1 else 2.0) and est != "air" and not walled:   # con la squadra serve una spinta vera (affondo pesante, scatto)
 			walled = true
 			est = "stun"
 			est_t = 0.9
@@ -585,6 +777,15 @@ func _check_end() -> bool:
 		return true
 	if hp <= 0.0:
 		hp = 0.0
+		party[active]["hp"] = 0.0
+		party[active]["ko"] = true
+		var nxt: int = next_alive()
+		if nxt >= 0:
+			# KO: entra subito il prossimo della squadra
+			_ev({"type": "ko", "who": active})
+			switch_ready = 0.0
+			switch_to(nxt, true)
+			return false
 		over = "sconfitta"
 		_ev({"type": "sconfitta", "time": time})
 		return true
@@ -672,11 +873,13 @@ func _impact() -> void:
 		gap = STRING_GAP + 0.6
 		_ev({"type": "nemico_a_vuoto", "kind": kind})
 	else:
-		var dmg: float = float(a["dmg"])
+		var dmg: float = float(a["dmg"]) * (PARTY_ENEMY_DMG if party.size() > 1 else 1.0)
 		if kind == "affondo" and time <= esposto_until:
 			dmg *= 2.0
 		hp -= dmg
 		pending = {}
+		holding = false
+		charge_t = 0.0
 		move = {}
 		chain = 0
 		p_air = 0.0
@@ -687,7 +890,7 @@ func _impact() -> void:
 			plan.clear()
 			plan_active = false
 			_ev({"type": "piano_fine", "why": "colpito"})
-		_ev({"type": "colpito", "kind": kind, "dmg": dmg, "doppio": dmg > float(a["dmg"])})
+		_ev({"type": "colpito", "kind": kind, "dmg": dmg, "doppio": time <= esposto_until and kind == "affondo"})
 		_check_end()
 	esposto_until = -1.0
 	eatk = {}
