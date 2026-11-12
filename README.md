@@ -95,3 +95,6 @@ Barre di vita dei nemici disegnate dalla HUD (`scripts/ui/enemy_bars.gd`): bordo
 
 ## 0.17
 Secondo boss, il TRALICCIO (ogni decima ondata; il COLOSSO resta sulla 5, 15, 25...): sfere a ventaglio da rimandare, scariche a terra annunciate, impulso se gli stai addosso. Prove: `tests/boss_17.gd`, `tests/traliccio_17.gd`.
+
+## 0.18
+Numeri dei danni (bianchi, oro per i colpi forti) e "N HITS" sopra la barra. Prova: `tests/pops_18.gd`.

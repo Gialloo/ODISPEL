@@ -78,6 +78,7 @@ var hp_white := 70.0
 var _white_hold := 0.0
 var _hp_seen := 70.0
 const WHITE_HOLD := 0.6
+var hit_chain := 0
 var _burn_tick := 0.0
 
 func setup(a: String, w: int, is_boss := false) -> void:
@@ -447,6 +448,7 @@ func _physics_process(delta: float) -> void:
 ## Ogni danno (colpi, fuoco, scosse) ferma il bianco; dopo la pausa scivola giù fino al rosso.
 func _tick_white(delta: float) -> void:
 	if hp < _hp_seen:
+		hit_chain = hit_chain + 1 if _white_hold > 0.0 else 1   # 0.18: colpi di fila ("N HITS")
 		_white_hold = WHITE_HOLD
 	_hp_seen = hp
 	if _white_hold > 0.0:
@@ -762,6 +764,9 @@ func receive_hit(info: Dictionary) -> void:
 	if state == S.DEAD:
 		return
 	hp -= info.dmg
+	# 0.18: numeri dei danni (li disegna la HUD, scripts/ui/enemy_bars.gd)
+	if info.dmg >= 1.0:
+		get_tree().call_group("dmg_pops", "pop", global_position + Vector3(0, 2.0 if arch == "brute" else 1.6, 0) * (1.6 if boss else 1.0), info.dmg, info.dmg >= 18.0)
 	poise -= info.poise
 	_mat.emission_enabled = true
 	_mat.emission = Color(1, 1, 1)
