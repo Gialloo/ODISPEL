@@ -22,6 +22,13 @@ const SIMUL: float = 0.06                # tocchi entro 60 ms valgono come uno (
 const DANGER_LEAD: float = 0.60          # da 600 ms prima dell'impatto la coda si congela e i tocchi sono CONTRO (D2)
 const MISS_STREAK_HINT: int = 3          # dopo 3 CONTRO mancati di fila Echo propone AMPIA (D12)
 
+# ---------------------------------------------------------------- SCARTO (schivata vera)
+const DODGE_IFRAMES: float = 0.30        # invulnerabilità dello scatto
+const DODGE_PERFECT: float = 0.12        # impatto entro 120 ms dall'inizio dello scatto = SCARTO PERFETTO
+const DODGE_COOLDOWN: float = 0.50
+const STAGGER_TIME: float = 1.2          # dopo lo SCARTO PERFETTO il nemico è sbilanciato...
+const STAGGER_DMG_MULT: float = 1.5      # ...e prende x1.5
+
 # ---------------------------------------------------------------- tempo
 const TICK: float = 1.0 / 60.0
 const IDLE_SLOW_AFTER: float = 1.0       # RALLENTY dopo 1 s senza tocchi
@@ -119,6 +126,17 @@ const ENEMIES: Dictionary = {
 			{"color": BLU, "windup": 1.1, "gap": 1.5},
 		],
 	},
+	# scontro di prova (sensazione prima di tutto): colori e un colpo bianco da schivare
+	"prova": {
+		"name": "Frammento", "hp": 2000, "segnale": 60, "dmg": 24,
+		"pattern": [
+			{"color": ROSSO, "windup": 1.1, "gap": 1.1},
+			{"color": BLU, "windup": 1.0, "gap": 0.9},
+			{"color": BIANCO, "windup": 1.2, "gap": 1.2},
+			{"color": GIALLO, "windup": 0.9, "gap": 1.0},
+			{"color": ROSSO, "windup": 0.8, "gap": 1.3},
+		],
+	},
 	"boss_ripetitore": {
 		"name": "Il Ripetitore", "hp": 14000, "segnale": 160, "dmg": 30, "boss": true,
 		"pattern": [
@@ -134,7 +152,7 @@ const ENEMIES: Dictionary = {
 }
 
 # Tempi di riferimento per il VOTO (D6): sotto il par si prende il massimo sul tempo.
-const PAR_TIME: Dictionary = {"frammento": 25.0, "sfondatore": 30.0, "specchio": 40.0, "boss_ripetitore": 150.0}
+const PAR_TIME: Dictionary = {"prova": 45.0, "frammento": 25.0, "sfondatore": 30.0, "specchio": 40.0, "boss_ripetitore": 150.0}
 
 
 static func step_of(value: float) -> int:

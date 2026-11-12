@@ -7,9 +7,10 @@ extends Node3D
 
 const C = preload("res://scripts/controsegnale/cs_content.gd")
 
-const ORDER: Array = ["frammento", "sfondatore", "specchio", "boss_ripetitore"]
-const VISUAL: Dictionary = {"frammento": "frammento_giallo", "sfondatore": "cassaforte", "specchio": "manichino", "boss_ripetitore": "semaforo"}
+const ORDER: Array = ["prova", "frammento", "sfondatore", "specchio", "boss_ripetitore"]
+const VISUAL: Dictionary = {"prova": "frammento_rosso", "frammento": "frammento_giallo", "sfondatore": "cassaforte", "specchio": "manichino", "boss_ripetitore": "semaforo"}
 const LESSON: Dictionary = {
+	"prova": "ECHO · Tocca i colori per colpire. Mirino colorato: tocca lo STESSO colore mentre si chiude, è un CONTRO. Mirino bianco: scorri il dito (o SCARTO) e Lance scatta via. All'ultimo istante è SCARTO PERFETTO.",
 	"frammento": "ECHO · Tocca i colori per colpire: si mettono in fila. Quando compare il MIRINO, tocca il SUO colore mentre si chiude: è un CONTRO.",
 	"sfondatore": "ECHO · Mirino BIANCO = SFONDA. Non si contra: SCARTO all'ultimo (tasto o scorri il dito).",
 	"specchio": "ECHO · Vedi lo SPECCHIO sul cartellino? Contrare quel colore gli ridà SEGNALE. Quello lo scarti.",
@@ -41,14 +42,26 @@ var _lesson: Label
 var _end_panel: PanelContainer
 var _ampia_panel: PanelContainer
 var _swipe_from: Vector2 = Vector2.INF
+var hero_ids: Array = ["lance"]
+var _hero_home: Array = []
+var _flash: ColorRect
+var _shake_t: float = 0.0
+var _shake_p: float = 0.0
+var _cam_home: Vector3
+var _dash_t: float = 0.0
+var _dash_dir: int = 1
+var _burst_t: float = 0.0
+var _burst_col: Color = Color.WHITE
+var _stop_id: int = 0
 
 
 func configure(args: Dictionary) -> void:
-	enemy_id = str(args.get("enemy", "frammento"))
+	enemy_id = str(args.get("enemy", "prova"))
+	hero_ids = args.get("heroes", ["lance"] if enemy_id == "prova" else ["lance", "rio"])
 
 
 func _ready() -> void:
-	battle = CsBattle.new(["lance", "rio"], [enemy_id])
+	battle = CsBattle.new(hero_ids, [enemy_id])
 	battle.wide = Settings.parry_wide          # la stessa impostazione della parata a turni
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
@@ -59,12 +72,13 @@ func _ready() -> void:
 	_build_arena()
 	cam = Camera3D.new()
 	cam.fov = 52.0
-	cam.position = Vector3(0, 3.1, 5.2)
+	cam.position = Vector3(1.0, 3.0, 6.2) if hero_ids.size() == 1 else Vector3(0, 3.1, 5.2)
 	add_child(cam)
-	cam.look_at(Vector3(0, 1.0, -3.0))
+	cam.look_at(Vector3(0, 1.1, -3.0))
+	_cam_home = cam.position
 	cam.current = true
-	var xs: Array = [-1.6, 1.6]
-	for i in 2:
+	var xs: Array = [0.0] if hero_ids.size() == 1 else [-1.6, 1.6]
+	for i in hero_ids.size():
 		var cv := CharacterVisual.new()
 		cv.setup(str(battle.heroes[i]["id"]))
 		cv.position = Vector3(xs[i], 0.1, 1.2)
@@ -72,6 +86,7 @@ func _ready() -> void:
 		add_child(cv)
 		cv.look_at(Vector3(ENEMY_POS.x, cv.position.y, ENEMY_POS.z), Vector3.UP, true)
 		hero_vis.append(cv)
+		_hero_home.append(cv.position)
 	enemy_vis = VendingVisual.new()
 	enemy_vis.kind = VISUAL.get(enemy_id, "frammento_giallo")
 	enemy_vis.awake = true
@@ -135,7 +150,7 @@ func _build_ui() -> void:
 	var party := VBoxContainer.new()
 	Ui.place(party, 0.0, 0.0, 0.0, 0.0, 16, 12, 300, 200)
 	ui.add_child(party)
-	for i in 2:
+	for i in hero_ids.size():
 		var l := Ui.label("", 22, Ui.CREAM, Ui.names(), 5)
 		party.add_child(l)
 		_hero_labels.append(l)
@@ -165,7 +180,9 @@ func _build_ui() -> void:
 		b.button_down.connect(func() -> void: battle.press(c))
 		ui.add_child(b)
 		_buttons[c] = b
+	var team: bool = hero_ids.size() > 1
 	var bset := Ui.button("SET", Ui.CREAM, 20, 110)
+	bset.visible = team
 	Ui.place(bset, 1.0, 1.0, 1.0, 1.0, -150, -330, -30, -270)
 	bset.pressed.connect(battle.toggle_set)
 	ui.add_child(bset)
@@ -178,32 +195,40 @@ func _build_ui() -> void:
 	var bd := Ui.button("SCARTO", Ui.CREAM, 24, 170)
 	bd.custom_minimum_size = Vector2(170, 100)
 	Ui.place(bd, 0.0, 1.0, 0.0, 1.0, 24, -130, 194, -30)
-	bd.button_down.connect(battle.dodge)
+	bd.button_down.connect(func() -> void: battle.dodge(0))
 	ui.add_child(bd)
 	var bc := Ui.button("CAMBIO", Ui.CYAN, 20, 140)
 	Ui.place(bc, 0.0, 1.0, 0.0, 1.0, 24, -210, 164, -150)
 	bc.pressed.connect(battle.swap)
+	bc.visible = team
 	ui.add_child(bc)
 	for i in 3:
 		var c: String = C.COLORS[i]
 		var pb := Ui.button("•", COL[c], 22, 54)
 		Ui.place(pb, 0.0, 1.0, 0.0, 1.0, 180 + i * 62, -210, 234 + i * 62, -150)
 		pb.pressed.connect(func() -> void: battle.partner_press(c))
+		pb.visible = team
 		ui.add_child(pb)
 	var bp := Ui.button("II", Ui.CREAM, 22, 70)
 	Ui.place(bp, 1.0, 0.0, 1.0, 0.0, -90, 16, -20, 76)
 	bp.pressed.connect(func() -> void: battle.set_paused(not battle.paused))
 	ui.add_child(bp)
+	_flash = ColorRect.new()
+	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash.color = Color(1, 1, 1, 0)
+	ui.add_child(_flash)
+	ui.move_child(_flash, 0)
 	_stamp = Ui.label("", 64, Ui.YELLOW, Ui.display(), 12)
 	_stamp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	Ui.place(_stamp, 0.2, 0.32, 0.8, 0.32, 0, 0, 0, 90)
 	_stamp.modulate.a = 0.0
 	ui.add_child(_stamp)
-	_lesson = Ui.label(LESSON.get(enemy_id, ""), 20, Ui.CREAM, Ui.body(), 5)
+	_lesson = Ui.label(LESSON.get(enemy_id, ""), 19, Ui.CREAM, Ui.body(), 5)
 	_lesson.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	Ui.place(_lesson, 0.0, 0.0, 0.0, 0.0, 16, 150, 400, 290)
+	Ui.place(_lesson, 0.0, 0.0, 0.0, 0.0, 16, 110, 420, 300)
 	ui.add_child(_lesson)
-	get_tree().create_timer(9.0).timeout.connect(func() -> void:
+	get_tree().create_timer(14.0).timeout.connect(func() -> void:
 		if is_instance_valid(_lesson):
 			create_tween().tween_property(_lesson, "modulate:a", 0.0, 0.6))
 
@@ -225,6 +250,15 @@ func _bar(col: Color, h: int) -> ProgressBar:
 
 func _process(delta: float) -> void:
 	battle.step(delta)
+	var rd: float = delta / maxf(0.01, Engine.time_scale)   # tempo reale, anche durante fermo immagine e rallenty
+	if _shake_t > 0.0:
+		_shake_t -= rd
+		var k: float = maxf(0.0, _shake_t) * _shake_p
+		cam.position = _cam_home + Vector3(randf_range(-k, k), randf_range(-k, k) * 0.6, 0)
+	else:
+		cam.position = _cam_home
+	_dash_t = maxf(0.0, _dash_t - rd)
+	_burst_t = maxf(0.0, _burst_t - rd)
 	for ev in battle.take_events():
 		_on_event(ev)
 	_refresh()
@@ -255,7 +289,7 @@ func _refresh() -> void:
 		st = "SEGNALE %d/%d" % [int(e["segnale"]), int(e["segnale_max"])]
 	_status.text = st
 	_btn_finale.visible = battle._in_blackout(e) and not e["finale_used"]
-	for i in 2:
+	for i in battle.heroes.size():
 		var h: Dictionary = battle.heroes[i]
 		var mark: String = "▶ " if i == battle.active else "   "
 		_hero_labels[i].text = mark + str(h["name"]).to_upper() + ("  KO" if h["ko"] else "") + ("  SET 2" if int(h["set"]) == 2 else "")
@@ -279,6 +313,20 @@ func _refresh() -> void:
 
 
 func _draw_overlay() -> void:
+	var vs: Vector2 = _overlay.size
+	if _dash_t > 0.0:                    # linee di velocità dello scatto
+		var a: float = _dash_t / 0.22
+		for j in 14:
+			var y: float = vs.y * (0.15 + 0.05 * j) + sin(j * 7.3) * 20.0
+			var x0: float = vs.x * (0.5 - 0.35 * _dash_dir) + sin(j * 3.1) * 80.0
+			_overlay.draw_line(Vector2(x0, y), Vector2(x0 + _dash_dir * (220.0 + 60.0 * sin(j)), y), Color(0.75, 0.95, 1.0, 0.55 * a), 3.0)
+	if _burst_t > 0.0:                   # scintille del CONTRO
+		var c: Vector2 = cam.unproject_position(ENEMY_POS + Vector3(0, 1.4, 0))
+		var g: float = 1.0 - _burst_t / 0.28
+		for j in 16:
+			var ang: float = TAU * j / 16.0 + 0.2
+			var r0: float = 40.0 + 200.0 * g
+			_overlay.draw_line(c + Vector2.from_angle(ang) * r0, c + Vector2.from_angle(ang) * (r0 + 70.0 * (1.0 - g)), Color(_burst_col, 1.0 - g), 6.0)
 	# MIRINO: anello del colore del colpo che si stringe fino all'impatto; tutti i mirini restano a schermo (D5)
 	for i in battle.enemies.size():
 		var e: Dictionary = battle.enemies[i]
@@ -301,8 +349,17 @@ func _draw_overlay() -> void:
 func _on_event(ev: Dictionary) -> void:
 	match str(ev["t"]):
 		"contro":
-			_show_stamp("CONTRO!" if not ev["perfect"] else "PERFETTO!", COL[str(ev["color"])])
+			var cc: Color = COL[str(ev["color"])]
+			_show_stamp("CONTRO!" if not ev["perfect"] else "CONTRO PERFETTO!", cc)
 			Sfx.word("CLANG", bool(ev["perfect"]))
+			_hitstop(0.14 if ev["perfect"] else 0.09)
+			_flash_now(cc, 0.45 if ev["perfect"] else 0.3)
+			_shake(0.3, 0.12)
+			_punch()
+			_burst_t = 0.28
+			_burst_col = cc
+			hero_vis[battle.active].attack()
+			_knock_enemy(-0.7)
 			enemy_vis.tilt = 0.4
 		"blackout":
 			_show_stamp("BLACKOUT", Ui.YELLOW)
@@ -320,19 +377,34 @@ func _on_event(ev: Dictionary) -> void:
 			_show_stamp("PRESTO", Color(1, 1, 1, 0.8), 0.5)
 		"colpito", "sfonda", "colore_sbagliato":
 			var hv: CharacterVisual = hero_vis[_hero_index(str(ev["hero"]))]
+			_lunge_enemy()
 			hv.hit()
 			Sfx.word("THUD")
+			_hitstop(0.06)
+			_flash_now(Color("#ff2040"), 0.35)
+			_shake(0.45, 0.16)
 			if ev["t"] == "sfonda":
 				_show_stamp("SFONDA", Color.WHITE)
 			elif ev["t"] == "colore_sbagliato":
 				_show_stamp("COLORE SBAGLIATO", Ui.CREAM, 0.6)
 		"scarto":
 			_show_stamp("SCARTO" + (" PERFETTO" if ev["perfect"] else ""), Ui.CYAN, 0.6)
+			_lunge_enemy()
+			if ev["perfect"]:
+				_slowmo(0.3, 0.55)
+				_flash_now(Ui.CYAN, 0.3)
+		"scatto":
+			_dash(int(ev["dir"]))
 			Sfx.word("SWISH")
+		"mirino":
+			_windup_enemy(float(ev["impact"]) - battle.t)
 		"danno":
 			if str(ev["src"]) != "contro" and str(ev["src"]) != "finale":
 				hero_vis[battle.active].attack()
 				Sfx.word("TAP")
+				_hitstop(0.035)
+				_knock_enemy(-0.25)
+			_number(int(ev["amount"]), str(ev["src"]))
 			enemy_vis.hop = 0.25
 		"furia":
 			_show_stamp("FURIA", Color("#ff5a3d"))
@@ -351,6 +423,87 @@ func _on_event(ev: Dictionary) -> void:
 			_end(true, ev["voto"])
 		"sconfitta":
 			_end(false, battle.vote())
+
+
+# ================================================================ sensazione: fermo immagine, rallenty, lampo, scossa, scatto
+
+func _hitstop(dur: float) -> void:
+	_stop_id += 1
+	var my: int = _stop_id
+	Engine.time_scale = 0.03
+	await get_tree().create_timer(dur, true, false, true).timeout
+	if my == _stop_id:
+		Engine.time_scale = 1.0
+
+
+func _slowmo(scale: float, dur: float) -> void:
+	_stop_id += 1
+	var my: int = _stop_id
+	Engine.time_scale = scale
+	await get_tree().create_timer(dur, true, false, true).timeout
+	if my == _stop_id:
+		Engine.time_scale = 1.0
+
+
+func _flash_now(col: Color, a: float) -> void:
+	_flash.color = Color(col, a)
+	var tw := create_tween().set_ignore_time_scale(true)
+	tw.tween_property(_flash, "color:a", 0.0, 0.22)
+
+
+func _shake(dur: float, power: float) -> void:
+	_shake_t = dur
+	_shake_p = power / maxf(0.01, dur)
+
+
+func _punch() -> void:
+	var tw := create_tween().set_ignore_time_scale(true)
+	tw.tween_property(cam, "fov", 44.0, 0.06)
+	tw.tween_property(cam, "fov", 52.0, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _dash(dir: int) -> void:
+	var i: int = battle.active
+	var cv: Node3D = hero_vis[i]
+	_dash_t = 0.22
+	_dash_dir = dir
+	var home: Vector3 = _hero_home[i]
+	var tw := create_tween().set_ignore_time_scale(true)
+	tw.tween_property(cv, "position", home + Vector3(1.8 * dir, 0, 0.3), 0.11).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(0.22)
+	tw.tween_property(cv, "position", home, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+
+
+func _windup_enemy(left: float) -> void:
+	var tw := create_tween()
+	tw.tween_property(enemy_vis, "position", ENEMY_POS + Vector3(0, 0, -0.6), maxf(0.1, left * 0.8)).set_trans(Tween.TRANS_SINE)
+
+
+func _lunge_enemy() -> void:
+	var tw := create_tween().set_ignore_time_scale(true)
+	tw.tween_property(enemy_vis, "position", ENEMY_POS + Vector3(0, 0, 3.2), 0.07).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	tw.tween_property(enemy_vis, "position", ENEMY_POS, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+func _knock_enemy(dz: float) -> void:
+	var tw := create_tween().set_ignore_time_scale(true)
+	tw.tween_property(enemy_vis, "position", ENEMY_POS + Vector3(0, 0, dz), 0.05)
+	tw.tween_property(enemy_vis, "position", ENEMY_POS, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _number(n: int, src: String) -> void:
+	var l := Ui.label(str(n), 40 if src == "finale" or src == "contro" else 30, Ui.YELLOW if src != "contro" else Ui.CYAN, Ui.display(), 8)
+	var p: Vector2 = cam.unproject_position(ENEMY_POS + Vector3(randf_range(-0.6, 0.6), 2.2, 0))
+	l.position = p - Vector2(30, 20)
+	ui.add_child(l)
+	var tw := create_tween().set_ignore_time_scale(true)
+	tw.tween_property(l, "position:y", p.y - 90.0, 0.6).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(l, "modulate:a", 0.0, 0.6).set_delay(0.25)
+	tw.tween_callback(l.queue_free)
+
+
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
 
 
 func _hero_index(id: String) -> int:
@@ -415,7 +568,7 @@ func _end(won: bool, v: Dictionary) -> void:
 	again.pressed.connect(func() -> void: _main().go("controsegnale", {"enemy": enemy_id}))
 	row.add_child(again)
 	var idx: int = ORDER.find(enemy_id)
-	if won and idx >= 0 and idx < ORDER.size() - 1:
+	if won and enemy_id != "prova" and idx >= 0 and idx < ORDER.size() - 1:
 		var nxt := Ui.button("PROSSIMO", Ui.YELLOW, 22, 190)
 		nxt.pressed.connect(func() -> void: _main().go("controsegnale", {"enemy": ORDER[idx + 1]}))
 		row.add_child(nxt)
@@ -437,7 +590,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_J: battle.press(C.ROSSO)
 			KEY_K: battle.press(C.GIALLO)
 			KEY_L: battle.press(C.BLU)
-			KEY_SPACE: battle.dodge()
+			KEY_SPACE: battle.dodge(0)
+			KEY_A: battle.dodge(-1)
+			KEY_D: battle.dodge(1)
 			KEY_Q: battle.swap()
 			KEY_E: battle.toggle_set()
 			KEY_F: battle.finale()
@@ -450,6 +605,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var st := event as InputEventScreenTouch
 		_swipe_from = st.position if st.pressed else Vector2.INF
 	elif event is InputEventScreenDrag and _swipe_from != Vector2.INF:
-		if (event as InputEventScreenDrag).position.distance_to(_swipe_from) > 90.0:
+		var dd: Vector2 = (event as InputEventScreenDrag).position - _swipe_from
+		if dd.length() > 90.0:
 			_swipe_from = Vector2.INF
-			battle.dodge()
+			battle.dodge(1 if dd.x > 0.0 else -1)

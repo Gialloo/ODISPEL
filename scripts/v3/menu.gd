@@ -95,7 +95,7 @@ func _ready() -> void:
 	row2.add_child(b6)
 	# CONTROSEGNALE: il combattimento in tempo reale a contrattacchi, modo separato da provare (12/11/2026)
 	var b7 := Ui.button("CONTROSEGNALE", Ui.PINK, 22, 230)
-	b7.pressed.connect(func() -> void: _main().go("controsegnale", {"enemy": "frammento"}))
+	b7.pressed.connect(func() -> void: _main().go("controsegnale", {"enemy": "prova"}))
 	row2.add_child(b7)
 	if not OS.has_feature("mobile"):
 		var b4 := Ui.button("ESCI", Color("#ff7a9c"), 22, 120)

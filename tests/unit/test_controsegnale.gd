@@ -84,6 +84,32 @@ func _play(enemy: String, offset: float, wrong_every: int, seed_v: int = 3, limi
 	return b
 
 
+func _play_solo() -> CsBattle:
+	var b := CsBattle.new(["lance"], ["prova"])
+	b.auto_slow = false
+	var handled: Dictionary = {}
+	var k: int = 0
+	while not b.over and b.t < 300.0:
+		var ei: int = b._incoming()
+		if ei >= 0:
+			var a: Dictionary = b.enemies[ei]["attack"]
+			var key: String = str(a["impact"])
+			if not handled.has(key) and b.t >= float(a["impact"]) - 0.05:
+				handled[key] = true
+				if a["color"] == C.BIANCO:
+					b.dodge()
+				else:
+					b.press(a["color"])
+		else:
+			if b._in_blackout(b.enemies[0]) and not b.enemies[0]["finale_used"]:
+				b.finale()
+			if b.heroes[0]["queue"].size() < 2 and fmod(b.t, 0.25) < C.TICK:
+				k += 1
+				b.press(C.COLORS[k % 3])
+		b.step(C.TICK)
+	return b
+
+
 func _initialize() -> void:
 	# ------------------------------------------------ CONTRO perfetto, buono, colore sbagliato
 	var b := _b()
@@ -179,10 +205,34 @@ func _initialize() -> void:
 	b = _b("sfondatore")
 	b.enemies[0]["pi"] = 1
 	_run_to_attack(b)
-	_run_until(b, float(b.enemies[0]["attack"]["impact"]))
+	_run_until(b, float(b.enemies[0]["attack"]["impact"]) - 0.05)
 	b.dodge()
+	_run_until(b, b.t + 0.3)
 	evs = b.take_events()
-	check(_has(evs, "scarto") and int(b.heroes[0]["hp"]) == int(b.heroes[0]["max"]), "SCARTO evita lo SFONDA")
+	var sc: Array = evs.filter(func(e): return e["t"] == "scarto")
+	check(sc.size() == 1 and int(b.heroes[0]["hp"]) == int(b.heroes[0]["max"]), "SCARTO evita lo SFONDA")
+	check(sc.size() == 1 and sc[0]["perfect"], "scatto 50 ms prima dell'impatto: SCARTO PERFETTO")
+	check(b.t < float(b.enemies[0]["stagger_until"]), "dopo lo SCARTO PERFETTO il nemico è sbilanciato")
+	# scatto un po' prima: va a vuoto lo stesso, ma non è perfetto
+	b = _b("sfondatore")
+	b.enemies[0]["pi"] = 1
+	_run_to_attack(b)
+	_run_until(b, float(b.enemies[0]["attack"]["impact"]) - 0.25)
+	b.dodge()
+	_run_until(b, b.t + 0.4)
+	sc = b.take_events().filter(func(e): return e["t"] == "scarto")
+	check(sc.size() == 1 and not sc[0]["perfect"], "scatto 250 ms prima: SCARTO normale")
+	# troppo presto: l'invulnerabilità finisce prima dell'impatto
+	b = _b("sfondatore")
+	b.enemies[0]["pi"] = 1
+	_run_to_attack(b)
+	_run_until(b, float(b.enemies[0]["attack"]["impact"]) - 0.6)
+	b.dodge()
+	b.dodge()
+	_run_until(b, b.t + 0.9)
+	evs = b.take_events()
+	check(_has(evs, "colpito") and not _has(evs, "scarto"), "scatto troppo presto: il colpo prende")
+	check(evs.filter(func(e): return e["t"] == "scatto").size() == 1, "lo scatto ha una ricarica: due tocchi, uno scatto")
 
 	# ------------------------------------------------ D10 SPECCHIO
 	b = _b("specchio")
@@ -269,7 +319,7 @@ func _initialize() -> void:
 	check(_has(b.take_events(), "fase2") and b.enemies[0]["specchio"] == C.BLU, "a metà vita il Ripetitore mette lo SPECCHIO sul blu")
 
 	# ------------------------------------------------ scontri interi
-	for en in ["frammento", "sfondatore", "specchio", "boss_ripetitore"]:
+	for en in ["prova", "frammento", "sfondatore", "specchio", "boss_ripetitore"]:
 		var p: CsBattle = _play(en, 0.0, 0)
 		var v: Dictionary = p.vote()
 		check(p.over and p.won, "%s: il giocatore preciso vince" % en)
@@ -281,6 +331,9 @@ func _initialize() -> void:
 		print("  %s impreciso: %s in %.0f s, voto %s, PV %d/%d" % [en, "vince" if s.won else "perde", s.t, vs["voto"], s.heroes[0]["hp"], s.heroes[1]["hp"]])
 		if en != "boss_ripetitore":
 			check(s.won, "%s: anche chi è in ritardo di 100 ms e sbaglia un colore su 4 vince (D12)" % en)
+	var solo: CsBattle = _play_solo()
+	check(solo.won, "prova: Lance da solo vince (%.0f s, voto %s)" % [solo.t, solo.vote()["voto"]])
+	print("  prova solo Lance: %.0f s, voto %s, PV %d" % [solo.t, solo.vote()["voto"], solo.heroes[0]["hp"]])
 	var r1: CsBattle = _play("sfondatore", 0.03, 5, 7)
 	var r2: CsBattle = _play("sfondatore", 0.03, 5, 7)
 	check(r1.t == r2.t and r1.vote() == r2.vote(), "stessa partita, stesso risultato")

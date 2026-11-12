@@ -22,6 +22,10 @@ var last_action_t: float = 0.0
 var combo: int = 0
 var last_hit_t: float = -99.0
 var last_press_t: float = -99.0
+var dodge_start: float = -99.0
+var dodge_until: float = -99.0
+var dodge_ready: float = 0.0
+var dodge_dir: int = 0
 var buffered: Dictionary = {}      # {"color", "enemy"}: tocco ricordato prima della finestra (D12)
 var miss_streak: int = 0
 var hint_given: bool = false
@@ -45,7 +49,7 @@ func _init(hero_ids: Array = ["lance", "rio"], enemy_ids: Array = ["frammento"])
 			"segnale_max": float(e["segnale"]), "dmg": int(e["dmg"]), "pattern": e["pattern"], "pi": 0, "attack": {},
 			"next_at": 1.5 + 0.7 * i, "furia": 0.0, "furia_left": 0, "blackout_until": -1.0, "specchio": str(e.get("specchio", "")),
 			"tag": "", "tag_until": -1.0, "last_hit_t": 0.0, "phase": 1, "phase2": e.get("phase2", {}), "boss": bool(e.get("boss", false)),
-			"finale_used": false})
+			"finale_used": false, "stagger_until": -1.0})
 	encounter = enemy_ids[0] if enemy_ids.size() == 1 else "+".join(enemy_ids)
 	stats = {"contro": 0, "perfetti": 0, "mancati": 0, "colpi_colorati": 0, "danni_presi": 0, "mosse": {},
 		"diretta_sum": 0.0, "diretta_n": 0, "scarti": 0, "blackout": 0, "durata": 0.0}
@@ -68,27 +72,35 @@ func press(color: String) -> void:
 	_enqueue(active, color)
 
 
-# SCARTO: evita il colpo (unico modo per i colpi SFONDA). Non toglie segnale: è la risposta sicura, non la migliore (D10).
-func dodge() -> void:
-	if over or paused:
+# SCARTO: scatto laterale con invulnerabilità. Si può fare sempre (ha una breve ricarica); se l'impatto arriva
+# mentre sei invulnerabile il colpo va a vuoto. Scattare all'ultimo istante è SCARTO PERFETTO: rallenty e nemico
+# sbilanciato per un attimo (colpi x1.5). È l'unico modo per i colpi SFONDA. Non toglie segnale come il CONTRO (D10).
+func dodge(dir: int = 0) -> void:
+	if over or paused or t < dodge_ready:
 		return
 	real_idle = 0.0
-	var ei: int = _incoming()
-	if ei < 0:
-		_ev({"t": "scarto_a_vuoto"})
-		return
-	var e: Dictionary = enemies[ei]
-	var d: float = t - float(e["attack"]["impact"])
-	if d < -_w(C.WIN_GOOD_BEFORE) or d > _w(C.WIN_GOOD_AFTER):
-		_ev({"t": "presto", "enemy": ei})
-		return
-	e["attack"]["resolved"] = true
+	dodge_start = t
+	dodge_until = t + C.DODGE_IFRAMES
+	dodge_ready = t + C.DODGE_COOLDOWN
+	dodge_dir = dir if dir != 0 else (-dodge_dir if dodge_dir != 0 else 1)
+	_ev({"t": "scatto", "dir": dodge_dir})
+
+
+func _resolve_dodge(i: int) -> void:
+	var e: Dictionary = enemies[i]
+	var a: Dictionary = e["attack"]
+	a["resolved"] = true
 	stats["scarti"] += 1
-	var perfect: bool = absf(d) <= _w(C.WIN_PERFECT)
-	if str(e["attack"]["color"]) == C.BIANCO:
-		_gain_diretta(C.DIRETTA_CONTRO if perfect else C.DIRETTA_HIT)
-	_ev({"t": "scarto", "enemy": ei, "perfect": perfect, "color": e["attack"]["color"]})
-	_after_attack(ei)
+	var lead: float = float(a["impact"]) - dodge_start
+	var perfect: bool = lead >= 0.0 and lead <= C.DODGE_PERFECT
+	if perfect:
+		_gain_diretta(C.DIRETTA_CONTRO)
+		e["stagger_until"] = t + C.STAGGER_TIME
+	else:
+		_gain_diretta(C.DIRETTA_HIT)
+	miss_streak = 0
+	_ev({"t": "scarto", "enemy": i, "perfect": perfect, "color": a["color"], "dir": dodge_dir})
+	_after_attack(i)
 
 
 func swap() -> void:
@@ -218,6 +230,9 @@ func _enemy_tick(i: int, dt: float) -> void:
 		var col: String = buffered["color"]
 		buffered = {}
 		_resolve_counter(i, col, false)
+		return
+	if d >= 0.0 and t <= dodge_until:                # l'impatto arriva durante lo scatto: a vuoto
+		_resolve_dodge(i)
 		return
 	if d > _w(C.WIN_GOOD_AFTER):
 		_hit_hero(i, 1.0, "colpito")
@@ -400,6 +415,8 @@ func _damage_enemy(i: int, amount: int, src: String) -> void:
 		return
 	if _in_blackout(e) and src != "finale":
 		amount = int(amount * C.BLACKOUT_DMG_MULT)
+	elif t < float(e.get("stagger_until", -1.0)):
+		amount = int(amount * C.STAGGER_DMG_MULT)
 	e["hp"] = maxi(0, int(e["hp"]) - amount)
 	e["last_hit_t"] = t
 	e["furia"] = 0.0
