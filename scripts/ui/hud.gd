@@ -119,6 +119,7 @@ func _ready() -> void:
 	_circle_label.size = Vector2(600, 40)
 	_circle_label.add_theme_color_override("font_color", Color(0.45, 0.9, 1.0))
 	add_child(_circle_label)
+	_make_boss_bar()
 	_set_form(0)
 
 func _button(text: String, col: Color, w := 380.0, h := 100.0, fs := 32) -> Button:
@@ -501,6 +502,7 @@ func _process(_d: float) -> void:
 		_combo_label.modulate.a = 1.0
 	elif _combo_label.text.find("+") == -1:
 		_combo_label.modulate.a = 0.0
+	_update_boss_bar(_d)
 	if Run.circle_t > 0.8 and Run.running:
 		_circle_label.text = "RESTA NEL CERCHIO · ONDATA TRA %d" % ceili(Run.CIRCLE_TIME - Run.circle_t)
 	else:
@@ -586,3 +588,46 @@ func _slider_row(title: String, obj, key: String, lo: float, hi: float) -> Contr
 		l.text = "%s: %.2f" % [title, val])
 	v.add_child(s)
 	return v
+
+## 0.15: barra del COLOSSO in alto al centro, sotto il numero dell'ondata.
+var _boss_box: Control
+var _boss_fill: ColorRect
+var _boss_shown := 1.0
+
+func _make_boss_bar() -> void:
+	_boss_box = Control.new()
+	_boss_box.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_boss_box.position = Vector2(-260, 52)
+	_boss_box.size = Vector2(520, 40)
+	_boss_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_box.visible = false
+	add_child(_boss_box)
+	var lbl := _label("COLOSSO", 18)
+	lbl.position = Vector2(0, 0)
+	lbl.size = Vector2(520, 20)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_color_override("font_color", Color(1, 0.62, 0.25))
+	_boss_box.add_child(lbl)
+	var back := ColorRect.new()
+	back.color = Color(0.05, 0.02, 0.06, 0.8)
+	back.position = Vector2(0, 24)
+	back.size = Vector2(520, 12)
+	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_box.add_child(back)
+	_boss_fill = ColorRect.new()
+	_boss_fill.color = Color(1, 0.45, 0.2)
+	_boss_fill.position = Vector2(2, 26)
+	_boss_fill.size = Vector2(516, 8)
+	_boss_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_box.add_child(_boss_fill)
+
+func _update_boss_bar(_d: float) -> void:
+	var b = get_tree().get_first_node_in_group("boss")
+	if b == null or not Run.running:
+		_boss_box.visible = false
+		_boss_shown = 1.0
+		return
+	_boss_box.visible = true
+	var k: float = clampf(b.hp / b.max_hp, 0.0, 1.0)
+	_boss_shown = move_toward(_boss_shown, k, 1.5 * _d)
+	_boss_fill.size.x = 516.0 * _boss_shown

@@ -85,3 +85,6 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 
 ## 0.14
 - Impact frame solo su counter, colpo dall'alto potente e colpo finale della combo (`player.IMPACT_FRAME_MOVES`). Città spostata lontano (palazzine a 140-175 m, grattacieli anni 2000 a 230-360 m nella foschia), linee elettriche in diagonale verso l'orizzonte. Prestazioni: niente contorni né emissione sulla città, riflessi spenti, pellicola a texture.
+
+## 0.15
+- Boss COLOSSO ogni quinta ondata (`enemy.boss`, tema "COLOSSO" in `run._next_wave`): Bruto 1,6 volte più grande, vita ×5,5, botta più larga e onda d'urto a tre anelli da saltare; barra in alto nella HUD; abbatterlo vale 1500 punti e mezza vita. Prova: `tests/boss_15.gd`.

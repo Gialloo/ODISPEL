@@ -32,6 +32,7 @@ var poise := 30.0
 var weight := 1.0                  # più pesante = meno spinta
 var state := S.IDLE
 var arch := "scout"
+var boss := false                  # 0.15: COLOSSO, un Bruto gigante che chiude ogni quinta ondata
 var wave := 1                      # ondata: rende i nemici più svelti e frequenti, non solo più resistenti
 var _zap_cd := 0.0
 var _prev_vy := 0.0
@@ -69,7 +70,7 @@ var _hit_by: Dictionary = {}
 var burn_t := 0.0                  # FUOCO: secondi di fiamma rimasti
 var _burn_tick := 0.0
 
-func setup(a: String, w: int) -> void:
+func setup(a: String, w: int, is_boss := false) -> void:
 	arch = a
 	wave = w
 	var d: Dictionary = ARCH[a]
@@ -77,6 +78,13 @@ func setup(a: String, w: int) -> void:
 	weight = d.weight
 	max_hp = d.hp * (1.0 + 0.04 * min(w - 1, 15))
 	max_poise = d.poise * (1.0 + 0.03 * min(w - 1, 15))
+	if is_boss:
+		# tanta vita ma postura solo il doppio: le combo pesanti lo devono ancora far barcollare
+		boss = true
+		max_hp *= 5.5
+		max_poise *= 2.2
+		radius *= 1.5
+		weight *= 2.0
 
 ## Valore della tabella per questo archetipo e questa ondata.
 func _tv(k: String) -> float:
@@ -89,6 +97,11 @@ func _tv(k: String) -> float:
 			v *= 1.0 - 0.03 * lw
 		"windup":
 			v *= max(0.75, 1.0 - 0.015 * lw)
+	if boss:
+		match k:
+			"speed": v *= 1.3
+			"attack_range": v *= 1.5
+			"damage": v *= 1.25
 	return v
 
 func is_heavy() -> bool:
@@ -101,7 +114,7 @@ func _ready() -> void:
 	var col := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
 	cap.radius = radius
-	cap.height = 2.0 if arch == "brute" else 1.5
+	cap.height = (3.2 if boss else 2.0) if arch == "brute" else 1.5
 	col.shape = cap
 	col.position.y = cap.height * 0.5
 	add_child(col)
@@ -167,10 +180,39 @@ func _ready() -> void:
 	add_child(_warn)
 	_bar_bg = _make_bar(Color(0, 0, 0, 0.6), 1.0)
 	_bar = _make_bar(Color(1, 0.3, 0.35), 0.98)
+	if boss:
+		_make_boss_look()
 	hp = max_hp
 	poise = max_poise
 	_cooldown = randf_range(0.6, 1.4)
 	_strafe = 1.0 if randf() < 0.5 else -1.0
+
+## COLOSSO: stesso corpo del Bruto ma 1,6 volte più grande, viola scuro, con tre corna e il petto acceso.
+func _make_boss_look() -> void:
+	add_to_group("boss")
+	_visual.scale = Vector3.ONE * 1.6
+	_mat.albedo_color = Color(0.42, 0.14, 0.32)
+	var hm := StandardMaterial3D.new()
+	hm.albedo_color = Color(0.95, 0.6, 0.2)
+	for i in 3:
+		var horn := MeshInstance3D.new()
+		var pm := PrismMesh.new()
+		pm.size = Vector3(0.28, 0.6 if i == 1 else 0.45, 0.28)
+		horn.mesh = pm
+		horn.material_override = hm
+		horn.position = Vector3((i - 1) * 0.5, 2.15, -0.1)
+		horn.rotation.z = (1 - i) * 0.35
+		_visual.add_child(horn)
+	var core := MeshInstance3D.new()
+	var cm := BoxMesh.new()
+	cm.size = Vector3(0.5, 0.5, 0.08)
+	core.mesh = cm
+	var km := StandardMaterial3D.new()
+	km.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	km.albedo_color = Color(1.0, 0.55, 0.15)
+	core.material_override = km
+	core.position = Vector3(0, 1.05, -0.62)
+	_visual.add_child(core)
 
 func _make_bar(c: Color, w: float) -> MeshInstance3D:
 	var m := MeshInstance3D.new()
@@ -377,18 +419,37 @@ func _flat(v: Vector3) -> Vector3:
 
 ## BRUTE: schianto ad area davanti a sé.
 func _slam() -> void:
-	var c := global_position + _attack_dir * 1.0
-	FX.ring(c, Color(1, 0.6, 0.2, 0.9), 3.0, 0.3)
-	FX.shake(0.6)
+	var c := global_position + _attack_dir * (1.6 if boss else 1.0)
+	var r := 4.5 if boss else 3.0
+	FX.ring(c, Color(1, 0.6, 0.2, 0.9), r, 0.3)
+	FX.shake(0.9 if boss else 0.6)
+	if boss:
+		_shockwave(c)
 	FX.sound("colpo_finale", 0.6)
 	FX.sparks(c, Vector3.UP, Color(1, 0.6, 0.2), 12, 8.0)
 	var to := _flat(player.global_position - c)
-	if to.length() < 3.0 and absf(player.global_position.y - global_position.y) < 1.6:
+	if to.length() < r and absf(player.global_position.y - global_position.y) < 1.6:
 		player.take_hit(self, _tv("damage"), to.normalized() if to.length() > 0.1 else _attack_dir)
 	for p in get_tree().get_nodes_in_group("props"):
-		if p.center().distance_to(c) < 3.0:
+		if p.center().distance_to(c) < r:
 			p.structure_damage(25.0)
 	_attack_resolved = true
+
+## COLOSSO: dopo la botta parte un'onda a terra che si allarga. Si evita saltando (o con una schivata perfetta).
+func _shockwave(c: Vector3) -> void:
+	var hit := [false]
+	for k in 3:
+		var rr := 6.0 + k * 3.0
+		get_tree().create_timer(0.12 + k * 0.12, false).timeout.connect(func():
+			if state == S.DEAD or not is_instance_valid(player):
+				return
+			FX.ring(c, Color(1, 0.45, 0.2, 0.7), rr, 0.25)
+			var d := _flat(player.global_position - c).length()
+			var grounded: bool = player.is_on_floor() and player.global_position.y - c.y < 0.6
+			# solo fuori dalla botta: chi l'ha già presa non viene colpito due volte
+			if not hit[0] and grounded and d > maxf(rr - 3.2, 4.6) and d < rr + 0.4:
+				hit[0] = true
+				player.take_hit(self, _tv("damage") * 0.45, _flat(player.global_position - c).normalized()))
 
 ## CONDUIT: sfera elettrica. Mira al giocatore o all'ambiente vicino a lui.
 func _fire_orb() -> void:
@@ -623,6 +684,13 @@ func _die(dir: Vector3) -> void:
 	FX.sound("ko", 1.2)
 	FX.stat("kills")
 	FX.sparks(global_position + Vector3(0, 1, 0), Vector3.UP, ARCH[arch].col, 16, 9.0)
+	if boss:
+		remove_from_group("boss")
+		FX.shake(1.2)
+		FX.speed_lines(700)
+		FX.ring(global_position, Color(1, 0.6, 0.2, 0.9), 7.0, 0.5)
+		FX.sparks(global_position + Vector3(0, 2, 0), Vector3.UP, Color(1, 0.6, 0.2), 30, 14.0)
+		FX.stat("boss_kills")
 	_bar.visible = false
 	_bar_bg.visible = false
 	var t := create_tween()
@@ -633,7 +701,7 @@ func _die(dir: Vector3) -> void:
 		queue_free())
 
 func _update_bar() -> void:
-	var show := hp < max_hp and state != S.DEAD
+	var show := hp < max_hp and state != S.DEAD and not boss   # il COLOSSO ha la barra in alto nella HUD
 	_bar.visible = show
 	_bar_bg.visible = show
 	if show:
