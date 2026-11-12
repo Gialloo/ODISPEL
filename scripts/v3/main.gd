@@ -13,6 +13,7 @@ const SCREENS: Dictionary = {
 	"battle": "res://scripts/v3/battle3d.gd",
 	"controsegnale": "res://scripts/controsegnale/cs_scene.gd",   # combattimento in tempo reale a contrattacchi (modo separato)
 	"prova_grezza": "res://scripts/prova_grezza/pg_scene.gd",     # prova grezza del core CONTROSEGNALE v2: Manichino contro un nemico
+	"prova_arena": "res://scripts/prova_grezza/pg_arena_scene.gd",   # prova grezza 2: arena circolare, squadra da 4 (12/11 sera)
 }
 
 var current: Node = null
@@ -292,7 +293,7 @@ func tear_now(secs: float = 0.6) -> bool:
 # SCHERMATA DI CARICAMENTO (variante "ricordo" di Rio, 3/11/2026): chiaro, biondo, con i riflessi olografici, ha l'aria di
 # un ricordo sbiadito. Sta sopra al nero della dissolvenza solo per strada e battaglia 3D, dove il caricamento si sente;
 # la texture (768x1024) si carica una volta sola. Senza il disegno la dissolvenza resta nera come prima.
-const CARICO_SU: Array = ["area", "battle", "controsegnale", "prova_grezza"]
+const CARICO_SU: Array = ["area", "battle", "controsegnale", "prova_grezza", "prova_arena"]
 var _carico: Control
 
 
