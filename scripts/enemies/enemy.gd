@@ -33,6 +33,10 @@ var weight := 1.0                  # più pesante = meno spinta
 var state := S.IDLE
 var arch := "scout"
 var boss := false                  # 0.15: COLOSSO, un Bruto gigante che chiude ogni quinta ondata
+var boss_name := ""                # 0.17: COLOSSO (Bruto gigante) o TRALICCIO (Conduit gigante, ogni decima ondata)
+var _shots := 0                    # TRALICCIO: attacchi fatti (ogni terzo è la scarica a terra)
+var _close_t := 0.0                # TRALICCIO: da quanto il giocatore gli sta addosso
+var _pulse_t := 0.0                # TRALICCIO: carica dell'impulso prima di sparire
 var wave := 1                      # ondata: rende i nemici più svelti e frequenti, non solo più resistenti
 var _zap_cd := 0.0
 var _prev_vy := 0.0
@@ -87,10 +91,19 @@ func setup(a: String, w: int, is_boss := false) -> void:
 	if is_boss:
 		# tanta vita ma postura solo il doppio: le combo pesanti lo devono ancora far barcollare
 		boss = true
-		max_hp *= 5.5
-		max_poise *= 2.2
-		radius *= 1.5
-		weight *= 2.0
+		if a == "conduit":
+			# TRALICCIO: si tiene lontano e spara a ventaglio. Le sue sfere rimandate indietro lo fanno crollare.
+			boss_name = "TRALICCIO"
+			max_hp *= 8.0
+			max_poise *= 3.0
+			radius *= 1.6
+			weight *= 3.0
+		else:
+			boss_name = "COLOSSO"
+			max_hp *= 5.5
+			max_poise *= 2.2
+			radius *= 1.5
+			weight *= 2.0
 
 ## Valore della tabella per questo archetipo e questa ondata.
 func _tv(k: String) -> float:
@@ -103,7 +116,12 @@ func _tv(k: String) -> float:
 			v *= 1.0 - 0.03 * lw
 		"windup":
 			v *= max(0.75, 1.0 - 0.015 * lw)
-	if boss:
+	if boss and arch == "conduit":
+		match k:
+			"speed": v *= 1.1
+			"attack_range": v *= 1.25
+			"windup": v *= 0.85
+	elif boss:
 		match k:
 			"speed": v *= 1.3
 			"attack_range": v *= 1.5
@@ -120,7 +138,7 @@ func _ready() -> void:
 	var col := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
 	cap.radius = radius
-	cap.height = (3.2 if boss else 2.0) if arch == "brute" else 1.5
+	cap.height = (3.2 if boss else 2.0) if arch == "brute" else (2.7 if boss else 1.5)
 	col.shape = cap
 	col.position.y = cap.height * 0.5
 	add_child(col)
@@ -198,6 +216,9 @@ func _ready() -> void:
 ## COLOSSO: stesso corpo del Bruto ma 1,6 volte più grande, viola scuro, con tre corna e il petto acceso.
 func _make_boss_look() -> void:
 	add_to_group("boss")
+	if arch == "conduit":
+		_make_pylon_look()
+		return
 	_visual.scale = Vector3.ONE * 1.6
 	_mat.albedo_color = Color(0.42, 0.14, 0.32)
 	var hm := StandardMaterial3D.new()
@@ -221,6 +242,33 @@ func _make_boss_look() -> void:
 	core.material_override = km
 	core.position = Vector3(0, 1.05, -0.62)
 	_visual.add_child(core)
+
+## TRALICCIO: un Conduit alto quasi il doppio, blu notte, con traverse da palo della luce e tre isolatori accesi.
+func _make_pylon_look() -> void:
+	_visual.scale = Vector3.ONE * 1.8
+	_mat.albedo_color = Color(0.12, 0.16, 0.38)
+	var bm := StandardMaterial3D.new()
+	bm.albedo_color = Color(0.2, 0.22, 0.3)
+	var gm := StandardMaterial3D.new()
+	gm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	gm.albedo_color = Color(0.5, 0.95, 1.0)
+	for i in 2:
+		var bar := MeshInstance3D.new()
+		var bx := BoxMesh.new()
+		bx.size = Vector3(1.5 - i * 0.5, 0.08, 0.1)
+		bar.mesh = bx
+		bar.material_override = bm
+		bar.position = Vector3(0, 1.25 + i * 0.3, 0)
+		_visual.add_child(bar)
+	for i in 3:
+		var iso := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.11
+		sm.height = 0.22
+		iso.mesh = sm
+		iso.material_override = gm
+		iso.position = Vector3((i - 1) * 0.68, 1.36, 0)
+		_visual.add_child(iso)
 
 func _make_bar(c: Color, w: float) -> MeshInstance3D:
 	var m := MeshInstance3D.new()
@@ -290,7 +338,14 @@ func _physics_process(delta: float) -> void:
 			if _t >= _tv("windup"):
 				_attack_dir = _flat(player.global_position - global_position).normalized()
 				_attack_resolved = false
-				if arch == "conduit":
+				if arch == "conduit" and boss:
+					_shots += 1
+					if _shots % 3 == 0:
+						_pylon_strike()
+					else:
+						_volley()
+					_set_state(S.RECOVER)
+				elif arch == "conduit":
 					_fire_orb()
 					_set_state(S.RECOVER)
 				elif arch == "brute":
@@ -326,7 +381,7 @@ func _physics_process(delta: float) -> void:
 			var fr: float = (22.0 if is_on_floor() else 5.0) * sqrt(weight)
 			velocity.x = move_toward(velocity.x, 0, fr * d)
 			velocity.z = move_toward(velocity.z, 0, fr * d)
-			if _t >= (0.32 if state == S.HITSTUN else (2.0 if arch == "brute" else 1.3)) and is_on_floor():
+			if _t >= (0.32 if state == S.HITSTUN else (2.4 if boss else (2.0 if arch == "brute" else 1.3))) and is_on_floor():
 				if state == S.STAGGER:
 					poise = max_poise
 				_set_state(S.CHASE)
@@ -407,6 +462,8 @@ func _chase(d: float) -> void:
 	_cooldown -= d
 	var to := _flat(player.global_position - global_position)
 	var dist := to.length()
+	if boss and arch == "conduit" and _tick_pulse(d, dist):
+		return
 	var dir := to.normalized()
 	var want: Vector3
 	if dist > _tv("attack_range") + 1.5:
@@ -607,7 +664,7 @@ func shock(dmg: float) -> void:
 	if state == S.DEAD:
 		return
 	receive_hit({"dmg": dmg, "poise": 35.0, "dir": Vector3.ZERO, "knock": 0.0, "launch": 0.0, "form": -1, "move": "shock", "env": true})
-	if state != S.DEAD and is_on_floor():
+	if state != S.DEAD and is_on_floor() and not boss:
 		_set_state(S.STAGGER)
 		_t = 0.35
 	_mat.emission_enabled = true
@@ -615,12 +672,90 @@ func shock(dmg: float) -> void:
 	_mat.emission_energy_multiplier = 2.0
 	_hit_flash = 0.18
 	FX.stat("enemies_shocked")
-	if arch == "conduit" and _zap_cd <= 0.0 and state != S.DEAD:
+	if arch == "conduit" and not boss and _zap_cd <= 0.0 and state != S.DEAD:
 		# il Conduit scosso si scarica su chi gli sta intorno
 		_zap_cd = 1.5
 		FX.stat("conduit_overloads")
 		var at := global_position
 		get_tree().create_timer(0.12).timeout.connect(func(): El.shock(at, self, 1.3))
+
+## TRALICCIO: tre sfere a ventaglio. Si rimandano con SPINGI o con la parata della BLADE.
+func _volley() -> void:
+	_mat.emission_enabled = false
+	var from := global_position + Vector3(0, 2.6, 0)
+	var aim: Vector3 = player.global_position + Vector3(0, 0.9, 0)
+	var base := aim - from
+	for i in 3:
+		var o := Orb.new()
+		FX._world.add_child(o)
+		var dir := base.rotated(Vector3.UP, deg_to_rad((i - 1) * 16.0))
+		o.fire(from, from + dir, self, _tv("damage"))
+	FX.sound("critico", 1.4, -2.0)
+	FX.stat("boss_volleys")
+
+## TRALICCIO: quattro scariche a terra intorno al giocatore, annunciate da anelli. Basta spostarsi.
+func _pylon_strike() -> void:
+	_mat.emission_enabled = false
+	var c := player.global_position
+	var spots := [c]
+	var a0 := randf() * TAU
+	for i in 3:
+		var a := a0 + i * TAU / 3.0
+		spots.append(c + Vector3(sin(a), 0, cos(a)) * 3.2)
+	for p in spots:
+		FX.ring(p, Color(0.5, 0.95, 1.0, 0.9), 1.8, 0.9)
+	FX.sound("scudo", 0.8, -4.0)
+	FX.stat("boss_strikes")
+	get_tree().create_timer(0.9, false).timeout.connect(func():
+		if state == S.DEAD:
+			return
+		for p in spots:
+			El.shock(p + Vector3(0, 0.1, 0), self, 0.8, true)
+		FX.shake(0.5))
+
+## TRALICCIO: se gli stai addosso troppo a lungo si carica (anello largo) e scarica tutto intorno, poi sparisce
+## lontano. Si evita allontanandosi o con la schivata perfetta. Vero se in questo frame sta facendo l'impulso.
+func _tick_pulse(d: float, dist: float) -> bool:
+	if _pulse_t > 0.0:
+		_pulse_t -= d
+		velocity.x = move_toward(velocity.x, 0, 30 * d)
+		velocity.z = move_toward(velocity.z, 0, 30 * d)
+		var k: float = 1.0 - _pulse_t / 0.8
+		_warn_mat.albedo_color = Color(0.5, 0.95, 1.0, 0.3 + 0.7 * k)
+		_warn.scale = Vector3.ONE * 4.2
+		_mat.emission_enabled = true
+		_mat.emission = Color(0.5, 0.95, 1.0)
+		_mat.emission_energy_multiplier = 3.0 * k
+		if _pulse_t <= 0.0:
+			_mat.emission_enabled = false
+			FX.ring(global_position, Color(0.5, 0.95, 1.0, 0.9), 4.2, 0.3)
+			FX.sound("critico", 0.9)
+			if _flat(player.global_position - global_position).length() < 4.4:
+				player.take_hit(self, _tv("damage") * 1.2, _flat(player.global_position - global_position).normalized())
+			var a := randf() * TAU
+			var to := Vector3(sin(a) * 15.0, 0.3, cos(a) * 15.0)
+			if to.distance_to(player.global_position) < 9.0:
+				to = Vector3(-to.x, to.y, -to.z)
+			global_position = to
+			FX.ring(to, Color(0.5, 0.95, 1.0, 0.8), 3.0, 0.4)
+			FX.stat("boss_blinks")
+			_close_t = 0.0
+			_cooldown = 0.8
+		return true
+	_close_t = _close_t + d if dist < 3.6 else maxf(0.0, _close_t - d * 0.5)
+	if _close_t > 2.4:
+		_pulse_t = 0.8
+		FX.sound("scudo", 0.6, -2.0)
+		return true
+	return false
+
+## TRALICCIO: una sua sfera rimandata indietro lo colpisce in pieno e gli toglie tanto equilibrio.
+func orb_backfire() -> void:
+	if state == S.DEAD:
+		return
+	FX.stat("boss_backfires")
+	FX.shake(0.5)
+	receive_hit({"dmg": max_hp * 0.06, "poise": max_poise * 0.4, "dir": Vector3.ZERO, "knock": 0.0, "launch": 0.0, "form": -1, "move": "backfire"})
 
 ## Riceve un colpo del giocatore (dati dalla tabella delle mosse).
 func receive_hit(info: Dictionary) -> void:
@@ -651,7 +786,7 @@ func receive_hit(info: Dictionary) -> void:
 			_power_fly = max(_power_fly, 0.45)
 			_hit_by.clear()
 	var interrupted := state == S.WINDUP or state == S.ATTACK
-	if arch == "brute" and poise > 0.0 and state != S.STAGGER and state != S.AIR and not info.has("pull_to"):
+	if (arch == "brute" or boss) and poise > 0.0 and state != S.STAGGER and state != S.AIR and not info.has("pull_to"):
 		# corazza: incassa senza fermarsi finché non perde l'equilibrio
 		velocity.x *= 0.25
 		velocity.z *= 0.25

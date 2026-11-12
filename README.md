@@ -92,3 +92,6 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 ## 0.16
 Barre di vita dei nemici disegnate dalla HUD (`scripts/ui/enemy_bars.gd`): bordo nero, rosso = vita, bianco = vita appena tolta
 (resta finché i colpi continuano), targhetta "LV n". Prova: `godot --path . -s tests/bars_16.gd -- /tmp/schermate`.
+
+## 0.17
+Secondo boss, il TRALICCIO (ogni decima ondata; il COLOSSO resta sulla 5, 15, 25...): sfere a ventaglio da rimandare, scariche a terra annunciate, impulso se gli stai addosso. Prove: `tests/boss_17.gd`, `tests/traliccio_17.gd`.

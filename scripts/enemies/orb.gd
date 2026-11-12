@@ -60,7 +60,9 @@ func _physics_process(delta: float) -> void:
 	scale = Vector3.ONE * (1.0 + 0.15 * sin(Time.get_ticks_msec() * 0.03))
 	if reflected:
 		for e in get_tree().get_nodes_in_group("enemies"):
-			if not e.is_dead() and e.global_position.distance_to(global_position - Vector3(0, 0.9, 0)) < e.radius + 0.6:
+			if not e.is_dead() and e.global_position.distance_to(global_position - Vector3(0, 0.9, 0)) < e.radius + 0.6 + (1.0 if e.boss else 0.0):
+				if e.has_method("orb_backfire") and e.boss and e.arch == "conduit":
+					e.orb_backfire()   # 0.17: rimandata al TRALICCIO lo fa crollare
 				_burst(1.4)
 				return
 	else:

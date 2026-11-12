@@ -600,6 +600,7 @@ func _slider_row(title: String, obj, key: String, lo: float, hi: float) -> Contr
 var _boss_box: Control
 var _boss_fill: ColorRect
 var _boss_white: ColorRect
+var _boss_label: Label
 var _boss_shown := 1.0
 
 func _make_boss_bar() -> void:
@@ -611,6 +612,7 @@ func _make_boss_bar() -> void:
 	_boss_box.visible = false
 	add_child(_boss_box)
 	var lbl := _label("COLOSSO", 18)
+	_boss_label = lbl
 	lbl.position = Vector2(0, 0)
 	lbl.size = Vector2(520, 20)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -648,6 +650,9 @@ func _update_boss_bar(_d: float) -> void:
 		_boss_shown = 1.0
 		return
 	_boss_box.visible = true
+	if b.boss_name != "" and _boss_label.text != b.boss_name:
+		_boss_label.text = b.boss_name
+		_boss_label.add_theme_color_override("font_color", Color(0.5, 0.9, 1.0) if b.arch == "conduit" else Color(1, 0.62, 0.25))
 	var k: float = clampf(b.hp / b.max_hp, 0.0, 1.0)
 	_boss_shown = k                    # 0.16: il rosso segue subito i danni, il bianco mostra quanto hai tolto
 	_boss_fill.size.x = 516.0 * _boss_shown

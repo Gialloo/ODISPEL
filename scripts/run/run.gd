@@ -14,7 +14,7 @@ const Enemy = preload("res://scripts/enemies/enemy.gd")
 const COST := {"scout": 1.0, "conduit": 2.0, "brute": 3.0}
 ## Punteggio (0.9): nemici sconfitti per tipo + combo. Una combo è una serie di colpi a segno
 ## con meno di COMBO_GAP secondi tra l'uno e l'altro; si incassa quando si chiude, si perde se ti colpiscono.
-const KILL_PTS := {"scout": 100, "conduit": 160, "brute": 260, "boss": 1500}
+const KILL_PTS := {"scout": 100, "conduit": 160, "brute": 260, "boss": 1500, "traliccio": 1800}
 const COMBO_GAP := 2.5
 ## Sicurezza (0.9): 5 secondi nel cerchio centrale con nessun nemico vicino = l'ondata riparte comunque.
 const CIRCLE_R := 6.0
@@ -246,6 +246,8 @@ func _next_wave() -> void:
 		theme = THEMES.get(cyc, ["SCIAME", "CORAZZATI", "TEMPESTA"][wave % 3])
 	if wave % 5 == 0:
 		theme = "COLOSSO"   # 0.15: ogni quinta ondata un boss, con una piccola scorta
+	if wave % 10 == 0:
+		theme = "TRALICCIO" # 0.17: ogni decima il boss è il TRALICCIO (5 COLOSSO, 10 TRALICCIO, 15 COLOSSO...)
 	_queue = _compose_theme(wave, theme) if theme != "" else _compose(wave)
 	_spawn_t = 0.3
 	FX.stat("waves")
@@ -262,6 +264,13 @@ func _compose_theme(w: int, th: String) -> Array:
 				list.append("scout")
 			if w >= 10:
 				list.append("conduit")
+		"TRALICCIO":
+			# scorta di corpo a corpo: ti spingono verso le sue scariche
+			list = ["traliccio", "scout", "scout"]
+			for i in w / 10:
+				list.append("scout")
+			if w >= 20:
+				list.append("brute")
 		"SCIAME":
 			# tanti Scout, uno dopo l'altro: velocità e spazio
 			for i in 4 + w:
@@ -309,7 +318,7 @@ func _spawn(arch: String) -> void:
 	var p: Vector3 = main.arena.spawn_point()
 	if main.player.global_position.distance_to(p) < 7.0:
 		p = Vector3(-p.x, p.y, -p.z)
-	FX.ring(p, Color(1, 0.3, 0.3, 0.8) if arch == "scout" else (Color(1, 0.6, 0.2, 0.9) if arch == "brute" or arch == "boss" else Color(0.4, 0.8, 1.0, 0.9)), 3.5 if arch == "boss" else 2.0, 0.6)
+	FX.ring(p, Color(1, 0.3, 0.3, 0.8) if arch == "scout" else (Color(1, 0.6, 0.2, 0.9) if arch == "brute" or arch == "boss" else Color(0.4, 0.8, 1.0, 0.9)), 3.5 if arch == "boss" or arch == "traliccio" else 2.0, 0.6)
 	_pending += 1
 	var rid := _run_id
 	get_tree().create_timer(0.6, false).timeout.connect(func():
@@ -317,7 +326,8 @@ func _spawn(arch: String) -> void:
 			return
 		_pending = max(0, _pending - 1)
 		var e := Enemy.new()
-		e.setup("brute" if arch == "boss" else arch, wave, arch == "boss")
+		var is_boss := arch == "boss" or arch == "traliccio"
+		e.setup("brute" if arch == "boss" else ("conduit" if arch == "traliccio" else arch), wave, is_boss)
 		e.player = main.player
 		e.tune = main.enemy_tune
 		e.position = p
@@ -329,7 +339,7 @@ func _spawn(arch: String) -> void:
 			if has("rigenerazione") and main and main.player.hp > 0.0:
 				main.player.hp = min(main.player.max_hp, main.player.hp + 4.0)
 				main.player.hp_changed.emit(main.player.hp, main.player.max_hp)
-			if arch == "boss" and main and main.player.hp > 0.0:
+			if is_boss and main and main.player.hp > 0.0:
 				# premio: mezza vita indietro
 				main.player.hp = min(main.player.max_hp, main.player.hp + main.player.max_hp * 0.5)
 				main.player.hp_changed.emit(main.player.hp, main.player.max_hp)
