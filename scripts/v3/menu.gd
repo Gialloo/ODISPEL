@@ -97,6 +97,10 @@ func _ready() -> void:
 	var b7 := Ui.button("CONTROSEGNALE", Ui.PINK, 22, 230)
 	b7.pressed.connect(func() -> void: _main().go("controsegnale", {"enemy": "prova"}))
 	row2.add_child(b7)
+	# PROVA GREZZA: il core v2 del combattimento, Manichino da prova contro un nemico (12/11/2026, forme semplici)
+	var b8 := Ui.button("PROVA GREZZA", Ui.YELLOW, 22, 230)
+	b8.pressed.connect(func() -> void: _main().go("prova_grezza"))
+	row2.add_child(b8)
 	if not OS.has_feature("mobile"):
 		var b4 := Ui.button("ESCI", Color("#ff7a9c"), 22, 120)
 		b4.pressed.connect(func() -> void: _main().quit())
