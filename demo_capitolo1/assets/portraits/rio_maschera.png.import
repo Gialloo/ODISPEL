@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bd8m6fkknw85f"
-path="res://.godot/imported/rio_triste.png-92767d13ef7383a1062538635de245c5.ctex"
+uid="uid://2edkxoa2h4vl"
+path="res://.godot/imported/rio_maschera.png-c6e20c61ef5be111e550066f5088e732.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/portraits/rio_triste.png"
-dest_files=["res://.godot/imported/rio_triste.png-92767d13ef7383a1062538635de245c5.ctex"]
+source_file="res://assets/portraits/rio_maschera.png"
+dest_files=["res://.godot/imported/rio_maschera.png-c6e20c61ef5be111e550066f5088e732.ctex"]
 
 [params]
 

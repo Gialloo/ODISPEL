@@ -7,6 +7,7 @@ var mondo: Node3D
 var _dito := -1
 var _centro := Vector2.ZERO
 var _punta := Vector2.ZERO
+var _dito_cam := -1
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -14,8 +15,20 @@ func _ready() -> void:
 func _input(e: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
+	var vp := get_viewport_rect().size
+	# metà destra (lontano dai bottoni): trascinare gira la camera
+	if e is InputEventScreenTouch and e.position.x >= vp.x * 0.45:
+		var su_bottoni: bool = e.position.x > vp.x - 330 and e.position.y > vp.y - 300
+		if e.pressed and _dito_cam == -1 and not su_bottoni:
+			_dito_cam = e.index
+		elif not e.pressed and e.index == _dito_cam:
+			_dito_cam = -1
+		return
+	if e is InputEventScreenDrag and e.index == _dito_cam:
+		mondo.yaw -= e.relative.x * 0.007
+		return
 	if e is InputEventScreenTouch:
-		if e.pressed and _dito == -1 and e.position.x < get_viewport_rect().size.x * 0.45:
+		if e.pressed and _dito == -1 and e.position.x < vp.x * 0.45:
 			_dito = e.index
 			_centro = e.position
 			_punta = e.position
@@ -34,6 +47,7 @@ func _input(e: InputEvent) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_VISIBILITY_CHANGED:
 		_dito = -1
+		_dito_cam = -1
 		if mondo:
 			mondo.input_stick = Vector2.ZERO
 		queue_redraw()

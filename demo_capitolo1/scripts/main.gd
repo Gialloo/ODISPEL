@@ -1,24 +1,24 @@
 extends Node
-## Flusso della prova: titolo → vicolo con Lance (percezioni, incontro con Rio)
-## → quartiere col gruppo al completo (cambio guida, percezioni, chiacchiere).
-## Niente combattimenti: l'autore li deciderà dopo.
+## Flusso della demo (senza combattimenti, per ora):
+## titolo → vicolo con Lance (percezioni, incontro con Rio, il boato)
+## → rifugio nella lavanderia (quattro sconosciuti, si parla con ognuno, la porta)
+## → quartiere trasformato e chiuso (gruppo, cambio guida, percezioni) → finale.
+## Il raccordo tra queste parti è una PROPOSTA (il canone non lo documenta, Manuale §14).
 
 var dati: Dictionary
 var mondo: Node3D
 var ui: CanvasLayer
-var taccuino: Array[String] = []
 var punto_vicino = null
 var occupato := false
+var finita := false
 var _hud: Control
 var _chip_luogo: Label
 var _chip_guida: Label
-var _chip_taccuino: Label
 var _bottone_esamina: Button
 var _bottone_cambia: Button
 var _stick: Control
 var _timer_chiacchiere := 0.0
 var _chiacchiera_i := 0
-var _scoperte_quartiere := 0
 
 func _ready() -> void:
 	var f := FileAccess.open("res://data/capitolo1.json", FileAccess.READ)
@@ -32,16 +32,24 @@ func _ready() -> void:
 	mondo.esamina_cambiato.connect(_su_esamina_cambiato)
 	mondo.innesco.connect(_su_innesco)
 	if OS.get_cmdline_user_args().has("prova"):
-		return   # lo script di prova guida da sé
+		return   # lo script di prova parte da sé
 	avvia()
 
+func _zona(nome: String, membri: Array) -> void:
+	var z: Dictionary = dati["zone"][nome]
+	mondo.carica_zona(nome, membri, z.get("comparse", {}), z.get("punti", []))
+	_chip_luogo.text = z.get("luogo", "")
+
 func avvia() -> void:
-	mondo.carica_zona("vicolo", ["lance"], dati["vicolo"]["punti"])
+	_zona("vicolo", ["lance"])
 	await _titolo()
-	await ui.cartello("11 NOVEMBRE  ·  NOTTE", "Periferia  ·  Lance, ricognizione")
-	_chip_luogo.text = "11/11  NOTTE  ·  PERIFERIA"
+	await ui.cartello("11 NOVEMBRE  ·  NOTTE", "Lance  ·  ricognizione, per conto suo")
 	_hud.visible = true
 	await esegui("intro")
+	_libera()
+
+func _libera() -> void:
+	mondo.camera_libera()
 	_aggiorna_hud()
 	mondo.controllo = true
 
@@ -52,10 +60,12 @@ func esegui(nome: String) -> void:
 	mondo.controllo = false
 	_bottone_esamina.visible = false
 	var hud_prima := _hud.visible
-	_hud.visible = false   # durante i dialoghi parla solo la scena, come nei JRPG
-	var righe: Array = dati["scene"].get(nome, [])
-	await _righe(righe)
+	_hud.visible = false   # durante le scene parla solo la scena
+	ui.togli_balloon()
+	await _righe(dati["scene"].get(nome, []))
 	ui.chiudi()
+	if ui._barre[0].visible and ui._barre[0].position.y > -40.0:
+		ui.barre(false)   # in esplorazione niente barre da film
 	_hud.visible = hud_prima
 	occupato = false
 
@@ -76,8 +86,9 @@ func _righe(righe: Array) -> void:
 		elif r.has("balloon"):
 			var chi: String = r["balloon"]
 			if mondo.corpi.has(chi):
-				ui.balloon(chi, r["testo"], mondo.testa.bind(chi), mondo.camera, float(r.get("s", 2.4)))
-				await get_tree().create_timer(float(r.get("s", 2.4)) + 0.25).timeout
+				var s := float(r.get("s", 2.4))
+				ui.balloon(chi, r["testo"], mondo.testa.bind(chi), mondo.camera, s)
+				await get_tree().create_timer(s + 0.25).timeout
 		else:
 			await ui.di(r)
 
@@ -95,15 +106,33 @@ func _regia(r: Dictionary) -> void:
 			ui.onomato(r["testo"])
 			await get_tree().create_timer(0.35).timeout
 		"lampo":
-			ui.lampo()
-		"rio":
-			await mondo.rio_azione(r["azione"])
-		"lance":
+			ui.lampo(Color(r.get("colore", "#ffffff")))
+		"muovi":
 			ui.nascondi_box()
-			await mondo.lance_avanza(float(r["z"]), float(r.get("s", 1.0)))
-		"luce":
-			mondo.rio_luce()
-			ui.lampo()
+			var a: Array = r["a"]
+			if r.get("aspetta", true):
+				await mondo.muovi(r["chi"], a[0], a[1], float(r.get("s", 1.0)))
+			else:
+				mondo.muovi(r["chi"], a[0], a[1], float(r.get("s", 1.0)))
+		"gira":
+			await mondo.gira(r["chi"], float(r["gradi"]))
+		"posa":
+			mondo.posa(r["chi"], r.get("posa", ""))
+		"salta":
+			var a: Array = r["a"]
+			await mondo.salta(r["chi"], a[0], a[1], a[2])
+		"luce_rio":
+			mondo.luce_rio()
+			ui.lampo(Color.WHITE)
+		"boato":
+			mondo.boato()
+			ui.lampo(Color("#ff2bd6"))
+			ui.onomato(r.get("testo", "BOOM"))
+			await get_tree().create_timer(1.2).timeout
+		"nome":
+			ui.nomi[r["chi"]] = r["nome"]
+		"fatto":
+			mondo.fatti[r["id"]] = true
 
 # ---------------------------------------------------------------- eventi del mondo
 
@@ -114,6 +143,8 @@ func _su_avviso(chi: String, punto: Dictionary) -> void:
 
 func _su_esamina_cambiato(p) -> void:
 	punto_vicino = p
+	if p != null:
+		_bottone_esamina.text = "PARLA" if p.get("tipo", "") == "parla" else "ESAMINA"
 	_bottone_esamina.visible = p != null and not occupato
 
 func esamina() -> void:
@@ -124,56 +155,55 @@ func esamina() -> void:
 	var per_chi: String = nome + "_" + str(mondo.gruppo[0])
 	if dati["scene"].has(per_chi):
 		nome = per_chi
-	ui.togli_balloon()
 	await esegui(nome)
 	mondo.segna_fatto(p["id"])
-	taccuino.append(p["scoperta"])
-	_toast("TACCUINO  +  " + p["scoperta"])
-	if mondo.zona == "quartiere":
-		_scoperte_quartiere += 1
-		if _scoperte_quartiere == dati["quartiere"]["punti"].size():
-			await get_tree().create_timer(1.2).timeout
-			await ui.cartello("FINE DELLA PROVA", "Ora la aggiustiamo insieme")
-			await esegui("fine_prova")
-	_aggiorna_hud()
-	mondo.controllo = true
+	if p.has("preso"):
+		_toast("PRESO  ·  " + p["preso"])
+	match p.get("dopo", ""):
+		"quartiere":
+			await ui.cartello("FUORI", "Il quartiere")
+			await vai_al_quartiere()
+			return
+		"fine":
+			if not finita:
+				finita = true
+				await ui.cartello("FINE DELLA DEMO", "La vera avventura comincia nel Capitolo 1")
+				await esegui("dopo_fine")
+	_libera()
 
 func _su_innesco(id: String) -> void:
 	match id:
 		"sagoma":
 			_righe(dati["scene"]["sagoma"])
 		"rio":
-			ui.togli_balloon()
 			_hud.visible = false
 			await esegui("rio")
-			await ui.cartello("PIÙ TARDI", "Prova: il gruppo al completo")
-			await vai_al_quartiere()
+			await ui.cartello("POCO DOPO", "Seminterrato di una lavanderia a gettoni")
+			_zona("rifugio", ["lance"])
+			_hud.visible = true
+			await esegui("rifugio")
+			_libera()
 
 func vai_al_quartiere() -> void:
-	ui.nomi["rio"] = "RIO"
-	mondo.camera_libera()
-	mondo.carica_zona("quartiere", ["lance", "nox", "rio", "saul"], dati["quartiere"]["punti"])
-	_chip_luogo.text = "11/11  NOTTE  ·  IL QUARTIERE"
+	_zona("quartiere", ["lance", "nox", "saul", "rio"])
 	_hud.visible = true
 	_bottone_cambia.visible = true
-	await get_tree().create_timer(0.4).timeout
-	await esegui("quartiere_intro")
-	_aggiorna_hud()
-	mondo.controllo = true
+	await get_tree().create_timer(0.3).timeout
+	await esegui("quartiere")
+	_libera()
 
 func cambia_guida() -> void:
 	if occupato or mondo.gruppo.size() < 2:
 		return
-	var chi: String = mondo.cambia_guida()
+	mondo.cambia_guida()
 	_aggiorna_hud()
-	ui.balloon(chi, "Guido io.", mondo.testa.bind(chi), mondo.camera, 1.2)
 
 func _process(delta: float) -> void:
 	if mondo.zona == "quartiere" and mondo.controllo and not occupato:
 		_timer_chiacchiere += delta
-		if _timer_chiacchiere > 22.0:
+		if _timer_chiacchiere > 24.0:
 			_timer_chiacchiere = 0.0
-			var lista: Array = dati["quartiere"]["chiacchiere"]
+			var lista: Array = dati["zone"]["quartiere"]["chiacchiere"]
 			_righe(lista[_chiacchiera_i % lista.size()])
 			_chiacchiera_i += 1
 
@@ -207,12 +237,12 @@ func _titolo() -> void:
 	t.position = Vector2(s.x * 0.5 - 380, s.y * 0.22)
 	c.add_child(t)
 	var st := Label.new()
-	st.text = "CAPITOLO 1  ·  PROVA DI ESPLORAZIONE"
+	st.text = "DEMO  ·  CAPITOLO 1"
 	st.add_theme_font_override("font", ui.font_titolo)
-	st.add_theme_font_size_override("font_size", 34)
+	st.add_theme_font_size_override("font_size", 36)
 	st.add_theme_color_override("font_color", Color("#3dff8a"))
 	st.rotation_degrees = -5.0
-	st.position = Vector2(s.x * 0.5 - 340, s.y * 0.5)
+	st.position = Vector2(s.x * 0.5 - 220, s.y * 0.5)
 	c.add_child(st)
 	var pr := Label.new()
 	pr.text = "Tocca per iniziare"
@@ -229,7 +259,6 @@ func _titolo() -> void:
 	ui.attivo = false
 	tw.kill()
 	c.queue_free()
-	mondo.camera_libera()
 
 func _chip(testo: String, col: Color) -> Label:
 	var l := Label.new()
@@ -283,8 +312,6 @@ func _costruisci_hud() -> void:
 	_chip_guida = _chip("", Color("#ff2340"))
 	_chip_guida.position = Vector2(28, 74)
 	_hud.add_child(_chip_guida)
-	_chip_taccuino = _chip("", Color("#2ef2ff"))
-	_hud.add_child(_chip_taccuino)
 	_bottone_esamina = _bottone("ESAMINA", Color("#3dff8a"))
 	_bottone_esamina.visible = false
 	_bottone_esamina.pressed.connect(esamina)
@@ -305,7 +332,6 @@ func _costruisci_hud() -> void:
 ## Posizioni a mano: con lo schermo largo del telefono il lato destro si sposta.
 func _impagina_hud() -> void:
 	var s := get_viewport().get_visible_rect().size
-	_chip_taccuino.position = Vector2(s.x - 300, 22)
 	_bottone_esamina.position = Vector2(s.x - 290, s.y - 150)
 	_bottone_cambia.position = Vector2(s.x - 290, s.y - 262)
 
@@ -314,15 +340,15 @@ func _aggiorna_hud() -> void:
 	_chip_guida.text = "GUIDA  " + ui.nomi.get(chi, chi.to_upper())
 	var sb: StyleBoxFlat = _chip_guida.get_theme_stylebox("normal")
 	sb.border_color = ui.COLORE.get(chi, Color.WHITE)
-	_chip_taccuino.text = "TACCUINO  %d" % taccuino.size()
+	_chip_guida.visible = mondo.gruppo.size() > 1
 
 func _toast(testo: String) -> void:
 	var l := _chip(testo, Color("#2ef2ff"))
 	var s := get_viewport().get_visible_rect().size
-	l.position = Vector2(s.x * 0.5 - 260, -60)
+	l.position = Vector2(s.x * 0.5 - 200, -60)
 	_hud.add_child(l)
 	var tw := create_tween()
 	tw.tween_property(l, "position:y", 130.0, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_interval(2.2)
+	tw.tween_interval(2.0)
 	tw.tween_property(l, "modulate:a", 0.0, 0.3)
 	tw.tween_callback(l.queue_free)

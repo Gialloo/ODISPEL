@@ -56,14 +56,23 @@ func aspetta_libero() -> void:
 
 func cammina(x: float, z: float) -> void:
 	var t := 0.0
+	var fermo := 0.0
+	var ultimo := Vector3.ZERO
 	while t < 20.0:
 		var g: Node3D = mondo.guida()
 		var d := Vector2(x - g.position.x, z - g.position.z)
-		if d.length() < 0.4 or not mondo.controllo:
+		if d.length() < 0.35 or not mondo.controllo:
 			break
-		mondo.input_stick = d.normalized()
+		# lo stick è relativo alla camera: lo ruoto nel suo sistema
+		var v := d.normalized().rotated(mondo.yaw)
+		mondo.input_stick = v
 		await process_frame
 		t += 1.0 / 60.0
+		fermo = fermo + 1.0 / 60.0 if g.position.distance_to(ultimo) < 0.005 else 0.0
+		ultimo = g.position
+		if fermo > 1.0:
+			print("PROVA: fermo a %s verso (%.1f, %.1f)" % [g.position, x, z])
+			break
 	mondo.input_stick = Vector2.ZERO
 
 func guida_di(chi: String) -> void:
@@ -73,16 +82,25 @@ func guida_di(chi: String) -> void:
 		giri += 1
 		await aspetta(0.2)
 
-func esamina_punto(x: float, z: float, nome: String) -> void:
-	await cammina(x, z + 3.5)
-	await aspetta(0.25)
-	await foto(nome + "_avviso")
-	await cammina(x, z)
+## Percorre le tappe, poi si avvicina al punto ed esamina.
+func esamina_punto(id: String, tappe: Array, nome := "") -> void:
+	if nome == "":
+		nome = id
+	for tp in tappe:
+		await cammina(tp[0], tp[1])
 	await aspetta(0.3)
-	if main.punto_vicino == null:
-		push_error("PROVA: nessun punto da esaminare a %s" % nome)
-	else:
-		await foto(nome + "_vicino")
+	await foto(nome + "_avviso")
+	var pt: Dictionary = {}
+	for p in mondo.punti:
+		if p["id"] == id:
+			pt = p
+	await cammina(pt["pos"][0], pt["pos"][1])
+	await aspetta(0.3)
+	if main.punto_vicino == null or main.punto_vicino["id"] != id:
+		push_error("PROVA: punto %s non vicino (guida a %s)" % [id, mondo.guida().position])
+		quit(1)
+		return
+	await foto(nome + "_vicino")
 	main.esamina()
 	await aspetta(0.4)
 	await aspetta_libero()
@@ -100,34 +118,43 @@ func _gioca() -> void:
 	_avanzatore()
 	await aspetta_libero()
 	await foto("vicolo_libero")
-	await esamina_punto(2.2, -9.0, "bossoli")
-	await esamina_punto(-1.9, -17.0, "distributore")
-	await cammina(0.0, -21.0)
-	await aspetta(0.6)
-	await foto("sagoma")
-	await esamina_punto(1.9, -26.6, "sacca")
-	await cammina(0.0, -35.0)
-	await aspetta(0.2)
-	# la regia dell'incontro con Rio parte da sola
+	await esamina_punto("bossoli", [[-1.5, -3.0]])
+	await esamina_punto("zaino", [[0.0, -14.0], [12.5, -14.2]])
+	await esamina_punto("pozzanghera", [[9.0, -17.0]])
+	await esamina_punto("distributore", [[0.0, -18.0], [-1.6, -23.0]])
+	await cammina(0.0, -28.0)
+	await aspetta_libero()
+	await cammina(0.0, -40.0)
+	while mondo.zona != "rifugio":
+		await aspetta(0.3)
+	await aspetta_libero()
+	await foto("rifugio_libero")
+	await esamina_punto("parla_nox", [])
+	await esamina_punto("parla_saul", [])
+	await esamina_punto("parla_rio", [])
+	await esamina_punto("porta", [[-100.0, 1.5]])
 	while mondo.zona != "quartiere":
 		await aspetta(0.3)
 	await aspetta_libero()
 	await foto("quartiere_libero")
 	foto_righe = false
 	await guida_di("saul")
-	await esamina_punto(101.0, -13.8, "piastrella")
+	await esamina_punto("piastrella", [[110.0, 4.0], [104.0, -18.0]])
 	await guida_di("nox")
-	await esamina_punto(118.0, -20.0, "glifo")
+	await esamina_punto("glifo", [[120.0, -17.0]])
 	await guida_di("rio")
-	await esamina_punto(112.0, 2.0, "grata")
+	await esamina_punto("grata", [[112.0, 2.0]])
 	await guida_di("lance")
-	await esamina_punto(122.0, -1.6, "transenna")
+	await esamina_punto("transenna", [[120.0, 1.0]])
 	foto_righe = true
 	await guida_di("saul")
-	await esamina_punto(106.0, 4.0, "manifesto")
+	await esamina_punto("manifesto", [[104.0, 5.0]])
+	foto_righe = false
 	await guida_di("nox")
-	await esamina_punto(115.0, -15.0, "palazzo")
-	await aspetta(1.0)
+	await esamina_punto("palazzo", [[103.0, -10.0]])
+	foto_righe = true
+	await esamina_punto("varco", [[110.0, -22.0]])
+	await aspetta(3.0)
 	await foto("fine")
-	print("PROVA OK: %d schermate, taccuino %d voci: %s" % [n, main.taccuino.size(), ", ".join(main.taccuino)])
+	print("PROVA OK: %d schermate, fatti: %s" % [n, ", ".join(mondo.fatti.keys())])
 	quit(0)

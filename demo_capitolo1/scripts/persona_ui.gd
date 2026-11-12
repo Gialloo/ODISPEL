@@ -15,7 +15,8 @@ const COLORE := {
 const LATO := {"lance": -1, "saul": -1, "nox": 1, "rio": 1}
 const VELOCITA_TESTO := 55.0
 
-var nomi := {"lance": "LANCE", "nox": "NOX", "saul": "SAUL", "rio": "???"}
+## Nessuno conosce il nome degli altri all'inizio: si scopre parlando (regia "nome").
+var nomi := {"lance": "LANCE", "nox": "???", "saul": "???", "rio": "???"}
 var font_titolo: Font = preload("res://assets/fonts/ArchivoBlack-Regular.ttf")
 var font_testo: Font = preload("res://assets/fonts/Roboto-Bold.ttf")
 var attivo := false
@@ -176,6 +177,8 @@ func _input(e: InputEvent) -> void:
 # ---------------------------------------------------------------- dialoghi
 
 func _tex(chi: String, faccia: String) -> Texture2D:
+	if chi == "rio":
+		faccia = "maschera"   # Rio ha sempre la maschera (decisione dell'autore, 11/11)
 	var k := chi + "_" + faccia
 	if not _cache_tex.has(k):
 		var path := "res://assets/portraits/%s.png" % k
@@ -362,9 +365,9 @@ func onomato(parola: String) -> void:
 	tw.tween_property(l, "modulate:a", 0.0, 0.25)
 	tw.tween_callback(l.queue_free)
 
-func lampo() -> void:
+func lampo(col := Color.WHITE) -> void:
 	var r := ColorRect.new()
-	r.color = Color(1, 1, 1, 0.8)
+	r.color = Color(col.r, col.g, col.b, 0.8)
 	r.size = _dim()
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_radice.add_child(r)
@@ -377,7 +380,12 @@ func lampo() -> void:
 ## Balloon a fumetto sopra la testa di un personaggio, nel mondo.
 ## Segue la testa finché dura. Restituisce il nodo (per aspettarlo o toglierlo).
 func balloon(chi: String, testo: String, punto_testa: Callable, camera: Camera3D, durata := 2.6) -> Control:
+	# un personaggio ha un solo balloon alla volta: il nuovo sostituisce il vecchio
+	for vecchio in _livello_balloon.get_children():
+		if vecchio.get_meta("chi", "") == chi:
+			vecchio.queue_free()
 	var b := _Balloon.new()
+	b.set_meta("chi", chi)
 	b.punto = punto_testa
 	b.camera = camera
 	_livello_balloon.add_child(b)
