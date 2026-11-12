@@ -131,6 +131,14 @@ func _regia(r: Dictionary) -> void:
 			await get_tree().create_timer(1.2).timeout
 		"nome":
 			ui.nomi[r["chi"]] = r["nome"]
+			ui.nascondi_box()
+			await ui.vignetta(r["chi"], r.get("faccia", "serio"), r["nome"])
+		"vignetta":
+			ui.nascondi_box()
+			await ui.vignetta(r["chi"], r.get("faccia", "serio"), r.get("nome", ""), float(r.get("s", 1.5)))
+		"trittico":
+			ui.nascondi_box()
+			await ui.trittico(r["chi"], float(r.get("s", 2.0)))
 		"fatto":
 			mondo.fatti[r["id"]] = true
 
@@ -222,32 +230,44 @@ func _titolo() -> void:
 	ui.add_child(c)
 	var s := get_viewport().get_visible_rect().size
 	var fondo := ColorRect.new()
-	fondo.color = Color(0.01, 0.01, 0.03, 0.72)
+	fondo.color = Color(0.01, 0.0, 0.01, 0.6)
 	fondo.size = s
 	c.add_child(fondo)
-	var t := Label.new()
-	t.text = "ODISPEL"
-	t.add_theme_font_override("font", ui.font_titolo)
-	t.add_theme_font_size_override("font_size", 150)
-	t.add_theme_color_override("font_color", Color.WHITE)
-	t.add_theme_color_override("font_shadow_color", Color("#ff2340"))
-	t.add_theme_constant_override("shadow_offset_x", 8)
-	t.add_theme_constant_override("shadow_offset_y", 6)
-	t.rotation_degrees = -5.0
-	t.position = Vector2(s.x * 0.5 - 380, s.y * 0.22)
+	var r := Rect2(-40, s.y * 0.16, s.x * 0.86, s.y * 0.5)
+	var bianco := Polygon2D.new()
+	bianco.polygon = Fumetto.fulmine(r.grow(16), 50.0, 36.0, 21)
+	bianco.color = Fumetto.BIANCO
+	c.add_child(bianco)
+	var rosso := Polygon2D.new()
+	rosso.polygon = Fumetto.fulmine(r, 50.0, 26.0, 22)
+	rosso.color = Fumetto.ROSSO
+	c.add_child(rosso)
+	var punti := Polygon2D.new()
+	punti.polygon = rosso.polygon
+	punti.material = Fumetto.retino(Color(0.3, 0.0, 0.05, 0.9), Color(0, 0, 0, 0), 14.0, Vector2(r.end.x, r.position.y), Vector2(r.position.x + r.size.x * 0.4, r.end.y), 0.5, 0.0)
+	c.add_child(punti)
+	var t := Fumetto.ritagli("ODISPEL", Fumetto.BIANCO, 128.0, 5)
+	t.rotation_degrees = -6.0
+	t.position = Vector2(s.x * 0.08, s.y * 0.2)
 	c.add_child(t)
 	var st := Label.new()
-	st.text = "DEMO  ·  CAPITOLO 1"
-	st.add_theme_font_override("font", ui.font_titolo)
-	st.add_theme_font_size_override("font_size", 36)
-	st.add_theme_color_override("font_color", Color("#3dff8a"))
-	st.rotation_degrees = -5.0
-	st.position = Vector2(s.x * 0.5 - 220, s.y * 0.5)
+	st.text = "  DEMO  ·  CAPITOLO 1  "
+	st.add_theme_font_override("font", ui.font_dialogo)
+	st.add_theme_font_size_override("font_size", 44)
+	st.add_theme_color_override("font_color", Fumetto.BIANCO)
+	var sbt := StyleBoxFlat.new()
+	sbt.bg_color = Fumetto.NERO
+	sbt.skew = Vector2(0.3, 0)
+	st.add_theme_stylebox_override("normal", sbt)
+	st.rotation_degrees = -6.0
+	st.position = Vector2(s.x * 0.14, s.y * 0.52)
 	c.add_child(st)
 	var pr := Label.new()
 	pr.text = "Tocca per iniziare"
-	pr.add_theme_font_override("font", ui.font_testo)
-	pr.add_theme_font_size_override("font_size", 30)
+	pr.add_theme_font_override("font", ui.font_dialogo)
+	pr.add_theme_font_size_override("font_size", 34)
+	pr.add_theme_color_override("font_outline_color", Fumetto.NERO)
+	pr.add_theme_constant_override("outline_size", 8)
 	pr.position = Vector2(s.x * 0.5 - 130, s.y * 0.78)
 	c.add_child(pr)
 	var tw := create_tween().set_loops()
@@ -263,15 +283,17 @@ func _titolo() -> void:
 func _chip(testo: String, col: Color) -> Label:
 	var l := Label.new()
 	l.text = testo
-	l.add_theme_font_override("font", ui.font_titolo)
-	l.add_theme_font_size_override("font_size", 24)
-	l.add_theme_color_override("font_color", Color.WHITE)
+	l.add_theme_font_override("font", ui.font_dialogo)
+	l.add_theme_font_size_override("font_size", 28)
+	l.add_theme_color_override("font_color", Fumetto.BIANCO)
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.02, 0.02, 0.04, 0.88)
+	sb.bg_color = Fumetto.NERO
 	sb.border_color = col
-	sb.border_width_bottom = 4
-	sb.border_width_left = 4
-	sb.skew = Vector2(0.25, 0)
+	sb.border_width_bottom = 5
+	sb.border_width_left = 12
+	sb.skew = Vector2(0.3, 0)
+	sb.shadow_color = col
+	sb.shadow_offset = Vector2(5, 5)
 	sb.content_margin_left = 22
 	sb.content_margin_right = 22
 	sb.content_margin_top = 6
@@ -283,15 +305,17 @@ func _bottone(testo: String, col: Color) -> Button:
 	var b := Button.new()
 	b.text = testo
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_override("font", ui.font_titolo)
-	b.add_theme_font_size_override("font_size", 30)
+	b.add_theme_font_override("font", ui.font_dialogo)
+	b.add_theme_font_size_override("font_size", 40)
 	b.custom_minimum_size = Vector2(230, 96)
 	for stato in ["normal", "hover", "pressed"]:
 		var sb := StyleBoxFlat.new()
-		sb.bg_color = col if stato != "normal" else Color(0.02, 0.02, 0.04, 0.9)
-		sb.border_color = col
-		sb.set_border_width_all(5)
-		sb.skew = Vector2(0.25, 0)
+		sb.bg_color = col if stato != "normal" else Fumetto.NERO
+		sb.border_color = Fumetto.BIANCO
+		sb.set_border_width_all(4)
+		sb.skew = Vector2(0.32, 0)
+		sb.shadow_color = col
+		sb.shadow_offset = Vector2(8, 8)
 		b.add_theme_stylebox_override(stato, sb)
 	b.add_theme_color_override("font_color", Color.WHITE)
 	b.add_theme_color_override("font_pressed_color", Color.BLACK)
@@ -306,17 +330,17 @@ func _costruisci_hud() -> void:
 	_hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud.visible = false
 	livello.add_child(_hud)
-	_chip_luogo = _chip("", Color("#3dff8a"))
+	_chip_luogo = _chip("", Fumetto.ROSSO)
 	_chip_luogo.position = Vector2(28, 22)
 	_hud.add_child(_chip_luogo)
 	_chip_guida = _chip("", Color("#ff2340"))
 	_chip_guida.position = Vector2(28, 74)
 	_hud.add_child(_chip_guida)
-	_bottone_esamina = _bottone("ESAMINA", Color("#3dff8a"))
+	_bottone_esamina = _bottone("ESAMINA", Fumetto.ROSSO)
 	_bottone_esamina.visible = false
 	_bottone_esamina.pressed.connect(esamina)
 	_hud.add_child(_bottone_esamina)
-	_bottone_cambia = _bottone("CAMBIA", Color("#ff2340"))
+	_bottone_cambia = _bottone("CAMBIA", Fumetto.BIANCO)
 	_bottone_cambia.custom_minimum_size = Vector2(230, 86)
 	_bottone_cambia.visible = false
 	_bottone_cambia.pressed.connect(cambia_guida)

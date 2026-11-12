@@ -61,6 +61,7 @@
   "scene": {
     "intro": [
       {"narra": "Notte. Da tre sere, in questa via, i lampioni si spengono tutti insieme. Sempre alla stessa ora."},
+      {"regia": "vignetta", "chi": "lance", "faccia": "serio", "nome": "LANCE", "s": 1.4},
       {"chi": "lance", "faccia": "serio", "testo": "Tre sere di fila, alla stessa ora. Una volta è un guasto. Tre no."},
       {"chi": "lance", "faccia": "neutro", "testo": "Nessuno ha fatto una segnalazione. O nessuno ha voglia di farla."},
       {"chi": "lance", "faccia": "serio", "testo": "Do un'occhiata e me ne torno a casa. Un'ora, non di più."},
@@ -113,6 +114,7 @@
       {"regia": "camera", "a": "rio_vicino", "s": 1.0},
       {"regia": "posa", "chi": "rio", "posa": "annusa"},
       {"narra": "Prende un pezzo, lo annusa, lo scarta. Ne prende un altro. Non ha fretta, e non si accorge di niente."},
+      {"regia": "vignetta", "chi": "rio", "s": 1.2},
       {"chi": "rio", "testo": "Sniff."},
       {"regia": "posa", "chi": "rio", "posa": "rovista"},
       {"regia": "camera", "a": "lance_volto", "s": 0.8},
@@ -273,6 +275,7 @@
 
     "quartiere": [
       {"regia": "barre", "on": true},
+      {"regia": "trittico", "chi": ["lance", "nox", "saul", "rio"], "s": 1.8},
       {"regia": "camera", "a": "panorama", "s": 0.0},
       {"regia": "attesa", "s": 0.6},
       {"narra": "Fuori, il quartiere c'è ancora. I palazzi, l'edicola, i lampioni. Ma sopra i balconi è cresciuto qualcosa di viola, gonfio, che si alza e si abbassa come se respirasse."},

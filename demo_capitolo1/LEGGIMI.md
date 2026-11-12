@@ -8,7 +8,9 @@ Progetto Godot 4.7.2 separato dalla V3 (si apre da questa cartella). Niente comb
 - **Lavanderia a gettoni** (PROPOSTA, non canone): il rifugio dopo il boato. Si parla con Nox, Saul e Rio uno alla volta (PARLA), poi si esce dalla porta.
 - **Il quartiere, dopo** (PROPOSTA di ponte verso il Capitolo 1, non canone): piazza chiusa da muri di carne. CAMBIA (o Q) cambia chi guida. Ognuno nota cose sue (Saul soldi, Nox magia, Rio tracce biologiche, Lance armi e attrezzatura). Il manifesto ha una scena diversa per ogni guida. Il varco nel muro chiude la demo.
 - **Movimento e camera**: accelerazione e frenata, corsa e passo (stick poco inclinato o Shift), braccia e gambe che oscillano. Camera alle spalle che si gira trascinando la metà destra dello schermo (Z/C sul PC). Contro un muro la camera sale e guarda dall'alto. I compagni che coprirebbero la guida si nascondono.
-- Interfaccia nostra «alla Persona»: riquadro storto, ritratti grandi che entrano di lato, cartellino del nome inclinato, scelte a lamelle, cartelli di data e luogo, barre da film solo nelle scene.
+- **Stile grafico (0.3, 12/11/2026)**: preso dalle tavole dell'autore, «stile Persona 5». Rosso, nero e bianco più il colore di ogni personaggio; retino da fumetto; cornici bianche a fulmine; nomi a lettere ritagliate; ritratti con contorno da adesivo. Banda dei dialoghi storta e nera con la striscia e l'ombra del colore di chi parla, testo condensato e grande. Vignette a tutto schermo a due colori quando entra un personaggio (Lance, Rio, Nox, Saul) e il trittico del gruppo all'arrivo nel quartiere. Cartelli rossi, scelte a lamelle, titolo a lettere ritagliate.
+- Pezzi grafici: `scripts/fumetto.gd` e `shaders/` (retino, ritratto). Nei dati si usano le regie `vignetta` e `trittico`. `tools/vetrina_ui.gd` fotografa tutti i pezzi dell'interfaccia.
+- Font nuovi (licenza OFL, in `assets/fonts/`): Anton per i dialoghi, Saira Stencil One per le lettere ritagliate.
 
 ## Dove si cambia cosa
 - Tutti i testi, le scene, i punti e le chiacchiere: `data/capitolo1.json` (si modifica senza toccare il codice).
