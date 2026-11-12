@@ -88,3 +88,7 @@ di vita. Sconfitto: RICOMINCIA (o Invio) riparte subito.
 
 ## 0.15
 - Boss COLOSSO ogni quinta ondata (`enemy.boss`, tema "COLOSSO" in `run._next_wave`): Bruto 1,6 volte più grande, vita ×5,5, botta più larga e onda d'urto a tre anelli da saltare; barra in alto nella HUD; abbatterlo vale 1500 punti e mezza vita. Prova: `tests/boss_15.gd`.
+
+## 0.16
+Barre di vita dei nemici disegnate dalla HUD (`scripts/ui/enemy_bars.gd`): bordo nero, rosso = vita, bianco = vita appena tolta
+(resta finché i colpi continuano), targhetta "LV n". Prova: `godot --path . -s tests/bars_16.gd -- /tmp/schermate`.

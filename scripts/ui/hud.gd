@@ -35,9 +35,16 @@ const FAM_COL := {"Blade": Color(0.35, 0.95, 1.0), "Impact": Color(1.0, 0.6, 0.2
 const OV_W := 316.0
 const OV_COL := [Color(0.85, 0.85, 0.9), Color(0.35, 0.95, 1.0), Color(0.85, 0.5, 1.0), Color(1.0, 0.82, 0.25)]
 
+const EnemyBars = preload("res://scripts/ui/enemy_bars.gd")
+var enemy_bars: Control
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_font = load("res://assets/fonts/ArchivoBlack-Regular.ttf")
+	# 0.16: barre di vita dei nemici (sotto tutto il resto della HUD)
+	enemy_bars = EnemyBars.new()
+	enemy_bars.font = _font
+	add_child(enemy_bars)
 	_flash = ColorRect.new()
 	_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_flash.color = Color(0.5, 1, 1, 0)
@@ -592,6 +599,7 @@ func _slider_row(title: String, obj, key: String, lo: float, hi: float) -> Contr
 ## 0.15: barra del COLOSSO in alto al centro, sotto il numero dell'ondata.
 var _boss_box: Control
 var _boss_fill: ColorRect
+var _boss_white: ColorRect
 var _boss_shown := 1.0
 
 func _make_boss_bar() -> void:
@@ -609,13 +617,25 @@ func _make_boss_bar() -> void:
 	lbl.add_theme_color_override("font_color", Color(1, 0.62, 0.25))
 	_boss_box.add_child(lbl)
 	var back := ColorRect.new()
-	back.color = Color(0.05, 0.02, 0.06, 0.8)
+	back.color = Color(0, 0, 0, 1)     # 0.16: bordo nero come le barre dei nemici
 	back.position = Vector2(0, 24)
 	back.size = Vector2(520, 12)
 	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_boss_box.add_child(back)
+	var inner := ColorRect.new()
+	inner.color = Color(0.16, 0.16, 0.18)
+	inner.position = Vector2(2, 26)
+	inner.size = Vector2(516, 8)
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_box.add_child(inner)
+	_boss_white = ColorRect.new()
+	_boss_white.color = Color(1, 1, 1)
+	_boss_white.position = Vector2(2, 26)
+	_boss_white.size = Vector2(516, 8)
+	_boss_white.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_box.add_child(_boss_white)
 	_boss_fill = ColorRect.new()
-	_boss_fill.color = Color(1, 0.45, 0.2)
+	_boss_fill.color = Color(0.86, 0.1, 0.12)
 	_boss_fill.position = Vector2(2, 26)
 	_boss_fill.size = Vector2(516, 8)
 	_boss_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -629,5 +649,6 @@ func _update_boss_bar(_d: float) -> void:
 		return
 	_boss_box.visible = true
 	var k: float = clampf(b.hp / b.max_hp, 0.0, 1.0)
-	_boss_shown = move_toward(_boss_shown, k, 1.5 * _d)
+	_boss_shown = k                    # 0.16: il rosso segue subito i danni, il bianco mostra quanto hai tolto
 	_boss_fill.size.x = 516.0 * _boss_shown
+	_boss_white.size.x = 516.0 * clampf(b.hp_white / b.max_hp, k, 1.0)

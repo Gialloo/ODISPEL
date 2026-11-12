@@ -68,6 +68,12 @@ var _charge_t := 0.0
 var _power_fly := 0.0
 var _hit_by: Dictionary = {}
 var burn_t := 0.0                  # FUOCO: secondi di fiamma rimasti
+## 0.16: barra di vita come la vuole l'autore: rosso = vita, bianco = vita appena tolta.
+## Il bianco resta fermo finché i colpi continuano e scende solo dopo una pausa.
+var hp_white := 70.0
+var _white_hold := 0.0
+var _hp_seen := 70.0
+const WHITE_HOLD := 0.6
 var _burn_tick := 0.0
 
 func setup(a: String, w: int, is_boss := false) -> void:
@@ -183,6 +189,8 @@ func _ready() -> void:
 	if boss:
 		_make_boss_look()
 	hp = max_hp
+	hp_white = max_hp
+	_hp_seen = max_hp
 	poise = max_poise
 	_cooldown = randf_range(0.6, 1.4)
 	_strafe = 1.0 if randf() < 0.5 else -1.0
@@ -379,6 +387,17 @@ func _physics_process(delta: float) -> void:
 	if state != S.WINDUP:
 		_warn_mat.albedo_color.a = move_toward(_warn_mat.albedo_color.a, 0.0, 6 * delta)
 	_update_bar()
+	_tick_white(delta)
+
+## Ogni danno (colpi, fuoco, scosse) ferma il bianco; dopo la pausa scivola giù fino al rosso.
+func _tick_white(delta: float) -> void:
+	if hp < _hp_seen:
+		_white_hold = WHITE_HOLD
+	_hp_seen = hp
+	if _white_hold > 0.0:
+		_white_hold -= delta
+	else:
+		hp_white = move_toward(hp_white, max(hp, 0.0), max_hp * 0.9 * delta)
 
 func _chase(d: float) -> void:
 	if player == null or player.get("state") == 4:
@@ -701,7 +720,8 @@ func _die(dir: Vector3) -> void:
 		queue_free())
 
 func _update_bar() -> void:
-	var show := hp < max_hp and state != S.DEAD and not boss   # il COLOSSO ha la barra in alto nella HUD
+	# 0.16: la barra sopra la testa ora la disegna la HUD (scripts/ui/enemy_bars.gd): questa resta spenta
+	var show := false
 	_bar.visible = show
 	_bar_bg.visible = show
 	if show:
