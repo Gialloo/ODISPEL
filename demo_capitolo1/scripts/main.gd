@@ -198,6 +198,9 @@ func esamina() -> void:
 	mondo.segna_fatto(p["id"])
 	if p.has("preso"):
 		_toast("PRESO  ·  " + p["preso"])
+	if p.get("tipo", "") == "traccia":
+		var tt := tracce()
+		_toast("TRACCIA %d/%d  ·  %s" % [tt.x, tt.y, p.get("nome", "")])
 	match p.get("dopo", ""):
 		"quartiere":
 			await ui.cartello("FUORI", "Il quartiere")
@@ -212,12 +215,29 @@ func esamina() -> void:
 		"fine":
 			if not finita:
 				finita = true
+				var tt := tracce()
+				await ui.cartello("TRACCE TROVATE", "%d su %d" % [tt.x, tt.y])
 				await ui.cartello("FINE DELLA DEMO", "La vera avventura comincia nel Capitolo 1")
 				await esegui("dopo_fine")
 	_libera()
 
+## 0.6: tracce trovate e totali, contate su tutte le zone (oggetti che raccontano, U20).
+func tracce() -> Vector2i:
+	var tot := 0
+	var trovate := 0
+	for z in dati["zone"]:
+		for p in dati["zone"][z]["punti"]:
+			if p.get("tipo", "") == "traccia":
+				tot += 1
+				if mondo.fatti.has(p["id"]):
+					trovate += 1
+	return Vector2i(trovate, tot)
+
 func _su_innesco(id: String) -> void:
 	match id:
+		"sciame":
+			await esegui("sciame")
+			_libera()
 		"sagoma":
 			_righe(dati["scene"]["sagoma"])
 		"rio":

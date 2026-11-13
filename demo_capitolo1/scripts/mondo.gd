@@ -47,6 +47,8 @@ var _scia: Array[Vector3] = []
 var _punto_vicino = null
 var _zona_root: Node3D
 var _neon: Array[Node3D] = []
+var _mat_vc: StandardMaterial3D
+var _luccichii := {}   # 0.6: id traccia -> segno luminoso
 var _tremolanti: Array = []
 var _pose := {}                         # chi -> "rovista", "annusa", "accucciato", "seduto", ""
 var _t := 0.0
@@ -121,7 +123,16 @@ func carica_zona(nome: String, membri: Array, comparse: Dictionary, dati_punti: 
 			_costruisci_nido()
 			partenza = Vector3(200, 0, 8)
 			limiti = Rect2(187.5, -54.0, 25.0, 64.5)
+			inneschi = [{"id": "sciame", "z_max": -37.0, "fatto": false}]  # PROPOSTA (0.6): le guardie del cuore
 			_pioggia_p.emitting = false
+	_unisci_statici()
+	_luccichii.clear()
+	for pt in dati_punti:
+		if pt.get("tipo", "") == "traccia" and not fatti.has(pt["id"]):
+			var l := _box(Vector3(pt["pos"][0], 0.5, pt["pos"][1]), Vector3(0.16, 0.16, 0.16), Color("#fff4c2"), 4.0)
+			l.name = "luccichio_" + pt["id"]
+			l.rotation = Vector3(PI / 4, 0, PI / 4)
+			_luccichii[pt["id"]] = l
 	for i in gruppo.size():
 		var chi: String = gruppo[i]
 		var p := _persona(chi)
@@ -179,6 +190,10 @@ func cambia_guida() -> String:
 
 func segna_fatto(id: String) -> void:
 	fatti[id] = true
+	if _luccichii.has(id):
+		if is_instance_valid(_luccichii[id]):
+			_luccichii[id].queue_free()
+		_luccichii.erase(id)
 	_punto_vicino = null
 	esamina_cambiato.emit(null)
 
@@ -198,6 +213,11 @@ func _process(delta: float) -> void:
 		var b := 1.0 + 0.06 * pow(maxf(0.0, sin(_t * 3.4)), 8.0)
 		cuore.scale = Vector3.ONE * b
 	_t += delta
+	for id in _luccichii:
+		var l: Node3D = _luccichii[id]
+		l.rotation.y = _t * 2.0
+		l.position.y = 0.5 + sin(_t * 3.0) * 0.08
+		l.scale = Vector3.ONE * (1.0 + 0.35 * maxf(0.0, sin(_t * 5.0 + l.position.x)))
 	for n in _tremolanti:
 		if is_instance_valid(n) and n.get_meta("acceso", true):
 			n.visible = fmod(_t * 7.3 + n.get_meta("fase"), 9.0) > 0.6
@@ -511,6 +531,107 @@ func _gambe(gs: Node3D, gd: Node3D, a: float) -> void:
 		gd.rotation.x = a
 
 # ================================================================ costruzione
+
+## 0.6: unisce i pezzi fermi della zona in una mesh per materiale. Sul telefono ogni mesh
+## è una draw call: così le zone passano da 200+ a qualche decina (misura: tools/misura.gd).
+## Restano separati i pezzi con un nome, quelli che tremolano e quelli con figli.
+func _unisci_statici() -> void:
+	var gruppi := {}
+	for n in _zona_root.get_children():
+		if not _fondibile(n):
+			continue
+		var mi := n as MeshInstance3D
+		if mi in _tremolanti:
+			continue
+		var neon := mi in _neon
+		var k := "vc" if _semplice(mi) and not neon and mi.transparency == 0.0 else "%d|%s|%s" % [mi.material_override.get_instance_id(), mi.transparency, neon]
+		if not gruppi.has(k):
+			gruppi[k] = []
+		gruppi[k].append(mi)
+	for k in gruppi:
+		var lista: Array = gruppi[k]
+		if lista.size() < 2:
+			continue
+		var primo: MeshInstance3D = lista[0]
+		var neon := primo in _neon
+		var trasp := primo.transparency
+		if neon:
+			for mi in lista:
+				_neon.erase(mi)
+		var u := _fondi(_zona_root, lista, _mat_vertici() if k == "vc" else primo.material_override)
+		u.transparency = trasp
+		if neon:
+			_neon.append(u)
+
+## Pezzo senza nome, senza figli, visibile: si può fondere con gli altri.
+func _fondibile(n: Node) -> bool:
+	if not (n is MeshInstance3D) or n.get_child_count() > 0 or not n.visible:
+		return false
+	var nome := String(n.name)
+	return (nome.begins_with("@") or nome.begins_with("MeshInstance3D")) and n.mesh != null
+
+## Materiale opaco normale (né luminoso né lucido): basta il colore per vertice.
+func _semplice(mi: MeshInstance3D) -> bool:
+	var m := mi.material_override as StandardMaterial3D
+	return m != null and not m.emission_enabled and m.metallic == 0.0
+
+func _mat_vertici() -> StandardMaterial3D:
+	if _mat_vc == null:
+		_mat_vc = StandardMaterial3D.new()
+		_mat_vc.vertex_color_use_as_albedo = true
+		_mat_vc.vertex_color_is_srgb = true
+		_mat_vc.roughness = 0.85
+	return _mat_vc
+
+## Fonde i pezzi in una sola mesh (posizione e colore di ciascuno nei vertici) e li toglie.
+func _fondi(parent: Node3D, lista: Array, mat: Material) -> MeshInstance3D:
+	var v := PackedVector3Array()
+	var nn := PackedVector3Array()
+	var cc := PackedColorArray()
+	var ii := PackedInt32Array()
+	for mi: MeshInstance3D in lista:
+		var arr := mi.mesh.surface_get_arrays(0)
+		var pv: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var pn: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+		var idx = arr[Mesh.ARRAY_INDEX]
+		var base := v.size()
+		var t: Transform3D = mi.transform
+		var col: Color = (mi.material_override as StandardMaterial3D).albedo_color
+		for q in pv:
+			v.append(t * q)
+			cc.append(col)
+		for q in pn:
+			nn.append((t.basis * q).normalized())
+		if idx == null or idx.is_empty():
+			for q in pv.size():
+				ii.append(base + q)
+		else:
+			for q in idx:
+				ii.append(base + q)
+		parent.remove_child(mi)
+		mi.free()
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = v
+	arrays[Mesh.ARRAY_NORMAL] = nn
+	arrays[Mesh.ARRAY_COLOR] = cc
+	arrays[Mesh.ARRAY_INDEX] = ii
+	var am := ArrayMesh.new()
+	am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var u := MeshInstance3D.new()
+	u.mesh = am
+	u.material_override = mat
+	parent.add_child(u)
+	return u
+
+## Fonde i pezzi semplici di un nodo del personaggio (busto, un braccio, una gamba).
+func _fondi_parte(n: Node3D) -> void:
+	var lista := []
+	for c in n.get_children():
+		if _fondibile(c) and _semplice(c):
+			lista.append(c)
+	if lista.size() > 1:
+		_fondi(n, lista, _mat_vertici())
 
 func _mat(col: Color, emiss := 0.0, lucido := false) -> StandardMaterial3D:
 	var k := "%s|%s|%s" % [col.to_html(), emiss, lucido]
@@ -957,6 +1078,11 @@ func _persona(chi: String) -> Node3D:
 				var occhio := _box(Vector3(0.08 * lato, 1.66 * h, 0.205), Vector3(0.1, 0.025, 0.02), Color("#c35bff"), 3.0, corpo)
 				occhio.name = "occhio_%d" % (lato + 1)
 			_box(Vector3(0, 1.55 * h, 0.205), Vector3(0.08, 0.015, 0.02), Color("#ffd23a"), 1.5, corpo)
+	# 0.6: meno pezzi da disegnare, stesso aspetto
+	_fondi_parte(corpo)
+	for parte in corpo.get_children():
+		if parte.name.begins_with("gamba") or parte.name.begins_with("braccio"):
+			_fondi_parte(parte)
 	return root
 
 func _sagoma(n: Node3D, on: bool) -> void:

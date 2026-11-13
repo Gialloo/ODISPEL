@@ -24,6 +24,11 @@ Progetto Godot 4.7.2 separato dalla V3 (si apre da questa cartella). Fino alla 0
 - Il **Cuore del Nido** è il boss: regia `scontro` con `"forza": 1.6` (più vita, più grande, viola). Dopo la vittoria il finale del capitolo; alcune righe compaiono solo se hai visto il reperto (campo `"se"` nelle righe di `data/capitolo1.json`).
 - Le chiacchiere a camminare ora valgono in ogni zona che le ha nei dati.
 
+## Tracce, sciame e leggerezza (0.6, 13/11/2026)
+- **Tracce**: otto oggetti nascosti, due per zona, segnati da un piccolo brillio (punti con `"tipo": "traccia"` in `data/capitolo1.json`). Ognuno racconta qualcosa di chi lo trova (regola U20): accendino e scarpa nel vicolo, calzino e bacheca in lavanderia, scooter e stencil nel quartiere, telefono e cuffie nel nido. Contatore in alto quando ne trovi una, conto finale prima della fine. Oggetti e righe sono PROPOSTA.
+- **Sciame del nido**: prima della camera del cuore le sacche si aprono e c'è uno scontro più leggero (`forza` 0.8), così il boss non arriva a freddo. PROPOSTA.
+- **Ottimizzazione per il telefono**: i pezzi fermi di ogni zona e i pezzi dei personaggi si fondono in poche mesh a colori per vertice (`_unisci_statici`, `_fondi_parte` in `scripts/mondo.gd`). Draw call per zona: vicolo 204 → 40, lavanderia 89 → 30, quartiere 232 → 53, nido 89 → 18. Misura: `tools/misura.gd`.
+
 ## Dove si cambia cosa
 - Tutti i testi, le scene, i punti e le chiacchiere: `data/capitolo1.json` (si modifica senza toccare il codice).
 - Città e modelli segnaposto: `scripts/mondo.gd`. Interfaccia: `scripts/persona_ui.gd`. Flusso: `scripts/main.gd`.

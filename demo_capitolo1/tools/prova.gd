@@ -88,12 +88,15 @@ func esamina_punto(id: String, tappe: Array, nome := "") -> void:
 		nome = id
 	for tp in tappe:
 		await cammina(tp[0], tp[1])
+		await aspetta_libero()
 	await aspetta(0.3)
 	await foto(nome + "_avviso")
 	var pt: Dictionary = {}
 	for p in mondo.punti:
 		if p["id"] == id:
 			pt = p
+	await cammina(pt["pos"][0], pt["pos"][1])
+	await aspetta_libero()
 	await cammina(pt["pos"][0], pt["pos"][1])
 	await aspetta(0.3)
 	if main.punto_vicino == null or main.punto_vicino["id"] != id:
@@ -119,9 +122,11 @@ func _gioca() -> void:
 	await aspetta_libero()
 	await foto("vicolo_libero")
 	await esamina_punto("bossoli", [[-1.5, -3.0]])
+	await esamina_punto("accendino", [[1.5, -9.0]])
 	await esamina_punto("zaino", [[0.0, -14.0], [12.5, -14.2]])
 	await esamina_punto("pozzanghera", [[9.0, -17.0]])
 	await esamina_punto("distributore", [[0.0, -18.0], [-1.6, -23.0]])
+	await esamina_punto("scarpa", [[0.5, -28.0]])
 	await cammina(0.0, -28.0)
 	await aspetta_libero()
 	await cammina(0.0, -40.0)
@@ -132,6 +137,8 @@ func _gioca() -> void:
 	await esamina_punto("parla_nox", [])
 	await esamina_punto("parla_saul", [])
 	await esamina_punto("parla_rio", [])
+	await esamina_punto("calzino", [[-101.0, -4.5]])
+	await esamina_punto("bacheca", [[-97.0, -3.0]])
 	await esamina_punto("porta", [[-100.0, 1.5]])
 	while mondo.zona != "quartiere":
 		await aspetta(0.3)
@@ -146,6 +153,8 @@ func _gioca() -> void:
 	await esamina_punto("grata", [[112.0, 2.0]])
 	await guida_di("lance")
 	await esamina_punto("transenna", [[120.0, 1.0]])
+	await esamina_punto("motorino", [[123.0, -6.0]])
+	await esamina_punto("murale", [[110.0, -6.0], [96.0, -6.0]])
 	foto_righe = true
 	await guida_di("saul")
 	await esamina_punto("manifesto", [[104.0, 5.0]])
@@ -164,9 +173,11 @@ func _gioca() -> void:
 	await esamina_punto("radio", [[201.5, -2.0]])
 	await guida_di("nox")
 	await esamina_punto("vene", [[200.5, -6.0]])
+	await esamina_punto("telefono", [[199.0, 1.0]])
 	await esamina_punto("bozzolo", [[199.0, -13.0], [196.5, -15.0]])
 	await guida_di("saul")
 	await esamina_punto("orologio", [[206.0, -22.0], [208.5, -29.0]])
+	await esamina_punto("cuffie", [[208.0, -20.0]])
 	await guida_di("rio")
 	foto_righe = true
 	await esamina_punto("reperto", [[200.0, -29.0], [192.5, -28.5], [191.0, -24.5]])
@@ -176,5 +187,6 @@ func _gioca() -> void:
 	await esamina_punto("cuore", [[200.0, -30.0], [200.0, -38.0]])
 	await aspetta(3.0)
 	await foto("fine")
+	print("PROVA TRACCE: %s" % main.tracce())
 	print("PROVA OK: %d schermate, fatti: %s" % [n, ", ".join(mondo.fatti.keys())])
 	quit(0)
