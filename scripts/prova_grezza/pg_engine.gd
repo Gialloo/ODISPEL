@@ -48,6 +48,9 @@ const MOVES: Dictionary = {
 	"scatto": {"dur": 0.55, "hit": 0.18, "cancel": 0.30, "dmg": 16.0, "seg": 6.0, "push": 2.0, "adv": 3.5},
 	"schianto": {"dur": 0.60, "hit": 0.20, "cancel": 0.34, "dmg": 20.0, "seg": 6.0, "push": 1.2, "adv": 0.8},
 	"entrata": {"dur": 0.45, "hit": 0.14, "cancel": 0.20, "dmg": 8.0, "seg": 2.0, "push": 0.6, "adv": 2.4},
+	# combo d'attacco (13/11, autore: «aggiungi combo attacco»): finali della catena, stessi gesti di sempre
+	"sfondamento": {"dur": 0.52, "hit": 0.15, "cancel": 0.26, "dmg": 16.0, "seg": 5.0, "push": 3.2, "adv": 2.8},   # colpo, colpo, colpo, scorri →
+	"falciata": {"dur": 0.46, "hit": 0.13, "cancel": 0.22, "dmg": 9.0, "seg": 3.0, "push": 0.3, "adv": 0.6},        # colpo, scorri ↓: a terra
 }
 # ---------------------------------------------------------------- carica e cambio personaggio (12/11 sera)
 const HOLD: float = 0.22                 # oltre 220 ms il tocco diventa carica
@@ -103,6 +106,7 @@ const DISCOVERIES: Array = [
 	["cambio_in_catena", "CAMBIO IN CATENA"], ["piano_contro", "PIANO E CONTRO"], ["blackout", "BLACKOUT"],
 	["contro_caricato", "CONTRO CARICATO"], ["montante", "MONTANTE"], ["schianto", "SCHIACCIATA CARICATA"],
 	["staffetta", "STAFFETTA"], ["cambio_difesa", "CAMBIO IN DIFESA"],
+	["sfondamento", "SFONDAMENTO"], ["falciata", "FALCIATA"],
 ]
 
 var rng := RandomNumberGenerator.new()
@@ -351,6 +355,10 @@ func _try(g: String, from_plan: bool) -> bool:
 			_start_move(id)
 			return true
 		"verso":
+			if _after_colpo(3) and _free(from_plan, "sfondamento"):
+				_found("sfondamento")
+				_start_move("sfondamento")
+				return true
 			if not _free(from_plan, "affondo"):
 				return false
 			if est == "tele" and eatk["kind"] == "affondo":
@@ -374,6 +382,10 @@ func _try(g: String, from_plan: bool) -> bool:
 			return true
 		"giu":
 			if p_air <= 0.0:
+				# a terra, dopo un colpo: FALCIATA, il nemico va giù (poi ↑ lo lancia)
+				if _after_colpo(1) and _free(from_plan, "falciata"):
+					_start_move("falciata")
+					return true
 				return false
 			if not _free(from_plan, "schiacciata"):
 				return false
@@ -412,6 +424,15 @@ func _try(g: String, from_plan: bool) -> bool:
 	return false
 
 
+func _after_colpo(n: int) -> bool:
+	# la catena è viva: un colpo in corso o appena finito, con almeno n colpi messi in fila
+	if chain < n:
+		return false
+	if st == "atk":
+		return move.get("id", "") == "colpo"
+	return st == "idle" and chain_idle < 0.5
+
+
 func _free(from_plan: bool, next_id: String) -> bool:
 	# si può agire ora? da fermo sempre; dentro una mossa solo nel lampo bianco (annullamento)
 	if st == "idle":
@@ -420,7 +441,7 @@ func _free(from_plan: bool, next_id: String) -> bool:
 		return false
 	if st != "atk" or not can_cancel_now():
 		return false
-	var natural: bool = (next_id in ["colpo", "montante"] and move["id"] == "colpo") \
+	var natural: bool = (next_id in ["colpo", "montante", "sfondamento", "falciata"] and move["id"] == "colpo") \
 		or (next_id in ["aria", "schiacciata"] and move["id"] in ["aria", "lancio", "montante"]) \
 		or move["id"] in ["contro", "entrata"] or next_id == "blackout"
 	if natural or from_plan:
@@ -643,7 +664,7 @@ func _resolve_player_hit() -> void:
 	var reach_ok: bool = d <= (2.8 if id == "schianto" else REACH + 0.1)
 	if id == "aria" and not in_air_target and p_air <= 0.0:
 		reach_ok = false
-	if id in ["colpo", "affondo", "lancio", "montante", "scatto", "entrata"] and in_air_target:
+	if id in ["colpo", "affondo", "lancio", "montante", "scatto", "entrata", "sfondamento", "falciata"] and in_air_target:
 		reach_ok = false      # da terra non arrivi a chi è in aria (salta per inseguirlo)
 	if not reach_ok:
 		_ev({"type": "a_vuoto", "id": id})
@@ -690,6 +711,12 @@ func _resolve_player_hit() -> void:
 					p_air = maxf(p_air, e_air)
 				if juggle >= 3:
 					_found("giocoliere")
+		"falciata":
+			if est in ["stun", "idle", "rec"]:
+				_found("falciata")
+				est = "down"
+				est_t = 0.6
+				_ev({"type": "falciata"})
 		"schiacciata", "schianto":
 			if id == "schianto":
 				_found("schianto")

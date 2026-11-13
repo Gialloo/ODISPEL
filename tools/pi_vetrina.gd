@@ -79,6 +79,22 @@ func _run() -> void:
 	await _shot("7_sospeso")
 	sc.call("_release")
 	await create_timer(1.0, true, false, true).timeout
+	# combo: colpo, colpo (pallini della catena), poi colpo e SFONDAMENTO
+	e.st = "idle"
+	e.p_air = 0.0
+	e.est = "idle"
+	e.idle_wait = 99.0
+	e.px = e.ex - 1.3
+	for _k in 2:
+		sc.call("_gesture", "tocco")
+		await create_timer(0.2, true, false, true).timeout
+	await _shot("7b_catena")
+	sc.call("_gesture", "tocco")
+	await create_timer(0.2, true, false, true).timeout
+	sc.call("_gesture", "verso")
+	await create_timer(0.16, true, false, true).timeout
+	await _shot("7c_sfondamento")
+	await create_timer(0.8, true, false, true).timeout
 	# CROLLO
 	e.seg = 0.5
 	e.last_seg_loss = e.time

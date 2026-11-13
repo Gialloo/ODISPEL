@@ -13,7 +13,7 @@ extends Node3D
 const E = preload("res://scripts/prova_grezza/pg_engine.gd")
 const COL: Dictionary = {"rosso": Color("#ff3d5a"), "blu": Color("#3f9dff"), "": Color("#ffd23f")}
 const WHITE := Color("#fff4dc")
-const SWIPE_MIN: float = 55.0
+const SWIPE_MIN: float = 40.0         # 13/11: più basso = lo scorrimento parte prima (più reattivo)
 const HEADS: Array = [Color("#e8dcc8"), Color("#7ce0c3"), Color("#ffb36b"), Color("#c9a0ff")]   # chi è chi, a colpo d'occhio
 # 12/11 notte, autore: «mi piaceva più orizzontale, era più snappy e responsive» → vista di lato fissa come la prima prova.
 # L'isometrica resta qui: basta mettere ISO = true.
@@ -40,6 +40,10 @@ var p_head_mat: StandardMaterial3D
 var _party_btns: Array = []
 var _party_bars: Array = []
 var _name_lab: Label
+var _combo_lab: Label
+var _combo_name: Label
+var _combo_n: int = 0
+var _combo_t: float = 0.0
 var e_root: Node3D
 var e_body: MeshInstance3D
 var e_mat: StandardMaterial3D
@@ -238,6 +242,14 @@ func _build_ui() -> void:
 	ui.add_child(lt)
 	_name_lab = Ui.label("MANICHINO A", 24, WHITE, Ui.display(), 6)
 	lt.add_child(_name_lab)
+	# contatore dei colpi a segno: si legge con la coda dell'occhio, si spegne se ti fermi o ti colpiscono
+	_combo_lab = Ui.label("", 64, Ui.YELLOW, Ui.display(), 10)
+	Ui.place(_combo_lab, 0, 0.5, 0, 0.5, 28, -120, 420, -40)
+	_combo_lab.pivot_offset = Vector2(60, 40)
+	ui.add_child(_combo_lab)
+	_combo_name = Ui.label("", 26, WHITE, Ui.display(), 6)
+	Ui.place(_combo_name, 0, 0.5, 0, 0.5, 30, -40, 520, 0)
+	ui.add_child(_combo_name)
 	_hp = _bar(Color("#46e07a"), 20, E.HP_MAX)
 	lt.add_child(_hp)
 	var fr := HBoxContainer.new()
@@ -299,16 +311,17 @@ func _build_ui() -> void:
 	_btn_piano.pressed.connect(_open_piano)
 	ui.add_child(_btn_piano)
 	# la squadra: un ritratto per membro, a destra come nei giochi a cambio rapido; toccarlo = CAMBIO
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 10)
-	Ui.place(col, 1, 0.5, 1, 0.5, -150, -190, -24, 150)
+	# 13/11: in basso tra pausa e PIANO, così non coprono il nemico quando sta al muro
+	var col := HBoxContainer.new()
+	col.add_theme_constant_override("separation", 8)
+	Ui.place(col, 1, 1, 1, 1, -590, -100, -216, -24)
 	ui.add_child(col)
 	for i in eng.party.size():
 		var cell := VBoxContainer.new()
 		cell.add_theme_constant_override("separation", 2)
 		col.add_child(cell)
-		var b := Ui.button(str(eng.party[i]["id"]).to_upper(), HEADS[i], 26, 126)
-		b.custom_minimum_size.y = 52
+		var b := Ui.button(str(eng.party[i]["id"]).to_upper(), HEADS[i], 26, 86)
+		b.custom_minimum_size.y = 58
 		b.focus_mode = Control.FOCUS_NONE
 		var idx: int = i
 		b.pressed.connect(func() -> void: _switch(idx))
@@ -368,12 +381,18 @@ func _process(delta: float) -> void:
 	_trail = _trail.filter(func(t: Array) -> bool: return t[2] > 0.0)
 	_speed_t = maxf(0.0, _speed_t - rd)
 	_cancel_glow = maxf(0.0, _cancel_glow - rd)
+	if _combo_n > 0:
+		_combo_t -= rd
+		_combo_lab.modulate.a = clampf(_combo_t * 2.0, 0.0, 1.0)
+		_combo_name.modulate.a = _combo_lab.modulate.a
+		if _combo_t <= 0.0:
+			_combo_n = 0
 	_ov.queue_redraw()
 
 
 func _sync(delta: float) -> void:
 	# i corpi inseguono le posizioni del motore: si vede chi arretra e chi avanza davvero
-	var k: float = minf(1.0, delta * 22.0)
+	var k: float = minf(1.0, delta * 34.0)     # 13/11: i corpi arrivano prima dove li mette il motore
 	var py: float = 0.0
 	if eng.st == "hover":
 		py = 2.2 + sin(Time.get_ticks_msec() * 0.012) * 0.06
@@ -399,9 +418,12 @@ func _sync(delta: float) -> void:
 					lean = 0.25
 				"schiacciata", "schianto":
 					lean = -0.8
-				"scatto":
+				"scatto", "sfondamento":
 					lean = -0.55
 					crouch = 0.9
+				"falciata":
+					lean = -0.1
+					crouch = 0.62
 		"charge":
 			# carica: si abbassa e trema di più a ogni livello
 			var lv: int = eng.charge_level()
@@ -415,9 +437,9 @@ func _sync(delta: float) -> void:
 		"hurt":
 			lean = 0.55
 			crouch = 0.85
-	p_body.rotation.z = lerp_angle(p_body.rotation.z, lean, minf(1.0, delta * 20.0))
-	p_body.scale.y = lerpf(p_body.scale.y, crouch, minf(1.0, delta * 18.0))
-	p_fist.position.x = lerpf(p_fist.position.x, fist_x, minf(1.0, delta * 30.0))
+	p_body.rotation.z = lerp_angle(p_body.rotation.z, lean, minf(1.0, delta * 32.0))
+	p_body.scale.y = lerpf(p_body.scale.y, crouch, minf(1.0, delta * 28.0))
+	p_fist.position.x = lerpf(p_fist.position.x, fist_x, minf(1.0, delta * 45.0))
 	# il lampo bianco: la mossa si può annullare
 	var col: Color = COL[eng.posture]
 	if eng.can_cancel_now():
@@ -453,7 +475,7 @@ func _sync(delta: float) -> void:
 			e_lean = 0.9 + sin(Time.get_ticks_msec() * 0.02) * 0.2
 	e_body.rotation.z = lerp_angle(e_body.rotation.z, e_lean, minf(1.0, delta * 16.0))
 	e_body.scale.y = lerpf(e_body.scale.y, e_sc, minf(1.0, delta * 16.0))
-	e_mat.albedo_color = e_mat.albedo_color.lerp(e_col, minf(1.0, delta * 20.0))
+	e_mat.albedo_color = e_mat.albedo_color.lerp(e_col, minf(1.0, delta * 12.0))   # più lento: il lampo bianco del colpo si vede
 	e_eyes.albedo_color = Color("#9a9aa8") if eng.est == "crollo" else (COL[d["color"]] if not d.is_empty() and d["kind"] == "affondo" else Color("#ffd23f"))
 
 
@@ -504,6 +526,11 @@ func _draw_overlay() -> void:
 		_ov.draw_arc(head, 34.0, 0, TAU, 40, Color(WHITE, 0.5), 3.0)
 		_ov.draw_arc(head, r, 0, TAU, 48, Color.WHITE if in_win else c, 10.0 if in_win else 5.0)
 		if d["kind"] == "affondo":
+			# striscia a terra: fin dove arriva l'AFFONDO (leggibile anche senza guardare l'icona)
+			var ef: Vector2 = cam.unproject_position(Vector3(e_root.position.x, 0.05, 0.4))
+			var pf: Vector2 = cam.unproject_position(Vector3(e_root.position.x - 3.0, 0.05, 0.4))
+			var fa: float = clampf(1.0 - left / maxf(0.1, float(d["impact"])), 0.0, 1.0)
+			_ov.draw_line(ef, pf, Color(Color.WHITE if in_win else c, 0.25 + 0.5 * fa), 14.0 + 10.0 * fa)
 			# freccia dritta verso il giocatore
 			var to_p: float = (_road_dir() * -1.0).angle()
 			var pts := PackedVector2Array()
@@ -528,6 +555,15 @@ func _draw_overlay() -> void:
 		var cc: Vector2 = cam.unproject_position(e_root.position + Vector3(0, 1.2, 0))
 		var fr: float = clampf(eng.est_t / E.CROLLO_TIME, 0.0, 1.0)
 		_ov.draw_arc(cc, 110.0, -PI * 0.5, -PI * 0.5 + TAU * fr, 64, Ui.YELLOW, 10.0)
+	# la catena: un pallino per colpo; accanto il gesto che la chiude
+	if eng.chain > 0 and eng.st != "charge":
+		var cp: Vector2 = cam.unproject_position(p_root.position + Vector3(0, 2.25, 0))
+		for i in 4:
+			var on: bool = i < eng.chain
+			_ov.draw_circle(cp + Vector2(-33 + i * 22, 0), 8.0 if on else 6.0, Ui.YELLOW if on else Color(1, 1, 1, 0.3))
+		var f: Font = ThemeDB.fallback_font
+		var tip: String = "→ SFONDA" if eng.chain >= 3 else "↓ FALCIA"
+		_ov.draw_string(f, cp + Vector2(-60, -16), tip, HORIZONTAL_ALIGNMENT_CENTER, 120, 22, Color(WHITE, 0.9))
 	# carica: un anello per livello; si chiude e cambia colore quando il livello sale
 	if eng.st in ["charge", "hover"]:
 		var cc2: Vector2 = cam.unproject_position(p_root.position + Vector3(0, 0.9, 0))
@@ -584,11 +620,17 @@ func _on_event(ev: Dictionary) -> void:
 	match ev["type"]:
 		"mossa":
 			match ev["id"]:
-				"affondo", "scatto", "entrata":
-					_speed_t = 0.22 if ev["id"] == "scatto" else 0.18
+				"affondo", "scatto", "entrata", "sfondamento":
+					_speed_t = 0.22 if ev["id"] in ["scatto", "sfondamento"] else 0.18
+					if ev["id"] == "sfondamento":
+						_combo_title("SFONDAMENTO")
 					Sfx.play("schivata", 0.0, 1.1 if ev["id"] == "scatto" else 1.3)
 				"montante":
 					Sfx.play("schivata", 0.0, 0.9)
+					_combo_title("MONTANTE")
+				"falciata":
+					Sfx.play("schivata", 0.0, 0.75)
+					_combo_title("FALCIATA")
 				"schianto":
 					Sfx.play("schivata", 0.0, 0.7)
 				"colpo", "aria":
@@ -598,7 +640,13 @@ func _on_event(ev: Dictionary) -> void:
 					_slowmo(0.25, 0.35)
 		"colpito_nemico":
 			var src: String = ev["src"]
-			var big: bool = src in ["affondo", "schiacciata", "lancio", "scatto", "schianto", "montante", "entrata"] or float(ev["dmg"]) >= 20.0
+			var big: bool = src in ["affondo", "schiacciata", "lancio", "scatto", "schianto", "montante", "entrata", "sfondamento", "falciata"] or float(ev["dmg"]) >= 20.0
+			_combo_hit()
+			# il colpo si vede sul nemico: lampo bianco e schiacciamento
+			e_mat.albedo_color = Color.WHITE
+			var sq := create_tween().set_ignore_time_scale(true)
+			e_body.scale = Vector3(1.18, 0.86 if not big else 0.78, 1.0)
+			sq.tween_property(e_body, "scale", Vector3.ONE, 0.12)
 			_sparks(e_root.position + Vector3(-0.5, 1.2 + _e_y * 0.2, 0.5), COL[eng.posture], 24 if big else 12)
 			_number(int(ev["dmg"]), big)
 			_knock()
@@ -634,6 +682,9 @@ func _on_event(ev: Dictionary) -> void:
 		"troppo_presto":
 			_sub_text("TROPPO PRESTO", Color("#ff7a9c"))
 		"colpito":
+			_combo_n = 0
+			_combo_t = 0.0
+			p_mat.albedo_color = Color.WHITE
 			_flash_now(Color("#ff2a2a"), 0.45)
 			_shake(0.3, 0.3)
 			_hitstop(0.09)
@@ -670,6 +721,9 @@ func _on_event(ev: Dictionary) -> void:
 			_hitstop(0.12 + 0.03 * lv2)
 			if lv2 > 0:
 				_sparks(Vector3(e_root.position.x, 0.2, 0.3), Ui.YELLOW, 40 + 15 * lv2)
+		"falciata":
+			_sub_text("A TERRA: SCORRI ↑ E LANCIALO", WHITE)
+			_shake(0.12, 0.12)
 		"carica":
 			Sfx.play("ui_sposta", 0.0, 0.6, -6.0)
 		"sospeso":
@@ -761,7 +815,10 @@ func _tutor() -> void:
 		_show_hint("", "TIENI PREMUTO: carichi. Rilascia: SCATTO (sulla freccia: CONTRO CARICATO)", 3.5, "tieni")
 	if eng.found.size() >= 4 and not _hints_done.has("cambio"):
 		_hints_done["cambio"] = true
-		_show_hint("", "Tocca un ritratto a destra: CAMBIO. Nel lampo bianco è una STAFFETTA", 3.5)
+		_show_hint("", "Tocca un ritratto in basso: CAMBIO. Nel lampo bianco è una STAFFETTA", 3.5)
+	if eng.found.has("catena_piena") and not _hints_done.has("combo"):
+		_hints_done["combo"] = true
+		_show_hint("", "Colpo ×3 poi scorri →: SFONDAMENTO · colpo poi scorri ↓: FALCIATA", 3.5)
 	if eng.found.size() >= 3 and not _hints_done.has("postura"):
 		_hints_done["postura"] = true
 		_show_hint("", "Due dita: cambi postura. Stesso colore della freccia = FREQUENZA", 3.5)
@@ -799,15 +856,31 @@ func _hide_hint() -> void:
 
 # ---------------------------------------------------------------- effetti
 
+func _combo_hit() -> void:
+	_combo_n += 1
+	_combo_t = 1.4
+	if _combo_n >= 2:
+		_combo_lab.text = "%d COLPI" % _combo_n
+		_combo_lab.add_theme_color_override("font_color", Ui.YELLOW if _combo_n < 8 else (Ui.PINK if _combo_n < 15 else WHITE))
+		_combo_lab.scale = Vector2(1.25, 1.25)
+		var tw := create_tween().set_ignore_time_scale(true)
+		tw.tween_property(_combo_lab, "scale", Vector2.ONE, 0.1)
+
+
+func _combo_title(t: String) -> void:
+	_combo_name.text = t
+	_combo_t = maxf(_combo_t, 1.0)
+
+
 func _stamp_text(t: String, c: Color) -> void:
 	_stamp.text = t
 	_stamp.add_theme_color_override("font_color", c)
 	_stamp.modulate.a = 1.0
 	_stamp.scale = Vector2(1.5, 1.5)
 	var tw := create_tween().set_ignore_time_scale(true)
-	tw.tween_property(_stamp, "scale", Vector2.ONE, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_interval(0.5)
-	tw.tween_property(_stamp, "modulate:a", 0.0, 0.25)
+	tw.tween_property(_stamp, "scale", Vector2.ONE, 0.09).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(0.38)
+	tw.tween_property(_stamp, "modulate:a", 0.0, 0.18)
 
 
 func _sub_text(t: String, c: Color) -> void:
