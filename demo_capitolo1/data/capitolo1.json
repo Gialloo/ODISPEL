@@ -37,15 +37,9 @@
         {"id": "glifo", "chi": "nox", "pos": [122.6, -15.0], "avviso": {"nox": "Aspettate. Su quella saracinesca c'è un residuo."}, "scena": "glifo"},
         {"id": "grata", "chi": "rio", "pos": [113.0, 5.0], "avviso": {"rio": "Sniff."}, "scena": "grata"},
         {"id": "transenna", "chi": "lance", "pos": [120.0, -0.8], "avviso": {"lance": "Una transenna della polizia. Montata di fretta, lasciata peggio."}, "scena": "transenna"},
-        {"id": "manifesto", "chi": "tutti", "pos": [102.0, 6.6],
-          "avviso": {"lance": "Quel foglio sulla bacheca è nuovo.", "nox": "Quell'annuncio l'hanno appeso stasera.", "saul": "Un annuncio. Vediamo se paga.", "rio": "Sniff?"},
-          "scena": "manifesto"},
-        {"id": "palazzo", "chi": "tutti", "pos": [103.0, -18.6],
-          "avviso": {"lance": "Il palazzo all'angolo. Guardate in alto.", "nox": "Le escrescenze partono da lì.", "saul": "Quel condominio ha qualcosa che non va. Oltre al condominio.", "rio": "Trending."},
-          "scena": "palazzo"},
-        {"id": "varco", "chi": "tutti", "pos": [110.0, -32.2],
-          "avviso": {"lance": "In fondo alla strada il muro si muove.", "nox": "Quel punto del muro è più sottile.", "saul": "Lì il muro respira più forte. Bello. Andiamo dall'altra parte?", "rio": "Hype."},
-          "scena": "varco", "dopo": "fine"}
+        {"id": "manifesto", "chi": "tutti", "pos": [102.0, 6.6], "avviso": {"lance": "Quel foglio sulla bacheca è nuovo.", "nox": "Quell'annuncio l'hanno appeso stasera.", "saul": "Un annuncio. Vediamo se paga.", "rio": "Sniff?"}, "scena": "manifesto"},
+        {"id": "palazzo", "chi": "tutti", "pos": [103.0, -18.6], "avviso": {"lance": "Il palazzo all'angolo. Guardate in alto.", "nox": "Le escrescenze partono da lì.", "saul": "Quel condominio ha qualcosa che non va. Oltre al condominio.", "rio": "Trending."}, "scena": "palazzo"},
+        {"id": "varco", "chi": "tutti", "pos": [110.0, -32.2], "avviso": {"lance": "In fondo alla strada il muro si muove.", "nox": "Quel punto del muro è più sottile.", "saul": "Lì il muro respira più forte. Bello. Andiamo dall'altra parte?", "rio": "Hype."}, "scena": "varco", "dopo": "nido"}
       ],
       "chiacchiere": [
         [{"balloon": "saul", "testo": "Quindi sei un soldato.", "s": 2.0}, {"balloon": "lance", "testo": "Lo ero.", "s": 1.6}, {"balloon": "saul", "testo": "E adesso?", "s": 1.6}, {"balloon": "lance", "testo": "Adesso cammino.", "s": 2.0}],
@@ -54,6 +48,24 @@
         [{"balloon": "lance", "testo": "State dove vi vedo.", "s": 1.8}, {"balloon": "saul", "testo": "Agli ordini, capo.", "s": 1.8}, {"balloon": "lance", "testo": "Non sono il tuo capo.", "s": 1.8}, {"balloon": "saul", "testo": "Agli ordini, non-capo.", "s": 2.0}],
         [{"balloon": "nox", "testo": "Il braccio ti fa ancora quel rumore.", "s": 2.4}, {"balloon": "lance", "testo": "Sta bene.", "s": 1.6}, {"balloon": "nox", "testo": "...Va bene.", "s": 1.6}],
         [{"balloon": "rio", "testo": "...", "s": 1.4}, {"balloon": "saul", "testo": "Perché ogni tanto si ferma e guarda il nulla?", "s": 2.6}, {"balloon": "nox", "testo": "Non è il nulla. È che noi non lo sentiamo.", "s": 2.6}]
+      ]
+    },
+
+    "nido": {
+      "luogo": "DENTRO IL VARCO  ·  IL NIDO",
+      "comparse": {},
+      "punti": [
+        {"id": "radio", "chi": "lance", "pos": [203.2, -4.0], "avviso": {"lance": "C'è una radio di servizio nella parete. È ancora accesa."}, "scena": "radio"},
+        {"id": "vene", "chi": "nox", "pos": [200.5, -9.0], "avviso": {"nox": "Le vene sono calde. Hanno un ritmo."}, "scena": "vene"},
+        {"id": "bozzolo", "chi": "tutti", "pos": [194.6, -16.0], "avviso": {"lance": "Un bozzolo. Dentro c'è qualcosa di solido.", "nox": "Quella sacca ha inghiottito della roba. Roba, spero.", "saul": "Se lì dentro ci sono soldi, ho la precedenza.", "rio": "Sniff?"}, "scena": "bozzolo"},
+        {"id": "orologio", "chi": "saul", "pos": [210.0, -30.0], "avviso": {"saul": "Oro. Lo sento da qui."}, "scena": "orologio"},
+        {"id": "reperto", "chi": "rio", "pos": [189.4, -24.0], "avviso": {"rio": "..."}, "scena": "reperto"},
+        {"id": "cuore", "chi": "tutti", "pos": [200.0, -43.5], "avviso": {"lance": "Il budello finisce lì. Sentite anche voi questo rumore?", "nox": "Il battito viene da là in fondo.", "saul": "Quel rumore non mi piace per niente.", "rio": "Hype."}, "scena": "cuore", "dopo": "fine"}
+      ],
+      "chiacchiere": [
+        [{"balloon": "saul", "testo": "Fa caldo, qui dentro.", "s": 1.8}, {"balloon": "nox", "testo": "È un organismo, Saul. Ha la febbre.", "s": 2.2}, {"balloon": "saul", "testo": "Bello. Noi siamo l'influenza.", "s": 2.2}],
+        [{"balloon": "nox", "testo": "Lance. Il braccio.", "s": 1.8}, {"balloon": "lance", "testo": "Sta bene.", "s": 1.4}, {"balloon": "nox", "testo": "Non ti ho chiesto come sta.", "s": 2.2}],
+        [{"balloon": "rio", "testo": "Sniff.", "s": 1.4}, {"balloon": "saul", "testo": "Cosa annusa, adesso?", "s": 1.8}, {"balloon": "lance", "testo": "Noi.", "s": 1.6}]
       ]
     }
   },
@@ -121,11 +133,9 @@
       {"chi": "lance", "faccia": "serio", "testo": "Postura bassa. Si nutre, oppure si sta facendo una tana."},
       {"chi": "lance", "faccia": "arrabbiato", "testo": "Tre sere di lampioni spenti, e in fondo alla via ci sei tu."},
       {"chi": "lance", "faccia": "serio", "testo": "Se è ostile va fermato adesso. Prima che domattina passi di qui qualcuno con il cane."},
-      {"scelta": [
-        {"testo": "Intimagli di allontanarsi", "vai": "rio_intima"},
-        {"testo": "Sorprendilo alle spalle", "vai": "rio_sorprendi"}
-      ]}
+      {"scelta": [{"testo": "Intimagli di allontanarsi", "vai": "rio_intima"}, {"testo": "Sorprendilo alle spalle", "vai": "rio_sorprendi"}]}
     ],
+
     "rio_intima": [
       {"chi": "lance", "faccia": "arrabbiato", "testo": "Ehi. Tu. Allontanati da lì, piano."},
       {"regia": "camera", "a": "rio_vicino", "s": 0.6},
@@ -143,6 +153,7 @@
       {"chi": "lance", "faccia": "serio", "testo": "No. Tienilo tu."},
       {"vai": "rio_fine"}
     ],
+
     "rio_sorprendi": [
       {"regia": "camera", "a": "due", "s": 0.8},
       {"narra": "Lance scivola di lato, nell'ombra delle casse. Un passo, poi un altro. Allunga il braccio verso il collo della figura."},
@@ -162,6 +173,7 @@
       {"chi": "lance", "faccia": "neutro", "testo": "...E adesso mi ignora di nuovo."},
       {"vai": "rio_fine"}
     ],
+
     "rio_fine": [
       {"regia": "luce_rio"},
       {"regia": "camera", "a": "rio_vicino", "s": 0.9},
@@ -336,11 +348,13 @@
       {"chi": "lance", "faccia": "neutro", "testo": "La colla è ancora fresca. Qualcuno era qui fuori un'ora fa."},
       {"chi": "lance", "faccia": "serio", "testo": "Spero che sia rientrato in casa in tempo."}
     ],
+
     "manifesto_nox": [
       {"narra": "Sulla bacheca, un foglio nuovo: «CERCASI GATTO GRIGIO. Si chiama Bistecca. Ricompensa.»"},
       {"chi": "nox", "faccia": "triste", "testo": "L'hanno appeso stasera. Pensavano di ritrovarlo domattina."},
       {"chi": "nox", "faccia": "serio", "testo": "Domattina..."}
     ],
+
     "manifesto_saul": [
       {"narra": "Sulla bacheca, un foglio nuovo: «CERCASI GATTO GRIGIO. Si chiama Bistecca. Ricompensa.»"},
       {"chi": "saul", "faccia": "felice", "testo": "Ricompensa."},
@@ -349,6 +363,7 @@
       {"chi": "saul", "faccia": "neutro", "testo": "Che c'è? Se lo vedo lo prendo. Per la ricompensa, eh."},
       {"narra": "Però stacca il foglio, lo piega con cura e se lo mette in tasca."}
     ],
+
     "manifesto_rio": [
       {"narra": "Sulla bacheca, un foglio nuovo: «CERCASI GATTO GRIGIO. Si chiama Bistecca. Ricompensa.»"},
       {"narra": "La figura mascherata annusa il foglio. Poi la strada, poi l'aria. Fa tre passi, si ferma e torna indietro."},
@@ -368,16 +383,123 @@
       {"regia": "barre", "on": true},
       {"regia": "camera", "a": "varco", "s": 1.0},
       {"narra": "In un punto il muro di carne è più sottile. Pulsa. Dall'altra parte, in controluce, si muovono delle sagome."},
-      {"chi": "lance", "faccia": "serio", "testo": "Di qui si passa. Ma non stanotte, e non così."},
+      {"narra": "Il muro si gonfia. Qualcosa si stacca dalla carne e prende forma davanti al varco, alta come una porta."},
+      {"regia": "lampo", "colore": "#ff2bd6"},
+      {"regia": "onomato", "testo": "SPLAT"},
+      {"regia": "scontro", "nemico": "ANOMALIA"},
+      {"narra": "Dell'anomalia resta una macchia che fuma sull'asfalto. Il varco pulsa ancora."},
+      {"chi": "lance", "faccia": "serio", "testo": "Di qui si passa. Non mi piace, ma è l'unica strada che ci lasciano."},
       {"chi": "nox", "faccia": "serio", "testo": "Se è un nido, da qualche parte c'è il cuore. Se lo troviamo, il quartiere torna come prima. Quasi."},
       {"chi": "saul", "faccia": "sfotto", "testo": "«Quasi». Che bella parola."},
       {"chi": "rio", "testo": "Hype."},
       {"narra": "Quattro sconosciuti davanti a un muro che respira. Nessuno di loro se ne va."},
+      {"narra": "Uno alla volta, entrano."},
       {"regia": "barre", "on": false}
     ],
 
     "dopo_fine": [
-      {"narra": "Grazie per aver giocato. Puoi continuare a girare il quartiere e cambiare guida per sentire cosa nota ognuno."}
+      {"narra": "Grazie per aver giocato. Puoi continuare a girare il nido e cambiare guida per sentire cosa nota ognuno."}
+    ],
+
+    "nido": [
+      {"regia": "barre", "on": true},
+      {"regia": "camera", "a": "nido_ingresso", "s": 0.0},
+      {"narra": "Il varco si richiude alle loro spalle con un rumore bagnato. Dentro fa caldo. Le pareti si alzano e si abbassano piano, come il fianco di qualcosa che dorme."},
+      {"chi": "saul", "faccia": "sfotto", "testo": "Ricapitolando: siamo entrati nella bestia. Di nostra volontà."},
+      {"chi": "lance", "faccia": "serio", "testo": "Siamo entrati nella sua tana. È diverso: una tana ha un fondo."},
+      {"chi": "nox", "faccia": "serio", "testo": "Le vene a terra vanno tutte dalla stessa parte. Se il nido ha un cuore, è laggiù."},
+      {"chi": "nox", "faccia": "neutro", "testo": "E non toccate le pareti. Dico a te, Saul."},
+      {"chi": "saul", "faccia": "felice", "testo": "Sono un professionista. Tocco solo con gli occhi."},
+      {"chi": "rio", "testo": "Sniff."},
+      {"narra": "La maschera si gira verso il fondo del budello, e ci resta."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Formazione stretta. Andiamo."},
+      {"narra": "Il cuore è in fondo. Prima guardatevi intorno: con CAMBIA ognuno nota cose diverse."},
+      {"regia": "barre", "on": false}
+    ],
+
+    "radio": [
+      {"narra": "Mezza radio di servizio spunta dalla carne. La lucina rossa lampeggia ancora."},
+      {"chi": "lance", "faccia": "serio", "testo": "Frequenza della centrale. Qualcuno l'ha persa mentre correva."},
+      {"narra": "Gracchia. Una voce stanca chiama una pattuglia, poi un'altra. Nessuno risponde."},
+      {"narra": "«...Chiunque si trovi nel quadrante, segnali la sua posizione.»"},
+      {"narra": "Lance appoggia il pollice sul tasto. Basterebbe premere."},
+      {"chi": "lance", "faccia": "serio", "testo": "..."},
+      {"narra": "Gira la manopola fino in fondo. Il gracchio si spegne."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Ce la caviamo da soli."}
+    ],
+
+    "vene": [
+      {"narra": "Nox si inginocchia sopra una vena luminosa e ci tiene il palmo a un dito di distanza, senza toccarla."},
+      {"chi": "nox", "faccia": "serio", "testo": "Pulsa a tempo. Novanta battiti al minuto. Novantadue."},
+      {"chi": "nox", "faccia": "sorpreso", "testo": "Accelera. Si sta accorgendo di noi."},
+      {"chi": "lance", "faccia": "serio", "testo": "Quanto tempo abbiamo?"},
+      {"chi": "nox", "faccia": "neutro", "testo": "Non lo so. Ed è la cosa che odio di più al mondo: non saperlo."},
+      {"chi": "saul", "faccia": "sfotto", "testo": "Io ne ho una lista intera, se ti serve compagnia."}
+    ],
+
+    "bozzolo": [
+      {"narra": "Dentro la membrana, schiacciati uno contro l'altro, si vedono un casco da scooter e la ruota di una bici."},
+      {"chi": "lance", "faccia": "serio", "testo": "Roba della piazza. Il nido si mangia quello che trova."},
+      {"chi": "nox", "faccia": "neutro", "testo": "Solo oggetti. Niente di vivo."},
+      {"narra": "Lo ripete sottovoce. La seconda volta lo dice a se stessa."},
+      {"chi": "saul", "faccia": "neutro", "testo": "Be'. Stanotte qualcuno è tornato a casa a piedi."},
+      {"chi": "rio", "testo": "..."}
+    ],
+
+    "orologio": [
+      {"narra": "Nella parete, all'altezza di un polso, c'è un orologio d'oro. Ticchetta ancora."},
+      {"chi": "saul", "faccia": "felice", "testo": "Svizzero. Automatico. E ancora carico."},
+      {"chi": "saul", "faccia": "sfotto", "testo": "Il proprietario o non ne ha più bisogno, o non è qui. In tutti e due i casi..."},
+      {"narra": "Lo sfila dalla carne con due dita, senza fretta. La parete sospira."},
+      {"chi": "nox", "faccia": "arrabbiato", "testo": "Saul."},
+      {"chi": "saul", "faccia": "neutro", "testo": "Lo stavo esaminando. Per la scienza."},
+      {"chi": "nox", "faccia": "serio", "testo": "Rimettilo dov'era."},
+      {"narra": "Lui alza le mani, aperte e vuote. Lei le guarda, poi guarda la parete. L'orologio non c'è più da nessuna parte."},
+      {"chi": "saul", "faccia": "sfotto", "testo": "Visto? L'ho rimesso. Non mi crede mai nessuno."}
+    ],
+
+    "reperto": [
+      {"regia": "camera", "a": "reperto", "s": 0.6},
+      {"narra": "In una nicchia bassa, mezzo coperto dalla carne, c'è un frammento chiaro e liscio. È tiepido."},
+      {"chi": "rio", "testo": "..."},
+      {"regia": "posa", "chi": "rio", "posa": "annusa"},
+      {"narra": "La maschera si avvicina. Lo annusa a lungo, senza fretta, come si riconosce un odore conosciuto."},
+      {"chi": "rio", "testo": "Sniff."},
+      {"narra": "Lo prende con due dita e lo gira. Per un attimo la linea gialla della bocca, sulla maschera, sembra stringersi."},
+      {"chi": "rio", "testo": "...Follow."},
+      {"regia": "posa", "chi": "rio", "posa": ""},
+      {"narra": "Il frammento sparisce sotto i vestiti. Gli altri sono più avanti, e non hanno visto niente."}
+    ],
+
+    "cuore": [
+      {"regia": "barre", "on": true},
+      {"regia": "camera", "a": "cuore", "s": 1.2},
+      {"narra": "In fondo al budello la carne si apre in una camera tonda. Al centro, appeso a otto cavi di carne, batte un cuore grande come un'auto."},
+      {"chi": "saul", "faccia": "sorpreso", "testo": "Ah. Ecco. Questo nei telegiornali non c'era."},
+      {"chi": "nox", "faccia": "serio", "testo": "È il cuore del nido. Se cede lui, cede tutto: i muri, le escrescenze, la piazza."},
+      {"chi": "lance", "faccia": "serio", "testo": "Allora cede."},
+      {"chi": "rio", "testo": "Hype."},
+      {"regia": "lampo", "colore": "#ff2bd6"},
+      {"regia": "onomato", "testo": "TU-TUM"},
+      {"narra": "Il cuore si contrae. Dai cavi colano due sagome che si fondono in una sola, enorme."},
+      {"regia": "scontro", "nemico": "CUORE DEL NIDO", "forza": 1.6},
+      {"regia": "camera", "a": "cuore_alto", "s": 0.0},
+      {"narra": "Il cuore smette di battere. Per un attimo non succede niente. Poi la camera intera si affloscia, come una tenda a cui hanno tolto i pali."},
+      {"narra": "Da lontano, attraverso la carne, arriva un rumore di vetri e di allarmi d'auto. Il quartiere sta tornando."},
+      {"chi": "nox", "faccia": "serio", "testo": "Quasi. Le escrescenze ci metteranno giorni a seccarsi. Ma i muri vengono giù."},
+      {"chi": "saul", "faccia": "felice", "testo": "Quindi siamo degli eroi. Lo metto nel curriculum."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Siamo quattro che passavano di qui."},
+      {"narra": "Lo dice senza guardare nessuno. Poi si gira e, per la prima volta, li conta: uno, due, tre."},
+      {"chi": "nox", "faccia": "neutro", "testo": "Alle sei ho il turno."},
+      {"chi": "nox", "faccia": "felice", "testo": "...Ce la faccio, se corro."},
+      {"chi": "saul", "faccia": "sfotto", "testo": "La consegna, invece, la do per persa. Anzi: per smarrita."},
+      {"se": "reperto", "narra": "Rio è rimasto indietro. Tiene una mano premuta sul fianco, dove ha nascosto il frammento, e guarda il cuore spento."},
+      {"se": "reperto", "chi": "rio", "testo": "..."},
+      {"chi": "rio", "testo": "Follow!"},
+      {"narra": "E segue il gruppo, a due passi di distanza. Nessuno gli ha chiesto di venire. Nessuno gli dice di andarsene."},
+      {"chi": "lance", "faccia": "serio", "testo": "Insieme, finché serve."},
+      {"narra": "Questa volta non aggiunge il resto."},
+      {"regia": "barre", "on": false}
     ]
   }
 }

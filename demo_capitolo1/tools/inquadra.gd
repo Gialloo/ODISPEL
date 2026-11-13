@@ -11,6 +11,9 @@ const PROVE := [
 	["quartiere", ["lance", "nox", "saul", "rio"], 110.0, 17.0, 0.0],
 	["quartiere", ["nox", "lance", "saul", "rio"], 121.5, -15.0, -1.57],
 	["quartiere", ["lance", "nox", "saul", "rio"], 110.0, -6.0, 0.0],
+	["nido", ["lance", "nox", "saul", "rio"], 200.0, 6.0, 0.0],
+	["nido", ["lance", "nox", "saul", "rio"], 200.0, -28.0, 0.0],
+	["nido", ["lance", "nox", "saul", "rio"], 200.0, -40.0, 0.0],
 ]
 func _initialize() -> void:
 	var a := OS.get_cmdline_user_args()

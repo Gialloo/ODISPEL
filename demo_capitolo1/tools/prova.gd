@@ -154,6 +154,26 @@ func _gioca() -> void:
 	await esamina_punto("palazzo", [[103.0, -10.0]])
 	foto_righe = true
 	await esamina_punto("varco", [[110.0, -22.0]])
+	# 0.5: dentro il varco, il nido
+	while mondo.zona != "nido":
+		await aspetta(0.3)
+	await aspetta_libero()
+	await foto("nido_libero")
+	foto_righe = false
+	await guida_di("lance")
+	await esamina_punto("radio", [[201.5, -2.0]])
+	await guida_di("nox")
+	await esamina_punto("vene", [[200.5, -6.0]])
+	await esamina_punto("bozzolo", [[199.0, -13.0], [196.5, -15.0]])
+	await guida_di("saul")
+	await esamina_punto("orologio", [[206.0, -22.0], [208.5, -29.0]])
+	await guida_di("rio")
+	foto_righe = true
+	await esamina_punto("reperto", [[200.0, -29.0], [192.5, -28.5], [191.0, -24.5]])
+	foto_righe = false
+	await guida_di("lance")
+	foto_righe = true
+	await esamina_punto("cuore", [[200.0, -30.0], [200.0, -38.0]])
 	await aspetta(3.0)
 	await foto("fine")
 	print("PROVA OK: %d schermate, fatti: %s" % [n, ", ".join(mondo.fatti.keys())])

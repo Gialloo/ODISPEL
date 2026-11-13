@@ -67,6 +67,10 @@ const INQUADRATURE := {
 	"panorama": [Vector3(110.0, 10.0, 21.0), Vector3(110.0, 4.0, -22.0)],
 	"muro": [Vector3(112.5, 2.4, -22.0), Vector3(110.0, 3.0, -35.0)],
 	"varco": [Vector3(113.0, 1.9, -28.0), Vector3(110.0, 2.2, -35.0)],
+	"nido_ingresso": [Vector3(203.0, 3.2, 12.0), Vector3(200.0, 1.5, -6.0)],
+	"cuore": [Vector3(204.5, 2.0, -36.0), Vector3(200.0, 3.0, -49.0)],
+	"cuore_alto": [Vector3(200.0, 9.0, -32.0), Vector3(200.0, 2.0, -48.0)],
+	"reperto": [Vector3(191.4, 1.0, -21.6), Vector3(189.6, 0.6, -24.0)],
 }
 
 func _ready() -> void:
@@ -112,6 +116,12 @@ func carica_zona(nome: String, membri: Array, comparse: Dictionary, dati_punti: 
 			partenza = Vector3(110, 0, 17)
 			limiti = Rect2(82.5, -36.0, 55.0, 57.5)
 			_pioggia_p.emitting = true
+		"nido":
+			# PROPOSTA (0.5): il luogo anomalo dietro il varco, dove sta il cuore del nido
+			_costruisci_nido()
+			partenza = Vector3(200, 0, 8)
+			limiti = Rect2(187.5, -54.0, 25.0, 64.5)
+			_pioggia_p.emitting = false
 	for i in gruppo.size():
 		var chi: String = gruppo[i]
 		var p := _persona(chi)
@@ -183,6 +193,10 @@ func _unhandled_input(e: InputEvent) -> void:
 		yaw -= e.relative.x * 0.006
 
 func _process(delta: float) -> void:
+	var cuore: Node3D = _zona_root.get_node_or_null("cuore") if _zona_root else null
+	if cuore:
+		var b := 1.0 + 0.06 * pow(maxf(0.0, sin(_t * 3.4)), 8.0)
+		cuore.scale = Vector3.ONE * b
 	_t += delta
 	for n in _tremolanti:
 		if is_instance_valid(n) and n.get_meta("acceso", true):
@@ -808,6 +822,65 @@ func _costruisci_quartiere() -> void:
 	ponte.rotation_degrees = Vector3(0, 0, 4)
 	_luce(Vector3(102, 3.5, -18), Color("#c04aff"), 1.5, 11.0)
 	_luce(Vector3(110, 3.0, -31), Color("#c04aff"), 1.8, 10.0)
+
+## Il nido: un budello di carne che dalla piazza scende fino a una camera col cuore.
+## Corridoio (z 10..-12), caverna (z -12..-38), camera del cuore (z -38..-54).
+func _costruisci_nido() -> void:
+	var carne := Color("#3d1550")
+	var carne2 := Color("#4a1a5e")
+	_box(Vector3(200, -0.05, -22), Vector3(30, 0.1, 70), Color("#24102e"))
+	_box(Vector3(200, 9.0, -22), Vector3(30, 0.5, 70), Color("#1a0a22"))   # volta
+	# corridoio
+	_blocco(186, 196, -12, 12, 9, carne)
+	_blocco(204, 214, -12, 12, 9, carne2)
+	_blocco(186, 214, 10, 12, 9, carne)
+	# caverna, con due colonne di carne
+	_blocco(184, 188, -40, -12, 9, carne2)
+	_blocco(212, 216, -40, -12, 9, carne)
+	_blocco(195.5, 197.5, -26, -23, 9, carne2)
+	_blocco(203, 205.5, -20, -17.5, 9, carne)
+	# camera del cuore
+	_blocco(184, 194, -56, -38, 9, carne)
+	_blocco(206, 216, -56, -38, 9, carne2)
+	_blocco(184, 216, -56, -54, 9, carne)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 77
+	# bolle e sacche sui muri, alcune accese
+	for k in 70:
+		var lato := -1.0 if rng.randf() < 0.5 else 1.0
+		var z := rng.randf_range(-52.0, 9.0)
+		var x := 200.0 + lato * (3.9 if z > -12.0 else (11.8 if z > -38.0 else 5.9))
+		_sfera(Vector3(x, rng.randf_range(0.3, 7.5), z), rng.randf_range(0.3, 1.1), carne.lerp(Color("#c0407a"), rng.randf()), 0.6 if rng.randf() < 0.3 else 0.0)
+	# vene luminose a terra che portano al cuore (Nox)
+	for k in 26:
+		var t := float(k) / 25.0
+		var z := lerpf(6.0, -46.0, t)
+		var x := 200.0 + sin(t * 9.0) * (1.4 if z > -12.0 else 4.0)
+		_box(Vector3(x, 0.03, z), Vector3(0.18, 0.04, 2.3), Color("#2ef2ff"), 1.4)
+	# il bozzolo: dentro si vedono un casco da scooter e una ruota di bici
+	_sfera(Vector3(193.0, 1.2, -16.0), 1.3, Color("#6b2a7a"), 0.0)
+	_box(Vector3(193.6, 1.0, -15.0), Vector3(0.5, 0.4, 0.5), Color("#e8e8e8"))
+	_box(Vector3(192.4, 0.7, -15.2), Vector3(0.08, 1.0, 1.0), Color("#20242e"))
+	# l'orologio d'oro incastrato nella carne (Saul)
+	_box(Vector3(210.9, 1.3, -30.0), Vector3(0.1, 0.25, 0.25), Color("#ffd23f"), 1.2)
+	_luce(Vector3(210.0, 1.4, -30.0), Color("#ffd23f"), 0.6, 3.0)
+	# la radio di un agente, inghiottita a metà (Lance)
+	_box(Vector3(204.15, 1.0, -4.0), Vector3(0.2, 0.5, 0.25), Color("#2a2e36"))
+	_box(Vector3(204.05, 1.2, -4.0), Vector3(0.02, 0.06, 0.06), Color("#ff2340"), 2.0)
+	# il reperto, in una nicchia bassa della caverna (Rio): un frammento chiaro e liscio
+	_box(Vector3(188.4, 0.35, -24.0), Vector3(0.05, 0.3, 0.22), Color("#f4f1ea"), 0.7)
+	_luce(Vector3(189.0, 0.6, -24.0), Color("#a65bff"), 0.7, 3.0)
+	# il cuore
+	var cuore := _sfera(Vector3(200, 3.2, -49.0), 3.0, Color("#b2367a"), 0.5)
+	cuore.name = "cuore"
+	for k in 8:
+		var a := TAU * k / 8.0
+		var cavo := _box(Vector3(200 + cos(a) * 3.6, 3.2 + sin(a) * 3.0, -51.0), Vector3(0.5, 0.5, 4.0), carne2)
+		cavo.look_at_from_position(cavo.position, Vector3(200, 3.2, -49.0))
+	_solidi.append(Rect2(197.0, -52.0, 6.0, 6.0))
+	_luce(Vector3(200, 4.0, -44.0), Color("#ff2bd6"), 2.2, 14.0)
+	_luce(Vector3(200, 4.0, -24.0), Color("#c04aff"), 1.6, 14.0)
+	_luce(Vector3(200, 3.5, 2.0), Color("#c04aff"), 1.2, 10.0)
 
 func _muro_carne(c: Vector3, lungo_x: bool, seme: int) -> void:
 	var rng := RandomNumberGenerator.new()

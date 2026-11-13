@@ -71,6 +71,9 @@ func esegui(nome: String) -> void:
 
 func _righe(righe: Array) -> void:
 	for r in righe:
+		# "se": la riga c'è solo se quella cosa è già successa (es. il reperto di Rio)
+		if r.has("se") and not mondo.fatti.has(r["se"]):
+			continue
 		if r.has("scelta"):
 			var opzioni: Array = r["scelta"]
 			var i: int = await ui.scegli(opzioni.map(func(o): return o["testo"]))
@@ -141,6 +144,34 @@ func _regia(r: Dictionary) -> void:
 			await ui.trittico(r["chi"], float(r.get("s", 2.0)))
 		"fatto":
 			mondo.fatti[r["id"]] = true
+		"scontro":
+			ui.nascondi_box()
+			await _scontro(r)
+
+## SCONTRO (13/11/2026): il combat della prova grezza 3 dentro la storia. Il mondo esce dalla scena finché si combatte
+## (così non si vede sotto l'arena), poi rientra com'era. Se perdi riprovi; si va avanti solo vincendo.
+func _scontro(r: Dictionary) -> void:
+	var hud_prima: bool = _hud.visible
+	_hud.visible = false
+	remove_child(mondo)
+	var vinto := false
+	while not vinto:
+		var sc: Node3D = preload("res://scripts/scontro/scontro.gd").new()
+		sc.configure({"squadra": r.get("squadra", mondo.gruppo.duplicate()), "nemico": r.get("nemico", "ANOMALIA"), "forza": r.get("forza", 1.0),
+			"prova": OS.get_cmdline_user_args().has("prova")})
+		var esito: Array = [null]
+		sc.finito.connect(func(v: bool) -> void: esito[0] = v)
+		sc.riprova.connect(func() -> void: esito[0] = "riprova")
+		add_child(sc)
+		while esito[0] == null:
+			await get_tree().process_frame
+		sc.queue_free()
+		await get_tree().process_frame
+		vinto = esito[0] is bool and esito[0]
+	add_child(mondo)
+	mondo.camera.current = true
+	print("SCONTRO: vinto contro ", r.get("nemico", "ANOMALIA"))
+	_hud.visible = hud_prima
 
 # ---------------------------------------------------------------- eventi del mondo
 
@@ -172,6 +203,12 @@ func esamina() -> void:
 			await ui.cartello("FUORI", "Il quartiere")
 			await vai_al_quartiere()
 			return
+		"nido":
+			await ui.cartello("DENTRO IL VARCO", "Il nido")
+			_zona("nido", mondo.gruppo.duplicate())
+			_hud.visible = true
+			await get_tree().create_timer(0.3).timeout
+			await esegui("nido")
 		"fine":
 			if not finita:
 				finita = true
@@ -207,11 +244,11 @@ func cambia_guida() -> void:
 	_aggiorna_hud()
 
 func _process(delta: float) -> void:
-	if mondo.zona == "quartiere" and mondo.controllo and not occupato:
+	if dati["zone"].get(mondo.zona, {}).has("chiacchiere") and mondo.controllo and not occupato:
 		_timer_chiacchiere += delta
 		if _timer_chiacchiere > 24.0:
 			_timer_chiacchiere = 0.0
-			var lista: Array = dati["zone"]["quartiere"]["chiacchiere"]
+			var lista: Array = dati["zone"][mondo.zona]["chiacchiere"]
 			_righe(lista[_chiacchiera_i % lista.size()])
 			_chiacchiera_i += 1
 
