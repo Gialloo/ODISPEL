@@ -75,6 +75,8 @@ const INQUADRATURE := {
 	"reperto": [Vector3(191.4, 1.0, -21.6), Vector3(189.6, 0.6, -24.0)],
 	"dispensa": [Vector3(183.0, 3.0, -26.0), Vector3(174.0, 1.0, -34.0)],
 	"culle": [Vector3(217.0, 3.2, -19.0), Vector3(226.0, 0.8, -22.0)],
+	"pozzo": [Vector3(162.0, 3.5, -28.0), Vector3(152.0, 0.0, -35.0)],
+	"gola": [Vector3(239.0, 3.0, -21.0), Vector3(250.0, 1.2, -21.0)],
 }
 
 func _ready() -> void:
@@ -124,10 +126,12 @@ func carica_zona(nome: String, membri: Array, comparse: Dictionary, dati_punti: 
 			# PROPOSTA (0.5, approvato dall'autore il 14/11/2026): il luogo anomalo dietro il varco, dove sta il cuore del nido
 			_costruisci_nido()
 			partenza = Vector3(200, 0, 8)
-			limiti = Rect2(167.5, -54.0, 65.0, 64.5)
+			limiti = Rect2(140.5, -54.0, 121.0, 64.5)
 			inneschi = [{"id": "sciame", "z_max": -37.0, "x_min": 188.0, "x_max": 212.0, "fatto": false},
 				{"id": "ingordo", "z_max": 99.0, "x_max": 183.0, "fatto": false},   # 0.7: entrando nella dispensa
-				{"id": "covata", "z_max": 99.0, "x_min": 217.0, "fatto": false}]   # 0.7: entrando nelle culle (sciame: 0.6, le guardie del cuore)
+				{"id": "covata", "z_max": 99.0, "x_min": 217.0, "x_max": 233.0, "fatto": false},
+				{"id": "guardiano", "z_max": 99.0, "x_max": 163.0, "fatto": false},   # 0.8: entrando nel pozzo
+				{"id": "eco", "z_max": 99.0, "x_min": 238.0, "fatto": false}]          # 0.8: entrando nella gola   # 0.7: entrando nelle culle (sciame: 0.6, le guardie del cuore)
 			_pioggia_p.emitting = false
 	_unisci_statici()
 	_luccichii.clear()
@@ -548,7 +552,10 @@ func _unisci_statici() -> void:
 		if mi in _tremolanti:
 			continue
 		var neon := mi in _neon
-		var k := "vc" if _semplice(mi) and not neon and mi.transparency == 0.0 else "%d|%s|%s" % [mi.material_override.get_instance_id(), mi.transparency, neon]
+		# 0.8: si fonde a riquadri di 32 m, così ogni pezzo sente solo le luci vicine
+		# (sul telefono al massimo 8 luci per oggetto) e quello fuori vista non si disegna
+		var riq := "%d,%d" % [floori(mi.position.x / 32.0), floori(mi.position.z / 32.0)]
+		var k := ("vc|" + riq) if _semplice(mi) and not neon and mi.transparency == 0.0 else "%d|%s|%s|%s" % [mi.material_override.get_instance_id(), mi.transparency, neon, riq]
 		if not gruppi.has(k):
 			gruppi[k] = []
 		gruppi[k].append(mi)
@@ -562,7 +569,7 @@ func _unisci_statici() -> void:
 		if neon:
 			for mi in lista:
 				_neon.erase(mi)
-		var u := _fondi(_zona_root, lista, _mat_vertici() if k == "vc" else primo.material_override)
+		var u := _fondi(_zona_root, lista, _mat_vertici() if k.begins_with("vc|") else primo.material_override)
 		u.transparency = trasp
 		if neon:
 			_neon.append(u)
@@ -967,6 +974,8 @@ func _costruisci_nido() -> void:
 	_blocco(212, 216, -18, -12, 9, carne)
 	_costruisci_dispensa(carne, carne2)
 	_costruisci_culle(carne, carne2)
+	_costruisci_pozzo(carne, carne2)
+	_costruisci_gola(carne, carne2)
 	_blocco(195.5, 197.5, -26, -23, 9, carne2)
 	_blocco(203, 205.5, -20, -17.5, 9, carne)
 	# camera del cuore
@@ -1016,7 +1025,9 @@ func _costruisci_nido() -> void:
 
 ## 0.7, PROPOSTA approvato dall'autore il 14/11/2026: l'ala ovest del nido, dove finisce quello che il nido ingoia.
 func _costruisci_dispensa(carne: Color, carne2: Color) -> void:
-	_blocco(164, 168, -48, -16, 9, carne)
+	# 0.8: il muro ovest si apre sul pozzo
+	_blocco(164, 168, -48, -36, 9, carne)
+	_blocco(164, 168, -30, -16, 9, carne)
 	_blocco(164, 188, -48, -44, 9, carne2)
 	_blocco(164, 188, -20, -16, 9, carne)
 	var rng := RandomNumberGenerator.new()
@@ -1038,12 +1049,16 @@ func _costruisci_dispensa(carne: Color, carne2: Color) -> void:
 	for k in 24:
 		var lato := -1.0 if k % 2 == 0 else 1.0
 		var z := rng.randf_range(-43.0, -21.0)
+		if k % 3 and lato < 0 and z < -29.5 and z > -36.5:
+			continue
 		_sfera(Vector3(168.2 if lato < 0 else 187.0, rng.randf_range(0.5, 7.5), z) if k % 3 else Vector3(rng.randf_range(168.0, 186.0), rng.randf_range(0.5, 7.5), -43.6 if lato < 0 else -20.4), rng.randf_range(0.4, 1.2), carne.lerp(Color("#c0407a"), rng.randf()), 0.6 if rng.randf() < 0.3 else 0.0)
 	_luce(Vector3(176.0, 4.0, -30.0), Color("#ff7a3a"), 1.4, 13.0)
 
 ## 0.7, PROPOSTA approvato dall'autore il 14/11/2026: l'ala est, le culle dove crescono le anomalie piccole.
 func _costruisci_culle(carne: Color, carne2: Color) -> void:
-	_blocco(232, 236, -36, -4, 9, carne2)
+	# 0.8: il muro est si apre sulla gola
+	_blocco(232, 236, -36, -24, 9, carne2)
+	_blocco(232, 236, -18, -4, 9, carne2)
 	_blocco(212, 236, -36, -32, 9, carne)
 	_blocco(212, 236, -8, -4, 9, carne2)
 	var rng := RandomNumberGenerator.new()
@@ -1071,6 +1086,64 @@ func _costruisci_culle(carne: Color, carne2: Color) -> void:
 	for k in 22:
 		_sfera(Vector3(rng.randf_range(213.0, 231.0), rng.randf_range(4.0, 8.5), rng.randf_range(-31.0, -9.0)), rng.randf_range(0.4, 1.0), carne.lerp(Color("#c0407a"), rng.randf()), 0.6 if rng.randf() < 0.4 else 0.0)
 	_luce(Vector3(224.0, 3.5, -20.0), Color("#ff2bd6"), 1.5, 13.0)
+
+## 0.8: oltre la dispensa, il pozzo dove il nido beve. Giù in fondo si sente la città.
+func _costruisci_pozzo(carne: Color, carne2: Color) -> void:
+	_box(Vector3(150, -0.05, -35), Vector3(32, 0.1, 42), Color("#24102e"))
+	_box(Vector3(150, 9.0, -35), Vector3(32, 0.5, 42), Color("#1a0a22"))
+	_blocco(136, 140, -56, -14, 9, carne2)
+	_blocco(136, 168, -56, -52, 9, carne)
+	_blocco(136, 168, -18, -14, 9, carne)
+	# il pozzo: un anello di carne attorno a un buio che respira
+	for k in 16:
+		var a := TAU * k / 16.0
+		_sfera(Vector3(152 + cos(a) * 5.0, 0.3, -35 + sin(a) * 5.0), 1.0, carne2.lerp(Color("#c0407a"), 0.3 * (k % 3)), 0.0)
+	_box(Vector3(152, 0.01, -35), Vector3(8.0, 0.02, 8.0), Color("#020104"))
+	_box(Vector3(152, 0.03, -35), Vector3(1.2, 0.02, 1.2), Color("#2ef2ff"), 1.0)
+	_solidi.append(Rect2(146.5, -40.5, 11.0, 11.0))
+	# lampione inghiottito ma ancora acceso (Nox)
+	_box(Vector3(143.5, 2.2, -24.0), Vector3(0.18, 4.4, 0.18), Color("#4a4f58"))
+	_box(Vector3(143.9, 4.4, -24.0), Vector3(0.9, 0.12, 0.3), Color("#4a4f58"))
+	_box(Vector3(144.3, 4.3, -24.0), Vector3(0.4, 0.08, 0.25), Color("#ffe9a8"), 3.0)
+	_luce(Vector3(144.3, 3.8, -24.0), Color("#ffe9a8"), 1.0, 7.0)
+	# targa di una via, piegata (Lance)
+	_box(Vector3(140.1, 2.2, -46.0), Vector3(0.06, 0.6, 1.6), Color("#f4f1ea"), 0.3)
+	_box(Vector3(140.15, 2.2, -46.0), Vector3(0.04, 0.45, 1.4), Color("#1b3f8a"))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 131
+	for k in 26:
+		var z := rng.randf_range(-51.0, -19.0)
+		_sfera(Vector3(140.4 if k % 2 else rng.randf_range(141.0, 163.0), rng.randf_range(0.6, 8.0), z if k % 2 else (-51.6 if k % 4 == 0 else -18.4)), rng.randf_range(0.4, 1.2), carne.lerp(Color("#c0407a"), rng.randf()), 0.6 if rng.randf() < 0.3 else 0.0)
+	_luce(Vector3(152.0, 2.0, -35.0), Color("#2ef2ff"), 1.3, 12.0)
+
+## 0.8: oltre le culle, la gola: un budello che fa una esse e rimanda le voci.
+func _costruisci_gola(carne: Color, carne2: Color) -> void:
+	_box(Vector3(250, -0.05, -21), Vector3(30, 0.1, 46), Color("#24102e"))
+	_box(Vector3(250, 9.0, -21), Vector3(30, 0.5, 46), Color("#1a0a22"))
+	_blocco(262, 266, -44, 2, 9, carne)
+	_blocco(232, 266, -44, -40, 9, carne2)
+	_blocco(232, 266, -2, 2, 9, carne)
+	# due quinte di carne fanno la esse
+	_blocco(236, 252, -31, -27, 9, carne2)
+	_blocco(246, 262, -15, -11, 9, carne)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 149
+	# telefoni inghiottiti nelle pareti: schermi che si accendono (l'eco)
+	for k in 14:
+		var z := rng.randf_range(-39.0, -3.0)
+		var x := 236.3 if k % 2 == 0 else 261.7
+		if x < 240.0 and z > -24.5 and z < -17.5:
+			continue
+		_box(Vector3(x, rng.randf_range(0.8, 3.5), z), Vector3(0.05, 0.3, 0.16), Color("#8fd0ff"), 2.0)
+	# il casco di un vigile del fuoco (Lance)
+	_box(Vector3(258.5, 0.25, -36.5), Vector3(0.5, 0.35, 0.6), Color("#c8102e"))
+	_box(Vector3(258.5, 0.1, -36.5), Vector3(0.7, 0.06, 0.8), Color("#c8102e"))
+	# la scritta col pennarello (Rio)
+	_box(Vector3(261.9, 1.6, -7.0), Vector3(0.04, 0.5, 2.6), Color("#f4f1ea"), 0.8)
+	for k in 20:
+		_sfera(Vector3(rng.randf_range(237.0, 261.0), rng.randf_range(4.5, 8.5), rng.randf_range(-39.0, -3.0)), rng.randf_range(0.4, 1.1), carne.lerp(Color("#c0407a"), rng.randf()), 0.6 if rng.randf() < 0.3 else 0.0)
+	_luce(Vector3(244.0, 3.5, -21.0), Color("#8fd0ff"), 1.2, 12.0)
+	_luce(Vector3(254.0, 3.5, -34.0), Color("#c04aff"), 1.2, 12.0)
 
 func _muro_carne(c: Vector3, lungo_x: bool, seme: int) -> void:
 	var rng := RandomNumberGenerator.new()

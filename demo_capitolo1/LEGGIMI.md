@@ -37,6 +37,14 @@ Progetto Godot 4.7.2 separato dalla V3 (si apre da questa cartella). Fino alla 0
 - Tracce ora 10. Chiacchiere nuove nel nido (3) e nel quartiere (2). Il finale ha righe in più se hai visto il mucchio o le culle.
 - Gli inneschi a terra accettano anche `x_min`/`x_max` (servono per le ali).
 
+## Il nido ancora più grande (0.8, 14/11/2026)
+- Richiesta dell'autore: «Il nido deve essere più grande». Niente tolto, niente meccaniche nuove.
+- Oltre la dispensa, **il pozzo** (`_costruisci_pozzo`): un buco nero da cui si sente la città di sotto. Punti: il pozzo (tutti), il lampione ancora acceso (Nox), la targa di Via dei Lampioni Spenti (Lance), la traccia «Palloncino a stella». All'ingresso, scontro col **Guardiano del Pozzo**.
+- Oltre le culle, **la gola** (`_costruisci_gola`): un budello a esse pieno di telefoni ingoiati che squillano. Punti: il telefono gemello di Saul, la scritta «CI SIAMO ANCORA» (Rio), il casco da pompiere (Lance), la traccia «Chiave di casa». All'ingresso, scontro con l'**Eco**.
+- Scontri nel nido: 6 più il cuore. Tracce: 12. Chiacchiere nuove nel nido: 2. Il finale ha due righe in più.
+- Prestazioni: i pezzi fermi si fondono a riquadri di 32 m, così ogni pezzo sente al massimo le luci vicine (limite di 8 per oggetto sul telefono) e quello fuori vista non si disegna. Nido: 44 draw call.
+- Da approvare: le stanze, i nemici e le scene nuove (PROPOSTA).
+
 ## Dove si cambia cosa
 - Tutti i testi, le scene, i punti e le chiacchiere: `data/capitolo1.json` (si modifica senza toccare il codice).
 - Città e modelli segnaposto: `scripts/mondo.gd`. Interfaccia: `scripts/persona_ui.gd`. Flusso: `scripts/main.gd`.

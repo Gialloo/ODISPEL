@@ -238,7 +238,7 @@ func _su_innesco(id: String) -> void:
 		"sciame":
 			await esegui("sciame")
 			_libera()
-		"ingordo", "covata":   # 0.7, PROPOSTA approvato dall'autore il 14/11/2026: le due ali del nido
+		"ingordo", "covata", "guardiano", "eco":   # 0.7 ali, 0.8 pozzo e gola; PROPOSTA approvato dall'autore il 14/11/2026: le due ali del nido
 			await esegui(id)
 			mondo.fatti[id] = true
 			_libera()
