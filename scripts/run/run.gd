@@ -28,6 +28,7 @@ var defs: Array = []
 var alive := 0
 var kills := 0
 var running := false
+var training := false                  # 0.19: Allenamento (manichini fermi, niente ondate)
 var choosing := false
 var options: Array = []
 var _queue: Array = []
@@ -78,12 +79,14 @@ func save_cfg() -> void:
 
 func stop() -> void:
 	running = false
+	training = false
 	_run_id += 1
 	_queue.clear()
 	_pending = 0
 
 func start(m: Node) -> void:
 	main = m
+	training = false
 	wave = 0
 	owned.clear()
 	alive = 0
@@ -105,6 +108,47 @@ func start(m: Node) -> void:
 	El.tune.chain = 4
 	El.tune.enemy_hop = 2.6
 	score_changed.emit(0)
+
+## 0.19: ALLENAMENTO. Stessa arena (bobina e pozza, bidoni, casse, muretto, blocco di metallo),
+## un manichino per tipo davanti a te: Scout, Bruto e Conduit. Non attaccano (il Conduit spara
+## una sfera ogni tanto), quando cadono tornano dopo un attimo, la vita del giocatore si ricarica.
+## Serve a imparare le diramazioni delle combo e la usano anche le prove automatiche.
+const TRAINING_SPOTS := {"scout": Vector3(0, 0.2, 0), "brute": Vector3(-6, 0.2, -3), "conduit": Vector3(6, 0.2, -3)}
+
+func start_training(m: Node) -> void:
+	start(m)
+	training = true
+	_between = 0.0
+	for a in TRAINING_SPOTS:
+		_spawn_dummy(a, TRAINING_SPOTS[a])
+
+func _spawn_dummy(arch: String, p: Vector3) -> void:
+	if not training or main == null:
+		return
+	var rid := _run_id
+	var e := Enemy.new()
+	e.setup(arch, 1)
+	e.dummy = true
+	e.home = p
+	e.player = main.player
+	e.tune = main.enemy_tune
+	e.position = p
+	main.enemies.add_child(e)
+	FX.ring(p, Color(1, 1, 1, 0.6), 1.8, 0.3)
+	e.died.connect(func(_x):
+		if rid != _run_id:
+			return
+		kills += 1
+		get_tree().create_timer(1.2, false).timeout.connect(func():
+			if rid == _run_id and training:
+				_spawn_dummy(arch, p)))
+
+func _tick_training(delta: float) -> void:
+	_tick_combo(delta)
+	var pl = main.player
+	if pl.hp < pl.max_hp and pl.hp > 0.0:
+		pl.hp = min(pl.max_hp, pl.hp + 25.0 * delta)
+		pl.hp_changed.emit(pl.hp, pl.max_hp)
 
 func has(id: String) -> bool:
 	return owned.has(id)
@@ -129,6 +173,9 @@ func _count_alive() -> int:
 
 func _process(delta: float) -> void:
 	if not running or choosing or main == null:
+		return
+	if training:
+		_tick_training(delta)
 		return
 	alive = _count_alive()
 	_tick_combo(delta)
@@ -400,7 +447,7 @@ func game_over() -> void:
 		return
 	_bank_combo()
 	running = false
-	if score > best and not main.get_meta("bot", false):
+	if score > best and not main.get_meta("bot", false) and not training:
 		best = score
 		save_cfg()
 	FX.stat("runs_over")

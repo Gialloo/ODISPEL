@@ -37,6 +37,10 @@ var boss_name := ""                # 0.17: COLOSSO (Bruto gigante) o TRALICCIO (
 var _shots := 0                    # TRALICCIO: attacchi fatti (ogni terzo è la scarica a terra)
 var _close_t := 0.0                # TRALICCIO: da quanto il giocatore gli sta addosso
 var _pulse_t := 0.0                # TRALICCIO: carica dell'impulso prima di sparire
+var _pull_at := Vector3.ZERO       # 0.19: punto d'arrivo di un trascinamento VECTOR
+var _pull_stop := 0.0
+var dummy := false                 # 0.19: manichino dell'Allenamento (non attacca, torna al suo posto)
+var home := Vector3.ZERO           # 0.19: posto del manichino
 var wave := 1                      # ondata: rende i nemici più svelti e frequenti, non solo più resistenti
 var _zap_cd := 0.0
 var _prev_vy := 0.0
@@ -431,6 +435,13 @@ func _physics_process(delta: float) -> void:
 			var n: Vector3 = away.normalized() if away.length() > 0.05 else Vector3.RIGHT
 			velocity.x += n.x * gap * 30.0 * d
 			velocity.z += n.z * gap * 30.0 * d
+	if _pull_stop > 0.0:
+		_pull_stop -= delta
+		var rest := _flat(_pull_at - global_position)
+		if rest.length() < 0.35 or rest.dot(_flat(velocity)) <= 0.0:
+			velocity.x = 0.0
+			velocity.z = 0.0
+			_pull_stop = 0.0
 	_prev_vy = velocity.y
 	var saved := velocity
 	velocity *= FX.enemy_time if FX.enemy_time < 1.0 else 1.0
@@ -456,7 +467,28 @@ func _tick_white(delta: float) -> void:
 	else:
 		hp_white = move_toward(hp_white, max(hp, 0.0), max_hp * 0.9 * delta)
 
+## 0.19: manichino dell'Allenamento. Non insegue e non colpisce: dopo ogni lancio torna al suo posto.
+## Il Conduit ogni tanto spara comunque una sfera, per provare la parata e SPINGI.
+func _dummy_idle(d: float) -> void:
+	var to_home := _flat(home - global_position)
+	var want := Vector3.ZERO
+	if to_home.length() > 1.2:
+		want = to_home.normalized() * 3.0
+	var hv := Vector3(velocity.x, 0, velocity.z).move_toward(want, 20 * d)
+	velocity.x = hv.x
+	velocity.z = hv.z
+	if player:
+		_face_player(d * 6.0)
+	if arch == "conduit" and player and _flat(player.global_position - global_position).length() < 14.0:
+		_cooldown -= d
+		if _cooldown <= 0.0:
+			_cooldown = 5.0
+			_set_state(S.WINDUP)
+
 func _chase(d: float) -> void:
+	if dummy:
+		_dummy_idle(d)
+		return
 	if player == null or player.get("state") == 4:
 		velocity.x = move_toward(velocity.x, 0, 20 * d)
 		velocity.z = move_toward(velocity.z, 0, 20 * d)
@@ -783,6 +815,9 @@ func receive_hit(info: Dictionary) -> void:
 		velocity.y = 3.0
 		_set_state(S.HITSTUN)
 		_t = -0.15
+		# 0.19: si ferma dove la catena lo porta (prima, da lontano, volava oltre il giocatore)
+		_pull_at = info.pull_to
+		_pull_stop = 0.6
 	else:
 		velocity.x = dir.x * kb
 		velocity.z = dir.z * kb

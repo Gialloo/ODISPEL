@@ -55,6 +55,9 @@ var _move_press_ms := 0           # pressione che ha avviato la mossa
 var _heavy_fired_press := -1
 var _last_move_id := ""
 var _last_move_end := 0
+var _chain_ids: Array = []          # 0.19: mosse della catena in corso (limite alle ripetizioni dei rami)
+var _picked_branch := false         # 0.19: l'ultima scelta è un ramo della tabella
+var _from_branch := false           # 0.19: la mossa in corso è partita da un ramo
 var _buffer := ""
 var _buffer_until := 0
 var _jump_buffer_until := 0
@@ -352,6 +355,8 @@ func next_form() -> int:
 
 func _pick_move(kind: String, peek := false) -> String:
 	var now := Time.get_ticks_msec()
+	if not peek:
+		_picked_branch = false
 	var airborne := not is_on_floor()
 	if _counter_ready and FX.is_slowed():
 		if not peek:
@@ -365,10 +370,18 @@ func _pick_move(kind: String, peek := false) -> String:
 	if t:
 		to_t = _flat(t.global_position - global_position)
 		d = to_t.length()
+	# 0.19: la mossa da cui parte la catena (quella in corso, o quella appena finita)
+	var src := _chain_src(now)
 	if kind == "heavy":
 		if airborne and global_position.y > 1.2:
 			return "impact_slam"
-		return "impact_hammer" if running else "impact_launcher"
+		# pesante nella finestra di catena: IMPACT interrompe e lancia, ma la catena continua
+		if running:
+			return "impact_hammer"
+		var hb := _branch(src, "heavy", peek)
+		if hb != "":
+			return hb
+		return "impact_launcher"
 	# sfera in arrivo vicina: l'attacco diventa BLADE, così para e la rimanda indietro
 	for o in get_tree().get_nodes_in_group("orbs"):
 		if not o.reflected and o.global_position.distance_to(global_position + Vector3(0, 0.9, 0)) < 3.0:
@@ -387,12 +400,21 @@ func _pick_move(kind: String, peek := false) -> String:
 		return "vector_sweep"
 	if in_sweep:
 		return "vector_whirl"
+	# 0.19: dopo un IMPACT, stick all'indietro + leggero = VECTOR recupera chi hai scagliato (fino a 9 m)
+	if t and src != "" and _stick_back(to_t):
+		var bb := _branch(src, "back", true)
+		if bb != "" and d <= float(M.DATA[bb].get("reach_branch", M.DATA[bb].reach)) + 0.5:
+			return _branch(src, "back", peek)
 	if t:
 		var back := input_dir()
 		# stick tirato all'indietro rispetto al nemico: VECTOR lo frusta verso di te
 		if back != Vector3.ZERO and d > 2.2 and d < 6.8 and back.normalized().dot(to_t.normalized()) < -0.5:
 			return "vector_reel"
 		if d > 3.4 and d < 11.5:
+			# 0.19 (scelta dell'autore): la frusta resta automatica, ma con lo stick spinto
+			# verso il nemico parte la lama in scatto
+			if _stick_fwd(to_t):
+				return "blade_dash"
 			return "vector_lash"
 	var nxt := ""
 	if state == S.ATTACK and move.next != "":
@@ -402,16 +424,49 @@ func _pick_move(kind: String, peek := false) -> String:
 		if last.next != "" and not last.get("air", false):
 			nxt = last.next
 	if nxt != "":
-		# stick di lato durante la combo: la variante della forma
+		# stick di lato durante la combo: la variante della forma (dalla tabella delle diramazioni)
 		if _stick_side(to_t):
-			if nxt == "blade_2" or nxt == "blade_3":
-				return "blade_spin"
-			if nxt == "impact_finisher":
-				return "impact_breaker"
+			var sb := _branch(src, "side", peek)
+			if sb != "":
+				return sb
 		return nxt
 	if running:
 		return "blade_dash"
 	return "blade_1"
+
+## 0.19: mossa da cui si dirama la catena: quella in corso, o l'ultima finita da meno di chain_window.
+## Le mosse aeree non si diramano a terra (come il vecchio seguito della catena).
+func _chain_src(now: int) -> String:
+	if state == S.ATTACK and move_id != "":
+		return move_id
+	if _last_move_id != "" and now - _last_move_end < int(tune.chain_window) and not M.DATA[_last_move_id].get("air", false):
+		return _last_move_id
+	return ""
+
+## Ramo della tabella per questo input, se esiste e non è già stato usato troppe volte in questa catena.
+func _branch(src: String, input: String, peek: bool) -> String:
+	if src == "":
+		return ""
+	var id: String = M.DATA[src].get("branch", {}).get(input, "")
+	if id == "" or _chain_ids.count(id) >= M.BRANCH_REPEAT_MAX:
+		return ""
+	if not peek:
+		_picked_branch = true
+	return id
+
+## Stick tirato all'indietro rispetto al nemico (stessa soglia della frusta all'indietro).
+func _stick_back(to_t: Vector3) -> bool:
+	var dir := input_dir()
+	if dir.length() < 0.5 or to_t.length() < 0.1:
+		return false
+	return dir.normalized().dot(to_t.normalized()) < -0.5
+
+## Stick spinto deciso verso il nemico.
+func _stick_fwd(to_t: Vector3) -> bool:
+	var dir := input_dir()
+	if dir.length() < 0.6 or to_t.length() < 0.1:
+		return false
+	return dir.normalized().dot(to_t.normalized()) > 0.75
 
 ## Stick spinto di lato rispetto al nemico (o a dove guardi).
 func _stick_side(to_t: Vector3) -> bool:
@@ -422,6 +477,14 @@ func _stick_side(to_t: Vector3) -> bool:
 	return absf(dir.normalized().dot(ref)) < 0.45
 
 func _start_move(id: String, now: int) -> void:
+	# 0.19: la catena continua se si parte da un colpo o entro chain_window dalla fine dell'ultimo
+	if state != S.ATTACK and (now - _last_move_end >= int(tune.chain_window) or _last_move_id == ""):
+		_chain_ids.clear()
+	_chain_ids.append(id)
+	_from_branch = _picked_branch
+	_picked_branch = false
+	if _from_branch:
+		FX.stat("branch_" + id)
 	move_id = id
 	move = M.DATA[id]
 	if move.lunge >= 11.0 or move.get("zip", false):
@@ -600,7 +663,8 @@ func _do_hits(slam: bool) -> void:
 		var dy: float = absf(to.y)
 		if dy > 2.4:
 			continue
-		var r: float = move.reach * (1.3 if move.form == M.Form.VECTOR and Run.has("frusta_lunga") else 1.0) + e.radius
+		var reach: float = float(move.get("reach_branch", move.reach)) if _from_branch else move.reach
+		var r: float = reach * (1.3 if move.form == M.Form.VECTOR and Run.has("frusta_lunga") else 1.0) + e.radius
 		if move_id == "vector_lash":
 			var along := flat.dot(facing)
 			var side := (flat - facing * along).length()
@@ -878,6 +942,7 @@ func take_hit(from: Node3D, dmg: float, dir: Vector3) -> String:
 	FX.stat("player_hits_taken")
 	OV.hurt()
 	_combo_hits = 0
+	_chain_ids.clear()
 	Run.combo_break()
 	_air_hits = 0
 	if state == S.ATTACK:

@@ -92,7 +92,7 @@ func _on_player_died() -> void:
 	Run.game_over()
 
 ## Ripartenza immediata: arena nuova, nemici via, contatori azzerati, stessa scena.
-func restart() -> void:
+func restart(training := false) -> void:
 	get_tree().paused = false
 	Engine.time_scale = 1.0
 	FX.enemy_time = 1.0
@@ -112,7 +112,10 @@ func restart() -> void:
 	player.revive()
 	player.global_position = Vector3(0, 0.5, 6)
 	player.velocity = Vector3.ZERO
-	Run.start(self)
+	if training:
+		Run.start_training(self)
+	else:
+		Run.start(self)
 
 # ------------------------------------------------------------ tastiera e mouse
 

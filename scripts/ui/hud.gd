@@ -458,14 +458,19 @@ func _open_over(wave: int, kills: int) -> void:
 	v.add_child(row)
 	add_child(_over)
 
-func restart() -> void:
+func restart(training := false) -> void:
 	close_screens()
+	if _panel:
+		toggle_panel()
 	_set_play_ui(true)
 	_score_shown = 0.0
 	_ups_label.text = ""
 	_wave_label.text = ""
 	_on_hp(player.max_hp, player.max_hp)
-	get_parent().restart()
+	get_parent().restart(training)
+	if training:
+		_wave_label.text = "ALLENAMENTO"
+		message("ALLENAMENTO\nmanichini fermi · prova le diramazioni\nstick indietro dopo IMPACT · tieni ATTACCO nella combo", 3.5)
 
 func _on_ov_level(l: int) -> void:
 	if l == 0:
@@ -538,6 +543,18 @@ func toggle_panel() -> void:
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(box)
 	box.add_child(_label("LAB · regola dal vivo", 20))
+	# 0.19: ALLENAMENTO (manichini fermi) direttamente dal LAB
+	var tr := Button.new()
+	tr.text = "Esci dall'allenamento" if Run.training else "ALLENAMENTO · manichini"
+	tr.add_theme_font_size_override("font_size", 22)
+	tr.custom_minimum_size = Vector2(0, 56)
+	tr.pressed.connect(func():
+		if Run.training:
+			toggle_panel()
+			get_parent().to_menu()
+		else:
+			restart(true))
+	box.add_child(tr)
 	var rows := [
 		["Velocità corsa", player.tune, "run_speed", 4.0, 14.0],
 		["Accelerazione", player.tune, "accel", 15.0, 120.0],
