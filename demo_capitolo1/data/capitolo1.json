@@ -1,5 +1,5 @@
 {
-  "_nota": "Testi della demo. Si cambiano qui senza toccare il codice. Righe: {chi, faccia, testo} oppure {narra}. Regia: {regia: ...}. Balloon: {balloon: chi, testo, s}. Scelte: {scelta: [{testo, vai}]}. Facce: neutro, serio, sorpreso, arrabbiato, sfotto, felice, triste (Rio ha sempre la maschera). Rio dice solo: ..., Sniff, Trending, Hype, Unfollow, Follow! (decisione dell'autore, 11/11). I quattro all'inizio sono sconosciuti (Manuale §1). Il raccordo vicolo → rifugio → quartiere e' una PROPOSTA da approvare (Manuale §14).",
+  "_nota": "Testi della demo. Si cambiano qui senza toccare il codice. Righe: {chi, faccia, testo} oppure {narra}. Regia: {regia: ...}. Balloon: {balloon: chi, testo, s}. Scelte: {scelta: [{testo, vai}]}. Facce: neutro, serio, sorpreso, arrabbiato, sfotto, felice, triste (Rio ha sempre la maschera). Rio dice solo: ..., Sniff, Trending, Hype, Unfollow, Follow! (decisione dell'autore, 11/11). I quattro all'inizio sono sconosciuti (Manuale §1). Il raccordo vicolo → rifugio → quartiere e' una PROPOSTA, approvato dall'autore il 14/11/2026 (Manuale §14).",
 
   "zone": {
     "vicolo": {

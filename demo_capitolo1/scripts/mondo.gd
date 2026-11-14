@@ -121,13 +121,13 @@ func carica_zona(nome: String, membri: Array, comparse: Dictionary, dati_punti: 
 			limiti = Rect2(82.5, -36.0, 55.0, 57.5)
 			_pioggia_p.emitting = true
 		"nido":
-			# PROPOSTA (0.5): il luogo anomalo dietro il varco, dove sta il cuore del nido
+			# PROPOSTA (0.5, approvato dall'autore il 14/11/2026): il luogo anomalo dietro il varco, dove sta il cuore del nido
 			_costruisci_nido()
 			partenza = Vector3(200, 0, 8)
 			limiti = Rect2(167.5, -54.0, 65.0, 64.5)
 			inneschi = [{"id": "sciame", "z_max": -37.0, "x_min": 188.0, "x_max": 212.0, "fatto": false},
 				{"id": "ingordo", "z_max": 99.0, "x_max": 183.0, "fatto": false},   # 0.7: entrando nella dispensa
-				{"id": "covata", "z_max": 99.0, "x_min": 217.0, "fatto": false}]   # 0.7: entrando nelle culle  # PROPOSTA (0.6): le guardie del cuore
+				{"id": "covata", "z_max": 99.0, "x_min": 217.0, "fatto": false}]   # 0.7: entrando nelle culle (sciame: 0.6, le guardie del cuore)
 			_pioggia_p.emitting = false
 	_unisci_statici()
 	_luccichii.clear()
@@ -1014,7 +1014,7 @@ func _costruisci_nido() -> void:
 	_luce(Vector3(200, 4.0, -24.0), Color("#c04aff"), 1.6, 14.0)
 	_luce(Vector3(200, 3.5, 2.0), Color("#c04aff"), 1.2, 10.0)
 
-## 0.7, PROPOSTA: l'ala ovest del nido, dove finisce quello che il nido ingoia.
+## 0.7, PROPOSTA approvato dall'autore il 14/11/2026: l'ala ovest del nido, dove finisce quello che il nido ingoia.
 func _costruisci_dispensa(carne: Color, carne2: Color) -> void:
 	_blocco(164, 168, -48, -16, 9, carne)
 	_blocco(164, 188, -48, -44, 9, carne2)
@@ -1041,7 +1041,7 @@ func _costruisci_dispensa(carne: Color, carne2: Color) -> void:
 		_sfera(Vector3(168.2 if lato < 0 else 187.0, rng.randf_range(0.5, 7.5), z) if k % 3 else Vector3(rng.randf_range(168.0, 186.0), rng.randf_range(0.5, 7.5), -43.6 if lato < 0 else -20.4), rng.randf_range(0.4, 1.2), carne.lerp(Color("#c0407a"), rng.randf()), 0.6 if rng.randf() < 0.3 else 0.0)
 	_luce(Vector3(176.0, 4.0, -30.0), Color("#ff7a3a"), 1.4, 13.0)
 
-## 0.7, PROPOSTA: l'ala est, le culle dove crescono le anomalie piccole.
+## 0.7, PROPOSTA approvato dall'autore il 14/11/2026: l'ala est, le culle dove crescono le anomalie piccole.
 func _costruisci_culle(carne: Color, carne2: Color) -> void:
 	_blocco(232, 236, -36, -4, 9, carne2)
 	_blocco(212, 236, -36, -32, 9, carne)

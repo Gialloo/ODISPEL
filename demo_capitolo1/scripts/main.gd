@@ -3,7 +3,7 @@ extends Node
 ## titolo → vicolo con Lance (percezioni, incontro con Rio, il boato)
 ## → rifugio nella lavanderia (quattro sconosciuti, si parla con ognuno, la porta)
 ## → quartiere trasformato e chiuso (gruppo, cambio guida, percezioni) → finale.
-## Il raccordo tra queste parti è una PROPOSTA (il canone non lo documenta, Manuale §14).
+## Il raccordo tra queste parti è una PROPOSTA, approvato dall'autore il 14/11/2026 (il canone non lo documenta, Manuale §14).
 
 var dati: Dictionary
 var mondo: Node3D
@@ -238,7 +238,7 @@ func _su_innesco(id: String) -> void:
 		"sciame":
 			await esegui("sciame")
 			_libera()
-		"ingordo", "covata":   # 0.7, PROPOSTA: le due ali del nido
+		"ingordo", "covata":   # 0.7, PROPOSTA approvato dall'autore il 14/11/2026: le due ali del nido
 			await esegui(id)
 			mondo.fatti[id] = true
 			_libera()
