@@ -37,6 +37,10 @@ var boss_name := ""                # 0.17: COLOSSO (Bruto gigante) o TRALICCIO (
 var _shots := 0                    # TRALICCIO: attacchi fatti (ogni terzo è la scarica a terra)
 var _close_t := 0.0                # TRALICCIO: da quanto il giocatore gli sta addosso
 var _pulse_t := 0.0                # TRALICCIO: carica dell'impulso prima di sparire
+var mark := ""                     # 0.19: marca di un potere ("pulled" ATTIRA, "slammed" sbattuto)
+var mark_until := 0
+var wet_until := 0                 # 0.19: bagnato (pozza): la scossa fa di più e salta da lui
+var _spiked := false               # 0.19: schiacciato giù da un colpo in aria
 var _pull_at := Vector3.ZERO       # 0.19: punto d'arrivo di un trascinamento VECTOR
 var _pull_stop := 0.0
 var dummy := false                 # 0.19: manichino dell'Allenamento (non attacca, torna al suo posto)
@@ -394,7 +398,12 @@ func _physics_process(delta: float) -> void:
 			velocity.x = move_toward(velocity.x, 0, 4 * d)
 			velocity.z = move_toward(velocity.z, 0, 4 * d)
 			_visual.rotation.x += _tumble * d
-			if is_on_floor() and _t > 0.15:
+			if is_on_floor() and _t > 0.15 and _spiked:
+				_spiked = false
+				_spike_wave()
+				_set_state(S.HITSTUN)
+				_tumble = 0.0
+			elif is_on_floor() and _t > 0.15:
 				if _prev_vy < -8.0 and not _bounced:
 					# cade forte: un rimbalzo basso, dà peso al corpo
 					_bounced = true
@@ -417,6 +426,13 @@ func _physics_process(delta: float) -> void:
 	velocity.y = max(velocity.y - g * d, -30.0)
 	if burn_t > 0.0 and state != S.DEAD:
 		_burning(delta)
+	# 0.19: bagnato: chi passa da una pozza resta bagnato per 4 s (gocce azzurre ogni tanto)
+	if state != S.DEAD and not El.puddles.is_empty() and El.puddle_at(global_position) >= 0:
+		if not is_wet():
+			FX.stat("enemies_wet")
+		wet_until = Time.get_ticks_msec() + 4000
+	if is_wet() and randf() < 0.05:
+		FX.sparks(global_position + Vector3(0, 1.2, 0), Vector3.DOWN, Color(0.4, 0.7, 1.0), 2, 2.0)
 	if charged:
 		_charge_t += delta
 		_mat.emission_enabled = true
@@ -608,7 +624,23 @@ func power_pull(point: Vector3) -> void:
 	_set_state(S.HITSTUN)
 	_t = -0.3
 	_warn_mat.albedo_color.a = 0.0
+	mark = "pulled"
+	mark_until = Time.get_ticks_msec() + 800
 	FX.stat("enemy_pulled")
+
+## 0.19: Contro-presa: attirato subito dopo una schivata, resta scoperto più a lungo.
+func grab_stun() -> void:
+	if state == S.DEAD:
+		return
+	_set_state(S.HITSTUN)
+	_t = -0.8
+
+func is_wet() -> bool:
+	return Time.get_ticks_msec() < wet_until
+
+func _set_mark(m: String, ms: int) -> void:
+	mark = m
+	mark_until = Time.get_ticks_msec() + ms
 
 ## SOVRACCARICA: al prossimo colpo esplode.
 func charge() -> void:
@@ -631,6 +663,7 @@ func _power_collisions(pre: Vector3) -> void:
 			velocity = Vector3(n.x, 0.4, n.z) * 3.0
 			FX.stat("wall_slams")
 			FX.stat("env_hits")
+			_set_mark("slammed", 1200)
 			receive_hit({"dmg": 8.0 + speed * 0.8, "poise": 50.0, "dir": n, "knock": 1.0, "launch": 0.0, "form": -1, "move": "wall", "env": true})
 			FX.ring(global_position + Vector3(0, 1, 0) - n * 0.4, Color(1, 1, 1, 0.8), 1.6, 0.2)
 			return
@@ -646,6 +679,7 @@ func _power_collisions(pre: Vector3) -> void:
 			e.receive_hit({"dmg": 6.0 + speed * 0.6, "poise": 40.0, "dir": dir, "knock": speed * 0.5, "launch": 3.0, "form": -1, "move": "bowl", "env": true})
 			FX.stat("enemy_collisions")
 			FX.stat("env_hits")
+			_set_mark("slammed", 1200)
 			FX.hitstop(60)
 			FX.sound("colpo_forte", 1.0)
 
@@ -795,10 +829,29 @@ func orb_backfire() -> void:
 func receive_hit(info: Dictionary) -> void:
 	if state == S.DEAD:
 		return
+	# 0.19: le marche dei poteri e il counter-hit valgono solo per i colpi dell'arma
+	var weapon_hit: bool = int(info.get("form", -1)) >= 0 and info.get("move", "") != "parry"
+	var was_air := state == S.AIR
+	var catch := false
+	var gold := false
+	if weapon_hit and mark != "" and Time.get_ticks_msec() < mark_until:
+		if mark == "pulled":
+			catch = true
+			FX.stat("catch")
+		elif mark == "slammed":
+			info.poise *= 2.0
+			gold = true
+			FX.stat("rebound")
+		mark = ""
+	if weapon_hit and state == S.WINDUP and int(info.form) == 1:
+		# counter-hit: IMPACT sull'avviso, sbilancia anche il Bruto corazzato
+		info.poise *= 1.5
+		gold = true
+		FX.stat("counter_hit")
 	hp -= info.dmg
 	# 0.18: numeri dei danni (li disegna la HUD, scripts/ui/enemy_bars.gd)
 	if info.dmg >= 1.0:
-		get_tree().call_group("dmg_pops", "pop", global_position + Vector3(0, 2.0 if arch == "brute" else 1.6, 0) * (1.6 if boss else 1.0), info.dmg, info.dmg >= 18.0)
+		get_tree().call_group("dmg_pops", "pop", global_position + Vector3(0, 2.0 if arch == "brute" else 1.6, 0) * (1.6 if boss else 1.0), info.dmg, info.dmg >= 18.0 or gold or catch)
 	poise -= info.poise
 	_mat.emission_enabled = true
 	_mat.emission = Color(1, 1, 1)
@@ -836,6 +889,8 @@ func receive_hit(info: Dictionary) -> void:
 		if charged and info.get("move", "") != "blast":
 			charged = false
 			_mat.emission_enabled = false
+			if int(info.get("form", -1)) == 1:
+				FX.stat("detonate")
 			FX.overcharge_blast(global_position + Vector3(0, 0.8, 0), self)
 		if hp <= 0.0:
 			_die(dir)
@@ -861,9 +916,34 @@ func receive_hit(info: Dictionary) -> void:
 	if charged and info.get("move", "") != "blast":
 		charged = false
 		_mat.emission_enabled = false
+		if int(info.get("form", -1)) == 1:
+			FX.stat("detonate")
 		FX.overcharge_blast(global_position + Vector3(0, 0.8, 0), self)
+	# 0.19: Aggancio (colpo su un nemico appena attirato): scoperto il doppio
+	if catch and state == S.HITSTUN:
+		_t -= 0.32
+	# 0.19: schiacciata: IMPACT dall'alto su un nemico in aria, cade come un proiettile
+	if was_air and info.get("move", "") == "impact_slam" and state != S.DEAD and not _spiked:
+		_spiked = true
+		velocity.y = -20.0
+		_set_state(S.AIR)
+		FX.stat("spikes")
 	if hp <= 0.0:
 		_die(dir)
+
+## 0.19: il nemico schiacciato a terra fa un'onda che colpisce gli altri vicini.
+func _spike_wave() -> void:
+	FX.ring(global_position, Color(1, 0.6, 0.2, 0.9), 2.5, 0.3)
+	FX.shake(0.35)
+	FX.sound("colpo_forte", 0.7)
+	for o in get_tree().get_nodes_in_group("enemies"):
+		if o == self or o.is_dead():
+			continue
+		var to: Vector3 = _flat(o.global_position - global_position)
+		if to.length() < 2.5 + o.radius:
+			o.receive_hit({"dmg": 10.0, "poise": 30.0, "dir": to.normalized() if to.length() > 0.1 else Vector3.FORWARD,
+				"knock": 5.0, "launch": 4.0, "form": -1, "move": "spike", "env": true})
+			FX.stat("spike_hits")
 
 func _die(dir: Vector3) -> void:
 	if burn_t > 0.0 and Run.has("fuoco_vivo"):

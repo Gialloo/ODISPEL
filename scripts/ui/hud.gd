@@ -299,6 +299,7 @@ func bind() -> void:
 	player.form_changed.connect(_set_form)
 	player.perfect_dodge.connect(_on_perfect)
 	OV.level_changed.connect(_on_ov_level)
+	OV.signature.connect(_on_signature)
 	Run.wave_started.connect(func(n, th):
 		_wave_label.text = "ONDATA %d" % n + ("  ·  " + th if th != "" else "")
 		message("ONDATA %d" % n + ("\n" + th if th != "" else ""), 1.2))
@@ -509,8 +510,12 @@ func _process(_d: float) -> void:
 	# punteggio che sale a scatti morbidi, combo in corso, conto alla rovescia del cerchio
 	_score_shown = move_toward(_score_shown, float(Run.score), max(40.0, (Run.score - _score_shown) * 8.0) * _d)
 	_score_label.text = "%d" % int(_score_shown)
+	var sig_on: bool = _sig_until > Time.get_ticks_msec()
 	if Run.combo >= 2:
-		_combo_label.text = "COMBO %d" % Run.combo
+		_combo_label.text = "COMBO %d" % Run.combo + ("  ·  " + _sig_text if sig_on else "")
+		_combo_label.modulate.a = 1.0
+	elif sig_on:
+		_combo_label.text = _sig_text
 		_combo_label.modulate.a = 1.0
 	elif _combo_label.text.find("+") == -1:
 		_combo_label.modulate.a = 0.0
@@ -564,6 +569,8 @@ func toggle_panel() -> void:
 		["Durata schivata", player.tune, "dodge_time", 0.1, 0.45],
 		["Finestra schivata perfetta", player.tune, "perfect_window", 0.05, 0.4],
 		["Aiuto mira (raggio)", player.tune, "assist_range", 0.0, 12.0],
+		["Finestra precisa (s)", player.tune, "precise_window", 0.04, 0.15],
+		["Bonus colpo preciso", player.tune, "precise_bonus", 0.0, 0.3],
 		["Arresto all'impatto", FX.tune, "hitstop_scale", 0.0, 2.5],
 		["Scossa telecamera", FX.tune, "shake_scale", 0.0, 2.5],
 		["Sensibilità visuale", touch, "look_scale", 0.5, 4.0],
@@ -612,6 +619,13 @@ func _slider_row(title: String, obj, key: String, lo: float, hi: float) -> Contr
 		l.text = "%s: %.2f" % [title, val])
 	v.add_child(s)
 	return v
+
+## 0.19: firme di tecnica: il nome resta 0,8 s accanto al COMBO (nessun elemento nuovo a schermo).
+var _sig_text := ""
+var _sig_until := 0
+func _on_signature(n: String) -> void:
+	_sig_text = n
+	_sig_until = Time.get_ticks_msec() + 800
 
 ## 0.15: barra del COLOSSO in alto al centro, sotto il numero dell'ondata.
 var _boss_box: Control

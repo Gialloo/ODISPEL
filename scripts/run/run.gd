@@ -412,8 +412,23 @@ func _open_choice() -> void:
 	free.shuffle()
 	options = []
 	var fams := {}
+	# 0.19: almeno un'opzione legata allo stile dei potenziamenti già presi (tags), se c'è
+	var my_tags := {}
+	for id in owned:
+		for tg in def(id).get("tags", []):
+			my_tags[tg] = true
+	if not my_tags.is_empty():
+		for d in free:
+			var hit := false
+			for tg in d.get("tags", []):
+				if my_tags.has(tg):
+					hit = true
+			if hit:
+				options.append(d)
+				fams[d.family] = true
+				break
 	for d in free:
-		if options.size() < 3 and not fams.has(d.family):
+		if options.size() < 3 and not fams.has(d.family) and not options.has(d):
 			options.append(d)
 			fams[d.family] = true
 	for d in free:

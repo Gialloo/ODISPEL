@@ -24,7 +24,20 @@ var values := {
 	# difesa e controllo
 	"perfect_dodges": ["defense", 15.0], "interrupts": ["defense", 6.0], "staggers": ["control", 5.0],
 	"launch_follow": ["control", 8.0], "kills": ["control", 5.0],
+	# 0.19: firme di tecnica (Combat System v2). Ripeterle rende ×0,3 come tutto il resto.
+	"tri_form": ["tech", 14.0], "air_4": ["tech", 10.0], "precise": ["tech", 4.0],
+	"catch": ["power", 8.0], "rebound": ["env", 10.0], "counter_hit": ["defense", 8.0],
+	"env_chain": ["chain", 12.0], "multi_target": ["power", 8.0], "detonate": ["chain", 10.0],
+	"counter_grab": ["defense", 10.0], "spikes": ["control", 10.0], "wet_shocks": ["chain", 6.0],
 }
+## 0.19: nomi delle firme, mostrati per un attimo sotto il COMBO.
+const SIGNATURES := {
+	"tri_form": "TRE FORME", "air_4": "IN VOLO ×4", "precise": "PRECISO", "catch": "AGGANCIO",
+	"rebound": "RIMBALZO", "counter_hit": "CONTRO-COLPO", "env_chain": "CATENA D'AMBIENTE",
+	"multi_target": "DOPPIO BERSAGLIO", "detonate": "DETONAZIONE", "counter_grab": "CONTRO-PRESA",
+	"spikes": "SCHIACCIATA",
+}
+signal signature(name: String)
 var tune := {
 	"gain": 0.6,           # moltiplicatore generale dei punti
 	"grace": 2.5,          # secondi senza azioni prima che la barra cali
@@ -57,6 +70,20 @@ func on_stat(key: String) -> void:
 	if values.has(key):
 		var v: Array = values[key]
 		feed(key, v[0], v[1])
+		if SIGNATURES.has(key):
+			signature.emit(SIGNATURES[key])
+		# 0.19: due reazioni d'ambiente DIVERSE entro 3 s = firma CATENA D'AMBIENTE
+		if v[0] == "env":
+			var now := Time.get_ticks_msec()
+			_env_recent = _env_recent.filter(func(x): return now - int(x[1]) < 3000)
+			for x in _env_recent:
+				if x[0] != key:
+					_env_recent.clear()
+					FX.stat("env_chain")
+					return
+			_env_recent.append([key, now])
+
+var _env_recent: Array = []
 
 ## Un'azione del giocatore: tag = cosa esattamente, cat = famiglia.
 func feed(tag: String, cat: String, pts: float) -> void:

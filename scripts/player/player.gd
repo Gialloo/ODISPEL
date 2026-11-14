@@ -34,6 +34,8 @@ var tune := {
 	"chain_cancel": 0.85,          # 0.10: da un colpo al successivo si passa prima (combo più fluide)
 	"chain_window": 600.0,         # ms dopo la fine di un colpo in cui la catena continua
 	"impact_mult": 1.2,            # 0.10: IMPACT (arancione) fa il 20% in più
+	"precise_window": 0.08,        # 0.19: secondi dopo la fine del colpo in cui l'input è «preciso»
+	"precise_bonus": 0.10,         # 0.19: danno in più della mossa partita precisa
 }
 
 var cam: Node3D                   # rig della telecamera (yaw)
@@ -58,6 +60,19 @@ var _last_move_end := 0
 var _chain_ids: Array = []          # 0.19: mosse della catena in corso (limite alle ripetizioni dei rami)
 var _picked_branch := false         # 0.19: l'ultima scelta è un ramo della tabella
 var _from_branch := false           # 0.19: la mossa in corso è partita da un ramo
+var _precise := false               # 0.19: la mossa in corso è partita nella finestra precisa
+var _precise_next := false
+var _chain_forms := {}              # 0.19: forme andate a segno nella catena (firma TRE FORME)
+var _tri_done := false
+var _air_chain := 0                 # 0.19: colpi a segno senza toccare terra (firma IN VOLO)
+var _zips := 0                      # 0.19: catene VECTOR in aria in questo volo
+var _grab_until := 0                # 0.19: Contro-presa pronta (schivata -> ATTIRA)
+var _grab_cd_until := 0
+var _grab_move := false
+var _guard_pending := false         # 0.19: Seconda guardia
+var _guard_move := false
+var _swap_target: Node3D = null     # 0.19: Scambio
+var _counter_small := false         # 0.19: la mossa in corso è la Contro-presa (contrattacco ridotto)
 var _buffer := ""
 var _buffer_until := 0
 var _jump_buffer_until := 0
@@ -164,6 +179,8 @@ func _physics_process(delta: float) -> void:
 	if on_floor:
 		_coyote_until = now + 120
 		_air_attacks = 0
+		_air_chain = 0
+		_zips = 0
 		_air_dodge_used = false
 		if velocity.y <= 0.1:
 			_jumps = 0
@@ -211,6 +228,14 @@ func _request(kind: String, now: int) -> void:
 	if state == S.HURT or state == S.DEAD:
 		_buffer = kind
 		_buffer_until = now + 200
+		return
+	# 0.19: finestra precisa. Premuto subito dopo la fine di un colpo andato a segno (non tenuto in
+	# coda da prima): la mossa dopo parte subito e fa un po' di danno in più. Chi preme a caso
+	# perde solo il bonus, la combo resta quella di sempre.
+	if kind != "dodge" and state == S.ATTACK and _hit_any and not move.get("slam", false) \
+			and move_t >= move.hit_to and move_t <= move.hit_to + tune.precise_window:
+		_precise_next = true
+		_do(kind, now)
 		return
 	if _can_act_now(kind):
 		_do(kind, now)
@@ -387,14 +412,24 @@ func _pick_move(kind: String, peek := false) -> String:
 		if not o.reflected and o.global_position.distance_to(global_position + Vector3(0, 0.9, 0)) < 3.0:
 			return "blade_air_1" if airborne else "blade_1"
 	if airborne:
+		var zip_max := 2 if Run.has("sospensione") else 1
+		# 0.19: a metà combo aerea, stick verso un altro nemico lontano: VECTOR ti porta da lui
+		if t and d > 3.5 and d < 10.0 and _air_attacks > 0 and _zips < zip_max and _stick_fwd(to_t):
+			return "vector_zip"
 		if state == S.ATTACK and move.get("air", false) and move.next != "":
 			return move.next
 		# VECTOR in aria: un nemico lontano ti attira verso di lui
-		if t and d > 3.5 and d < 10.0 and _air_attacks == 0:
+		if t and d > 3.5 and d < 10.0 and (_air_attacks == 0 or (Run.has("sospensione") and _zips < zip_max and _air_attacks <= 1)):
 			return "vector_zip"
-		if _air_attacks < 3:
+		if _air_attacks < (5 if Run.has("sospensione") else 3):
 			return "blade_air_1"
 		return "blade_air_3"
+	# 0.19: Contro-presa (schivata, poi ATTIRA entro mezzo secondo): il leggero dopo è un contrattacco ridotto
+	if now < _grab_until:
+		if not peek:
+			_grab_until = 0
+			_grab_move = true
+		return "impact_counter"
 	var in_sweep: bool = (state == S.ATTACK and move_id == "vector_sweep") or (_last_move_id == "vector_sweep" and now - _last_move_end < int(tune.chain_window))
 	if now - _last_dodge_end < 450 and not in_sweep:
 		return "vector_sweep"
@@ -414,6 +449,9 @@ func _pick_move(kind: String, peek := false) -> String:
 			# 0.19 (scelta dell'autore): la frusta resta automatica, ma con lo stick spinto
 			# verso il nemico parte la lama in scatto
 			if _stick_fwd(to_t):
+				# Scambio (potenziamento): prima scambi di posto con lui, poi la lama in scatto
+				if Run.has("scambio") and not peek:
+					_swap_target = t
 				return "blade_dash"
 			return "vector_lash"
 	var nxt := ""
@@ -433,6 +471,17 @@ func _pick_move(kind: String, peek := false) -> String:
 	if running:
 		return "blade_dash"
 	return "blade_1"
+
+## 0.19: ATTIRA subito dopo una schivata: il prossimo leggero è la Contro-presa (una volta ogni 3 s).
+func on_power_pull() -> bool:
+	var now := Time.get_ticks_msec()
+	if now - _last_dodge_end < 500 or state == S.DODGE:
+		if now >= _grab_cd_until:
+			_grab_cd_until = now + 3000
+			_grab_until = now + 900
+			FX.stat("counter_grab")
+			return true
+	return false
 
 ## 0.19: mossa da cui si dirama la catena: quella in corso, o l'ultima finita da meno di chain_window.
 ## Le mosse aeree non si diramano a terra (come il vecchio seguito della catena).
@@ -480,9 +529,37 @@ func _start_move(id: String, now: int) -> void:
 	# 0.19: la catena continua se si parte da un colpo o entro chain_window dalla fine dell'ultimo
 	if state != S.ATTACK and (now - _last_move_end >= int(tune.chain_window) or _last_move_id == ""):
 		_chain_ids.clear()
+	if _chain_ids.is_empty():
+		_chain_forms.clear()
+		_tri_done = false
 	_chain_ids.append(id)
 	_from_branch = _picked_branch
 	_picked_branch = false
+	_precise = _precise_next
+	_precise_next = false
+	if _precise:
+		FX.stat("precise")
+		_flash(Color(1, 1, 1))
+		FX.ring(global_position + Vector3(0, 1.0, 0), Color(1, 1, 1, 0.8), 0.9, 0.12)
+		FX.sound("critico", 2.0, -10.0)
+	var grab := _grab_move
+	_grab_move = false
+	if id != "impact_counter":
+		grab = false
+	_guard_move = false
+	if _guard_pending and M.DATA[id].form == M.Form.BLADE:
+		_guard_pending = false
+		_guard_move = true
+	if id == "blade_dash" and _swap_target and is_instance_valid(_swap_target) and not _swap_target.is_dead():
+		var mine := global_position
+		global_position = Vector3(_swap_target.global_position.x, mine.y, _swap_target.global_position.z)
+		_swap_target.global_position = Vector3(mine.x, _swap_target.global_position.y, mine.z)
+		FX.ring(mine, Color(0.8, 0.45, 1.0, 0.9), 1.6, 0.2)
+		FX.ring(global_position, Color(0.8, 0.45, 1.0, 0.9), 1.6, 0.2)
+		_afterimage()
+		FX.stat("up_swaps")
+	_swap_target = null
+	_counter_small = grab
 	if _from_branch:
 		FX.stat("branch_" + id)
 	move_id = id
@@ -525,6 +602,8 @@ func _start_move(id: String, now: int) -> void:
 	weapon.play(id, move)   # 0.13: posa completa di arma e corpo per ogni colpo
 	if move.form == M.Form.IMPACT and move.hit_from > 0.1:
 		weapon.charge(move.hit_from)
+	if id == "vector_zip":
+		_zips += 1
 	if move.get("air", false):
 		_air_attacks += 1
 		velocity.y = max(velocity.y, 2.2)
@@ -689,6 +768,10 @@ func _do_hits(slam: bool) -> void:
 			if move_id == "vector_whirl":
 				info["pull_to"] = global_position + kdir * 1.5
 		_apply_upgrades_to_hit(info)
+		if _precise:
+			info.dmg *= 1.0 + tune.precise_bonus
+		if _counter_small:
+			info.dmg = 18.0
 		var is_enemy: bool = e.is_in_group("enemies")
 		if is_enemy and _heavy_ready and move.form == M.Form.IMPACT:
 			info.dmg *= 2.0
@@ -708,6 +791,15 @@ func _do_hits(slam: bool) -> void:
 		_air_hits = 0
 	if _hit_any and first_hit:
 		OV.feed("move:" + move_id, "weapon_%d" % move.form, 5.0)
+		# 0.19: firme di tecnica (le conta OVERLOAD e le mostra la HUD sotto il COMBO)
+		_chain_forms[move.form] = true
+		if _chain_forms.size() >= 3 and not _tri_done:
+			_tri_done = true
+			FX.stat("tri_form")
+		if not is_on_floor():
+			_air_chain += 1
+			if _air_chain == 4:
+				FX.stat("air_4")
 		FX.hitstop(move.stop)
 		FX.shake(move.shake)
 		# 0.14 (scelta dell'autore): impact frame SOLO su counter, attacco dall'alto potente e critico
@@ -745,6 +837,10 @@ func _apply_upgrades_to_hit(info: Dictionary) -> void:
 func _upgrade_hit(e: Node3D) -> void:
 	_combo_hits += 1
 	Run.combo_hit()
+	if move.form == M.Form.BLADE and Run.has("lama_bagnata") and e.has_method("is_wet") and e.is_wet() and not e.is_dead():
+		e.receive_hit({"dmg": 4.0, "poise": 6.0, "dir": Vector3.ZERO, "knock": 0.0, "launch": 0.0, "form": -1, "move": "shock", "env": true})
+		FX.sparks(e.global_position + Vector3(0, 1.0, 0), Vector3.UP, Color(0.45, 0.9, 1.0), 6, 6.0)
+		FX.stat("up_wet_blade")
 	if move.form == M.Form.BLADE and Run.has("lama_scintilla") and _combo_hits % 5 == 0:
 		El.shock(e.global_position + Vector3(0, 0.5, 0), self, 0.8)
 		FX.stat("up_blade_sparks")
@@ -889,7 +985,7 @@ func _perfect(_e: Node) -> void:
 ## Chiamata dai nemici quando il loro colpo arriva. Ritorna "hit", "dodged" o "perfect".
 ## PARRY: un colpo BLADE partito al momento giusto ferma l'attacco e lo rimanda al mittente.
 func can_parry(from: Node3D) -> bool:
-	if state != S.ATTACK or move.form != M.Form.BLADE or move_t > tune.parry_window:
+	if state != S.ATTACK or move.form != M.Form.BLADE or move_t > tune.parry_window * (2.0 if _guard_move else 1.0):
 		return false
 	if from and is_instance_valid(from):
 		var to := _flat(from.global_position - global_position)
@@ -903,6 +999,8 @@ func parry(from: Node3D, dmg: float, projectile := false) -> void:
 		hp_changed.emit(hp, max_hp)
 	FX.stat("parries")
 	OV.feed("parry", "defense", 16.0)
+	if Run.has("seconda_guardia"):
+		_guard_pending = true
 	FX.hitstop(130)
 	FX.shake(0.4)
 	FX.sound("scudo", 1.8)
@@ -933,6 +1031,17 @@ func take_hit(from: Node3D, dmg: float, dir: Vector3) -> String:
 			_perfect(from)
 			return "perfect"
 		return "dodged"
+	# 0.19: Corazza viva: mentre carichi un colpo IMPACT prendi il danno ma non ti fermi
+	if Run.has("corazza_viva") and state == S.ATTACK and move.form == M.Form.IMPACT and move_t < move.hit_from + 0.05 and hp - dmg > 0.0:
+		hp = max(0.0, hp - dmg)
+		hp_changed.emit(hp, max_hp)
+		FX.hitstop(40)
+		FX.shake(0.25)
+		FX.sound("ferita", 0.8, -4.0)
+		_flash(Color(1, 0.6, 0.2))
+		FX.stat("up_living_armor")
+		OV.hurt()
+		return "hit"
 	hp = max(0.0, hp - dmg)
 	hp_changed.emit(hp, max_hp)
 	FX.hitstop(70)

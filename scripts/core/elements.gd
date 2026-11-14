@@ -90,10 +90,16 @@ func shock(pos: Vector3, source: Node = null, power := 1.0, hostile := false) ->
 			if visited.has(e) or e.is_dead():
 				continue
 			var hop: float = reach if depth == 0 else tune.enemy_hop
+			# 0.19: un nemico bagnato è un conduttore: l'arco lo raggiunge da più lontano e fa di più
+			var wet: bool = e.has_method("is_wet") and e.is_wet()
+			if wet:
+				hop = max(hop, tune.shock_range)
 			if e.global_position.distance_to(at) < hop:
 				visited[e] = true
 				_arc(at + Vector3(0, 0.9, 0), e.global_position + Vector3(0, 0.9, 0))
-				e.shock(tune.shock_dmg * power)
+				e.shock(tune.shock_dmg * power * (1.5 if wet else 1.0))
+				if wet:
+					FX.stat("wet_shocks")
 				frontier.append({"pos": e.global_position, "depth": depth + 1})
 		for p in _props():
 			if visited.has(p) or p.center().distance_to(at) > reach:

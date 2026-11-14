@@ -98,3 +98,22 @@ Secondo boss, il TRALICCIO (ogni decima ondata; il COLOSSO resta sulla 5, 15, 25
 
 ## 0.18
 Numeri dei danni (bianchi, oro per i colpi forti) e "N HITS" sopra la barra. Prova: `tests/pops_18.gd`.
+
+## 0.19
+Combat System v2 (specifica in `COMBAT_V2_AUDIT_E_SPECIFICA.md`, cartella condivisa del progetto). Nessun tasto nuovo, nessuna barra nuova:
+chi preme solo ATTACCO gioca come prima, chi impara aggiunge stick e tempismo.
+- ALLENAMENTO dal LAB (o TAB): manichini Scout, Bruto e Conduit che non attaccano e tornano quando cadono (`Run.start_training`, `enemy.dummy`).
+- Diramazioni nella tabella delle mosse (`branch` in `moves.gd`): stick di lato = variante, tieni ATTACCO = IMPACT dentro la combo,
+  dopo un IMPACT stick indietro + attacco = VECTOR recupera il nemico fino a 9 m. Ogni ramo al massimo 2 volte per catena.
+- La frusta resta automatica; con lo stick spinto verso il nemico lontano parte la lama in scatto.
+- In aria, a metà combo, stick verso un altro nemico = la catena VECTOR ti porta da lui (una volta per volo).
+- Finestra precisa: attacco premuto entro 80 ms dalla fine di un colpo a segno = parte subito e fa +10% (LAB: «Finestra precisa»).
+- Marche dei poteri: ATTIRA poi colpo = Aggancio (scoperto il doppio); sbattuto contro muro o nemico poi colpo = Rimbalzo (postura ×2);
+  SOVRACCARICA poi IMPACT = Detonazione; schivata e subito ATTIRA = Contro-presa.
+- Nemici: IMPACT sull'avviso = counter-hit (postura ×1,5, anche sul Bruto); IMPACT dall'alto su un nemico in aria = schiacciata con onda;
+  chi passa da una pozza resta bagnato 4 s (scossa ×1,5, l'arco lo raggiunge da più lontano).
+- Firme di tecnica in OVERLOAD, mostrate accanto al COMBO: TRE FORME, IN VOLO ×4, PRECISO, AGGANCIO, RIMBALZO, CONTRO-COLPO,
+  CATENA D'AMBIENTE, DOPPIO BERSAGLIO, DETONAZIONE, CONTRO-PRESA, SCHIACCIATA.
+- 6 potenziamenti di stile (30 in tutto): Sospensione, Corazza viva, Scambio, Lama bagnata, Seconda guardia, Orbita.
+  Ogni potenziamento ha dei `tags`; la scelta prova a offrirne uno dello stile di quelli già presi.
+- Prove: `tests/branch_19.gd` (fasi 0-2), `tests/v2_19.gd` (fasi 3-7).

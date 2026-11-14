@@ -65,7 +65,10 @@ func _physics_process(delta: float) -> void:
 	target = _pick_target()
 	_update_reticle()
 	if held and is_instance_valid(held):
-		held.set_hold_point(player.global_position + Vector3(0, 2.6, 0) + player.facing * 1.4)
+		if Run.has("orbita"):
+			_orbit(delta)
+		else:
+			held.set_hold_point(player.global_position + Vector3(0, 2.6, 0) + player.facing * 1.4)
 	if player.state == player.S.DEAD or player.state == player.S.HURT:
 		return
 	if Pad.just("push"):
@@ -74,6 +77,26 @@ func _physics_process(delta: float) -> void:
 		pull()
 	if Pad.just("alter"):
 		alter()
+
+## 0.19, potenziamento Orbita: l'oggetto tenuto ti gira attorno e colpisce chi tocca (danno ridotto).
+var _orbit_a := 0.0
+var _orbit_hit := {}
+func _orbit(delta: float) -> void:
+	_orbit_a += delta * 4.5
+	var off := Vector3(cos(_orbit_a), 0, sin(_orbit_a)) * 1.9
+	held.set_hold_point(player.global_position + Vector3(0, 1.1, 0) + off)
+	var now := Time.get_ticks_msec()
+	var c: Vector3 = held.center()
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e.is_dead() or now < int(_orbit_hit.get(e, 0)):
+			continue
+		if e.global_position.distance_to(c - Vector3(0, 0.6, 0)) < e.radius + 1.0:
+			_orbit_hit[e] = now + 600
+			var dir: Vector3 = e.global_position - player.global_position
+			dir.y = 0
+			e.receive_hit({"dmg": 6.0, "poise": 14.0, "dir": dir.normalized(), "knock": 4.0, "launch": 0.0, "form": -1, "move": "orbit", "env": true})
+			FX.sparks(c, dir.normalized(), Color(0.7, 0.95, 1.0), 6, 6.0)
+			FX.stat("up_orbit_hits")
 
 func _can_move(t: Node3D) -> bool:
 	if t == null:
@@ -204,9 +227,11 @@ func push() -> void:
 		_too_heavy()
 		_cd.push = 0.25
 		return
+	var moved := 0
 	for t in _targets_for_stage(target):
 		if not _can_move(t):
 			continue
+		moved += 1
 		var dir: Vector3 = t.global_position - player.global_position
 		dir.y = 0
 		dir = dir.normalized()
@@ -217,6 +242,8 @@ func push() -> void:
 			t.power_push(v)
 		_beam_to(t.global_position + Vector3(0, 0.9, 0), Color(0.7, 0.95, 1.0, 0.9))
 		FX.sparks(t.global_position + Vector3(0, 0.9, 0), dir, Color(0.7, 0.95, 1.0), 8, 7.0)
+	if moved >= 2:
+		FX.stat("multi_target")
 	_done("push", "push")
 
 ## ATTIRA: un oggetto viene tenuto sospeso davanti a te; un nemico viene trascinato a portata di lama.
@@ -239,9 +266,11 @@ func pull() -> void:
 		_too_heavy()
 		_cd.pull = 0.25
 		return
+	var moved := 0
 	for t in _targets_for_stage(target, "pull"):
 		if not _can_move(t):
 			continue
+		moved += 1
 		if t.has_method("hold"):
 			if held == null:
 				held = t
@@ -251,7 +280,12 @@ func pull() -> void:
 				t.launch(to2.normalized() * tune.pull_speed * 0.6 + Vector3(0, 4, 0), player)
 		else:
 			t.power_pull(player.global_position + player.facing * 1.8)
+			# 0.19: schivata e poi ATTIRA = Contro-presa (il nemico arriva scoperto a lungo)
+			if t.is_in_group("enemies") and player.has_method("on_power_pull") and player.on_power_pull():
+				t.grab_stun()
 		_beam_to(t.global_position + Vector3(0, 0.9, 0), Color(0.85, 0.5, 1.0, 0.9))
+	if moved >= 2:
+		FX.stat("multi_target")
 	_done("pull", "pull")
 
 ## ALTERA (limitata): SOVRACCARICA il bersaglio. Al prossimo impatto esplode.
