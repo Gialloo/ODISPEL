@@ -1,0 +1,33 @@
+; Demo del Capitolo 1 di ODISPEL in stile Persona (prova senza combattimenti).
+; Progetto Godot separato dalla V3: si apre da questa cartella.
+
+config_version=5
+
+[application]
+
+config/name="ODISPEL Capitolo 1 (prova)"
+config/description="ODISPEL · Capitolo 1 · prova di esplorazione e dialoghi"
+config/version="0.8.0"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/bg_color=Color(0.03, 0.04, 0.07, 1)
+boot_splash/show_image=false
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/handheld/orientation=0
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_3d=1
