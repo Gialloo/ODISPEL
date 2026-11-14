@@ -43,7 +43,7 @@ Progetto Godot 4.7.2 separato dalla V3 (si apre da questa cartella). Fino alla 0
 - Oltre le culle, **la gola** (`_costruisci_gola`): un budello a esse pieno di telefoni ingoiati che squillano. Punti: il telefono gemello di Saul, la scritta «CI SIAMO ANCORA» (Rio), il casco da pompiere (Lance), la traccia «Chiave di casa». All'ingresso, scontro con l'**Eco**.
 - Scontri nel nido: 6 più il cuore. Tracce: 12. Chiacchiere nuove nel nido: 2. Il finale ha due righe in più.
 - Prestazioni: i pezzi fermi si fondono a riquadri di 32 m, così ogni pezzo sente al massimo le luci vicine (limite di 8 per oggetto sul telefono) e quello fuori vista non si disegna. Nido: 44 draw call.
-- Da approvare: le stanze, i nemici e le scene nuove (PROPOSTA).
+- Le stanze, i nemici e le scene nuove erano PROPOSTA: approvati dall'autore il 14/11/2026.
 
 ## Dove si cambia cosa
 - Tutti i testi, le scene, i punti e le chiacchiere: `data/capitolo1.json` (si modifica senza toccare il codice).
