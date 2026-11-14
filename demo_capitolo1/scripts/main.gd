@@ -238,6 +238,10 @@ func _su_innesco(id: String) -> void:
 		"sciame":
 			await esegui("sciame")
 			_libera()
+		"ingordo", "covata":   # 0.7, PROPOSTA: le due ali del nido
+			await esegui(id)
+			mondo.fatti[id] = true
+			_libera()
 		"sagoma":
 			_righe(dati["scene"]["sagoma"])
 		"rio":

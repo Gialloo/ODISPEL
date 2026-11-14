@@ -181,10 +181,25 @@ func _gioca() -> void:
 	await guida_di("rio")
 	foto_righe = true
 	await esamina_punto("reperto", [[200.0, -29.0], [192.5, -28.5], [191.0, -24.5]])
+	# 0.7: la dispensa (ala ovest) e le culle (ala est)
+	await esamina_punto("mucchio", [[190.0, -31.0], [186.0, -31.0], [181.0, -31.0]])
 	foto_righe = false
+	await esamina_punto("fototessera", [[175.0, -40.0]])
+	await guida_di("saul")
+	await esamina_punto("fermata", [[178.0, -27.0]])
 	await guida_di("lance")
+	await esamina_punto("vetrina", [[175.0, -24.0]])
+	await guida_di("nox")
 	foto_righe = true
-	await esamina_punto("cuore", [[200.0, -30.0], [200.0, -38.0]])
+	await esamina_punto("uova", [[180.0, -28.0], [186.0, -31.0], [200.0, -30.0], [208.0, -21.0], [219.0, -21.0]])
+	foto_righe = false
+	await guida_di("rio")
+	await esamina_punto("culla", [[224.0, -15.0]])
+	await guida_di("lance")
+	await esamina_punto("tacche", [[229.0, -13.0]])
+	await esamina_punto("fischietto", [[226.0, -24.0]])
+	foto_righe = true
+	await esamina_punto("cuore", [[214.0, -21.0], [208.0, -22.0], [200.0, -30.0], [200.0, -38.0]])
 	await aspetta(3.0)
 	await foto("fine")
 	print("PROVA TRACCE: %s" % main.tracce())

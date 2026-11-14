@@ -48,6 +48,8 @@
         {"id": "varco", "chi": "tutti", "pos": [110.0, -32.2], "avviso": {"lance": "In fondo alla strada il muro si muove.", "nox": "Quel punto del muro è più sottile.", "saul": "Lì il muro respira più forte. Bello. Andiamo dall'altra parte?", "rio": "Hype."}, "scena": "varco", "dopo": "nido"}
       ],
       "chiacchiere": [
+        [{"balloon": "saul", "testo": "Domani questa piazza è su tutti i social.", "s": 2.0}, {"balloon": "rio", "testo": "Trending.", "s": 1.4}, {"balloon": "saul", "testo": "Appunto.", "s": 1.4}],
+        [{"balloon": "nox", "testo": "Lance, tu dormi mai?", "s": 1.6}, {"balloon": "lance", "testo": "Il giusto.", "s": 1.4}, {"balloon": "nox", "testo": "Il giusto quanto?", "s": 1.6}, {"balloon": "lance", "testo": "Il giusto.", "s": 1.4}],
         [{"balloon": "saul", "testo": "Quindi sei un soldato.", "s": 2.0}, {"balloon": "lance", "testo": "Lo ero.", "s": 1.6}, {"balloon": "saul", "testo": "E adesso?", "s": 1.6}, {"balloon": "lance", "testo": "Adesso cammino.", "s": 2.0}],
         [{"balloon": "nox", "testo": "Saul, smettila di toccare tutto.", "s": 2.2}, {"balloon": "saul", "testo": "Tocco solo le cose interessanti.", "s": 2.2}, {"balloon": "nox", "testo": "Per te è la stessa cosa.", "s": 2.0}],
         [{"balloon": "saul", "testo": "La bestiaccia mi fissa.", "s": 2.0}, {"balloon": "nox", "testo": "Ti sta studiando.", "s": 1.8}, {"balloon": "saul", "testo": "Appunto. È questo che mi preoccupa.", "s": 2.4}],
@@ -61,6 +63,14 @@
       "luogo": "DENTRO IL VARCO  ·  IL NIDO",
       "comparse": {},
       "punti": [
+        {"id": "mucchio", "chi": "tutti", "pos": [178.5, -34.0], "avviso": {"lance": "Quella montagna di roba... c'è di tutto.", "nox": "Il nido ha messo da parte qualcosa.", "saul": "Ehi. Quello è uno zaino da rider.", "rio": "Sniff."}, "scena": "mucchio"},
+        {"id": "fermata", "chi": "saul", "pos": [181.5, -24.0], "avviso": {"saul": "Una fermata. Qui dentro. Certo."}, "scena": "fermata"},
+        {"id": "vetrina", "chi": "lance", "pos": [171.5, -24.0], "avviso": {"lance": "Una vetrina. Ancora intera."}, "scena": "vetrina"},
+        {"id": "fototessera", "chi": "tutti", "pos": [170.0, -41.0], "tipo": "traccia", "nome": "Fototessera", "scena": "fototessera"},
+        {"id": "uova", "chi": "nox", "pos": [221.0, -26.0], "avviso": {"nox": "Queste sacche... respirano."}, "scena": "uova"},
+        {"id": "tacche", "chi": "lance", "pos": [231.0, -13.0], "avviso": {"lance": "Sul muro. Segni fatti a mano."}, "scena": "tacche"},
+        {"id": "culla", "chi": "rio", "pos": [225.0, -12.0], "avviso": {"rio": "..."}, "scena": "culla"},
+        {"id": "fischietto", "chi": "tutti", "pos": [228.0, -30.0], "tipo": "traccia", "nome": "Fischietto", "scena": "fischietto"},
         {"id": "telefono", "chi": "tutti", "pos": [196.8, 4.0], "tipo": "traccia", "nome": "Telefono di qualcuno", "scena": "telefono"},
         {"id": "cuffie", "chi": "tutti", "pos": [208.0, -16.0], "tipo": "traccia", "nome": "Cuffie accese", "scena": "cuffie"},
         {"id": "radio", "chi": "lance", "pos": [203.2, -4.0], "avviso": {"lance": "C'è una radio di servizio nella parete. È ancora accesa."}, "scena": "radio"},
@@ -71,6 +81,9 @@
         {"id": "cuore", "chi": "tutti", "pos": [200.0, -43.5], "avviso": {"lance": "Il budello finisce lì. Sentite anche voi questo rumore?", "nox": "Il battito viene da là in fondo.", "saul": "Quel rumore non mi piace per niente.", "rio": "Hype."}, "scena": "cuore", "dopo": "fine"}
       ],
       "chiacchiere": [
+        [{"balloon": "saul", "testo": "Nox, da uno a dieci, quanto è grave?", "s": 2.0}, {"balloon": "nox", "testo": "Undici.", "s": 1.4}, {"balloon": "saul", "testo": "Lo sapevo che non dovevo chiedere.", "s": 2.0}],
+        [{"balloon": "lance", "testo": "State vicini.", "s": 1.4}, {"balloon": "saul", "testo": "Più vicini di così ti siamo addosso.", "s": 2.0}, {"balloon": "lance", "testo": "Bene.", "s": 1.2}],
+        [{"balloon": "nox", "testo": "Rio, ti fa male qualcosa?", "s": 1.8}, {"balloon": "rio", "testo": "Sniff.", "s": 1.2}, {"balloon": "nox", "testo": "Lo prendo per un no.", "s": 1.8}],
         [{"balloon": "saul", "testo": "Fa caldo, qui dentro.", "s": 1.8}, {"balloon": "nox", "testo": "È un organismo, Saul. Ha la febbre.", "s": 2.2}, {"balloon": "saul", "testo": "Bello. Noi siamo l'influenza.", "s": 2.2}],
         [{"balloon": "nox", "testo": "Lance. Il braccio.", "s": 1.8}, {"balloon": "lance", "testo": "Sta bene.", "s": 1.4}, {"balloon": "nox", "testo": "Non ti ho chiesto come sta.", "s": 2.2}],
         [{"balloon": "rio", "testo": "Sniff.", "s": 1.4}, {"balloon": "saul", "testo": "Cosa annusa, adesso?", "s": 1.8}, {"balloon": "lance", "testo": "Noi.", "s": 1.6}]
@@ -79,6 +92,91 @@
   },
 
   "scene": {
+    "ingordo": [
+      {"regia": "barre", "on": true},
+      {"regia": "camera", "a": "dispensa", "s": 1.0},
+      {"narra": "L'ala ovest è piena fino al soffitto di cose: carrelli, bici, cartelli stradali, tutto impastato nella carne come l'uvetta nel panettone."},
+      {"chi": "saul", "faccia": "sorpreso", "testo": "Il nido fa la spesa."},
+      {"chi": "nox", "faccia": "serio", "testo": "Non mangia. Conserva. Come uno scoiattolo."},
+      {"narra": "Il mucchio si muove. Qualcosa ci dorme dentro, e si sveglia."},
+      {"chi": "lance", "faccia": "arrabbiato", "testo": "Indietro. Questa è roba sua e la difende."},
+      {"regia": "barre", "on": false},
+      {"regia": "scontro", "nemico": "INGORDO", "forza": 1.0},
+      {"chi": "saul", "faccia": "felice", "testo": "Scoiattolo battuto. Ci prendiamo qualcosa?"},
+      {"chi": "lance", "faccia": "serio", "testo": "Niente. Non è roba nostra."}
+    ],
+    "covata": [
+      {"regia": "barre", "on": true},
+      {"regia": "camera", "a": "culle", "s": 1.0},
+      {"narra": "L'ala est è calda e silenziosa. A terra, file di sacche lucide, ognuna con un'ombra rannicchiata dentro."},
+      {"chi": "nox", "faccia": "triste", "testo": "Sono culle."},
+      {"chi": "saul", "faccia": "serio", "testo": "Dimmi che hai sbagliato parola."},
+      {"chi": "nox", "faccia": "serio", "testo": "Non ho sbagliato parola."},
+      {"narra": "Una sacca si strappa. Poi un'altra."},
+      {"chi": "lance", "faccia": "serio", "testo": "Quelle già sveglie. Alle altre ci pensa il cuore, quando lo spegniamo."},
+      {"regia": "barre", "on": false},
+      {"regia": "scontro", "nemico": "COVATA", "forza": 0.9},
+      {"chi": "nox", "faccia": "neutro", "testo": "Se il cuore cade, le altre non si apriranno. Spero."}
+    ],
+    "mucchio": [
+      {"narra": "In mezzo al mucchio, schiacciato tra una bici e un cartello di divieto, c'è uno zaino termico da rider."},
+      {"chi": "saul", "faccia": "serio", "testo": "Questo è di uno dei nostri. Ha ancora l'adesivo della zona nord."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Lo conosci?"},
+      {"chi": "saul", "faccia": "neutro", "testo": "No. Ma stanotte era in giro, come me."},
+      {"narra": "Saul apre lo zaino. Dentro c'è un cartone di pizza, chiuso, ancora tiepido."},
+      {"chi": "saul", "faccia": "sfotto", "testo": "Margherita. Consegna fallita, cliente furioso, zero stelle."},
+      {"chi": "saul", "faccia": "serio", "testo": "Quando usciamo lo cerco. Voglio dirgli che la pizza si è salvata."}
+    ],
+    "fermata": [
+      {"narra": "Una palina dell'autobus, intera, con la tabella degli orari ancora leggibile."},
+      {"chi": "saul", "faccia": "neutro", "testo": "Il notturno passa ogni quaranta minuti. Dice qui."},
+      {"chi": "nox", "faccia": "neutro", "testo": "Qui dentro non passa niente, Saul."},
+      {"chi": "saul", "faccia": "felice", "testo": "Aspetto lo stesso. È la cosa più normale che vedo da ore."},
+      {"narra": "Per tre secondi Saul aspetta davvero. Poi raggiunge gli altri."}
+    ],
+    "vetrina": [
+      {"narra": "La vetrina di una gelateria, intera, piantata nella carne. Dietro il vetro le vaschette sono vuote e pulite, come a fine serata."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Questa la conosco. Sulla piazza, all'angolo con la farmacia."},
+      {"chi": "nox", "faccia": "neutro", "testo": "Ci andavi?"},
+      {"chi": "lance", "faccia": "serio", "testo": "Ci passavo davanti. Sempre di fretta."},
+      {"narra": "Lance appoggia due dita sul vetro, un momento."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Quando la rimettono a posto, entro."}
+    ],
+    "fototessera": [
+      {"narra": "Incastrata tra due pieghe di carne, una striscia di fototessere: quattro scatti di due ragazzi che ridono, sempre più storti."},
+      {"chi": "nox", "faccia": "felice", "testo": "Al quarto non si vede più niente. Solo capelli."},
+      {"chi": "saul", "faccia": "neutro", "testo": "Il quarto è sempre il migliore."},
+      {"chi": "lance", "faccia": "neutro", "testo": "Tienila tu, Nox. La riportiamo insieme al telefono."}
+    ],
+    "uova": [
+      {"narra": "Nox si inginocchia davanti a una culla. L'ombra dentro si gira verso di lei, piano."},
+      {"chi": "nox", "faccia": "serio", "testo": "Non sono cattive. Non ancora. Hanno fame, come tutto qui."},
+      {"chi": "lance", "faccia": "serio", "testo": "Non avvicinarti troppo."},
+      {"chi": "nox", "faccia": "triste", "testo": "Non lo faccio per loro. Voglio sapere cosa stiamo per spegnere."},
+      {"narra": "Si rialza. Per un po' non dice altro."}
+    ],
+    "tacche": [
+      {"narra": "Sul muro qualcuno ha graffiato delle tacche, a gruppi di cinque. Undici in tutto. Sotto l'ultima, una freccia verso l'uscita."},
+      {"chi": "lance", "faccia": "serio", "testo": "Qualcuno è rimasto chiuso qui. E ha contato."},
+      {"chi": "saul", "faccia": "serio", "testo": "Undici cosa? Giorni?"},
+      {"chi": "lance", "faccia": "neutro", "testo": "Ore, spero."},
+      {"narra": "Lance guarda la freccia a lungo."},
+      {"chi": "lance", "faccia": "neutro", "testo": "È uscito. La freccia la disegni solo quando sai dove andare."}
+    ],
+    "culla": [
+      {"narra": "Rio si ferma davanti alla culla più piccola e ci appoggia sopra il palmo, piatto."},
+      {"narra": "L'ombra dentro smette di agitarsi."},
+      {"chi": "saul", "faccia": "sorpreso", "testo": "Ehi. Come hai fatto?"},
+      {"chi": "rio", "testo": "..."},
+      {"chi": "nox", "faccia": "neutro", "testo": "Lascialo stare. Non serve che ce lo spieghi."}
+    ],
+    "fischietto": [
+      {"narra": "Appeso a un filo di carne dondola un fischietto da arbitro."},
+      {"chi": "saul", "faccia": "felice", "testo": "Una partita di calcetto interrotta a metà. Chi vinceva?"},
+      {"chi": "lance", "faccia": "neutro", "testo": "Nessuno, adesso."},
+      {"chi": "rio", "testo": "Hype."},
+      {"narra": "Rio ci soffia dentro. Non esce nessun fischio, solo bolle. Saul ride per primo."}
+    ],
     "accendino": [
       {"narra": "Un accendino di metallo, incastrato nella grata del tombino. Sul fianco c'è inciso: «Per i turni di notte»."},
       {"chi": "lance", "faccia": "serio", "testo": "Qualcuno ci teneva."},
@@ -561,6 +659,9 @@
       {"narra": "Il cuore smette di battere. Per un attimo non succede niente. Poi la camera intera si affloscia, come una tenda a cui hanno tolto i pali."},
       {"narra": "Da lontano, attraverso la carne, arriva un rumore di vetri e di allarmi d'auto. Il quartiere sta tornando."},
       {"chi": "nox", "faccia": "serio", "testo": "Quasi. Le escrescenze ci metteranno giorni a seccarsi. Ma i muri vengono giù."},
+      {"se": "covata", "chi": "nox", "faccia": "neutro", "testo": "E le culle si sgonfiano. Là dietro non nascerà più niente."},
+      {"se": "mucchio", "chi": "saul", "faccia": "neutro", "testo": "Io torno a prendere lo zaino del collega. Non ditemi di no."},
+      {"se": "mucchio", "chi": "lance", "faccia": "neutro", "testo": "Ti accompagno."},
       {"chi": "saul", "faccia": "felice", "testo": "Quindi siamo degli eroi. Lo metto nel curriculum."},
       {"chi": "lance", "faccia": "neutro", "testo": "Siamo quattro che passavano di qui."},
       {"narra": "Lo dice senza guardare nessuno. Poi si gira e, per la prima volta, li conta: uno, due, tre."},

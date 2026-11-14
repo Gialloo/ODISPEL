@@ -29,6 +29,14 @@ Progetto Godot 4.7.2 separato dalla V3 (si apre da questa cartella). Fino alla 0
 - **Sciame del nido**: prima della camera del cuore le sacche si aprono e c'è uno scontro più leggero (`forza` 0.8), così il boss non arriva a freddo. PROPOSTA.
 - **Ottimizzazione per il telefono**: i pezzi fermi di ogni zona e i pezzi dei personaggi si fondono in poche mesh a colori per vertice (`_unisci_statici`, `_fondi_parte` in `scripts/mondo.gd`). Draw call per zona: vicolo 204 → 40, lavanderia 89 → 30, quartiere 232 → 53, nido 89 → 18. Misura: `tools/misura.gd`.
 
+## Il nido più grande (0.7, 14/11/2026) · PROPOSTA
+- Nessuna meccanica nuova: più mappa, più posti, più scontri, più dialoghi.
+- La caverna del nido si apre su due **ali** (`_costruisci_dispensa`, `_costruisci_culle` in `scripts/mondo.gd`):
+  - **Dispensa** (ovest): il mucchio di cose che il nido ha ingoiato (Saul trova lo zaino di un altro rider), la fermata dell'autobus (Saul), la vetrina di una gelateria (Lance), la traccia «Fototessera». All'ingresso, scontro con l'**Ingordo**.
+  - **Culle** (est): le uova delle anomalie (Nox), le tacche graffiate sul muro (Lance), la culla più piccola (Rio), la traccia «Fischietto». All'ingresso, scontro con la **Covata**.
+- Tracce ora 10. Chiacchiere nuove nel nido (3) e nel quartiere (2). Il finale ha righe in più se hai visto il mucchio o le culle.
+- Gli inneschi a terra accettano anche `x_min`/`x_max` (servono per le ali).
+
 ## Dove si cambia cosa
 - Tutti i testi, le scene, i punti e le chiacchiere: `data/capitolo1.json` (si modifica senza toccare il codice).
 - Città e modelli segnaposto: `scripts/mondo.gd`. Interfaccia: `scripts/persona_ui.gd`. Flusso: `scripts/main.gd`.
