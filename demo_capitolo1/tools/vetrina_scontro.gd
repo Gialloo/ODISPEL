@@ -34,7 +34,9 @@ func _wait_tele(e: PgEngine, kind: String, left: float) -> void:
 func _run() -> void:
 	await process_frame
 	var sc: Node = load("res://scripts/scontro/scontro.gd").new()
-	sc.configure({"squadra": ["lance", "nox", "saul", "rio"]})
+	# "saul" dopo la cartella: Saul in campo per primo (modello v3, 15/11/2026)
+	var primo_saul: bool = OS.get_cmdline_user_args().has("saul")
+	sc.configure({"squadra": ["saul", "lance", "nox", "rio"] if primo_saul else ["lance", "nox", "saul", "rio"]})
 	root.add_child(sc)
 	await create_timer(1.0).timeout
 	await _shot("1_inizio")

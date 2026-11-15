@@ -16,7 +16,7 @@ const COLORE := {
 const LATO := {"lance": -1, "saul": -1, "nox": 1, "rio": 1}
 const VELOCITA_TESTO := 55.0
 ## Altezza del volto nel ritratto (frazione dall'alto), per centrare i primi piani.
-const VOLTO := {"lance": 0.37, "nox": 0.31, "saul": 0.36, "rio": 0.4}
+const VOLTO := {"lance": 0.37, "nox": 0.31, "saul": 0.32, "rio": 0.4}   # saul 0.32: ritratti v3 (15/11/2026)
 
 ## Nessuno conosce il nome degli altri all'inizio: si scopre parlando (regia "nome").
 var nomi := {"lance": "LANCE", "nox": "???", "saul": "???", "rio": "???"}

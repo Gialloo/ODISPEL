@@ -46,6 +46,10 @@ var p_body: MeshInstance3D
 var p_fist: MeshInstance3D
 var p_mat: StandardMaterial3D
 var p_head_mat: StandardMaterial3D
+# 15/11/2026: quando in campo c'e' Saul si vede il suo modello v3 al posto del manichino; il colore della postura
+# resta leggibile nell'anello a terra (stesso materiale dei bordi del manichino)
+var saul_m: SaulModello = null
+var saul_anello: MeshInstance3D = null
 var _party_btns: Array = []
 var _party_bars: Array = []
 var _name_lab: Label
@@ -122,6 +126,7 @@ func _ready() -> void:
 	add_child(env)
 	_build_arena()
 	_build_bodies()
+	_mostra_saul(0)
 	cam = Camera3D.new()
 	if not ISO:
 		# vista di lato fissa: niente inseguimento, lo schermo è il ring
@@ -231,6 +236,22 @@ func _build_bodies() -> void:
 	p_head_mat = head.material_override
 	p_head_mat.albedo_color = HEADS[0]
 	p_fist = _box(Vector3(0.34, 0.26, 0.26), Vector3(0.35, 0.25, 0.25), _mat(WHITE), p_body)
+	if squadra.has("saul") and SaulModello.esiste():
+		saul_m = SaulModello.crea(false)
+		saul_m.rotation.y = PI * 0.5          # guarda il nemico (+X)
+		saul_m.visible = false
+		p_root.add_child(saul_m)
+		saul_anello = MeshInstance3D.new()
+		var cy := CylinderMesh.new()
+		cy.top_radius = 0.62
+		cy.bottom_radius = 0.62
+		cy.height = 0.03
+		cy.radial_segments = 24
+		saul_anello.mesh = cy
+		saul_anello.material_override = p_mat
+		saul_anello.position.y = 0.015
+		saul_anello.visible = false
+		p_root.add_child(saul_anello)
 	# DISTURBO: blocco scuro con due occhi; si piega indietro (AFFONDO) o si abbassa (SPAZZATA)
 	e_root = Node3D.new()
 	add_child(e_root)
@@ -242,6 +263,31 @@ func _build_bodies() -> void:
 	if forza > 1.0:
 		e_root.scale = Vector3.ONE * (1.0 + (forza - 1.0) * 0.5)
 		e_mat.albedo_color = Color("#6a1d58")
+
+
+## Saul in campo: la stessa posa del manichino tradotta sulle ossa (piega del busto, braccio che colpisce, gambe piegate)
+func _mostra_saul(i: int) -> void:
+	if saul_m == null:
+		return
+	var on: bool = i >= 0 and i < squadra.size() and squadra[i] == "saul"
+	p_body.visible = not on
+	saul_m.visible = on
+	saul_anello.visible = on
+	if on:
+		saul_m.riposa()
+
+
+func _posa_saul(lean: float, fist_x: float, crouch: float, delta: float) -> void:
+	var k := minf(1.0, delta * 30.0)
+	var colpo := clampf((fist_x - 0.35) / 0.65, 0.0, 1.0)
+	var giu := clampf(1.0 - crouch, 0.0, 0.5)
+	saul_m.busto = lerpf(saul_m.busto, -lean * 1.1, k)
+	saul_m.anca_giu = lerpf(saul_m.anca_giu, giu * 0.9, k)
+	saul_m.gamba_s = lerpf(saul_m.gamba_s, -giu * 2.2 - 0.25, k)          # gamba avanti in guardia
+	saul_m.gamba_d = lerpf(saul_m.gamba_d, -giu * 1.2 + 0.25, k)
+	saul_m.braccio_d = lerpf(saul_m.braccio_d, -0.35 - colpo * 1.25, k)   # il braccio che lancia le carte
+	saul_m.braccio_s = lerpf(saul_m.braccio_s, -0.5 + colpo * 0.3, k)
+	saul_m.gomiti = lerpf(saul_m.gomiti, 0.5 * (1.0 - colpo), k)
 
 
 # ================================================================ interfaccia
@@ -474,6 +520,8 @@ func _sync(delta: float) -> void:
 	p_body.rotation.z = lerp_angle(p_body.rotation.z, lean, minf(1.0, delta * 32.0))
 	p_body.scale.y = lerpf(p_body.scale.y, crouch, minf(1.0, delta * 28.0))
 	p_fist.position.x = lerpf(p_fist.position.x, fist_x, minf(1.0, delta * 45.0))
+	if saul_m != null and saul_m.visible:
+		_posa_saul(lean, fist_x, crouch, delta)
 	# il lampo bianco: la mossa si può annullare
 	var col: Color = COL[eng.posture]
 	if eng.can_cancel_now():
@@ -768,6 +816,7 @@ func _on_event(ev: Dictionary) -> void:
 			var to: int = int(ev["to"])
 			p_head_mat.albedo_color = HEADS[to]
 			p_mat.albedo_color = COL[eng.posture]
+			_mostra_saul(to)
 			var pop := create_tween().set_ignore_time_scale(true)
 			p_root.scale = Vector3(0.4, 1.4, 0.4)
 			pop.tween_property(p_root, "scale", Vector3.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

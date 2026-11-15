@@ -93,7 +93,15 @@ func _righe(righe: Array) -> void:
 				ui.balloon(chi, r["testo"], mondo.testa.bind(chi), mondo.camera, s)
 				await get_tree().create_timer(s + 0.25).timeout
 		else:
+			_faccia_3d(r)
 			await ui.di(r)
+
+## 15/11/2026: quando Saul parla, il viso del modello 3D prende la stessa espressione del ritratto
+func _faccia_3d(r: Dictionary) -> void:
+	if str(r.get("chi", "")) != "saul" or not mondo.corpi.has("saul"):
+		return
+	for m in (mondo.corpi["saul"] as Node).find_children("saul_modello", "", true, false):
+		(m as SaulModello).espressione(str(r.get("faccia", "neutro")))
 
 func _regia(r: Dictionary) -> void:
 	match r["regia"]:
