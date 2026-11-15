@@ -45,6 +45,16 @@ Progetto Godot 4.7.2 separato dalla V3 (si apre da questa cartella). Fino alla 0
 - Prestazioni: i pezzi fermi si fondono a riquadri di 32 m, così ogni pezzo sente al massimo le luci vicine (limite di 8 per oggetto sul telefono) e quello fuori vista non si disegna. Nido: 44 draw call.
 - Le stanze, i nemici e le scene nuove erano PROPOSTA: approvati dall'autore il 14/11/2026.
 
+## Il Saul nuovo (0.9, 15/11/2026)
+- Richiesta dell'autore: «implementalo in tutte le forme e in tutti i dialoghi, scene e combat del Capitolo 1». È il Saul v3 approvato il 15/11/2026 (base VRoid CC0, stesso stile di Lance, cappotto marrone, gilet oliva, coda). Niente tolto: gli altri personaggi restano come sono.
+- **Esplorazione e scene**: `scripts/saul_modello.gd` (classe `SaulModello`) carica `assets/personaggi/saul/saul.glb` con lo scheletro VRoid e muove le ossa con gli stessi perni dei segnaposto (`gamba_s`, `braccio_d`...): passo, corsa, pose della regia (seduto, accucciato, rovista...), sagoma nera delle comparse. Sbatte le palpebre e, quando parla, il viso prende l'espressione della battuta (`faccia`).
+- **Ossa elastiche** (richiesta dell'autore): quattro falde del cappotto e la coda si muovono da sole (`SpringBoneSimulator3D`) e urtano capsule su cosce, stinchi, bacino e schiena, così il cappotto passa dietro le gambe e la coda non entra nella schiena. Mani a riposo: polso dritto, dita piegate verso il palmo.
+- **Scontri**: quando in campo c'è Saul si vede il modello al posto del manichino, rivolto al nemico; colpo, carica, schivata e colpo subito piegano busto, braccia e gambe. Il colore della postura resta leggibile nell'anello a terra.
+- **Dialoghi, vignetta e trittico**: i sette ritratti `assets/portraits/saul_*.png` (neutro, felice, arrabbiato, sorpreso, triste, serio, sfotto) sono render del modello v3 con le forme del viso VRoid. I ritratti di prima sono nella cartella del progetto, `odispel/capitolo1_persona/saul_ritratti_prima_della_v3/`.
+- **Telefono**: il modello è in due trame sole (vesti e pelle, viso con trasparenza): 3 draw call per Saul, le zone non crescono (rifugio 34 → 32, quartiere 67 → 65 con `tools/misura.gd`). Circa 26 mila triangoli.
+- Come si rifà: `tools/blender/saul_esporta_gioco.py` (modello) e `tools/blender/saul_ritratti.py` (ritratti), Blender 4.2, dal file `saul_v3_rig.blend` della cartella del progetto. Schermate senza giocare: `tools/saul_vetrina.gd`; scontro con Saul in campo: `tools/vetrina_scontro.gd -- <cartella> saul`.
+- Crediti e licenze: `assets/personaggi/saul/CREDITI.md` (la pagina licenze VRoid va ricontrollata a mano prima di pubblicare).
+
 ## Dove si cambia cosa
 - Tutti i testi, le scene, i punti e le chiacchiere: `data/capitolo1.json` (si modifica senza toccare il codice).
 - Città e modelli segnaposto: `scripts/mondo.gd`. Interfaccia: `scripts/persona_ui.gd`. Flusso: `scripts/main.gd`.

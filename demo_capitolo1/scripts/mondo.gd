@@ -1167,6 +1167,13 @@ func _persona(chi: String) -> Node3D:
 	var corpo := Node3D.new()
 	corpo.name = "corpo"
 	root.add_child(corpo)
+	# 15/11/2026: Saul e' il modello v3 approvato dall'autore (scheletro VRoid, cappotto e coda elastici).
+	# I perni gamba_s/braccio_d restano vuoti: il modello li legge e muove le ossa, la regia non cambia.
+	if chi == "saul" and SaulModello.esiste():
+		var m := SaulModello.crea(true)
+		corpo.add_child(m)
+		m.usa_perni(corpo)
+		return root
 	var h := 0.92 if chi == "rio" else 1.0
 	for lato in [-1, 1]:
 		var anca := Node3D.new()
