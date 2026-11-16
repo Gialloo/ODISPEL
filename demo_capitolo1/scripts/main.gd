@@ -165,7 +165,7 @@ func _scontro(r: Dictionary) -> void:
 	var vinto := false
 	while not vinto:
 		var sc: Node3D = preload("res://scripts/scontro/scontro.gd").new()
-		sc.configure({"squadra": r.get("squadra", mondo.gruppo.duplicate()), "nemico": r.get("nemico", "ANOMALIA"), "forza": r.get("forza", 1.0),
+		sc.configure({"squadra": r.get("squadra", mondo.gruppo.duplicate()), "nemico": r.get("nemico", "ANOMALIA"), "forza": r.get("forza", 1.0), "ritmo": r.get("ritmo", {}),
 			"prova": OS.get_cmdline_user_args().has("prova")})
 		var esito: Array = [null]
 		sc.finito.connect(func(v: bool) -> void: esito[0] = v)

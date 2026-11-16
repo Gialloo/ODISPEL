@@ -111,7 +111,7 @@
       {"narra": "Dal bordo del pozzo si alza qualcosa di lungo, tutto collo e niente faccia."},
       {"chi": "lance", "faccia": "arrabbiato", "testo": "Lui. State dietro di me."},
       {"regia": "barre", "on": false},
-      {"regia": "scontro", "nemico": "GUARDIANO DEL POZZO", "forza": 1.2},
+      {"regia": "scontro", "nemico": "GUARDIANO DEL POZZO", "forza": 1.2, "ritmo": {"nota": "spazza il bordo: stringhe lunghe, poi un respiro lungo per rispondere", "legato": 0.8, "pausa": 1.7, "tenuta": 1.3, "stringhe": [[["affondo", "rosso"], ["spazzata", ""], ["affondo", "blu"]], [["spazzata", ""], ["affondo", "blu"], ["affondo", "rosso"]], [["affondo", "rosso"], ["affondo", "rosso"], ["spazzata", ""], ["affondo", "blu"]], [["affondo", "blu"], ["spazzata", ""], ["spazzata", ""]]]}},
       {"chi": "saul", "faccia": "felice", "testo": "Il custode è in ferie. Possiamo guardare?"},
       {"chi": "lance", "faccia": "serio", "testo": "Da lontano."}
     ],
@@ -124,7 +124,7 @@
       {"narra": "Gli squilli si mescolano, si alzano, diventano una voce sola che non dice niente."},
       {"chi": "lance", "faccia": "serio", "testo": "Allora lo facciamo stare zitto."},
       {"regia": "barre", "on": false},
-      {"regia": "scontro", "nemico": "ECO", "forza": 1.0},
+      {"regia": "scontro", "nemico": "ECO", "forza": 1.0, "ritmo": {"nota": "ripete quello che ha appena fatto: chi ascolta la prima volta, la seconda lo anticipa", "eco": true, "tempo": 0.9, "pausa": 0.9}},
       {"narra": "Gli schermi si spengono uno alla volta. Ne resta acceso uno, con la batteria all'uno per cento."}
     ],
     "pozzo": [
@@ -190,7 +190,7 @@
       {"narra": "Il mucchio si muove. Qualcosa ci dorme dentro, e si sveglia."},
       {"chi": "lance", "faccia": "arrabbiato", "testo": "Indietro. Questa è roba sua e la difende."},
       {"regia": "barre", "on": false},
-      {"regia": "scontro", "nemico": "INGORDO", "forza": 1.0},
+      {"regia": "scontro", "nemico": "INGORDO", "forza": 1.0, "ritmo": {"nota": "lento e pesante: mirini lunghi, colpi che fanno male, difende la sua roba", "tempo": 1.3, "pausa": 1.3, "danno": 1.6, "tenuta": 1.5, "crollo": 3.0, "stringhe": [[["affondo", "rosso"]], [["affondo", "blu"]], [["affondo", "rosso"], ["affondo", "rosso"]], [["spazzata", ""]]]}},
       {"chi": "saul", "faccia": "felice", "testo": "Scoiattolo battuto. Ci prendiamo qualcosa?"},
       {"chi": "lance", "faccia": "serio", "testo": "Niente. Non è roba nostra."}
     ],
@@ -204,7 +204,7 @@
       {"narra": "Una sacca si strappa. Poi un'altra."},
       {"chi": "lance", "faccia": "serio", "testo": "Quelle già sveglie. Alle altre ci pensa il cuore, quando lo spegniamo."},
       {"regia": "barre", "on": false},
-      {"regia": "scontro", "nemico": "COVATA", "forza": 0.9},
+      {"regia": "scontro", "nemico": "COVATA", "forza": 0.9, "ritmo": {"nota": "i piccoli vanno alle caviglie: quasi tutto basso, si salta", "pausa": 0.8, "stringhe": [[["spazzata", ""]], [["spazzata", ""], ["spazzata", ""]], [["spazzata", ""], ["affondo", "blu"]], [["spazzata", ""], ["spazzata", ""], ["spazzata", ""]], [["affondo", "rosso"], ["spazzata", ""]]]}},
       {"chi": "nox", "faccia": "neutro", "testo": "Se il cuore cade, le altre non si apriranno. Spero."}
     ],
     "mucchio": [
@@ -328,7 +328,7 @@
       {"chi": "lance", "faccia": "arrabbiato", "testo": "Dietro di me. Sono le guardie del cuore."},
       {"chi": "saul", "faccia": "sorpreso", "testo": "Il cuore ha le guardie?"},
       {"chi": "nox", "faccia": "serio", "testo": "Tutto quello che vive si difende."},
-      {"regia": "scontro", "nemico": "SCIAME DEL NIDO", "forza": 0.8},
+      {"regia": "scontro", "nemico": "SCIAME DEL NIDO", "forza": 0.8, "ritmo": {"nota": "tanti e svelti: mirini corti, poche pause, colpi leggeri", "tempo": 0.72, "pausa": 0.5, "legato": 0.7, "danno": 0.7, "stringhe": [[["affondo", "rosso"]], [["affondo", "blu"]], [["affondo", "rosso"], ["affondo", "blu"]], [["affondo", "blu"], ["affondo", "rosso"]], [["spazzata", ""], ["affondo", "rosso"]]]}},
       {"chi": "nox", "faccia": "neutro", "testo": "Ecco perché non voleva che arrivassimo fin qui."},
       {"chi": "lance", "faccia": "serio", "testo": "Allora ci siamo vicini."}
     ],
@@ -743,7 +743,7 @@
       {"regia": "lampo", "colore": "#ff2bd6"},
       {"regia": "onomato", "testo": "TU-TUM"},
       {"narra": "Il cuore si contrae. Dai cavi colano due sagome che si fondono in una sola, enorme."},
-      {"regia": "scontro", "nemico": "CUORE DEL NIDO", "forza": 1.6},
+      {"regia": "scontro", "nemico": "CUORE DEL NIDO", "forza": 1.6, "ritmo": {"nota": "batte TU-TUM: colpi a coppie, e dopo ogni BLACKOUT batte più forte e più svelto", "legato": 0.45, "tenuta": 1.3, "crollo": 3.5, "danno": 1.15, "crescendo": 0.88, "stringhe": [[["affondo", "rosso"], ["affondo", "rosso"]], [["affondo", "blu"], ["affondo", "blu"]], [["affondo", "rosso"], ["affondo", "blu"]], [["spazzata", ""], ["affondo", "rosso"]], [["affondo", "rosso"], ["affondo", "blu"], ["spazzata", ""], ["spazzata", ""]]]}},
       {"regia": "camera", "a": "cuore_alto", "s": 0.0},
       {"narra": "Il cuore smette di battere. Per un attimo non succede niente. Poi la camera intera si affloscia, come una tenda a cui hanno tolto i pali."},
       {"narra": "Da lontano, attraverso la carne, arriva un rumore di vetri e di allarmi d'auto. Il quartiere sta tornando."},

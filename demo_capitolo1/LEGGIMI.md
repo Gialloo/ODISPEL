@@ -55,6 +55,14 @@ Progetto Godot 4.7.2 separato dalla V3 (si apre da questa cartella). Fino alla 0
 - Come si rifà: `tools/blender/saul_esporta_gioco.py` (modello) e `tools/blender/saul_ritratti.py` (ritratti), Blender 4.2, dal file `saul_v3_rig.blend` della cartella del progetto. Schermate senza giocare: `tools/saul_vetrina.gd`; scontro con Saul in campo: `tools/vetrina_scontro.gd -- <cartella> saul`.
 - Crediti e licenze: `assets/personaggi/saul/CREDITI.md` (la pagina licenze VRoid va ricontrollata a mano prima di pubblicare).
 
+## Il ritmo degli scontri (0.10, 16/11/2026) · PROPOSTA per l'autore
+- Richiesta dell'autore: «concentrati sul ritmo degli scontri». Prima i sette scontri erano lo stesso nemico con più o meno vita: stessi attacchi, stessi tempi.
+- Ora ogni nemico ha il suo passo, scritto in `"ritmo"` accanto allo scontro in `data/capitolo1.json` (campo `nota` = l'idea in una riga). Il motore lo legge in `pg_engine.gd`, `set_ritmo`. Senza `"ritmo"` il nemico resta quello di prima: l'anomalia del varco è ancora la lezione.
+  - **Sciame**: tanti e svelti, mirini corti, colpi leggeri. **Covata**: quasi tutto basso, si salta. **Ingordo**: lento e pesante, difende la sua roba. **Eco**: rifà la stringa appena fatta, la seconda volta la anticipi. **Guardiano**: stringhe lunghe, poi un respiro lungo per rispondere. **Cuore**: colpi a coppie (TU-TUM), dopo ogni BLACKOUT batte più svelto.
+  - Il mirino non scende mai sotto la finestra del CONTRO più un quarto di secondo: resta sempre leggibile.
+- Corretto: con la squadra la barra della vita del nemico restava piena per il primo terzo dello scontro (la vita vera è ×1.5).
+- Misura senza grafica: `godot --headless --path . -s tools/ritmo.gd -- semi=20` (giocatore finto «bravo» e «medio» contro ogni nemico: durata, attacchi, colpi presi, CROLLI, KO, tempo a terra).
+
 ## Dove si cambia cosa
 - Tutti i testi, le scene, i punti e le chiacchiere: `data/capitolo1.json` (si modifica senza toccare il codice).
 - Città e modelli segnaposto: `scripts/mondo.gd`. Interfaccia: `scripts/persona_ui.gd`. Flusso: `scripts/main.gd`.

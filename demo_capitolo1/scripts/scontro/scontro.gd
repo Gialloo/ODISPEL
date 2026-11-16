@@ -16,6 +16,7 @@ var squadra: Array = ["lance", "nox", "rio", "saul"]
 var nemico: String = "ANOMALIA"
 ## Più di 1 per un nemico più grosso e resistente (il cuore del nido, 0.5).
 var forza: float = 1.0
+var ritmo: Dictionary = {}     # passo del nemico (16/11/2026, PROPOSTA): vedi pg_engine.gd, set_ritmo
 var prova_auto: bool = false
 var _auto_t: float = 0.0
 var HEADS: Array = []
@@ -104,6 +105,7 @@ func configure(args: Dictionary) -> void:
 	squadra = args.get("squadra", squadra)
 	nemico = args.get("nemico", nemico)
 	forza = float(args.get("forza", 1.0))
+	ritmo = args.get("ritmo", {})
 	prova_auto = args.get("prova", false)
 
 
@@ -118,6 +120,7 @@ func _ready() -> void:
 		HEADS.append(COLORE[chi])
 	eng.posture = eng.party[0]["posture"]
 	eng.ehp *= forza
+	eng.set_ritmo(ritmo)
 	var env := WorldEnvironment.new()
 	var e := Environment.new()
 	e.background_mode = Environment.BG_COLOR
@@ -335,12 +338,12 @@ func _build_ui() -> void:
 	var n := Ui.label(nemico, 24, Ui.PINK, Ui.display(), 6)
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	rt.add_child(n)
-	_ehp = _bar(Ui.PINK, 18, E.ENEMY_HP * forza)
+	_ehp = _bar(Ui.PINK, 18, eng.ehp)     # 16/11: la vita vera (con la squadra è ×1.5): prima la barra restava piena per il primo terzo dello scontro
 	rt.add_child(_ehp)
 	_seg_lab = Ui.label("SEGNALE", 18, Ui.YELLOW, Ui.display(), 5)
 	_seg_lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	rt.add_child(_seg_lab)
-	_seg = _bar(Ui.YELLOW, 26, E.SEG_MAX)
+	_seg = _bar(Ui.YELLOW, 26, eng.seg_max)
 	rt.add_child(_seg)
 	# al centro in alto: il Registro
 	_reg_lab = Ui.label("REGISTRO 0/%d" % E.DISCOVERIES.size(), 20, WHITE, Ui.display(), 5)
@@ -635,7 +638,7 @@ func _draw_overlay() -> void:
 	# CROLLO: il nemico è aperto
 	if eng.est == "crollo":
 		var cc: Vector2 = cam.unproject_position(e_root.position + Vector3(0, 1.2, 0))
-		var fr: float = clampf(eng.est_t / E.CROLLO_TIME, 0.0, 1.0)
+		var fr: float = clampf(eng.est_t / eng.crollo_time, 0.0, 1.0)
 		_ov.draw_arc(cc, 110.0, -PI * 0.5, -PI * 0.5 + TAU * fr, 64, Ui.YELLOW, 10.0)
 	# la catena: un pallino per colpo; accanto il gesto che la chiude
 	if eng.chain > 0 and eng.st != "charge":
