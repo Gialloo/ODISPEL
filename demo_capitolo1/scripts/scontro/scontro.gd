@@ -37,6 +37,17 @@ var cam: Camera3D
 var _cam_home: Vector3
 var _cam_x: float = 0.0
 var _cam_off: Vector3
+# REGIA DELLA CAMERA (16/11/2026, richiesta dell'autore: «piccolo zoom-in quando carica un attacco… piccolezze che fanno
+# la differenza»). Tre strati che si sommano alla vista fissa, senza toglierla: zoom (gradi di fov in meno),
+# spostamento verso chi agisce, e il «calcio» dei colpi grossi. Lo zoom entra piano e si scioglie di colpo al rilascio.
+const CAM_BASE := Vector3(0, 2.3, 9.2)
+const CAM_LOOK := Vector3(0, 1.3, 0)
+var _fov_punch: float = 50.0       # lo pilota _punch; la regia ci toglie lo zoom
+var _zoom: float = 0.0
+var _lean_x: float = 0.0
+var _lift: float = 0.0
+var _kick: float = 0.0
+var _charge_lv_prev: int = 0
 var _shake_t: float = 0.0
 var _shake_p: float = 0.0
 var _stop_id: int = 0
@@ -453,12 +464,16 @@ func _process(delta: float) -> void:
 	if ISO:
 		_cam_x = lerpf(_cam_x, _wx((eng.px + eng.ex) * 0.5), minf(1.0, rd * 4.0))
 		_cam_home = Vector3(_cam_x, 1.1, 0) + _cam_off
+	if not ISO:
+		_regia_camera(rd)
 	if _shake_t > 0.0:
 		_shake_t -= rd
 		var p: float = _shake_p * maxf(0.0, _shake_t)
 		cam.position = _cam_home + Vector3(randf_range(-p, p), randf_range(-p, p), 0)
 	else:
 		cam.position = cam.position.lerp(_cam_home, 0.3)
+	if not ISO:
+		cam.look_at(CAM_LOOK + Vector3(_lean_x * 0.85 + _kick * 0.5, _lift * 0.6, 0))
 	for t in _trail:
 		t[2] -= rd
 	_trail = _trail.filter(func(t: Array) -> bool: return t[2] > 0.0)
@@ -707,6 +722,9 @@ func _on_event(ev: Dictionary) -> void:
 			match ev["id"]:
 				"affondo", "scatto", "entrata", "sfondamento":
 					_speed_t = 0.22 if ev["id"] in ["scatto", "sfondamento"] else 0.18
+					if ev["id"] == "scatto":
+						_punch(54.0)      # rilascio della carica: la camera si apre e lo scatto parte
+					_cam_kick(0.18 if ev["id"] in ["scatto", "sfondamento"] else 0.1)
 					if ev["id"] == "sfondamento":
 						_combo_title("SFONDAMENTO")
 					Sfx.play("schivata", 0.0, 1.1 if ev["id"] == "scatto" else 1.3)
@@ -718,6 +736,7 @@ func _on_event(ev: Dictionary) -> void:
 					_combo_title("FALCIATA")
 				"schianto":
 					Sfx.play("schivata", 0.0, 0.7)
+					_punch(54.0)          # rilascio: la camera si apre di colpo, lo schianto ha spazio
 				"colpo", "aria":
 					Sfx.play("schivata", 0.0, 1.6 + 0.1 * int(ev["chain"]), -8.0)
 				"blackout":
@@ -727,6 +746,8 @@ func _on_event(ev: Dictionary) -> void:
 			var src: String = ev["src"]
 			var big: bool = src in ["affondo", "schiacciata", "lancio", "scatto", "schianto", "montante", "entrata", "sfondamento", "falciata"] or float(ev["dmg"]) >= 20.0
 			_combo_hit()
+			if big:
+				_cam_kick(0.22)
 			# il colpo si vede sul nemico: lampo bianco e schiacciamento
 			e_mat.albedo_color = Color.WHITE
 			var sq := create_tween().set_ignore_time_scale(true)
@@ -767,6 +788,7 @@ func _on_event(ev: Dictionary) -> void:
 		"troppo_presto":
 			_sub_text("TROPPO PRESTO", Color("#ff7a9c"))
 		"colpito":
+			_cam_kick(-0.25)
 			_combo_n = 0
 			_combo_t = 0.0
 			p_mat.albedo_color = Color.WHITE
@@ -988,6 +1010,53 @@ func _toast_text(t: String) -> void:
 	tw.tween_property(_toast, "modulate:a", 0.0, 0.4)
 
 
+func _regia_camera(rd: float) -> void:
+	# dove guarda la camera adesso: obiettivi, poi inseguiti con morbidezza (in tempo reale, anche nel rallenty)
+	var z: float = 0.0
+	var lx: float = 0.0
+	var up: float = 0.0
+	var px: float = p_root.position.x
+	var exw: float = e_root.position.x
+	var lv: int = eng.charge_level() if eng.st in ["charge", "hover"] else 0
+	if eng.st == "charge":
+		z = 2.0 + 1.5 * lv                   # carica: ci si stringe sul personaggio, di più a ogni livello
+		lx = px * 0.35
+	elif eng.st == "hover":
+		z = 4.0 + 1.0 * lv                   # sospeso in aria: stretto e un po' più su
+		lx = px * 0.35
+		up = 0.35
+	elif eng.est == "crollo":
+		z = 4.0                              # il nemico è giù: la camera va verso l'occasione
+		lx = exw * 0.3
+	else:
+		var d: Dictionary = eng.danger()
+		if not d.is_empty():
+			# il colpo nemico sta per arrivare: la scena si stringe un poco sui due, la tensione si vede
+			var left: float = float(d["left"])
+			var t: float = clampf(1.0 - left / maxf(0.01, eng.win_len() + 0.35), 0.0, 1.0)
+			z = 2.5 * t * t
+			lx = (px + exw) * 0.5 * 0.2 * t
+	# livello di carica nuovo: un piccolo battito
+	if lv > _charge_lv_prev and lv > 1:
+		_shake(0.08, 0.05 + 0.03 * lv)
+		_sparks(p_root.position + Vector3(0, 1.0, 0.3), COL[eng.posture].lerp(Ui.YELLOW, 0.3 * lv), 8 + 6 * lv)
+		Sfx.play("ui_sposta", 0.0, 0.8 + 0.25 * lv, -4.0)
+	_charge_lv_prev = lv
+	# entra piano (si sente l'attesa), esce svelta (si sente lo scatto)
+	var kz: float = minf(1.0, rd * (5.0 if z > _zoom else 16.0))
+	_zoom = lerpf(_zoom, z, kz)
+	_lean_x = lerpf(_lean_x, lx, minf(1.0, rd * (4.0 if absf(lx) > absf(_lean_x) else 10.0)))
+	_lift = lerpf(_lift, up, minf(1.0, rd * 6.0))
+	_kick = lerpf(_kick, 0.0, minf(1.0, rd * 12.0))
+	cam.fov = _fov_punch - _zoom
+	_cam_home = CAM_BASE + Vector3(_lean_x + _kick, _lift, -_zoom * 0.04)
+
+
+func _cam_kick(dir: float) -> void:
+	# il colpo grosso spinge la camera un attimo nella sua direzione
+	_kick = clampf(_kick + dir, -0.35, 0.35)
+
+
 func _hitstop(dur: float) -> void:
 	_stop_id += 1
 	var my: int = _stop_id
@@ -1021,8 +1090,8 @@ func _shake(dur: float, power: float) -> void:
 func _punch(fov: float) -> void:
 	var tw := create_tween().set_ignore_time_scale(true)
 	if not ISO:
-		tw.tween_property(cam, "fov", fov, 0.06)
-		tw.tween_property(cam, "fov", 50.0, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tw.tween_property(self, "_fov_punch", fov, 0.06)
+		tw.tween_property(self, "_fov_punch", 50.0, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		return
 	tw.tween_property(cam, "size", CAM_SIZE * fov / 50.0, 0.06)
 	tw.tween_property(cam, "size", CAM_SIZE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -1219,6 +1288,13 @@ func _registro_panel(title: String, ended: bool) -> Control:
 
 
 func _end(won: bool) -> void:
+	if won and not ISO:
+		# l'ultimo colpo si gusta: mezzo secondo al rallentatore, stretto sul nemico che cade
+		_flash_now(Color.WHITE, 0.6)
+		_sparks(e_root.position + Vector3(0, 1.2, 0.5), Ui.YELLOW, 60)
+		_punch(40.0)
+		Engine.time_scale = 0.2
+		await get_tree().create_timer(0.5, true, false, true).timeout
 	Engine.time_scale = 1.0
 	await get_tree().create_timer(0.9).timeout
 	_end_panel = _registro_panel("VITTORIA" if won else "SCONFITTA", true)

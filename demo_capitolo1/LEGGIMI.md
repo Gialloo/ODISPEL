@@ -64,6 +64,16 @@ Progetto Godot 4.7.2 separato dalla V3 (si apre da questa cartella). Fino alla 0
 - Corretto: con la squadra la barra della vita del nemico restava piena per il primo terzo dello scontro (la vita vera è ×1.5).
 - Misura senza grafica: `godot --headless --path . -s tools/ritmo.gd -- semi=20` (giocatore finto «bravo» e «medio» contro ogni nemico: durata, attacchi, colpi presi, CROLLI, KO, tempo a terra).
 
+## La regia della camera nello scontro (0.11, 16/11/2026)
+- Richiesta dell'autore: «piccolo zoom-in della telecamera verso il personaggio quando carica un attacco… piccolezze che fanno la differenza». Tutto in `scontro.gd`, `_regia_camera`; la vista di lato fissa resta, i tocchi si sommano.
+  - **Carica**: la camera si stringe piano sul personaggio, un po' di più a ogni livello; ogni livello nuovo dà un piccolo battito (scossa, scintille, suono più acuto).
+  - **Rilascio** (scatto, schianto): la camera si apre di colpo, lo zoom si scioglie svelto.
+  - **Sospeso in aria**: stretto e un po' più in alto.
+  - **Colpo nemico in arrivo**: negli ultimi istanti del mirino la scena si stringe appena sui due.
+  - **CROLLO**: la camera va verso il nemico a terra.
+  - **Calcio**: i colpi grossi spingono la camera un attimo verso il nemico, quelli presi all'indietro.
+  - **Vittoria**: l'ultimo colpo dura mezzo secondo al rallentatore, con lampo e scintille, prima del pannello.
+
 ## Dove si cambia cosa
 - Tutti i testi, le scene, i punti e le chiacchiere: `data/capitolo1.json` (si modifica senza toccare il codice).
 - Città e modelli segnaposto: `scripts/mondo.gd`. Interfaccia: `scripts/persona_ui.gd`. Flusso: `scripts/main.gd`.
