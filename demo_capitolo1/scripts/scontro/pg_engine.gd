@@ -154,6 +154,15 @@ var hits_in_row: int = 0
 var walled: bool = false                 # un solo AL MURO finché il nemico non torna ad attaccare
 var phase: int = 0
 var idle_wait: float = 1.2
+# RITMO del nemico (16/11/2026, PROPOSTA per l'autore): ogni nemico del Capitolo 1 ha il suo passo, letto da
+# "ritmo" in data/capitolo1.json. Senza "ritmo" il nemico è quello di sempre (l'anomalia del varco resta la lezione).
+# tempo: durata del MIRINO · pausa: respiro tra una stringa e l'altra · legato: pausa dentro la stringa
+# danno: forza dei colpi · tenuta: SEGNALE massimo · crollo: secondi a terra · stringhe: il suo repertorio
+# eco: ripete la stringa appena fatta · crescendo: dopo ogni BLACKOUT il MIRINO si accorcia ancora
+var ritmo: Dictionary = {}
+var seg_max: float = SEG_MAX
+var crollo_time: float = CROLLO_TIME
+var _ultima_stringa: Array = []
 
 # squadra e carica
 var party: Array = []                    # {id, name, hp, maxhp, posture, ko}; hp e posture qui sopra sono quelli di chi è in campo
@@ -174,6 +183,13 @@ func _init(seed_v: int = 7, party_size: int = 1) -> void:
 
 
 # ================================================================ comandi
+
+func set_ritmo(r: Dictionary) -> void:
+	ritmo = r
+	seg_max = SEG_MAX * float(r.get("tenuta", 1.0))
+	seg = seg_max
+	crollo_time = float(r.get("crollo", CROLLO_TIME))
+
 
 func input(g: String) -> void:
 	if over != "":
@@ -652,7 +668,7 @@ func _resolve_player_hit() -> void:
 		_ev({"type": "blackout", "dmg": dmg, "team": team - 1})
 		ex = WALL_R - 0.5
 		phase += 1
-		seg = SEG_MAX
+		seg = seg_max
 		last_seg_loss = time
 		est = "down"
 		est_t = 1.4
@@ -748,7 +764,7 @@ func _hit_enemy(dmg: float, s: float, push: float, src: String) -> void:
 		return
 	if seg <= 0.0:
 		est = "crollo"
-		est_t = CROLLO_TIME
+		est_t = crollo_time
 		estring.clear()
 		eatk = {}
 		e_air = 0.0
@@ -789,7 +805,7 @@ func _push_enemy(push: float) -> void:
 				return
 			if seg <= 0.0 and est != "crollo":
 				est = "crollo"
-				est_t = CROLLO_TIME
+				est_t = crollo_time
 				_ev({"type": "crollo"})
 		return
 	ex = nx
@@ -823,7 +839,7 @@ func _check_end() -> bool:
 
 func _tick_enemy() -> void:
 	if est != "crollo" and est != "dead" and time - last_seg_loss > SEG_REGEN_AFTER:
-		seg = minf(SEG_MAX, seg + SEG_REGEN * TICK)
+		seg = minf(seg_max, seg + SEG_REGEN * TICK)
 	match est:
 		"idle":
 			var d: float = ex - px
@@ -843,7 +859,7 @@ func _tick_enemy() -> void:
 					_start_tele(estring.pop_front())
 				else:
 					# dopo aver incassato risponde subito; dopo aver attaccato lascia respirare
-					idle_wait = 0.25 if est == "stun" else rng.randf_range(0.6, 1.2) * (0.8 if phase > 0 else 1.0)
+					idle_wait = 0.25 if est == "stun" else rng.randf_range(0.6, 1.2) * (0.8 if phase > 0 else 1.0) * float(ritmo.get("pausa", 1.0))
 					est = "idle"
 		"air":
 			e_air -= TICK
@@ -855,14 +871,20 @@ func _tick_enemy() -> void:
 			est_t -= TICK
 			if est_t <= 0.0:
 				est = "idle"
-				seg = SEG_MAX * 0.6
+				seg = seg_max * 0.6
 				last_seg_loss = time
 				idle_wait = 0.4
 				_ev({"type": "crollo_finito"})
 
 
 func _next_attack(now: bool) -> void:
-	var s: Array = STRINGS[rng.randi_range(0, STRINGS.size() - 1)].duplicate(true)
+	var rep: Array = ritmo.get("stringhe", STRINGS)
+	var s: Array = rep[rng.randi_range(0, rep.size() - 1)].duplicate(true)
+	if ritmo.get("eco", false) and not _ultima_stringa.is_empty():
+		s = _ultima_stringa.duplicate(true)     # l'ECO rifà quello che ha appena fatto, poi cambia
+		_ultima_stringa = []
+	elif ritmo.get("eco", false):
+		_ultima_stringa = s.duplicate(true)
 	if phase > 0 and rng.randf() < 0.5:
 		s.append(STRINGS[rng.randi_range(0, 2)][0].duplicate())   # dopo il primo BLACKOUT le stringhe si allungano
 	estring = s
@@ -873,7 +895,9 @@ func _next_attack(now: bool) -> void:
 
 func _start_tele(a: Array) -> void:
 	var kind: String = a[0]
-	var w: float = float(ATTACKS[kind]["windup"]) * (0.85 if phase > 0 else 1.0)
+	var w: float = float(ATTACKS[kind]["windup"]) * (0.85 if phase > 0 else 1.0) * float(ritmo.get("tempo", 1.0))
+	w *= pow(float(ritmo.get("crescendo", 1.0)), phase)
+	w = maxf(w, WIN + 0.25)     # il MIRINO resta sempre leggibile: mai più corto della finestra del CONTRO più un attimo
 	eatk = {"kind": kind, "color": a[1], "impact": w, "t": 0.0}
 	est = "tele"
 	hits_in_row = 0
@@ -885,7 +909,7 @@ func _impact() -> void:
 	var a: Dictionary = ATTACKS[eatk["kind"]]
 	var kind: String = eatk["kind"]
 	var d: float = ex - px
-	var gap: float = STRING_GAP
+	var gap: float = STRING_GAP * float(ritmo.get("legato", 1.0))
 	ex = maxf(px + BODY, ex - float(a["lunge"]))
 	if iframes > 0.0:
 		var perfect: bool = st == "dodge" and time - dodge_start <= DODGE_PERFECT
@@ -900,7 +924,7 @@ func _impact() -> void:
 		gap = STRING_GAP + 0.6
 		_ev({"type": "nemico_a_vuoto", "kind": kind})
 	else:
-		var dmg: float = float(a["dmg"]) * (PARTY_ENEMY_DMG if party.size() > 1 else 1.0)
+		var dmg: float = float(a["dmg"]) * (PARTY_ENEMY_DMG if party.size() > 1 else 1.0) * float(ritmo.get("danno", 1.0))
 		if kind == "affondo" and time <= esposto_until:
 			dmg *= 2.0
 		hp -= dmg
@@ -923,7 +947,7 @@ func _impact() -> void:
 	eatk = {}
 	if est == "tele":
 		est = "rec"
-		est_t = gap if not estring.is_empty() else gap + 0.3
+		est_t = gap if not estring.is_empty() else (gap + 0.3) * float(ritmo.get("pausa", 1.0))
 
 
 # ================================================================ utilità
