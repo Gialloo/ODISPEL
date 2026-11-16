@@ -30,7 +30,7 @@ const PIANO_COST: float = 30.0
 const RESPIRO: float = 15.0              # FIATO a fine catena (almeno 3 colpi a segno)
 const SEG_REGEN: float = 12.0            # il SEGNALE torna se non lo metti sotto pressione...
 const SEG_REGEN_AFTER: float = 2.0       # ...dopo 2 s
-const CROLLO_TIME: float = 4.0
+const CROLLO_TIME: float = 3.0           # 16/11/2026, autore: da 4 a 3 s, il nemico passava un terzo dello scontro a terra
 const BLACKOUT_FRAC: float = 0.15
 const SCROLLATA_HITS: int = 5            # dopo 5 colpi di fila senza poter agire il nemico si scrolla di dosso
 

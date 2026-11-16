@@ -94,7 +94,7 @@ func _partita(p: Dictionary, forza: float, ritmo: Dictionary, seme: int) -> Dict
 			continue
 		prossimo_gesto = eng.time + p["riflessi"] * 0.6
 		if eng.est == "crollo":
-			if eng.time - crollo_da > 2.4:
+			if eng.time - crollo_da > eng.crollo_time - 0.6:
 				eng.input("verso")      # BLACKOUT
 			else:
 				eng.input("tocco")

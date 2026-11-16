@@ -60,6 +60,7 @@ Progetto Godot 4.7.2 separato dalla V3 (si apre da questa cartella). Fino alla 0
 - Ora ogni nemico ha il suo passo, scritto in `"ritmo"` accanto allo scontro in `data/capitolo1.json` (campo `nota` = l'idea in una riga). Il motore lo legge in `pg_engine.gd`, `set_ritmo`. Senza `"ritmo"` il nemico resta quello di prima: l'anomalia del varco è ancora la lezione.
   - **Sciame**: tanti e svelti, mirini corti, colpi leggeri. **Covata**: quasi tutto basso, si salta. **Ingordo**: lento e pesante, difende la sua roba. **Eco**: rifà la stringa appena fatta, la seconda volta la anticipi. **Guardiano**: stringhe lunghe, poi un respiro lungo per rispondere. **Cuore**: colpi a coppie (TU-TUM), dopo ogni BLACKOUT batte più svelto.
   - Il mirino non scende mai sotto la finestra del CONTRO più un quarto di secondo: resta sempre leggibile.
+- CROLLO da 4 a 3 secondi per tutti (deciso dall'autore il 16/11/2026); Ingordo 2,3 s e Cuore 2,6 s restano più corti degli altri.
 - Corretto: con la squadra la barra della vita del nemico restava piena per il primo terzo dello scontro (la vita vera è ×1.5).
 - Misura senza grafica: `godot --headless --path . -s tools/ritmo.gd -- semi=20` (giocatore finto «bravo» e «medio» contro ogni nemico: durata, attacchi, colpi presi, CROLLI, KO, tempo a terra).
 
